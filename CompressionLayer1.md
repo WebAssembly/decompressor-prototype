@@ -298,6 +298,264 @@ Algorithms are written with respect to decompression. Hence parsing is reading
 from the compressed file while printing is writing to the corresponding
 decompressed file.
 
+## Compression via the Map s-expression
+
+One way you can compress a section is to use a different integer encoding when
+writing than when reading. You may do this because the read encoding uses less
+bits than the write encoding. The _map_ expression handles this case. A _map_
+has two arguments. The first is how to read a value while the second is how to
+write a value.
+
+In the previous example, the return count (parsed using varuint1) is only a zero
+or a 1. Hence we can use the map instruction to take advantage of this as
+follows:
+
+```
+(define 'type'
+  (bit.to.byte
+    (loop (varuint32)
+      (varuint7)
+      (loop (varuint32) (uint8))
+      (if (map (fixed 1) (varuint1)) (uint8) (void))))
+```
+
+Note: The _fixed_ expression reads and writes integers using the number of bits
+defined by its argument. In this case we have used 1 bit since zero and 1 can be
+written as a single bit.
+
+## Taking advantage of stream types
+
+In the previous section, we showed how one can use the _map_ expression to
+change formats between the input _bit_ stream, and the output _byte_ stream.
+
+While the example given is correct, it isn't necessary in this case. The reason
+for this is that the notion of
+
+```
+(fixed 1)
+```
+
+has different meanings on a bit and a byte stream. On a _bit_ stream, the value
+will be read/written using a single bit. On a _byte_ stream, where all values
+must be byte aligned, the value will be read/written out using 8 bits. This is
+equivalent to what format _varuint1_ would generate.
+
+Hence, there was no need for the _map_ expression in this context. Rather, we
+can just replace the conditional check as follows:
+
+```
+(define 'type'
+  (bit.to.byte
+    (loop (varuint32)
+      (varuint7)
+      (loop (varuint32) (uint8))
+      (if (fixed 1) (uint8) (void))))
+```
+
+## Value injection
+
+If a field is always a constant, one need not add it to the compressed file.
+Rather, you can write-inject the value using a _write_ expression.
+
+For example, consider the form field of the previously algorithm for processing
+type sections. Currently, the form always has the value 0x40, and is encoded
+using varuint7. Rather than saving it in the compressed file, we could have
+replaced:
+
+```
+(varuint7)
+```
+
+with
+
+```
+(write 0x40 (varuint7))
+```
+
+This expression states to use the constant 0x40 (i.e. read no bits) as the read
+value. Then write it using encoding varuint7. Note that the _write_ expression
+is a shorthand for a _map_ expression. That is,
+
+```
+(write N E) == (map (i32.const N) E)
+```
+
+## Multiple filters
+
+It is important to realize that the input and output of a decompressor are just
+encoded versions of a sequence of integers. If you work at the level of the
+encoding, it really limits the structural advantage one can use to
+compress. Many compression techniques can be improved by using an intermediate
+data structure, thereby separating decodings of integers from the implied
+structure of WASM modules.
+
+That is, one need not implement a compression filter as a single mapping from an
+input bit stream to a corresponding output byte stream. Rather, it can be a
+series of filters, where each filter does a particular task.
+
+The simplest form of this is to divide input into two two filters.
+
+- F1 : bitream -> vector<integer>
+- F2 : vector<integer> -> bitstream
+
+The _filter_ statement takes N statemens. Each statement is a filter, and are
+applied sequentially as written, piping the output of the previous statement to
+the input of the next statement.
+
+To see this more clearly, reconsider the filter for a type section. Using the
+_filter_ statement, one can separate decoding the input from encoding the output
+as follows:
+
+```
+(define 'type'
+  (filter
+    (bit.to.int
+      (loop (varuint32)
+        (varuint7)
+        (loop (varuint32) (uint8))
+        (if (fixed 1) (uint8) (void))))
+    (int.to.byte
+      (loop (varuint32)
+        (varuint7)
+        (loop (varuint32) (uint8))
+        (if (fixed 1) (uint8) (void))))))
+```
+
+The statements _bit.to.int_ and _int.to.byte_ describe how read/write
+expressions should work, based on the type of stream.
+
+The above example does not look like it buys you anything, just duplicates
+code. That is because we have not modified either of the filters. We will
+shortly. When we do, it will become more obvious. The key thing to note is that
+the _bit.to.int_ filter reads encoded values and builds a sequence of integers,
+and the _int.to.bit_ filter walks that sequence of integers and encodes them as
+appropriate. Thus, we have separated how we decode the sequence of integers from
+how we encode the sequence of integers.
+
+An _int_ stream assumes an internal stream of integer values (implemented as a
+vector<integer>). In addition, all formatting actions on integer streams do the
+same thing.  When reading, they read an integer from the input stream. When
+writing, they write an integer to the output stream.
+
+In addition, there is an ast stream that allows tree building (see
+[Instructions and Asts](#instructions-and-asts)). Conceptually, the ast stream
+is a stack of abstract syntax trees.
+
+Note that other than specifying how streams are handled, nothing else had to
+change. The reason is that evaluating these statements simply changes the
+behaviour of how reads and writes work, when their argument is evaluated. The
+behavior of encoding s-expressions are:
+
+
+* Reading:
+  * ast.to.XXX - Pop an ast off the ast stack. Flatten the ast into a sequence
+    of integers first. Then return the next integer in the flattened sequence.
+  * bits.to.XXX: Decode the bits and return the integer.
+  * bytes.to.XXX: Decode the bytes and return the integer.
+  * int.to.XXX:  Read the next integer and return it.
+
+* Writing:
+  * XXX.to.ast - Push a value onto the ast stack.
+  * XXX.to.bits: Encode the integer and write to the bit stream.
+  * XXX.to.bytes:  Encode the integer and write to the byte stream.
+  * XXX.to.int: Write the integer to the integer stream.
+
+It should be noted in the previous example that the first filter reads the
+compressed data, and the second filter writes it out in an uncompressed
+form. This separation of the reader and the writer is significant. The (final)
+write filter, for a section, will always be the same. Hence, the framework
+provides a default write filter. Similarly, the read filter need not know the
+complex structure implied by the semantics of WASM. When compressing, one can
+simply write out all integers using a single variable-rate encoding.
+
+For example, the decompression algorithm can be simplified to:
+
+```
+(define 'type'
+  (filter
+    (bits.to.int
+      (loop.unbounded (vbr 6)))
+    (int.to.bytes (eval 'type'))))
+```
+
+Some clarification is needed here to fully understand the above example. The
+_vbr_ expression uses a variable-bit rate using 6-bit chunks (rather than 8 as
+in [LEB128](https://en.wikipedia.org/wiki/LEB128)). The _loop.unbounded_
+statement is like a _loop_ statement, except no bounds condition
+(i.e. expression) is used. Rather, end of the input stream (i.e. section) is
+used to terminate the loop.
+
+Finally, the _eval_ statement applies the default read/write filter for the
+given section name.
+
+## Using default algorithms
+
+In the previous section, we used the eval statement to apply a default algorithm
+for processing type sections. The decompressor intentionally provides many
+default methods. The rationale is to limit the number of algorithms that need to
+be included in the compressed file.
+
+By having predefined, default algorithms, fewer bits need to be downloaded to
+the client. In addition, filter algorithms (appearing within the compressed
+file) may be interpreted and therefore run more slowing. Default algorithms,
+since they are defined once, can be compiled and run much more efficiently.
+
+However, the framework does provide the ability to change default
+algorithms. Default algorithms are implemented using the same framework as
+sections. That is, one can define a default algorithm using the define
+statement. They are called in the following contexts:
+
+* by the driver code when a section with a given ID is found.
+
+* When the eval statement is evaluated.
+
+Currently, the following default algorithms are defined:
+
+* _code.default_ - Default implementation for parsing a code section of a WASM
+  module.
+
+* _code.body_- Default implementation for parsing function bodies within the
+  code section of a WASM module.
+
+* _code.inst_ Default implementation for parsing an instruction within the code
+  section of a WASM module.
+
+* _data.default_ Default implementation for parsing a data section of a WASM
+  module.
+
+* _export.default_ - Default implementation for parsing an export section of a
+  WASM module.
+
+* _filter.default_ - Default implementation for parsing a filter section of a
+  WASM module.
+
+* _filter.inst_ - Default implementation for parsing an instruction within the
+  filter section of a WASM module.
+
+* _function.default_ - Default implementation for parsing a function section of
+  a WASM module.
+
+* _import.default_ - Default implementation for parsing an import section of a
+  WASM module.
+
+* _memory.default_ - Default implementation for parsing a memory section of a
+  WASM module.
+
+* _name.default_ - Default implementation for parsing the name section of a WASM
+  module.
+
+* _start.default_ - Default implementation for parsing a start section of a WASM
+  module.
+
+* _table.default_ - Default implementation for parsing a table section of a WASM
+  module.
+
+* _type.default_ - Default implementation for parsing a type section of a WASM
+  module.
+
+<a name="instructions-and-asts">
+## Instructions and Asts
+
 <a name="proposed-framework">
 # Proposed Framework
 
