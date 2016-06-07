@@ -1908,3 +1908,532 @@ Write [[ (vbr N) ]] V Out =
       Out = writeAst(V, Out)
   return Out
 ```
+
+### I/O control
+
+This section introduces the operations for controlling when subexpressions are
+read and written using different formatting I/O constructs.
+
+#### (map E1 E2)
+
+The _map_ expression uses the first argument for reading, and the second
+argument for writing.
+
+```
+Parse In Stack Opcode =
+  Op, In = readUint8(In)
+  assert Op == Opcode['map']
+  Values = vector<value>()
+  for i in {1, 2}:
+    Values.prepend(Stack.popLast())
+  Values.prepend('map')
+  Stack.append(postorder(Values))
+  return In, Stack
+```
+
+```
+Read [[ (map E1 E2) ]] In = Read [[ E1 ]] In 
+```
+
+```
+Write [[ (map E1 E2) ]] V Out = Write [[ E2 ]] V Out
+```
+
+#### (read E)
+
+The _read_ expresssion reads its argument when reading, and is ignored when
+writing.
+
+```
+Parse In Stack Opcode =
+  Op, In = readUint8(In)
+  assert Op == Opcode['read']
+  Values = vector<value>()
+  Values.prepend(Stack.popLast())
+  Values.prepend('read')
+  Stack.append(postorder(Values))
+  return In, Stack
+```
+
+```
+Read [[ (read E) ]] In = Read [[ E ]] In
+```
+
+```
+Write [[ (read E) ]] V Out = Out
+```
+
+#### (lit N)
+
+The _lit_ expression returns _N_ as the value read. When writing, the value _N_
+is written using the default (_value_) format.
+
+```
+Parse In Stack Opcode =
+  Op, In = readUint8(In)
+  assert Op == Opcode['lit']
+  Values = vector<value>()
+  Values.append('lit')
+  N, In = readVarint64(In)
+  Values.append(N)
+  Stack.append(preorder(Values))
+  return In, Stack
+```
+
+```
+Read [[ (lit N) ]] In = N, In
+```
+
+```
+Write [[ (lit N) ]] V Out:
+  assert V == N
+  return Write [[ (value) ]] V Out
+```
+
+#### (write N E)
+
+The _write_ expression returns _N_ when reading. When writing, _E_ is used to
+format the value _N_.
+
+```
+Parse In Stack Opcode =
+  Op, In = readUint8(In)
+  assert Op == Opcode['write']
+  Values = vector<value>()
+  Values.append('write')
+  N, In = readVarint64(In)
+  Values.append(N)
+  Values.append(Stack.popLast())
+  Stack.append(preorder(NodeValues))
+  return In, Stack
+```
+
+```
+Read [[ (write N E) ]] In = N, In
+```
+
+```
+Write [[ (write N E) ]] V Out =
+  assert N == V
+  return Write [[ E ]] V Out
+```
+
+#### (peek E)
+
+When reading, the _peek_ expression reads E, and then resets the input stream
+back to its original position. When writing, _peek_ is ignored.
+
+```
+Parse In Stack Opcode =
+  Op, In = readUint8(In)
+  assert Op == Opcode['peek']
+  Values = vector<sexp_value>()
+  Values.prepend(Stack.popLast())
+  Values.prepend('peek')
+  Stack.append(postorder(Values))
+  return In Stack
+```
+
+```
+Read [[ (peek E) ]] In = 
+  V, Ignore = Read [[ E ]] In
+  return V, In
+```
+
+```
+Write [[ (peek E) ]] V Out = Out
+```
+
+### Trees
+
+Note: Currently, we only have ways of constructing trees, and flattening them
+back out to a sequence of integers. If (or when) additional operators can be
+justified, they will be added.
+
+#### (preorder N)
+
+Creates an ast node of _N_ values (including the root) where the values are on
+the output stream stack in preorder. Note: If the output stream is not an ast
+stream, this operation is a nop.
+
+```
+Parse In Stack Opcode:
+  Op, In = readUint8(In)
+  assert Op == Opcode['preorder']
+  N, In = readVaruint32(In)
+  assert N > 0
+  Values = vector<value>()
+  Values.append('preorder')
+  Values.append(N)
+  Stack.append(preorder(Values))
+  return In, Stack
+```
+
+```
+Run [[ (preorder N) ]] Env:
+  If Env.out.type != 'ast':
+    return Env
+  Values = vector<value>()
+  for i = 1; i <= N; ++i:
+    Values.prepend(Env.out.stream.main.popLast())
+  Env.out.stream.main.append(preorder(Values))
+  return Env
+```
+
+#### (postorder N)
+
+Creates an ast node of _N_ values (including the root) where the values are on
+the output stream stack in postorder. Note: If the output stream is not an ast
+stream, this operation is a nop.
+
+```
+Parse In Stack Opcode:
+  Op, In = readUint8(In)
+  assert Op == Opcode['postorder']
+  N, In = readVaruint32(In)
+  assert N > 0
+  Values = vector<value>()
+  Values.append('postorder')
+  Values.append(N)
+  Stack.append(prefix(Values))
+  return In, Stack
+```
+
+```
+Run [[ (postorder N) ]] Env:
+  If  Env.out.type != 'ast':
+    return Env
+  Values = vector<value>()
+  Root = Env.out.stream.main.popLast()
+  for i = 2; i <= N; ++i:
+    Values.prepend(Env.out.stream.popLast())
+  Values.prepend(Root)
+  Env.out.stream.main.append(postorder(Values))
+  return Env
+```
+
+#### (stash N)
+
+Pops _N_ values off the output stream's _main_ stack, and pushes them onto the
+corresponding _stash_ stack. Note: If the output stream is not an ast stream,
+the operation is a nop.
+
+```
+Parse In Stack Opcode:
+  Op, In = readUint8(In)
+  assert Op == Opcode['stash']
+  N, In = readVaruint32(In)
+  assert N > 0
+  Values = vector<value>()
+  Values.append('stash')
+  Values.append(N)
+  Stack.append(preorder(Values))
+  return In, Stack
+```
+
+```
+Run [[ (stash N ]] Env
+  if Env.out.type != 'ast':
+    return Env
+  for i = 1; i <= N; ++i:
+    Env.in.stream.stash.append(Env.out.stream.main.popLast())
+  return Env
+```
+
+#### (unstash N)
+
+Pops _N_ values off the output stream's _stash_ stack, and pushes them onto the
+corresponding _main_ stack. Note: If the output stream is not an ast stream, this
+operation is a nop.
+
+```
+Parse In Stack Opcode =
+  Op, In = readUint8(In)
+  assert Op == Opcode['unstash']
+  N, In = readVaruint32(In)
+  assert N > 0
+  Values = vector<value>()
+  Values.append('unstash')
+  Values.append(N)
+  Stack.append(preorder(Values))
+  return In, Stack
+```
+
+```
+Run [[ (unstash N) ]] Env:
+  if Env.out.type != 'ast':
+    return Env;
+  for i = 1; i <= N; ++i:
+    Env.out.stream.main.append(Env.out.stream.stash.popLast())
+  return Env
+```
+
+## Statements
+
+This section defines the set of statements that can appear in filter secctions.
+
+### Control Flow
+
+This section defines statement that control the order other statements are executed.
+
+#### (seq S1 \.\.\. Sn)
+
+The _seq_ statement evaluates each of its arguments, in the order found.
+
+```
+Parse In Stack Opcode:
+  Op, In  = readUint8(In)
+  assert Op == Opcode['seq']
+  Values = vector<value>()
+  N, In = readVaruint32(In)
+  for i = 1; i <= N; ++i:
+    Values.prepend(Stack.popLast())
+  Values.prepend('seq')
+  Stack.append(postorder(Values))
+  return In, Stack
+```
+
+```
+Run [[ (seq S1 \.\.\. Sn) ]] Env:
+  for i = 1, i <= n; ++i:
+    Env = Run [[ Si ]] Env
+  return Env
+```
+    
+#### (loop E S1 \.\.\. Sn)
+
+The _loop_ statement reads (and writes) expression _E_ , defining the number of
+iterations _M_. It then iterates _M_ times, running each of the expressions in
+the order specified.
+
+```
+Parse In Stack Opcode:
+  Op, In = readUint8(In)
+  assert Op == Opcode['loop']
+  Values = vector<value>()
+  N, In = readVaruint32(In)
+  assert N > 1;
+  for i = 1; i <= N; ++i:
+    Values.prepend(Stack.popLast())
+  Values.prepend('loop')
+  Stack.append(postorder(Values))
+  return In, Stack
+```
+
+```
+Run [[ (loop E S1 \.\.\. En) ]] Env:
+  M, Env.In = Read [[ E ]] Env.In
+  Env.Out = Write [[ E ]] M Env.Out
+  assert M.type == 'int'
+  for i = 1; i <= M.value; ++i:
+    PrevSize = Env.in.stream.size()
+    for j = 1; j < n; ++j:
+      Env = Run [[ Sj ]] Env
+    assert Env.in.stream.size() > PrevSize
+  return Env
+```
+
+#### (loop.unbounded S1 \.\.\. Sn)
+
+The _loop.unbounded_ statement evaluates the sequence of expressions while there
+is more input to process.
+
+```
+Parse In Stack Opcode =
+  Op, In = readUint8(In)
+  assert Op == Opcode['loop.unbounded']
+  Values = vector<value>()
+  N, In = readVaruint32(In)
+  assert N > 1;
+  for i = 1; i <= N; ++i:
+    Values.prepend(Stack.popLast())
+  Values.prepend('loop.unbounded')
+  Stack.append(postorder(Values))
+  return In, Stack
+```
+
+```
+Run [[ (loop.unbounded S1 \.\.\. Sn) ]] Env:
+  while not In.stream.empty():
+    PrevSize = Env.in.stream.size()
+    for i = 1; i <= n; ++i:
+      Env = Run [[ Si ]] Env
+    assert Env.In.stream.size() > PrevSize
+  return Env
+```
+
+#### (if E S1 S2)
+
+The _if_ statement initially reads (and writes) _E_ to define a condition
+_C_. If _C_ is zero, _S2_ is processed. Otherwise _S1_ is processed.
+
+```
+Parse In Stack Opcode:
+  Op, In = readUuint8(In)
+  assert Op == Opcode['if']
+  Values = vector<value>()
+  for i = 1; i <= 3; ++i:
+    Values.prepend(Stack.popLast())
+  Values.prepend('if')
+  Stack.append(postorder(Values))
+  return In, Stack
+```
+
+```
+Run [[ (if E S1 S2) ]] Env:
+  C, Env.in = Read [[ E1 ]] Env.in
+  Env.out = Write [[ E1 ]] Env.out
+  if C == 0 then
+    return Run [[ S2 ]] Env
+  else
+    return Run [[ S1 ]] Env
+```
+
+#### (select V D C1 \.\.\. Cn)
+
+The _select_ statement reads (and writes) the selector expression _V_. It then
+looks for a corresponding case _Ci_ statement that matches value _V_. If found,
+_Ci_ is processed and then control returns. If no _Ci_ applies, the default
+statement D is processed.
+
+```
+Parse In Stack Opcode =
+  Op, In = readUint8(In)
+  assert Op == Opcode['select']
+  Values = vector<value>()
+  N, In = readVaruint32(In)
+  for i = 1; i <= N + 2; ++i:
+    Kids.prepend(Stack.popLast())
+  Values.prepend('select')
+  Stack.append(postorder(Values))
+  return In, Stack
+```
+
+```
+Run [[ (select V D C1 \.\.\. Cn) ]] Env:
+   K, Env.in = Read [[ V ]] Env.in
+   Env.out = Write [[ V ]] K Env.out
+   for i = 1; i <= n; ++i:
+   if Matches [[ Ci ]] K then
+     return Run [[ Ci ]] Env
+   return Run [[ D ]] Env
+```
+
+#### (case K S1 \.\.\. Sn)
+
+The case statement labels the sequence of instructions _S1_ through _Sn_. When
+inside a select, the case if followed iff the condition of the select matches
+integer _K_.
+
+```
+Parse In Stack Opcode:
+  Op, In = readUint8(In)
+  assert Op == Opcode['case']
+  Values = vector<value>()
+  K, In = readVaruint64(In)
+  N, In = readVaruint64(In)
+  for i = 1; i <= N; ++i:
+    Values.prepend(Stack.popLast())
+  Values.prepend(K)
+  Values.prepend('case')
+  Stack.append(postorder(Values))
+  return In, Stack
+```
+
+```
+Run [[ (case K S1 \.\.\. Sn) ]] Env =
+  Run [[ (seq S1 \.\.\. Sn ]] Env
+```
+
+```
+Matches [[ (case K S1 \.\.\. Sn) ]] V = (V == K)
+```
+
+#### (extract S)
+
+The _extract_ statement reads a size value _N_ from the input stream, to define
+the number of (input stream) elements that define the boundary of the construct
+parsed by statement _S_. It then sets the _end of input_ marker (of the input
+stream) to _N_, and runs statement _S_.
+
+For bit streams, additional bits are read from the bit stream until the input is
+byte aligned. Finally, before returning, the previous _end of input_ marker is
+restored.
+
+```
+Parse In Stack Opcode =
+  Op, In = readUint8(In)
+  assert Op == Opcode['extract']
+  Values = vector<value>()
+  Values.prepend(Stack.popLast())
+  Values.prepend('extract')
+  Stack.append(postorder(Values))
+  return In, Stack
+```
+
+```
+Run [[ (extract S) ]] Env:
+  Size, Env.in = Read [[ (varuint32) ]] Env
+  assert Size > 0
+  OutCont = Env.out
+  Switch Env.in.type:
+    case 'bit':
+      Env.in, InCont = splitBitstream(Env.in, Size)
+      Env.out = streamOf<bit>():bit
+    case 'byte':
+      Env.in, InCont = splitBitstream(Env.in, Size * 8)
+      Env.out = streamOf<bit>():byte
+    case 'int':
+      Env.in, InCont = splitIntstream(Env.in, Size)
+      Env.out = streamOf<int>():int
+    case 'ast':
+      Env.in, InCont = splitAststream(Env.in, Size)
+      Env.out = stream_of<ast>():ast
+  Env = Run [[ S ]] Env
+  Result = Env.out
+  Env.In = Result
+  Env.Out = OutCont
+  Size = Result.stream.size()
+  Env.out = Write [[ (varuint32) ]] Size Env.out
+  Env = Run [[ (copy) ]] Env
+  Env.in = InCont
+  if Env.out.type == 'bit':
+     Env.out = byteAlign(Env.out)
+  return Env
+```
+
+Note that we have predefined the format for the _extract_ statement. This is
+intentional. It allows the implementation greater flexibility on how the size of
+the resulting output buffer is written. The semantics above implies that the
+size is written after the buffer is generated, and then the output buffer is
+copied back into the original output stream.
+
+Alternatively, the implementation is allowed to reserve space for the resulting
+buffer size. It can then directly output the the results of running _S_ into the
+original buffer, and backpatch the size afterwards.
+
+For byte and bit streams, this would require writting out 5 bytes initially, and
+then backpatching the value using LEB128, but forcing 5 chunks to be generated,
+even it that many chunks were not necessary for the size.
+
+#### (copy)
+
+Copies the rest of the input stream to the output stream.
+
+```
+Parse In Stack Opcode:
+  Op, In = readUint8(In)
+  assert Op == Opcode['copy']
+  Values = vector<value>()
+  Values.append('copy')
+  Stack.append(preorder(Values))
+  return In, Stack
+```
+
+```
+Run [[ (copy) ]] Env:
+  while not Env.in.empty() :
+    V, Env.in = Read [[ (fixed 1) ]] In
+    Env.out = Write [[ (fixed 1) ]] Out
+  Return Env
+```
