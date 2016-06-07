@@ -553,11 +553,481 @@ Currently, the following default algorithms are defined:
 * _type.default_ - Default implementation for parsing a type section of a WASM
   module.
 
-<a name="instructions-and-asts">
-## Instructions and Asts
+## The power of select
 
-<a name="proposed-framework">
+This decompression framework provides a concept that implements
+opcode-selection, but generalizes it to any integer (not just bytes), and allows
+a default case to handle unspecified opcodes. The _select_ is defined using
+statement of the form:
+
+```
+  (select V D C1 ... CN)
+  (case K E1 \.\.\. En)
+```
+
+where
+
+- _V_ - is read to get the corresponding selection value.
+
+- _Ci_ - a case s-expression.
+
+- _D_ - The default s-expression to evaluate if no case applies.
+
+- _K_ - A constant integer defining the key.
+
+- _E1 \.\.\. En_ - S-expressions to evaluate if the key matches the selection
+  value of the case.
+
+For example, one can write an opcode selector for control flow operators
+(appearing in the code section) as:
+
+```
+(select (uint8)
+  (void)
+  (case 0x06 (varuint1) (varuint32))
+  (case 0x07 (varuint1) (varuint32))
+  (case 0x09 (varuint1)))
+```
+
+The _select_ statement can be used more creatively as a sub-filter, converting a
+sequence of integers to another sequence of integers. In particular, you can
+compress a sub-sequences of integers that appear often by selecting an opcode to
+model that sequence. Such filters can be an _int.to.int_ filter, converting one
+sequence of integers to another.
+
+Now consider a more general example Assume that the input sequence of integers
+contains the following sequence of integers 1000 times:
+
+```
+3 2 0
+```
+
+Further, assume that the number _591_ does not occur in the input sequence of
+integers, and hence can be used as an opcode. We can remove 2000 numbers from
+the list of integers when compressing by replacing the sub-sequences of integers
+_3, 2, 0_ with the integer _591_. The algorithm to decompress the corresponding
+sequence of integers is:
+
+```
+(int.to.int
+  (loop
+    (select (value)
+      (void)
+      (case 591 (lit 3) (lit 2) (lit 0)))))
+```
+
+The _value_ expression reads/writes an integer from/to integer sequence.  The
+_lit_ expression returns the integer value of its argument when reading, and
+writes the value when writing. That is,
+
+```
+(lit n) == (map (i64.const N) (value))
+```
+
+Note that other frequent sequences of integers may appear on the decompressed
+sequence of integers. Like above, separate unused integers (not appearing in the
+input sequence) can be compressed by adding additional cases.
+
+For example, consider that the subsequence
+
+```
+1 0 0 1
+```
+
+appears 500 times, and the number _691_ does not appear in the input sequence. You
+can replace the instances of sequence _1 0 0 1_ with the number 691 (saving
+having to write 1500 integers) by updating the selector to:
+
+```
+(int.to.int
+  (loop
+    (select (value)
+      (void)
+      (case 591 (lit 3) (lit 2) (lit 0))
+      (case 691 (lit 1) (lit 0) (lit 0) (lit 1))))
+```
+
+If you don't want to find an integer that isn't used, you can always add a
+quoting integer and a separate case to handle the quoted integer.
+
+For example, consider that you want to use _791_ as a quoting integer to the above
+example.  When compressing, anytime _591_, _691_, or _791_ occurs, you write the quote
+number _791_ first. The corresponding algorithm can then be used:
+
+```
+(int.to.int
+  (loop
+    (select (peek (value))
+      (value)
+      (case 591 (read (value)) (lit 3) (lit 2) (lit 0))
+      (case 691 (read (value)) (lit 1) (lit 0) (lit 0)(lit 1))
+      (case 791 (read (value)) (value)))))
+```
+
+Note that the _peek_ expression reads the next value on the input, but doesn't
+advance the input. The _read_ expression is the converse of the _write_
+expression. That is, when reading, the argument is used to read the next
+integer. When writing, this expression corresponds to a nop.
+
+Also note that we use the _peek_ expression to first see if it is the quoted
+character. If it is, we erase it using the _read_ expression in the _case_
+statement for value _791_.
+
+It should also be noted that when inserting _lit_ values, the values need be
+consecutive. For example, consider the case that the pattern sequence
+
+5, X, 10
+
+where the value _X_ is any integer. Using constant _851_ as an opcode, we can
+extend the above example to capture this pattern as follows:
+
+```
+(int.to.int
+  (loop
+    (select (peek (value))
+      (value)
+      (case 591 (read (value)) (lit 3) (lit 2) (lit 0))
+      (case 691 (read (value)) (lit 1) (lit 0) (lit 0) (lit 1))
+      (case 791 (read (value)) (value))
+      (case 851 (read (value)) (lit 5) (value) (lit 10)))))
+```
+
+## Filter Methods
+
+So far, a filter for a section filter has been defined as a single
+instruction. This is sufficient to decompress the compressed file. However, it
+isn't necessarily small. As the algorithm gets larger, it is more likely that
+the same statements/expressions will be used multiple times.
+
+Like many programming languages, this framework has a solution. It has the
+notion of methods and method calls.
+
+The encoding is low level, but simple. When defining a filter algorithm, the
+_define_ statement can define more than one algorithm. It accepts an arbitrary
+sequence of instructions. The first instruction must be a statement, and is
+always used as the entry point for the filter to apply to the section. The
+remaining instructions can be statements or expressions, and are considered
+helper _methods_.
+
+The arguments to the _define_ statement are numbered sequentially, starting at
+zero for the first instruction (the entry method). A method is called usint the
+_call_ expression and gets a single argument, the index of the method to call.
+
+For example, earlier we showed the following filter for type section:
+
+```
+(define 'type'
+  (byte.to.byte
+    (loop (varuint32)
+      (varuint7)
+      (loop (varuint32) (uint8))
+      (if (fixed 1) (uint8) (void)))))
+```
+
+We can factor this into methods entry (0), function signature (1), parameter
+types (2), and return type (3) as follows:
+
+```
+(define 'type'
+  (byte.to.bit
+    (loop (varuint32) (call 1))
+    (seq (varuint7) (call 2) (call 3))
+    (loop (varuint32) (uint8))
+    (if (fixed 1) (uint8) (void))))
+```
+
+## Extracting Regions
+
+There are several places in WASM modules that define it's corresponding data as
+sequence of N bytes. Most are simple (such as the name defined by the sequence
+of bytes or the bytes to initialize a global variable). Some are quite complex,
+such as function bodies in the code section.
+
+The simple cases can be handled using a loop like the following:
+
+```
+(loop (varuint32) (uint8))
+```
+
+Function bodies, on the other hand, are complex because the size is parsed
+first, and then the sequence of bytes are parsed to construct the corresponding
+instructions (or asts) in the function bodies. The problem is that in order to
+parse the bytes, we need to convert the notion of the _end of function body_ to
+a position within the input stream.
+
+To facilitate this, the following statement is available:
+
+```
+(extract (varuint32) S)
+```
+
+The first argument defines the number of elements in the input stream (from the
+point immediately following the read of the first argument) that should be
+treated as the _end of input_ marker when evaluating statement S. Once S has
+been evaluated, the special _end of input_ marker is removed, and is restored to
+its old value.  Extract expressions can be nested.
+
+Note that the first argument, defining the number of elements, is based on the
+type of input stream. This is done since the size comes from the input stream,
+and that size doesn't (typically) correspond to the same position on the output
+stream. Rather, a nested copy of the input is generated. The nested input then
+parsed using an (initially empty) nested output. Once parsing completes, the
+output has been generated, a corresponding size measure (based on the nested
+output element size) is inserted into the original output stream. Then, the
+nested output stream is appended to the original output stream.
+
+Note that the discussion of creating a nested input/output stream may not match
+the implementation. The implementation is free to generate in place by saving a
+fixed-size LEB128 (5 byte) value, and then back-substitute the actual count
+after the extract construct is processed. For small numbers, this may require
+adding zero-valued continuation chunks to the backpatched size.
+
+<a name="instructions-and-asts"/>
+## Instructions and Asts
+</a>
+
+Most of the code sections of a WASM module is a sequence of opcode based
+instructions (defining a function body).  These instructions are then converted
+to s-expressions denoting an
+[abstract syntax tree](https://en.wikipedia.org/wiki/Abstract_syntax_tree). Compressing
+at the AST level can be very powerful, and can lead to substantial compression.
+
+This section looks at how the construction of instructions and ASTs are handled
+in algorithms. In general, instructions are built using a preorder traversal of
+the instruction. Larger expressions are typically built using a postorder
+traversal of the nodes in the AST.
+
+To do this, this framework defines an _ast_ stream specifier that treats the
+input/output stream of a filter as a stack of values. For an ast stream, values
+on the stack can be integers, symbols, and nodes. To make it possible to flatten
+an AST back to a sequence of integers, each node records the order the kids in
+the node should be walked when flattening. There are two forms: _preorder_ and
+_postorder_.
+
+For example, consider building an algorithm for modeling WASM instructions in
+the code section of a WASM module.  For this example, we will only look at
+modeling _i32.const_, _32.add_, and _i32.mul_ instruction.  The _select_
+statement to build corresponding asts can be defined as follows:
+
+```
+(loop.unbounded
+  (select (value)
+    (eval 'code.inst')
+    (case 0x10 (value) (preorder 2))     // i32.const
+    (case 0x40 (postorder 3))            // i32.add
+    (case 0x42 (postorder 3))))          // i32.mul
+```
+
+The _preorder_ expression pops off N elements (based on its only argument),
+creating a node with the corresponding list of N elements, in the order they
+appeared on the stack. The node is then pushed back onto the stack. This
+corresponds to reading the values from the stack in preorder (i.e. the lowest
+element in the stack is the instruction ID, and the remainder are its
+arguments).
+
+Similarly the _postorder_ instruction pops off N elements (based on its only
+argument), creating a node with the first value popped of the stack, followed by
+the last N-1 elements popped (in the order they appeared on the stack). The node
+is then pushed back onto the stack. This corresponds to reading the values from
+the stack in postorder (i.e. the instruction ID is the last value, and the kids
+appear before the name).
+
+
+The _eval_ statement uses the (predefined) default implementation to read WASM
+code instructions, and build the corresponding tree (when the output is an _ast_
+stream). It is provided so that one only need to specify extensions into the
+compressed file. However, for this example, we have explicitly overwritten the
+_i32.const_, _i32.add_, and _i32.mul_ cases to provide examples of how to build
+ASTs in algorithms.
+
+For example, consider the following s-expression:
+
+```
+(i32.add (i32.mul (i32.const 1) (i32.const 2)) (i32.const 3))
+```
+
+Further, assume that the corresponding intput _int_ stream for the filter algorithm is:
+
+```
+Input: 0x10 1 0x10 2 0x42 0x10 3 0x40
+Output:
+```
+
+Running the above select instruction on this input, case _0x10_ will read
+(i.e. push) two integers, updating as follows:
+
+```
+input: 0x10 2 0x42 0x10 3 0x40
+output: 0x10 1
+```
+
+At this point, the _preorder_ expression (of case _0x10_) pops off two elements,
+generating the corresponding preorder node (denoted with <> brackets) and
+pushes it back onto the stack. The updated streams are:
+
+```
+input: 0x10 2 0x42 0x10 3 0x40
+output: <0x10 1>
+```
+
+Similarly, after the next iteration of the loop the updates the streams as
+follows:
+
+```
+input: 0x42 0x10 3 0x40
+output: <0x10 1> <0x10 2>
+```
+
+At this point _case_ statement _0x42_ starts by pushing _0x42_ onto the output
+stack.  The _postorder_ expression (of case _0x42_) pops off three elements,
+generating the corresponding postorder node (denoted with [] brackets) and
+pushes it back onto the stack. The updated streams are:
+
+```
+input: 0x10 3 0x40
+output: [0x42 <0x10 1> <0x10 2>]
+```
+
+After running _case_ statement _0x10_, the streams are updated as follows:
+
+```
+input: 0x40
+output: (0x42 <0x10 1> <0x10 2>) <0x10 3>
+```
+
+Finally, _case_ statement _0x42_ is processed, resulting int the following:
+
+```
+input:
+output: [0x40 [0x42 <0x10 1> <0x10 2>] <0x10 3>]
+```
+
+## Adding Tree Patterns
+
+Tree patterns, within algorithms, take an AST opcode, over N AST arguments, and
+replaces that AST with a new AST that uses the N ast arguments.
+
+For example, consider the address calculation of an element within an array. The
+AST for this type of address calculation could have the following form:
+
+```
+(+ (+ (* C N) M) A)
+```
+
+- _A_ is a memory address to an array.
+- _C_ is the number of bytes used by each element in the array.
+- _N_ is the element within the array being accessed.
+- _M_ is the offset to a field within the record stored at that address.
+
+Conceptually, we could create a new meta operator _index_ to capture this as the
+instruction:
+
+```
+(index C N M A)
+```
+
+Using this form as a new opcode, it removes the need to save the times (*) and
+two add (+) instrucitons into the compressed file, by replacing them by the new
+index instruction.
+
+The problem with tree patterns is that many opcodes do not appear in the input
+stream until after the arguments have been pushed onto the stack. Hence, there
+is no place to insert the times (*) and the inner add (+) instrucitons into the
+AST while reading. This is fixed by changing the output stream from a stack of
+values, to a pair of stack of values.
+
+One stack is the _main_ stack. The _main_ stack is the same as described in the
+previous section. The other is the _stash_ stack. The _stash_ expression pops
+elements off the _main_ stack and pushes them onto the _stash_ stack. The
+_unstash_ expression pops elements off the _stash_ stack and pushes them onto the
+_main_ stack.
+
+Returning the the index instruction example above, the _stash_ expression lets
+us pop off the trees _M_ and _A_ from the main stack. This allows us to insert a
+times (\*) instruction over _C_ and _N_ on the top of the _main_ stack. The
+_unstash_ expression can then be used to move M back onto the main stack,
+allowing us to insert an _add_ (\+). Finally, another _unstash_ expresssion can
+be used to move _A_ back onto the main stack so that we can add the top-level
+times (*).
+
+More specifically, the following select loop can be used to process simple
+address calculations:
+
+```
+(loop.unbounded
+  (select (peek(value))
+    (eval 'code.inst')
+    (case 257                        // meta index opcode
+      (read (value)) (stash 2) (lit 0x42) (postfix 3)
+      (unstash 1) (lit 0x40) (postfix 3)
+      (unstash 1) (lit 0x40) (postfix 3))))
+```
+
+On need not specify how to flatten the constructed asts back into a sequence of
+integers, so that the (default) algorithm can be used to generate the resulting
+decompressed WASM module. Rather, the implementation of an _ast_ stream, when
+used as an input stream, will automatically flatten the asts as they are found.
+
+## Ast to Ast Filters
+
+Currently, our notation allows ast.to.ast filters. However, the framework
+(currently) doesn't allow this form of filter. The rationale is that we have not
+yet seen examples that demonstrate the value of such filters.
+
+Should motivating examples for ast.to.ast filters be found, extending this
+framework to handle that case will be added at that time.
+
+## Other potential compressions
+
+This section notes that this document doesn't cover some interesting cases of
+compression that probably should be added at some point. In particular, there
+are two (obvious) additional types of compression that have not been considered
+so far.
+
+The first is that some *level 2* compression algorithms use a notion of _sliding
+windows_, where the range of that window is dependent on the corresponding
+compression algorithm.
+[Brotli](https://datatracker.ietf.org/doc/draft-alakuijala-brotli/) is such an
+example.
+
+In such cases, you may want to reorder the input sequence of integers to put
+similar things together to improve the performance of the level 2 compression.
+
+The second (obvious) case is to consider not downloading an updated
+module. Rather, only send changes between the updated module, and the previously
+downloaded module. That is, send a _patch_ instead of a complete copy of the
+updated module.
+
+A patch can easily be defined as a sequence of edits (i.e. remove, insert, or
+move) on sequences of integers, using the sequence of integers represented by
+the previously downloaded module.
+
+Note that these edit moves, if defined, make both kinds of compression
+feasable. It is believed that editting statements should be added to this
+framework, but is not included in this document.
+
+It is assumed that extensions to handle these cases (and the corresponding
+edits) will be added in a future version of this document.
+
+## Streaming
+
+In general, one desirable property of filters is that they be able to stream
+both the input and the output. When this is possible, simple buffers can be used
+to limit the amount of information stored in local memory.
+
+For bit, byte, and int streams, this is possible because no read or write can
+access more than a fixed amount. Hence, using a buffering strategy in the
+decompressor is relatively easy.
+
+For ast streams, one can have arbitrarily long unstash operations. Therefore, by
+default, one can't stream _ast_ streams. The solution to this problem is the
+_flush_ statement. When evaluated, all values on the (main) output stack can be
+passed to the next filter. Note that it is an error to try and
+push/pop/stash/unstash values that were flushed.
+
+<a name="proposed-framework"/>
 # Proposed Framework
+</a>
 
 ## Types
 
