@@ -3072,3 +3072,544 @@ modeled, since the semantics of this framework doesn't model the concept of stre
 ```
 Run [[ (flush) ]] Env = Env
 ```
+
+## Support functions
+
+The following subsections define the support functions for filter constructs.
+
+### byteAlign
+
+Aligns a _bit_/_byte_ stream to a byte boundary. Note: The current semantics
+model doesn't contain enough information to correctly model _byteAlign_, so no
+definition is given.
+
+### fixStreamType
+
+Fixes the stream type to the given _Kind_, if _S_ isn't of that kind. Used when
+streams use filter conversions, and converts back and forth between _bit_
+streams and _byte_ streams.
+
+```
+fixStreamType(Kind:symbol, S:stream) -> stream:
+  if S.type == Kind the
+    return S
+  switch S.type:
+    case 'bit':
+      assert Kind == 'byte'
+      return byteAlign(S):byte
+    case 'byte':
+      assert Kind == 'bit'
+      return S.stream:bit
+```
+
+### readAst
+
+Incrementally flattens the ast into a sequence of integers, and then returns the
+next integer on the input stream.
+
+```
+readAst(In:stream) -> value x stream = 
+  assert In.type == 'ast'
+  V = In.stream.main.popFirst()
+  switch V.type:
+    case 'int':
+      return V, In
+    case 'sym':
+      for i = V.stream.main.size(); i > 0; --i:
+        In.stream.main.prepend(V.value[i-1])
+      return V.stream.main.size():
+    case 'node':
+      if V.postorder:
+        In.stream.main.prepend(V.value[0])
+        for i = V.stream.main.size(); i > 1; --i:
+          In.stream.main.prepend(V.value[i-1])
+      else: 
+        for i = V.stream.main..size(); i > 0; --i:
+          In.main.main.prepend(V.value[i-1])
+        return readAst(In)
+    case 'void':
+      return readAst(In)
+```
+
+### readFixed
+
+Reads the next N bits as an (unsigned) integer.
+
+```
+readFixed(N: u32, In:stream) -> value x stream:
+  assert N >= 1
+  assert N <= 64
+  V = 0
+  for i = 0; i < N; ++i:
+    V = (V << 1) & In.stream.popFirst()
+  return V:int, In
+```
+
+### readInt
+
+Reads an integer from an integer input stream.
+
+```
+readInt(In:stream) -> value x stream:
+  assert In.type == 'int'
+  V = In.stream.popFirst()
+  return V, In
+```
+
+### readLEB128
+
+Reads an unsigned integer using
+[LEB128](https://en.wikipedia.org/wiki/LEB128). _N_ defines the chunk size to
+use (LEB128 is defined with _N=8_).
+
+```
+readLEB128(N:u32, In:stream) -> value x stream:
+  assert N >= 2
+  assert N <= 64
+  V = 0
+  Shift = 0
+  while true:
+    Chunk, In = readFixed(N, In)
+    Data = Chunk & ~(cast<u64>(1) << (N - 1))
+    V |= Data << Shift;
+    if Chunk >> (N - 1) == 0:
+      return V
+    Shift += N - 1
+```
+
+### readSignedLEB128
+
+Reads a signed integer using
+[Signed LEB128](https://en.wikipedia.org/wiki/LEB128). _N_ defines the chunk
+size to use (SIgned LEB128 is defined with _N=8_). VSize is the number of bits
+used to model the corresponding integer type (_32_ for _i32_ and _u32_, _64_ for
+_i64_ and _u64_).
+
+```
+readSignedLEB128(N:u32, VSize:u32, In:stream) -> i64 x stream:
+  assert N >= 2
+  assert N <= 64
+  V = 0
+  Shift = 0
+  while true:
+    Chunk, In = readFixed(N, In)
+    Data = Chunk & ~(cast<u64>(1) << (N - 1))
+    V |= Data << Shift
+    Shift += N - 1
+    if Chunk >> (N - 1) == 0:
+      if Shift < VSize && Chunk >> (N - 2) == 1:
+        V |= - (cast<u64>(1) << Shift)
+      return cast<u64>(V):int, In
+```
+
+### readSymbol
+
+Reads a symbol from the input stream. Returns the read symbol and the updated
+input stream.
+
+```
+readSymbol(In: stream) -> value x stream:
+  S = symbol()
+  N, In = Read [[ (varuint32) ]] In
+  for i = 1; i <= N; ++i:
+    C, In = Read [[ (uint8) ]] In
+    S.append(C)
+  return S:sym, In
+```
+
+### readUnit8
+
+Reads one byte from a bitstream, and returns the read
+(unsigned) integer and the updated input stream.
+
+```
+readUint8(In:stream) -> value x stream:
+  return readFixed(8, In)
+```
+
+### readUint32
+
+Reads a four-byte little endian unsigned integer from a bitstream. Returns the
+read integer and the updated input stream.
+
+```
+readUint32(In:stream) -> value x stream:
+  return readFixed(32, In)
+```
+
+### readUint64
+
+Reads an eight-byte little endian unsigned integer from a bitstream. Returns the
+read integer and the updated input stream.
+
+```
+readUint64(In: stream) -> value x stream:
+  return readFixed(64, In)
+```
+
+###readVarint32
+
+Reads a [Signed LEB128](https://en.wikipedia.org/wiki/LEB128) variable-length
+_i32_ value.
+
+```
+readVarint32(In:stream) -> value x stream:
+  return readSignedLEB128(8, 32, In)
+```
+
+### readVarint64
+
+Reads a [Signed LEB128](https://en.wikipedia.org/wiki/LEB128) variable-length
+_i64_ value.
+
+```
+readVarint64(In:stream) -> value x stream:
+  return readSignedLEB128(8, 64, In)
+```
+
+### readVaruint1
+
+Reads a [LEB128](https://en.wikipedia.org/wiki/LEB128) unsigned integer, limited
+to the range [0, 1].
+
+```
+readVaruint1(In:stream) -> value x stream:
+  V, In = readLEB128(8, In)
+  assert cast<u64>(V.value) <= 1
+  return V, In
+```
+
+### readVaruint7
+
+Reads a [LEB128](https://en.wikipedia.org/wiki/LEB128) unsigned integer, limited
+to the range [0, 127].
+
+```
+readVaruint7(In:stream) -> value x stream:
+  V, In = readLEB128(8, In)
+  assert cast<u64>(V.Value) <= 127
+  return V, In
+```
+
+### readVaruint32
+
+Reads a [LEB128](https://en.wikipedia.org/wiki/LEB128) _u32_ value.
+
+```
+readVaruint32(In:stream) -> value x stream:
+  V, In = readLEB128(8, In)
+  assert V.value >> 32 == 0
+  return V, In
+```
+
+### readVaruint64
+
+Reads a [LEB128](https://en.wikipedia.org/wiki/LEB128) _u64_ value.
+
+```
+readVaruin64(In:stream) -> value x stream:
+  V, In = readLEB128(8, In)
+  assert V.value >> 64 == 0
+  return V, In
+```
+
+### readVbr
+
+Reads a [LEB128](https://en.wikipedia.org/wiki/LEB128) unsigned integer, except
+that the chunk size is defined by _N_.
+
+```
+readVbr(N:u32, In:stream) -> value x stream:
+  return readLEB128(N, In)
+```
+
+### readIvbr
+
+Reads a [Signed LEB128](https://en.wikipedia.org/wiki/LEB128) integer, except
+that the chunk size is defined by _N_.
+
+```
+readIivbr(N:u32, In:stream) -> value x stream:
+  return readSignedLEB128(N, 64, In)
+```
+
+### splitAststream
+
+Splits the given _ast_ stream (i.e. vector of values) into two _ast_
+streams. The first stream contains the first _N_ values. The second stream has
+all remaining values after the first _N_ values are removed.
+
+```
+splitAststream(In: stream, N:u64) -> stream x stream:
+  Split = streamOf<ast>
+  for i = 1; i < N; ++i:
+    V = In.stream.main.popFirst()
+    Split.main.append(V)
+  Return Split:In.type, In
+```
+### splitBitstream
+
+Splits the given _bit_ stream into two _bit_ streams. The first stream contains
+the first _N_ bits of the given stream. The second has all remaining bits after
+the first _N_ bits are removed.
+
+```
+splitBitstream(In:stream, N:u64) -> stream x stream:
+  Split = streamOf<bit>
+  for i = 1; i < N; ++i:
+    B = In.stream.popFirst()
+    Split.append(B)
+  return Split:In.type, In
+```
+
+### splitIntstream
+
+Splits the given _int_ stream into two _int_ streams. The first stream contains
+the first _N_ integers of the given stream. The second has all remaining
+integers after the first _N_ integers are removed.
+
+```
+splitIntstream(In:stream, N:u64) -> stream x stream:
+  split = streamOf<int>()
+  for i = 1; i < N; ++i:
+     V = In.stream.popfirst()
+     Split.append(V)
+  return split:int, In
+```
+
+### writeAst
+
+Writes a (possibly ast) value onto an ast stream.
+
+```
+writeAst(V:value, Out:stream) =
+  assert Out.type == 'ast'
+  Out.stream.main.append(V)
+  return Out
+```
+
+### writeFixed
+
+Writes out an unsigned integer as a sequence of _N_ fixed bits.
+
+```
+writeFixed(N:u32, V:value, Out:stream) - > stream:
+  assert N > 0
+  assert N <= 64
+  V = cast<u64>(V.value)
+  for i = N; i > 0; --i:
+    Out.append((V >> (i - 1)) & 1)
+  return Out
+```
+
+### writeIint
+
+Writes an integer to an int ast stream. Returns the updated output stream.
+
+```
+writeIint(V:value, Out:stream) -> stream:
+  assert V.type == 'int'
+  assert Out.type == 'int'
+  Out.stream.append(V.value)
+  return Out
+```
+
+### writeLEB128
+
+Writes an unsigned integer using
+[LEB128](https://en.wikipedia.org/wiki/LEB128). _N_ defines the chunk size to
+use (LEB128 is defined with _N=8_).
+
+```
+writeLEB128(N: u32, V:value, Out:stream) -> stream:
+  assert N >= 2
+  assert N <= 64
+  V = cast<u64>(V.value)
+  Mask = (1 << (N - 1)) - 1
+  while true:
+    Chunk = V & Mask
+    V >>= N - 1
+    if V == 0:
+      return writeFixed(N, Chunk, Out)
+    Chunk |= cast<u64>(1) << (N - 1)
+    writeFixed(N, Chunk, Out)
+```
+
+### writeSignedLEB128
+
+Writes a signed integer using
+[Signed LEB128](https://en.wikipedia.org/wiki/LEB128). _N_ defines the chunk
+size to use (SIgned LEB128 is defined with _N=8_). VSize is the number of bits
+used to model the corresponding integer type (_32_ for _i32_ and _u32_, _64_ for
+_i64_ and _u64_).
+
+```
+writeSignedLEB128(N: u32, V:Value, VSize:u32, Out:stream) -> stream:
+  assert N >= 2
+  assert N <= 64
+  assert abs(cast<i64>(V)) >> VSize == 0
+  V = cast<i64>(V.value)
+  Negative = V < 0
+  Mask = (1 << (N - 1)) - 1
+  while true:
+    Chunk = V & Mask
+    V >>= N - 1
+    If Negative:
+      Value |= - (cast<u64>(1) << (VSize - (N - 1)))
+    If V == 0 && Chunk >> (N - 2) == 0:
+      return Out
+    else if V == -1 && Chunk >> (N - 2) == 1:
+      return Out
+    else:
+      Chunk |= cast<u64>(1) << (N - 1)
+      Out = writeFixed(N, C, Out)
+```
+
+### writeUint8
+
+Writes one byte from a bitstream. Returns the updated output stream.
+
+```
+writeUuint8(V: Value, Out:stream) -> stream:
+  return writeFixed(8, V, Out)
+```
+
+### writeUint32
+
+Writes a four-byte little endian unsigned integer from a bitstream. Returns the
+updated output stream.
+
+```
+writeUuint32(V: value, Out:stream) -> stream:
+  return writeFixed(32, V, Out)
+```
+
+### writeUint64
+
+Writes an eight-byte little endian unsigned integer from a bitstream. Returns
+the updated output stream.
+
+```
+writeUint64(V: value, Out:stream) -> Stream:
+  return writeFixed(64, V, Out)
+```
+
+### writeVarint32
+
+Writes a [Signed LEB128](https://en.wikipedia.org/wiki/LEB128) variable-length
+_i32_ value.
+
+```
+writeVarint32(V:value, Out:stream) -> stream:
+  return writeSignedLEB128(8, V 32, Out)
+```
+
+### writeVarint64
+
+Writes a [Signed LEB128](https://en.wikipedia.org/wiki/LEB128) variable-length
+_i64_ value.
+
+```
+writeVarint64(V:value, Out:stream) -> stream:
+  return writeSignedLEB128(8, V, 64, Out)
+```
+
+### writeVaruint1
+
+Writes a [LEB128](https://en.wikipedia.org/wiki/LEB128) unsigned integer, limited
+to the range [0, 1].
+
+```
+writeVaruint1(V:value, Out:stream) -> stream:
+  assert cast<u64>(V.value) <= 1
+  return writeLEB128(8, V, Out)
+```
+
+### writeVaruint7
+
+Writes a [LEB128](https://en.wikipedia.org/wiki/LEB128) unsigned integer, limited
+to the range [0, 127].
+
+```
+writeVaruint7(V:value, Out:stream) -> stream:
+  assert cast<u64>(V.Value) <= 127
+  return writeLEB128(8, V, Out)
+```
+
+### writeVaruint32
+
+Writes a [LEB128](https://en.wikipedia.org/wiki/LEB128) _u32_ value.
+
+```
+writeVaruint32(V:value, Out:stream) -> stream:
+  assert cast<u64>(V.value) >> 32 == 0
+  return writeLEB128(8, V, In)
+```
+
+### writeVaruint64
+
+Writes a [LEB128](https://en.wikipedia.org/wiki/LEB128) _u64_ value.
+
+```
+writeVaruin64(V:value, Out:stream) -> Stream
+  assert cast<u64>(V.value) >> 64 == 0
+  return writLEB128(8, V, In)
+```
+
+### writeVbr
+
+Writes a [Signed LEB128](https://en.wikipedia.org/wiki/LEB128) integer, except
+that the chunk size is defined by _N_.
+
+```
+writeVbr(N:u32, V:value, Out:stream) -> stream:
+  return writeLEB128(N, V, Out)
+```
+
+### writeIvbr
+
+Writes a [Signed LEB128](https://en.wikipedia.org/wiki/LEB128) integer, except
+that the chunk size is defined by _N_.
+
+```
+writeIvbr(N: u32, V:value, Out:stream) -> stream:
+  return writeSignedLEB128(N, V, 64, Out)
+```
+
+## Defaults
+
+This section presents the initial (default) definitions assumed to already be
+preloaded by the decompressor.
+
+TODO: Fill this in.
+
+## Top-level driver
+
+At the top, level, the decompressor only understands sections in a compressed
+WASM module. It also assumes that this top-level structure is never compressed.
+As a result, the top level input/output streams are _byte_ streams.
+
+The top-level driver takes two streams, the _byte_ input stream and the _byte_
+output stream. Returns the generated output stream. It also takes a copy of
+the compiled in definitions preloaded into the decompressor.
+
+```
+decode(In:stream, Out:stream, Defaults: sym_ap) -> stream:
+  assert In.type == 'byte'
+  assert Out.type == 'byte'
+  Methods =  vector<symbo>()
+  Env = (In, Out, copyMap(Defaults), Methods)
+  MagicNumber, In = readUint32(In)
+  Version, In = readUint32(In)
+  while not In.stream.empty():
+    SectionName, In = readSymbol(In)
+    if Env.def.is_defined(SectionName):
+      Env = Run [[ (eval SectionName) ]] Env
+    else:
+      DefaultSectionName = SectionName + ".default"
+      if Env.def.is_defined(DefaultSectionName):
+        Env = Runt [[ (eval DefaultSectionName) ]] Env
+      else:
+        Env = Run [[ (copy) ]] Env
+```
+
