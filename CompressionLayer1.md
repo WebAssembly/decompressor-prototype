@@ -1029,5 +1029,882 @@ push/pop/stash/unstash values that were flushed.
 # Proposed Framework
 </a>
 
+The following subsections defines the framework being proposed.
+
+Before going into the details, it is important to get an overall understanding
+of what is being presented. Filter sections are a sequence of
+s-expressions. These s-expressions define how to filter a bitstream. The first
+element of each s-expression is a symbol. The symbol defines what algorithm to
+apply to its other arguments.
+
+Therefore, filter algorithms are nothing more than s-expressions. To keep track
+of filter algorithms, state is introduced. We call this state the
+environment. All algorithms operate on the environment, and update as
+appropriate.
+
+Part of the environment is a mapping from section names (or names in general),
+to a corresponding list of filter algorithms (s-expression) to apply. When
+filtering a section in a WASM module, the first filter algorithm in the list
+corresponding filter algorithms (i.e. stored s-expression via define) is used.
+
+If no s-expression is defined for a section, the default section algorithm is
+used. The default section algorithm has the same map for section names. However,
+it appends ".default" to the section name and then looks up on that name.
+
+The input and output streams are initially a sequence of zeros and ones (i.e. a
+bitstream). If subfilters are defined, these input/output streams can be
+replaced by either:
+
+1. A sequence of integers.
+2. Two stacks of integers, instructions, and ast nodes. One stack is the _main_
+  stack and can be read and/or written to. The other stack is only available to
+  the write stream, and is called the _stash_ stack. The stash stack allows tree
+  editing of the asts being built.
+
+S-expressions simultaneously define three things:
+
+1. Control flow
+2. How to read the input.
+3. How to write the output.
+
+This allows the same code to be used to both read an input stream, and
+simultaneously write to the output stream. This is intentional in that it
+reduces the amount of code within filter algorithms.
+
+The following subsections introduce a formalization of the set of legal
+s-expressions, and the semantics behind these s-expressions.
+
 ## Types
 
+This section introduces the type model used by this filter framework. It defines
+the set of all possible types (integers, bitstreams, integer sequences, vectors,
+and stacks). In general, we assume that values on stacks are runtime-typed, so
+that the structure of the ASTs are explicit. Other values can be run-time typed,
+but it is not necessary.
+
+The following are primitive types used when evaluating filter algorithms. For
+simplicity, we assume that all integers (and floating point values) can be
+represented as an unsigned 64-bit value. Hence, integers, when internal will be
+stored in that form. The other forms of integer are only used when encoding
+to/decoding from bitstream.
+
+Primitive types:
+
+- void - a single, zer0-bit undefined value.
+- u1 - a bit in the set {0, 1}.
+- u8 - an 8-bit unsigned integer.
+- u32 - a 32-bit unsigned integer.
+- u64 - a 64-bit unsigned integer.
+- i32 - a 32-bit signed integer.
+- i64 - a 64-bit signed integer.
+
+Structured types:
+
+- int = u1 | u8 | u32 | u64 | i32 | i64
+- astValue = int | symbol | node | void
+- methods = vector<value>
+- opcodeMap = symbol -> int
+- stack = vector<value> 
+- node = postfix:u1 x values:vector<value>
+- stream = type:symbol x stream:streamValue
+- streamOf<bit> = vector<u1>
+- streamOff<int> = vector<int>
+- streamOff<ast> = main:stack x stash:stack
+- streamValue = streamOf<bit> | streamOf<int> | streamOf<ast>
+- symbol = vector<u8>
+- symMap = symbol -> methods
+- value = type:symbol x value: astValue
+
+Values are (runtime) typed with a symbol. The legal symbols are:
+
+- 'int' - Value is an integer in type int
+- 'sym' - Value is a symbol
+- 'node' - Value is an node
+- 'void' - Value is the void value
+
+In general, we will not include conversions between instances of type value and
+type ast_value. Rather, we assume appropriate conversions are implicitly added,
+if needed.
+
+Streams are similarly typed with a symbol that identifies the type of the
+stream. Legal symbols are:
+
+- 'ast' - The stream is of type streamOf<ast>. Note: Currently, one of the
+  streams (either input or output) must not be an ast stream if the other stream
+  is an ast stream. When an ast stream appears as input, it will automatically
+  be converted to a sequence of integers by the formatting instructions.
+- 'bit' - The stream is of type streamOf<bit> for which the the extract size is
+  in bits.
+- 'byte' - The stream is of type streamOf<bit> for which the extraction size is
+  in bytes.
+- 'int' - The stream is of type streamOf<int>
+
+Like values, we will not include conversions between instances of type stream
+and type streamVvalue. Rather, we assume appropriate conversions are implicitly
+added, if needed.  Values are pair consisting (X, Y) where Y is the untyped
+value, and X is the name of the corresponding untyped value. Values are denoted
+as the pair _Y:X_.
+
+For readability the value _undefined:void_ will simply be denoted as
+_void_.
+
+An node is prefixed with a bit that defines if the tree should be flattened
+using a preorder (0) or a postorder (1) walk. Notationally, we will use the
+following:
+
+- preorder(Values) = node(0, Values)
+- postorder(Values) = node(1, Values)
+
+The opcode_map is a mapping from filter opcode names, to the corresponding
+opcode value. It is used to verify that the correct opcode is used for an
+instruction name.
+
+S-expressions are just (ast) values. For readability, _Exp_ will be used for
+expressions and _Stmt_ for statements.
+
+## Translation Functions
+
+This section defines the set of translation functions that define the semantics
+of the decompressor. The implementation of these functions are described using
+denotational semantics. This section focuses on the signature of translation
+functions, and their intended goal. Succeeding sections define the semantics for
+individual s-expressions.
+
+```
+Parse: stream -> stack -> opcode_map -> (stream x stack)
+```
+
+Function _Parse_ converts the bits in a filter section to its corresponding
+s-expressions. Once the s-expressions have been decoded, the generated list of
+s-expressions are processed to install the corresponding filters.
+
+```
+state = in:stream x out:stream x def:sym_map x methods:methods
+```
+
+Type _state_ defines the environment in which s-expressions are evaluated. It
+contains an input stream to parse, an output stream to generate, a set of symbol
+definitions (for eval s-expressions), and a set of available methods (for call
+s-expressions).
+
+Function _Run_ takes an s-expression (i.e. either a statement or an expression)
+and a state, and describes how the state is updated as the s-expression if
+processed.
+
+```
+Run: value -> state -> state
+```
+
+For all expressions, the definition of _Run_ is:
+
+```
+Run [[ E ]] State =
+V, State.In = Read [[ E ]] State.In;
+State.Out = Write [[ E ]] V State.Out;
+```
+
+Function _Read_ takes an expression and an input stream, and returns both the
+value read and the updated input stream. Note: Reading (and writing) are modeled
+using a side-effect free model to simplify the semantics.
+
+```
+Read: Exp -> stream -> (value x stream)
+```
+
+If _Read_ is not defined explicitly for an expression, the following is assumed:
+
+```
+Read [[ E ]] In = error
+```
+
+Function _Write_ takes an expression and an output stream, and returns an
+updated output stream where the value as added to the end of the output stream.
+
+```
+Write: Exp -> value -> stream -> stream
+```
+
+If _Write_ is not defined explicitly for an expression, the following is assumed:
+
+```
+Write [[ E ]] V Out = error
+```
+
+Function _Matches_ tests if a _case_ statement matches the corresponding select
+key of the select it appears in.
+
+```
+Matches: Stmt -> u1
+```
+
+If _Matches_ is not defined explicitly for a statement, the following is assumed:
+
+```
+Matches [[ S ]] = error()
+```
+
+Function _OutStream_ generates an empty output stream, as defined by the given
+statement.
+
+```
+OutStream: Stmt -> stream
+```
+
+If _OutStream_ is not defined explicitly for a statement, the following is assumed:
+
+```
+OutStream [[ S ]] = error
+```
+
+## Expressions
+
+This section defines the set of expressions that can appear in filter secctions.
+
+### Constants
+
+Constant instructions define constants that can be used as an argument to other
+instructions. The do not consume input when reading, and do not generate any
+output when writing.
+
+#### (void)
+
+```
+Parse In Stack Opcode =
+  Op, In = readUint8(In)
+  assert Op.value == Opcode['void']
+  Values = vector<value>()
+  Values.append('void')
+  Stack.append(preorder(Values))
+  return In, Stack
+```
+
+```
+Read [[ (void) ]] In = void, In
+```
+
+```
+Write [[ (void) ]] V Out = Out
+```
+
+
+#### (i32.const N)
+
+```
+Parse In Stack Opcode =
+  Op, In = readUint8(In)
+  assert Op == Opcode['i32.const']
+  Values = vector<value>()
+  Values.append('i32.const')
+  N, In = readVarint32(In)
+  Values.append(N)
+  Stack.append(preorder(Values))
+  return In, Stack
+```
+
+```
+Read [[ (i32.const N) ]] In = N, In
+```
+
+```
+Write [[ (i32.const N) ]] V Out = Out
+```
+
+#### (u32.const N)
+
+```
+Parse In Stack Opcode =
+  Op, In = readUint8(In)
+  assert Op == Opcode['u32.const']
+  Values = vector<value>()
+  Values.append('u32.const')
+  N, In = readVaruint32(In)
+  Values.append(N)
+  Stack.append(preorder(Values))
+  return In, Stack
+```
+
+```
+Read [[ (u32.const N) ]] In = N, In
+```
+
+```
+Write [[ (u32.const N) ]] V Out = Out
+```
+
+#### (i64.const N)
+
+```
+Parse In Stack Opcode =
+  Op, In = readUint8(In)
+  Assert Op == Opcode['i64.const']
+  Values = vector<value>()
+  Values.append('i64.const')
+  N, In = readVarint64(In)
+  Values.append(N)
+  Stack.append(preorder(Values))
+  return In, Stack
+```
+
+```
+Read [[ (i64.const N) ]] In = N, In
+```
+
+```
+Write [[ (i64.const N) ]] V Out = Out
+```
+
+#### (u64.const N)
+
+```
+Parse In Stack Opcode =
+  Op, In = readUint8(In)
+  assert Op == Opcode['u64.const']
+  Values = vector<value>();
+  Values.append('u64.const')
+  N, In = readVaruint64(In)
+  Values.append(N)
+  Stack.append(preorder(Values))
+  return In, Stack
+```
+
+```
+Read [[ (u64.const N) ]] In = N, In
+```
+
+```
+Write [[ (u64.const N) ]] V Out = Out
+```
+
+#### (f32.const N)
+
+```
+Parse In Stack Opcode =
+  Op, In = readUint8(In)
+  assert Op == Opcode['f32.const']
+  Values = vector<value>()
+  Values.append('f32.const')
+  N, In = readUint32(In)
+  Values.append(N)
+  Stack.append(preorder(values))
+  return In, Stack
+```
+
+```
+Read [[ (u64.const N) ]] In = N, In
+```
+
+```
+Write [[ (u64.const N) ]] V Out = Out
+```
+
+### Formatting
+
+Formatting expressions convert integers to sequences of bits when writing, and
+from sequences of bits to integers when reading. Reading or writing an integer
+on an int stream corresponds to reading/writing an integer from/to the
+corresponding stream.
+
+Ast streams are slightly anomalous. Writing to an ast stream always appends
+(i.e. pushes) the corresponding ast value. Reading, on the other hand, is
+dependent on the type of the corresponding output stream.  Reading from an ast
+stream automatically flatten ast nodes into a sequence of integers, and the
+formatting instructions use the next (flattened) integer.
+
+#### (value)
+
+The value formatting instruction is the default formatting instruction.
+
+```
+Parse In Stack Opcode:
+  Op, In = readUuint8(In)
+  assert Op == Opcode['value']
+  Values = vector<value>()
+  Values.append('value')
+  Stack.append(preorder(Values))
+  return In, Stack
+```
+
+```
+Read [[ (value) ]] In = Read [[ (ivbr 6) ]] In
+```
+
+```
+Write [[ (value) ]] V Out = Write [[ (ivbr 6) ]] V Out
+```
+
+#### (uint8)
+
+```
+Parse In Stack Opcode:
+  Op, In = readUint8(In)
+  assert Op == Opcode['uint8']
+  Values = vector<value>()
+  Values.append('uint8');
+  Stack.append(preorder(Values))
+  return In, Stack
+```
+
+```
+Read [[ (uint8) ]] In:
+  switch In.type:
+    case 'bit', 'byte':
+      V, In = readUint8(In)
+    case 'int':
+      V, In = readInt(In)
+    case 'ast':
+      V, In = readAst(In)
+  return V, In
+```
+
+```
+Write [[ (uint8) ]] V Out:
+  switch In.type:
+    case 'bit', 'byte':
+      Out = writeUint8(V, Out)
+    case 'int':
+      Out = writeInt(V, Out)
+    case 'ast':
+      Out = writeAst(V, Out)
+  return Out
+```
+
+#### (uint32)
+
+```
+Parse In Stack Opcode =
+  Op, In = readUint8(In)
+  assert Op == Opcode['uint32']
+  Values = vector<value>()
+  Values.append('uint32')
+  Stack.append(preorder(Values))
+  return In, Stack
+```
+
+```
+Read [[ (uint32) ]] In =
+  switch In.type:
+    case 'bit', 'byte':
+      V, In = readUint32(In)
+    case 'int':
+      V, In = readIint(In)
+    case 'ast':
+      V, In = readAst(In)
+      return V, In
+```
+
+```
+Write [[ (uint32) ]] V Out =
+  switch out.type:
+    case 'bit', 'byte:
+      Out = writeUint32(V, Out);
+    case 'int':
+      Out = writeInt(V, Out)
+    case 'ast':
+      Out = write_ast(V, Out)
+    return Out
+```
+#### (uint64)
+
+```
+Parse In Stack Opcode =
+  Op, In = readUint8(In)
+  assert Op == Opcode['uint64']
+  Values = vector<value>()
+  Values.append('uint64')
+  Stack.append(preorder(Values))
+  return In, Stack
+```
+
+```
+Read [[ (uint64) ]] In =
+  switch In.type:
+    case 'bit', 'byte':
+      V, In = readUint64(In)
+    case 'int':
+      V, In = readInt(In)
+    case 'ast':
+      V. In = readAst(In)
+  return V, In
+```
+
+```
+Write [[ (uint64) ]] V Out =
+  Switch Out.type:
+    case 'bit', 'byte':
+      Out = writeUint64(V, Out)
+    case 'int':
+      Out = writeInt(V, Out)
+    case 'ast':
+      Out = writeAst(V, Out)
+  return Out
+```
+
+#### (varuint1)
+
+```
+Parse In Stack Opcode =
+  Op, In = readUint8(In)
+  assert Op == Opcode['varuint1']
+  Values = vector<value>()
+  Values.append('varuint1')
+  Stack.append(preorder(values))
+  return In, Stack
+```
+
+```
+Read [[ (varuint1) ]] In =
+  switch In.type:
+    case 'bit', 'byte':
+      V, In = readVaruint1(In)
+    case 'int':
+      V, In = readInt(In)
+    case 'ast':
+      V, In = readAst(In)
+  return V, In
+```
+
+```
+Write [[ (varuint1) ]] V Out =
+  switch Out.type:
+    case 'bit', 'byte':
+      Out = writeVaruint1(V, Out)
+    case 'int':
+      Out = writeInt(V, Out);
+    case 'ast':
+      Out = write_ast(V, Out)
+  return Out
+```
+
+#### (varuint7)
+
+```
+Parse In Stack Opcode =
+  Op, In = readUint8(In)
+  assert Op == Opcode['varuint7']
+  Values = vector<value>()
+  Values.append('varuint7')
+  Stack.append(preorder(Values))
+  return In, Stack
+```
+
+```
+Read [[ (varuint7) ]] In =
+  switch In.type:
+    case 'bit', 'byte':
+      V, In = readVaruint7(In)
+    case 'int':
+      V, In = readInt(In)
+    case 'ast':
+      V, In = readAst(In)
+    return V, In
+```
+
+```
+Write [[ (varuint7) ]] V Out =
+  switch Out.type:
+    case 'bit', 'byte':
+      Out = writeVaruint7(V, Out)
+    case 'int':
+      Out = writeInt(V, Out)
+    case 'ast':
+      Out = writeAst(V, Out)
+  return Out
+```
+
+#### (varint32)
+
+```
+Parse In Stack Opcode =
+  Op, In = readUint8(In)
+  assert Op == Opcode['varint32']
+  Values = vector<value>()
+  Values.append('varint32')
+  Stack.append(preorder(Values))
+  return In, Stack
+```
+
+```
+Read [[ (varint32) ]] In =
+  switch if In.type:
+    case 'bit', 'byte':
+      V, In = readVarint32(In)
+    case 'int':
+      V, In = readInt(In)
+    case 'ast':
+      V, In = readAst(In)
+  return V, In
+```
+
+```
+Write [[ (varint32 ]] V Out =
+  switch Out.type:
+    case 'bit', 'byte':
+      Out = writeVarint32(V, Out)
+    case 'int':
+      Out = writeInt(V, Out)
+    case 'ast':
+      Out = writeAst(V, Out)
+  return Out
+```
+
+#### (varuint32)
+
+```
+Parse In Stack Opcode =
+  Op, In = readUint8(In)
+  assert Op == Opcode['varuint32']
+  Values = vector<value>()
+  Values.append('varuint32')
+  Stack.append(preorder(Values))
+  return In, Stack 
+```
+
+```
+Read [[ (varuint32) ]] In =
+  switch In.type:
+    case 'bit', ''byte':
+      V, In = readVaruint32(In)
+    case 'int':
+      V, In = readInt(In)
+    case 'ast':
+      V, In readAst(In)
+  return V, In
+```
+
+```
+Write [[ (varuint32 ]] V Out =
+  switch Out.type: 
+    case 'bit', 'byte':
+      Out = writeVaruint32(V, Out)
+    case 'int':
+      Out = writeInt(V, Out);
+    case 'ast':
+      Out = writeAst(V, Out)
+  return Out
+```
+
+#### (varint64)
+
+```
+Parse In Stack Opcode =
+  Op, In = readUint8(In)
+  assert Op == Opcode['varint64']
+  Values = vector<value>()
+  Values.append('varuint64')
+  Stack.append(preorder(Values))
+  return In, Stack
+```
+
+```
+Read [[ (varint64) ]] In =
+  switch In.type:
+    case 'bit' , 'byte':
+      V, In = readVarint64(In)
+    case 'int':
+      V, In = readInt(In)
+    case 'ast':
+      V, In = readAst(In)
+  return V, In
+```
+
+```
+Write [[ (varint64 ]] V Out =
+  switch Out.type:
+    case in 'bit', 'byte':
+      Out = writeWarint64(V, Out)
+    case 'int':
+      Out = writeInt(V, Out)
+    case 'ast':
+      Out = writeAst(V, Out)
+  return Out
+```
+
+#### (varuint64)
+
+```
+Parse In Stack Opcode =
+  Op, In = readUint8(In)
+  assert Op == Opcode['varuint64']
+  Values = vector<value>()
+  Values.append('varuint64')
+  Stack.append(preorder(Values))
+  return In, Stack
+```
+
+```
+Read [[ (varuint64) ]] In =
+  switch In.type:
+    case 'bit', 'byte':
+      V, In = readVaruint64(In)
+    case 'int':
+      V, In = readInt(In)
+    case 'ast':
+      V, In = readAst(In)
+  return V, In
+```
+
+```
+Write [[ (varuint64 ]] V Out =
+  switch Out.type:
+    case 'bit', 'byte':
+      Out = writeVaruint64(V, Out)
+    case 'int':
+      Out = writeInt(V, Out)
+    case 'ast':
+      Out = writeAst(V, Out)
+  return Out
+```
+
+#### (fixed N)
+
+On bit streams, prints out the integer using the given number of bits. On byte
+streams, rounds up to the nearest fixed-width byte format.
+
+```
+Parse In Stack Opcode =
+  Op, In = readUint8(In)
+  assert Op == Opcode['fixed']
+  Values = vector<value>()
+  Values.append('fixed')
+  N, In = readUuint8(In)
+  assert N <= 64
+  Values.append(N)
+  Stack.append(preorder(Values))
+  return In, Stack
+```
+
+```
+Read [[ (fixed N) ]] In =
+  switch In.type:
+    case 'bit':
+      V, In = readFixed(N, In)
+    case 'byte':
+      if N <= 8:
+        return Read [[ (uint8) ]] In
+      if N <= 32:
+        return Read [[ (uint32) ]] In
+      return Read [[ (uint64) ]] In
+    case 'int':
+      V, In = readInt(In)
+    case 'ast':
+      V, In = readAst(In)
+  return V, In
+```
+
+```
+Write [[ (fixed N) ]] V Out =
+  switch Out.type:
+    case 'bit':
+      Out = writeFixed(N, V, Out)
+    case 'byte':
+      if N <= 8:
+        return Write [[ (uint8) ]] V Out
+      if N <= 32:
+        return Write [[ (uint32) ]] V Out
+      return Write [[ (uint64) ]] V Out
+    case 'int':
+      Out = writeInt(V, Out)
+    case 'ast':
+      Out = writeAst(V, Out)
+  return Out
+```
+
+#### (vbr N)
+
+On bit streams, formats integers using LEB128, and chunk size of N (rather than
+8). On byte streams, converts to LEB128 with chunk size 8.
+
+```
+Parse In Stack Opcode =
+  Op, In = readUint8(In)
+  assert Op == Opcode['vbr']
+  Values = vector<value>()
+  Values.append('vbr')
+  N, In = readUint8(In)
+  assert N <= 64
+  Values.append(N)
+  Stack.append(preorder(Values))
+  return In, Stack
+```
+
+```
+Read [[ (vbr N) ]] In =
+  switch In.type:
+    case 'bit':
+      V, In = readVbr(N, In)
+    case 'byte':
+      if N <= 32:
+        return Read [[ (varuint32) ]] In
+      return Read [[ (varuint64) ]] In
+    case 'int':
+      V, In = readInt(In)
+    case 'ast':
+      V, In = readAst(In)
+  return V, In
+```
+
+```
+Write [[ (vbr N) ]] V Out =
+  switch Out.type:
+    case 'bit'
+      Out = writeVbr(N, V, Out)
+    case 'byte':
+      if N <= 32:
+        return Write [[ (varuint32) ]] In
+      return Write [[ (varuint64) ]] In
+    case 'int':
+      Out = writeInt(V, Out)
+    case 'ast':
+      Out = writeAst(V, Out)
+  return Out
+```
+
+#### (ivbr N)
+
+On bit streams, formats integers using Signed LEB128, and chunk size of N
+(rather than 8). On byte streams, converts to Signed LEB128 with chunk size 8.
+
+```
+Parse In Stack Opcode =
+  Op, In = readUint8(In)
+  assert Op == Opcode['ivbr']
+  Values = vector<value>()
+  Values.append('ivbr')
+  N, In = readUint8(In)
+  assert N <= 64
+  Values.append(N)
+  Stack.append(preorder(Values))
+  return In, Stack
+```
+
+```
+Read [[ (vbr N) ]] In =
+  switch In.type:
+    case 'bit':
+      V, In = readIvbr(N, In)
+    case 'byte':
+      if N <= 32:
+        return Read [[ (varint32) ]] In
+      return Read [[ (varint64) ]] In
+    case 'int':
+      V, In = readInt(In)
+    case 'ast':
+      V, In = readAst(In)
+  return V, In
+```
+
+```
+Write [[ (vbr N) ]] V Out =
+  switch Out.type:
+    case 'bit'
+      Out = writeVbr(N, V, Out)
+    case 'byte':
+      if N <= 32:
+        return Write [[ (varint32) ]] In
+      return Write [[ (varint64) ]] In
+    case 'int':
+      Out = writeInt(V, Out)
+    case 'ast':
+      Out = writeAst(V, Out)
+  return Out
+```
