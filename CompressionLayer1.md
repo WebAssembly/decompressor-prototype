@@ -2437,3 +2437,638 @@ Run [[ (copy) ]] Env:
     Env.out = Write [[ (fixed 1) ]] Out
   Return Env
 ```
+
+### Method definitions and calls
+
+This section defines definitions that define methods associated with a
+symbol. Definitions can only appear as top-level statements, and all top-level
+statements in a filter section must be a method definition.
+
+#### (define N S1 \.\.\. Sn)
+
+
+Defines methods _S1_ through _Sn_ for the symbol _N_.
+
+```
+Parse In Stack Opcode:
+  Op, In = readUint8(In)
+  assert Op == Opcode['define']
+  Values = vector<value>()
+  S, In = readSymbol(In)
+  N, In  = readVaruint32(In)
+  assert N > 0
+  For i = 0; i < N; ++i:
+    Values.prepend(Stack.popLast())
+  Values.prepend(S)
+  Values.prepend('define')
+  Stack.append(postorder(Values))
+  return In, Stack
+```
+
+```
+Run [[ (define N S1 \.\.\. Sn) ]] Env:
+  Meths = Methods()
+  for i = 1; i <= n; ++i:
+    Meths.append(Si);
+  Env.def[N] = Methods
+  return Env
+```
+
+#### (eval N)
+
+Calls method 0 associated with symbol _N_.
+
+Note: Should this be an expression?
+
+```
+Parse In Stack Opcode:
+  Op, In = readUint8(In)
+  Assert Op == Opcode['eval']
+  Values = vector<value>()
+  Values.prepend('eval')
+  S, In = readSymbol(In)
+  Values.prepend(S)
+  Stack.append(preorder(Values))
+  Return In, Stack
+```
+
+```
+Run [[ (eval N) ]] Env:
+  if not Env.def.is_defined(N):
+    error
+  PrevMethods = Env.methods
+  Env.methods = Env.def[N]
+  S = Env.methods[0]
+  Env = Run S Env
+  Env.methods = PrevMethods
+  return Env
+```
+
+#### (call N)
+
+Calls method _N_ associated with the current set of methods.
+
+Note: Should this be an expression?
+
+```
+Parse In Stack Opcode:
+  Op, In = readUint8(In)
+  assert Op == Opcode['call']
+  Values = vector<value>()
+  Values.append('call')
+  N, In = readVaruint32(In)
+  Values.append(n)
+  Stack,push(preorder(values))
+  return In, Stack
+```
+
+```
+Run [[ (call N) ]] Env:
+  assert N < Env.methods.size()
+  S = Env.methods[N]
+  return Run S Env
+```
+
+### Filtering
+
+Filtering allows one to subdivide a single filter into a sequence of filters. It
+also allows the ability to define the contents of each input/output stream as
+they are filtered.
+
+#### (filter S1 \.\.\. Sn)
+
+```
+Parse In Stack Opcode =
+  Op, In = readUint8(In)
+  assert Op == Opcode['filter']
+  Values = vector<value>()
+  N, In = readVarint32(In)
+  assert N > 1
+  for i = 1; i <= N; ++ i:
+    Values.prepend(Stack.popLast())
+  Values.prepend('filter')
+  Stack.append(postorder(Values))
+  return In, Stack
+```
+
+```
+Run [[ (filter S1 \.\.\. Sn) ]] Env:
+  FinalOut = Env.out
+  for i = 1; i <= n; ++i:
+    if i == n:
+      Env.out = FinalOut
+      Env = Run [[ En ]] Env
+    else:
+      Env.out = Outstream [[ Si ]]
+      Env = Run [[ Ei ]] Env
+    Env.in = Env.out
+  return Env
+```
+
+#### (bit.to.bit S)
+
+Runs statement _S_ assuming that both the input and the output streams are _bit_
+streams.
+
+```
+Parse In Stack Opcode:
+  Op, In = readUint8(In)
+  assert Op == Opcode['bit.to.bit']
+  Values = vector<value>()
+  Values.prepend(Stack.popLast())
+  Values.prepend('bit.to.bit')
+  Stack.append(postorder(Values))
+  return In, Stack
+```
+
+```
+Run [[ (bit.to.bit S) ]] Env:
+  InType = Env.in.type
+  OutType = Env.out.type
+  Env.in = fixStreamType 'bit' Env.in
+  Env.out = fixStreamType 'bit' Env.Out
+  Env = Run [[ S ]] Env
+  Env.in = fixStreamType InType Env.in
+  Env.out = fixStreamType OutType Env.out
+  return Env
+```
+
+```
+OutStream [[ (bit.to.bit S) ]] = return streamOf<bit>():bit
+```
+
+
+#### (bit.to.byte S)
+
+Runs statement _S_ assuming that the input stream is a _bit_ stream, and the
+output streams is a _byte_ stream.
+
+```
+Parse In Stack Opcode:
+  Op, In = readUint8(In)
+  assert Op == Opcode[`bit.to.byte']
+  Values = vector<value>()
+  Values.prepend(Stack.popLast())
+  Values.prepend('bit.to.byte')
+  Stack.append(postorder(Values))
+  return In, Stack
+```
+
+```
+Run [[ (bit.to.byte S) ]] Env:
+  InType = Env.in.type
+  OutType = Env.out.type
+  Env.in = fixStreamType 'bit' Env.in
+  Env.out = fixStreamType 'byte' Env.Out
+  Env = Run [[ S ]] Env
+  Env.in = fixStreamType InType Env.in
+  Env.out = fixStreamType OutType Env.out
+  return Env
+```
+
+```
+OutStream [[ (bit.to.byte S) ]] = return streamOf<bit>():byte
+```
+
+#### (bit.to.int S)
+
+Runs statement _S_ assuming that the input stream is a _bit_ stream, and the
+output streams is an _int_ stream.
+
+```
+Parse In Stack Opcode:
+  Op, In = readUint8(In)
+  assert Op == Opcode[`bit.to.int']
+  Values = vector<value>()
+  Values.prepend(Stack.popLast())
+  Values.prepend('bit.to.int')
+  Stack.append(postorder(Values))
+  return In, Stack
+```
+
+```
+Run [[ (bit.to.int S) ]] Env:
+  InType = Env.in.type
+  OutType = Env.out.type
+  Env.in = fixStreamType 'bit' Env.in
+  Env.out = fixStreamType 'int' Env.Out
+  Env = Run [[ S ]] Env
+  Env.in = fixStreamType InType Env.in
+  Env.out = fixStreamType OutType Env.out
+  return Env
+```
+
+```
+OutStream [[ (bit.to.int S) ]] = return streamOf<int>():int
+```
+
+#### (bit.to.ast S)
+
+Runs statement _S_ assuming that the input stream is a _bit_ stream, and the
+output streams is an _ast_ stream.
+
+```
+Parse In Stack Opcode:
+  Op, In = readUint8(In)
+  assert Op == Opcode[`bit.to.ast']
+  Values = vector<value>()
+  Values.prepend(Stack.popLast())
+  Values.prepend('bit.to.ast')
+  Stack.append(postorder(Values))
+  return In, Stack
+```
+
+```
+Run [[ (bit.to.int S) ]] Env:
+  InType = Env.in.type
+  OutType = Env.out.type
+  Env.in = fixStreamType 'bit' Env.in
+  Env.out = fixStreamType 'ast' Env.Out
+  Env = Run [[ S ]] Env
+  Env.in = fixStreamType InType Env.in
+  Env.out = fixStreamType OutType Env.out
+  return Env
+```
+
+```
+OutStream [[ (bit.to.ast S) ]] = return streamOf<ast>():ast
+```
+
+#### (byte.to.bit S)
+
+Runs statement _S_ assuming that the input stream is a _byte_ stream, and the
+output streams is a _bit_ stream.
+
+```
+Parse In Stack Opcode:
+  Op, In = readUint8(In)
+  assert Op == Opcode[`byte.to.bit']
+  Values = vector<value>()
+  Values.prepend(Stack.popLast())
+  Values.prepend('byte.to.bit')
+  Stack.append(postorder(Values))
+  return In, Stack
+```
+
+```
+Run [[ (byte.to.bit S) ]] Env:
+  InType = Env.in.type
+  OutType = Env.out.type
+  Env.in = fixStreamType 'byte' Env.in
+  Env.out = fixStreamType 'bit' Env.Out
+  Env = Run [[ S ]] Env
+  Env.in = fixStreamType InType Env.in
+  Env.out = fixStreamType OutType Env.out
+  return Env
+```
+
+```
+OutStream [[ (byte.to.bit S) ]] = return streamOf<bit>():bit
+```
+
+#### (byte.to.byte S)
+
+Runs statement _S_ assuming that both the input and the output streams are _byte_
+streams.
+
+```
+Parse In Stack Opcode:
+  Op, In = readUint8(In)
+  assert Op == Opcode[`byte.to.byte']
+  Values = vector<value>()
+  Values.prepend(Stack.popLast())
+  Values.prepend('byte.to.byte')
+  Stack.append(postorder(Values))
+  return In, Stack
+```
+
+```
+Run [[ (byte.to.byte S) ]] Env:
+  InType = Env.in.type
+  OutType = Env.out.type
+  Env.in = fixStreamType 'byte' Env.in
+  Env.out = fixStreamType 'byte' Env.Out
+  Env = Run [[ S ]] Env
+  Env.in = fixStreamType InType Env.in
+  Env.out = fixStreamType OutType Env.out
+  return Env
+```
+
+```
+OutStream [[ (byte.to.byte S) ]] = return streamOf<bit>():byte
+```
+
+#### (byte.to.int S)
+
+Runs statement _S_ assuming that the input stream is a _byte_ stream, and the
+output streams is an _int_ stream.
+
+```
+Parse In Stack Opcode:
+  Op, In = readUint8(In)
+  assert Op == Opcode[`byte.to.int']
+  Values = vector<value>()
+  Values.prepend(Stack.popLast())
+  Values.prepend('byte.to.int')
+  Stack.append(postorder(Values))
+  return In, Stack
+```
+
+```
+Run [[ (byte.to.int S) ]] Env:
+  InType = Env.in.type
+  OutType = Env.out.type
+  Env.in = fixStreamType 'byte' Env.in
+  Env.out = fixStreamType 'int' Env.Out
+  Env = Run [[ S ]] Env
+  Env.in = fixStreamType InType Env.in
+  Env.out = fixStreamType OutType Env.out
+  return Env
+```
+
+```
+OutStream [[ (byte.to.int S) ]] = return streamOf<int>():int
+```
+
+#### (byte.to.ast S)
+
+Runs statement _S_ assuming that the input stream is a _byte_ stream, and the
+output streams is an _ast_ stream.
+
+```
+Parse In Stack Opcode:
+  Op, In = readUint8(In)
+  assert Op == Opcode[`byte.to.ast']
+  Values = vector<value>()
+  Values.prepend(Stack.popLast())
+  Values.prepend('byte.to.ast')
+  Stack.append(postorder(Values))
+  return In, Stack
+```
+
+```
+Run [[ (byte.to.ast S) ]] Env:
+  InType = Env.in.type
+  OutType = Env.out.type
+  Env.in = fixStreamType 'byte' Env.in
+  Env.out = fixStreamType 'ast' Env.Out
+  Env = Run [[ S ]] Env
+  Env.in = fixStreamType InType Env.in
+  Env.out = fixStreamType OutType Env.out
+  return Env
+```
+
+```
+OutStream [[ (byte.to.ast S) ]] = return streamOf<ast>():ast
+```
+
+#### (int.to.bit S)
+
+Runs statement _S_ assuming that the input stream is an _int_ stream, and the
+output streams is a _bit_ stream.
+
+```
+Parse In Stack Opcode:
+  Op, In = readUint8(In)
+  assert Op == Opcode[`int.to.bit']
+  Values = vector<value>()
+  Values.prepend(Stack.popLast())
+  Values.prepend('int.to.bit')
+  Stack.append(postorder(Values))
+  return In, Stack
+```
+
+```
+Run [[ (int.to.bit S) ]] Env:
+  InType = Env.in.type
+  OutType = Env.out.type
+  Env.in = fixStreamType 'int' Env.in
+  Env.out = fixStreamType 'bit' Env.Out
+  Env = Run [[ S ]] Env
+  Env.in = fixStreamType InType Env.in
+  Env.out = fixStreamType OutType Env.out
+  return Env
+```
+
+```
+OutStream [[ (int.to.bit S) ]] = return streamOf<bit>():bit
+```
+
+#### (int.to.byte S)
+
+Runs statement _S_ assuming that the input stream is an _int_ stream, and the
+output streams is a _byte_ stream.
+
+```
+Parse In Stack Opcode:
+  Op, In = readUint8(In)
+  assert Op == Opcode[`int.to.byte']
+  Values = vector<value>()
+  Values.prepend(Stack.popLast())
+  Values.prepend('int.to.byte')
+  Stack.append(postorder(Values))
+  return In, Stack
+```
+
+```
+Run [[ (int.to.bit S) ]] Env:
+  InType = Env.in.type
+  OutType = Env.out.type
+  Env.in = fixStreamType 'int' Env.in
+  Env.out = fixStreamType 'byte' Env.Out
+  Env = Run [[ S ]] Env
+  Env.in = fixStreamType InType Env.in
+  Env.out = fixStreamType OutType Env.out
+  return Env
+```
+
+```
+OutStream [[ (int.to.byte S) ]] = return streamOf<bit>():byte
+```
+
+#### (int.to.int S)
+
+Runs statement _S_ assuming that both the input and the output streams are _int_
+streams.
+
+```
+Parse In Stack Opcode:
+  Op, In = readUint8(In)
+  assert Op == Opcode[`int.to.int']
+  Values = vector<value>()
+  Values.prepend(Stack.popLast())
+  Values.prepend('int.to.int')
+  Stack.append(postorder(Values))
+  return In, Stack
+```
+
+```
+Run [[ (int.to.int S) ]] Env:
+  InType = Env.in.type
+  OutType = Env.out.type
+  Env.in = fixStreamType 'int' Env.in
+  Env.out = fixStreamType 'int' Env.Out
+  Env = Run [[ S ]] Env
+  Env.in = fixStreamType InType Env.in
+  Env.out = fixStreamType OutType Env.out
+  return Env
+```
+
+```
+OutStream [[ (int.to.int S) ]] = return streamOf<int>():int
+```
+
+#### (int.to.ast S)
+
+Runs statement _S_ assuming that the input stream is an _int_ stream, and the
+output streams is an _ast_ stream.
+
+```
+Parse In Stack Opcode:
+  Op, In = readUint8(In)
+  assert Op == Opcode[`int.to.ast']
+  Values = vector<value>()
+  Values.prepend(Stack.popLast())
+  Values.prepend('int.to.ast')
+  Stack.append(postorder(Values))
+  return In, Stack
+```
+
+```
+Run [[ (int.to.ast S) ]] Env:
+  InType = Env.in.type
+  OutType = Env.out.type
+  Env.in = fixStreamType 'int' Env.in
+  Env.out = fixStreamType 'ast' Env.Out
+  Env = Run [[ S ]] Env
+  Env.in = fixStreamType InType Env.in
+  Env.out = fixStreamType OutType Env.out
+  return Env
+```
+
+```
+OutStream [[ (int.to.ast S) ]] = return streamOf<ast>():ast
+```
+
+#### (ast.to.bit S)
+
+Runs statement _S_ assuming that the input stream is an _ast_ stream, and the
+output streams is a _bit_ stream.
+
+```
+Parse In Stack Opcode:
+  Op, In = readUint8(In)
+  assert Op == Opcode[`ast.to.bit']
+  Values = vector<value>()
+  Values.prepend(Stack.popLast())
+  Values.prepend('ast.to.bit')
+  Stack.append(postorder(Values))
+  return In, Stack
+```
+
+```
+Run [[ (ast.to.bit S) ]] Env:
+  InType = Env.in.type
+  OutType = Env.out.type
+  Env.in = fixStreamType 'ast' Env.in
+  Env.out = fixStreamType 'bit' Env.Out
+  Env = Run [[ S ]] Env
+  Env.in = fixStreamType InType Env.in
+  Env.out = fixStreamType OutType Env.out
+  return Env
+```
+
+```
+OutStream [[ (ast.to.bit S) ]] = return streamOf<bit>():bit
+```
+
+#### (ast.to.byte S)
+
+Runs statement _S_ assuming that the input stream is an _ast_ stream, and the
+output streams is a _byte_ stream.
+
+```
+Parse In Stack Opcode:
+  Op, In = readUint8(In)
+  assert Op == Opcode[`ast.to.byte']
+  Values = vector<value>()
+  Values.prepend(Stack.popLast())
+  Values.prepend('ast.to.byte')
+  Stack.append(postorder(Values))
+  return In, Stack
+```
+
+```
+Run [[ (ast.to.byte S) ]] Env:
+  InType = Env.in.type
+  OutType = Env.out.type
+  Env.in = fixStreamType 'ast' Env.in
+  Env.out = fixStreamType 'byte' Env.Out
+  Env = Run [[ S ]] Env
+  Env.in = fixStreamType InType Env.in
+  Env.out = fixStreamType OutType Env.out
+  return Env
+```
+
+```
+OutStream [[ (ast.to.byte S) ]] = return streamOf<bit>():byte
+```
+
+#### (ast.to.int S)
+
+Runs statement _S_ assuming that the input stream is an _ast_ stream, and the
+output streams is an _int_ stream.
+
+```
+Parse In Stack Opcode:
+  Op, In = readUint8(In)
+  assert Op == Opcode[`ast.to.int']
+  Values = vector<value>()
+  Values.prepend(Stack.popLast())
+  Values.prepend('ast.to.int')
+  Stack.append(postorder(Values))
+  return In, Stack
+```
+
+```
+Run [[ (ast.to.int S) ]] Env:
+  InType = Env.in.type
+  OutType = Env.out.type
+  Env.in = fixStreamType 'ast' Env.in
+  Env.out = fixStreamType 'int' Env.Out
+  Env = Run [[ S ]] Env
+  Env.in = fixStreamType InType Env.in
+  Env.out = fixStreamType OutType Env.out
+  return Env
+```
+
+```
+OutStream [[ (ast.to.int S) ]] = return streamOf<int>():int
+```
+
+### Other
+
+This section covers statements that don't fit into the other sections.
+
+#### (flush)
+
+Directive to communicate to the filter that all elements on the output stream
+can be flushed at this point (i.e. won't be used later)
+
+```
+Parse In Stack Opcode:
+  Op, In = readUint8(In)
+  assert  Op == Opcode['flush']
+  Values = vector<value>()
+  Values.append('flush')
+  Stack.append(preorder(Values))
+  return In, Stack
+```
+
+Note that the flush instruction is a directive to the implementation that it may
+flush any values already on the output stream. Semantically, this is not
+modeled, since the semantics of this framework doesn't model the concept of streaming.
+
+```
+Run [[ (flush) ]] Env = Env
+```
