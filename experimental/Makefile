@@ -6,13 +6,7 @@
 
 # # CLANG_PATH is the location of the clang compiler to use for building
 # the host binaries.
-#CLANG_PATH ?= $(shell readlink -e \
-#  ../../../../third_party/llvm-build/Release+Asserts/bin)
-CLANG_PATH=''
-CLANG_PATH=/home/kschimpf/workspace/nacl/third_party/llvm-build/Release+Asserts/bin
-
-#CLANG_CPP = clang++
-CLANG_CPP = $(CLANG_PATH)/clang++
+CLANG_CPP = clang++
 
 OBJDIR = build/objs
 TESTDIR = build
