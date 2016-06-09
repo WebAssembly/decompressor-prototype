@@ -99,7 +99,7 @@
     )
     (method export_entry
       (append.value (vbr32 6))     # Index into the function table
-      (eval 'symbol') # funtion string
+      (eval 'symbol')              # funtion string
       (append)
     )
   )
@@ -111,7 +111,7 @@
   (define 'code.default'
     (seq
       (preorder 0)
-      (loop (append.value (vbr32 6))
+      (loop (append.value (vbr 6))
         (eval 'function.body')
         (append))
     )
