@@ -1,0 +1,288 @@
+/* -*- C++ -*- */
+/*
+ * Copyright 2016 WebAssembly Community Group participants
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+%skeleton "lalr1.cc"
+
+/* Textual parser for filter s-expressions */
+
+%defines
+%define api.namespace {wasm::filt}
+%define parser_class_name {FilterParser}
+
+%define api.token.constructor
+%define api.value.type variant
+%define parse.assert
+
+
+%code requires {
+
+namespace wasm {
+namespace filt {
+
+class Driver;
+class Node;
+
+struct IntData {
+  std::string Name;
+  uint64_t Value;
+};
+
+}}
+
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wdeprecated-register"
+#pragma clang diagnostic ignored "-Wundefined-inline"
+#endif // __clang__
+}
+
+// The parsing context.
+%param { Driver& driver }
+
+%locations
+%initial-action
+{
+  // Initialize the initial location.
+  @$.begin.filename = @$.end.filename = &driver.file;
+};
+
+%define parse.trace
+%define parse.error verbose
+
+%code
+{
+# include "Driver.h"
+}
+
+// Special tokens
+%token END 0 "$END"
+
+// Keywords
+%token BIT_TO_BIT    "bit.to.bit"
+%token BIT_TO_BYTE   "bit.to.byte"
+%token BIT_TO_INT    "bit.to.int"
+%token BIT_TO_AST    "bit.to.ast"
+%token BYTE_TO_BIT   "byte.to.bit"
+%token BYTE_TO_BYTE  "byte.to.byte"
+%token BYTE_TO_INT   "byte.to.int"
+%token BYTE_TO_AST   "byte.to.ast"
+%token CALL          "call"
+%token CASE          "case"
+%token CLOSEPAREN    ")"
+%token COPY          "copy"
+%token DEFINE        "define"
+%token EVAL          "eval"
+%token EXTRACT       "extract"
+%token FILTER        "filter"
+%token FIXED32       "fixed32"
+%token FIXED64       "fixed64"
+%token IF            "if"
+%token INT_TO_BIT    "int.to.bit"
+%token INT_TO_BYTE   "int.to.byte"
+%token INT_TO_INT    "int.to.int"
+%token INT_TO_AST    "int.to.ast"
+%token I32_CONST     "i32.const"
+%token I64_CONST     "i64.const"
+%token LIT           "lit"
+%token LOOP          "loop"
+%token LOOP_UNBOUNDED "loop.unbounded"
+%token OPENPAREN     "("
+%token MAP           "map"
+%token METHOD        "method"
+%token PEEK          "peek"
+%token READ          "read"
+%token SECTION       "section"
+%token SELECT        "select"
+%token SEQ           "seq"
+%token SYM_CONST     "sym.const"
+%token UINT8         "uint8"
+%token UINT32        "uint32"
+%token UINT64        "uint64"
+%token U32_CONST     "u32.const"
+%token U64_CONST     "u64.const"
+%token VALUE         "value"
+%token VARINT32      "varint32"
+%token VARINT64      "varint64"
+%token VARUINT1      "varuint1"
+%token VARUINT7      "varuint7"
+%token VARUINT32     "varuint32"
+%token VARUINT64     "varuint64"
+%token VBRINT32      "vbrint32"
+%token VBRINT64      "vbrint64"
+%token VBRUINT32     "vbruint32"
+%token VBRUINT64     "vbruint64"
+%token VERSION       "version"
+%token VOID          "void"
+%token WRITE         "write"
+
+// Terminal classes
+%token <std::string> IDENTIFIER
+%token <std::string> QUOTED_IDENTIFIER
+%token <IntData> INTEGER
+
+%type <wasm::filter::Node *> case
+%type <wasm::filter::Node *> case_list
+%type <wasm::filter::Node *> declaration
+%type <wasm::filter::Node *> declaration_list
+%type <wasm::filter::Node *> expression
+%type <wasm::filter::Node *> file
+%type <wasm::filter::Node *> filter
+%type <wasm::filter::Node *> filter_list
+%type <wasm::filter::Node *> header
+%type <wasm::filter::Node *> integer
+%type <wasm::filter::Node *> method
+%type <wasm::filter::Node *> method_list
+%type <wasm::filter::Node *> name
+%type <wasm::filter::Node *> section
+%type <wasm::filter::Node *> section_list
+%type <wasm::filter::Node *> statement
+%type <wasm::filter::Node *> statement_list
+%type <wasm::filter::Node *> symbol
+
+%start file
+
+%%
+
+file
+        : header section_list { $$ = nullptr; }
+        ;
+
+case
+        : "(" "case" integer statement ")" { $$ = nullptr; }
+        ;
+
+case_list
+        : statement { $$ = nullptr; }      // default statement.
+        | case_list case { $$ = nullptr; }
+        ;
+
+declaration
+        : "(" "define" symbol method_list ")" { $$ = nullptr; }
+        ;
+
+declaration_list
+        : declaration { $$ = nullptr; }
+        | declaration_list declaration { $$ = nullptr; }
+        ;
+
+expression
+        : "(" "void" ")" { $$ = nullptr; } // void
+        | "(" "i32.const" integer ")" { $$ = nullptr; }
+        | "(" "u32.const" integer ")" { $$ = nullptr; }
+        | "(" "i64.const" integer ")" { $$ = nullptr; }
+        | "(" "u64.const" integer ")" { $$ = nullptr; }
+        | "(" "sym.const" symbol ")" { $$ = nullptr; }
+        | "(" "value" ")" { $$ = nullptr; }
+        | "(" "uint8" ")" { $$ = nullptr; }
+        | "(" "uint32" ")" { $$ = nullptr; }
+        | "(" "varuint1" ")" { $$ = nullptr; }
+        | "(" "varuint7" ")" { $$ = nullptr; }
+        | "(" "varint32" ")" { $$ = nullptr; }
+        | "(" "varuint32" ")" { $$ = nullptr; }
+        | "(" "varint64" ")" { $$ = nullptr; }
+        | "(" "varuint64" ")" { $$ = nullptr; }
+        | "(" "uint64" ")" { $$ = nullptr; }
+        | "(" "fixed32" integer ")"  { $$ = nullptr; }
+        | "(" "fixed64" integer ")"  { $$ = nullptr; }
+        | "(" "vbruint32" integer ")" { $$ = nullptr; }
+        | "(" "vbruint64" integer ")" { $$ = nullptr; }
+        | "(" "vbrint32" integer ")" { $$ = nullptr; }
+        | "(" "vbrint64" integer ")" { $$ = nullptr; }
+        | "(" "map" expression expression ")" { $$ = nullptr; }
+        | "(" "read" expression ")" { $$ = nullptr; }
+        | "(" "write" expression ")" { $$ = nullptr; }
+        | "(" "lit" integer ")" { $$ = nullptr; }
+        | "(" "peek" expression ")" { $$ = nullptr; }
+        | "(" "call" name ")" { $$ = nullptr; }
+        | "(" "eval" symbol ")" { $$ = nullptr; }
+        ;
+
+filter
+        : "(" "bit.to.bit" statement ")" { $$ = nullptr; }
+        | "(" "bit.to.byte" statement ")" { $$ = nullptr; }
+        | "(" "bit.to.int" statement ")" { $$ = nullptr; }
+        | "(" "bit.to.ast" statement ")" { $$ = nullptr; }
+        | "(" "byte.to.bit" statement ")" { $$ = nullptr; }
+        | "(" "byte.to.byte" statement ")" { $$ = nullptr; }
+        | "(" "byte.to.int" statement ")" { $$ = nullptr; }
+        | "(" "byte.to.ast" statement ")" { $$ = nullptr; }
+        | "(" "int.to.bit" statement ")" { $$ = nullptr; }
+        | "(" "int.to.byte" statement ")" { $$ = nullptr; }
+        | "(" "int.to.int" statement ")" { $$ = nullptr; }
+        | "(" "int.to.ast" statement ")" { $$ = nullptr; }
+        ;
+
+filter_list
+        : filter { $$ = nullptr; }
+        | filter_list filter { $$ = nullptr; }
+        ;
+
+header
+        : "(" "version" integer ")" { $$ = nullptr; }
+        ;
+
+integer
+        : INTEGER { $$ = nullptr; }
+        ;
+
+method
+        : "(" "method" name statement ")" { $$ = nullptr; }
+        ;
+
+method_list
+        : statement { $$ = nullptr; }          // entry statement.
+        | method_list method { $$ = nullptr; }
+        ;
+
+name
+        : IDENTIFIER { $$ = nullptr; }
+        ;
+
+section
+        : "(" "section" symbol declaration_list ")" { $$ = nullptr; }
+        ;
+
+section_list
+        : section { $$ = nullptr; }
+        | section_list section { $$ = nullptr; }
+        ;
+
+statement
+        : expression { $$ = nullptr; }
+        | "(" "seq" statement_list ")" { $$ = nullptr; }
+        | "(" "loop" expression statement ")" { $$ = nullptr; }
+        | "(" "loop.unbounded" statement ")" { $$ = nullptr; }
+        | "(" "if" expression statement statement ")" { $$ = nullptr; }
+        | "(" "select" expression case_list ")" { $$ = nullptr; }
+        | "(" "extract" expression statement ")" { $$ = nullptr; }
+        | "(" "copy" ")" { $$ = nullptr; }
+        | "(" "filter" filter_list ")" { $$ = nullptr; }
+        ;
+
+statement_list
+        : statement { $$ = nullptr; }
+        | statement_list statement { $$ = nullptr; }
+        ;
+
+symbol
+        : QUOTED_IDENTIFIER { $$ = nullptr; }
+        ;
+
+%%
+
+void wasm::filt::FilterParser::error (const location_type& l, const std::string& m) {
+  driver.error (l, m);
+}
