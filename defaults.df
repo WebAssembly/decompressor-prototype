@@ -192,37 +192,37 @@
       (case 0x23 (call memory_immediate))    # i32.load16_u address
       (case 0x24 (call memory_immediate))    # i64.load8_s address
       (case 0x25 (call memory_immediate))    # i64.load8_u address
-      (case 0x26 (call memory_immediate)) # i64.load16_s address
-      (case 0x27 (call memory_immediate)) # i64.load16_u address
-      (case 0x28 (call memory_immediate)) # i64.load32_s address
-      (case 0x29 (call memory_immediate)) # i64.load32_u address
-      (case 0x2a (call memory_immediate)) # i32.load address
-      (case 0x2b (call memory_immediate)) # i64.load address
-      (case 0x2c (call memory_immediate)) # f32.load address
-      (case 0x2d (call memory_immediate)) # f64.load address
-      (case 0x2e (call memory_immediate)) # i32.store8 address
-      (case 0x2f (call memory_immediate)) # i32.store16 address
-      (case 0x30 (call memory_immediate)) # i64.store8 address
-      (case 0x31 (call memory_immediate)) # i64.store16 address
-      (case 0x32 (call memory_immediate)) # i64.store32 address
-      (case 0x33 (call memory_immediate)) # i32.store address
-      (case 0x34 (call memory_immediate)) # i64.store address
-      (case 0x35 (call memory_immediate)) # f32.store address
-      (case 0x36 (call memory_immediate)) # f64.store address
+      (case 0x26 (call memory_immediate))    # i64.load16_s address
+      (case 0x27 (call memory_immediate))    # i64.load16_u address
+      (case 0x28 (call memory_immediate))    # i64.load32_s address
+      (case 0x29 (call memory_immediate))    # i64.load32_u address
+      (case 0x2a (call memory_immediate))    # i32.load address
+      (case 0x2b (call memory_immediate))    # i64.load address
+      (case 0x2c (call memory_immediate))    # f32.load address
+      (case 0x2d (call memory_immediate))    # f64.load address
+      (case 0x2e (call memory_immediate))    # i32.store8 address
+      (case 0x2f (call memory_immediate))    # i32.store16 address
+      (case 0x30 (call memory_immediate))    # i64.store8 address
+      (case 0x31 (call memory_immediate))    # i64.store16 address
+      (case 0x32 (call memory_immediate))    # i64.store32 address
+      (case 0x33 (call memory_immediate))    # i32.store address
+      (case 0x34 (call memory_immediate))    # i64.store address
+      (case 0x35 (call memory_immediate))    # f32.store address
+      (case 0x36 (call memory_immediate))    # f64.store address
     )
     (method branch_table
-      (append.value (fixed 1))     # argument_count
+      (append.value (fixed 1))       # argument_count
       (loop (append.value (vbr32 6))
          (append.value (vbr32 6)))   # target entries indicating block/loop to break
       (append.value (vbr32 6))       # default target
     )
     (method branch_target
-       (append.value (fixed 1))   #   argument_count
-       (append.value (vbr32 6)) #   relative depth          
+       (append.value (fixed 1))      #   argument_count
+       (append.value (vbr32 6))      #   relative depth          
     )
     (method call_args
-      (append.value (fixed 1))     #   argument count
-      (append.value (vbr32 6))   #   funtion index
+      (append.value (fixed 1))       #   argument count
+      (append.value (vbr32 6))       #   funtion index
     )
     (method memory_immediate
       # flags bitfield encoding alignment as log2(alignment)
