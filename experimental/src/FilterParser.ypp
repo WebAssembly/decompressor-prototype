@@ -127,7 +127,6 @@ struct IntData {
 %type <wasm::filter::Node *> filter_list
 %type <wasm::filter::Node *> filter_type
 %type <wasm::filter::Node *> header
-%type <wasm::filter::Node *> header_sexp
 %type <wasm::filter::Node *> integer
 %type <wasm::filter::Node *> method
 %type <wasm::filter::Node *> method_list
@@ -144,7 +143,6 @@ struct IntData {
 
 file
         : header section_list { $$ = nullptr; }
-        | header_sexp { $$ = nullptr; } // TODO: add section list.
         ;
 
 case
@@ -216,9 +214,6 @@ filter_type
 header
         : "version" integer ";" { $$ = nullptr; }
         ;
-
-header_sexp
-        : "(" "version" integer ")" { $$ = nullptr;}
 
 integer
         : INTEGER { $$ = nullptr; }
