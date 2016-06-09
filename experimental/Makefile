@@ -20,7 +20,7 @@ SRCS = \
 	FileWriter.cpp \
 	FilterDriver.cpp \
 	filter_lexer.cpp \
-	filter_parser.tab.cpp
+	FilterParser.tab.cpp
 
 OBJS=$(patsubst %.cpp, $(OBJDIR)/%.o, $(SRCS))
 
@@ -53,8 +53,8 @@ clean-lexer:
 	cd src; rm -f filter_lexer.cpp
 
 clean-parser:
-	cd src; rm -f filter_parser.output filter_parser.tab.cpp \
-		filter_parser.tab.hpp location.hh position.hh stack.hh
+	cd src; rm -f FilterParser.output FilterParser.tab.cpp \
+		FilterParser.tab.hpp location.hh position.hh stack.hh
 
 gen: lexer parser
 
@@ -63,10 +63,10 @@ lexer: src/filter_lexer.cpp
 src/filter_lexer.cpp: src/filter_lexer.lex
 	cd src; lex -o filter_lexer.cpp filter_lexer.lex
 
-parser: src/filter_parser.tab.cpp
+parser: src/FilterParser.tab.cpp
 
-src/filter_parser.tab.cpp: src/filter_parser.ypp
-	cd src; bison -d -r all filter_parser.ypp
+src/FilterParser.tab.cpp: src/FilterParser.ypp
+	cd src; bison -d -r all FilterParser.ypp
 
 objs: $(OBJS)
 

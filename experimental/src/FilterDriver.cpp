@@ -1,4 +1,4 @@
-#include "filter_parser.tab.hpp"
+#include "FilterParser.tab.hpp"
 #include "FilterDriver.h"
 
 namespace wasm {

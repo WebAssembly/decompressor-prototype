@@ -4,7 +4,7 @@
 #include <string>
 
 #include "filter_ast.h"
-#include "filter_parser.tab.hpp"
+#include "FilterParser.tab.hpp"
 #include "FilterDriver.h"
 
 using namespace wasm::filt;
