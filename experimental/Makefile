@@ -54,7 +54,7 @@ clean-lexer:
 
 clean-parser:
 	cd src; rm -f filter_parser.output filter_parser.tab.cpp \
-		filter_parser.tab.hpp
+		filter_parser.tab.hpp location.hh position.hh stack.hh
 
 gen: lexer parser
 
