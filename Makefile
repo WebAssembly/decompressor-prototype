@@ -12,13 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+CPP_COMPILER ?= clang++
+
 SRCDIR = src
 BUILDDIR = build
 OBJDIR = $(BUILDDIR)/obj
 
-SEXP_PARSERDIR = $(SRCDIR)/sexp-parser
-SEXP_PARSEROBJDIR = $(OBJDIR)/sexp-parser
-SEXP_PARSER_GENSRCS = \
+###### Parse objects and locations ######
+
+PARSER_DIR = $(SRCDIR)/sexp-parser
+PARSER_OBJDIR = $(OBJDIR)/sexp-parser
+PARSER_GENSRCS = \
 	location.hh \
 	Lexer.cpp \
 	Parser.output \
@@ -27,22 +31,85 @@ SEXP_PARSER_GENSRCS = \
 	position.hh \
 	stack.hh
 
-all: gen
+PARSER_SRCS = \
+	Driver.cpp \
+	Lexer.cpp \
+	Parser.tab.cpp
+
+PARSER_OBJS=$(patsubst %.cpp, $(PARSER_OBJDIR)/%.o, $(PARSER_SRCS))
+
+###### Test executables and locations ######
+
+TEST_DIR = test
+TEST_EXECDIR = $(BUILDDIR)/test
+
+TEST_SRCS = \
+	TestParser.cpp
+
+TEST_EXECS=$(patsubst %.cpp, $(TEST_EXECDIR)/%, $(TEST_SRCS))
+
+###### General compilation definitions ######
+
+$(info -----------------------------------------------)
+$(info Using CPP_COMPILER = $(CPP_COMPILER))
+$(info -----------------------------------------------)
+
+CCACHE := `command -v ccache`
+CXX :=  CCACHE_CPP2=yes $(CCACHE) $(CPP_COMPILER)
+
+CXXFLAGS := -std=gnu++11 -Wall -Wextra -O2 -g -pedantic -MP -MD -Werror -Isrc
+
+###### Default Rule ######
+
+all: gen parser_objs test_execs
+
+###### Cleaning Rules #######
 
 clean: clean-parser
 
 clean-parser:
-	cd $(SEXP_PARSERDIR); rm -f $(SEXP_PARSER_GENSRCS)
+	cd $(PARSER_DIR); rm -f $(PARSER_GENSRCS)
+
+###### Source Generation Rules #######
 
 gen: gen-parser gen-lexer
 
-gen-lexer: $(SEXP_PARSERDIR)/Lexer.lex
-	cd $(SEXP_PARSERDIR); lex -o Lexer.cpp Lexer.lex
+gen-lexer: $(PARSER_DIR)/Lexer.cpp
 
-gen-parser: $(SEXP_PARSERDIR)/Parser.ypp
-	cd $(SEXP_PARSERDIR); bison -d -r all Parser.ypp
+###### Compiling Filter Parser #######
 
-PHONY: all clean clean-parser gen gen-parser
+$(PARSER_DIR)/Lexer.cpp: $(PARSER_DIR)/Lexer.lex
+	cd $(PARSER_DIR); lex -o Lexer.cpp Lexer.lex
 
+gen-parser: $(PARSER_DIR)/Parser.tab.cpp
 
+$(PARSER_DIR)/Parser.tab.cpp: $(PARSER_DIR)/Parser.ypp
+	cd $(PARSER_DIR); bison -d -r all Parser.ypp
+
+parser_objs: $(PARSER_OBJS)
+
+$(PARSER_OBJS): | $(PARSER_OBJDIR)
+
+$(PARSER_OBJDIR):
+	mkdir -p $@
+
+-include $(foreach dep,$(PARSER_SRCS:.cpp=.d),$(PARSER_OBJDIR)/$(dep))
+
+$(PARSER_OBJS): $(PARSER_OBJDIR)/%.o: $(PARSER_DIR)/%.cpp
+	$(CXX) -c $(CXXFLAGS) $< -o $@
+
+###### Compiling Test Executables #######
+
+test_execs: $(TEST_EXECS)
+
+$(TEST_EXECDIR):
+	mkdir -p $@
+
+$(TEST_EXECS): | $(TEST_EXECDIR)
+
+$(TEST_EXECDIR)/TestParser: $(TEST_DIR)/TestParser.cpp $(PARSER_OBJS)
+	$(CXX) $(CXXFLAGS) $< $(PARSER_OBJS) -o $@
+
+.PHONY: all clean clean-parser gen gen-lexer gen-parser parser_objs
+.PHONY: test_execs
 
