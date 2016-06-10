@@ -21,26 +21,20 @@
 
 %defines
 %define api.namespace {wasm::filt}
-%define parser_class_name {FilterParser}
+%define parser_class_name {Parser}
 
 %define api.token.constructor
 %define api.value.type variant
 %define parse.assert
 
-
 %code requires {
+#include "sexp/Ast.h"
+#include <string>
 
 namespace wasm {
 namespace filt {
-
 class Driver;
 class Node;
-
-struct IntData {
-  std::string Name;
-  uint64_t Value;
-};
-
 }}
 
 #ifdef __clang__
@@ -51,13 +45,13 @@ struct IntData {
 }
 
 // The parsing context.
-%param { Driver& driver }
+%param { class Driver& Driver }
 
 %locations
 %initial-action
 {
   // Initialize the initial location.
-  @$.begin.filename = @$.end.filename = &driver.file;
+  @$.begin.filename = @$.end.filename = &Driver.getFilename();
 };
 
 %define parse.trace
@@ -65,6 +59,7 @@ struct IntData {
 
 %code
 {
+// Note: Must follow definitions above, so that location_type is declared.
 # include "Driver.h"
 }
 
@@ -72,6 +67,8 @@ struct IntData {
 %token END 0 "$END"
 
 // Keywords
+%token APPEND        "append"
+%token APPEND_VALUE  "append.value"
 %token BIT_TO_BIT    "bit.to.bit"
 %token BIT_TO_BYTE   "bit.to.byte"
 %token BIT_TO_INT    "bit.to.int"
@@ -104,6 +101,8 @@ struct IntData {
 %token MAP           "map"
 %token METHOD        "method"
 %token PEEK          "peek"
+%token POSTORDER     "postorder"
+%token PREORDER      "preorder"
 %token READ          "read"
 %token SECTION       "section"
 %token SELECT        "select"
@@ -132,37 +131,36 @@ struct IntData {
 // Terminal classes
 %token <std::string> IDENTIFIER
 %token <std::string> QUOTED_IDENTIFIER
-%token <IntData> INTEGER
+%token <uint64_t> INTEGER
 
-%type <wasm::filter::Node *> case
-%type <wasm::filter::Node *> case_list
-%type <wasm::filter::Node *> declaration
-%type <wasm::filter::Node *> declaration_list
-%type <wasm::filter::Node *> expression
-%type <wasm::filter::Node *> file
-%type <wasm::filter::Node *> filter
-%type <wasm::filter::Node *> filter_list
-%type <wasm::filter::Node *> header
-%type <wasm::filter::Node *> integer
-%type <wasm::filter::Node *> method
-%type <wasm::filter::Node *> method_list
-%type <wasm::filter::Node *> name
-%type <wasm::filter::Node *> section
-%type <wasm::filter::Node *> section_list
-%type <wasm::filter::Node *> statement
-%type <wasm::filter::Node *> statement_list
-%type <wasm::filter::Node *> symbol
+// Nonterminal classes.
+%type <wasm::filt::Node *> case
+%type <wasm::filt::Node *> case_list
+%type <wasm::filt::Node *> declaration
+%type <wasm::filt::Node *> declaration_list
+%type <wasm::filt::Node *> expression
+%type <wasm::filt::Node *> file
+%type <wasm::filt::Node *> filter
+%type <wasm::filt::Node *> filter_list
+%type <wasm::filt::Node *> header
+%type <wasm::filt::Node *> integer
+%type <wasm::filt::Node *> method
+%type <wasm::filt::Node *> method_list
+%type <wasm::filt::Node *> name
+%type <wasm::filt::Node *> section
+%type <wasm::filt::Node *> section_list
+%type <wasm::filt::Node *> statement
+%type <wasm::filt::Node *> statement_list
+%type <wasm::filt::Node *> symbol
 
 %start file
 
 %%
 
-file
-        : header section_list { $$ = nullptr; }
+file    : header section_list { $$ = nullptr; }
         ;
 
-case
-        : "(" "case" integer statement ")" { $$ = nullptr; }
+case    : "(" "case" integer statement_list ")" { $$ = nullptr; }
         ;
 
 case_list
@@ -181,6 +179,8 @@ declaration_list
 
 expression
         : "(" "void" ")" { $$ = nullptr; } // void
+        | "(" "append" ")" { $$ = nullptr; }
+        | "(" "append.value" expression ")" { $$ = nullptr; }
         | "(" "i32.const" integer ")" { $$ = nullptr; }
         | "(" "u32.const" integer ")" { $$ = nullptr; }
         | "(" "i64.const" integer ")" { $$ = nullptr; }
@@ -209,10 +209,11 @@ expression
         | "(" "peek" expression ")" { $$ = nullptr; }
         | "(" "call" name ")" { $$ = nullptr; }
         | "(" "eval" symbol ")" { $$ = nullptr; }
+        | "(" "postorder" integer ")" { $$ = nullptr; }
+        | "(" "preorder" integer ")" { $$ = nullptr; }
         ;
 
-filter
-        : "(" "bit.to.bit" statement ")" { $$ = nullptr; }
+filter  : "(" "bit.to.bit" statement ")" { $$ = nullptr; }
         | "(" "bit.to.byte" statement ")" { $$ = nullptr; }
         | "(" "bit.to.int" statement ")" { $$ = nullptr; }
         | "(" "bit.to.ast" statement ")" { $$ = nullptr; }
@@ -231,16 +232,13 @@ filter_list
         | filter_list filter { $$ = nullptr; }
         ;
 
-header
-        : "(" "version" integer ")" { $$ = nullptr; }
+header  : "(" "version" integer ")" { $$ = nullptr; }
         ;
 
-integer
-        : INTEGER { $$ = nullptr; }
+integer : INTEGER { $$ = IntegerNode::create($1); }
         ;
 
-method
-        : "(" "method" name statement ")" { $$ = nullptr; }
+method  : "(" "method" name statement_list ")" { $$ = nullptr; }
         ;
 
 method_list
@@ -248,12 +246,10 @@ method_list
         | method_list method { $$ = nullptr; }
         ;
 
-name
-        : IDENTIFIER { $$ = nullptr; }
+name    : IDENTIFIER { $$ = nullptr; }
         ;
 
-section
-        : "(" "section" symbol declaration_list ")" { $$ = nullptr; }
+section : "(" "section" symbol declaration_list ")" { $$ = nullptr; }
         ;
 
 section_list
@@ -264,17 +260,17 @@ section_list
 statement
         : expression { $$ = nullptr; }
         | "(" "seq" statement_list ")" { $$ = nullptr; }
-        | "(" "loop" expression statement ")" { $$ = nullptr; }
-        | "(" "loop.unbounded" statement ")" { $$ = nullptr; }
+        | "(" "loop" expression statement_list ")" { $$ = nullptr; }
+        | "(" "loop.unbounded" statement_list ")" { $$ = nullptr; }
         | "(" "if" expression statement statement ")" { $$ = nullptr; }
         | "(" "select" expression case_list ")" { $$ = nullptr; }
-        | "(" "extract" expression statement ")" { $$ = nullptr; }
+        | "(" "extract" expression statement_list ")" { $$ = nullptr; }
         | "(" "copy" ")" { $$ = nullptr; }
         | "(" "filter" filter_list ")" { $$ = nullptr; }
         ;
 
 statement_list
-        : statement { $$ = nullptr; }
+        : { $$ = nullptr; }
         | statement_list statement { $$ = nullptr; }
         ;
 
@@ -284,6 +280,6 @@ symbol
 
 %%
 
-void wasm::filt::FilterParser::error (const location_type& l, const std::string& m) {
-  driver.error (l, m);
+void wasm::filt::Parser::error(const location_type& L, const std::string& M) {
+  Driver.error(L, M);
 }
