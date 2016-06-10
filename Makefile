@@ -20,6 +20,7 @@ SEXP_PARSERDIR = $(SRCDIR)/sexp-parser
 SEXP_PARSEROBJDIR = $(OBJDIR)/sexp-parser
 SEXP_PARSER_GENSRCS = \
 	location.hh \
+	Lexer.cpp \
 	Parser.output \
 	Parser.tab.cpp \
 	Parser.tab.hpp \
@@ -33,7 +34,10 @@ clean: clean-parser
 clean-parser:
 	cd $(SEXP_PARSERDIR); rm -f $(SEXP_PARSER_GENSRCS)
 
-gen: gen-parser
+gen: gen-parser gen-lexer
+
+gen-lexer: $(SEXP_PARSERDIR)/Lexer.lex
+	cd $(SEXP_PARSERDIR); lex -o Lexer.cpp Lexer.lex
 
 gen-parser: $(SEXP_PARSERDIR)/Parser.ypp
 	cd $(SEXP_PARSERDIR); bison -d -r all Parser.ypp
