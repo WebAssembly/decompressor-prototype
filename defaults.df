@@ -12,17 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 # This file defines the default algorithms for decompressing a WASM
 # module.
 
 # Note: Each define constructs a single ast node. This is done so that
 # callers can assume structure accross "eval" calls.
 
-# Note: The construct (method NAME E1 ...) is for readability only. It
-# corresponds to a (seq E1 ...) construct. The NAME is used to
-# symbolically associate the method index with a name. (call NAME)
-# constructs similarly replace the NAME with the corresponding method
-# index.
+# Note: The construct (method NAME S1 ... Sn) is for readability
+# only. It corresponds to a (seq S1 ... Sn) construct. The NAME is
+# used to symbolically associate the method index with a name. (call
+# NAME) constructs similarly replace the NAME with the corresponding
+# method index.
 
 (version 0)
 (section 'filter'
@@ -30,35 +31,35 @@
   (define 'symbol.default' # reads in a symbol name
     (seq
       (preorder 0)
-      (loop (append.value (vbr32 6)) (append.value (uint8)))
+      (loop (append.value (vbruint32 6)) (append.value (uint8)))
     )
   )
 
   (define 'type.default'
     (seq
       (preorder 0)
-      (loop (append.value (vbr32 6)) (seq
-        (append (varuint7))             # function type 0x40
-        (loop (append.value (vbr32 6))  # parameters
+      (loop (append.value (vbruint32 6))
+        (append.value (varuint7))             # function type 0x40
+        (loop (append.value (vbruint32 6))    # parameters
           (call value_type))
-        (call return_type)              # return type
-      ))
+        (call return_type)                    # return type
+      )
     )
     (method value_type
-      (append.value (fixed 3))
+      (append.value (fixed32 3))
     )
     (method return_type
-      (if (append.value (fixed 1)) (call value_type) (void))
+      (if (append.value (fixed32 1)) (call value_type) (void))
     )
   )
 
   (define 'import.default'
     (seq
       (preorder 0)
-      (loop (append.value (vbr32 6)) (call import_entry)
+      (loop (append.value (vbruint32 6)) (call import_entry))
     )
     (method import_entry
-      (append.value (vbr32 6))      # signature index of the import
+      (append.value (vbruint32 6))  # signature index of the import
       (eval 'symbol')               # module string
       (append)
       (eval 'symbol')               # function string
@@ -69,24 +70,24 @@
   (define 'function.default'
     (seq
       (preorder 0)
-      (loop (append.value (vbr32 6))
-         (append.value (vbr32 6))) # list of type signature indices
+      (loop (append.value (vbruint32 6))
+         (append.value (vbruint32 6))) # list of type signature indices
     )
   )
 
   (define 'table.default'
     (seq
       (preorder 0)
-      (loop (append (vbr32 6))
-        (append.value (vbr32 6)) # indices into the function section
+      (loop (append.value (vbruint32 6))
+        (append.value (vbruint32 6))) # indices into the function section
     )
   )
 
   (define 'memory.default'
     (seq
-      (vbr32 6)   # Initial memory suze
-      (vbr32 6)   # maximum memory size
-      (fixed 1)   # 1 if the memory is visible outside the module
+      (vbruint32 6)   # Initial memory suze
+      (vbruint32 6)   # maximum memory size
+      (fixed32 1)     # 1 if the memory is visible outside the module
       (preorder 3)
     )
   )
@@ -94,24 +95,24 @@
   (define 'export.default'
     (seq
       (preorder 0)
-      (loop (append (vbr32 6))
+      (loop (append.value (vbruint32 6))
         (call export_entry))
     )
     (method export_entry
-      (append.value (vbr32 6))     # Index into the function table
-      (eval 'symbol')              # funtion string
+      (append.value (vbruint32 6))     # Index into the function table
+      (eval 'symbol')                  # funtion string
       (append)
     )
   )
 
   (define 'start.default'
-    (vbr32 6)
+    (vbruint32 6)
   )
 
   (define 'code.default'
     (seq
       (preorder 0)
-      (loop (append.value (vbr 6))
+      (loop (append.value (vbruint32 6))
         (eval 'function.body')
         (append))
     )
@@ -120,13 +121,13 @@
   (define 'data.default'
     (seq
       (preorder 0)
-      (loop (append.value (vbr32 6))
+      (loop (append.value (vbruint32 6))
         (call data_segment)))
     (method data_segment
       # The offset in linear memory at which to store the data.
-      (append.value (vbr32 6))
+      (append.value (vbruint32 6))
       # The data
-      (loop (append.value (vbr32 6))
+      (loop (append.value (vbruint32 6))
         (append.value (uint8)))
     )
   )
@@ -134,24 +135,23 @@
   (define 'name.default'
     (seq
       (preorder 0)
-      (loop (append.value (vbr32 6))
+      (loop (append.value (vbruint32 6))
         (call function_names)))
     (method function_names
-      (eval 'symbol')                    # fcn_name
+      (eval 'symbol')                        # fcn_name
       (append)
-      (loop (append.value (vbr32 6))     # local names.
+      (loop (append.value (vbruint32 6))     # local names.
         (eval 'symbol') 
-        (append)
-      )
+        (append))
     )
   )
 
   (define 'function.body.default'
     (seq
       (preorder 0)
-      (extract (append.value (vbr32 6))
+      (extract (append.value (vbruint32 6))
         (seq
-          (loop (append.value (vbr32 6))
+          (loop (append.value (vbruint32 6))
             (call local_entry))
           (loop.unbounded
             (eval 'code.inst')
@@ -161,74 +161,76 @@
       )
     )
     (method local_entry
-      (loop (append.value (vbr32 6))  # Type of each local variable.
-        (append.value (fixed 3)))
+      (loop (append.value (vbruint32 6))  # Type of each local variable.
+        (append.value (fixed32 3)))
     )
   )
 
   (define 'code.inst.default'
-    (preorder 0)
-    (select (append.value (uint8))
-      (default (void)) # simple one byte opcode.
-      # control flow operators.
-      (case 0x06 (call branch_target))       # br
-      (case 0x07 (call branch_target))       # br_if
-      (case 0x08  # br_table (call branch_table))
-      (case 0x09 (append.value (fixed 1)))   # return argument_count
-      # basic operators
-      (case 0x10 (append.value (ivbr32 6)))  # i32.const value
-      (case 0x11 (append.value (ivbr64 6)))  # i64.const value
-      (case 0x12 (append.value (uint64)))    # f64.const value
-      (case 0x13 (append.value (uint32)))    # f32.const value
-      (case 0x14 (append.value (vbr32 6)))   # get_local index
-      (case 0x15 (append.value (vbr32 6)))   # set_local index
-      (case 0x16 (call call_args))           # call
-      (case 0x17 (call call_args)            # call_indirect
-      (case 0x18 (call call_args))           # call_import
-      # Memory-related operators
-      (case 0x20 (call memory_immediate))    # i32.load8_s address
-      (case 0x21 (call memory_immediate))    # i32.load8_u address
-      (case 0x22 (call memory_immediate))    # i32.load16_s address
-      (case 0x23 (call memory_immediate))    # i32.load16_u address
-      (case 0x24 (call memory_immediate))    # i64.load8_s address
-      (case 0x25 (call memory_immediate))    # i64.load8_u address
-      (case 0x26 (call memory_immediate))    # i64.load16_s address
-      (case 0x27 (call memory_immediate))    # i64.load16_u address
-      (case 0x28 (call memory_immediate))    # i64.load32_s address
-      (case 0x29 (call memory_immediate))    # i64.load32_u address
-      (case 0x2a (call memory_immediate))    # i32.load address
-      (case 0x2b (call memory_immediate))    # i64.load address
-      (case 0x2c (call memory_immediate))    # f32.load address
-      (case 0x2d (call memory_immediate))    # f64.load address
-      (case 0x2e (call memory_immediate))    # i32.store8 address
-      (case 0x2f (call memory_immediate))    # i32.store16 address
-      (case 0x30 (call memory_immediate))    # i64.store8 address
-      (case 0x31 (call memory_immediate))    # i64.store16 address
-      (case 0x32 (call memory_immediate))    # i64.store32 address
-      (case 0x33 (call memory_immediate))    # i32.store address
-      (case 0x34 (call memory_immediate))    # i64.store address
-      (case 0x35 (call memory_immediate))    # f32.store address
-      (case 0x36 (call memory_immediate))    # f64.store address
+    (seq
+      (preorder 0)
+      (select (append.value (uint8))
+        (void)                                   # simple one byte opcode.
+        # control flow operators.
+        (case 0x06 (call branch_target))         # br
+        (case 0x07 (call branch_target))         # br_if
+        (case 0x08 (call branch_table))          # br_table
+        (case 0x09 (append.value (fixed32 1)))   # return argument_count
+        # basic operators
+        (case 0x10 (append.value (vbrint32 6)))  # i32.const value
+        (case 0x11 (append.value (vbrint64 6)))  # i64.const value
+        (case 0x12 (append.value (uint64)))      # f64.const value
+        (case 0x13 (append.value (uint32)))      # f32.const value
+        (case 0x14 (append.value (vbruint32 6))) # get_local index
+        (case 0x15 (append.value (vbruint32 6))) # set_local index
+        (case 0x16 (call call_args))             # call
+        (case 0x17 (call call_args))             # call_indirect
+        (case 0x18 (call call_args))             # call_import
+        # Memory-related operators
+        (case 0x20 (call memory_immediate))      # i32.load8_s address
+        (case 0x21 (call memory_immediate))      # i32.load8_u address
+        (case 0x22 (call memory_immediate))      # i32.load16_s address
+        (case 0x23 (call memory_immediate))      # i32.load16_u address
+        (case 0x24 (call memory_immediate))      # i64.load8_s address
+        (case 0x25 (call memory_immediate))      # i64.load8_u address
+        (case 0x26 (call memory_immediate))      # i64.load16_s address
+        (case 0x27 (call memory_immediate))      # i64.load16_u address
+        (case 0x28 (call memory_immediate))      # i64.load32_s address
+        (case 0x29 (call memory_immediate))      # i64.load32_u address
+        (case 0x2a (call memory_immediate))      # i32.load address
+        (case 0x2b (call memory_immediate))      # i64.load address
+        (case 0x2c (call memory_immediate))      # f32.load address
+        (case 0x2d (call memory_immediate))      # f64.load address
+        (case 0x2e (call memory_immediate))      # i32.store8 address
+        (case 0x2f (call memory_immediate))      # i32.store16 address
+        (case 0x30 (call memory_immediate))      # i64.store8 address
+        (case 0x31 (call memory_immediate))      # i64.store16 address
+        (case 0x32 (call memory_immediate))      # i64.store32 address
+        (case 0x33 (call memory_immediate))      # i32.store address
+        (case 0x34 (call memory_immediate))      # i64.store address
+        (case 0x35 (call memory_immediate))      # f32.store address
+        (case 0x36 (call memory_immediate))      # f64.store address
+      )
     )
     (method branch_table
-      (append.value (fixed 1))       # argument_count
-      (loop (append.value (vbr32 6))
-         (append.value (vbr32 6)))   # target entries indicating block/loop to break
-      (append.value (vbr32 6))       # default target
+      (append.value (fixed32 1))       # argument_count
+      (loop (append.value (vbruint32 6))
+         (append.value (vbruint32 6))) # target entries indicating block/loop to break
+      (append.value (vbruint32 6))     # default target
     )
     (method branch_target
-       (append.value (fixed 1))      #   argument_count
-       (append.value (vbr32 6))      #   relative depth          
+       (append.value (fixed32 1))      #   argument_count
+       (append.value (vbruint32 6))    #   relative depth          
     )
     (method call_args
-      (append.value (fixed 1))       #   argument count
-      (append.value (vbr32 6))       #   funtion index
+      (append.value (fixed32 1))       #   argument count
+      (append.value (vbruint32 6))     #   funtion index
     )
     (method memory_immediate
       # flags bitfield encoding alignment as log2(alignment)
-      (append.value (vbr32 6))
+      (append.value (vbruint32 6))
       # memory offset
-      (append.value (vbr32 6))
+      (append.value (vbruint32 6))
     )
   )
 )
