@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-/* Textual lexer for filter s-expressions */
-
 %{
 
 #include <sstream>
