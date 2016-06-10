@@ -12,11 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Note: If using -jN, be sure to run "make gen" first.
+
 CPP_COMPILER ?= clang++
 
 SRCDIR = src
 BUILDDIR = build
 OBJDIR = $(BUILDDIR)/obj
+
+###### Decoder objects and locations ######
+
+SRCS = \
+	Defs.cpp
+
+OBJS=$(patsubst %.cpp, $(OBJDIR)/%.o, $(SRCS))
 
 ###### Parse objects and locations ######
 
@@ -37,6 +46,15 @@ PARSER_SRCS = \
 	Parser.tab.cpp
 
 PARSER_OBJS=$(patsubst %.cpp, $(PARSER_OBJDIR)/%.o, $(PARSER_SRCS))
+
+###### Filter s-expressions ###
+
+SEXP_SRCDIR = $(SRCDIR)/sexp
+SEXP_OBJDIR = $(OBJDIR)/sexp
+SEXP_SRCS = \
+	Ast.cpp
+
+SEXP_OBJS=$(patsubst %.cpp, $(SEXP_OBJDIR)/%.o, $(SEXP_SRCS))
 
 ###### Test executables and locations ######
 
@@ -61,32 +79,103 @@ CXXFLAGS := -std=gnu++11 -Wall -Wextra -O2 -g -pedantic -MP -MD -Werror -Isrc
 
 ###### Default Rule ######
 
-all: gen parser_objs test_execs
+all: gen objs parser-objs sexp-objs test-execs
+
+.PHONY: all
 
 ###### Cleaning Rules #######
 
-clean: clean-parser
+clean: clean-objs clean-parser clean-sexp-objs clean-test-execs
 
-clean-parser:
+.PHONY: clean
+
+clean-all: clean
+	rm -rf $(BUILDDIR)
+
+.PHONY: clean-all
+
+clean-objs:
+	rm -f $(OBJS)
+
+.PHONY: clean-objs
+
+clean-parser: clean-parser-objs
 	cd $(PARSER_DIR); rm -f $(PARSER_GENSRCS)
+
+.PHONY: clean-parser
+
+clean-parser-objs:
+	rm -f $(PARSER_OBJS)
+
+.PHONY: clean-parser-objs
+
+clean-sexp-objs:
+	rm -f $(SEXP_OBJS)
+
+.PNONY: clean-sexp-objs
+
+clean-test-execs:
+	rm -f $(TEST_EXECS)
+
+.PHONY: clean-test-execs
 
 ###### Source Generation Rules #######
 
 gen: gen-parser gen-lexer
 
+.PHONY: gen
+
 gen-lexer: $(PARSER_DIR)/Lexer.cpp
 
+.PHONY: gen-lexer
+
+gen-parser: $(PARSER_DIR)/Parser.tab.cpp
+
+.PHONY: ge-parser
+
+###### Compiliing Sources ######
+
+objs: $(OBJS)
+
+.PHONY: objs
+
+$(OBJS): | $(OBJDIR)
+
+$(OBJDIR):
+	mkdir -p $@
+
+-include $(foreach dep,$(SRCS:.cpp=.d),$(OBJDIR)/$(dep))
+
+$(OBJS): $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
+	$(CXX) -c $(CXXFLAGS) $< -o $@
+
+###### Compiliing Sexp Sources ######
+
+sexp-objs: $(SEXP_OBJS)
+
+.PHONY: sexp-objs
+
+$(SEXP_OBJS): | $(SEXP_OBJDIR)
+
+$(SEXP_OBJDIR):
+	mkdir -p $@
+
+-include $(foreach dep,$(SEXP_SRCS:.cpp=.d),$(SEXP_OBJDIR)/$(dep))
+
+$(SEXP_OBJS): $(SEXP_OBJDIR)/%.o: $(SEXP_SRCDIR)/%.cpp
+	$(CXX) -c $(CXXFLAGS) $< -o $@
+
 ###### Compiling Filter Parser #######
+
+parser-objs: $(PARSER_OBJS)
+
+.PHONY: parser-objs
 
 $(PARSER_DIR)/Lexer.cpp: $(PARSER_DIR)/Lexer.lex
 	cd $(PARSER_DIR); lex -o Lexer.cpp Lexer.lex
 
-gen-parser: $(PARSER_DIR)/Parser.tab.cpp
-
 $(PARSER_DIR)/Parser.tab.cpp: $(PARSER_DIR)/Parser.ypp
 	cd $(PARSER_DIR); bison -d -r all Parser.ypp
-
-parser_objs: $(PARSER_OBJS)
 
 $(PARSER_OBJS): | $(PARSER_OBJDIR)
 
@@ -100,16 +189,17 @@ $(PARSER_OBJS): $(PARSER_OBJDIR)/%.o: $(PARSER_DIR)/%.cpp
 
 ###### Compiling Test Executables #######
 
-test_execs: $(TEST_EXECS)
+test-execs: $(TEST_EXECS)
+
+.PHONY: test-execs
 
 $(TEST_EXECDIR):
 	mkdir -p $@
 
 $(TEST_EXECS): | $(TEST_EXECDIR)
 
-$(TEST_EXECDIR)/TestParser: $(TEST_DIR)/TestParser.cpp $(PARSER_OBJS)
-	$(CXX) $(CXXFLAGS) $< $(PARSER_OBJS) -o $@
+-include $(foreach dep,$(TEST_SRCS:.cpp=.d),$(TEST_EXECDIR)/$(dep))
 
-.PHONY: all clean clean-parser gen gen-lexer gen-parser parser_objs
-.PHONY: test_execs
-
+$(TEST_EXECDIR)/TestParser: $(TEST_DIR)/TestParser.cpp $(PARSER_OBJS) \
+                            $(SEXP_OBJS) $(OBJS)
+	$(CXX) $(CXXFLAGS) $< $(PARSER_OBJS) $(SEXP_OBJS) $(OBJS) -o $@
