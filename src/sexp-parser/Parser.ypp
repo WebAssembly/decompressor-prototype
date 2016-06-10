@@ -44,6 +44,7 @@ struct IntData {
 }}
 
 #ifdef __clang__
+// TODO: Limit the reach of these pragma's?
 #pragma clang diagnostic ignored "-Wdeprecated-register"
 #pragma clang diagnostic ignored "-Wundefined-inline"
 #endif // __clang__
