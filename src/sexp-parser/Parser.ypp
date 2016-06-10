@@ -28,6 +28,7 @@
 %define parse.assert
 
 %code requires {
+#include "sexp/Ast.h"
 #include <string>
 
 namespace wasm {
@@ -234,7 +235,7 @@ filter_list
 header  : "(" "version" integer ")" { $$ = nullptr; }
         ;
 
-integer : INTEGER { $$ = nullptr; }
+integer : INTEGER { $$ = IntegerNode::create($1); }
         ;
 
 method  : "(" "method" name statement_list ")" { $$ = nullptr; }
