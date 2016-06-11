@@ -97,6 +97,9 @@ id	{letter}({letter}|{digit}|[_.])*
 "("               return Parser::make_OPENPAREN(Driver.getLoc());
 "append"          return Parser::make_APPEND(Driver.getLoc());
 "append.value"    return Parser::make_APPEND_VALUE(Driver.getLoc());
+"ast.to.bit"      return Parser::make_AST_TO_BIT(Driver.getLoc());
+"ast.to.byte"     return Parser::make_AST_TO_BYTE(Driver.getLoc());
+"ast.to.int"      return Parser::make_AST_TO_INT(Driver.getLoc());
 "bit.to.bit"      return Parser::make_BIT_TO_BIT(Driver.getLoc());
 "bit.to.byte"     return Parser::make_BIT_TO_BYTE(Driver.getLoc());
 "bit.to.int"      return Parser::make_BIT_TO_INT(Driver.getLoc());
