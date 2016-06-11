@@ -20,9 +20,11 @@
 #ifndef DECOMPRESSOR_SRC_DEFS_H
 #define DECOMPRESSOR_SRC_DEFS_H
 
+#include <cassert>
 #include <climits>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 
 namespace wasm {
 

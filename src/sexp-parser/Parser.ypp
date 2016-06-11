@@ -69,6 +69,9 @@ class Node;
 // Keywords
 %token APPEND        "append"
 %token APPEND_VALUE  "append.value"
+%token AST_TO_BIT    "ast.to.bit"
+%token AST_TO_BYTE   "ast.to.byte"
+%token AST_TO_INT    "ast.to.int"
 %token BIT_TO_BIT    "bit.to.bit"
 %token BIT_TO_BYTE   "bit.to.byte"
 %token BIT_TO_INT    "bit.to.int"
@@ -135,147 +138,352 @@ class Node;
 
 // Nonterminal classes.
 %type <wasm::filt::Node *> case
-%type <wasm::filt::Node *> case_list
+%type <wasm::filt::Nary<NodeType::Select> *> case_list
+%type <wasm::filt::Nary<NodeType::Case> *> case_statement_list
 %type <wasm::filt::Node *> declaration
-%type <wasm::filt::Node *> declaration_list
+%type <wasm::filt::Nary<NodeType::Section> *> declaration_list
 %type <wasm::filt::Node *> expression
+%type <wasm::filt::Nary<NodeType::Extract> *> extract_statement_list
 %type <wasm::filt::Node *> file
 %type <wasm::filt::Node *> filter
-%type <wasm::filt::Node *> filter_list
+%type <wasm::filt::Nary<NodeType::Filter> *> filter_list
 %type <wasm::filt::Node *> header
 %type <wasm::filt::Node *> integer
+%type <wasm::filt::Nary<NodeType::Loop> *> loop_statement_list
+%type <wasm::filt::Nary<NodeType::LoopUnbounded> *> loop_unbounded_statement_list
 %type <wasm::filt::Node *> method
-%type <wasm::filt::Node *> method_list
+%type <wasm::filt::Nary<NodeType::Define> *> method_list
+%type <wasm::filt::Nary<NodeType::Method> *> method_statement_list
 %type <wasm::filt::Node *> name
 %type <wasm::filt::Node *> section
-%type <wasm::filt::Node *> section_list
+%type <wasm::filt::Nary<NodeType::File> *> section_list
 %type <wasm::filt::Node *> statement
-%type <wasm::filt::Node *> statement_list
+%type <wasm::filt::Nary<NodeType::Sequence> *> statement_list
 %type <wasm::filt::Node *> symbol
 
 %start file
 
 %%
 
-file    : header section_list { $$ = nullptr; }
+file    : section_list { $$ = $1; }
         ;
 
-case    : "(" "case" integer statement_list ")" { $$ = nullptr; }
+case    : "(" "case" case_statement_list ")" { $$ = $3; }
         ;
 
 case_list
-        : statement { $$ = nullptr; }      // default statement.
-        | case_list case { $$ = nullptr; }
+        : expression statement { // selector / default statement.
+            $$ =  Nary<NodeType::Select>::create();
+            $$->append($1);
+            $$->append($2);
+          }
+        | case_list case {
+            $$ = $1;
+          }
+        ;
+
+case_statement_list
+        : integer statement { // case index / first statement of case.
+            $$ = Nary<NodeType::Case>::create();
+            $$->append($1);
+            $$->append($2);
+          }
+        | case_statement_list statement { // remaining statements of case.
+            $$ = $1;
+            $$->append($2);
+          }
         ;
 
 declaration
-        : "(" "define" symbol method_list ")" { $$ = nullptr; }
+        : "(" "define" method_list ")" { $$ = $3; }
         ;
 
 declaration_list
-        : declaration { $$ = nullptr; }
-        | declaration_list declaration { $$ = nullptr; }
+        : symbol declaration {  // Section name / first define.
+            $$ = Nary<NodeType::Section>::create();
+            $$->append($1);
+            $$->append($2);
+          }
+          | declaration_list declaration { // Additional defines.
+            $$ = $1;
+            $$->append($2);
+          }
         ;
 
 expression
-        : "(" "void" ")" { $$ = nullptr; } // void
-        | "(" "append" ")" { $$ = nullptr; }
-        | "(" "append.value" expression ")" { $$ = nullptr; }
-        | "(" "i32.const" integer ")" { $$ = nullptr; }
-        | "(" "u32.const" integer ")" { $$ = nullptr; }
-        | "(" "i64.const" integer ")" { $$ = nullptr; }
-        | "(" "u64.const" integer ")" { $$ = nullptr; }
-        | "(" "sym.const" symbol ")" { $$ = nullptr; }
-        | "(" "value" ")" { $$ = nullptr; }
-        | "(" "uint8" ")" { $$ = nullptr; }
-        | "(" "uint32" ")" { $$ = nullptr; }
-        | "(" "varuint1" ")" { $$ = nullptr; }
-        | "(" "varuint7" ")" { $$ = nullptr; }
-        | "(" "varint32" ")" { $$ = nullptr; }
-        | "(" "varuint32" ")" { $$ = nullptr; }
-        | "(" "varint64" ")" { $$ = nullptr; }
-        | "(" "varuint64" ")" { $$ = nullptr; }
-        | "(" "uint64" ")" { $$ = nullptr; }
-        | "(" "fixed32" integer ")"  { $$ = nullptr; }
-        | "(" "fixed64" integer ")"  { $$ = nullptr; }
-        | "(" "vbruint32" integer ")" { $$ = nullptr; }
-        | "(" "vbruint64" integer ")" { $$ = nullptr; }
-        | "(" "vbrint32" integer ")" { $$ = nullptr; }
-        | "(" "vbrint64" integer ")" { $$ = nullptr; }
-        | "(" "map" expression expression ")" { $$ = nullptr; }
-        | "(" "read" expression ")" { $$ = nullptr; }
-        | "(" "write" expression ")" { $$ = nullptr; }
-        | "(" "lit" integer ")" { $$ = nullptr; }
-        | "(" "peek" expression ")" { $$ = nullptr; }
-        | "(" "call" name ")" { $$ = nullptr; }
-        | "(" "eval" symbol ")" { $$ = nullptr; }
-        | "(" "postorder" integer ")" { $$ = nullptr; }
-        | "(" "preorder" integer ")" { $$ = nullptr; }
+        : "(" "void" ")" {
+            $$ = Nullary<NodeType::Void>::create();
+          }
+        | "(" "append" ")" {
+            $$ = Nullary<NodeType::Append>::create();
+          }
+        | "(" "append.value" expression ")" {
+            $$ = Unary<NodeType::AppendValue>::create($3);
+          }
+        | "(" "i32.const" integer ")" {
+            $$ = Unary<NodeType::I32Const>::create($3);
+          }
+        | "(" "u32.const" integer ")" {
+            $$ = Unary<NodeType::U32Const>::create($3);
+          }
+        | "(" "i64.const" integer ")" {
+            $$ = Unary<NodeType::I64Const>::create($3);
+          }
+        | "(" "u64.const" integer ")" {
+            $$ = Unary<NodeType::U64Const>::create($3);
+          }
+        | "(" "sym.const" symbol ")" {
+            $$ = Unary<NodeType::SymConst>::create($3);
+          }
+        | "(" "value" ")" {
+            $$ = Nullary<NodeType::Value>::create();
+          }
+        | "(" "uint8" ")" {
+            $$ = Nullary<NodeType::Uint8>::create();
+          }
+        | "(" "uint32" ")" {
+            $$ = Nullary<NodeType::Uint32>::create();
+          }
+        | "(" "varuint1" ")" {
+            $$ = Nullary<NodeType::Varuint1>::create();
+          }
+        | "(" "varuint7" ")" {
+            $$ = Nullary<NodeType::Varuint7>::create();
+          }
+        | "(" "varint32" ")" {
+            $$ = Nullary<NodeType::Varint32>::create();
+          }
+        | "(" "varuint32" ")" {
+            $$ = Nullary<NodeType::Varuint32>::create();
+          }
+        | "(" "varint64" ")" {
+            $$ = Nullary<NodeType::Varint64>::create();
+          }
+        | "(" "varuint64" ")" {
+            $$ = Nullary<NodeType::Varuint64>::create();
+          }
+        | "(" "uint64" ")" {
+            $$ = Nullary<NodeType::Uint64>::create();
+          }
+        | "(" "fixed32" integer ")"  {
+            $$ = Unary<NodeType::Fixed32>::create($3);
+          }
+        | "(" "fixed64" integer ")"  {
+            $$ = Unary<NodeType::Fixed64>::create($3);
+          }
+        | "(" "vbruint32" integer ")" {
+            $$ = Unary<NodeType::Vbruint32>::create($3);
+          }
+        | "(" "vbruint64" integer ")" {
+            $$ = Unary<NodeType::Vbruint64>::create($3);
+          }
+        | "(" "vbrint32" integer ")" {
+            $$ = Unary<NodeType::Vbrint32>::create($3);
+          }
+        | "(" "vbrint64" integer ")" {
+            $$ = Unary<NodeType::Vbrint64>::create($3);
+          }
+        | "(" "map" expression expression ")" {
+            $$ = Binary<NodeType::Map>::create($3, $4);
+          }
+        | "(" "read" expression ")" {
+            $$ = Unary<NodeType::Read>::create($3);
+          }
+        | "(" "write" expression ")" {
+            $$ = Unary<NodeType::Write>::create($3);
+          }
+        | "(" "lit" integer ")" {
+            $$ = Unary<NodeType::Lit>::create($3);
+          }
+        | "(" "peek" expression ")" {
+            $$ = Unary<NodeType::Peek>::create($3);
+          }
+        | "(" "call" name ")" {
+            $$ = Unary<NodeType::Call>::create($3);
+          }
+        | "(" "eval" symbol ")" {
+            $$ = Unary<NodeType::Eval>::create($3);
+          }
+        | "(" "postorder" integer ")" {
+            $$ = Unary<NodeType::Postorder>::create($3);
+          }
+        | "(" "preorder" integer ")" {
+            $$ = Unary<NodeType::Preorder>::create($3);
+          }
         ;
 
-filter  : "(" "bit.to.bit" statement ")" { $$ = nullptr; }
-        | "(" "bit.to.byte" statement ")" { $$ = nullptr; }
-        | "(" "bit.to.int" statement ")" { $$ = nullptr; }
-        | "(" "bit.to.ast" statement ")" { $$ = nullptr; }
-        | "(" "byte.to.bit" statement ")" { $$ = nullptr; }
-        | "(" "byte.to.byte" statement ")" { $$ = nullptr; }
-        | "(" "byte.to.int" statement ")" { $$ = nullptr; }
-        | "(" "byte.to.ast" statement ")" { $$ = nullptr; }
-        | "(" "int.to.bit" statement ")" { $$ = nullptr; }
-        | "(" "int.to.byte" statement ")" { $$ = nullptr; }
-        | "(" "int.to.int" statement ")" { $$ = nullptr; }
-        | "(" "int.to.ast" statement ")" { $$ = nullptr; }
+extract_statement_list
+        : expression statement { // extract size / first statement
+            $$ = Nary<NodeType::Extract>::create();
+            $$->append($1);
+            $$->append($2);
+          }
+        | extract_statement_list statement { // remaining statements of extract.
+            $$ = $1;
+            $$->append($2);
+          }
+        ;
+
+filter  : "(" "bit.to.bit" statement ")" {
+            $$ = Unary<NodeType::BitToBit>::create($3);
+          }
+        | "(" "bit.to.byte" statement ")" {
+            $$ = Unary<NodeType::BitToByte>::create($3);
+          }
+        | "(" "bit.to.int" statement ")" {
+            $$ = Unary<NodeType::BitToInt>::create($3);
+          }
+        | "(" "bit.to.ast" statement ")" {
+            $$ = Unary<NodeType::BitToAst>::create($3);
+          }
+        | "(" "byte.to.bit" statement ")" {
+            $$ = Unary<NodeType::ByteToBit>::create($3);
+          }
+        | "(" "byte.to.byte" statement ")" {
+            $$ = Unary<NodeType::ByteToByte>::create($3);
+          }
+        | "(" "byte.to.int" statement ")" {
+            $$ = Unary<NodeType::ByteToInt>::create($3);
+          }
+        | "(" "byte.to.ast" statement ")" {
+            $$ = Unary<NodeType::ByteToAst>::create($3);
+          }
+        | "(" "int.to.bit" statement ")" {
+            $$ = Unary<NodeType::IntToBit>::create($3);
+          }
+        | "(" "int.to.byte" statement ")" {
+            $$ = Unary<NodeType::IntToByte>::create($3);
+          }
+        | "(" "int.to.int" statement ")" {
+            $$ = Unary<NodeType::IntToInt>::create($3);
+          }
+        | "(" "int.to.ast" statement ")" {
+            $$ = Unary<NodeType::IntToAst>::create($3);
+          }
+        | "(" "ast.to.bit" statement ")" {
+            $$ = Unary<NodeType::AstToBit>::create($3);
+          }
+        | "(" "ast.to.byte" statement ")" {
+            $$ = Unary<NodeType::AstToByte>::create($3);
+          }
+        | "(" "ast.to.int" statement ")" {
+            $$ = Unary<NodeType::AstToInt>::create($3);
+          }
         ;
 
 filter_list
-        : filter { $$ = nullptr; }
-        | filter_list filter { $$ = nullptr; }
+        : filter {
+            $$ = Nary<NodeType::Filter>::create();
+            $$->append($1);
+          }
+        | filter_list filter {
+            $$ = $1;
+            $$->append($2);
+          }
         ;
 
-header  : "(" "version" integer ")" { $$ = nullptr; }
+header  : "(" "version" integer ")" {
+            $$ = Unary<NodeType::Version>::create($3);
+          }
         ;
 
 integer : INTEGER { $$ = IntegerNode::create($1); }
         ;
 
-method  : "(" "method" name statement_list ")" { $$ = nullptr; }
+loop_statement_list
+        : expression statement { // size / first statement of loop
+            $$ = Nary<NodeType::Loop>::create();
+            $$->append($1);
+            $$->append($2);
+          }
+        | loop_statement_list statement { // remaining statements of loop
+            $$ = $1;
+            $$->append($2);
+          }
+        ;
+
+loop_unbounded_statement_list
+        : statement { // First statement of loop
+            $$ = Nary<NodeType::LoopUnbounded>::create();
+            $$->append($1);
+          }
+        | loop_unbounded_statement_list statement { // remaining statements.
+            $$ = $1;
+            $$->append($2);
+          }
+        ;
+
+method  : "(" "method" method_statement_list ")" { $$ = $3; }
         ;
 
 method_list
-        : statement { $$ = nullptr; }          // entry statement.
-        | method_list method { $$ = nullptr; }
+        : symbol statement { // entry statement for define.
+            $$ = Nary<NodeType::Define>::create();
+            $$->append($1);
+            $$->append($2);
+          }
+        | method_list method { // Helper methods of define.
+            $$ = $1;
+            $$->append($2);
+          }
         ;
 
-name    : IDENTIFIER { $$ = nullptr; }
+method_statement_list
+        : name statement { // Name and first statement of method
+            $$ = Nary<NodeType::Method>::create();
+            $$->append($1);
+            $$->append($2);
+          }
+        | method_statement_list statement { // Remaining statements of method
+            $$ = $1;
+            $$->append($2);
+          }
         ;
 
-section : "(" "section" symbol declaration_list ")" { $$ = nullptr; }
+name    : IDENTIFIER { $$ = SymbolNode::create($1); }
+        ;
+
+section : "(" "section" declaration_list ")" { $$ = $3; }
         ;
 
 section_list
-        : section { $$ = nullptr; }
-        | section_list section { $$ = nullptr; }
+        : header section { // Header / first section of file.
+            $$ = Nary<NodeType::File>::create();
+            $$->append($1);
+            $$->append($2);
+          }
+        | section_list section { // Remaining sections in file.
+            $$ = $1;
+            $$->append($2);
+          }
         ;
 
 statement
-        : expression { $$ = nullptr; }
-        | "(" "seq" statement_list ")" { $$ = nullptr; }
-        | "(" "loop" expression statement_list ")" { $$ = nullptr; }
-        | "(" "loop.unbounded" statement_list ")" { $$ = nullptr; }
-        | "(" "if" expression statement statement ")" { $$ = nullptr; }
-        | "(" "select" expression case_list ")" { $$ = nullptr; }
-        | "(" "extract" expression statement_list ")" { $$ = nullptr; }
-        | "(" "copy" ")" { $$ = nullptr; }
-        | "(" "filter" filter_list ")" { $$ = nullptr; }
+        : expression { $$ = $1; }
+        | "(" "seq" statement_list ")" { $$ = $3; }
+        | "(" "loop" loop_statement_list ")" { $$ = $3; }
+        | "(" "loop.unbounded" loop_unbounded_statement_list ")" { $$ = $3; }
+        | "(" "if" expression statement statement ")" {
+            $$ = IfThenElse::create($3, $4, $5);
+          }
+        | "(" "select" case_list ")" { $$ = $3; }
+        | "(" "extract" extract_statement_list ")" { $$ = $3; }
+        | "(" "copy" ")" { $$ = Nullary<NodeType::Copy>::create(); }
+        | "(" "filter" filter_list ")" { $$ = $3; }
         ;
 
 statement_list
-        : { $$ = nullptr; }
-        | statement_list statement { $$ = nullptr; }
+        : %empty {
+            $$ = Nary<NodeType::Sequence>::create();
+          }
+        | statement_list statement {
+            $$ = $1;
+            $$->append($2);
+          }
         ;
 
 symbol
-        : QUOTED_IDENTIFIER { $$ = nullptr; }
+        : QUOTED_IDENTIFIER { $$ = SymbolNode::create($1); }
         ;
 
 %%

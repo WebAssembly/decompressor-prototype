@@ -22,7 +22,6 @@
 
 #include "Defs.h"
 
-#include <iterator>
 #include <memory>
 #include <vector>
 
@@ -31,13 +30,76 @@ namespace wasm {
 namespace filt {
 
 enum class NodeType {
-  Integer,
-  Symbol
+  Append,
+    AppendValue,
+    AstToBit,
+    AstToByte,
+    AstToInt,
+    BitToAst,
+    BitToBit,
+    BitToByte,
+    BitToInt,
+    ByteToAst,
+    ByteToBit,
+    ByteToByte,
+    ByteToInt,
+    Call,
+    Case,
+    Copy,
+    Define,
+    Eval,
+    Extract,
+    File,
+    Filter,
+    Fixed32,
+    Fixed64,
+    IfThenElse,
+    Integer,
+    IntToAst,
+    IntToBit,
+    IntToByte,
+    IntToInt,
+    I32Const,
+    I64Const,
+    Lit,
+    Loop,
+    LoopUnbounded,
+    Map,
+    Method,
+    Peek,
+    Postorder,
+    Preorder,
+    Read,
+    Section,
+    Select,
+    Sequence,
+    Symbol,
+    SymConst,
+    Uint32,
+    Uint8,
+    Uint64,
+    U32Const,
+    U64Const,
+    Value,
+    Varint32,
+    Varint64,
+    Varuint1,
+    Varuint32,
+    Varuint64,
+    Varuint7,
+    Vbrint32,
+    Vbrint64,
+    Vbruint32,
+    Vbruint64,
+    Version,
+    Void,
+    Write
 };
 
 class Node;
 
 // Holds memory associated with nodes.
+// TODO: Make this an arena allocator.
 class NodeMemory {
   NodeMemory(const NodeMemory&) = delete;
   NodeMemory &operator=(const NodeMemory&) = delete;
@@ -47,10 +109,9 @@ public:
   static NodeMemory Default;
 private:
   friend class Node;
-  Node *add(Node *N) {
+  void add(Node *N) {
     std::unique_ptr<Node> Nptr(N);
     Nodes.push_back(std::move(Nptr));
-    return N;
   }
   std::vector<std::unique_ptr<Node>> Nodes;
 };
@@ -59,9 +120,11 @@ class Node {
   Node(const Node&) = delete;
   Node &operator=(const Node&) = delete;
 public:
+  using IndexType = size_t;
   class Iterator {
   public:
-    explicit Iterator(const Node *Node, size_t Index): Node(Node), Index(Index) {}
+    explicit Iterator(const Node *Node, IndexType Index)
+        : Node(Node), Index(Index) {}
     Iterator(const Iterator &Iter): Node(Iter.Node), Index(Iter.Index) {}
     Iterator &operator=(const Iterator &Iter) {
       Node = Iter.Node;
@@ -85,20 +148,21 @@ public:
     }
   private:
     const Node *Node;
-    size_t Index;
+    IndexType Index;
   };
 
+  virtual ~Node() {}
   NodeType getType() const {
     return Type;
   }
-  virtual size_t getNumKids() const = 0;
-  virtual Node *getKid(size_t Index) const = 0;
+  virtual IndexType getNumKids() const = 0;
+  virtual Node *getKid(IndexType Index) const = 0;
   Iterator begin() { return Iterator(this, 0); }
   Iterator end() { return Iterator(this, getNumKids()); }
-  void huh();
+  Iterator rbegin() { return Iterator(this, getNumKids() - 1); }
+  Iterator rend() const { return Iterator(this, -1); }
 protected:
-  NodeType Type;
-
+  const NodeType Type;
   Node(NodeType Type) : Type(Type) {}
   Node *add(NodeMemory &Memory) {
     Memory.add(this);
@@ -110,20 +174,46 @@ class NullaryNode : public Node {
   NullaryNode(const NullaryNode&) = delete;
   NullaryNode &operator=(const NullaryNode&) = delete;
 public:
-  size_t getNumKids() const override { return 0; }
-  Node *getKid(size_t Index) const override;
+  IndexType getNumKids() const final { return 0; }
+  Node *getKid(IndexType /*Index*/) const final {
+    assert(false);
+    return nullptr;
+  }
+  ~NullaryNode() override {}
 protected:
   NullaryNode(NodeType Type) : Node(Type) {}
 };
 
-class IntegerNode : public NullaryNode {
+template<NodeType Kind>
+class Nullary final : public NullaryNode {
+  Nullary(const Nullary<Kind>&) = delete;
+  Nullary<Kind> &operator=(const Nullary<Kind>&) = delete;
+  virtual void forceCompilation();
+public:
+  static Nullary<Kind> *create(
+      NodeMemory &Memory = NodeMemory::Default) {
+    Nullary<Kind> *Node = new Nullary<Kind>();
+    Node->add(Memory);
+    return Node;
+  }
+  ~Nullary() {}
+private:
+  Nullary() : NullaryNode(Kind) {}
+};
+
+class IntegerNode final : public NullaryNode {
   IntegerNode(const IntegerNode&) = delete;
   IntegerNode &operator=(const IntegerNode&) = delete;
   IntegerNode() = delete;
+  virtual void forceCompilation();
 public:
-  static Node *create(decode::IntType Value,
-                      NodeMemory &Memory = NodeMemory::Default) {
-    return (new IntegerNode(Value))->add(Memory);
+  ~IntegerNode() {}
+  static IntegerNode *create(
+      decode::IntType Value,
+      NodeMemory &Memory = NodeMemory::Default) {
+    IntegerNode *Node = new IntegerNode(Value);
+    Node->add(Memory);
+    return Node;
   }
   decode::IntType getValue() const {
     return Value;
@@ -132,6 +222,165 @@ private:
   decode::IntType Value;
   IntegerNode(decode::IntType Value)
       : NullaryNode(NodeType::Integer), Value(Value) {}
+};
+
+class SymbolNode final : public NullaryNode {
+  SymbolNode(const SymbolNode&) = delete;
+  SymbolNode &operator=(const SymbolNode&) = delete;
+  SymbolNode() = delete;
+  virtual void forceCompilation();
+public:
+  ~SymbolNode() {}
+  static SymbolNode *create(
+      std::string Name,
+      NodeMemory &Memory = NodeMemory::Default) {
+    SymbolNode *Node = new SymbolNode(Name);
+    Node->add(Memory);
+    return Node;
+  }
+  std::string getName() const {
+    return Name;
+  }
+private:
+  std::string Name;
+  SymbolNode(std::string Name)
+      : NullaryNode(NodeType::Symbol), Name(Name) {}
+};
+
+class UnaryNode : public Node {
+  UnaryNode(const UnaryNode&) = delete;
+  UnaryNode &operator=(const UnaryNode&) = delete;
+public:
+  IndexType getNumKids() const final { return 1; }
+  Node *getKid(IndexType Index) const final {
+    assert(Index == 0);
+    return Kid;
+  }
+  ~UnaryNode() override {}
+protected:
+  Node *Kid;
+  UnaryNode(NodeType Type, Node *Kid)
+      : Node(Type), Kid(Kid) {}
+};
+
+
+template<NodeType Kind>
+class Unary final : public UnaryNode {
+  Unary(const Unary<Kind>&) = delete;
+  Unary<Kind> &operator=(const Unary<Kind>&) = delete;
+  virtual void forceCompilation();
+public:
+  ~Unary() {}
+  static Unary<Kind> *create(
+      Node *Kid, NodeMemory &Memory = NodeMemory::Default) {
+    Unary<Kind> *Node = new Unary<Kind>(Kid);
+    Node->add(Memory);
+    return Node;
+  }
+private:
+  Unary(Node *Kid) : UnaryNode(Kind, Kid) {}
+};
+
+
+class BinaryNode : public Node {
+  BinaryNode(const BinaryNode&) = delete;
+  BinaryNode &operator=(const BinaryNode&) = delete;
+public:
+  IndexType getNumKids() const final { return 2; }
+  Node *getKid(IndexType Index) const final {
+    assert(Index < 2);
+    return Kids[Index];
+  }
+  ~BinaryNode() override {}
+protected:
+  Node *Kids[2];
+  BinaryNode(NodeType Type, Node *Kid1, Node *Kid2)
+      : Node(Type) {
+    Kids[0] = Kid1;
+    Kids[1] = Kid2;
+  }
+};
+
+template<NodeType Kind>
+class Binary final : public BinaryNode {
+  Binary(const Binary<Kind>&) = delete;
+  Binary<Kind> &operator=(const Binary<Kind>&) = delete;
+  virtual void forceCompilation();
+public:
+  ~Binary() {}
+  static Binary<Kind> *create(
+      Node *Kid1, Node *Kid2, NodeMemory &Memory = NodeMemory::Default) {
+    Binary<Kind> *Node = new Binary<Kind>(Kid1, Kid2);
+    Node->add(Memory);
+    return Node;
+  }
+private:
+  Binary(Node *Kid1, Node *Kid2) : BinaryNode(Kind, Kid1, Kid2) {}
+};
+
+class IfThenElse final : public Node {
+  IfThenElse(const IfThenElse&) = delete;
+  IfThenElse &operator=(const IfThenElse&) = delete;
+  IfThenElse() = delete;
+  virtual void forceCompilation();
+public:
+  ~IfThenElse() {}
+  IndexType getNumKids() const final { return 3; }
+  Node *getKid(IndexType Index) const final {
+    assert(Index < 3);
+    return Kids[Index];
+  }
+  static IfThenElse *create(
+      Node *Exp, Node *Then, Node *Else,
+      NodeMemory &Memory = NodeMemory::Default) {
+    IfThenElse *Node = new IfThenElse(Exp, Then, Else);
+    Node->add(Memory);
+    return Node;
+  }
+  Node *getTest() const { return Kids[0]; }
+  Node *getThen() const { return Kids[1]; }
+  Node *getElse() const { return Kids[2]; }
+private:
+  Node *Kids[3];
+  IfThenElse(Node *Exp, Node* Then, Node* Else)
+      : Node(NodeType::IfThenElse) {
+    Kids[0] = Exp;
+    Kids[1] = Then;
+    Kids[2] = Else;
+  }
+};
+
+class NaryNode : public Node {
+  NaryNode(const NaryNode&) = delete;
+  NaryNode &operator=(const NaryNode&) = delete;
+public:
+  IndexType getNumKids() const final { return Kids.size(); }
+  Node *getKid(IndexType Index) const final {
+    return Kids.at(Index);
+  }
+  void append(Node *Kid) { Kids.push_back(Kid); }
+  ~NaryNode() override {}
+protected:
+  std::vector<Node*> Kids;
+  NaryNode(NodeType Type) : Node(Type) {}
+};
+
+
+template<NodeType Kind>
+class Nary final : public NaryNode {
+  Nary(const Nary<Kind>&) = delete;
+  Nary<Kind> &operator=(const Nary<Kind>&) = delete;
+  virtual void forceCompilation();
+public:
+  ~Nary() {}
+  static Nary<Kind> *create(
+      NodeMemory &Memory = NodeMemory::Default) {
+    Nary<Kind> *Node = new Nary<Kind>();
+    Node->add(Memory);
+    return Node;
+  }
+private:
+  Nary() : NaryNode(Kind) {}
 };
 
 } // end of namespace filt
