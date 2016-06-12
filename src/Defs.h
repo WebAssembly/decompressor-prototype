@@ -26,6 +26,9 @@
 #include <cstdint>
 #include <limits>
 
+template<class T, size_t N>
+size_t size(T (&)[N]) { return N; }
+
 namespace wasm {
 
 namespace decode {

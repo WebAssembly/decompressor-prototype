@@ -68,7 +68,16 @@ public:
 
   // Run the parser on file F. Returns true on success.
   bool parse (const std::string& Filename);
-  // Whether parser traces should be generated.
+
+
+  // Returns the last parsed ast.
+  Node *getParsedAst() const {
+    return ParsedAst;
+  }
+
+  void setParsedAst(Node *Ast) {
+    ParsedAst = Ast;
+  }
 
   // Error handling.
   void error (const wasm::filt::location& Loc,
@@ -81,6 +90,7 @@ private:
   bool TraceParsing = false;
   // The location of the last token.
   location Loc;
+  Node *ParsedAst = nullptr;
 
   // Called before parsing for setup.
   void Begin ();
