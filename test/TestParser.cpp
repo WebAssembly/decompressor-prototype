@@ -15,20 +15,34 @@
  * limitations under the License.
  */
 
+#include "sexp/TextWriter.h"
 #include "sexp-parser/Parser.tab.hpp"
 #include "sexp-parser/Driver.h"
+
 #include <iostream>
 
+using namespace wasm::filt;
+
 int main(int Argc, char *Argv[]) {
-  wasm::filt::Driver Driver;
+  Driver Driver;
+  bool PrintAst = false;
   for (int i = 1; i < Argc; ++i) {
     if (Argv[i] == std::string("-p"))
       Driver.setTraceParsing(true);
     else if (Argv[i] == std::string("-s"))
       Driver.setTraceLexing(true);
+    else if (Argv[i] == std::string("-w"))
+      PrintAst = true;
     else if (!Driver.parse(Argv[i])) {
-      std::cerr << "Errors detected: " << Argv[i] << "\n";
+      fprintf(stderr, "Errors detected: %s\n", Argv[i]);
       return EXIT_FAILURE;
+    } else if (PrintAst) {
+      if (Node *Root = Driver.getParsedAst()) {
+        TextWriter Writer;
+        Writer.write(stdout, Root);
+      } else {
+        fprintf(stderr, "No filter s-expressions found: %s\n", Argv[i]);
+      }
     }
   }
   return EXIT_SUCCESS;

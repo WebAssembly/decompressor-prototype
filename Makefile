@@ -52,7 +52,8 @@ PARSER_OBJS=$(patsubst %.cpp, $(PARSER_OBJDIR)/%.o, $(PARSER_SRCS))
 SEXP_SRCDIR = $(SRCDIR)/sexp
 SEXP_OBJDIR = $(OBJDIR)/sexp
 SEXP_SRCS = \
-	Ast.cpp
+	Ast.cpp \
+	TextWriter.cpp
 
 SEXP_OBJS=$(patsubst %.cpp, $(SEXP_OBJDIR)/%.o, $(SEXP_SRCS))
 

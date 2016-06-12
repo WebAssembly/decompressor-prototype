@@ -21,6 +21,7 @@ using namespace wasm::filt;
 
 bool Driver::parse (const std::string &Filename) {
   this->Filename = Filename;
+  ParsedAst = nullptr;
   Begin();
   wasm::filt::Parser parser (*this);
   parser.set_debug_level(TraceParsing);
