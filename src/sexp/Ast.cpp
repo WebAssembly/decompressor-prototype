@@ -20,8 +20,98 @@
 #include "Defs.h"
 #include "sexp/Ast.h"
 
+#include <unordered_map>
+
+namespace {
+
+using namespace wasm::filt;
+
+struct { NodeType Type; const char* Name; } NodeTypeData[] = {
+  {NodeType::Append, "append" },
+  {NodeType::AppendValue, "append.value"},
+  {NodeType::AstToBit, "ast.to.bit"},
+  {NodeType::AstToByte, "ast.to.byte"},
+  {NodeType::AstToInt, "ast.to.int"},
+  {NodeType::BitToAst, "bit.to.ast"},
+  {NodeType::BitToBit, "bit.to.bit"},
+  {NodeType::BitToByte, "bit.to.byte"},
+  {NodeType::BitToInt, "bit.to.int"},
+  {NodeType::ByteToAst, "byte.to.ast"},
+  {NodeType::ByteToBit, "byte.to.bit"},
+  {NodeType::ByteToByte, "byte.to.byte"},
+  {NodeType::ByteToInt, "byte.to.int"},
+  {NodeType::Call, "call"},
+  {NodeType::Case, "case"},
+  {NodeType::Copy, "copy"},
+  {NodeType::Define, "define"},
+  {NodeType::Eval, "eval"},
+  {NodeType::Extract, "extract"},
+  {NodeType::File, "file"},
+  {NodeType::Filter, "filter"},
+  {NodeType::Fixed32, "fixed32"},
+  {NodeType::Fixed64, "fixed64"},
+  {NodeType::IfThenElse, "if"},
+  {NodeType::Integer, "<integer>"},
+  {NodeType::IntToAst, "int.to.ast"},
+  {NodeType::IntToBit, "int.to.bit"},
+  {NodeType::IntToByte, "int.to.byte"},
+  {NodeType::IntToInt, "int.to.int"},
+  {NodeType::I32Const, "i32.const"},
+  {NodeType::I64Const, "i64.const"},
+  {NodeType::Lit, "lit"},
+  {NodeType::Loop, "loop"},
+  {NodeType::LoopUnbounded, "loop.unbounded"},
+  {NodeType::Map, "map"},
+  {NodeType::Method, "method"},
+  {NodeType::Peek, "peek"},
+  {NodeType::Postorder, "preorder"},
+  {NodeType::Preorder, "postorder" },
+  {NodeType::Read, "read"},
+  {NodeType::Section, "section"},
+  {NodeType::Select, "select"},
+  {NodeType::Sequence, "sequence"},
+  {NodeType::Symbol, "symbol"},
+  {NodeType::SymConst, "sym.const"},
+  {NodeType::Uint32, "uint32"},
+  {NodeType::Uint8, "uint8"},
+  {NodeType::Uint64, "uint64"},
+  {NodeType::U32Const, "u32.const"},
+  {NodeType::U64Const, "u64.const"},
+  {NodeType::Value, "value"},
+  {NodeType::Varint32, "varint32"},
+  {NodeType::Varint64, "varint64"},
+  {NodeType::Varuint1, "varuint1"},
+  {NodeType::Varuint7, "varuint7"},
+  {NodeType::Varuint32, "varuint32"},
+  {NodeType::Varuint64, "varuint64"},
+  {NodeType::Vbrint32, "vbrint32"},
+  {NodeType::Vbrint64, "vbrint64"},
+  {NodeType::Vbruint32, "vbruint32"},
+  {NodeType::Vbruint64, "vbruint64"},
+  {NodeType::Version, "version"},
+  {NodeType::Void, "void"},
+  {NodeType::Write, "write"}
+};
+
+
+} // end of anonymous namespace
+
 namespace wasm {
 namespace filt {
+
+const char *getNodeTypeName(NodeType Type) {
+  static std::unordered_map<int, const char*> Mapping;
+  if (Mapping.empty()) {
+    for (size_t i = 0; i < size(NodeTypeData); ++i) {
+      const char *Name = NodeTypeData[i].Name;
+      Mapping[static_cast<int>(NodeTypeData[i].Type)] = Name;
+    }
+  }
+  const char *Name = Mapping[static_cast<int>(Type)];
+  if (Name == nullptr)
+    Mapping[static_cast<int>(Type)] = Name = "?NodeType?";
+  return Name;
+}
 
 NodeMemory NodeMemory::Default;
 

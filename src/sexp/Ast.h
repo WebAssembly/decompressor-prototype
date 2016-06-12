@@ -22,6 +22,7 @@
 
 #include "Defs.h"
 
+// #include <iterator>
 #include <memory>
 #include <vector>
 
@@ -84,9 +85,9 @@ enum class NodeType {
     Varint32,
     Varint64,
     Varuint1,
+    Varuint7,
     Varuint32,
     Varuint64,
-    Varuint7,
     Vbrint32,
     Vbrint64,
     Vbruint32,
@@ -95,6 +96,8 @@ enum class NodeType {
     Void,
     Write
 };
+
+const char *getNodeTypeName(NodeType Type);
 
 class Node;
 
