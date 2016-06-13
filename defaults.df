@@ -150,13 +150,11 @@
     (seq
       (preorder 0)
       (extract (append.value (vbruint32 6))
-        (seq
-          (loop (append.value (vbruint32 6))
-            (call local_entry))
-          (loop.unbounded
-            (eval 'code.inst')
-            (append)
-          )
+        (loop (append.value (vbruint32 6))
+          (call local_entry))
+        (loop.unbounded
+          (eval 'code.inst')
+          (append)
         )
       )
     )

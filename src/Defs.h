@@ -20,9 +20,14 @@
 #ifndef DECOMPRESSOR_SRC_DEFS_H
 #define DECOMPRESSOR_SRC_DEFS_H
 
+#include <cassert>
 #include <climits>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
+
+template<class T, size_t N>
+size_t size(T (&)[N]) { return N; }
 
 namespace wasm {
 
