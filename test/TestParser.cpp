@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+// Reads a filter file.
+
 #include "sexp/TextWriter.h"
 #include "sexp-parser/Parser.tab.hpp"
 #include "sexp-parser/Driver.h"

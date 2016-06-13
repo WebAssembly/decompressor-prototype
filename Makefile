@@ -47,7 +47,7 @@ PARSER_SRCS = \
 
 PARSER_OBJS=$(patsubst %.cpp, $(PARSER_OBJDIR)/%.o, $(PARSER_SRCS))
 
-###### Filter s-expressions ###
+###### Filter s-expressions ######
 
 SEXP_SRCDIR = $(SRCDIR)/sexp
 SEXP_OBJDIR = $(OBJDIR)/sexp
@@ -57,13 +57,26 @@ SEXP_SRCS = \
 
 SEXP_OBJS=$(patsubst %.cpp, $(SEXP_OBJDIR)/%.o, $(SEXP_SRCS))
 
+###### Stream handlers ######
+
+STRM_SRCDIR = $(SRCDIR)/stream
+STRM_OBJDIR = $(OBJDIR)/stream
+STRM_SRCS = \
+	FileReader.cpp \
+	FileWriter.cpp \
+	StreamReader.cpp \
+	StreamWriter.cpp
+
+STRM_OBJS=$(patsubst %.cpp, $(STRM_OBJDIR)/%.o, $(STRM_SRCS))
+
 ###### Test executables and locations ######
 
 TEST_DIR = test
 TEST_EXECDIR = $(BUILDDIR)/test
 
 TEST_SRCS = \
-	TestParser.cpp
+	TestParser.cpp \
+	TestRawStreams.cpp
 
 TEST_EXECS=$(patsubst %.cpp, $(TEST_EXECDIR)/%, $(TEST_SRCS))
 
@@ -80,13 +93,13 @@ CXXFLAGS := -std=gnu++11 -Wall -Wextra -O2 -g -pedantic -MP -MD -Werror -Isrc
 
 ###### Default Rule ######
 
-all: gen objs parser-objs sexp-objs test-execs
+all: gen objs parser-objs sexp-objs strm-objs test-execs
 
 .PHONY: all
 
 ###### Cleaning Rules #######
 
-clean: clean-objs clean-parser clean-sexp-objs clean-test-execs
+clean: clean-objs clean-parser clean-sexp-objs clean-strm-objs clean-test-execs
 
 .PHONY: clean
 
@@ -114,6 +127,11 @@ clean-sexp-objs:
 	rm -f $(SEXP_OBJS)
 
 .PNONY: clean-sexp-objs
+
+clean-strm-objs:
+	rm -f $(STRM_OBJS)
+
+.PHONY: clean-strm-objs
 
 clean-test-execs:
 	rm -f $(TEST_EXECS)
@@ -166,6 +184,22 @@ $(SEXP_OBJDIR):
 $(SEXP_OBJS): $(SEXP_OBJDIR)/%.o: $(SEXP_SRCDIR)/%.cpp
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 
+###### Compiling stream sources ######
+
+strm-objs: $(STRM_OBJS)
+
+.PHONY: strm-objs
+
+$(STRM_OBJS): | $(STRM_OBJDIR)
+
+$(STRM_OBJDIR):
+	mkdir -p $@
+
+-include $(foreach dep,$(STRM_SRCS:.cpp=.d),$(STRM_OBJDIR)/$(dep))
+
+$(STRM_OBJS): $(STRM_OBJDIR)/%.o: $(STRM_SRCDIR)/%.cpp
+	$(CXX) -c $(CXXFLAGS) $< -o $@
+
 ###### Compiling Filter Parser #######
 
 parser-objs: $(PARSER_OBJS)
@@ -204,3 +238,7 @@ $(TEST_EXECS): | $(TEST_EXECDIR)
 $(TEST_EXECDIR)/TestParser: $(TEST_DIR)/TestParser.cpp $(PARSER_OBJS) \
                             $(SEXP_OBJS) $(OBJS)
 	$(CXX) $(CXXFLAGS) $< $(PARSER_OBJS) $(SEXP_OBJS) $(OBJS) -o $@
+
+$(TEST_EXECDIR)/TestRawStreams: $(TEST_DIR)/TestRawStreams.cpp $(STRM_OBJS) \
+				$(OBJS)
+	$(CXX) $(CXXFLAGS) $< $(STRM_OBJS) $(OBJS) -o $@
