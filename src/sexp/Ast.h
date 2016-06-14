@@ -50,6 +50,9 @@ enum class NodeType {
     Define,
     Eval,
     Extract,
+    ExtractBegin,
+    ExtractEnd,
+    ExtractEof,
     File,
     Filter,
     Fixed32,
@@ -94,8 +97,10 @@ enum class NodeType {
     Vbruint64,
     Version,
     Void,
-    Write
+    Write // Assumed to be last in list (see NumNodeTypes).
 };
+
+static constexpr size_t NumNodeTypes = static_cast<int>(NodeType::Write) + 1;
 
 const char *getNodeTypeName(NodeType Type);
 

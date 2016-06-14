@@ -55,13 +55,14 @@ class TextWriter {
   };
 
 public:
-  TextWriter() {}
+  TextWriter();
   void write(FILE *file, Node *Root);
 
 private:
   FILE *File = 0;
   size_t IndentCount = 0;
   bool LineEmpty = true;
+  std::vector<Node::IndexType> KidCountSameLine;
 
   void initialize(FILE *File);
 

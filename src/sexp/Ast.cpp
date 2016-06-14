@@ -46,6 +46,9 @@ struct { NodeType Type; const char* Name; } NodeTypeData[] = {
   {NodeType::Define, "define"},
   {NodeType::Eval, "eval"},
   {NodeType::Extract, "extract"},
+  {NodeType::ExtractBegin, "extract.begin"},
+  {NodeType::ExtractEnd, "extract.end"},
+  {NodeType::ExtractEof, "extract.eof"},
   {NodeType::File, "file"},
   {NodeType::Filter, "filter"},
   {NodeType::Fixed32, "fixed32"},
@@ -141,6 +144,7 @@ void Nary<Kind>::forceCompilation() {}
 
 template class Nullary<NodeType::Append>;
 template class Nullary<NodeType::Copy>;
+template class Nullary<NodeType::ExtractEof>;
 template class Nullary<NodeType::Uint8>;
 template class Nullary<NodeType::Uint32>;
 template class Nullary<NodeType::Uint64>;
@@ -165,6 +169,8 @@ template class Unary<NodeType::ByteToAst>;
 template class Unary<NodeType::ByteToBit>;
 template class Unary<NodeType::ByteToByte>;
 template class Unary<NodeType::ByteToInt>;
+template class Unary<NodeType::ExtractBegin>;
+template class Unary<NodeType::ExtractEnd>;
 template class Unary<NodeType::Call>;
 template class Unary<NodeType::Eval>;
 template class Unary<NodeType::Fixed32>;

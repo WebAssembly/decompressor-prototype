@@ -87,6 +87,9 @@ class Node;
 %token DEFINE        "define"
 %token EVAL          "eval"
 %token EXTRACT       "extract"
+%token EXTRACT_BEGIN "extract.begin"
+%token EXTRACT_END   "extract.end"
+%token EXTRACT_EOF   "extract.eof"
 %token FILTER        "filter"
 %token FIXED32       "fixed32"
 %token FIXED64       "fixed64"
@@ -224,6 +227,15 @@ expression
         | "(" "append.value" expression ")" {
             $$ = Unary<NodeType::AppendValue>::create($3);
           }
+        | "(" "extract.begin" integer ")" {
+            $$ = Unary<NodeType::ExtractBegin>::create($3);
+          }
+        | "(" "extract.end" integer ")" {
+            $$ = Unary<NodeType::ExtractEnd>::create($3);
+          }
+        | "(" "extract.eof" ")" {
+            $$ = Nullary<NodeType::ExtractEof>::create();
+          }
         | "(" "i32.const" integer ")" {
             $$ = Unary<NodeType::I32Const>::create($3);
           }
@@ -317,10 +329,9 @@ expression
         ;
 
 extract_statement_list
-        : expression statement { // extract size / first statement
+        : statement { // first statement of extract
             $$ = Nary<NodeType::Extract>::create();
             $$->append($1);
-            $$->append($2);
           }
         | extract_statement_list statement { // remaining statements of extract.
             $$ = $1;
