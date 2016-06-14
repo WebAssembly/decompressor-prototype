@@ -27,7 +27,54 @@ namespace {
 
 constexpr const char *IndentString = "  ";
 
+struct {
+  NodeType Type;
+  Node::IndexType KidsCountSameLine;
+} KidCountData[] = {
+  // If not in list, assume 0.
+  {NodeType::AppendValue, 1},
+  {NodeType::Call, 1},
+  {NodeType::Case, 2},
+  {NodeType::Define, 1},
+  {NodeType::Eval, 1},
+  {NodeType::Extract, 1},
+  {NodeType::ExtractBegin, 1},
+  {NodeType::ExtractEnd, 1},
+  {NodeType::Fixed32, 1},
+  {NodeType::Fixed64, 1},
+  {NodeType::IfThenElse, 1},
+  {NodeType::I32Const, 1},
+  {NodeType::I64Const, 1},
+  {NodeType::Lit, 1},
+  {NodeType::Loop, 1},
+  {NodeType::Map, 1},
+  {NodeType::Method, 1},
+  {NodeType::Peek, 1},
+  {NodeType::Postorder, 1},
+  {NodeType::Preorder, 1},
+  {NodeType::Read, 1},
+  {NodeType::Section, 1},
+  {NodeType::Select, 1},
+  {NodeType::SymConst, 1},
+  {NodeType::U32Const, 1},
+  {NodeType::U64Const, 1},
+  {NodeType::Vbrint32, 1},
+  {NodeType::Vbrint64, 1},
+  {NodeType::Vbruint32, 1},
+  {NodeType::Vbruint64, 1},
+  {NodeType::Version, 1}
+};
+
 } // end of anonyous namespace
+
+TextWriter::TextWriter() {
+  for (size_t i = 0; i < NumNodeTypes; ++i) {
+    KidCountSameLine.push_back(0);
+  }
+  for (size_t i = 0; i < size(KidCountData); ++i)
+    KidCountSameLine[static_cast<int>(KidCountData[i].Type)]
+        = KidCountData[i].KidsCountSameLine;
+}
 
 TextWriter::Indent::Indent(TextWriter *Writer, bool AddNewline)
     : Writer(Writer), AddNewline(AddNewline) {
@@ -88,6 +135,9 @@ void TextWriter::writeNode(Node *Node, bool AddNewline) {
     case NodeType::Call:
     case NodeType::Copy:
     case NodeType::Eval:
+    case NodeType::ExtractBegin:
+    case NodeType::ExtractEnd:
+    case NodeType::ExtractEof:
     case NodeType::Fixed32:
     case NodeType::Fixed64:
     case NodeType::I32Const:
@@ -117,46 +167,14 @@ void TextWriter::writeNode(Node *Node, bool AddNewline) {
     case NodeType::Vbruint64:
     case NodeType::Version:
     case NodeType::Void:
-    case NodeType::Write: {
-      // Treat like expression, which goes on same line.
-      Parenthesize _(this, Type, AddNewline);
-      for (auto *Kid : *Node) {
-        writeSpace();
-        writeNode(Kid, false);
-      }
-      return;
-    }
     case NodeType::Case:
-    case NodeType::Extract: {
-      // Treat like statement where all but first element put on separate lines,
-      // unless there is only 2 or less arguments.
-      Parenthesize _(this, Type, AddNewline);
-      bool KidAddNewline = Node->getNumKids() > 2;
-      for (auto *Kid : *Node) {
-        if (!KidAddNewline)
-          writeSpace();
-        writeNode(Kid, KidAddNewline);
-      }
-      return;
-    }
+    case NodeType::Extract:
     case NodeType::Define:
     case NodeType::IfThenElse:
     case NodeType::Loop:
     case NodeType::Method:
     case NodeType::Section:
-    case NodeType::Select: {
-      // Treat like statement where all but first element put on separate lines.
-      Parenthesize _(this, Type, AddNewline);
-      bool IsFirst = true;
-      for (auto *Kid : *Node) {
-        if (IsFirst) {
-          writeSpace();
-          IsFirst = false;
-        }
-        writeNode(Kid, true);
-      }
-      return;
-    }
+    case NodeType::Select:
     case NodeType::AstToBit:
     case NodeType::AstToByte:
     case NodeType::AstToInt:
@@ -174,14 +192,24 @@ void TextWriter::writeNode(Node *Node, bool AddNewline) {
     case NodeType::IntToByte:
     case NodeType::IntToInt:
     case NodeType::LoopUnbounded:
-    case NodeType::Sequence: {
-      // Treat like statement where all elements put on separate line.
+    case NodeType::Sequence:
+    case NodeType::Write: {
       Parenthesize _(this, Type, AddNewline);
-      if (Node->getNumKids() == 0)
-        return;
-      writeNewline();
-      for (auto *Kid : *Node)
-        writeNode(Kid, true);
+      Node::IndexType Count = 0;
+      Node::IndexType KidsSameLine = KidCountSameLine[static_cast<int>(Type)];
+      Node::IndexType NumKids = Node->getNumKids();
+      for (auto *Kid : *Node) {
+        ++Count;
+        if (Count <= KidsSameLine) {
+          writeSpace();
+          bool AddNewline = Count == KidsSameLine && Count < NumKids;
+          writeNode(Kid, AddNewline);
+        } else {
+          if (Count == 1)
+            writeNewline();
+          writeNode(Kid, true);
+        }
+      }
       return;
     }
     case NodeType::File: {

@@ -114,6 +114,9 @@ id	{letter}({letter}|{digit}|[_.])*
 "define"          return Parser::make_DEFINE(Driver.getLoc());
 "eval"            return Parser::make_EVAL(Driver.getLoc());
 "extract"         return Parser::make_EXTRACT(Driver.getLoc());
+"extract.begin"   return Parser::make_EXTRACT_BEGIN(Driver.getLoc());
+"extract.end"     return Parser::make_EXTRACT_END(Driver.getLoc());
+"extract.eof"     return Parser::make_EXTRACT_EOF(Driver.getLoc());
 "filter"          return Parser::make_FILTER(Driver.getLoc());
 "fixed32"         return Parser::make_FIXED32(Driver.getLoc());
 "fixed64"         return Parser::make_FIXED64(Driver.getLoc());
