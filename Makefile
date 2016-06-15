@@ -64,6 +64,7 @@ STRM_OBJDIR = $(OBJDIR)/stream
 STRM_SRCS = \
 	FileReader.cpp \
 	FileWriter.cpp \
+	ByteQueue.cpp \
 	StreamReader.cpp \
 	StreamWriter.cpp
 
