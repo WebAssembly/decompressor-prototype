@@ -19,6 +19,9 @@
 
 #include "sexp/TextWriter.h"
 
+#define __STDC_FORMAT_MACROS 1
+#include <inttypes.h>
+
 namespace wasm {
 
 namespace filt {
@@ -223,7 +226,7 @@ void TextWriter::writeNode(Node *Node, bool AddNewline) {
       auto *Int = dynamic_cast<IntegerNode*>(Node);
       // TODO: Get sign/format correct.
       // TODO: Get format directive correct on all platforms!
-      fprintf(File, "%lu", Int->getValue());
+      fprintf(File, "%" PRIu64 "", Int->getValue());
       LineEmpty = false;
       return;
     }
