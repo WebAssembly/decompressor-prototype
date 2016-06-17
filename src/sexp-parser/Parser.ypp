@@ -68,7 +68,6 @@ class Node;
 
 // Keywords
 %token APPEND        "append"
-%token APPEND_VALUE  "append.value"
 %token AST_TO_BIT    "ast.to.bit"
 %token AST_TO_BYTE   "ast.to.byte"
 %token AST_TO_INT    "ast.to.int"
@@ -84,15 +83,15 @@ class Node;
 %token CASE          "case"
 %token CLOSEPAREN    ")"
 %token COPY          "copy"
+%token DEFAULT       "default"
 %token DEFINE        "define"
+%token ERROR         "error"
 %token EVAL          "eval"
 %token EXTRACT       "extract"
 %token EXTRACT_BEGIN "extract.begin"
 %token EXTRACT_END   "extract.end"
 %token EXTRACT_EOF   "extract.eof"
 %token FILTER        "filter"
-%token FIXED32       "fixed32"
-%token FIXED64       "fixed64"
 %token IF            "if"
 %token INT_TO_BIT    "int.to.bit"
 %token INT_TO_BYTE   "int.to.byte"
@@ -126,10 +125,6 @@ class Node;
 %token VARUINT7      "varuint7"
 %token VARUINT32     "varuint32"
 %token VARUINT64     "varuint64"
-%token VBRINT32      "vbrint32"
-%token VBRINT64      "vbrint64"
-%token VBRUINT32     "vbruint32"
-%token VBRUINT64     "vbruint64"
 %token VERSION       "version"
 %token VOID          "void"
 %token WRITE         "write"
@@ -141,27 +136,26 @@ class Node;
 
 // Nonterminal classes.
 %type <wasm::filt::Node *> case
-%type <wasm::filt::Nary<NodeType::Select> *> case_list
-%type <wasm::filt::Nary<NodeType::Case> *> case_statement_list
+%type <wasm::filt::Node *> case_list
+%type <wasm::filt::Node *> case_statement_list
 %type <wasm::filt::Node *> declaration
-%type <wasm::filt::Nary<NodeType::Section> *> declaration_list
+%type <wasm::filt::Node *> declaration_list
 %type <wasm::filt::Node *> expression
-%type <wasm::filt::Nary<NodeType::Extract> *> extract_statement_list
+%type <wasm::filt::Node *> extract_statement_list
 %type <wasm::filt::Node *> file
 %type <wasm::filt::Node *> filter
-%type <wasm::filt::Nary<NodeType::Filter> *> filter_list
+%type <wasm::filt::Node *> filter_list
 %type <wasm::filt::Node *> header
 %type <wasm::filt::Node *> integer
-%type <wasm::filt::Nary<NodeType::Loop> *> loop_statement_list
-%type <wasm::filt::Nary<NodeType::LoopUnbounded> *> loop_unbounded_statement_list
+%type <wasm::filt::Node *> loop_body
 %type <wasm::filt::Node *> method
-%type <wasm::filt::Nary<NodeType::Define> *> method_list
-%type <wasm::filt::Nary<NodeType::Method> *> method_statement_list
+%type <wasm::filt::Node *> method_list
+%type <wasm::filt::Node *> method_statement_list
 %type <wasm::filt::Node *> name
 %type <wasm::filt::Node *> section
-%type <wasm::filt::Nary<NodeType::File> *> section_list
+%type <wasm::filt::Node *> section_list
 %type <wasm::filt::Node *> statement
-%type <wasm::filt::Nary<NodeType::Sequence> *> statement_list
+%type <wasm::filt::Node *> statement_list
 %type <wasm::filt::Node *> symbol
 
 %start file
@@ -202,7 +196,7 @@ case_statement_list
         ;
 
 declaration
-        : "(" "define" method_list ")" { $$ = $3; }
+        : "(" method_list ")" { $$ = $2; }
         ;
 
 declaration_list
@@ -218,14 +212,20 @@ declaration_list
         ;
 
 expression
-        : "(" "void" ")" {
-            $$ = Nullary<NodeType::Void>::create();
+        : "(" "append" ")" {
+            $$ = Nullary<NodeType::AppendNoArgs>::create();
           }
-        | "(" "append" ")" {
-            $$ = Nullary<NodeType::Append>::create();
+        | "(" "append" expression ")" {
+            $$ = Unary<NodeType::AppendOneArg>::create($3);
           }
-        | "(" "append.value" expression ")" {
-            $$ = Unary<NodeType::AppendValue>::create($3);
+        | "(" "call" name ")" {
+            $$ = Unary<NodeType::Call>::create($3);
+          }
+        | "(" "error" ")" {
+            $$ = Nullary<NodeType::Error>::create();
+          }
+        | "(" "eval" symbol ")" {
+            $$ = Unary<NodeType::Eval>::create($3);
           }
         | "(" "extract.begin" integer ")" {
             $$ = Unary<NodeType::ExtractBegin>::create($3);
@@ -239,26 +239,65 @@ expression
         | "(" "i32.const" integer ")" {
             $$ = Unary<NodeType::I32Const>::create($3);
           }
-        | "(" "u32.const" integer ")" {
-            $$ = Unary<NodeType::U32Const>::create($3);
-          }
         | "(" "i64.const" integer ")" {
             $$ = Unary<NodeType::I64Const>::create($3);
           }
-        | "(" "u64.const" integer ")" {
-            $$ = Unary<NodeType::U64Const>::create($3);
+        | "(" "lit" integer ")" {
+            $$ = Unary<NodeType::Lit>::create($3);
+          }
+        | "(" "map" expression expression ")" {
+            $$ = Binary<NodeType::Map>::create($3, $4);
+          }
+        | "(" "peek" expression ")" {
+            $$ = Unary<NodeType::Peek>::create($3);
+          }
+        | "(" "postorder" integer ")" {
+            $$ = Unary<NodeType::Postorder>::create($3);
+          }
+        | "(" "preorder" integer ")" {
+            $$ = Unary<NodeType::Preorder>::create($3);
+          }
+        | "(" "read" expression ")" {
+            $$ = Unary<NodeType::Read>::create($3);
           }
         | "(" "sym.const" symbol ")" {
             $$ = Unary<NodeType::SymConst>::create($3);
-          }
-        | "(" "value" ")" {
-            $$ = Nullary<NodeType::Value>::create();
           }
         | "(" "uint8" ")" {
             $$ = Nullary<NodeType::Uint8>::create();
           }
         | "(" "uint32" ")" {
-            $$ = Nullary<NodeType::Uint32>::create();
+            $$ = Nullary<NodeType::Uint32NoArgs>::create();
+          }
+        | "(" "uint32" integer ")"  {
+            $$ = Unary<NodeType::Uint32OneArg>::create($3);
+          }
+        | "(" "uint64" ")" {
+            $$ = Nullary<NodeType::Uint64NoArgs>::create();
+          }
+        | "(" "uint64" integer ")"  {
+            $$ = Unary<NodeType::Uint64OneArg>::create($3);
+          }
+        | "(" "u32.const" integer ")" {
+            $$ = Unary<NodeType::U32Const>::create($3);
+          }
+        | "(" "u64.const" integer ")" {
+            $$ = Unary<NodeType::U64Const>::create($3);
+          }
+        | "(" "value" ")" {
+            $$ = Nullary<NodeType::Value>::create();
+          }
+        | "(" "varint32" ")" {
+            $$ = Nullary<NodeType::Varint32NoArgs>::create();
+          }
+        | "(" "varint32" integer ")" {
+            $$ = Unary<NodeType::Varint32OneArg>::create($3);
+          }
+        | "(" "varint64" ")" {
+            $$ = Nullary<NodeType::Varint64NoArgs>::create();
+          }
+        | "(" "varint64" integer ")" {
+            $$ = Unary<NodeType::Varint64OneArg>::create($3);
           }
         | "(" "varuint1" ")" {
             $$ = Nullary<NodeType::Varuint1>::create();
@@ -266,65 +305,23 @@ expression
         | "(" "varuint7" ")" {
             $$ = Nullary<NodeType::Varuint7>::create();
           }
-        | "(" "varint32" ")" {
-            $$ = Nullary<NodeType::Varint32>::create();
-          }
         | "(" "varuint32" ")" {
-            $$ = Nullary<NodeType::Varuint32>::create();
+            $$ = Nullary<NodeType::Varuint32NoArgs>::create();
           }
-        | "(" "varint64" ")" {
-            $$ = Nullary<NodeType::Varint64>::create();
+        | "(" "varuint32" integer ")" {
+            $$ = Unary<NodeType::Varuint32OneArg>::create($3);
           }
         | "(" "varuint64" ")" {
-            $$ = Nullary<NodeType::Varuint64>::create();
+            $$ = Nullary<NodeType::Varuint64NoArgs>::create();
           }
-        | "(" "uint64" ")" {
-            $$ = Nullary<NodeType::Uint64>::create();
+        | "(" "varuint64" integer ")" {
+            $$ = Unary<NodeType::Varuint64OneArg>::create($3);
           }
-        | "(" "fixed32" integer ")"  {
-            $$ = Unary<NodeType::Fixed32>::create($3);
-          }
-        | "(" "fixed64" integer ")"  {
-            $$ = Unary<NodeType::Fixed64>::create($3);
-          }
-        | "(" "vbruint32" integer ")" {
-            $$ = Unary<NodeType::Vbruint32>::create($3);
-          }
-        | "(" "vbruint64" integer ")" {
-            $$ = Unary<NodeType::Vbruint64>::create($3);
-          }
-        | "(" "vbrint32" integer ")" {
-            $$ = Unary<NodeType::Vbrint32>::create($3);
-          }
-        | "(" "vbrint64" integer ")" {
-            $$ = Unary<NodeType::Vbrint64>::create($3);
-          }
-        | "(" "map" expression expression ")" {
-            $$ = Binary<NodeType::Map>::create($3, $4);
-          }
-        | "(" "read" expression ")" {
-            $$ = Unary<NodeType::Read>::create($3);
+        | "(" "void" ")" {
+            $$ = Nullary<NodeType::Void>::create();
           }
         | "(" "write" expression ")" {
             $$ = Unary<NodeType::Write>::create($3);
-          }
-        | "(" "lit" integer ")" {
-            $$ = Unary<NodeType::Lit>::create($3);
-          }
-        | "(" "peek" expression ")" {
-            $$ = Unary<NodeType::Peek>::create($3);
-          }
-        | "(" "call" name ")" {
-            $$ = Unary<NodeType::Call>::create($3);
-          }
-        | "(" "eval" symbol ")" {
-            $$ = Unary<NodeType::Eval>::create($3);
-          }
-        | "(" "postorder" integer ")" {
-            $$ = Unary<NodeType::Postorder>::create($3);
-          }
-        | "(" "preorder" integer ")" {
-            $$ = Unary<NodeType::Preorder>::create($3);
           }
         ;
 
@@ -339,7 +336,19 @@ extract_statement_list
           }
         ;
 
-filter  : "(" "bit.to.bit" statement ")" {
+filter  : "(" "ast.to.ast" statement ")" {
+            $$ = Unary<NodeType::AstToAst>::create($3);
+          }
+        | "(" "ast.to.bit" statement ")" {
+            $$ = Unary<NodeType::AstToBit>::create($3);
+          }
+        | "(" "ast.to.byte" statement ")" {
+            $$ = Unary<NodeType::AstToByte>::create($3);
+          }
+        | "(" "ast.to.int" statement ")" {
+            $$ = Unary<NodeType::AstToInt>::create($3);
+          }
+        | "(" "bit.to.bit" statement ")" {
             $$ = Unary<NodeType::BitToBit>::create($3);
           }
         | "(" "bit.to.byte" statement ")" {
@@ -375,15 +384,6 @@ filter  : "(" "bit.to.bit" statement ")" {
         | "(" "int.to.ast" statement ")" {
             $$ = Unary<NodeType::IntToAst>::create($3);
           }
-        | "(" "ast.to.bit" statement ")" {
-            $$ = Unary<NodeType::AstToBit>::create($3);
-          }
-        | "(" "ast.to.byte" statement ")" {
-            $$ = Unary<NodeType::AstToByte>::create($3);
-          }
-        | "(" "ast.to.int" statement ")" {
-            $$ = Unary<NodeType::AstToInt>::create($3);
-          }
         ;
 
 filter_list
@@ -405,24 +405,16 @@ header  : "(" "version" integer ")" {
 integer : INTEGER { $$ = IntegerNode::create($1); }
         ;
 
-loop_statement_list
-        : expression statement { // size / first statement of loop
-            $$ = Nary<NodeType::Loop>::create();
-            $$->append($1);
-            $$->append($2);
-          }
-        | loop_statement_list statement { // remaining statements of loop
-            $$ = $1;
-            $$->append($2);
-          }
-        ;
 
-loop_unbounded_statement_list
-        : statement { // First statement of loop
-            $$ = Nary<NodeType::LoopUnbounded>::create();
-            $$->append($1);
+loop_body
+        : "loop" expression {
+            $$ = Nary<NodeType::Loop>::create();
+            $$->append($2);
           }
-        | loop_unbounded_statement_list statement { // remaining statements.
+        | "loop.unbounded" {
+            $$ = Nary<NodeType::LoopUnbounded>::create();
+          }
+        | loop_body statement {
             $$ = $1;
             $$->append($2);
           }
@@ -432,10 +424,15 @@ method  : "(" "method" method_statement_list ")" { $$ = $3; }
         ;
 
 method_list
-        : symbol statement { // entry statement for define.
-            $$ = Nary<NodeType::Define>::create();
-            $$->append($1);
+        : "default" symbol statement {
+          $$ = Nary<NodeType::Default>::create();
             $$->append($2);
+            $$->append($3);
+          }
+        | "define" symbol statement {
+            $$ = Nary<NodeType::Define>::create();
+            $$->append($2);
+            $$->append($3);
           }
         | method_list method { // Helper methods of define.
             $$ = $1;
@@ -475,16 +472,17 @@ section_list
 
 statement
         : expression { $$ = $1; }
-        | "(" "seq" statement_list ")" { $$ = $3; }
-        | "(" "loop" loop_statement_list ")" { $$ = $3; }
-        | "(" "loop.unbounded" loop_unbounded_statement_list ")" { $$ = $3; }
+        | "(" "copy" ")" { $$ = Nullary<NodeType::Copy>::create(); }
+        | "(" "extract" extract_statement_list ")" { $$ = $3; }
+        | "(" "filter" filter_list ")" { $$ = $3; }
         | "(" "if" expression statement statement ")" {
             $$ = IfThenElse::create($3, $4, $5);
           }
+        | "(" loop_body ")" { $$ = $2; }
+//        | "(" "loop" loop_statement_list ")" { $$ = $3; }
+//        | "(" "loop.unbounded" loop_unbounded_statement_list ")" { $$ = $3; }
         | "(" "select" case_list ")" { $$ = $3; }
-        | "(" "extract" extract_statement_list ")" { $$ = $3; }
-        | "(" "copy" ")" { $$ = Nullary<NodeType::Copy>::create(); }
-        | "(" "filter" filter_list ")" { $$ = $3; }
+        | "(" "seq" statement_list ")" { $$ = $3; }
         ;
 
 statement_list
