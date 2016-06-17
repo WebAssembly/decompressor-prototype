@@ -35,9 +35,10 @@ struct {
   Node::IndexType KidsCountSameLine;
 } KidCountData[] = {
   // If not in list, assume 0.
-  {NodeType::AppendValue, 1},
+  {NodeType::AppendOneArg, 1},
   {NodeType::Call, 1},
   {NodeType::Case, 2},
+  {NodeType::Default, 1},
   {NodeType::Define, 1},
   {NodeType::Eval, 1},
   {NodeType::Extract, 1},
@@ -136,70 +137,9 @@ void TextWriter::writeNode(Node *Node, bool AddNewline) {
     return;
   }
   switch (NodeType Type = Node->getType()) {
-    case NodeType::Append:
-    case NodeType::AppendValue:
-    case NodeType::Call:
-    case NodeType::Copy:
-    case NodeType::Eval:
-    case NodeType::ExtractBegin:
-    case NodeType::ExtractEnd:
-    case NodeType::ExtractEof:
-    case NodeType::I32Const:
-    case NodeType::I64Const:
-    case NodeType::Lit:
-    case NodeType::Map:
-    case NodeType::Peek:
-    case NodeType::Postorder:
-    case NodeType::Preorder:
-    case NodeType::Read:
-    case NodeType::SymConst:
-    case NodeType::Uint8:
-    case NodeType::Uint32NoArgs:
-    case NodeType::Uint32OneArg:
-    case NodeType::Uint64NoArgs:
-    case NodeType::Uint64OneArg:
-    case NodeType::U32Const:
-    case NodeType::U64Const:
-    case NodeType::Value:
-    case NodeType::Varint32NoArgs:
-    case NodeType::Varint32OneArg:
-    case NodeType::Varint64NoArgs:
-    case NodeType::Varint64OneArg:
-    case NodeType::Varuint1:
-    case NodeType::Varuint7:
-    case NodeType::Varuint32NoArgs:
-    case NodeType::Varuint32OneArg:
-    case NodeType::Varuint64NoArgs:
-    case NodeType::Varuint64OneArg:
-    case NodeType::Version:
-    case NodeType::Void:
-    case NodeType::Case:
-    case NodeType::Extract:
-    case NodeType::Define:
-    case NodeType::IfThenElse:
-    case NodeType::Loop:
-    case NodeType::Method:
-    case NodeType::Section:
-    case NodeType::Select:
-    case NodeType::AstToBit:
-    case NodeType::AstToByte:
-    case NodeType::AstToInt:
-    case NodeType::BitToAst:
-    case NodeType::BitToBit:
-    case NodeType::BitToByte:
-    case NodeType::BitToInt:
-    case NodeType::ByteToAst:
-    case NodeType::ByteToBit:
-    case NodeType::ByteToByte:
-    case NodeType::ByteToInt:
-    case NodeType::Filter:
-    case NodeType::IntToAst:
-    case NodeType::IntToBit:
-    case NodeType::IntToByte:
-    case NodeType::IntToInt:
-    case NodeType::LoopUnbounded:
-    case NodeType::Sequence:
-    case NodeType::Write: {
+    default: {
+      // Write out with number of kids specified to be on same line,
+      // with remaining kids on separate (indented) lines.
       Parenthesize _(this, Type, AddNewline);
       Node::IndexType Count = 0;
       Node::IndexType KidsSameLine = KidCountSameLine[static_cast<int>(Type)];

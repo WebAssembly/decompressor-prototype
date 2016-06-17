@@ -15,7 +15,14 @@
  * limitations under the License.
  */
 
-/* Defines an internal model of filter AST's. */
+// Defines an internal model of filter AST's.
+//
+// NOTE: Many classes define  virtual:
+//
+//    virtual void forceCompilation() final;
+//
+// This is done to force the compilation of virtuals associated with the
+// class in file Ast.cpp.
 
 #ifndef DECOMPRESSOR_SRC_SEXP_AST_H
 #define DECOMPRESSOR_SRC_SEXP_AST_H
@@ -32,8 +39,9 @@ namespace wasm {
 namespace filt {
 
 enum class NodeType {
-  Append,
-    AppendValue,
+  AppendNoArgs,
+    AppendOneArg,
+    AstToAst,
     AstToBit,
     AstToByte,
     AstToInt,
@@ -48,7 +56,9 @@ enum class NodeType {
     Call,
     Case,
     Copy,
+    Default,
     Define,
+    Error,
     Eval,
     Extract,
     ExtractBegin,
@@ -170,12 +180,14 @@ public:
   }
   virtual IndexType getNumKids() const = 0;
   virtual Node *getKid(IndexType Index) const = 0;
+  // WARNING: Only supported if underlying type allows.
+  virtual void append(Node *Kid);
   Iterator begin() { return Iterator(this, 0); }
   Iterator end() { return Iterator(this, getNumKids()); }
   Iterator rbegin() { return Iterator(this, getNumKids() - 1); }
   Iterator rend() const { return Iterator(this, -1); }
 protected:
-  const NodeType Type;
+  NodeType Type;
   Node(NodeType Type) : Type(Type) {}
   Node *add(NodeMemory &Memory) {
     Memory.add(this);
@@ -201,7 +213,7 @@ template<NodeType Kind>
 class Nullary final : public NullaryNode {
   Nullary(const Nullary<Kind>&) = delete;
   Nullary<Kind> &operator=(const Nullary<Kind>&) = delete;
-  virtual void forceCompilation();
+  virtual void forceCompilation() final;
 public:
   static Nullary<Kind> *create(
       NodeMemory &Memory = NodeMemory::Default) {
@@ -218,7 +230,7 @@ class IntegerNode final : public NullaryNode {
   IntegerNode(const IntegerNode&) = delete;
   IntegerNode &operator=(const IntegerNode&) = delete;
   IntegerNode() = delete;
-  virtual void forceCompilation();
+  virtual void forceCompilation() final;
 public:
   ~IntegerNode() {}
   static IntegerNode *create(
@@ -241,7 +253,7 @@ class SymbolNode final : public NullaryNode {
   SymbolNode(const SymbolNode&) = delete;
   SymbolNode &operator=(const SymbolNode&) = delete;
   SymbolNode() = delete;
-  virtual void forceCompilation();
+  virtual void forceCompilation() final;
 public:
   ~SymbolNode() {}
   static SymbolNode *create(
@@ -281,7 +293,7 @@ template<NodeType Kind>
 class Unary final : public UnaryNode {
   Unary(const Unary<Kind>&) = delete;
   Unary<Kind> &operator=(const Unary<Kind>&) = delete;
-  virtual void forceCompilation();
+  virtual void forceCompilation() final;
 public:
   ~Unary() {}
   static Unary<Kind> *create(
@@ -318,7 +330,7 @@ template<NodeType Kind>
 class Binary final : public BinaryNode {
   Binary(const Binary<Kind>&) = delete;
   Binary<Kind> &operator=(const Binary<Kind>&) = delete;
-  virtual void forceCompilation();
+  virtual void forceCompilation() final;
 public:
   ~Binary() {}
   static Binary<Kind> *create(
@@ -335,7 +347,7 @@ class IfThenElse final : public Node {
   IfThenElse(const IfThenElse&) = delete;
   IfThenElse &operator=(const IfThenElse&) = delete;
   IfThenElse() = delete;
-  virtual void forceCompilation();
+  virtual void forceCompilation() final;
 public:
   ~IfThenElse() {}
   IndexType getNumKids() const final { return 3; }
@@ -371,19 +383,18 @@ public:
   Node *getKid(IndexType Index) const final {
     return Kids.at(Index);
   }
-  void append(Node *Kid) { Kids.push_back(Kid); }
+  void append(Node *Kid) final;
   ~NaryNode() override {}
 protected:
   std::vector<Node*> Kids;
   NaryNode(NodeType Type) : Node(Type) {}
 };
 
-
 template<NodeType Kind>
 class Nary final : public NaryNode {
   Nary(const Nary<Kind>&) = delete;
   Nary<Kind> &operator=(const Nary<Kind>&) = delete;
-  virtual void forceCompilation();
+  virtual void forceCompilation() final;
 public:
   ~Nary() {}
   static Nary<Kind> *create(

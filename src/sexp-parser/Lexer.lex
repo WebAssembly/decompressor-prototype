@@ -96,7 +96,6 @@ id	{letter}({letter}|{digit}|[_.])*
 ")"               return Parser::make_CLOSEPAREN(Driver.getLoc());
 "("               return Parser::make_OPENPAREN(Driver.getLoc());
 "append"          return Parser::make_APPEND(Driver.getLoc());
-"append.value"    return Parser::make_APPEND_VALUE(Driver.getLoc());
 "ast.to.bit"      return Parser::make_AST_TO_BIT(Driver.getLoc());
 "ast.to.byte"     return Parser::make_AST_TO_BYTE(Driver.getLoc());
 "ast.to.int"      return Parser::make_AST_TO_INT(Driver.getLoc());
@@ -111,6 +110,7 @@ id	{letter}({letter}|{digit}|[_.])*
 "call"            return Parser::make_CALL(Driver.getLoc());
 "case"            return Parser::make_CASE(Driver.getLoc());
 "copy"            return Parser::make_COPY(Driver.getLoc());
+"default"         return Parser::make_DEFAULT(Driver.getLoc());
 "define"          return Parser::make_DEFINE(Driver.getLoc());
 "eval"            return Parser::make_EVAL(Driver.getLoc());
 "extract"         return Parser::make_EXTRACT(Driver.getLoc());

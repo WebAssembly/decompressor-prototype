@@ -29,8 +29,9 @@ using namespace wasm::filt;
 typedef struct { NodeType Type; const char* Name; } TypeNamePair;
 
 TypeNamePair SexpTypeNamePair[] = {
-  {NodeType::Append, "append" },
-  {NodeType::AppendValue, "append.value"},
+  {NodeType::AppendNoArgs, "append" },
+  {NodeType::AppendOneArg, "append" },
+  {NodeType::AstToAst, "ast.to.ast"},
   {NodeType::AstToBit, "ast.to.bit"},
   {NodeType::AstToByte, "ast.to.byte"},
   {NodeType::AstToInt, "ast.to.int"},
@@ -45,7 +46,9 @@ TypeNamePair SexpTypeNamePair[] = {
   {NodeType::Call, "call"},
   {NodeType::Case, "case"},
   {NodeType::Copy, "copy"},
+  {NodeType::Default, "default"},
   {NodeType::Define, "define"},
+  {NodeType::Error, "error"},
   {NodeType::Eval, "eval"},
   {NodeType::Extract, "extract"},
   {NodeType::ExtractBegin, "extract.begin"},
@@ -100,6 +103,8 @@ TypeNamePair SexpTypeNamePair[] = {
 
 // Defines clarifying unique names if SexpTypeNamePair not unique.
 TypeNamePair UniquifyingTypeNamePair[] = {
+  {NodeType::AppendNoArgs, "appendnoArgs"},
+  {NodeType::AppendOneArg, "appendoneArg"},
   {NodeType::Uint32NoArgs, "uint32noArgs"},
   {NodeType::Uint32OneArg, "uint32oneArg"},
   {NodeType::Uint64NoArgs, "uint64noArgs"},
@@ -149,6 +154,14 @@ const char *getNodeTypeName(NodeType Type) {
 
 NodeMemory NodeMemory::Default;
 
+void Node::append(Node *) {
+  decode::fatal("Node::append not supported for ast node!");
+}
+
+void NaryNode::append(Node *Kid) {
+  Kids.push_back(Kid);
+}
+
 // Note: we create duumy virtual forceCompilation() to force legal
 // class definitions to be compiled in here. Classes not explicitly
 // instantiated here will not link. This used to force an error if
@@ -173,8 +186,9 @@ void Binary<Kind>::forceCompilation() {}
 template<NodeType Kind>
 void Nary<Kind>::forceCompilation() {}
 
-template class Nullary<NodeType::Append>;
+template class Nullary<NodeType::AppendNoArgs>;
 template class Nullary<NodeType::Copy>;
+template class Nullary<NodeType::Error>;
 template class Nullary<NodeType::ExtractEof>;
 template class Nullary<NodeType::Uint8>;
 template class Nullary<NodeType::Uint32NoArgs>;
@@ -188,7 +202,8 @@ template class Nullary<NodeType::Varuint32NoArgs>;
 template class Nullary<NodeType::Varuint64NoArgs>;
 template class Nullary<NodeType::Void>;
 
-template class Unary<NodeType::AppendValue>;
+template class Unary<NodeType::AppendOneArg>;
+template class Unary<NodeType::AstToAst>;
 template class Unary<NodeType::AstToBit>;
 template class Unary<NodeType::AstToByte>;
 template class Unary<NodeType::AstToInt>;
@@ -230,8 +245,9 @@ template class Unary<NodeType::Write>;
 template class Binary<NodeType::Map>;
 
 template class Nary<NodeType::Case>;
-template class Nary<NodeType::Define>;
 template class Nary<NodeType::Extract>;
+template class Nary<NodeType::Default>;
+template class Nary<NodeType::Define>;
 template class Nary<NodeType::File>;
 template class Nary<NodeType::Filter>;
 template class Nary<NodeType::Loop>;
