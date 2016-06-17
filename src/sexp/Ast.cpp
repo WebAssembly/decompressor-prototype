@@ -26,7 +26,9 @@ namespace {
 
 using namespace wasm::filt;
 
-struct { NodeType Type; const char* Name; } NodeTypeData[] = {
+typedef struct { NodeType Type; const char* Name; } TypeNamePair;
+
+TypeNamePair SexpTypeNamePair[] = {
   {NodeType::Append, "append" },
   {NodeType::AppendValue, "append.value"},
   {NodeType::AstToBit, "ast.to.bit"},
@@ -51,8 +53,6 @@ struct { NodeType Type; const char* Name; } NodeTypeData[] = {
   {NodeType::ExtractEof, "extract.eof"},
   {NodeType::File, "file"},
   {NodeType::Filter, "filter"},
-  {NodeType::Fixed32, "fixed32"},
-  {NodeType::Fixed64, "fixed64"},
   {NodeType::IfThenElse, "if"},
   {NodeType::Integer, "<integer>"},
   {NodeType::IntToAst, "int.to.ast"},
@@ -75,45 +75,76 @@ struct { NodeType Type; const char* Name; } NodeTypeData[] = {
   {NodeType::Sequence, "sequence"},
   {NodeType::Symbol, "symbol"},
   {NodeType::SymConst, "sym.const"},
-  {NodeType::Uint32, "uint32"},
+  {NodeType::Uint32NoArgs, "uint32"},
+  {NodeType::Uint32OneArg, "uint32"},
   {NodeType::Uint8, "uint8"},
-  {NodeType::Uint64, "uint64"},
+  {NodeType::Uint64NoArgs, "uint64"},
+  {NodeType::Uint64OneArg, "uint64"},
   {NodeType::U32Const, "u32.const"},
   {NodeType::U64Const, "u64.const"},
   {NodeType::Value, "value"},
-  {NodeType::Varint32, "varint32"},
-  {NodeType::Varint64, "varint64"},
+  {NodeType::Varint32NoArgs, "varint32"},
+  {NodeType::Varint32OneArg, "varint32"},
+  {NodeType::Varint64NoArgs, "varint64"},
+  {NodeType::Varint64OneArg, "varint64"},
   {NodeType::Varuint1, "varuint1"},
   {NodeType::Varuint7, "varuint7"},
-  {NodeType::Varuint32, "varuint32"},
-  {NodeType::Varuint64, "varuint64"},
-  {NodeType::Vbrint32, "vbrint32"},
-  {NodeType::Vbrint64, "vbrint64"},
-  {NodeType::Vbruint32, "vbruint32"},
-  {NodeType::Vbruint64, "vbruint64"},
+  {NodeType::Varuint32NoArgs, "varuint32"},
+  {NodeType::Varuint32OneArg, "varuint32"},
+  {NodeType::Varuint64NoArgs, "varuint64"},
+  {NodeType::Varuint64OneArg, "varuint64"},
   {NodeType::Version, "version"},
   {NodeType::Void, "void"},
   {NodeType::Write, "write"}
 };
 
+// Defines clarifying unique names if SexpTypeNamePair not unique.
+TypeNamePair UniquifyingTypeNamePair[] = {
+  {NodeType::Uint32NoArgs, "uint32noArgs"},
+  {NodeType::Uint32OneArg, "uint32oneArg"},
+  {NodeType::Uint64NoArgs, "uint64noArgs"},
+  {NodeType::Uint64OneArg, "uint64OneArg"},
+  {NodeType::Varint32NoArgs, "varint32noArgs"},
+  {NodeType::Varint32OneArg, "varint32oneArg"},
+  {NodeType::Varint64NoArgs, "varint64noArgs"},
+  {NodeType::Varint64OneArg, "varint64oneArg"},
+  {NodeType::Varuint32NoArgs, "varuint32noArgs"},
+  {NodeType::Varuint32OneArg, "varuint32oneArg"},
+  {NodeType::Varuint64NoArgs, "varuint64noArgs"},
+  {NodeType::Varuint64OneArg, "varuint64oneArg"},
+};
 
 } // end of anonymous namespace
 
 namespace wasm {
 namespace filt {
 
-const char *getNodeTypeName(NodeType Type) {
+const char *getNodeSexpName(NodeType Type) {
   static std::unordered_map<int, const char*> Mapping;
   if (Mapping.empty()) {
-    for (size_t i = 0; i < size(NodeTypeData); ++i) {
-      const char *Name = NodeTypeData[i].Name;
-      Mapping[static_cast<int>(NodeTypeData[i].Type)] = Name;
+    for (size_t i = 0; i < size(SexpTypeNamePair); ++i) {
+      const char *Name = SexpTypeNamePair[i].Name;
+      Mapping[static_cast<int>(SexpTypeNamePair[i].Type)] = Name;
     }
   }
   const char *Name = Mapping[static_cast<int>(Type)];
   if (Name == nullptr)
     Mapping[static_cast<int>(Type)] = Name = "?NodeType?";
   return Name;
+}
+
+const char *getNodeTypeName(NodeType Type) {
+  static std::unordered_map<int, const char*> Mapping;
+  if (Mapping.empty()) {
+    for (size_t i = 0; i < size(UniquifyingTypeNamePair); ++i) {
+      const char *Name = UniquifyingTypeNamePair[i].Name;
+      Mapping[static_cast<int>(UniquifyingTypeNamePair[i].Type)] = Name;
+    }
+  }
+  const char *Name = Mapping[static_cast<int>(Type)];
+  if (Name != nullptr)
+    return Name;
+  return getNodeSexpName(Type);
 }
 
 NodeMemory NodeMemory::Default;
@@ -146,15 +177,15 @@ template class Nullary<NodeType::Append>;
 template class Nullary<NodeType::Copy>;
 template class Nullary<NodeType::ExtractEof>;
 template class Nullary<NodeType::Uint8>;
-template class Nullary<NodeType::Uint32>;
-template class Nullary<NodeType::Uint64>;
+template class Nullary<NodeType::Uint32NoArgs>;
+template class Nullary<NodeType::Uint64NoArgs>;
 template class Nullary<NodeType::Value>;
-template class Nullary<NodeType::Varint32>;
-template class Nullary<NodeType::Varint64>;
+template class Nullary<NodeType::Varint32NoArgs>;
+template class Nullary<NodeType::Varint64NoArgs>;
 template class Nullary<NodeType::Varuint1>;
 template class Nullary<NodeType::Varuint7>;
-template class Nullary<NodeType::Varuint32>;
-template class Nullary<NodeType::Varuint64>;
+template class Nullary<NodeType::Varuint32NoArgs>;
+template class Nullary<NodeType::Varuint64NoArgs>;
 template class Nullary<NodeType::Void>;
 
 template class Unary<NodeType::AppendValue>;
@@ -173,8 +204,6 @@ template class Unary<NodeType::ExtractBegin>;
 template class Unary<NodeType::ExtractEnd>;
 template class Unary<NodeType::Call>;
 template class Unary<NodeType::Eval>;
-template class Unary<NodeType::Fixed32>;
-template class Unary<NodeType::Fixed64>;
 template class Unary<NodeType::IntToAst>;
 template class Unary<NodeType::IntToBit>;
 template class Unary<NodeType::IntToByte>;
@@ -187,12 +216,14 @@ template class Unary<NodeType::Postorder>;
 template class Unary<NodeType::Preorder>;
 template class Unary<NodeType::Read>;
 template class Unary<NodeType::SymConst>;
+template class Unary<NodeType::Uint32OneArg>;
+template class Unary<NodeType::Uint64OneArg>;
 template class Unary<NodeType::U32Const>;
 template class Unary<NodeType::U64Const>;
-template class Unary<NodeType::Vbrint32>;
-template class Unary<NodeType::Vbrint64>;
-template class Unary<NodeType::Vbruint32>;
-template class Unary<NodeType::Vbruint64>;
+template class Unary<NodeType::Varint32OneArg>;
+template class Unary<NodeType::Varint64OneArg>;
+template class Unary<NodeType::Varuint32OneArg>;
+template class Unary<NodeType::Varuint64OneArg>;
 template class Unary<NodeType::Version>;
 template class Unary<NodeType::Write>;
 

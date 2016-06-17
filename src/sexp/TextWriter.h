@@ -55,6 +55,9 @@ class TextWriter {
   };
 
 public:
+  // When true use getNodeTypeName() instead of getNodeSexpName() for node
+  // names.
+  static bool UseNodeTypeNames;
   TextWriter();
   void write(FILE *file, Node *Root);
 

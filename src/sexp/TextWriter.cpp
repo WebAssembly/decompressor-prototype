@@ -43,8 +43,6 @@ struct {
   {NodeType::Extract, 1},
   {NodeType::ExtractBegin, 1},
   {NodeType::ExtractEnd, 1},
-  {NodeType::Fixed32, 1},
-  {NodeType::Fixed64, 1},
   {NodeType::IfThenElse, 1},
   {NodeType::I32Const, 1},
   {NodeType::I64Const, 1},
@@ -59,16 +57,20 @@ struct {
   {NodeType::Section, 1},
   {NodeType::Select, 1},
   {NodeType::SymConst, 1},
+  {NodeType::Uint32OneArg, 1},
+  {NodeType::Uint64OneArg, 1},
   {NodeType::U32Const, 1},
   {NodeType::U64Const, 1},
-  {NodeType::Vbrint32, 1},
-  {NodeType::Vbrint64, 1},
-  {NodeType::Vbruint32, 1},
-  {NodeType::Vbruint64, 1},
+  {NodeType::Varint32OneArg, 1},
+  {NodeType::Varint64OneArg, 1},
+  {NodeType::Varuint32OneArg, 1},
+  {NodeType::Varuint64OneArg, 1},
   {NodeType::Version, 1}
 };
 
 } // end of anonyous namespace
+
+bool TextWriter::UseNodeTypeNames = false;
 
 TextWriter::TextWriter() {
   for (size_t i = 0; i < NumNodeTypes; ++i) {
@@ -93,7 +95,8 @@ TextWriter::Parenthesize::Parenthesize(
     : Writer(Writer), AddNewline(AddNewline) {
   Writer->writeIndent();
   fputc('(', Writer->File);
-  fputs(getNodeTypeName(Type), Writer->File);
+  fputs(UseNodeTypeNames ? getNodeTypeName(Type) : getNodeSexpName(Type),
+        Writer->File);
   Writer->LineEmpty = false;
   ++Writer->IndentCount;
 }
@@ -141,8 +144,6 @@ void TextWriter::writeNode(Node *Node, bool AddNewline) {
     case NodeType::ExtractBegin:
     case NodeType::ExtractEnd:
     case NodeType::ExtractEof:
-    case NodeType::Fixed32:
-    case NodeType::Fixed64:
     case NodeType::I32Const:
     case NodeType::I64Const:
     case NodeType::Lit:
@@ -153,21 +154,23 @@ void TextWriter::writeNode(Node *Node, bool AddNewline) {
     case NodeType::Read:
     case NodeType::SymConst:
     case NodeType::Uint8:
-    case NodeType::Uint32:
-    case NodeType::Uint64:
+    case NodeType::Uint32NoArgs:
+    case NodeType::Uint32OneArg:
+    case NodeType::Uint64NoArgs:
+    case NodeType::Uint64OneArg:
     case NodeType::U32Const:
     case NodeType::U64Const:
     case NodeType::Value:
-    case NodeType::Varint32:
-    case NodeType::Varint64:
+    case NodeType::Varint32NoArgs:
+    case NodeType::Varint32OneArg:
+    case NodeType::Varint64NoArgs:
+    case NodeType::Varint64OneArg:
     case NodeType::Varuint1:
     case NodeType::Varuint7:
-    case NodeType::Varuint32:
-    case NodeType::Varuint64:
-    case NodeType::Vbrint32:
-    case NodeType::Vbrint64:
-    case NodeType::Vbruint32:
-    case NodeType::Vbruint64:
+    case NodeType::Varuint32NoArgs:
+    case NodeType::Varuint32OneArg:
+    case NodeType::Varuint64NoArgs:
+    case NodeType::Varuint64OneArg:
     case NodeType::Version:
     case NodeType::Void:
     case NodeType::Case:

@@ -56,8 +56,6 @@ enum class NodeType {
     ExtractEof,
     File,
     Filter,
-    Fixed32,
-    Fixed64,
     IfThenElse,
     Integer,
     IntToAst,
@@ -80,22 +78,24 @@ enum class NodeType {
     Sequence,
     Symbol,
     SymConst,
-    Uint32,
+    Uint32NoArgs,
+    Uint32OneArg,
     Uint8,
-    Uint64,
+    Uint64NoArgs,
+    Uint64OneArg,
     U32Const,
     U64Const,
     Value,
-    Varint32,
-    Varint64,
+    Varint32NoArgs,
+    Varint32OneArg,
+    Varint64NoArgs,
+    Varint64OneArg,
     Varuint1,
     Varuint7,
-    Varuint32,
-    Varuint64,
-    Vbrint32,
-    Vbrint64,
-    Vbruint32,
-    Vbruint64,
+    Varuint32NoArgs,
+    Varuint32OneArg,
+    Varuint64NoArgs,
+    Varuint64OneArg,
     Version,
     Void,
     Write // Assumed to be last in list (see NumNodeTypes).
@@ -103,6 +103,10 @@ enum class NodeType {
 
 static constexpr size_t NumNodeTypes = static_cast<int>(NodeType::Write) + 1;
 
+// Returns the s-expression name
+const char *getNodeSexpName(NodeType Type);
+
+// Returns a unique (printable) type name
 const char *getNodeTypeName(NodeType Type);
 
 class Node;

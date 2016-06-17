@@ -118,8 +118,6 @@ id	{letter}({letter}|{digit}|[_.])*
 "extract.end"     return Parser::make_EXTRACT_END(Driver.getLoc());
 "extract.eof"     return Parser::make_EXTRACT_EOF(Driver.getLoc());
 "filter"          return Parser::make_FILTER(Driver.getLoc());
-"fixed32"         return Parser::make_FIXED32(Driver.getLoc());
-"fixed64"         return Parser::make_FIXED64(Driver.getLoc());
 "if"              return Parser::make_IF(Driver.getLoc());
 "int.to.bit"      return Parser::make_INT_TO_BIT(Driver.getLoc());
 "int.to.byte"     return Parser::make_INT_TO_BYTE(Driver.getLoc());
@@ -152,10 +150,6 @@ id	{letter}({letter}|{digit}|[_.])*
 "varuint7"        return Parser::make_VARUINT7(Driver.getLoc());
 "varuint32"       return Parser::make_VARUINT32(Driver.getLoc());
 "varuint64"       return Parser::make_VARUINT64(Driver.getLoc());
-"vbrint32"        return Parser::make_VBRINT32(Driver.getLoc());
-"vbrint64"        return Parser::make_VBRINT32(Driver.getLoc());
-"vbruint32"       return Parser::make_VBRUINT32(Driver.getLoc());
-"vbruint64"       return Parser::make_VBRUINT32(Driver.getLoc());
 "version"         return Parser::make_VERSION(Driver.getLoc());
 "void"            return Parser::make_VOID(Driver.getLoc());
 "write"           return Parser::make_WRITE(Driver.getLoc());
