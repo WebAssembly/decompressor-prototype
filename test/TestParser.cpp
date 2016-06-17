@@ -33,6 +33,7 @@ void usage(const char *AppName) {
   fprintf(stderr, "Options:\n");
   fprintf(stderr, "  -l\t\tTrace lexing of file(s).\n");
   fprintf(stderr, "  -p\t\tTrace parsing of file(s).\n");
+  fprintf(stderr, "  -t\t\tUse internal type names for s-expressions\n");
   fprintf(stderr, "  -w\t\tWrite out parsed s-expressions.\n");
 }
 
@@ -45,6 +46,8 @@ int main(int Argc, char *Argv[]) {
       Driver.setTraceParsing(true);
     else if (Argv[i] == std::string("-l"))
       Driver.setTraceLexing(true);
+    else if (Argv[i] == std::string("-t"))
+      TextWriter::UseNodeTypeNames = true;
     else if (Argv[i] == std::string("-w"))
       PrintAst = true;
     else if (Argv[i] == std::string("-h")

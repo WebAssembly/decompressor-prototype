@@ -28,160 +28,160 @@
 (version 0)
 (section 'filter'
 
-  (define 'symbol.default' # reads in a symbol name
+  (default 'symbol' # reads in a symbol name
     (seq
       (preorder 0)
-      (loop (append.value (vbruint32 6)) (append.value (uint8)))
+      (loop (append (varuint32 6)) (append (uint8)))
     )
   )
 
-  (define 'type.default'
+  (default 'type'
     (seq
       (preorder 0)
-      (loop (append.value (vbruint32 6))
-        (append.value (varuint7))             # function type 0x40
-        (loop (append.value (vbruint32 6))    # parameters
+      (loop (append (varuint32 6))
+        (append (varuint7))             # function type 0x40
+        (loop (append (varuint32 6))    # parameters
           (call value_type))
-        (call return_type)                    # return type
+        (call return_type)              # return type
       )
     )
     (method value_type
-      (append.value (fixed32 3))
+      (append (uint32 3))
     )
     (method return_type
-      (if (append.value (fixed32 1)) (call value_type) (void))
+      (if (append (uint32 1)) (call value_type) (void))
     )
   )
 
-  (define 'import.default'
+  (default 'import'
     (seq
       (preorder 0)
-      (loop (append.value (vbruint32 6)) (call import_entry))
+      (loop (append (varuint32 6)) (call import_entry))
     )
     (method import_entry
-      (append.value (vbruint32 6))  # signature index of the import
-      (eval 'symbol')               # module string
+      (append (varuint32 6))  # signature index of the import
+      (eval 'symbol')         # module string
       (append)
-      (eval 'symbol')               # function string
+      (eval 'symbol')         # function string
       (append)
     )
   )
 
-  (define 'function.default'
+  (default 'function'
     (seq
       (preorder 0)
-      (loop (append.value (vbruint32 6))
-         (append.value (vbruint32 6))) # list of type signature indices
+      (loop (append (varuint32 6))
+         (append (varuint32 6))) # list of type signature indices
     )
   )
 
-  (define 'table.default'
+  (default 'table'
     (seq
       (preorder 0)
-      (loop (append.value (vbruint32 6))
-        (append.value (vbruint32 6))) # indices into the function section
+      (loop (append (varuint32 6))
+        (append (varuint32 6))) # indices into the function section
     )
   )
 
-  (define 'memory.default'
+  (default 'memory'
     (seq
-      (vbruint32 6)   # Initial memory suze
-      (vbruint32 6)   # maximum memory size
-      (fixed32 1)     # 1 if the memory is visible outside the module
+      (varuint32 6)   # Initial memory suze
+      (varuint32 6)   # maximum memory size
+      (uint32 1)      # 1 if the memory is visible outside the module
       (preorder 3)
     )
   )
 
-  (define 'export.default'
+  (default 'export'
     (seq
       (preorder 0)
-      (loop (append.value (vbruint32 6))
+      (loop (append (varuint32 6))
         (call export_entry))
     )
     (method export_entry
-      (append.value (vbruint32 6))     # Index into the function table
-      (eval 'symbol')                  # funtion string
+      (append (varuint32 6))     # Index into the function table
+      (eval 'symbol')            # funtion name
       (append)
     )
   )
 
-  (define 'start.default'
-    (vbruint32 6)
+  (default 'start'
+    (varuint32 6)
   )
 
-  (define 'code.default'
+  (default 'code'
     (seq
       (preorder 0)
-      (loop (append.value (vbruint32 6))
+      (loop (append (varuint32 6))
         (eval 'function.body')
         (append))
     )
   )
 
-  (define 'data.default'
+  (default 'data'
     (seq
       (preorder 0)
-      (loop (append.value (vbruint32 6))
+      (loop (append (varuint32 6))
         (call data_segment)))
     (method data_segment
       # The offset in linear memory at which to store the data.
-      (append.value (vbruint32 6))
+      (append (varuint32 6))
       # The data
-      (loop (append.value (vbruint32 6))
-        (append.value (uint8)))
+      (loop (append (varuint32 6))
+        (append (uint8)))
     )
   )
 
-  (define 'name.default'
+  (default 'name'
     (seq
       (preorder 0)
-      (loop (append.value (vbruint32 6))
+      (loop (append (varuint32 6))
         (call function_names)))
     (method function_names
-      (eval 'symbol')                        # fcn_name
+      (eval 'symbol')                  # fcn_name
       (append)
-      (loop (append.value (vbruint32 6))     # local names.
+      (loop (append (varuint32 6))     # local names.
         (eval 'symbol') 
         (append))
     )
   )
 
-  (define 'function.body.default'
+  (default 'function.body'
     (seq
       (preorder 0)
-      (append.value (extract.begin 0xFE))    # fake opcode 0xFE
+      (append (extract.begin 0xFE))    # fake opcode 0xFE
       (append)
-      (loop (append.value (vbruint32 6))
+      (loop (append (varuint32 6))
         (call local_entry))
       (loop.unbounded
         (eval 'code.inst')
         (append)
       )
-      (append.value (extract.end 0xFF))      # fake opcode 0xFF
+      (append (extract.end 0xFF))      # fake opcode 0xFF
     )
     (method local_entry
-      (loop (append.value (vbruint32 6))     # Type of each local variable.
-        (append.value (fixed32 3)))
+      (loop (append (varuint32 6))     # Type of each local variable.
+        (append (uint32 3)))
     )
   )
 
-  (define 'code.inst.default'
+  (default 'code.inst'
     (seq
       (preorder 0)
-      (select (append.value (uint8))
+      (select (append (uint8))
         (void)                                   # simple one byte opcode.
         # control flow operators.
         (case 0x06 (call branch_target))         # br
         (case 0x07 (call branch_target))         # br_if
         (case 0x08 (call branch_table))          # br_table
-        (case 0x09 (append.value (fixed32 1)))   # return argument_count
+        (case 0x09 (append (uint32 1)))          # return argument_count
         # basic operators
-        (case 0x10 (append.value (vbrint32 6)))  # i32.const value
-        (case 0x11 (append.value (vbrint64 6)))  # i64.const value
-        (case 0x12 (append.value (uint64)))      # f64.const value
-        (case 0x13 (append.value (uint32)))      # f32.const value
-        (case 0x14 (append.value (vbruint32 6))) # get_local index
-        (case 0x15 (append.value (vbruint32 6))) # set_local index
+        (case 0x10 (append (varint32 6)))        # i32.const value
+        (case 0x11 (append (varint64 6)))        # i64.const value
+        (case 0x12 (append (uint64)))            # f64.const value
+        (case 0x13 (append (uint32)))            # f32.const value
+        (case 0x14 (append (varuint32 6)))       # get_local index
+        (case 0x15 (append (varuint32 6)))       # set_local index
         (case 0x16 (call call_args))             # call
         (case 0x17 (call call_args))             # call_indirect
         (case 0x18 (call call_args))             # call_import
@@ -213,24 +213,24 @@
       )
     )
     (method branch_table
-      (append.value (fixed32 1))       # argument_count
-      (loop (append.value (vbruint32 6))
-         (append.value (vbruint32 6))) # target entries indicating block/loop to break
-      (append.value (vbruint32 6))     # default target
+      (append (uint32 1))        # argument_count
+      (loop (append (varuint32 6))
+         (append (varuint32 6))) # target entries indicating block/loop to break
+      (append (varuint32 6))     # default target
     )
     (method branch_target
-       (append.value (fixed32 1))      #   argument_count
-       (append.value (vbruint32 6))    #   relative depth          
+       (append (uint32 1))       #   argument_count
+       (append (varuint32 6))    #   relative depth          
     )
     (method call_args
-      (append.value (fixed32 1))       #   argument count
-      (append.value (vbruint32 6))     #   funtion index
+      (append (uint32 1))        #   argument count
+      (append (varuint32 6))     #   funtion index
     )
     (method memory_immediate
       # flags bitfield encoding alignment as log2(alignment)
-      (append.value (vbruint32 6))
+      (append (varuint32 6))
       # memory offset
-      (append.value (vbruint32 6))
+      (append (varuint32 6))
     )
   )
 )
