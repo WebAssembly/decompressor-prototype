@@ -1,0 +1,13 @@
+language: c++
+
+sudo: false
+
+before_script: ./travis/install_dependencies.sh
+
+install: true
+
+script: ./travis/build_and_test.sh
+
+os:
+  - linux
+  - osx

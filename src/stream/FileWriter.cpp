@@ -17,9 +17,10 @@
 
 #include "stream/FileWriter.h"
 
+#include <algorithm>
 #include <cstring>
-#include <unistd.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 namespace wasm {
 
