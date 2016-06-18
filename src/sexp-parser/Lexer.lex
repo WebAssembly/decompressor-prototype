@@ -34,6 +34,7 @@ using namespace wasm::filt;
 
 static Parser::symbol_type make_QuotedID(
     const Driver &Driver, const std::string &Name) {
+  // TODO(KarlSchimpf) allow more general forms (any sequence of uint8)?
   return Parser::make_IDENTIFIER(Name.substr(1, Name.size()-2),
                                  Driver.getLoc());
 }

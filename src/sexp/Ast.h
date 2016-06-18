@@ -379,40 +379,6 @@ private:
       : TernaryNode(Kind, Kid1, Kid2, Kid3) {}
 };
 
-#if 0
-class IfThenElse final : public Node {
-  IfThenElse(const IfThenElse&) = delete;
-  IfThenElse &operator=(const IfThenElse&) = delete;
-  IfThenElse() = delete;
-  virtual void forceCompilation() final;
-public:
-  ~IfThenElse() {}
-  IndexType getNumKids() const final { return 3; }
-  Node *getKid(IndexType Index) const final {
-    assert(Index < 3);
-    return Kids[Index];
-  }
-  static IfThenElse *create(
-      Node *Exp, Node *Then, Node *Else,
-      NodeMemory &Memory = NodeMemory::Default) {
-    IfThenElse *Node = new IfThenElse(Exp, Then, Else);
-    Node->add(Memory);
-    return Node;
-  }
-  Node *getTest() const { return Kids[0]; }
-  Node *getThen() const { return Kids[1]; }
-  Node *getElse() const { return Kids[2]; }
-private:
-  Node *Kids[3];
-  IfThenElse(Node *Exp, Node* Then, Node* Else)
-      : Node(NodeType::IfThenElse) {
-    Kids[0] = Exp;
-    Kids[1] = Then;
-    Kids[2] = Else;
-  }
-};
-#endif
-
 class NaryNode : public Node {
   NaryNode(const NaryNode&) = delete;
   NaryNode &operator=(const NaryNode&) = delete;

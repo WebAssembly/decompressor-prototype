@@ -123,13 +123,13 @@ void TextWriter::writeIndent() {
     return;
   for (size_t i = 0; i < IndentCount; ++i)
     fputs(IndentString, File);
-  LineEmpty = (IndentCount > 0);
+  LineEmpty = IndentCount == 0;
 }
 
 void TextWriter::writeNode(Node *Node, bool AddNewline) {
   if (Node == nullptr) {
     Indent _(this, AddNewline);
-    fprintf(File, "null");
+    fprintf(File, "<nullptr>");
     LineEmpty = false;
     return;
   }
@@ -173,7 +173,6 @@ void TextWriter::writeNode(Node *Node, bool AddNewline) {
     case NodeType::Symbol: {
       Indent _(this, AddNewline);
       auto *Sym = dynamic_cast<SymbolNode*>(Node);
-      // TODO: Get if needs to be quoted.
       fprintf(File, "'%s'", Sym->getName().c_str());
       LineEmpty = false;
       return;

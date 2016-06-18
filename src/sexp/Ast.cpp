@@ -124,6 +124,7 @@ namespace wasm {
 namespace filt {
 
 const char *getNodeSexpName(NodeType Type) {
+  // TODO(KarlSchimpf): Make thread safe
   static std::unordered_map<int, const char*> Mapping;
   if (Mapping.empty()) {
     for (size_t i = 0; i < size(SexpTypeNamePair); ++i) {
@@ -144,6 +145,7 @@ const char *getNodeSexpName(NodeType Type) {
 }
 
 const char *getNodeTypeName(NodeType Type) {
+  // TODO(KarlSchimpf): Make thread safe
   static std::unordered_map<int, const char*> Mapping;
   if (Mapping.empty()) {
     for (size_t i = 0; i < size(UniquifyingTypeNamePair); ++i) {

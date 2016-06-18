@@ -19,86 +19,6 @@
 (version 0)
 (section 'filter'
 
-  (default 'type'
-    (preorder 0)
-    (loop (append (varuint32 6))
-      (append (varuint7))             # function type 0x40
-      (loop (append (varuint32 6))    # parameters
-        (eval 'type.value_type'))
-      (eval 'type.return_type')       # return type
-    )
-  )
-
-  (default 'type.value_type'
-    (append (uint32 3))
-  )
-
-  (default 'type.return_type'
-    (if (append (uint32 1)) (eval 'value_type') (void))
-  )
-
-  (default 'import'
-    (preorder 0)
-    (loop (append (varuint32 6)) (eval 'import_entry'))
-  )
-
-  (default 'import.entry'
-    (preorder 0)
-    (append (varuint32 6))  # signature index of the import
-    (eval 'import.symbol')  # module string
-    (append)
-    (eval 'import.symbol')  # function string
-    (append)
-  )
-
-  (default 'import.symbol' # reads in a symbol name
-    (preorder 0)
-    (loop (append (varuint32 6)) (append (uint8)))
-  )
-
-  (default 'function'
-    (preorder 0)
-    (loop (append (varuint32 6))
-       (append (varuint32 6))    # list of type signature indices
-    )
-  )
-
-  (default 'table'
-    (preorder 0)
-    (loop (append (varuint32 6))
-      (append (varuint32 6))) # indices into the function section
-  )
-
-  (default 'memory'
-    (varuint32 6)   # Initial memory suze
-    (varuint32 6)   # maximum memory size
-    (uint32 1)      # 1 if the memory is visible outside the module
-    (preorder 3)
-  )
-
-  (default 'export'
-    (preorder 0)
-    (loop (append (varuint32 6))
-      (eval 'export.entry')
-    )
-  )
-
-  (default 'export.entry'
-    (preorder 0)
-    (append (varuint32 6))     # Index into the function table
-    (eval 'export.symbol')            # funtion name
-    (append)
-  )
-
-  (default 'export.symbol' # reads in a symbol name
-    (preorder 0)
-    (loop (append (varuint32 6)) (append (uint8)))
-  )
-
-  (default 'start'
-    (varuint32 6)
-  )
-
   (default 'code'
     (preorder 0)
     (loop (append (varuint32 6))
@@ -214,6 +134,58 @@
     )
   )
 
+  (default 'export'
+    (preorder 0)
+    (loop (append (varuint32 6))
+      (eval 'export.entry')
+    )
+  )
+
+  (default 'export.entry'
+    (preorder 0)
+    (append (varuint32 6))     # Index into the function table
+    (eval 'export.symbol')            # funtion name
+    (append)
+  )
+
+  (default 'export.symbol' # reads in a symbol name
+    (preorder 0)
+    (loop (append (varuint32 6)) (append (uint8)))
+  )
+
+  (default 'function'
+    (preorder 0)
+    (loop (append (varuint32 6))
+       (append (varuint32 6))    # list of type signature indices
+    )
+  )
+
+  (default 'import'
+    (preorder 0)
+    (loop (append (varuint32 6)) (eval 'import_entry'))
+  )
+
+  (default 'import.entry'
+    (preorder 0)
+    (append (varuint32 6))  # signature index of the import
+    (eval 'import.symbol')  # module string
+    (append)
+    (eval 'import.symbol')  # function string
+    (append)
+  )
+
+  (default 'import.symbol'
+    (preorder 0)
+    (loop (append (varuint32 6)) (append (uint8)))
+  )
+
+  (default 'memory'
+    (varuint32 6)   # Initial memory suze
+    (varuint32 6)   # maximum memory size
+    (uint32 1)      # 1 if the memory is visible outside the module
+    (preorder 3)
+  )
+
   (default 'name'
     (preorder 0)
     (loop (append (varuint32 6))
@@ -235,5 +207,33 @@
   (default 'name.symbol' # reads in a symbol name
     (preorder 0)
     (loop (append (varuint32 6)) (append (uint8)))
+  )
+
+  (default 'start'
+    (varuint32 6)
+  )
+
+  (default 'table'
+    (preorder 0)
+    (loop (append (varuint32 6))
+      (append (varuint32 6))) # indices into the function section
+  )
+
+  (default 'type'
+    (preorder 0)
+    (loop (append (varuint32 6))
+      (append (varuint7))             # function type 0x40
+      (loop (append (varuint32 6))    # parameters
+        (eval 'type.value_type'))
+      (eval 'type.return_type')       # return type
+    )
+  )
+
+  (default 'type.return_type'
+    (if (append (uint32 1)) (eval 'value_type') (void))
+  )
+
+  (default 'type.value_type'
+    (append (uint32 3))
   )
 )
