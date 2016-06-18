@@ -75,11 +75,13 @@ class Node;
 %token BIT_TO_BYTE   "bit.to.byte"
 %token BIT_TO_INT    "bit.to.int"
 %token BIT_TO_AST    "bit.to.ast"
+%token BLOCK         "block"
+%token BLOCKBEGIN    "block.begin"
+%token BLOCKEND      "block.end"
 %token BYTE_TO_BIT   "byte.to.bit"
 %token BYTE_TO_BYTE  "byte.to.byte"
 %token BYTE_TO_INT   "byte.to.int"
 %token BYTE_TO_AST   "byte.to.ast"
-%token CALL          "call"
 %token CASE          "case"
 %token CLOSEPAREN    ")"
 %token COPY          "copy"
@@ -87,10 +89,6 @@ class Node;
 %token DEFINE        "define"
 %token ERROR         "error"
 %token EVAL          "eval"
-%token EXTRACT       "extract"
-%token EXTRACT_BEGIN "extract.begin"
-%token EXTRACT_END   "extract.end"
-%token EXTRACT_EOF   "extract.eof"
 %token FILTER        "filter"
 %token IF            "if"
 %token INT_TO_BIT    "int.to.bit"
@@ -104,7 +102,6 @@ class Node;
 %token LOOP_UNBOUNDED "loop.unbounded"
 %token OPENPAREN     "("
 %token MAP           "map"
-%token METHOD        "method"
 %token PEEK          "peek"
 %token POSTORDER     "postorder"
 %token PREORDER      "preorder"
@@ -116,6 +113,7 @@ class Node;
 %token UINT8         "uint8"
 %token UINT32        "uint32"
 %token UINT64        "uint64"
+%token UNDEFINE      "undefine"
 %token U32_CONST     "u32.const"
 %token U64_CONST     "u64.const"
 %token VALUE         "value"
@@ -131,7 +129,6 @@ class Node;
 
 // Terminal classes
 %token <std::string> IDENTIFIER
-%token <std::string> QUOTED_IDENTIFIER
 %token <uint64_t> INTEGER
 
 // Nonterminal classes.
@@ -140,22 +137,19 @@ class Node;
 %type <wasm::filt::Node *> case_statement_list
 %type <wasm::filt::Node *> declaration
 %type <wasm::filt::Node *> declaration_list
+%type <wasm::filt::Node *> declaration_stmt_list
 %type <wasm::filt::Node *> expression
-%type <wasm::filt::Node *> extract_statement_list
 %type <wasm::filt::Node *> file
-%type <wasm::filt::Node *> filter
-%type <wasm::filt::Node *> filter_list
+%type <wasm::filt::Node *> stream_conv
+%type <wasm::filt::Node *> stream_conv_list
+%type <wasm::filt::Node *> stream_conv_stmt_list
 %type <wasm::filt::Node *> header
 %type <wasm::filt::Node *> integer
 %type <wasm::filt::Node *> loop_body
-%type <wasm::filt::Node *> method
-%type <wasm::filt::Node *> method_list
-%type <wasm::filt::Node *> method_statement_list
-%type <wasm::filt::Node *> name
 %type <wasm::filt::Node *> section
 %type <wasm::filt::Node *> section_list
+%type <wasm::filt::Node *> seq_statement_list
 %type <wasm::filt::Node *> statement
-%type <wasm::filt::Node *> statement_list
 %type <wasm::filt::Node *> symbol
 
 %start file
@@ -196,8 +190,31 @@ case_statement_list
         ;
 
 declaration
-        : "(" method_list ")" { $$ = $2; }
+        : "(" declaration_stmt_list ")" {
+            $$ = $2;
+          }
+        | "(" "undefine" symbol ")" {
+            $$ = Unary<NodeType::Undefine>::create($3);
+          }
         ;
+
+declaration_stmt_list
+        : "default" symbol statement {
+            $$ = Nary<NodeType::Default>::create();
+            $$->append($2);
+            $$->append($3);
+          }
+        | "define" symbol statement {
+            $$ = Nary<NodeType::Define>::create();
+            $$->append($2);
+            $$->append($3);
+          }
+        | declaration_stmt_list statement {
+            $$ = $1;
+            $$->append($2);
+          }
+        ;
+
 
 declaration_list
         : symbol declaration {  // Section name / first define.
@@ -218,23 +235,16 @@ expression
         | "(" "append" expression ")" {
             $$ = Unary<NodeType::AppendOneArg>::create($3);
           }
-        | "(" "call" name ")" {
-            $$ = Unary<NodeType::Call>::create($3);
+        | "(" "block" expression integer integer ")" {
+            $$ = Ternary<NodeType::Block>::create($3, $4, $5);
           }
+        | "(" "block.begin" ")" { $$ = Nullary<NodeType::BlockBegin>::create(); }
+        | "(" "block.end" ")" { $$ = Nullary<NodeType::BlockEnd>::create(); }
         | "(" "error" ")" {
             $$ = Nullary<NodeType::Error>::create();
           }
         | "(" "eval" symbol ")" {
             $$ = Unary<NodeType::Eval>::create($3);
-          }
-        | "(" "extract.begin" integer ")" {
-            $$ = Unary<NodeType::ExtractBegin>::create($3);
-          }
-        | "(" "extract.end" integer ")" {
-            $$ = Unary<NodeType::ExtractEnd>::create($3);
-          }
-        | "(" "extract.eof" ")" {
-            $$ = Nullary<NodeType::ExtractEof>::create();
           }
         | "(" "i32.const" integer ")" {
             $$ = Unary<NodeType::I32Const>::create($3);
@@ -325,78 +335,6 @@ expression
           }
         ;
 
-extract_statement_list
-        : statement { // first statement of extract
-            $$ = Nary<NodeType::Extract>::create();
-            $$->append($1);
-          }
-        | extract_statement_list statement { // remaining statements of extract.
-            $$ = $1;
-            $$->append($2);
-          }
-        ;
-
-filter  : "(" "ast.to.ast" statement ")" {
-            $$ = Unary<NodeType::AstToAst>::create($3);
-          }
-        | "(" "ast.to.bit" statement ")" {
-            $$ = Unary<NodeType::AstToBit>::create($3);
-          }
-        | "(" "ast.to.byte" statement ")" {
-            $$ = Unary<NodeType::AstToByte>::create($3);
-          }
-        | "(" "ast.to.int" statement ")" {
-            $$ = Unary<NodeType::AstToInt>::create($3);
-          }
-        | "(" "bit.to.bit" statement ")" {
-            $$ = Unary<NodeType::BitToBit>::create($3);
-          }
-        | "(" "bit.to.byte" statement ")" {
-            $$ = Unary<NodeType::BitToByte>::create($3);
-          }
-        | "(" "bit.to.int" statement ")" {
-            $$ = Unary<NodeType::BitToInt>::create($3);
-          }
-        | "(" "bit.to.ast" statement ")" {
-            $$ = Unary<NodeType::BitToAst>::create($3);
-          }
-        | "(" "byte.to.bit" statement ")" {
-            $$ = Unary<NodeType::ByteToBit>::create($3);
-          }
-        | "(" "byte.to.byte" statement ")" {
-            $$ = Unary<NodeType::ByteToByte>::create($3);
-          }
-        | "(" "byte.to.int" statement ")" {
-            $$ = Unary<NodeType::ByteToInt>::create($3);
-          }
-        | "(" "byte.to.ast" statement ")" {
-            $$ = Unary<NodeType::ByteToAst>::create($3);
-          }
-        | "(" "int.to.bit" statement ")" {
-            $$ = Unary<NodeType::IntToBit>::create($3);
-          }
-        | "(" "int.to.byte" statement ")" {
-            $$ = Unary<NodeType::IntToByte>::create($3);
-          }
-        | "(" "int.to.int" statement ")" {
-            $$ = Unary<NodeType::IntToInt>::create($3);
-          }
-        | "(" "int.to.ast" statement ")" {
-            $$ = Unary<NodeType::IntToAst>::create($3);
-          }
-        ;
-
-filter_list
-        : filter {
-            $$ = Nary<NodeType::Filter>::create();
-            $$->append($1);
-          }
-        | filter_list filter {
-            $$ = $1;
-            $$->append($2);
-          }
-        ;
-
 header  : "(" "version" integer ")" {
             $$ = Unary<NodeType::Version>::create($3);
           }
@@ -404,7 +342,6 @@ header  : "(" "version" integer ")" {
 
 integer : INTEGER { $$ = IntegerNode::create($1); }
         ;
-
 
 loop_body
         : "loop" expression {
@@ -418,41 +355,6 @@ loop_body
             $$ = $1;
             $$->append($2);
           }
-        ;
-
-method  : "(" "method" method_statement_list ")" { $$ = $3; }
-        ;
-
-method_list
-        : "default" symbol statement {
-          $$ = Nary<NodeType::Default>::create();
-            $$->append($2);
-            $$->append($3);
-          }
-        | "define" symbol statement {
-            $$ = Nary<NodeType::Define>::create();
-            $$->append($2);
-            $$->append($3);
-          }
-        | method_list method { // Helper methods of define.
-            $$ = $1;
-            $$->append($2);
-          }
-        ;
-
-method_statement_list
-        : name statement { // Name and first statement of method
-            $$ = Nary<NodeType::Method>::create();
-            $$->append($1);
-            $$->append($2);
-          }
-        | method_statement_list statement { // Remaining statements of method
-            $$ = $1;
-            $$->append($2);
-          }
-        ;
-
-name    : IDENTIFIER { $$ = SymbolNode::create($1); }
         ;
 
 section : "(" "section" declaration_list ")" { $$ = $3; }
@@ -470,33 +372,117 @@ section_list
           }
         ;
 
-statement
-        : expression { $$ = $1; }
-        | "(" "copy" ")" { $$ = Nullary<NodeType::Copy>::create(); }
-        | "(" "extract" extract_statement_list ")" { $$ = $3; }
-        | "(" "filter" filter_list ")" { $$ = $3; }
-        | "(" "if" expression statement statement ")" {
-            $$ = IfThenElse::create($3, $4, $5);
-          }
-        | "(" loop_body ")" { $$ = $2; }
-//        | "(" "loop" loop_statement_list ")" { $$ = $3; }
-//        | "(" "loop.unbounded" loop_unbounded_statement_list ")" { $$ = $3; }
-        | "(" "select" case_list ")" { $$ = $3; }
-        | "(" "seq" statement_list ")" { $$ = $3; }
-        ;
-
-statement_list
+seq_statement_list
         : %empty {
             $$ = Nary<NodeType::Sequence>::create();
           }
-        | statement_list statement {
+        | seq_statement_list statement {
             $$ = $1;
             $$->append($2);
           }
         ;
 
-symbol
-        : QUOTED_IDENTIFIER { $$ = SymbolNode::create($1); }
+statement
+        : expression { $$ = $1; }
+        | "(" "copy" ")" { $$ = Nullary<NodeType::Copy>::create(); }
+        | stream_conv { $$ = $1; }
+        | "(" "filter" stream_conv_list ")" { $$ = $3; }
+        | "(" "if" expression statement statement ")" {
+            $$ = Ternary<NodeType::IfThenElse>::create($3, $4, $5);
+          }
+        | "(" loop_body ")" { $$ = $2; }
+        | "(" "select" case_list ")" { $$ = $3; }
+        | "(" "seq" seq_statement_list ")" { $$ = $3; }
+        ;
+
+stream_conv  : "(" stream_conv_stmt_list ")" {
+            $$ = $2;
+          }
+        ;
+
+stream_conv_list
+        : stream_conv {
+            $$ = Nary<NodeType::Filter>::create();
+            $$->append($1);
+          }
+        | stream_conv_list stream_conv {
+            $$ = $1;
+            $$->append($2);
+          }
+        ;
+
+stream_conv_stmt_list
+        : "ast.to.ast" statement {
+            $$ = Nary<NodeType::AstToAst>::create();
+            $$->append($2);
+          }
+        | "ast.to.bit" statement  {
+            $$ = Nary<NodeType::AstToBit>::create();
+            $$->append($2);
+          }
+        | "ast.to.byte" statement {
+            $$ = Nary<NodeType::AstToByte>::create();
+            $$->append($2);
+          }
+        | "ast.to.int" statement {
+            $$ = Nary<NodeType::AstToInt>::create();
+            $$->append($2);
+          }
+        | "bit.to.bit" statement {
+            $$ = Nary<NodeType::BitToBit>::create();
+            $$->append($2);
+          }
+        | "bit.to.byte" statement {
+            $$ = Nary<NodeType::BitToByte>::create();
+            $$->append($2);
+          }
+        | "bit.to.int" statement {
+            $$ = Nary<NodeType::BitToInt>::create();
+            $$->append($2);
+          }
+        | "bit.to.ast" statement {
+            $$ = Nary<NodeType::BitToAst>::create();
+            $$->append($2);
+          }
+        | "byte.to.bit" statement {
+            $$ = Nary<NodeType::ByteToBit>::create();
+            $$->append($2);
+          }
+        | "byte.to.byte" statement {
+            $$ = Nary<NodeType::ByteToByte>::create();
+            $$->append($2);
+          }
+        | "byte.to.int" statement {
+            $$ = Nary<NodeType::ByteToInt>::create();
+            $$->append($2);
+          }
+        | "byte.to.ast" statement {
+            $$ = Nary<NodeType::ByteToAst>::create();
+            $$->append($2);
+          }
+        | "int.to.bit" statement  {
+            $$ = Nary<NodeType::IntToBit>::create();
+            $$->append($2);
+          }
+        | "int.to.byte" statement {
+            $$ = Nary<NodeType::IntToByte>::create();
+            $$->append($2);
+          }
+        | "int.to.int" statement {
+            $$ = Nary<NodeType::IntToInt>::create();
+            $$->append($2);
+          }
+        | "int.to.ast" statement {
+            $$ = Nary<NodeType::IntToAst>::create();
+            $$->append($2);
+          }
+        | stream_conv_stmt_list statement {
+            $$ = $1;
+            $$->append($2);
+          }
+        ;
+
+symbol  : IDENTIFIER { $$ = SymbolNode::create($1); }
         ;
 
 %%

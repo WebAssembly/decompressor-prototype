@@ -34,8 +34,9 @@ using namespace wasm::filt;
 
 static Parser::symbol_type make_QuotedID(
     const Driver &Driver, const std::string &Name) {
-  return Parser::make_QUOTED_IDENTIFIER(Name.substr(1, Name.size()-2),
-                                        Driver.getLoc());
+  // TODO(KarlSchimpf) allow more general forms (any sequence of uint8)?
+  return Parser::make_IDENTIFIER(Name.substr(1, Name.size()-2),
+                                 Driver.getLoc());
 }
 
 static uint64_t read_Integer(const Driver &Driver, const std::string &Name) {
@@ -103,20 +104,18 @@ id	{letter}({letter}|{digit}|[_.])*
 "bit.to.byte"     return Parser::make_BIT_TO_BYTE(Driver.getLoc());
 "bit.to.int"      return Parser::make_BIT_TO_INT(Driver.getLoc());
 "bit.to.ast"      return Parser::make_BIT_TO_AST(Driver.getLoc());
+"block"           return Parser::make_BLOCK(Driver.getLoc());
+"block.begin"     return Parser::make_BLOCKBEGIN(Driver.getLoc());
+"block.end"       return Parser::make_BLOCKEND(Driver.getLoc());
 "byte.to.bit"     return Parser::make_BYTE_TO_BIT(Driver.getLoc());
 "byte.to.byte"    return Parser::make_BYTE_TO_BYTE(Driver.getLoc());
 "byte.to.int"     return Parser::make_BYTE_TO_BIT(Driver.getLoc());
 "byte.to.ast"     return Parser::make_BYTE_TO_AST(Driver.getLoc());
-"call"            return Parser::make_CALL(Driver.getLoc());
 "case"            return Parser::make_CASE(Driver.getLoc());
 "copy"            return Parser::make_COPY(Driver.getLoc());
 "default"         return Parser::make_DEFAULT(Driver.getLoc());
 "define"          return Parser::make_DEFINE(Driver.getLoc());
 "eval"            return Parser::make_EVAL(Driver.getLoc());
-"extract"         return Parser::make_EXTRACT(Driver.getLoc());
-"extract.begin"   return Parser::make_EXTRACT_BEGIN(Driver.getLoc());
-"extract.end"     return Parser::make_EXTRACT_END(Driver.getLoc());
-"extract.eof"     return Parser::make_EXTRACT_EOF(Driver.getLoc());
 "filter"          return Parser::make_FILTER(Driver.getLoc());
 "if"              return Parser::make_IF(Driver.getLoc());
 "int.to.bit"      return Parser::make_INT_TO_BIT(Driver.getLoc());
@@ -129,7 +128,6 @@ id	{letter}({letter}|{digit}|[_.])*
 "loop.unbounded"  return Parser::make_LOOP_UNBOUNDED(Driver.getLoc());
 "loop"            return Parser::make_LOOP(Driver.getLoc());
 "map"             return Parser::make_MAP(Driver.getLoc());
-"method"          return Parser::make_METHOD(Driver.getLoc());
 "peek"            return Parser::make_PEEK(Driver.getLoc());
 "postorder"       return Parser::make_POSTORDER(Driver.getLoc());
 "preorder"        return Parser::make_PREORDER(Driver.getLoc());
@@ -141,6 +139,7 @@ id	{letter}({letter}|{digit}|[_.])*
 "uint8"           return Parser::make_UINT8(Driver.getLoc());
 "uint32"          return Parser::make_UINT32(Driver.getLoc());
 "uint64"          return Parser::make_UINT64(Driver.getLoc());
+"undefine"        return Parser::make_UNDEFINE(Driver.getLoc());
 "u32.const"       return Parser::make_U32_CONST(Driver.getLoc());
 "u64.const"       return Parser::make_U64_CONST(Driver.getLoc());
 "value"           return Parser::make_VALUE(Driver.getLoc());
@@ -156,7 +155,6 @@ id	{letter}({letter}|{digit}|[_.])*
 "0x"{hexdigit}+   return make_HexInteger(Driver, yytext);
 {digit}+          return make_Integer(Driver, yytext);
 -?{digit}+        return make_SignedInteger(Driver, yytext);
-{id}              return Parser::make_IDENTIFIER(yytext, Driver.getLoc());
 "'"{id}"'"        return make_QuotedID(Driver, yytext);
 .                 Driver.error("invalid character");
 <<EOF>>           return Parser::make_END(Driver.getLoc());
