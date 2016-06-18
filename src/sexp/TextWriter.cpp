@@ -56,6 +56,7 @@ struct {
   {NodeType::SymConst, 1},
   {NodeType::Uint32OneArg, 1},
   {NodeType::Uint64OneArg, 1},
+  {NodeType::Undefine, 1},
   {NodeType::U32Const, 1},
   {NodeType::U64Const, 1},
   {NodeType::Varint32OneArg, 1},

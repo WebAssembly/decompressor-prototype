@@ -138,6 +138,7 @@ id	{letter}({letter}|{digit}|[_.])*
 "uint8"           return Parser::make_UINT8(Driver.getLoc());
 "uint32"          return Parser::make_UINT32(Driver.getLoc());
 "uint64"          return Parser::make_UINT64(Driver.getLoc());
+"undefine"        return Parser::make_UNDEFINE(Driver.getLoc());
 "u32.const"       return Parser::make_U32_CONST(Driver.getLoc());
 "u64.const"       return Parser::make_U64_CONST(Driver.getLoc());
 "value"           return Parser::make_VALUE(Driver.getLoc());

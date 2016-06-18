@@ -81,6 +81,7 @@ TypeNamePair SexpTypeNamePair[] = {
   {NodeType::Uint8, "uint8"},
   {NodeType::Uint64NoArgs, "uint64"},
   {NodeType::Uint64OneArg, "uint64"},
+  {NodeType::Undefine, "undefine"},
   {NodeType::U32Const, "u32.const"},
   {NodeType::U64Const, "u64.const"},
   {NodeType::Value, "value"},
@@ -210,23 +211,7 @@ template class Nullary<NodeType::Varuint64NoArgs>;
 template class Nullary<NodeType::Void>;
 
 template class Unary<NodeType::AppendOneArg>;
-template class Unary<NodeType::AstToAst>;
-template class Unary<NodeType::AstToBit>;
-template class Unary<NodeType::AstToByte>;
-template class Unary<NodeType::AstToInt>;
-template class Unary<NodeType::BitToAst>;
-template class Unary<NodeType::BitToBit>;
-template class Unary<NodeType::BitToByte>;
-template class Unary<NodeType::BitToInt>;
-template class Unary<NodeType::ByteToAst>;
-template class Unary<NodeType::ByteToBit>;
-template class Unary<NodeType::ByteToByte>;
-template class Unary<NodeType::ByteToInt>;
 template class Unary<NodeType::Eval>;
-template class Unary<NodeType::IntToAst>;
-template class Unary<NodeType::IntToBit>;
-template class Unary<NodeType::IntToByte>;
-template class Unary<NodeType::IntToInt>;
 template class Unary<NodeType::I32Const>;
 template class Unary<NodeType::I64Const>;
 template class Unary<NodeType::Lit>;
@@ -237,6 +222,7 @@ template class Unary<NodeType::Read>;
 template class Unary<NodeType::SymConst>;
 template class Unary<NodeType::Uint32OneArg>;
 template class Unary<NodeType::Uint64OneArg>;
+template class Unary<NodeType::Undefine>;
 template class Unary<NodeType::U32Const>;
 template class Unary<NodeType::U64Const>;
 template class Unary<NodeType::Varint32OneArg>;
@@ -251,11 +237,27 @@ template class Binary<NodeType::Map>;
 template class Ternary<NodeType::IfThenElse>;
 template class Ternary<NodeType::Block>;
 
+template class Nary<NodeType::AstToAst>;
+template class Nary<NodeType::AstToBit>;
+template class Nary<NodeType::AstToByte>;
+template class Nary<NodeType::AstToInt>;
+template class Nary<NodeType::BitToAst>;
+template class Nary<NodeType::BitToBit>;
+template class Nary<NodeType::BitToByte>;
+template class Nary<NodeType::BitToInt>;
+template class Nary<NodeType::ByteToAst>;
+template class Nary<NodeType::ByteToBit>;
+template class Nary<NodeType::ByteToByte>;
+template class Nary<NodeType::ByteToInt>;
 template class Nary<NodeType::Case>;
 template class Nary<NodeType::Default>;
 template class Nary<NodeType::Define>;
 template class Nary<NodeType::File>;
 template class Nary<NodeType::Filter>;
+template class Nary<NodeType::IntToAst>;
+template class Nary<NodeType::IntToBit>;
+template class Nary<NodeType::IntToByte>;
+template class Nary<NodeType::IntToInt>;
 template class Nary<NodeType::Loop>;
 template class Nary<NodeType::LoopUnbounded>;
 template class Nary<NodeType::Section>;

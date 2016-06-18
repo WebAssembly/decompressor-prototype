@@ -90,6 +90,7 @@ enum class NodeType {
     Uint8,
     Uint64NoArgs,
     Uint64OneArg,
+    Undefine,
     U32Const,
     U64Const,
     Value,

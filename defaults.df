@@ -236,5 +236,4 @@
     (preorder 0)
     (loop (append (varuint32 6)) (append (uint8)))
   )
-
 )
