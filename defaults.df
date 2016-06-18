@@ -16,221 +16,224 @@
 # This file defines the default algorithms for decompressing a WASM
 # module.
 
-# Note: Each define constructs a single ast node. This is done so that
-# callers can assume structure accross "eval" calls.
-
-# Note: The construct (method NAME S1 ... Sn) is for readability
-# only. It corresponds to a (seq S1 ... Sn) construct. The NAME is
-# used to symbolically associate the method index with a name. (call
-# NAME) constructs similarly replace the NAME with the corresponding
-# method index.
-
 (version 0)
 (section 'filter'
 
-  (default 'symbol' # reads in a symbol name
-    (seq
-      (preorder 0)
-      (loop (append (varuint32 6)) (append (uint8)))
+  (default 'code'
+    (preorder 0)
+    (loop (append (varuint32 6))
+      (eval 'code.function')
+      (append)
     )
   )
 
-  (default 'type'
-    (seq
-      (preorder 0)
-      (loop (append (varuint32 6))
-        (append (varuint7))             # function type 0x40
-        (loop (append (varuint32 6))    # parameters
-          (call value_type))
-        (call return_type)              # return type
-      )
+  (default 'code.address'
+    # flags bitfield encoding alignment as log2(alignment)
+    (append (varuint32 6))
+    # memory offset
+    (append (varuint32 6))
+  )
+
+  (default 'code.br_table'
+    (append (uint32 1))        # argument_count
+    (loop (append (varuint32 6))
+       (append (varuint32 6))) # target entries indicating block/loop to break
+    (append (varuint32 6))     # default target
+  )
+
+  (default 'code.br_target'
+     (append (uint32 1))       #   argument_count
+     (append (varuint32 6))    #   relative depth
+  )
+
+  (default 'code.call_args'
+    (append (uint32 1))        #   argument count
+    (append (varuint32 6))     #   funtion index
+  )
+
+  (default 'code.function'
+    (preorder 0)
+    (block (varuint32) 0xFE 0xFF)
+    (loop (append (varuint32 6))
+      (eval 'code.locals'))
+    (loop.unbounded
+      (eval 'code.inst')
+      (append)
     )
-    (method value_type
+  )
+
+  (default 'code.locals'
+    (preorder 0)
+    (loop (append (varuint32 6))     # Type of each local variable.
       (append (uint32 3))
     )
-    (method return_type
-      (if (append (uint32 1)) (call value_type) (void))
+  )
+
+  (default 'code.inst'
+    (preorder 0)
+    (select (append (uint8))
+      (void)                                 # simple one byte opcode.
+      # control flow operators.
+      (case 0x06 (eval 'code.br_target'))    # br
+      (case 0x07 (eval 'code.br_target'))    # br_if
+      (case 0x08 (eval 'code.br_table'))     # br_table
+      (case 0x09 (append (uint32 1)))        # return argument_count
+      # basic operators
+      (case 0x10 (append (varint32 6)))      # i32.const value
+      (case 0x11 (append (varint64 6)))      # i64.const value
+      (case 0x12 (append (uint64)))          # f64.const value
+      (case 0x13 (append (uint32)))          # f32.const value
+      (case 0x14 (append (varuint32 6)))     # get_local index
+      (case 0x15 (append (varuint32 6)))     # set_local index
+      (case 0x16 (eval 'code.call_args'))    # call
+      (case 0x17 (eval 'code.call_args'))    # call_indirect
+      (case 0x18 (eval 'code.call_args'))    # call_import
+      # Memory-related operators
+      (case 0x20 (eval 'code.address'))      # i32.load8_s address
+      (case 0x21 (eval 'code.address'))      # i32.load8_u address
+      (case 0x22 (eval 'code.address'))      # i32.load16_s address
+      (case 0x23 (eval 'code.address'))      # i32.load16_u address
+      (case 0x24 (eval 'code.address'))      # i64.load8_s address
+      (case 0x25 (eval 'code.address'))      # i64.load8_u address
+      (case 0x26 (eval 'code.address'))      # i64.load16_s address
+      (case 0x27 (eval 'code.address'))      # i64.load16_u address
+      (case 0x28 (eval 'code.address'))      # i64.load32_s address
+      (case 0x29 (eval 'code.address'))      # i64.load32_u address
+      (case 0x2a (eval 'code.address'))      # i32.load address
+      (case 0x2b (eval 'code.address'))      # i64.load address
+      (case 0x2c (eval 'code.address'))      # f32.load address
+      (case 0x2d (eval 'code.address'))      # f64.load address
+      (case 0x2e (eval 'code.address'))      # i32.store8 address
+      (case 0x2f (eval 'code.address'))      # i32.store16 address
+      (case 0x30 (eval 'code.address'))      # i64.store8 address
+      (case 0x31 (eval 'code.address'))      # i64.store16 address
+      (case 0x32 (eval 'code.address'))      # i64.store32 address
+      (case 0x33 (eval 'code.address'))      # i32.store address
+      (case 0x34 (eval 'code.address'))      # i64.store address
+      (case 0x35 (eval 'code.address'))      # f32.store address
+      (case 0x36 (eval 'code.address'))      # f64.store address
+      (case 0xFF (block.end))                # end function block
     )
   )
 
-  (default 'import'
-    (seq
-      (preorder 0)
-      (loop (append (varuint32 6)) (call import_entry))
-    )
-    (method import_entry
-      (append (varuint32 6))  # signature index of the import
-      (eval 'symbol')         # module string
+  (default 'data'
+    (preorder 0)
+    (loop (append (varuint32 6))
+      (eval 'data_segment')
       (append)
-      (eval 'symbol')         # function string
-      (append)
     )
   )
 
-  (default 'function'
-    (seq
-      (preorder 0)
-      (loop (append (varuint32 6))
-         (append (varuint32 6))) # list of type signature indices
-    )
-  )
-
-  (default 'table'
-    (seq
-      (preorder 0)
-      (loop (append (varuint32 6))
-        (append (varuint32 6))) # indices into the function section
-    )
-  )
-
-  (default 'memory'
-    (seq
-      (varuint32 6)   # Initial memory suze
-      (varuint32 6)   # maximum memory size
-      (uint32 1)      # 1 if the memory is visible outside the module
-      (preorder 3)
+  (default 'data.segment'
+    (preorder 0)
+    # The offset in linear memory at which to store the data.
+    (append (varuint32 6))
+    # The data
+    (loop (append (varuint32 6))
+      (append (uint8))
     )
   )
 
   (default 'export'
-    (seq
-      (preorder 0)
-      (loop (append (varuint32 6))
-        (call export_entry))
+    (preorder 0)
+    (loop (append (varuint32 6))
+      (eval 'export.entry')
     )
-    (method export_entry
-      (append (varuint32 6))     # Index into the function table
-      (eval 'symbol')            # funtion name
+  )
+
+  (default 'export.entry'
+    (preorder 0)
+    (append (varuint32 6))     # Index into the function table
+    (eval 'export.symbol')            # funtion name
+    (append)
+  )
+
+  (default 'export.symbol' # reads in a symbol name
+    (preorder 0)
+    (loop (append (varuint32 6)) (append (uint8)))
+  )
+
+  (default 'function'
+    (preorder 0)
+    (loop (append (varuint32 6))
+       (append (varuint32 6))    # list of type signature indices
+    )
+  )
+
+  (default 'import'
+    (preorder 0)
+    (loop (append (varuint32 6)) (eval 'import_entry'))
+  )
+
+  (default 'import.entry'
+    (preorder 0)
+    (append (varuint32 6))  # signature index of the import
+    (eval 'import.symbol')  # module string
+    (append)
+    (eval 'import.symbol')  # function string
+    (append)
+  )
+
+  (default 'import.symbol'
+    (preorder 0)
+    (loop (append (varuint32 6)) (append (uint8)))
+  )
+
+  (default 'memory'
+    (varuint32 6)   # Initial memory suze
+    (varuint32 6)   # maximum memory size
+    (uint32 1)      # 1 if the memory is visible outside the module
+    (preorder 3)
+  )
+
+  (default 'name'
+    (preorder 0)
+    (loop (append (varuint32 6))
+      (eval 'function_names')
       (append)
     )
+  )
+
+  (default 'name.function'
+    (preorder 0)
+    (eval 'name.symbol')                  # fcn_name
+    (append)
+    (loop (append (varuint32 6))     # local names.
+      (eval 'name.symbol') 
+      (append)
+    )
+  )
+
+  (default 'name.symbol' # reads in a symbol name
+    (preorder 0)
+    (loop (append (varuint32 6)) (append (uint8)))
   )
 
   (default 'start'
     (varuint32 6)
   )
 
-  (default 'code'
-    (seq
-      (preorder 0)
-      (loop (append (varuint32 6))
-        (eval 'function.body')
-        (append))
+  (default 'table'
+    (preorder 0)
+    (loop (append (varuint32 6))
+      (append (varuint32 6))) # indices into the function section
+  )
+
+  (default 'type'
+    (preorder 0)
+    (loop (append (varuint32 6))
+      (append (varuint7))             # function type 0x40
+      (loop (append (varuint32 6))    # parameters
+        (eval 'type.value_type'))
+      (eval 'type.return_type')       # return type
     )
   )
 
-  (default 'data'
-    (seq
-      (preorder 0)
-      (loop (append (varuint32 6))
-        (call data_segment)))
-    (method data_segment
-      # The offset in linear memory at which to store the data.
-      (append (varuint32 6))
-      # The data
-      (loop (append (varuint32 6))
-        (append (uint8)))
-    )
+  (default 'type.return_type'
+    (if (append (uint32 1)) (eval 'value_type') (void))
   )
 
-  (default 'name'
-    (seq
-      (preorder 0)
-      (loop (append (varuint32 6))
-        (call function_names)))
-    (method function_names
-      (eval 'symbol')                  # fcn_name
-      (append)
-      (loop (append (varuint32 6))     # local names.
-        (eval 'symbol') 
-        (append))
-    )
-  )
-
-  (default 'function.body'
-    (seq
-      (preorder 0)
-      (append (extract.begin 0xFE))    # fake opcode 0xFE
-      (append)
-      (loop (append (varuint32 6))
-        (call local_entry))
-      (loop.unbounded
-        (eval 'code.inst')
-        (append)
-      )
-      (append (extract.end 0xFF))      # fake opcode 0xFF
-    )
-    (method local_entry
-      (loop (append (varuint32 6))     # Type of each local variable.
-        (append (uint32 3)))
-    )
-  )
-
-  (default 'code.inst'
-    (seq
-      (preorder 0)
-      (select (append (uint8))
-        (void)                                   # simple one byte opcode.
-        # control flow operators.
-        (case 0x06 (call branch_target))         # br
-        (case 0x07 (call branch_target))         # br_if
-        (case 0x08 (call branch_table))          # br_table
-        (case 0x09 (append (uint32 1)))          # return argument_count
-        # basic operators
-        (case 0x10 (append (varint32 6)))        # i32.const value
-        (case 0x11 (append (varint64 6)))        # i64.const value
-        (case 0x12 (append (uint64)))            # f64.const value
-        (case 0x13 (append (uint32)))            # f32.const value
-        (case 0x14 (append (varuint32 6)))       # get_local index
-        (case 0x15 (append (varuint32 6)))       # set_local index
-        (case 0x16 (call call_args))             # call
-        (case 0x17 (call call_args))             # call_indirect
-        (case 0x18 (call call_args))             # call_import
-        # Memory-related operators
-        (case 0x20 (call memory_immediate))      # i32.load8_s address
-        (case 0x21 (call memory_immediate))      # i32.load8_u address
-        (case 0x22 (call memory_immediate))      # i32.load16_s address
-        (case 0x23 (call memory_immediate))      # i32.load16_u address
-        (case 0x24 (call memory_immediate))      # i64.load8_s address
-        (case 0x25 (call memory_immediate))      # i64.load8_u address
-        (case 0x26 (call memory_immediate))      # i64.load16_s address
-        (case 0x27 (call memory_immediate))      # i64.load16_u address
-        (case 0x28 (call memory_immediate))      # i64.load32_s address
-        (case 0x29 (call memory_immediate))      # i64.load32_u address
-        (case 0x2a (call memory_immediate))      # i32.load address
-        (case 0x2b (call memory_immediate))      # i64.load address
-        (case 0x2c (call memory_immediate))      # f32.load address
-        (case 0x2d (call memory_immediate))      # f64.load address
-        (case 0x2e (call memory_immediate))      # i32.store8 address
-        (case 0x2f (call memory_immediate))      # i32.store16 address
-        (case 0x30 (call memory_immediate))      # i64.store8 address
-        (case 0x31 (call memory_immediate))      # i64.store16 address
-        (case 0x32 (call memory_immediate))      # i64.store32 address
-        (case 0x33 (call memory_immediate))      # i32.store address
-        (case 0x34 (call memory_immediate))      # i64.store address
-        (case 0x35 (call memory_immediate))      # f32.store address
-        (case 0x36 (call memory_immediate))      # f64.store address
-        (case 0xFF (extract.eof))                # end function block
-      )
-    )
-    (method branch_table
-      (append (uint32 1))        # argument_count
-      (loop (append (varuint32 6))
-         (append (varuint32 6))) # target entries indicating block/loop to break
-      (append (varuint32 6))     # default target
-    )
-    (method branch_target
-       (append (uint32 1))       #   argument_count
-       (append (varuint32 6))    #   relative depth          
-    )
-    (method call_args
-      (append (uint32 1))        #   argument count
-      (append (varuint32 6))     #   funtion index
-    )
-    (method memory_immediate
-      # flags bitfield encoding alignment as log2(alignment)
-      (append (varuint32 6))
-      # memory offset
-      (append (varuint32 6))
-    )
+  (default 'type.value_type'
+    (append (uint32 3))
   )
 )

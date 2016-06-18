@@ -36,21 +36,17 @@ struct {
 } KidCountData[] = {
   // If not in list, assume 0.
   {NodeType::AppendOneArg, 1},
-  {NodeType::Call, 1},
+  {NodeType::Block, 3},
   {NodeType::Case, 2},
   {NodeType::Default, 1},
   {NodeType::Define, 1},
   {NodeType::Eval, 1},
-  {NodeType::Extract, 1},
-  {NodeType::ExtractBegin, 1},
-  {NodeType::ExtractEnd, 1},
   {NodeType::IfThenElse, 1},
   {NodeType::I32Const, 1},
   {NodeType::I64Const, 1},
   {NodeType::Lit, 1},
   {NodeType::Loop, 1},
   {NodeType::Map, 1},
-  {NodeType::Method, 1},
   {NodeType::Peek, 1},
   {NodeType::Postorder, 1},
   {NodeType::Preorder, 1},
@@ -60,6 +56,7 @@ struct {
   {NodeType::SymConst, 1},
   {NodeType::Uint32OneArg, 1},
   {NodeType::Uint64OneArg, 1},
+  {NodeType::Undefine, 1},
   {NodeType::U32Const, 1},
   {NodeType::U64Const, 1},
   {NodeType::Varint32OneArg, 1},
@@ -126,13 +123,13 @@ void TextWriter::writeIndent() {
     return;
   for (size_t i = 0; i < IndentCount; ++i)
     fputs(IndentString, File);
-  LineEmpty = (IndentCount > 0);
+  LineEmpty = IndentCount == 0;
 }
 
 void TextWriter::writeNode(Node *Node, bool AddNewline) {
   if (Node == nullptr) {
     Indent _(this, AddNewline);
-    fprintf(File, "null");
+    fprintf(File, "<nullptr>");
     LineEmpty = false;
     return;
   }
@@ -176,8 +173,7 @@ void TextWriter::writeNode(Node *Node, bool AddNewline) {
     case NodeType::Symbol: {
       Indent _(this, AddNewline);
       auto *Sym = dynamic_cast<SymbolNode*>(Node);
-      // TODO: Get if needs to be quoted.
-      fprintf(File, "%s", Sym->getName().c_str());
+      fprintf(File, "'%s'", Sym->getName().c_str());
       LineEmpty = false;
       return;
     }

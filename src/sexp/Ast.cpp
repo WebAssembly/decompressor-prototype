@@ -20,6 +20,7 @@
 #include "Defs.h"
 #include "sexp/Ast.h"
 
+#include <cstring>
 #include <unordered_map>
 
 namespace {
@@ -38,22 +39,20 @@ TypeNamePair SexpTypeNamePair[] = {
   {NodeType::BitToAst, "bit.to.ast"},
   {NodeType::BitToBit, "bit.to.bit"},
   {NodeType::BitToByte, "bit.to.byte"},
+  {NodeType::Block, "block"},
+  {NodeType::BlockBegin, "block.begin"},
+  {NodeType::BlockEnd, "block.end"},
   {NodeType::BitToInt, "bit.to.int"},
   {NodeType::ByteToAst, "byte.to.ast"},
   {NodeType::ByteToBit, "byte.to.bit"},
   {NodeType::ByteToByte, "byte.to.byte"},
   {NodeType::ByteToInt, "byte.to.int"},
-  {NodeType::Call, "call"},
   {NodeType::Case, "case"},
   {NodeType::Copy, "copy"},
   {NodeType::Default, "default"},
   {NodeType::Define, "define"},
   {NodeType::Error, "error"},
   {NodeType::Eval, "eval"},
-  {NodeType::Extract, "extract"},
-  {NodeType::ExtractBegin, "extract.begin"},
-  {NodeType::ExtractEnd, "extract.end"},
-  {NodeType::ExtractEof, "extract.eof"},
   {NodeType::File, "file"},
   {NodeType::Filter, "filter"},
   {NodeType::IfThenElse, "if"},
@@ -68,14 +67,13 @@ TypeNamePair SexpTypeNamePair[] = {
   {NodeType::Loop, "loop"},
   {NodeType::LoopUnbounded, "loop.unbounded"},
   {NodeType::Map, "map"},
-  {NodeType::Method, "method"},
   {NodeType::Peek, "peek"},
-  {NodeType::Postorder, "preorder"},
-  {NodeType::Preorder, "postorder" },
+  {NodeType::Postorder, "postorder"},
+  {NodeType::Preorder, "pretorder" },
   {NodeType::Read, "read"},
   {NodeType::Section, "section"},
   {NodeType::Select, "select"},
-  {NodeType::Sequence, "sequence"},
+  {NodeType::Sequence, "seq"},
   {NodeType::Symbol, "symbol"},
   {NodeType::SymConst, "sym.const"},
   {NodeType::Uint32NoArgs, "uint32"},
@@ -83,6 +81,7 @@ TypeNamePair SexpTypeNamePair[] = {
   {NodeType::Uint8, "uint8"},
   {NodeType::Uint64NoArgs, "uint64"},
   {NodeType::Uint64OneArg, "uint64"},
+  {NodeType::Undefine, "undefine"},
   {NodeType::U32Const, "u32.const"},
   {NodeType::U64Const, "u64.const"},
   {NodeType::Value, "value"},
@@ -125,6 +124,7 @@ namespace wasm {
 namespace filt {
 
 const char *getNodeSexpName(NodeType Type) {
+  // TODO(KarlSchimpf): Make thread safe
   static std::unordered_map<int, const char*> Mapping;
   if (Mapping.empty()) {
     for (size_t i = 0; i < size(SexpTypeNamePair); ++i) {
@@ -132,13 +132,20 @@ const char *getNodeSexpName(NodeType Type) {
       Mapping[static_cast<int>(SexpTypeNamePair[i].Type)] = Name;
     }
   }
-  const char *Name = Mapping[static_cast<int>(Type)];
-  if (Name == nullptr)
-    Mapping[static_cast<int>(Type)] = Name = "?NodeType?";
+  char *Name = const_cast<char*>(Mapping[static_cast<int>(Type)]);
+  if (Name == nullptr) {
+    std::string NewName(
+        std::string("NodeType::") + std::to_string(static_cast<int>(Type)));
+    Name = new char[NewName.size() + 1];
+    Name[NewName.size()] ='\0';
+    memcpy(Name, NewName.data(), NewName.size());
+    Mapping[static_cast<int>(Type)] = Name;
+  }
   return Name;
 }
 
 const char *getNodeTypeName(NodeType Type) {
+  // TODO(KarlSchimpf): Make thread safe
   static std::unordered_map<int, const char*> Mapping;
   if (Mapping.empty()) {
     for (size_t i = 0; i < size(UniquifyingTypeNamePair); ++i) {
@@ -147,9 +154,9 @@ const char *getNodeTypeName(NodeType Type) {
     }
   }
   const char *Name = Mapping[static_cast<int>(Type)];
-  if (Name != nullptr)
-    return Name;
-  return getNodeSexpName(Type);
+  if (Name == nullptr)
+    Mapping[static_cast<int>(Type)] =  Name = getNodeSexpName(Type);
+  return Name;
 }
 
 NodeMemory NodeMemory::Default;
@@ -171,7 +178,6 @@ void IntegerNode::forceCompilation() {}
 
 void SymbolNode::forceCompilation() {}
 
-void IfThenElse::forceCompilation() {}
 
 template<NodeType Kind>
 void Nullary<Kind>::forceCompilation() {}
@@ -184,12 +190,16 @@ template<NodeType Kind>
 void Binary<Kind>::forceCompilation() {}
 
 template<NodeType Kind>
+void Ternary<Kind>::forceCompilation() {}
+
+template<NodeType Kind>
 void Nary<Kind>::forceCompilation() {}
 
 template class Nullary<NodeType::AppendNoArgs>;
+template class Nullary<NodeType::BlockBegin>;
+template class Nullary<NodeType::BlockEnd>;
 template class Nullary<NodeType::Copy>;
 template class Nullary<NodeType::Error>;
-template class Nullary<NodeType::ExtractEof>;
 template class Nullary<NodeType::Uint8>;
 template class Nullary<NodeType::Uint32NoArgs>;
 template class Nullary<NodeType::Uint64NoArgs>;
@@ -203,26 +213,7 @@ template class Nullary<NodeType::Varuint64NoArgs>;
 template class Nullary<NodeType::Void>;
 
 template class Unary<NodeType::AppendOneArg>;
-template class Unary<NodeType::AstToAst>;
-template class Unary<NodeType::AstToBit>;
-template class Unary<NodeType::AstToByte>;
-template class Unary<NodeType::AstToInt>;
-template class Unary<NodeType::BitToAst>;
-template class Unary<NodeType::BitToBit>;
-template class Unary<NodeType::BitToByte>;
-template class Unary<NodeType::BitToInt>;
-template class Unary<NodeType::ByteToAst>;
-template class Unary<NodeType::ByteToBit>;
-template class Unary<NodeType::ByteToByte>;
-template class Unary<NodeType::ByteToInt>;
-template class Unary<NodeType::ExtractBegin>;
-template class Unary<NodeType::ExtractEnd>;
-template class Unary<NodeType::Call>;
 template class Unary<NodeType::Eval>;
-template class Unary<NodeType::IntToAst>;
-template class Unary<NodeType::IntToBit>;
-template class Unary<NodeType::IntToByte>;
-template class Unary<NodeType::IntToInt>;
 template class Unary<NodeType::I32Const>;
 template class Unary<NodeType::I64Const>;
 template class Unary<NodeType::Lit>;
@@ -233,6 +224,7 @@ template class Unary<NodeType::Read>;
 template class Unary<NodeType::SymConst>;
 template class Unary<NodeType::Uint32OneArg>;
 template class Unary<NodeType::Uint64OneArg>;
+template class Unary<NodeType::Undefine>;
 template class Unary<NodeType::U32Const>;
 template class Unary<NodeType::U64Const>;
 template class Unary<NodeType::Varint32OneArg>;
@@ -244,15 +236,32 @@ template class Unary<NodeType::Write>;
 
 template class Binary<NodeType::Map>;
 
+template class Ternary<NodeType::IfThenElse>;
+template class Ternary<NodeType::Block>;
+
+template class Nary<NodeType::AstToAst>;
+template class Nary<NodeType::AstToBit>;
+template class Nary<NodeType::AstToByte>;
+template class Nary<NodeType::AstToInt>;
+template class Nary<NodeType::BitToAst>;
+template class Nary<NodeType::BitToBit>;
+template class Nary<NodeType::BitToByte>;
+template class Nary<NodeType::BitToInt>;
+template class Nary<NodeType::ByteToAst>;
+template class Nary<NodeType::ByteToBit>;
+template class Nary<NodeType::ByteToByte>;
+template class Nary<NodeType::ByteToInt>;
 template class Nary<NodeType::Case>;
-template class Nary<NodeType::Extract>;
 template class Nary<NodeType::Default>;
 template class Nary<NodeType::Define>;
 template class Nary<NodeType::File>;
 template class Nary<NodeType::Filter>;
+template class Nary<NodeType::IntToAst>;
+template class Nary<NodeType::IntToBit>;
+template class Nary<NodeType::IntToByte>;
+template class Nary<NodeType::IntToInt>;
 template class Nary<NodeType::Loop>;
 template class Nary<NodeType::LoopUnbounded>;
-template class Nary<NodeType::Method>;
 template class Nary<NodeType::Section>;
 template class Nary<NodeType::Select>;
 template class Nary<NodeType::Sequence>;
