@@ -49,21 +49,19 @@ enum class NodeType {
     BitToBit,
     BitToByte,
     BitToInt,
+    Block,
+    BlockBegin,
+    BlockEnd,
     ByteToAst,
     ByteToBit,
     ByteToByte,
     ByteToInt,
-    Call,
     Case,
     Copy,
     Default,
     Define,
     Error,
     Eval,
-    Extract,
-    ExtractBegin,
-    ExtractEnd,
-    ExtractEof,
     File,
     Filter,
     IfThenElse,
@@ -78,7 +76,6 @@ enum class NodeType {
     Loop,
     LoopUnbounded,
     Map,
-    Method,
     Peek,
     Postorder,
     Preorder,
@@ -306,7 +303,6 @@ private:
   Unary(Node *Kid) : UnaryNode(Kind, Kid) {}
 };
 
-
 class BinaryNode : public Node {
   BinaryNode(const BinaryNode&) = delete;
   BinaryNode &operator=(const BinaryNode&) = delete;
@@ -343,6 +339,46 @@ private:
   Binary(Node *Kid1, Node *Kid2) : BinaryNode(Kind, Kid1, Kid2) {}
 };
 
+class TernaryNode : public Node {
+  TernaryNode(const TernaryNode&) = delete;
+  TernaryNode &operator=(const TernaryNode&) = delete;
+public:
+  IndexType getNumKids() const final { return 3; }
+  Node *getKid(IndexType Index) const final {
+    assert(Index < 3);
+    return Kids[Index];
+  }
+  ~TernaryNode() override {}
+protected:
+  Node *Kids[3];
+  TernaryNode(NodeType Type, Node *Kid1, Node *Kid2, Node *Kid3)
+      : Node(Type) {
+    Kids[0] = Kid1;
+    Kids[1] = Kid2;
+    Kids[2] = Kid3;
+  }
+};
+
+template<NodeType Kind>
+class Ternary final : public TernaryNode {
+  Ternary(const Ternary<Kind>&) = delete;
+  Ternary<Kind> &operator=(const Ternary<Kind>&) = delete;
+  virtual void forceCompilation() final;
+public:
+  ~Ternary() {}
+  static Ternary<Kind> *create(
+      Node *Kid1, Node *Kid2, Node *Kid3,
+      NodeMemory &Memory = NodeMemory::Default) {
+    Ternary<Kind> *Node = new Ternary<Kind>(Kid1, Kid2, Kid3);
+    Node->add(Memory);
+    return Node;
+  }
+private:
+  Ternary(Node *Kid1, Node *Kid2, Node* Kid3)
+      : TernaryNode(Kind, Kid1, Kid2, Kid3) {}
+};
+
+#if 0
 class IfThenElse final : public Node {
   IfThenElse(const IfThenElse&) = delete;
   IfThenElse &operator=(const IfThenElse&) = delete;
@@ -374,6 +410,7 @@ private:
     Kids[2] = Else;
   }
 };
+#endif
 
 class NaryNode : public Node {
   NaryNode(const NaryNode&) = delete;
