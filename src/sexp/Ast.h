@@ -238,6 +238,7 @@ public:
     return Name;
   }
 private:
+  // TODO(KarlSchimpf) Allocate using allocator.
   std::string Name;
 };
 
