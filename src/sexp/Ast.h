@@ -28,11 +28,14 @@
 #define DECOMPRESSOR_SRC_SEXP_AST_H
 
 #include "Defs.h"
+#include "Allocator.h"
 
 // #include <iterator>
 #include <memory>
 #include <string>
 #include <vector>
+
+using namespace wasm::alloc;
 
 namespace wasm {
 
@@ -117,26 +120,6 @@ const char *getNodeSexpName(NodeType Type);
 // Returns a unique (printable) type name
 const char *getNodeTypeName(NodeType Type);
 
-class Node;
-
-// Holds memory associated with nodes.
-// TODO: Make this an arena allocator.
-class NodeMemory {
-  NodeMemory(const NodeMemory&) = delete;
-  NodeMemory &operator=(const NodeMemory&) = delete;
-public:
-  NodeMemory() {}
-  ~NodeMemory() {}
-  static NodeMemory Default;
-private:
-  friend class Node;
-  void add(Node *N) {
-    std::unique_ptr<Node> Nptr(N);
-    Nodes.push_back(std::move(Nptr));
-  }
-  std::vector<std::unique_ptr<Node>> Nodes;
-};
-
 class Node {
   Node(const Node&) = delete;
   Node &operator=(const Node&) = delete;
@@ -185,12 +168,10 @@ public:
   Iterator rbegin() { return Iterator(this, getNumKids() - 1); }
   Iterator rend() const { return Iterator(this, -1); }
 protected:
+  static MallocAllocator Malloc;
+  static ArenaAllocator<MallocAllocator> ArenaMalloc;
   NodeType Type;
   Node(NodeType Type) : Type(Type) {}
-  Node *add(NodeMemory &Memory) {
-    Memory.add(this);
-    return this;
-  }
 };
 
 class NullaryNode : public Node {
@@ -213,10 +194,9 @@ class Nullary final : public NullaryNode {
   Nullary<Kind> &operator=(const Nullary<Kind>&) = delete;
   virtual void forceCompilation() final;
 public:
-  static Nullary<Kind> *create(
-      NodeMemory &Memory = NodeMemory::Default) {
-    Nullary<Kind> *Node = new Nullary<Kind>();
-    Node->add(Memory);
+  static Nullary<Kind> *create() {
+    Nullary<Kind> *Node =
+        new (ArenaMalloc.allocate<Nullary<Kind>>()) Nullary<Kind>();
     return Node;
   }
   ~Nullary() {}
@@ -231,11 +211,9 @@ class IntegerNode final : public NullaryNode {
   virtual void forceCompilation() final;
 public:
   ~IntegerNode() {}
-  static IntegerNode *create(
-      decode::IntType Value,
-      NodeMemory &Memory = NodeMemory::Default) {
-    IntegerNode *Node = new IntegerNode(Value);
-    Node->add(Memory);
+  static IntegerNode *create(decode::IntType Value) {
+    IntegerNode *Node =
+        new (ArenaMalloc.allocate<IntegerNode>()) IntegerNode(Value);
     return Node;
   }
   decode::IntType getValue() const {
@@ -254,11 +232,9 @@ class SymbolNode final : public NullaryNode {
   virtual void forceCompilation() final;
 public:
   ~SymbolNode() {}
-  static SymbolNode *create(
-      std::string Name,
-      NodeMemory &Memory = NodeMemory::Default) {
-    SymbolNode *Node = new SymbolNode(Name);
-    Node->add(Memory);
+  static SymbolNode *create(std::string Name) {
+    SymbolNode *Node =
+        new (ArenaMalloc.allocate<SymbolNode>()) SymbolNode(Name);
     return Node;
   }
   std::string getName() const {
@@ -294,10 +270,9 @@ class Unary final : public UnaryNode {
   virtual void forceCompilation() final;
 public:
   ~Unary() {}
-  static Unary<Kind> *create(
-      Node *Kid, NodeMemory &Memory = NodeMemory::Default) {
-    Unary<Kind> *Node = new Unary<Kind>(Kid);
-    Node->add(Memory);
+  static Unary<Kind> *create(Node *Kid) {
+    Unary<Kind> *Node =
+        new (ArenaMalloc.allocate<Unary<Kind>>()) Unary<Kind>(Kid);
     return Node;
   }
 private:
@@ -330,10 +305,9 @@ class Binary final : public BinaryNode {
   virtual void forceCompilation() final;
 public:
   ~Binary() {}
-  static Binary<Kind> *create(
-      Node *Kid1, Node *Kid2, NodeMemory &Memory = NodeMemory::Default) {
-    Binary<Kind> *Node = new Binary<Kind>(Kid1, Kid2);
-    Node->add(Memory);
+  static Binary<Kind> *create(Node *Kid1, Node *Kid2) {
+    Binary<Kind> *Node =
+        new (ArenaMalloc.allocate<Binary<Kind>>()) Binary<Kind>(Kid1, Kid2);
     return Node;
   }
 private:
@@ -367,11 +341,10 @@ class Ternary final : public TernaryNode {
   virtual void forceCompilation() final;
 public:
   ~Ternary() {}
-  static Ternary<Kind> *create(
-      Node *Kid1, Node *Kid2, Node *Kid3,
-      NodeMemory &Memory = NodeMemory::Default) {
-    Ternary<Kind> *Node = new Ternary<Kind>(Kid1, Kid2, Kid3);
-    Node->add(Memory);
+  static Ternary<Kind> *create(Node *Kid1, Node *Kid2, Node *Kid3) {
+    Ternary<Kind> *Node =
+        new (ArenaMalloc.allocate<Ternary<Kind>>())
+        Ternary<Kind>(Kid1, Kid2, Kid3);
     return Node;
   }
 private:
@@ -382,15 +355,22 @@ private:
 class NaryNode : public Node {
   NaryNode(const NaryNode&) = delete;
   NaryNode &operator=(const NaryNode&) = delete;
+  // TODO(KarlSchimpf): Find way to arena allocate vector.
+  static constexpr size_t KidsListSize = 10;
+  struct KidList {
+    Node *Kids[KidsListSize];
+    KidList *Next = nullptr;
+    KidList() {}
+  };
 public:
-  IndexType getNumKids() const final { return Kids.size(); }
-  Node *getKid(IndexType Index) const final {
-    return Kids.at(Index);
-  }
+  IndexType getNumKids() const final { return NumKids; }
+  Node *getKid(IndexType Index) const final;
   void append(Node *Kid) final;
   ~NaryNode() override {}
 protected:
-  std::vector<Node*> Kids;
+  size_t NumKids = 0;
+  KidList *Kids = nullptr;
+  KidList *KidsLast = nullptr;
   NaryNode(NodeType Type) : Node(Type) {}
 };
 
@@ -401,10 +381,9 @@ class Nary final : public NaryNode {
   virtual void forceCompilation() final;
 public:
   ~Nary() {}
-  static Nary<Kind> *create(
-      NodeMemory &Memory = NodeMemory::Default) {
-    Nary<Kind> *Node = new Nary<Kind>();
-    Node->add(Memory);
+  static Nary<Kind> *create() {
+    Nary<Kind> *Node =
+        new (ArenaMalloc.allocate<Nary<Kind>>()) Nary<Kind>();
     return Node;
   }
 private:
