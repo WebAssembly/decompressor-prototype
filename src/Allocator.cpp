@@ -25,6 +25,21 @@ namespace alloc {
 
 size_t DefaultAllocAlignLog2 = 3;
 
+size_t DefaultArenaInitPageSize = size_t(1) << 12;
+size_t DefaultArenaMaxPageSize = size_t(1) << 20;
+size_t DefaultArenaGrowAfterCount = 4;
+size_t DefaultArenaThreshold = size_t(1) << 10;
+
+MallocArena::MallocArena(size_t InitPageSize, size_t MaxPageSize,
+                         size_t Threshold, size_t GrowAfterCount)
+    : AllocatorBase<MallocArena>(),
+      Allocator(),
+      Arena(Allocator, InitPageSize, MaxPageSize, Threshold, GrowAfterCount) {}
+
+void *MallocArena::allocateBlock(size_t Size, size_t AlignLog2) {
+  return Arena.allocateBlock(Size, AlignLog2);
+}
+
 } // end of namespace alloc
 
 } // end of namespace wasm

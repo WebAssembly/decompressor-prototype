@@ -155,15 +155,12 @@ public:
   void deallocateBlock(void* Pointer) {
     free(Pointer);
   }
-
-  // Pull in base class overloads.
-  using AllocatorBase<Malloc>::allocate;
-  using AllocatorBase<Malloc>::create;
-  using AllocatorBase<Malloc>::deallocate;
-  using AllocatorBase<Malloc>::allocateArray;
-  using AllocatorBase<Malloc>::createArray;
-  using AllocatorBase<Malloc>::deallocateArray;
 };
+
+extern size_t DefaultArenaInitPageSize;
+extern size_t DefaultArenaMaxPageSize;
+extern size_t DefaultArenaGrowAfterCount;
+extern size_t DefaultArenaThreshold;
 
 // Defines an simple arena allocator, that will allocate from internal pages if
 // smaller than threshold. Otherwise will allocate individually through base
@@ -176,16 +173,13 @@ class ArenaAllocator : public AllocatorBase<ArenaAllocator<BaseAllocator>> {
   ArenaAllocator(const ArenaAllocator &) = delete;
   ArenaAllocator &operator=(const ArenaAllocator&) = delete;
   ArenaAllocator() = delete;
-  static constexpr size_t DefaultInitPageSize = size_t(1) << 12;
-  static constexpr size_t DefaultMaxPageSize = size_t(1) << 20;
-  static constexpr size_t DefaultGrowAfterCount = 4;
   void deallocateBlock(void */*Pointer*/) = delete;
 public:
   explicit ArenaAllocator(BaseAllocator &_BaseAlloc,
-                          size_t _InitPageSize = DefaultInitPageSize,
-                          size_t _MaxPageSize = DefaultMaxPageSize,
-                          size_t _Threshold = DefaultInitPageSize,
-                          size_t _GrowAfterCount = DefaultGrowAfterCount) :
+                          size_t _InitPageSize = DefaultArenaInitPageSize,
+                          size_t _MaxPageSize = DefaultArenaMaxPageSize,
+                          size_t _Threshold = DefaultArenaThreshold,
+                          size_t _GrowAfterCount = DefaultArenaGrowAfterCount) :
       BaseAlloc(_BaseAlloc),
       Threshold(_Threshold),
       PageSize(_InitPageSize),
@@ -203,9 +197,9 @@ public:
     assert(WantedSize >= Size);
 
     if ((WantedSize >= Threshold) || (WantedSize >= PageSize)) {
-      void *Space = BaseAlloc.allocateBlock(Size, Alignment);
-      BigAllocations.emplace_back(Space, Size);
-      return Space;
+      void *Page = BaseAlloc.allocateBlock(Size, Alignment);
+      BigAllocations.emplace_back(Page);
+      return Page;
     }
 
     size_t AlignBytes = alignmentBytesNeeded(Alignment);
@@ -226,17 +220,11 @@ public:
   }
 
   ~ArenaAllocator() {
-    for (const auto &pair : BumpPages)
-      BaseAlloc.deallocateBlock(pair.first);
-    for (const auto &pair : BigAllocations)
-      BaseAlloc.deallocateBlock(pair.first);
+    for (void *Page : AllocatedPages)
+      BaseAlloc.deallocateBlock(Page);
+    for (void *Page : BigAllocations)
+      BaseAlloc.deallocateBlock(Page);
   }
-
-  // Pull in base class overloads.
-  using AllocatorBase<ArenaAllocator<BaseAllocator>>::allocate;
-  using AllocatorBase<ArenaAllocator<BaseAllocator>>::allocateArray;
-  using AllocatorBase<ArenaAllocator<BaseAllocator>>::create;
-  using AllocatorBase<ArenaAllocator<BaseAllocator>>::createArray;
 
 private:
   BaseAllocator &BaseAlloc;
@@ -244,9 +232,9 @@ private:
   size_t PageSize;
   size_t MaxPageSize;
   size_t GrowAfterCount;
-  std::vector<std::pair<void*, size_t>> BumpPages;
-  // Big allocations not put into Slabs.
-  std::vector<std::pair<void*, size_t>> BigAllocations;
+  std::vector<void*> AllocatedPages;
+  // Big allocations not put into allocated pages.
+  std::vector<void*> BigAllocations;
   // The next two fields hold available space.
   uint8_t *Available;
   uint8_t *End;
@@ -257,7 +245,7 @@ private:
   }
 
   void createNewPage() {
-    size_t NumBumpPages = BumpPages.size();
+    size_t NumBumpPages = AllocatedPages.size();
     // Scale page size as more bump pages are needed, to cut down
     // on number of page allocations.
     size_t GrowSize = size_t(1) << (NumBumpPages / GrowAfterCount);
@@ -268,37 +256,30 @@ private:
     }
     size_t BlockSize = sizeof(uint8_t) * PageSize;
     uint8_t *Page = static_cast<uint8_t *>(BaseAlloc.allocateBlock(BlockSize));
-    BumpPages.emplace_back(Page, BlockSize);
+    AllocatedPages.emplace_back(Page);
     Available = Page;
     End = Available + PageSize;
   }
 };
 
-#if 0
-class ArenaMalloc : public ArenaAllocator<Malloc> {
-  ArenaMalloc(const Arenamalloc &) = delete;
-  ArenaMalloc &operator=(const ArenamMalloc &) = delete;
-  ArenaMalloc() = delete;
+// Implements an arena allocator using a Malloc allocator.
+class MallocArena : public AllocatorBase<MallocArena> {
+  MallocArena(const MallocArena &) = delete;
+  MallocArena &operator=(const MallocArena &) = delete;
 public:
-  ArenaMalloc(size_t _InitPageSize = DefaultInitPageSize,
-              size_t _MaxPageSize = DefaultMaxPageSize,
-              size_t _Threshold = DefaultInitPageSize,
-              size_t _GrowAfterCount = DefaultGrowAfterCount);
+  explicit MallocArena(size_t InitPageSize = DefaultArenaInitPageSize,
+                       size_t MaxPageSize = DefaultArenaMaxPageSize,
+                       size_t Threshold = DefaultArenaThreshold,
+                       size_t GrowAfterCount = DefaultArenaGrowAfterCount);
 
-  void *allocateBlock(size_t Size, size_t Alignment=1);
+  void *allocateBlock(size_t Size, size_t AligLog2=DefaultAllocAlignLog2);
 
-  void deallocateBlock(void * /*Pointer*/, size_t /*Size*/) {}
+  void deallocateBlock(void * *Pointer) = delete;
 
-  using ArenaAllocator<Malloc>::allocate;
-  using ArenaAllocator<Malloc>::create;
-  using ArenaAllocator<Malloc>::deallocate;
-  //  using ArenaAllocator<Malloc>::allocateArray;
-  //  using ArenaAllocator<Malloc>::createArray;
-  //  using ArenaAllocator<Malloc>::deallocateArray;
 private:
-  Malloc BaseAllocator;
+  Malloc Allocator;
+  ArenaAllocator<Malloc> Arena;
 };
-#endif
 
 } // end of namespace alloc
 

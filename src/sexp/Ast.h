@@ -35,8 +35,6 @@
 #include <string>
 #include <vector>
 
-using namespace wasm::alloc;
-
 namespace wasm {
 
 namespace filt {
@@ -169,8 +167,8 @@ public:
   Iterator rbegin() { return Iterator(this, getNumKids() - 1); }
   Iterator rend() const { return Iterator(this, -1); }
 protected:
-  static Malloc AstMalloc;
-  static ArenaAllocator<Malloc> ArenaMalloc;
+  // static Malloc AstMalloc;
+  static alloc::MallocArena Arena;
   NodeType Type;
   Node(NodeType Type) : Type(Type) {}
 };
@@ -197,7 +195,7 @@ class Nullary final : public NullaryNode {
 public:
   Nullary() : NullaryNode(Kind) {}
   static Nullary<Kind> *create() {
-    return ArenaMalloc.create<Nullary<Kind>>();
+    return Arena.create<Nullary<Kind>>();
   }
   ~Nullary() {}
 };
@@ -211,7 +209,7 @@ public:
   IntegerNode(decode::IntType Value)
       : NullaryNode(NodeType::Integer), Value(Value) {}
   static IntegerNode *create(decode::IntType Value) {
-    return ArenaMalloc.create<IntegerNode>(Value);
+    return Arena.create<IntegerNode>(Value);
   }
   ~IntegerNode() {}
   decode::IntType getValue() const {
@@ -230,7 +228,7 @@ public:
   SymbolNode(std::string Name)
       : NullaryNode(NodeType::Symbol), Name(Name) {}
   static SymbolNode *create(std::string Name) {
-    return ArenaMalloc.create<SymbolNode>(Name);
+    return Arena.create<SymbolNode>(Name);
   }
   ~SymbolNode() {}
   std::string getName() const {
@@ -265,7 +263,7 @@ class Unary final : public UnaryNode {
 public:
   Unary(Node *Kid) : UnaryNode(Kind, Kid) {}
   static Unary<Kind> *create(Node *Kid) {
-    return ArenaMalloc.create<Unary<Kind>>(Kid);
+    return Arena.create<Unary<Kind>>(Kid);
   }
   ~Unary() {}
 };
@@ -297,7 +295,7 @@ class Binary final : public BinaryNode {
 public:
   Binary(Node *Kid1, Node *Kid2) : BinaryNode(Kind, Kid1, Kid2) {}
   static Binary<Kind> *create(Node *Kid1, Node *Kid2) {
-    return ArenaMalloc.create<Binary<Kind>>(Kid1, Kid2);
+    return Arena.create<Binary<Kind>>(Kid1, Kid2);
   }
   ~Binary() {}
 };
@@ -331,7 +329,7 @@ public:
   Ternary(Node *Kid1, Node *Kid2, Node* Kid3)
       : TernaryNode(Kind, Kid1, Kid2, Kid3) {}
   static Ternary<Kind> *create(Node *Kid1, Node *Kid2, Node *Kid3) {
-    return ArenaMalloc.create<Ternary<Kind>>(Kid1, Kid2, Kid3);
+    return Arena.create<Ternary<Kind>>(Kid1, Kid2, Kid3);
   }
   ~Ternary() {}
 };
@@ -366,7 +364,7 @@ class Nary final : public NaryNode {
 public:
   Nary() : NaryNode(Kind) {}
   static Nary<Kind> *create() {
-    return ArenaMalloc.create<Nary<Kind>>();
+    return Arena.create<Nary<Kind>>();
   }
   ~Nary() {}
 };
