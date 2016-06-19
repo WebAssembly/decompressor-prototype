@@ -127,8 +127,9 @@ using namespace wasm::alloc;
 namespace wasm {
 namespace filt {
 
-MallocAllocator Node::Malloc;
-ArenaAllocator<MallocAllocator> Node::ArenaMalloc(Node::Malloc);
+//Malloc Node::AstMalloc;
+//ArenaAllocator<Malloc> Node::ArenaMalloc(Node::AstMalloc);
+alloc::MallocArena Node::Arena;
 
 const char *getNodeSexpName(NodeType Type) {
   // TODO(KarlSchimpf): Make thread safe
@@ -198,12 +199,12 @@ void NaryNode::append(Node *Kid) {
   }
   if (Last == nullptr) {
     // At beginning of list.
-    Next = new (ArenaMalloc.allocate<KidList>()) KidList();
+    Next = Arena.create<KidList>();
     Next->Kids[0] = Kid;
     Kids = Next;
     return;
   }
-  Last->Next = new (ArenaMalloc.allocate<KidList>()) KidList();
+  Last->Next = Arena.create<KidList>();
   Last->Next->Kids[0] = Kid;
 }
 
