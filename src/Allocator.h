@@ -33,36 +33,29 @@ namespace alloc {
 // Default alignment to use (Starts at 3 => alignment 8).
 extern size_t DefaultAllocAlignLog2;
 
-// Defines the base of all allocators. Provides a common API that dispatches to
-// the derived class the corresponding (obvious) top-level methods.
-//
-// Note: byte alignment is in base log2.
-template <typename DerivedClass>
-class AllocatorBase {
-  AllocatorBase (const AllocatorBase<DerivedClass> &) = delete;
-  AllocatorBase<DerivedClass>
-  &operator=(const AllocatorBase<DerivedClass> &) = delete;
+// Defines a virtual base for all allocators. Allows use of generic allocators
+// by using virtual dispatch.
+class Allocator {
+  Allocator(const Allocator &) = delete;
+  Allocator &operator=(const Allocator &) = delete;
 public:
-  AllocatorBase() {}
+  Allocator() {}
+  virtual ~Allocator() {}
 
-  // Generic allocation
-  void *allocateBlock(size_t Size, size_t AlignLog2=DefaultAllocAlignLog2) {
-    return
-        static_cast<DerivedClass *>(this)->allocateBlock(Size, AlignLog2);
-  }
+  // The default allocator to use, if one isn't provided.
+  static Allocator *Default;
 
-  // Generic deallocation
-  void deallocateBlock(void *Pointer) {
-    static_cast<DerivedClass *>(this)->deallocateBlock(Pointer);
-  }
+  // Generic virtual allocation
+  virtual void *allocateVirtual(size_t Size,
+                                size_t AlignLog2=DefaultAllocAlignLog2) = 0;
+
+  // Generic virtual deallocation
+  virtual void deallocateVirtual(void *Pointer) = 0;
 
   // Allocate a single element of Type
   template<class Type>
   Type *allocate(size_t AlignLog2=DefaultAllocAlignLog2) {
-    return
-        static_cast<Type *>(
-            static_cast<DerivedClass *>(this)
-            ->allocateBlock(sizeof(Type), AlignLog2));
+    return static_cast<Type *>(this->allocateVirtual(sizeof(Type), AlignLog2));
   }
 
   // Allocate and construct an instance of Type T using T(Args).
@@ -75,8 +68,8 @@ public:
   // Allocate an array of Type.
   template<class Type, size_t Size>
   Type *allocate(size_t AlignLog2=DefaultAllocAlignLog2) {
-    return static_cast<DerivedClass *>(this)
-        ->allocateBlock(sizeof(Type) * Size, AlignLog2);
+    return static_cast<Type *>(
+        this->allocateVirtual(sizeof(Type) * Size, AlignLog2));
   }
 
   // Allocate and construct an instance of Type[Size];
@@ -88,8 +81,8 @@ public:
   // Allocate an array of Type[Size] (alternate form)
   template<class Type>
   Type *allocateArray(size_t Size, size_t AlignLog2=DefaultAllocAlignLog2) {
-    return static_cast<DerivedClass *>(this)
-        ->allocateBlock(sizeof(Type) * Size, AlignLog2);
+    return static_cast<Type *>(
+        this->allocateVirtual(sizeof(Type) * Size, AlignLog2));
   }
 
   // Allocate and construct an instance of Type[Size] (alternate form)
@@ -102,7 +95,7 @@ public:
   // Deallcate an instance of Type
   template<class Type>
   void deallocate(Type * Pointer) {
-    static_cast<DerivedClass *>(this)->deallocateBlock(Pointer);
+    this->deallocateVirtual(Pointer);
   }
 
   // Destruct and deallocate an instance of Type
@@ -115,7 +108,7 @@ public:
   // Deallocate an array of Type
   template<class Type, size_t Size>
   void deallocate(Type *Pointer) {
-    static_cast<DerivedClass *>(this)->deallocateBlock(Pointer);
+    this>deallocateVirtual(Pointer);
   }
 
   // Destruct and deallocate an array of Type[Size]
@@ -129,7 +122,117 @@ public:
   // Deallocate an array of Type (alternate form)
   template<class Type>
   void deallocateArray(Type *Pointer, size_t) {
-    static_cast<DerivedClass *>(this)->deallocateBlock(Pointer);
+    this->deallocateVirtual(Pointer);
+  }
+
+  // Eestruct and deallocate an array of Type[Size] (alternate form)
+  template<class Type>
+  void destroyArray(Type *Pointer, size_t Size) {
+    for (size_t i = 0; i < Size; ++i)
+      (Pointer + i)->~Type();
+    deallocateArray<Type>(Pointer, Size);
+  }
+};
+
+// Defines the base of all allocators. Provides a common API that dispatches to
+// the derived class the corresponding (obvious) top-level methods, rather than
+// making a virtual call. Also inherits virtual API for generic allocation.
+template <typename DerivedClass>
+class AllocatorBase : public Allocator {
+  AllocatorBase (const AllocatorBase<DerivedClass> &) = delete;
+  AllocatorBase<DerivedClass>
+  &operator=(const AllocatorBase<DerivedClass> &) = delete;
+public:
+  AllocatorBase() {}
+  ~AllocatorBase() override {}
+
+  // Generic allocation
+  void *allocateDispatch(size_t Size, size_t AlignLog2=DefaultAllocAlignLog2) {
+    return
+        static_cast<DerivedClass *>(this)->allocateDispatch(Size, AlignLog2);
+  }
+
+  // Generic deallocation
+  void deallocateDispatch(void *Pointer) {
+    static_cast<DerivedClass *>(this)->deallocateDispatch(Pointer);
+  }
+
+  // Allocate a single element of Type
+  template<class Type>
+  Type *allocate(size_t AlignLog2=DefaultAllocAlignLog2) {
+    return
+        static_cast<Type *>(
+            static_cast<DerivedClass *>(this)
+            ->allocateDispatch(sizeof(Type), AlignLog2));
+  }
+
+  // Allocate and construct an instance of Type T using T(Args).
+  template<typename T, typename... Args>
+  T *create(Args&&... args)
+  {
+    return new (allocate<T>()) T(std::forward<Args>(args)...);
+  }
+
+  // Allocate an array of Type.
+  template<class Type, size_t Size>
+  Type *allocate(size_t AlignLog2=DefaultAllocAlignLog2) {
+    return static_cast<Type *>(
+        static_cast<DerivedClass *>(this)
+        ->allocateDispatch(sizeof(Type) * Size, AlignLog2));
+  }
+
+  // Allocate and construct an instance of Type[Size];
+  template<typename T, size_t Size>
+  T *create() {
+    return new (allocate<T, Size>()) T[Size];
+  }
+
+  // Allocate an array of Type[Size] (alternate form)
+  template<class Type>
+  Type *allocateArray(size_t Size, size_t AlignLog2=DefaultAllocAlignLog2) {
+    return static_cast<Type *>(
+        static_cast<DerivedClass *>(this)
+        ->allocateDispatch(sizeof(Type) * Size, AlignLog2));
+  }
+
+  // Allocate and construct an instance of Type[Size] (alternate form)
+  template<class Type>
+  Type *createArray(const size_t Size, size_t AlignLog2=DefaultAllocAlignLog2) {
+    return new (allocateArray<Type>(Size, AlignLog2)) Type[Size];
+  }
+
+
+  // Deallcate an instance of Type
+  template<class Type>
+  void deallocate(Type * Pointer) {
+    static_cast<DerivedClass *>(this)->deallocateDispatch(Pointer);
+  }
+
+  // Destruct and deallocate an instance of Type
+  template<class Type>
+  void destroy(Type *Pointer) {
+    Pointer->~Type();
+    deallocate<Type>(Pointer);
+  }
+
+  // Deallocate an array of Type
+  template<class Type, size_t Size>
+  void deallocate(Type *Pointer) {
+    static_cast<DerivedClass *>(this)->deallocateDispatch(Pointer);
+  }
+
+  // Destruct and deallocate an array of Type[Size]
+  template<class Type, size_t Size>
+  void destroy(Type *Pointer) {
+    for (size_t i = 0; i < Size; ++i)
+      (Pointer + i)->~Type();
+    deallocate<Type, Size>(Pointer);
+  }
+
+  // Deallocate an array of Type (alternate form)
+  template<class Type>
+  void deallocateArray(Type *Pointer, size_t) {
+    static_cast<DerivedClass *>(this)->deallocateDispatch(Pointer);
   }
 
   // Eestruct and deallocate an array of Type[Size] (alternate form)
@@ -147,12 +250,21 @@ class Malloc : public AllocatorBase<Malloc> {
   Malloc &operator=(const Malloc&) = delete;
 public:
   Malloc() {}
-  void *allocateBlock(size_t Size, size_t AlignLog2=DefaultAllocAlignLog2) {
+  ~Malloc() override;
+
+  // Generic virtual allocation
+  void *allocateVirtual(size_t Size,
+                        size_t AlignLog2=DefaultAllocAlignLog2) override;
+
+  // Generic virtual deallocation
+  virtual void deallocateVirtual(void *Pointer) override;
+
+  void *allocateDispatch(size_t Size, size_t AlignLog2=DefaultAllocAlignLog2) {
     (void) AlignLog2;
     return malloc(Size);
   }
 
-  void deallocateBlock(void* Pointer) {
+  void deallocateDispatch(void* Pointer) {
     free(Pointer);
   }
 };
@@ -173,7 +285,7 @@ class ArenaAllocator : public AllocatorBase<ArenaAllocator<BaseAllocator>> {
   ArenaAllocator(const ArenaAllocator &) = delete;
   ArenaAllocator &operator=(const ArenaAllocator&) = delete;
   ArenaAllocator() = delete;
-  void deallocateBlock(void */*Pointer*/) = delete;
+  void deallocateDispatch(void */*Pointer*/) = delete;
 public:
   explicit ArenaAllocator(BaseAllocator &_BaseAlloc,
                           size_t _InitPageSize = DefaultArenaInitPageSize,
@@ -187,8 +299,23 @@ public:
       GrowAfterCount(_GrowAfterCount)
       {}
 
+  ~ArenaAllocator() override {
+    for (void *Page : AllocatedPages)
+      BaseAlloc.deallocateDispatch(Page);
+    for (void *Page : BigAllocations)
+      BaseAlloc.deallocateDispatch(Page);
+  }
 
-  void *allocateBlock(size_t Size, size_t AlignLog2=DefaultAllocAlignLog2) {
+  // Generic virtual allocation
+  void *allocateVirtual(size_t Size,
+                        size_t AlignLog2=DefaultAllocAlignLog2) override {
+    return allocateDispatch(Size, AlignLog2);
+  }
+
+  // Generic virtual deallocation
+  virtual void deallocateVirtual(void * /*Pointer*/) override {}
+
+  void *allocateDispatch(size_t Size, size_t AlignLog2=DefaultAllocAlignLog2) {
     assert(AlignLog2 < 32);
     size_t Alignment = (size_t)1 << AlignLog2;
     size_t WantedSize = Size + Alignment - 1; // Pad to guarantee enough space.
@@ -197,7 +324,7 @@ public:
     assert(WantedSize >= Size);
 
     if ((WantedSize >= Threshold) || (WantedSize >= PageSize)) {
-      void *Page = BaseAlloc.allocateBlock(Size, Alignment);
+      void *Page = BaseAlloc.allocateDispatch(Size, Alignment);
       BigAllocations.emplace_back(Page);
       return Page;
     }
@@ -217,13 +344,6 @@ public:
     void *Space = Available + AlignBytes;
     Available += WantedSize;
     return Space;
-  }
-
-  ~ArenaAllocator() {
-    for (void *Page : AllocatedPages)
-      BaseAlloc.deallocateBlock(Page);
-    for (void *Page : BigAllocations)
-      BaseAlloc.deallocateBlock(Page);
   }
 
 private:
@@ -255,7 +375,8 @@ private:
       PageSize = GrowSize;
     }
     size_t BlockSize = sizeof(uint8_t) * PageSize;
-    uint8_t *Page = static_cast<uint8_t *>(BaseAlloc.allocateBlock(BlockSize));
+    uint8_t *Page = static_cast<uint8_t *>(
+        BaseAlloc.allocateDispatch(BlockSize));
     AllocatedPages.emplace_back(Page);
     Available = Page;
     End = Available + PageSize;
@@ -272,14 +393,53 @@ public:
                        size_t Threshold = DefaultArenaThreshold,
                        size_t GrowAfterCount = DefaultArenaGrowAfterCount);
 
-  void *allocateBlock(size_t Size, size_t AligLog2=DefaultAllocAlignLog2);
+  ~MallocArena() override {}
 
-  void deallocateBlock(void * *Pointer) = delete;
+  // Generic virtual allocation
+  void *allocateVirtual(size_t Size,
+                        size_t AlignLog2=DefaultAllocAlignLog2) override;
+
+  // Generic virtual deallocation
+  virtual void deallocateVirtual(void *Pointer) override;
+
+  void *allocateDispatch(size_t Size, size_t AligLog2=DefaultAllocAlignLog2);
+
+  void deallocateDispatch(void * *Pointer) = delete;
 
 private:
   Malloc Allocator;
   ArenaAllocator<Malloc> Arena;
 };
+
+// Converts an allocator into an allocator that can be used in templates.  That
+// is, adds the necessary casting operators to convert the underlying allocator
+// to the right type.
+template <class T>
+struct TemplateAllocator {
+  typedef T value_type;
+  TemplateAllocator(Allocator *Alloc) : Alloc(Alloc) {}
+  TemplateAllocator() : Alloc(Allocator::Default) {}
+  template <class U> TemplateAllocator(const TemplateAllocator<U>& other)
+      : Alloc(other.Alloc) {}
+  T* allocate(std::size_t Size) {
+    return static_cast<T*>(Alloc->allocateVirtual(sizeof(T) * Size));
+  }
+  void deallocate(T* Pointer, std::size_t /*Size*/) {
+    Alloc->deallocateVirtual(Pointer);
+  }
+private:
+  Allocator *Alloc;
+};
+
+template <class T, class U>
+bool operator==(const TemplateAllocator<T>& L, const TemplateAllocator<U>& R) {
+  return L.Alloc == R.Alloc;
+}
+
+template <class T, class U>
+bool operator!=(const TemplateAllocator<T>& L, const TemplateAllocator<U>& R) {
+  return !(L == R);
+}
 
 } // end of namespace alloc
 
