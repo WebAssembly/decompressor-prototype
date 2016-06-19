@@ -172,6 +172,7 @@ void Node::append(Node *) {
 }
 
 Node *NaryNode::getKid(Node::IndexType Index) const {
+#if 0
   KidList *Next = Kids;
   while (Index >= KidsListSize) {
     if (Next == nullptr)
@@ -182,9 +183,13 @@ Node *NaryNode::getKid(Node::IndexType Index) const {
   if (Next == nullptr)
     return nullptr;
   return Next->Kids[Index];
+#else
+  return Kids[Index];
+#endif
 }
 
 void NaryNode::append(Node *Kid) {
+#if 0
   KidList *Last = nullptr;
   KidList *Next = Kids;
   size_t Index = NumKids++;
@@ -206,6 +211,9 @@ void NaryNode::append(Node *Kid) {
   }
   Last->Next = Arena.create<KidList>();
   Last->Next->Kids[0] = Kid;
+#else
+  Kids.emplace_back(Kid);
+#endif
 }
 
 // Note: we create duumy virtual forceCompilation() to force legal

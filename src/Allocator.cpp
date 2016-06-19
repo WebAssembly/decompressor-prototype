@@ -30,14 +30,34 @@ size_t DefaultArenaMaxPageSize = size_t(1) << 20;
 size_t DefaultArenaGrowAfterCount = 4;
 size_t DefaultArenaThreshold = size_t(1) << 10;
 
+Malloc::~Malloc() {}
+
+void *Malloc::allocateVirtual(size_t Size, size_t AlignLog2) {
+  return allocateDispatch(Size, AlignLog2);
+}
+
+void Malloc::deallocateVirtual(void *Pointer) {
+  deallocateDispatch(Pointer);
+}
+
+//template<> class ArenaAllocator<Malloc>;
+
 MallocArena::MallocArena(size_t InitPageSize, size_t MaxPageSize,
                          size_t Threshold, size_t GrowAfterCount)
     : AllocatorBase<MallocArena>(),
       Allocator(),
       Arena(Allocator, InitPageSize, MaxPageSize, Threshold, GrowAfterCount) {}
 
-void *MallocArena::allocateBlock(size_t Size, size_t AlignLog2) {
-  return Arena.allocateBlock(Size, AlignLog2);
+void *MallocArena::allocateVirtual(size_t Size, size_t AlignLog2) {
+  return allocateDispatch(Size, AlignLog2);
+}
+
+void MallocArena::deallocateVirtual(void *) {
+  // Can't deallocate, do nothing.
+}
+
+void *MallocArena::allocateDispatch(size_t Size, size_t AlignLog2) {
+  return Arena.allocateDispatch(Size, AlignLog2);
 }
 
 } // end of namespace alloc
