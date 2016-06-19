@@ -123,6 +123,7 @@ const char *getNodeTypeName(NodeType Type);
 class Node {
   Node(const Node&) = delete;
   Node &operator=(const Node&) = delete;
+  Node() = delete;
 public:
   using IndexType = size_t;
   class Iterator {
@@ -168,8 +169,8 @@ public:
   Iterator rbegin() { return Iterator(this, getNumKids() - 1); }
   Iterator rend() const { return Iterator(this, -1); }
 protected:
-  static MallocAllocator Malloc;
-  static ArenaAllocator<MallocAllocator> ArenaMalloc;
+  static Malloc AstMalloc;
+  static ArenaAllocator<Malloc> ArenaMalloc;
   NodeType Type;
   Node(NodeType Type) : Type(Type) {}
 };
@@ -194,14 +195,11 @@ class Nullary final : public NullaryNode {
   Nullary<Kind> &operator=(const Nullary<Kind>&) = delete;
   virtual void forceCompilation() final;
 public:
+  Nullary() : NullaryNode(Kind) {}
   static Nullary<Kind> *create() {
-    Nullary<Kind> *Node =
-        new (ArenaMalloc.allocate<Nullary<Kind>>()) Nullary<Kind>();
-    return Node;
+    return ArenaMalloc.create<Nullary<Kind>>();
   }
   ~Nullary() {}
-private:
-  Nullary() : NullaryNode(Kind) {}
 };
 
 class IntegerNode final : public NullaryNode {
@@ -210,19 +208,17 @@ class IntegerNode final : public NullaryNode {
   IntegerNode() = delete;
   virtual void forceCompilation() final;
 public:
-  ~IntegerNode() {}
+  IntegerNode(decode::IntType Value)
+      : NullaryNode(NodeType::Integer), Value(Value) {}
   static IntegerNode *create(decode::IntType Value) {
-    IntegerNode *Node =
-        new (ArenaMalloc.allocate<IntegerNode>()) IntegerNode(Value);
-    return Node;
+    return ArenaMalloc.create<IntegerNode>(Value);
   }
+  ~IntegerNode() {}
   decode::IntType getValue() const {
     return Value;
   }
 private:
   decode::IntType Value;
-  IntegerNode(decode::IntType Value)
-      : NullaryNode(NodeType::Integer), Value(Value) {}
 };
 
 class SymbolNode final : public NullaryNode {
@@ -231,19 +227,17 @@ class SymbolNode final : public NullaryNode {
   SymbolNode() = delete;
   virtual void forceCompilation() final;
 public:
-  ~SymbolNode() {}
+  SymbolNode(std::string Name)
+      : NullaryNode(NodeType::Symbol), Name(Name) {}
   static SymbolNode *create(std::string Name) {
-    SymbolNode *Node =
-        new (ArenaMalloc.allocate<SymbolNode>()) SymbolNode(Name);
-    return Node;
+    return ArenaMalloc.create<SymbolNode>(Name);
   }
+  ~SymbolNode() {}
   std::string getName() const {
     return Name;
   }
 private:
   std::string Name;
-  SymbolNode(std::string Name)
-      : NullaryNode(NodeType::Symbol), Name(Name) {}
 };
 
 class UnaryNode : public Node {
@@ -269,14 +263,11 @@ class Unary final : public UnaryNode {
   Unary<Kind> &operator=(const Unary<Kind>&) = delete;
   virtual void forceCompilation() final;
 public:
-  ~Unary() {}
-  static Unary<Kind> *create(Node *Kid) {
-    Unary<Kind> *Node =
-        new (ArenaMalloc.allocate<Unary<Kind>>()) Unary<Kind>(Kid);
-    return Node;
-  }
-private:
   Unary(Node *Kid) : UnaryNode(Kind, Kid) {}
+  static Unary<Kind> *create(Node *Kid) {
+    return ArenaMalloc.create<Unary<Kind>>(Kid);
+  }
+  ~Unary() {}
 };
 
 class BinaryNode : public Node {
@@ -304,14 +295,11 @@ class Binary final : public BinaryNode {
   Binary<Kind> &operator=(const Binary<Kind>&) = delete;
   virtual void forceCompilation() final;
 public:
-  ~Binary() {}
-  static Binary<Kind> *create(Node *Kid1, Node *Kid2) {
-    Binary<Kind> *Node =
-        new (ArenaMalloc.allocate<Binary<Kind>>()) Binary<Kind>(Kid1, Kid2);
-    return Node;
-  }
-private:
   Binary(Node *Kid1, Node *Kid2) : BinaryNode(Kind, Kid1, Kid2) {}
+  static Binary<Kind> *create(Node *Kid1, Node *Kid2) {
+    return ArenaMalloc.create<Binary<Kind>>(Kid1, Kid2);
+  }
+  ~Binary() {}
 };
 
 class TernaryNode : public Node {
@@ -340,16 +328,12 @@ class Ternary final : public TernaryNode {
   Ternary<Kind> &operator=(const Ternary<Kind>&) = delete;
   virtual void forceCompilation() final;
 public:
-  ~Ternary() {}
-  static Ternary<Kind> *create(Node *Kid1, Node *Kid2, Node *Kid3) {
-    Ternary<Kind> *Node =
-        new (ArenaMalloc.allocate<Ternary<Kind>>())
-        Ternary<Kind>(Kid1, Kid2, Kid3);
-    return Node;
-  }
-private:
   Ternary(Node *Kid1, Node *Kid2, Node* Kid3)
       : TernaryNode(Kind, Kid1, Kid2, Kid3) {}
+  static Ternary<Kind> *create(Node *Kid1, Node *Kid2, Node *Kid3) {
+    return ArenaMalloc.create<Ternary<Kind>>(Kid1, Kid2, Kid3);
+  }
+  ~Ternary() {}
 };
 
 class NaryNode : public Node {
@@ -380,14 +364,11 @@ class Nary final : public NaryNode {
   Nary<Kind> &operator=(const Nary<Kind>&) = delete;
   virtual void forceCompilation() final;
 public:
-  ~Nary() {}
-  static Nary<Kind> *create() {
-    Nary<Kind> *Node =
-        new (ArenaMalloc.allocate<Nary<Kind>>()) Nary<Kind>();
-    return Node;
-  }
-private:
   Nary() : NaryNode(Kind) {}
+  static Nary<Kind> *create() {
+    return ArenaMalloc.create<Nary<Kind>>();
+  }
+  ~Nary() {}
 };
 
 } // end of namespace filt

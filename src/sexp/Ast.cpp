@@ -127,8 +127,8 @@ using namespace wasm::alloc;
 namespace wasm {
 namespace filt {
 
-MallocAllocator Node::Malloc;
-ArenaAllocator<MallocAllocator> Node::ArenaMalloc(Node::Malloc);
+Malloc Node::AstMalloc;
+ArenaAllocator<Malloc> Node::ArenaMalloc(Node::AstMalloc);
 
 const char *getNodeSexpName(NodeType Type) {
   // TODO(KarlSchimpf): Make thread safe

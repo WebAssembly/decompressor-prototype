@@ -24,10 +24,14 @@
 
 #include <cstdlib>
 #include <vector>
+#include <utility>
 
 namespace wasm {
 
 namespace alloc {
+
+// Default alignment to use (Starts at 3 => alignment 8).
+extern size_t DefaultAllocAlignLog2;
 
 // Defines the base of all allocators. Provides a common API that dispatches to
 // the derived class the corresponding (obvious) top-level methods.
@@ -36,82 +40,129 @@ namespace alloc {
 template <typename DerivedClass>
 class AllocatorBase {
   AllocatorBase (const AllocatorBase<DerivedClass> &) = delete;
-  AllocatorBase<DerivedClass> &operator=(const AllocatorBase<DerivedClass> &) = delete;
+  AllocatorBase<DerivedClass>
+  &operator=(const AllocatorBase<DerivedClass> &) = delete;
 public:
   AllocatorBase() {}
+
   // Generic allocation
-  void *allocateBlock(size_t Size, size_t Alignment=1) {
+  void *allocateBlock(size_t Size, size_t AlignLog2=DefaultAllocAlignLog2) {
     return
-        static_cast<DerivedClass *>(this)->allocateBlock(Size, Alignment);
+        static_cast<DerivedClass *>(this)->allocateBlock(Size, AlignLog2);
+  }
+
+  // Generic deallocation
+  void deallocateBlock(void *Pointer) {
+    static_cast<DerivedClass *>(this)->deallocateBlock(Pointer);
   }
 
   // Allocate a single element of Type
   template<class Type>
-  Type *allocate(size_t Alignment=1) {
+  Type *allocate(size_t AlignLog2=DefaultAllocAlignLog2) {
     return
         static_cast<Type *>(
             static_cast<DerivedClass *>(this)
-            ->allocateBlock(sizeof(Type), Alignment));
+            ->allocateBlock(sizeof(Type), AlignLog2));
+  }
+
+  // Allocate and construct an instance of Type T using T(Args).
+  template<typename T, typename... Args>
+  T *create(Args&&... args)
+  {
+    return new (allocate<T>()) T(std::forward<Args>(args)...);
   }
 
   // Allocate an array of Type.
   template<class Type, size_t Size>
-  Type *allocate(size_t Alignment=1) {
+  Type *allocate(size_t AlignLog2=DefaultAllocAlignLog2) {
     return static_cast<DerivedClass *>(this)
-        ->allocateBlock(sizeof(Type) * Size, Alignment);
+        ->allocateBlock(sizeof(Type) * Size, AlignLog2);
   }
 
-  // Allocate an array of Type (alternate form)
+  // Allocate and construct an instance of Type[Size];
+  template<typename T, size_t Size>
+  T *create() {
+    return new (allocate<T, Size>()) T[Size];
+  }
+
+  // Allocate an array of Type[Size] (alternate form)
   template<class Type>
-  Type *allocateArray(size_t Size, size_t Alignment) {
+  Type *allocateArray(size_t Size, size_t AlignLog2=DefaultAllocAlignLog2) {
     return static_cast<DerivedClass *>(this)
-        ->allocateBlock(sizeof(Type) * Size, Alignment);
+        ->allocateBlock(sizeof(Type) * Size, AlignLog2);
   }
 
-  // Generic deallocation
-  void deallocateBlock(size_t Size, size_t Alignment=1) {
-    static_cast<DerivedClass *>(this)->deallocateBlock(Size, Alignment);
-  }
-
-  // Deallcate a single element of Type
+  // Allocate and construct an instance of Type[Size] (alternate form)
   template<class Type>
-  void deallocate(const Type * Pointer) {
-    static_cast<DerivedClass *>(this)->deallocateBlock(Pointer, sizeof(Type));
+  Type *createArray(const size_t Size, size_t AlignLog2=DefaultAllocAlignLog2) {
+    return new (allocateArray<Type>(Size, AlignLog2)) Type[Size];
+  }
+
+
+  // Deallcate an instance of Type
+  template<class Type>
+  void deallocate(Type * Pointer) {
+    static_cast<DerivedClass *>(this)->deallocateBlock(Pointer);
+  }
+
+  // Destruct and deallocate an instance of Type
+  template<class Type>
+  void destroy(Type *Pointer) {
+    Pointer->~Type();
+    deallocate<Type>(Pointer);
   }
 
   // Deallocate an array of Type
   template<class Type, size_t Size>
-  void deallocate(const Type *Pointer) {
-    static_cast<DerivedClass *>(this)
-        ->deallocateBlock(Pointer, sizeof(Type) * Size);
+  void deallocate(Type *Pointer) {
+    static_cast<DerivedClass *>(this)->deallocateBlock(Pointer);
   }
 
-  // deallocate an arra of Type (alternate form)
+  // Destruct and deallocate an array of Type[Size]
+  template<class Type, size_t Size>
+  void destroy(Type *Pointer) {
+    for (size_t i = 0; i < Size; ++i)
+      (Pointer + i)->~Type();
+    deallocate<Type, Size>(Pointer);
+  }
+
+  // Deallocate an array of Type (alternate form)
   template<class Type>
-  void deallocateArray(const Type *Pointer, size_t Size) {
-    static_cast<DerivedClass *>(this)
-        ->deallocateBlock(Pointer, sizeof(Type) * Size);
+  void deallocateArray(Type *Pointer, size_t) {
+    static_cast<DerivedClass *>(this)->deallocateBlock(Pointer);
+  }
+
+  // Eestruct and deallocate an array of Type[Size] (alternate form)
+  template<class Type>
+  void destroyArray(Type *Pointer, size_t Size) {
+    for (size_t i = 0; i < Size; ++i)
+      (Pointer + i)->~Type();
+    deallocateArray<Type>(Pointer, Size);
   }
 };
 
 // Defines an allocator based on malloc
-class MallocAllocator : public AllocatorBase<MallocAllocator> {
-  MallocAllocator(const MallocAllocator &) = delete;
-  MallocAllocator &operator=(const MallocAllocator&) = delete;
+class Malloc : public AllocatorBase<Malloc> {
+  Malloc(const Malloc &) = delete;
+  Malloc &operator=(const Malloc&) = delete;
 public:
-  MallocAllocator() {}
-  void *allocateBlock(size_t Size, size_t Alignment=1) {
-    (void) Alignment;
+  Malloc() {}
+  void *allocateBlock(size_t Size, size_t AlignLog2=DefaultAllocAlignLog2) {
+    (void) AlignLog2;
     return malloc(Size);
   }
 
-  void deallocateBlock(void* Pointer, size_t /* Size */) {
+  void deallocateBlock(void* Pointer) {
     free(Pointer);
   }
 
   // Pull in base class overloads.
-  using AllocatorBase<MallocAllocator>::allocate;
-  using AllocatorBase<MallocAllocator>::deallocate;
+  using AllocatorBase<Malloc>::allocate;
+  using AllocatorBase<Malloc>::create;
+  using AllocatorBase<Malloc>::deallocate;
+  using AllocatorBase<Malloc>::allocateArray;
+  using AllocatorBase<Malloc>::createArray;
+  using AllocatorBase<Malloc>::deallocateArray;
 };
 
 // Defines an simple arena allocator, that will allocate from internal pages if
@@ -125,14 +176,15 @@ class ArenaAllocator : public AllocatorBase<ArenaAllocator<BaseAllocator>> {
   ArenaAllocator(const ArenaAllocator &) = delete;
   ArenaAllocator &operator=(const ArenaAllocator&) = delete;
   ArenaAllocator() = delete;
-  static constexpr size_t DefaultInitPageSize = size_t(1) << 10;
+  static constexpr size_t DefaultInitPageSize = size_t(1) << 12;
   static constexpr size_t DefaultMaxPageSize = size_t(1) << 20;
-  static constexpr size_t DefaultGrowAfterCount = 32;
+  static constexpr size_t DefaultGrowAfterCount = 4;
+  void deallocateBlock(void */*Pointer*/) = delete;
 public:
   explicit ArenaAllocator(BaseAllocator &_BaseAlloc,
-                          size_t _Threshold = DefaultInitPageSize,
                           size_t _InitPageSize = DefaultInitPageSize,
                           size_t _MaxPageSize = DefaultMaxPageSize,
+                          size_t _Threshold = DefaultInitPageSize,
                           size_t _GrowAfterCount = DefaultGrowAfterCount) :
       BaseAlloc(_BaseAlloc),
       Threshold(_Threshold),
@@ -141,15 +193,23 @@ public:
       GrowAfterCount(_GrowAfterCount)
       {}
 
-  void *allocateBlock(size_t Size, size_t Alignment=1) {
-    assert(Alignment > 0);
-    assert(Alignment < 32);
-    Alignment = (size_t)1 << Alignment;
-    size_t AlignBytes = alignmentBytesNeeded(Alignment);
-    size_t WantedSize = AlignBytes + Size;
+
+  void *allocateBlock(size_t Size, size_t AlignLog2=DefaultAllocAlignLog2) {
+    assert(AlignLog2 < 32);
+    size_t Alignment = (size_t)1 << AlignLog2;
+    size_t WantedSize = Size + Alignment - 1; // Pad to guarantee enough space.
 
     // Make sure alignment doesn't cause size overflow.
     assert(WantedSize >= Size);
+
+    if ((WantedSize >= Threshold) || (WantedSize >= PageSize)) {
+      void *Space = BaseAlloc.allocateBlock(Size, Alignment);
+      BigAllocations.emplace_back(Space, Size);
+      return Space;
+    }
+
+    size_t AlignBytes = alignmentBytesNeeded(Alignment);
+    WantedSize = AlignBytes + Size;
 
     if (WantedSize <= size_t(End - Available)) {
       void *Space = Available + AlignBytes;
@@ -157,14 +217,7 @@ public:
       return Space;
     }
 
-    WantedSize = Size + Alignment - 1; // Pad to guarantee enough space.
-    if ((WantedSize >= Threshold) || (WantedSize >= PageSize)) {
-      void *Space = BaseAlloc.allocateBlock(Size, Alignment);
-      BigAllocations.emplace_back(Space, Size);
-      return Space;
-    }
-
-    createNewBumpPage();
+    createNewPage();
     AlignBytes = alignmentBytesNeeded(Alignment);
     WantedSize = AlignBytes + Size;
     void *Space = Available + AlignBytes;
@@ -172,18 +225,19 @@ public:
     return Space;
   }
 
-  void deallocateBlock(void * /*Pointer*/, size_t /*Size*/) {}
-
   ~ArenaAllocator() {
     for (const auto &pair : BumpPages)
-      BaseAlloc.deallocateBlock(pair.first, pair.second);
+      BaseAlloc.deallocateBlock(pair.first);
     for (const auto &pair : BigAllocations)
-      BaseAlloc.deallocateBlock(pair.first, pair.second);
+      BaseAlloc.deallocateBlock(pair.first);
   }
 
   // Pull in base class overloads.
   using AllocatorBase<ArenaAllocator<BaseAllocator>>::allocate;
-  using AllocatorBase<ArenaAllocator<BaseAllocator>>::deallocate;
+  using AllocatorBase<ArenaAllocator<BaseAllocator>>::allocateArray;
+  using AllocatorBase<ArenaAllocator<BaseAllocator>>::create;
+  using AllocatorBase<ArenaAllocator<BaseAllocator>>::createArray;
+
 private:
   BaseAllocator &BaseAlloc;
   size_t Threshold;
@@ -202,7 +256,7 @@ private:
             & ~(Alignment - 1)) - (size_t)Available;
   }
 
-  void createNewBumpPage() {
+  void createNewPage() {
     size_t NumBumpPages = BumpPages.size();
     // Scale page size as more bump pages are needed, to cut down
     // on number of page allocations.
@@ -219,6 +273,32 @@ private:
     End = Available + PageSize;
   }
 };
+
+#if 0
+class ArenaMalloc : public ArenaAllocator<Malloc> {
+  ArenaMalloc(const Arenamalloc &) = delete;
+  ArenaMalloc &operator=(const ArenamMalloc &) = delete;
+  ArenaMalloc() = delete;
+public:
+  ArenaMalloc(size_t _InitPageSize = DefaultInitPageSize,
+              size_t _MaxPageSize = DefaultMaxPageSize,
+              size_t _Threshold = DefaultInitPageSize,
+              size_t _GrowAfterCount = DefaultGrowAfterCount);
+
+  void *allocateBlock(size_t Size, size_t Alignment=1);
+
+  void deallocateBlock(void * /*Pointer*/, size_t /*Size*/) {}
+
+  using ArenaAllocator<Malloc>::allocate;
+  using ArenaAllocator<Malloc>::create;
+  using ArenaAllocator<Malloc>::deallocate;
+  //  using ArenaAllocator<Malloc>::allocateArray;
+  //  using ArenaAllocator<Malloc>::createArray;
+  //  using ArenaAllocator<Malloc>::deallocateArray;
+private:
+  Malloc BaseAllocator;
+};
+#endif
 
 } // end of namespace alloc
 
