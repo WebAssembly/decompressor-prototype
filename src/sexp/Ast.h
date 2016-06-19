@@ -330,9 +330,7 @@ protected:
   std::vector<Node*, alloc::TemplateAllocator<Node*>> Kids;
   NaryNode(NodeType Type, alloc::Allocator *Alloc)
       : Node(Type),
-        Kids(alloc::TemplateAllocator<Node*>(Alloc)) {
-    Kids.reserve(10);
-  }
+        Kids(alloc::TemplateAllocator<Node*>(Alloc)) {}
 };
 
 template<NodeType Kind>
@@ -341,7 +339,7 @@ class Nary final : public NaryNode {
   Nary<Kind> &operator=(const Nary<Kind>&) = delete;
   virtual void forceCompilation() final;
 public:
-  Nary(alloc::Allocator *Alloc) : NaryNode(Kind, Alloc) {}
+  Nary(alloc::Allocator *Alloc = new alloc::Malloc) : NaryNode(Kind, Alloc) {}
   ~Nary() {}
 };
 

@@ -36,26 +36,26 @@ class Driver
   Driver(const Driver&) = delete;
   Driver &operator=(const Driver&) = delete;
 public:
-  Driver (alloc::MallocArena *_Arena = nullptr)
-      : Arena(_Arena) {
-    if (Arena == nullptr)
-      Arena = new alloc::MallocArena();
+  Driver (alloc::Allocator *_Alloc = nullptr)
+      : Alloc(_Alloc) {
+    if (Alloc == nullptr)
+      Alloc = new alloc::MallocArena();
   }
 
   ~Driver () {}
 
   template<typename T, typename... Args>
   T *create(Args&&... args) {
-    return Arena->create<T>(std::forward<Args>(args)...);
+    return Alloc->create<T>(std::forward<Args>(args)...);
   }
 
   template<typename T, typename... Args>
-  T *createArena(Args&&... args) {
-    return Arena->create<T>(Arena, std::forward<Args>(args)...);
+  T *createWithAllocator(Args&&... args) {
+    return Alloc->create<T>(getAllocator(), std::forward<Args>(args)...);
   }
 
-  alloc::MallocArena *getArena() {
-    return Arena;
+  alloc::Allocator *getAllocator() {
+    return Alloc;
   }
 
   // The name of the file being parsed.
@@ -106,7 +106,7 @@ public:
   void error (const std::string& Message) const;
 
 private:
-  alloc::MallocArena *Arena;
+  alloc::Allocator *Alloc;
   std::string Filename;
   bool TraceLexing = false;
   bool TraceParsing = false;
