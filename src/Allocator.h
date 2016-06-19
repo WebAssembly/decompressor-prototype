@@ -42,6 +42,9 @@ public:
   Allocator() {}
   virtual ~Allocator() {}
 
+  // The default allocator to use, if one isn't provided.
+  static Allocator *Default;
+
   // Generic virtual allocation
   virtual void *allocateVirtual(size_t Size,
                                 size_t AlignLog2=DefaultAllocAlignLog2) = 0;
@@ -132,10 +135,8 @@ public:
 };
 
 // Defines the base of all allocators. Provides a common API that dispatches to
-// the derived class the corresponding (obvious) top-level methods. Also
-// inherits virtual API for generic allocation.
-//
-// Note: byte alignment is in base log2.
+// the derived class the corresponding (obvious) top-level methods, rather than
+// making a virtual call. Also inherits virtual API for generic allocation.
 template <typename DerivedClass>
 class AllocatorBase : public Allocator {
   AllocatorBase (const AllocatorBase<DerivedClass> &) = delete;
@@ -410,11 +411,14 @@ private:
   ArenaAllocator<Malloc> Arena;
 };
 
-// Converts an allocator into an allocator that can be used in templates.
+// Converts an allocator into an allocator that can be used in templates.  That
+// is, adds the necessary casting operators to convert the underlying allocator
+// to the right type.
 template <class T>
 struct TemplateAllocator {
   typedef T value_type;
   TemplateAllocator(Allocator *Alloc) : Alloc(Alloc) {}
+  TemplateAllocator() : Alloc(Allocator::Default) {}
   template <class U> TemplateAllocator(const TemplateAllocator<U>& other)
       : Alloc(other.Alloc) {}
   T* allocate(std::size_t Size) {

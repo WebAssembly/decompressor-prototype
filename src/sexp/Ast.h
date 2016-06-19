@@ -23,6 +23,9 @@
 //
 // This is done to force the compilation of virtuals associated with the
 // class in file Ast.cpp.
+//
+// Note: Classes allow an optional allocator as the first argument. This
+// allows the creator to decide what allocator will be used internally.
 
 #ifndef DECOMPRESSOR_SRC_SEXP_AST_H
 #define DECOMPRESSOR_SRC_SEXP_AST_H
@@ -158,8 +161,12 @@ public:
   NodeType getType() const {
     return Type;
   }
-  virtual IndexType getNumKids() const = 0;
-  virtual Node *getKid(IndexType Index) const = 0;
+  IndexType getNumKids() const {
+    return Kids.size();
+  }
+  Node *getKid(IndexType Index) const {
+    return Kids[Index];
+  }
   // WARNING: Only supported if underlying type allows.
   virtual void append(Node *Kid);
   Iterator begin() { return Iterator(this, 0); }
@@ -167,24 +174,24 @@ public:
   Iterator rbegin() { return Iterator(this, getNumKids() - 1); }
   Iterator rend() const { return Iterator(this, -1); }
 protected:
-  // static Malloc AstMalloc;
-  static alloc::MallocArena Arena;
   NodeType Type;
-  Node(NodeType Type) : Type(Type) {}
+  std::vector<Node*, alloc::TemplateAllocator<Node*>> Kids;
+  Node(NodeType Type)
+      : Type(Type), Kids(alloc::Allocator::Default) {}
+  Node(alloc::Allocator *Alloc, NodeType Type)
+      : Type(Type), Kids(Alloc) {}
 };
 
 class NullaryNode : public Node {
   NullaryNode(const NullaryNode&) = delete;
   NullaryNode &operator=(const NullaryNode&) = delete;
 public:
-  IndexType getNumKids() const final { return 0; }
-  Node *getKid(IndexType /*Index*/) const final {
-    assert(false);
-    return nullptr;
-  }
   ~NullaryNode() override {}
 protected:
-  NullaryNode(NodeType Type) : Node(Type) {}
+  NullaryNode(NodeType Type)
+      : Node(alloc::Allocator::Default, Type) {}
+  NullaryNode(alloc::Allocator *Alloc, NodeType Type)
+      : Node(Alloc, Type) {}
 };
 
 template<NodeType Kind>
@@ -194,6 +201,7 @@ class Nullary final : public NullaryNode {
   virtual void forceCompilation() final;
 public:
   Nullary() : NullaryNode(Kind) {}
+  Nullary(alloc::Allocator *Alloc) : NullaryNode(Alloc, Kind) {}
   ~Nullary() {}
 };
 
@@ -205,6 +213,8 @@ class IntegerNode final : public NullaryNode {
 public:
   IntegerNode(decode::IntType Value)
       : NullaryNode(NodeType::Integer), Value(Value) {}
+  IntegerNode(alloc::Allocator* Alloc, decode::IntType Value)
+      : NullaryNode(Alloc, NodeType::Integer), Value(Value) {}
   ~IntegerNode() {}
   decode::IntType getValue() const {
     return Value;
@@ -221,6 +231,8 @@ class SymbolNode final : public NullaryNode {
 public:
   SymbolNode(std::string Name)
       : NullaryNode(NodeType::Symbol), Name(Name) {}
+  SymbolNode(alloc::Allocator *Alloc, std::string Name)
+      : NullaryNode(Alloc, NodeType::Symbol), Name(Name) {}
   ~SymbolNode() {}
   std::string getName() const {
     return Name;
@@ -233,18 +245,17 @@ class UnaryNode : public Node {
   UnaryNode(const UnaryNode&) = delete;
   UnaryNode &operator=(const UnaryNode&) = delete;
 public:
-  IndexType getNumKids() const final { return 1; }
-  Node *getKid(IndexType Index) const final {
-    assert(Index == 0);
-    return Kid;
-  }
   ~UnaryNode() override {}
 protected:
-  Node *Kid;
   UnaryNode(NodeType Type, Node *Kid)
-      : Node(Type), Kid(Kid) {}
+      : Node(Type) {
+    Kids.emplace_back(Kid);
+  }
+  UnaryNode(alloc::Allocator *Alloc, NodeType Type, Node *Kid)
+      : Node(Alloc, Type) {
+    Kids.emplace_back(Kid);
+  }
 };
-
 
 template<NodeType Kind>
 class Unary final : public UnaryNode {
@@ -253,6 +264,7 @@ class Unary final : public UnaryNode {
   virtual void forceCompilation() final;
 public:
   Unary(Node *Kid) : UnaryNode(Kind, Kid) {}
+  Unary(alloc::Allocator* Alloc, Node *Kid) : UnaryNode(Alloc, Kind, Kid) {}
   ~Unary() {}
 };
 
@@ -260,18 +272,17 @@ class BinaryNode : public Node {
   BinaryNode(const BinaryNode&) = delete;
   BinaryNode &operator=(const BinaryNode&) = delete;
 public:
-  IndexType getNumKids() const final { return 2; }
-  Node *getKid(IndexType Index) const final {
-    assert(Index < 2);
-    return Kids[Index];
-  }
   ~BinaryNode() override {}
 protected:
-  Node *Kids[2];
   BinaryNode(NodeType Type, Node *Kid1, Node *Kid2)
       : Node(Type) {
-    Kids[0] = Kid1;
-    Kids[1] = Kid2;
+    Kids.emplace_back(Kid1);
+    Kids.emplace_back(Kid2);
+  }
+  BinaryNode(alloc::Allocator *Alloc, NodeType Type, Node *Kid1, Node *Kid2)
+      : Node(Alloc, Type) {
+    Kids.emplace_back(Kid1);
+    Kids.emplace_back(Kid2);
   }
 };
 
@@ -282,6 +293,8 @@ class Binary final : public BinaryNode {
   virtual void forceCompilation() final;
 public:
   Binary(Node *Kid1, Node *Kid2) : BinaryNode(Kind, Kid1, Kid2) {}
+  Binary(alloc::Allocator *Alloc, Node *Kid1, Node *Kid2)
+      : BinaryNode(Alloc, Kind, Kid1, Kid2) {}
   ~Binary() {}
 };
 
@@ -289,19 +302,20 @@ class TernaryNode : public Node {
   TernaryNode(const TernaryNode&) = delete;
   TernaryNode &operator=(const TernaryNode&) = delete;
 public:
-  IndexType getNumKids() const final { return 3; }
-  Node *getKid(IndexType Index) const final {
-    assert(Index < 3);
-    return Kids[Index];
-  }
   ~TernaryNode() override {}
 protected:
-  Node *Kids[3];
   TernaryNode(NodeType Type, Node *Kid1, Node *Kid2, Node *Kid3)
       : Node(Type) {
-    Kids[0] = Kid1;
-    Kids[1] = Kid2;
-    Kids[2] = Kid3;
+    Kids.emplace_back(Kid1);
+    Kids.emplace_back(Kid2);
+    Kids.emplace_back(Kid3);
+  }
+  TernaryNode(alloc::Allocator *Alloc, NodeType Type,
+              Node *Kid1, Node *Kid2, Node *Kid3)
+      : Node(Alloc, Type) {
+    Kids.emplace_back(Kid1);
+    Kids.emplace_back(Kid2);
+    Kids.emplace_back(Kid3);
   }
 };
 
@@ -313,24 +327,23 @@ class Ternary final : public TernaryNode {
 public:
   Ternary(Node *Kid1, Node *Kid2, Node* Kid3)
       : TernaryNode(Kind, Kid1, Kid2, Kid3) {}
+  Ternary(alloc::Allocator *Alloc, Node *Kid1, Node *Kid2, Node* Kid3)
+      : TernaryNode(Alloc, Kind, Kid1, Kid2, Kid3) {}
   ~Ternary() {}
 };
 
 class NaryNode : public Node {
   NaryNode(const NaryNode&) = delete;
   NaryNode &operator=(const NaryNode&) = delete;
-  // TODO(KarlSchimpf): Find way to arena allocate vector.
-  static constexpr size_t KidsListSize = 10;
+  virtual void forceCompilation();
 public:
-  IndexType getNumKids() const final { return Kids.size(); }
-  Node *getKid(IndexType Index) const final;
-  void append(Node *Kid) final;
+  void append(Node *Kid) final {
+    Kids.emplace_back(Kid);
+  }
   ~NaryNode() override {}
 protected:
-  std::vector<Node*, alloc::TemplateAllocator<Node*>> Kids;
-  NaryNode(NodeType Type, alloc::Allocator *Alloc)
-      : Node(Type),
-        Kids(alloc::TemplateAllocator<Node*>(Alloc)) {}
+  NaryNode(NodeType Type) : Node(Type) {}
+  NaryNode(alloc::Allocator *Alloc, NodeType Type) : Node(Alloc, Type) {}
 };
 
 template<NodeType Kind>
@@ -339,7 +352,8 @@ class Nary final : public NaryNode {
   Nary<Kind> &operator=(const Nary<Kind>&) = delete;
   virtual void forceCompilation() final;
 public:
-  Nary(alloc::Allocator *Alloc = new alloc::Malloc) : NaryNode(Kind, Alloc) {}
+  Nary() : NaryNode(Kind) {}
+  Nary(alloc::Allocator *Alloc) : NaryNode(Alloc, Kind) {}
   ~Nary() {}
 };
 

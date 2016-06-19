@@ -32,6 +32,12 @@ size_t DefaultArenaThreshold = size_t(1) << 10;
 
 Malloc::~Malloc() {}
 
+namespace {
+Malloc MallocAllocator;
+} // end of anonymous namespace
+
+Allocator *Allocator::Default = &MallocAllocator;
+
 void *Malloc::allocateVirtual(size_t Size, size_t AlignLog2) {
   return allocateDispatch(Size, AlignLog2);
 }

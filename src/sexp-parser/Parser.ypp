@@ -167,7 +167,7 @@ case    : "(" "case" case_statement_list ")" { $$ = $3; }
 
 case_list
         : expression statement { // selector / default statement.
-            $$ = Driver.createWithAllocator<Nary<NodeType::Select>>();
+            $$ = Driver.create<Nary<NodeType::Select>>();
             $$->append($1);
             $$->append($2);
           }
@@ -179,7 +179,7 @@ case_list
 
 case_statement_list
         : integer statement { // case index / first statement of case.
-            $$ = Driver.createWithAllocator<Nary<NodeType::Case>>();
+            $$ = Driver.create<Nary<NodeType::Case>>();
             $$->append($1);
             $$->append($2);
           }
@@ -200,12 +200,12 @@ declaration
 
 declaration_stmt_list
         : "default" symbol statement {
-            $$ = Driver.createWithAllocator<Nary<NodeType::Default>>();
+            $$ = Driver.create<Nary<NodeType::Default>>();
             $$->append($2);
             $$->append($3);
           }
         | "define" symbol statement {
-            $$ = Driver.createWithAllocator<Nary<NodeType::Define>>();
+            $$ = Driver.create<Nary<NodeType::Define>>();
             $$->append($2);
             $$->append($3);
           }
@@ -218,7 +218,7 @@ declaration_stmt_list
 
 declaration_list
         : symbol declaration {  // Section name / first define.
-            $$ = Driver.createWithAllocator<Nary<NodeType::Section>>();
+            $$ = Driver.create<Nary<NodeType::Section>>();
             $$->append($1);
             $$->append($2);
           }
@@ -349,11 +349,11 @@ integer : INTEGER { $$ = Driver.create<IntegerNode>($1); }
 
 loop_body
         : "loop" expression {
-           $$ = Driver.createWithAllocator<Nary<NodeType::Loop>>();
+           $$ = Driver.create<Nary<NodeType::Loop>>();
             $$->append($2);
           }
         | "loop.unbounded" {
-            $$ = Driver.createWithAllocator<Nary<NodeType::LoopUnbounded>>();
+            $$ = Driver.create<Nary<NodeType::LoopUnbounded>>();
           }
         | loop_body statement {
             $$ = $1;
@@ -366,7 +366,7 @@ section : "(" "section" declaration_list ")" { $$ = $3; }
 
 section_list
         : header section { // Header / first section of file.
-            $$ = Driver.createWithAllocator<Nary<NodeType::File>>();
+            $$ = Driver.create<Nary<NodeType::File>>();
             $$->append($1);
             $$->append($2);
           }
@@ -378,7 +378,7 @@ section_list
 
 seq_statement_list
         : %empty {
-            $$ = Driver.createWithAllocator<Nary<NodeType::Sequence>>();
+            $$ = Driver.create<Nary<NodeType::Sequence>>();
           }
         | seq_statement_list statement {
             $$ = $1;
@@ -408,7 +408,7 @@ stream_conv  : "(" stream_conv_stmt_list ")" {
 
 stream_conv_list
         : stream_conv {
-            $$ = Driver.createWithAllocator<Nary<NodeType::Filter>>();
+            $$ = Driver.create<Nary<NodeType::Filter>>();
             $$->append($1);
           }
         | stream_conv_list stream_conv {
@@ -419,67 +419,67 @@ stream_conv_list
 
 stream_conv_stmt_list
         : "ast.to.ast" statement {
-           $$ = Driver.createWithAllocator<Nary<NodeType::AstToAst>>();
+           $$ = Driver.create<Nary<NodeType::AstToAst>>();
             $$->append($2);
           }
         | "ast.to.bit" statement  {
-            $$ = Driver.createWithAllocator<Nary<NodeType::AstToBit>>();
+            $$ = Driver.create<Nary<NodeType::AstToBit>>();
             $$->append($2);
           }
         | "ast.to.byte" statement {
-            $$ = Driver.createWithAllocator<Nary<NodeType::AstToByte>>();
+            $$ = Driver.create<Nary<NodeType::AstToByte>>();
             $$->append($2);
           }
         | "ast.to.int" statement {
-            $$ = Driver.createWithAllocator<Nary<NodeType::AstToInt>>();
+            $$ = Driver.create<Nary<NodeType::AstToInt>>();
             $$->append($2);
           }
         | "bit.to.bit" statement {
-            $$ = Driver.createWithAllocator<Nary<NodeType::BitToBit>>();
+            $$ = Driver.create<Nary<NodeType::BitToBit>>();
             $$->append($2);
           }
         | "bit.to.byte" statement {
-           $$ = Driver.createWithAllocator<Nary<NodeType::BitToByte>>();
+           $$ = Driver.create<Nary<NodeType::BitToByte>>();
             $$->append($2);
           }
         | "bit.to.int" statement {
-            $$ = Driver.createWithAllocator<Nary<NodeType::BitToInt>>();
+            $$ = Driver.create<Nary<NodeType::BitToInt>>();
             $$->append($2);
           }
         | "bit.to.ast" statement {
-            $$ = Driver.createWithAllocator<Nary<NodeType::BitToAst>>();
+            $$ = Driver.create<Nary<NodeType::BitToAst>>();
             $$->append($2);
           }
         | "byte.to.bit" statement {
-            $$ = Driver.createWithAllocator<Nary<NodeType::ByteToBit>>();
+            $$ = Driver.create<Nary<NodeType::ByteToBit>>();
             $$->append($2);
           }
         | "byte.to.byte" statement {
-            $$ = Driver.createWithAllocator<Nary<NodeType::ByteToByte>>();
+            $$ = Driver.create<Nary<NodeType::ByteToByte>>();
             $$->append($2);
           }
         | "byte.to.int" statement {
-            $$ = Driver.createWithAllocator<Nary<NodeType::ByteToInt>>();
+            $$ = Driver.create<Nary<NodeType::ByteToInt>>();
             $$->append($2);
           }
         | "byte.to.ast" statement {
-            $$ = Driver.createWithAllocator<Nary<NodeType::ByteToAst>>();
+            $$ = Driver.create<Nary<NodeType::ByteToAst>>();
             $$->append($2);
           }
         | "int.to.bit" statement  {
-            $$ = Driver.createWithAllocator<Nary<NodeType::IntToBit>>();
+            $$ = Driver.create<Nary<NodeType::IntToBit>>();
             $$->append($2);
           }
         | "int.to.byte" statement {
-            $$ = Driver.createWithAllocator<Nary<NodeType::IntToByte>>();
+            $$ = Driver.create<Nary<NodeType::IntToByte>>();
             $$->append($2);
           }
         | "int.to.int" statement {
-            $$ = Driver.createWithAllocator<Nary<NodeType::IntToInt>>();
+            $$ = Driver.create<Nary<NodeType::IntToInt>>();
             $$->append($2);
           }
         | "int.to.ast" statement {
-            $$ = Driver.createWithAllocator<Nary<NodeType::IntToAst>>();
+            $$ = Driver.create<Nary<NodeType::IntToAst>>();
             $$->append($2);
           }
         | stream_conv_stmt_list statement {

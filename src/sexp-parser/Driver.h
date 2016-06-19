@@ -49,11 +49,6 @@ public:
     return Alloc->create<T>(std::forward<Args>(args)...);
   }
 
-  template<typename T, typename... Args>
-  T *createWithAllocator(Args&&... args) {
-    return Alloc->create<T>(getAllocator(), std::forward<Args>(args)...);
-  }
-
   alloc::Allocator *getAllocator() {
     return Alloc;
   }
