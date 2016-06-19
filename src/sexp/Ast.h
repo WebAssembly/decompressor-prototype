@@ -194,9 +194,11 @@ class Nullary final : public NullaryNode {
   virtual void forceCompilation() final;
 public:
   Nullary() : NullaryNode(Kind) {}
+#if 0
   static Nullary<Kind> *create() {
     return Arena.create<Nullary<Kind>>();
   }
+#endif
   ~Nullary() {}
 };
 

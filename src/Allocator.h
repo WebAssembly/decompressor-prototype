@@ -75,8 +75,9 @@ public:
   // Allocate an array of Type.
   template<class Type, size_t Size>
   Type *allocate(size_t AlignLog2=DefaultAllocAlignLog2) {
-    return static_cast<DerivedClass *>(this)
-        ->allocateBlock(sizeof(Type) * Size, AlignLog2);
+    return static_cast<Type *>(
+        static_cast<DerivedClass *>(this)
+        ->allocateBlock(sizeof(Type) * Size, AlignLog2));
   }
 
   // Allocate and construct an instance of Type[Size];
@@ -88,8 +89,9 @@ public:
   // Allocate an array of Type[Size] (alternate form)
   template<class Type>
   Type *allocateArray(size_t Size, size_t AlignLog2=DefaultAllocAlignLog2) {
-    return static_cast<DerivedClass *>(this)
-        ->allocateBlock(sizeof(Type) * Size, AlignLog2);
+    return static_cast<Type *>(
+        static_cast<DerivedClass *>(this)
+        ->allocateBlock(sizeof(Type) * Size, AlignLog2));
   }
 
   // Allocate and construct an instance of Type[Size] (alternate form)

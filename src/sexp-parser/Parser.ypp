@@ -167,7 +167,7 @@ case    : "(" "case" case_statement_list ")" { $$ = $3; }
 
 case_list
         : expression statement { // selector / default statement.
-            $$ =  Nary<NodeType::Select>::create();
+          $$ = Driver.create<Nary<NodeType::Select>>();
             $$->append($1);
             $$->append($2);
           }
@@ -230,7 +230,7 @@ declaration_list
 
 expression
         : "(" "append" ")" {
-            $$ = Nullary<NodeType::AppendNoArgs>::create();
+             $$ = Driver.create<Nullary<NodeType::AppendNoArgs>>();
           }
         | "(" "append" expression ")" {
             $$ = Unary<NodeType::AppendOneArg>::create($3);
@@ -238,10 +238,14 @@ expression
         | "(" "block" expression integer integer ")" {
             $$ = Ternary<NodeType::Block>::create($3, $4, $5);
           }
-        | "(" "block.begin" ")" { $$ = Nullary<NodeType::BlockBegin>::create(); }
-        | "(" "block.end" ")" { $$ = Nullary<NodeType::BlockEnd>::create(); }
+        | "(" "block.begin" ")" {
+            $$ = Driver.create<Nullary<NodeType::BlockBegin>>();
+          }
+        | "(" "block.end" ")" {
+            $$ = Driver.create<Nullary<NodeType::BlockEnd>>();
+          }
         | "(" "error" ")" {
-            $$ = Nullary<NodeType::Error>::create();
+            $$ = Driver.create<Nullary<NodeType::Error>>();
           }
         | "(" "eval" symbol ")" {
             $$ = Unary<NodeType::Eval>::create($3);
@@ -274,16 +278,16 @@ expression
             $$ = Unary<NodeType::SymConst>::create($3);
           }
         | "(" "uint8" ")" {
-            $$ = Nullary<NodeType::Uint8>::create();
+            $$ = Driver.create<Nullary<NodeType::Uint8>>();
           }
         | "(" "uint32" ")" {
-            $$ = Nullary<NodeType::Uint32NoArgs>::create();
+            $$ = Driver.create<Nullary<NodeType::Uint32NoArgs>>();
           }
         | "(" "uint32" integer ")"  {
             $$ = Unary<NodeType::Uint32OneArg>::create($3);
           }
         | "(" "uint64" ")" {
-            $$ = Nullary<NodeType::Uint64NoArgs>::create();
+            $$ = Driver.create<Nullary<NodeType::Uint64NoArgs>>();
           }
         | "(" "uint64" integer ")"  {
             $$ = Unary<NodeType::Uint64OneArg>::create($3);
@@ -295,40 +299,40 @@ expression
             $$ = Unary<NodeType::U64Const>::create($3);
           }
         | "(" "value" ")" {
-            $$ = Nullary<NodeType::Value>::create();
+            $$ = Driver.create<Nullary<NodeType::Value>>();
           }
         | "(" "varint32" ")" {
-            $$ = Nullary<NodeType::Varint32NoArgs>::create();
+            $$ = Driver.create<Nullary<NodeType::Varint32NoArgs>>();
           }
         | "(" "varint32" integer ")" {
             $$ = Unary<NodeType::Varint32OneArg>::create($3);
           }
         | "(" "varint64" ")" {
-            $$ = Nullary<NodeType::Varint64NoArgs>::create();
+            $$ = Driver.create<Nullary<NodeType::Varint64NoArgs>>();
           }
         | "(" "varint64" integer ")" {
             $$ = Unary<NodeType::Varint64OneArg>::create($3);
           }
         | "(" "varuint1" ")" {
-            $$ = Nullary<NodeType::Varuint1>::create();
+            $$ = Driver.create<Nullary<NodeType::Varuint1>>();
           }
         | "(" "varuint7" ")" {
-            $$ = Nullary<NodeType::Varuint7>::create();
+            $$ = Driver.create<Nullary<NodeType::Varuint7>>();
           }
         | "(" "varuint32" ")" {
-            $$ = Nullary<NodeType::Varuint32NoArgs>::create();
+            $$ = Driver.create<Nullary<NodeType::Varuint32NoArgs>>();
           }
         | "(" "varuint32" integer ")" {
             $$ = Unary<NodeType::Varuint32OneArg>::create($3);
           }
         | "(" "varuint64" ")" {
-            $$ = Nullary<NodeType::Varuint64NoArgs>::create();
+            $$ = Driver.create<Nullary<NodeType::Varuint64NoArgs>>();
           }
         | "(" "varuint64" integer ")" {
             $$ = Unary<NodeType::Varuint64OneArg>::create($3);
           }
         | "(" "void" ")" {
-            $$ = Nullary<NodeType::Void>::create();
+            $$ = Driver.create<Nullary<NodeType::Void>>();
           }
         | "(" "write" expression ")" {
             $$ = Unary<NodeType::Write>::create($3);
@@ -384,7 +388,9 @@ seq_statement_list
 
 statement
         : expression { $$ = $1; }
-        | "(" "copy" ")" { $$ = Nullary<NodeType::Copy>::create(); }
+        | "(" "copy" ")" {
+            $$ = Driver.create<Nullary<NodeType::Copy>>();
+          }
         | stream_conv { $$ = $1; }
         | "(" "filter" stream_conv_list ")" { $$ = $3; }
         | "(" "if" expression statement statement ")" {
