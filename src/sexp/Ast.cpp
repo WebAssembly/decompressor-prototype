@@ -23,6 +23,8 @@
 #include <cstring>
 #include <unordered_map>
 
+#include <iostream>
+
 namespace {
 
 using namespace wasm::filt;
@@ -120,8 +122,13 @@ TypeNamePair UniquifyingTypeNamePair[] = {
 
 } // end of anonymous namespace
 
+using namespace wasm::alloc;
+
 namespace wasm {
 namespace filt {
+
+MallocAllocator Node::Malloc;
+ArenaAllocator<MallocAllocator> Node::ArenaMalloc(Node::Malloc);
 
 const char *getNodeSexpName(NodeType Type) {
   // TODO(KarlSchimpf): Make thread safe
@@ -159,14 +166,45 @@ const char *getNodeTypeName(NodeType Type) {
   return Name;
 }
 
-NodeMemory NodeMemory::Default;
-
 void Node::append(Node *) {
   decode::fatal("Node::append not supported for ast node!");
 }
 
+Node *NaryNode::getKid(Node::IndexType Index) const {
+  KidList *Next = Kids;
+  while (Index >= KidsListSize) {
+    if (Next == nullptr)
+      return nullptr;
+    Index -= KidsListSize;
+    Next = Next->Next;
+  }
+  if (Next == nullptr)
+    return nullptr;
+  return Next->Kids[Index];
+}
+
 void NaryNode::append(Node *Kid) {
-  Kids.push_back(Kid);
+  KidList *Last = nullptr;
+  KidList *Next = Kids;
+  size_t Index = NumKids++;
+  while (Index >= KidsListSize) {
+    Index -= KidsListSize;
+    Last = Next;
+    Next = Next->Next;
+  }
+  if (Next) {
+    Next->Kids[Index] = Kid;
+    return;
+  }
+  if (Last == nullptr) {
+    // At beginning of list.
+    Next = new (ArenaMalloc.allocate<KidList>()) KidList();
+    Next->Kids[0] = Kid;
+    Kids = Next;
+    return;
+  }
+  Last->Next = new (ArenaMalloc.allocate<KidList>()) KidList();
+  Last->Next->Kids[0] = Kid;
 }
 
 // Note: we create duumy virtual forceCompilation() to force legal
