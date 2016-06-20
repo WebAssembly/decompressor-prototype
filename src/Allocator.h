@@ -436,7 +436,7 @@ struct TemplateAllocator {
     return new (p) T(std::forward<Args>(args)...);
   }
   void destroy(T *p) {
-    Alloc->destroy(p);
+    p->~T();
   }
   size_t max_size() const {
     return size_t(1) << 30;
