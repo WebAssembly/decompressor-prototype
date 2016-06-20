@@ -34,6 +34,8 @@ namespace wasm {
 namespace decode {
 
 using IntType = uint64_t;
+using SignedIntType = int64_t;
+
 static constexpr size_t kBitsInIntType = 64;
 
 enum class StreamType {Bit, Byte, Int, Ast};

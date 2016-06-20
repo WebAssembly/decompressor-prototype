@@ -213,6 +213,8 @@ class IntegerNode final : public NullaryNode {
   IntegerNode() = delete;
   virtual void forceCompilation() final;
 public:
+  // Note: ValueFormat provided so that we can echo back out same
+  // representation as when lexing s-expressions.
   enum ValueFormat { Decimal, SignedDecimal, Hexidecimal };
   IntegerNode(decode::IntType Value, ValueFormat Format = Decimal) :
       NullaryNode(NodeType::Integer),

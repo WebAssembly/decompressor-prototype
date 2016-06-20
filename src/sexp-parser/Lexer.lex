@@ -22,6 +22,8 @@
 #include "Parser.tab.hpp"
 #include "Driver.h"
 
+#include <iostream>
+
 using namespace wasm::decode;
 using namespace wasm::filt;
 
@@ -39,10 +41,12 @@ static Parser::symbol_type make_QuotedID(
                                  Driver.getLoc());
 }
 
-static IntType read_Integer(const std::string &Name) {
+static IntType read_Integer(const std::string &Name, size_t StartIndex = 0) {
   IntType Value = 0;
-  for (const auto &ch : Name)
+  for (size_t i = StartIndex, Size = Name.size(); i < Size; ++i) {
+    char ch = Name[i];
     Value = (Value * 10) + uint8_t(ch - '0');
+  }
   return Value;
 }
 
@@ -56,8 +60,9 @@ static Parser::symbol_type make_Integer(Driver &Driver,
 
 static Parser::symbol_type make_SignedInteger(Driver &Driver,
                                               const std::string &Name) {
+  IntType UnsignedValue = read_Integer(Name, 1);
   IntegerValue Value;
-  Value.Value = IntType(- int64_t(read_Integer(Name)));
+  Value.Value = IntType(- SignedIntType(UnsignedValue));
   Value.Format = IntegerNode::SignedDecimal;
   return Parser::make_INTEGER(Value, Driver.getLoc());
 }
@@ -84,14 +89,14 @@ static uint8_t getHex(char Ch) {
     case 'd':
     case 'e':
     case 'f':
-      return Ch - 'a';
+      return 10 + (Ch - 'a');
     case 'A':
     case 'B':
     case 'C':
     case 'D':
     case 'E':
     case 'F':
-      return Ch - 'F';
+      return 10 + (Ch - 'A');
   }
 }
 
@@ -101,7 +106,7 @@ static Parser::symbol_type make_HexInteger(Driver &Driver,
   assert(Name[0] == '0');
   assert(Name[1] == 'x');
   for (size_t i = 2, Count = Name.size(); i < Count; ++i) {
-    HexValue = (HexValue << 4) | getHex(Name[i]);
+    HexValue = (HexValue << 4) + getHex(Name[i]);
   }
   IntegerValue Value;
   Value.Value = HexValue;
