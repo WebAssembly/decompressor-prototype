@@ -135,7 +135,7 @@ struct IntegerValue {
 %token WRITE         "write"
 
 // Terminal classes
-%token <std::string> IDENTIFIER
+%token <std::vector<uint8_t>> IDENTIFIER
 %token <wasm::filt::IntegerValue> INTEGER
 
 // Nonterminal classes.

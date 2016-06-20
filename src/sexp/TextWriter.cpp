@@ -19,6 +19,7 @@
 
 #include "sexp/TextWriter.h"
 
+#include <cctype>
 #define __STDC_FORMAT_MACROS 1
 #include <inttypes.h>
 
@@ -247,7 +248,49 @@ void TextWriter::writeNode(Node *Node, bool AddNewline) {
     case NodeType::Symbol: {
       Indent _(this, AddNewline);
       auto *Sym = dynamic_cast<SymbolNode*>(Node);
-      fprintf(File, "'%s'", Sym->getName().c_str());
+      fputc('\'', File);
+      for (uint8_t V : Sym->getName()) {
+        switch (V) {
+          case '\\':
+            fputc('\\', File);
+            fputc('\\', File);
+            continue;
+          case '\f':
+            fputc('\\', File);
+            fputc('f', File);
+            continue;
+          case '\n':
+            fputc('\\', File);
+            fputc('n', File);
+            continue;
+          case '\r':
+            fputc('\\', File);
+            fputc('r', File);
+            continue;
+          case '\t':
+            fputc('\\', File);
+            fputc('t', File);
+            continue;
+          case '\v':
+            fputc('\\', File);
+            fputc('v', File);
+            continue;
+        }
+        if (isprint(V)) {
+          fputc(V, File);
+          continue;
+        }
+        fputc('\\', File);
+        uint8_t BitsPerOctal = 3;
+        uint8_t Shift = 2 * BitsPerOctal;
+        for (int Count = 3; Count > 0; --Count) {
+          uint8_t Digit = V >> Shift;
+          fputc('0' + Digit, File);
+          V &= ((1 << Shift) - 1);
+          Shift -= BitsPerOctal;
+        }
+      }
+      fputc('\'', File);
       LineEmpty = false;
       return;
     }

@@ -34,12 +34,58 @@ using namespace wasm::filt;
 # undef yywrap
 # define yywrap() 1
 
+static SymbolNode::NameType Buffer;
+
+static void buffer_Text(const std::string Text) {
+  for (char Ch : Text)
+    Buffer.emplace_back(Ch);
+}
+
+static void buffer_Escape(const Driver &Driver, const std::string Text) {
+  assert(Text.size() == 1);
+  switch (Text[0]) {
+    case '\\':
+      Buffer.emplace_back('\\');
+      return;
+    case 'f':
+      Buffer.emplace_back('\f');
+      return;
+    case 'n':
+      Buffer.emplace_back('\n');
+      return;
+    case 'r':
+      Buffer.emplace_back('\r');
+      return;
+    case 't':
+      Buffer.emplace_back('\t');
+      return;
+    case 'v':
+      Buffer.emplace_back('\v');
+      return;
+    default:
+      Driver.tokenError("\\" + Text);
+      Buffer.emplace_back('?');
+      return;
+  }
+}
+
+
+static void buffer_Octal(const std::string Text) {
+  uint8_t Value = 0;
+  for (uint8_t Ch : Text)
+    Value = (Value << 3) + (Ch - '0');
+  Buffer.emplace_back(Value);
+}
+
+#if 0
 static Parser::symbol_type make_QuotedID(
     const Driver &Driver, const std::string &Name) {
-  // TODO(KarlSchimpf) allow more general forms (any sequence of uint8)?
-  return Parser::make_IDENTIFIER(Name.substr(1, Name.size()-2),
-                                 Driver.getLoc());
+  std::vector<uint8_t> Contents;
+  for (size_t i = 1, Size = Name.size() - 1; i < Size; ++i)
+    Contents.emplace_back(Name[i]);
+  return Parser::make_IDENTIFIER(Contents, Driver.getLoc());
 }
+#endif
 
 static IntType read_Integer(const std::string &Name, size_t StartIndex = 0) {
   IntType Value = 0;
@@ -114,20 +160,27 @@ static Parser::symbol_type make_HexInteger(Driver &Driver,
   return Parser::make_INTEGER(Value, Driver.getLoc());
 }
 
+//octalchar "\\"[0-3][0-7][0-7]
+//escapechar "\\\\"|"\\f"|"\\m"|"\\r"|"\\t"|"\\v"
+
 %}
 
 %option noyywrap nounput batch debug noinput
 
 blank	[ \t]
 digit	[0-9]
+escape  "\\"[fnrtv\\]
 hexdigit [0-9a-fA-F]
 letter	[a-zA-Z]
-id	{letter}({letter}|{digit}|[_.])*
+id ({letter}|{digit}|[_.])*
 
 %{
 // Code run each time a pattern is matched.
 # define YY_USER_ACTION  Driver.extendLocationColumns(yyleng);
 %}
+
+%x Name
+%x Escape
 
 %%
 
@@ -200,8 +253,37 @@ id	{letter}({letter}|{digit}|[_.])*
 "0x"{hexdigit}+   return make_HexInteger(Driver, yytext);
 {digit}+          return make_Integer(Driver, yytext);
 -?{digit}+        return make_SignedInteger(Driver, yytext);
-"'"{id}"'"        return make_QuotedID(Driver, yytext);
-.                 Driver.error("invalid character");
+"'"               {
+                    Buffer.clear();
+                    BEGIN(Name);
+                  }
+<Name>{id}        buffer_Text(yytext);
+<Name>"\\"        BEGIN(Escape);
+<Name>"'"         {
+                    BEGIN(INITIAL);
+                    return Parser::make_IDENTIFIER(Buffer, Driver.getLoc());
+                  }
+<Name>.           {
+                    Driver.tokenError(yytext);
+                    BEGIN(INITIAL);
+                  }
+<Escape>"\\"      {
+                    buffer_Escape(Driver, yytext);
+                    BEGIN(Name);
+                  }
+<Escape>[f,n,r,t,v] {
+                    buffer_Escape(Driver, yytext);
+                    BEGIN(Name);
+                  }
+<Escape>[0-3][0-7][0-7] {
+                    buffer_Octal(yytext);
+                    BEGIN(Name);
+                  }
+<Escape>.         {
+                     Driver.tokenError(yytext);
+                     BEGIN(Name);
+                  }
+.                 Driver.tokenError(yytext);
 <<EOF>>           return Parser::make_END(Driver.getLoc());
 %%
 
