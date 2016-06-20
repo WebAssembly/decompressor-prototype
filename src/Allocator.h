@@ -432,6 +432,12 @@ struct TemplateAllocator {
   void deallocate(T* Pointer, std::size_t /*Size*/) {
     Alloc->deallocateVirtual(Pointer);
   }
+  template<typename... Args> T *construct(pointer *p, Args&&... args) {
+    return new (p) T(std::forward<Args>(args)...);
+  }
+  void destroy(pointer *p) {
+    Alloc->destroy(p);
+  }
   template < typename Other >
     struct rebind { using other = TemplateAllocator< Other >; };
 private:
