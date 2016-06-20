@@ -48,13 +48,18 @@ static IntType read_Integer(const std::string &Name) {
 
 static Parser::symbol_type make_Integer(Driver &Driver,
                                         const std::string &Name) {
-  return Parser::make_INTEGER(read_Integer(Name), Driver.getLoc());
+  IntegerValue Value;
+  Value.Value = read_Integer(Name);
+  Value.Format = IntegerNode::Decimal;
+  return Parser::make_INTEGER(Value, Driver.getLoc());
 }
 
-static Parser::symbol_type make_SignedInteger(
-    const Driver &Driver, const std::string &Name) {
-  return Parser::make_INTEGER(-static_cast<int64_t>(read_Integer(Name)),
-                              Driver.getLoc());
+static Parser::symbol_type make_SignedInteger(Driver &Driver,
+                                              const std::string &Name) {
+  IntegerValue Value;
+  Value.Value = IntType(- int64_t(read_Integer(Name)));
+  Value.Format = IntegerNode::SignedDecimal;
+  return Parser::make_INTEGER(Value, Driver.getLoc());
 }
 
 static uint8_t getHex(char Ch) {
@@ -90,14 +95,17 @@ static uint8_t getHex(char Ch) {
   }
 }
 
-static Parser::symbol_type make_HexInteger(
-    const Driver &Driver, const std::string &Name) {
-  IntType Value = 0;
+static Parser::symbol_type make_HexInteger(Driver &Driver,
+                                           const std::string &Name) {
+  IntType HexValue = 0;
   assert(Name[0] == '0');
   assert(Name[1] == 'x');
   for (size_t i = 2, Count = Name.size(); i < Count; ++i) {
-    Value = (Value << 4) | getHex(Name[i]);
+    HexValue = (HexValue << 4) | getHex(Name[i]);
   }
+  IntegerValue Value;
+  Value.Value = HexValue;
+  Value.Format = IntegerNode::Hexidecimal;
   return Parser::make_INTEGER(Value, Driver.getLoc());
 }
 

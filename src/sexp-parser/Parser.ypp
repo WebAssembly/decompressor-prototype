@@ -35,6 +35,12 @@ namespace wasm {
 namespace filt {
 class Driver;
 class Node;
+
+struct IntegerValue {
+  wasm::decode::IntType Value;
+  wasm::filt::IntegerNode::ValueFormat Format;
+};
+
 }}
 
 #ifdef __clang__
@@ -61,6 +67,7 @@ class Node;
 {
 // Note: Must follow definitions above, so that location_type is declared.
 # include "Driver.h"
+
 }
 
 // Special tokens
@@ -129,7 +136,7 @@ class Node;
 
 // Terminal classes
 %token <std::string> IDENTIFIER
-%token <uint64_t> INTEGER
+%token <wasm::filt::IntegerValue> INTEGER
 
 // Nonterminal classes.
 %type <wasm::filt::Node *> case
@@ -140,11 +147,11 @@ class Node;
 %type <wasm::filt::Node *> declaration_stmt_list
 %type <wasm::filt::Node *> expression
 %type <wasm::filt::Node *> file
+%type <wasm::filt::Node *> integer
 %type <wasm::filt::Node *> stream_conv
 %type <wasm::filt::Node *> stream_conv_list
 %type <wasm::filt::Node *> stream_conv_stmt_list
 %type <wasm::filt::Node *> header
-%type <wasm::filt::Node *> integer
 %type <wasm::filt::Node *> loop_body
 %type <wasm::filt::Node *> section
 %type <wasm::filt::Node *> section_list
@@ -356,8 +363,9 @@ header  : "(" "version" integer ")" {
           }
         ;
 
-integer : INTEGER { $$ = Driver.create<IntegerNode>($1); }
-        ;
+integer : INTEGER {
+           $$ = Driver.create<IntegerNode>($1.Value, $1.Format);
+          }
 
 loop_body
         : "loop" expression {

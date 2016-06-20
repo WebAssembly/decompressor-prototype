@@ -213,28 +213,26 @@ class IntegerNode final : public NullaryNode {
   IntegerNode() = delete;
   virtual void forceCompilation() final;
 public:
-  enum class Format { Decimal, SignedDecimal, Hex };
-  IntegerNode(decode::IntType Value) :
+  enum ValueFormat { Decimal, SignedDecimal, Hexidecimal };
+  IntegerNode(decode::IntType Value, ValueFormat Format = Decimal) :
       NullaryNode(NodeType::Integer),
       Value(Value),
-      format(Format::Decimal) {}
-  IntegerNode(alloc::Allocator* Alloc, decode::IntType Value) :
+      Format(Format) {}
+  IntegerNode(alloc::Allocator* Alloc, decode::IntType Value,
+              ValueFormat Format = Decimal) :
       NullaryNode(Alloc, NodeType::Integer),
       Value(Value),
-      format(Format::Decimal) {}
+      Format(Format) {}
   ~IntegerNode() {}
-  Format getFormat() const {
-    return format;
-  }
-  void setFormat(Format NewValue) {
-    format = NewValue;
+  ValueFormat getFormat() const {
+    return Format;
   }
   decode::IntType getValue() const {
     return Value;
   }
 private:
   decode::IntType Value;
-  Format format;
+  ValueFormat Format;
 };
 
 class SymbolNode final : public NullaryNode {
