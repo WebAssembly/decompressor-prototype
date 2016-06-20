@@ -35,6 +35,12 @@ namespace wasm {
 namespace filt {
 class Driver;
 class Node;
+
+struct IntegerValue {
+  wasm::decode::IntType Value;
+  wasm::filt::IntegerNode::ValueFormat Format;
+};
+
 }}
 
 #ifdef __clang__
@@ -61,6 +67,7 @@ class Node;
 {
 // Note: Must follow definitions above, so that location_type is declared.
 # include "Driver.h"
+
 }
 
 // Special tokens
@@ -129,7 +136,7 @@ class Node;
 
 // Terminal classes
 %token <std::string> IDENTIFIER
-%token <uint64_t> INTEGER
+%token <wasm::filt::IntegerValue> INTEGER
 
 // Nonterminal classes.
 %type <wasm::filt::Node *> case
@@ -140,11 +147,11 @@ class Node;
 %type <wasm::filt::Node *> declaration_stmt_list
 %type <wasm::filt::Node *> expression
 %type <wasm::filt::Node *> file
+%type <wasm::filt::Node *> integer
 %type <wasm::filt::Node *> stream_conv
 %type <wasm::filt::Node *> stream_conv_list
 %type <wasm::filt::Node *> stream_conv_stmt_list
 %type <wasm::filt::Node *> header
-%type <wasm::filt::Node *> integer
 %type <wasm::filt::Node *> loop_body
 %type <wasm::filt::Node *> section
 %type <wasm::filt::Node *> section_list
@@ -235,8 +242,20 @@ expression
         | "(" "append" expression ")" {
             $$ = Driver.create<Unary<NodeType::AppendOneArg>>($3);
           }
+        | "(" "block" expression ")" {
+            // 1st argument is width in bytes
+            $$ = Driver.create<Unary<NodeType::BlockOneArg>>($3);
+          }
+        | "(" "block" expression integer ")" {
+            // 1st argument is width in bytes
+            // 2nd argument is block.end value to inject
+            $$ = Driver.create<Binary<NodeType::BlockTwoArgs>>($3, $4);
+          }
         | "(" "block" expression integer integer ")" {
-            $$ = Driver.create<Ternary<NodeType::Block>>($3, $4, $5);
+            // 1st argument is width in bytes
+            // 2nd argument is block.begin value to inject
+            // 3nd argument is block.end value to inject
+            $$ = Driver.create<Ternary<NodeType::BlockThreeArgs>>($3, $4, $5);
           }
         | "(" "block.begin" ")" {
             $$ = Driver.create<Nullary<NodeType::BlockBegin>>();
@@ -344,8 +363,9 @@ header  : "(" "version" integer ")" {
           }
         ;
 
-integer : INTEGER { $$ = Driver.create<IntegerNode>($1); }
-        ;
+integer : INTEGER {
+           $$ = Driver.create<IntegerNode>($1.Value, $1.Format);
+          }
 
 loop_body
         : "loop" expression {
