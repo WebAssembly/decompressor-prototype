@@ -427,6 +427,8 @@ struct TemplateAllocator {
   void deallocate(T* Pointer, std::size_t /*Size*/) {
     Alloc->deallocateVirtual(Pointer);
   }
+  template < typename Other >
+    struct rebind { using other = TemplateAllocator< Other >; };
 private:
   Allocator *Alloc;
 };
