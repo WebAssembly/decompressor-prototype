@@ -127,10 +127,6 @@ using namespace wasm::alloc;
 namespace wasm {
 namespace filt {
 
-//Malloc Node::AstMalloc;
-//ArenaAllocator<Malloc> Node::ArenaMalloc(Node::AstMalloc);
-alloc::MallocArena Node::Arena;
-
 const char *getNodeSexpName(NodeType Type) {
   // TODO(KarlSchimpf): Make thread safe
   static std::unordered_map<int, const char*> Mapping;
@@ -171,43 +167,6 @@ void Node::append(Node *) {
   decode::fatal("Node::append not supported for ast node!");
 }
 
-Node *NaryNode::getKid(Node::IndexType Index) const {
-  KidList *Next = Kids;
-  while (Index >= KidsListSize) {
-    if (Next == nullptr)
-      return nullptr;
-    Index -= KidsListSize;
-    Next = Next->Next;
-  }
-  if (Next == nullptr)
-    return nullptr;
-  return Next->Kids[Index];
-}
-
-void NaryNode::append(Node *Kid) {
-  KidList *Last = nullptr;
-  KidList *Next = Kids;
-  size_t Index = NumKids++;
-  while (Index >= KidsListSize) {
-    Index -= KidsListSize;
-    Last = Next;
-    Next = Next->Next;
-  }
-  if (Next) {
-    Next->Kids[Index] = Kid;
-    return;
-  }
-  if (Last == nullptr) {
-    // At beginning of list.
-    Next = Arena.create<KidList>();
-    Next->Kids[0] = Kid;
-    Kids = Next;
-    return;
-  }
-  Last->Next = Arena.create<KidList>();
-  Last->Next->Kids[0] = Kid;
-}
-
 // Note: we create duumy virtual forceCompilation() to force legal
 // class definitions to be compiled in here. Classes not explicitly
 // instantiated here will not link. This used to force an error if
@@ -230,6 +189,8 @@ void Binary<Kind>::forceCompilation() {}
 
 template<NodeType Kind>
 void Ternary<Kind>::forceCompilation() {}
+
+void NaryNode::forceCompilation() {}
 
 template<NodeType Kind>
 void Nary<Kind>::forceCompilation() {}
