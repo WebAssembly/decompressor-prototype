@@ -37,3 +37,8 @@ void Driver::error (const wasm::filt::location& L, const std::string& M) const {
 void Driver::error (const std::string& M) const {
   error(Loc, M);
 }
+
+void Driver::tokenError(const std::string& Token) const {
+  std::string Message("Invalid token'");
+  error(std::string("invalidToken '") + Token + "'");
+}

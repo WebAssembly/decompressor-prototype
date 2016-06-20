@@ -243,17 +243,27 @@ class SymbolNode final : public NullaryNode {
   SymbolNode() = delete;
   virtual void forceCompilation() final;
 public:
-  SymbolNode(std::string Name)
-      : NullaryNode(NodeType::Symbol), Name(Name) {}
-  SymbolNode(alloc::Allocator *Alloc, std::string Name)
-      : NullaryNode(Alloc, NodeType::Symbol), Name(Name) {}
+  using NameType = std::vector<uint8_t>;
+  using InternalNameType =
+      std::vector<uint8_t, alloc::TemplateAllocator<uint8_t>>;
+  SymbolNode(NameType &_Name)
+      : NullaryNode(NodeType::Symbol), Name(alloc::Allocator::Default) {
+    init(_Name);
+  }
+  SymbolNode(alloc::Allocator *Alloc, NameType &_Name)
+      : NullaryNode(Alloc, NodeType::Symbol), Name(Alloc) {
+    init(_Name);
+  }
   ~SymbolNode() {}
-  std::string getName() const {
+  const InternalNameType &getName() const {
     return Name;
   }
 private:
-  // TODO(KarlSchimpf) Allocate using allocator.
-  std::string Name;
+  InternalNameType Name;
+  void init(NameType &_Name) {
+    for (const auto &V : _Name)
+      Name.emplace_back(V);
+  }
 };
 
 class UnaryNode : public Node {

@@ -99,6 +99,7 @@ public:
   void error (const wasm::filt::location& Loc,
               const std::string& Message) const;
   void error (const std::string& Message) const;
+  void tokenError(const std::string& Token) const;
 
 private:
   alloc::Allocator *Alloc;

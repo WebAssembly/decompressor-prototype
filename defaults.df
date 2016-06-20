@@ -17,7 +17,7 @@
 # module.
 
 (version 0)
-(section 'filter'
+(section 'fil\031te\322e\nr'
 
   (default 'code'
     (preorder 0)
