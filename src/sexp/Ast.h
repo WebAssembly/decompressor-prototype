@@ -213,7 +213,7 @@ class IntegerNode final : public NullaryNode {
   IntegerNode() = delete;
   virtual void forceCompilation() final;
 public:
-  enum class Format { Decimal, Hex };
+  enum class Format { Decimal, SignedDecimal, Hex };
   IntegerNode(decode::IntType Value) :
       NullaryNode(NodeType::Integer),
       Value(Value),
