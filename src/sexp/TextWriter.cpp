@@ -36,7 +36,9 @@ struct {
 } KidCountData[] = {
   // If not in list, assume 0.
   {NodeType::AppendOneArg, 1},
-  {NodeType::Block, 3},
+  {NodeType::BlockOneArg, 1},
+  {NodeType::BlockThreeArgs, 3},
+  {NodeType::BlockTwoArgs, 2},
   {NodeType::Case, 2},
   {NodeType::Default, 1},
   {NodeType::Define, 1},

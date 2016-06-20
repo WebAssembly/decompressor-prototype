@@ -53,9 +53,11 @@ enum class NodeType {
     BitToBit,
     BitToByte,
     BitToInt,
-    Block,
     BlockBegin,
     BlockEnd,
+    BlockOneArg,
+    BlockThreeArgs,
+    BlockTwoArgs,
     ByteToAst,
     ByteToBit,
     ByteToByte,
@@ -211,16 +213,28 @@ class IntegerNode final : public NullaryNode {
   IntegerNode() = delete;
   virtual void forceCompilation() final;
 public:
-  IntegerNode(decode::IntType Value)
-      : NullaryNode(NodeType::Integer), Value(Value) {}
-  IntegerNode(alloc::Allocator* Alloc, decode::IntType Value)
-      : NullaryNode(Alloc, NodeType::Integer), Value(Value) {}
+  enum class Format { Decimal, Hex };
+  IntegerNode(decode::IntType Value) :
+      NullaryNode(NodeType::Integer),
+      Value(Value),
+      format(Format::Decimal) {}
+  IntegerNode(alloc::Allocator* Alloc, decode::IntType Value) :
+      NullaryNode(Alloc, NodeType::Integer),
+      Value(Value),
+      format(Format::Decimal) {}
   ~IntegerNode() {}
+  Format getFormat() const {
+    return format;
+  }
+  void setFormat(Format NewValue) {
+    format = NewValue;
+  }
   decode::IntType getValue() const {
     return Value;
   }
 private:
   decode::IntType Value;
+  Format format;
 };
 
 class SymbolNode final : public NullaryNode {

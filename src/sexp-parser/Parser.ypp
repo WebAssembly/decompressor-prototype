@@ -235,8 +235,20 @@ expression
         | "(" "append" expression ")" {
             $$ = Driver.create<Unary<NodeType::AppendOneArg>>($3);
           }
+        | "(" "block" expression ")" {
+            // 1st argument is width in bytes
+            $$ = Driver.create<Unary<NodeType::BlockOneArg>>($3);
+          }
+        | "(" "block" expression integer ")" {
+            // 1st argument is width in bytes
+            // 2nd argument is block.end value to inject
+            $$ = Driver.create<Binary<NodeType::BlockTwoArgs>>($3, $4);
+          }
         | "(" "block" expression integer integer ")" {
-            $$ = Driver.create<Ternary<NodeType::Block>>($3, $4, $5);
+            // 1st argument is width in bytes
+            // 2nd argument is block.begin value to inject
+            // 3nd argument is block.end value to inject
+            $$ = Driver.create<Ternary<NodeType::BlockThreeArgs>>($3, $4, $5);
           }
         | "(" "block.begin" ")" {
             $$ = Driver.create<Nullary<NodeType::BlockBegin>>();

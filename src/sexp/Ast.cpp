@@ -41,9 +41,11 @@ TypeNamePair SexpTypeNamePair[] = {
   {NodeType::BitToAst, "bit.to.ast"},
   {NodeType::BitToBit, "bit.to.bit"},
   {NodeType::BitToByte, "bit.to.byte"},
-  {NodeType::Block, "block"},
   {NodeType::BlockBegin, "block.begin"},
   {NodeType::BlockEnd, "block.end"},
+  {NodeType::BlockOneArg, "block"},
+  {NodeType::BlockThreeArgs, "block"},
+  {NodeType::BlockTwoArgs, "block"},
   {NodeType::BitToInt, "bit.to.int"},
   {NodeType::ByteToAst, "byte.to.ast"},
   {NodeType::ByteToBit, "byte.to.bit"},
@@ -71,7 +73,7 @@ TypeNamePair SexpTypeNamePair[] = {
   {NodeType::Map, "map"},
   {NodeType::Peek, "peek"},
   {NodeType::Postorder, "postorder"},
-  {NodeType::Preorder, "pretorder" },
+  {NodeType::Preorder, "preorder" },
   {NodeType::Read, "read"},
   {NodeType::Section, "section"},
   {NodeType::Select, "select"},
@@ -104,20 +106,23 @@ TypeNamePair SexpTypeNamePair[] = {
 
 // Defines clarifying unique names if SexpTypeNamePair not unique.
 TypeNamePair UniquifyingTypeNamePair[] = {
-  {NodeType::AppendNoArgs, "appendnoArgs"},
-  {NodeType::AppendOneArg, "appendoneArg"},
-  {NodeType::Uint32NoArgs, "uint32noArgs"},
-  {NodeType::Uint32OneArg, "uint32oneArg"},
-  {NodeType::Uint64NoArgs, "uint64noArgs"},
+  {NodeType::AppendNoArgs, "appendNoArgs"},
+  {NodeType::AppendOneArg, "appendOneArg"},
+  {NodeType::BlockOneArg, "blockOneArg"},
+  {NodeType::BlockThreeArgs, "blockThreeArgs"},
+  {NodeType::BlockTwoArgs, "blockTwoArgs"},
+  {NodeType::Uint32NoArgs, "uint32NoArgs"},
+  {NodeType::Uint32OneArg, "uint32OneArg"},
+  {NodeType::Uint64NoArgs, "uint64NoArgs"},
   {NodeType::Uint64OneArg, "uint64OneArg"},
-  {NodeType::Varint32NoArgs, "varint32noArgs"},
-  {NodeType::Varint32OneArg, "varint32oneArg"},
-  {NodeType::Varint64NoArgs, "varint64noArgs"},
-  {NodeType::Varint64OneArg, "varint64oneArg"},
-  {NodeType::Varuint32NoArgs, "varuint32noArgs"},
-  {NodeType::Varuint32OneArg, "varuint32oneArg"},
-  {NodeType::Varuint64NoArgs, "varuint64noArgs"},
-  {NodeType::Varuint64OneArg, "varuint64oneArg"},
+  {NodeType::Varint32NoArgs, "varint32NoArgs"},
+  {NodeType::Varint32OneArg, "varint32OneArg"},
+  {NodeType::Varint64NoArgs, "varint64NoArgs"},
+  {NodeType::Varint64OneArg, "varint64OneArg"},
+  {NodeType::Varuint32NoArgs, "varuint32NoArgs"},
+  {NodeType::Varuint32OneArg, "varuint32OneArg"},
+  {NodeType::Varuint64NoArgs, "varuint64NoArgs"},
+  {NodeType::Varuint64OneArg, "varuint64OneArg"},
 };
 
 } // end of anonymous namespace
@@ -213,6 +218,7 @@ template class Nullary<NodeType::Varuint64NoArgs>;
 template class Nullary<NodeType::Void>;
 
 template class Unary<NodeType::AppendOneArg>;
+template class Unary<NodeType::BlockOneArg>;
 template class Unary<NodeType::Eval>;
 template class Unary<NodeType::I32Const>;
 template class Unary<NodeType::I64Const>;
@@ -234,10 +240,11 @@ template class Unary<NodeType::Varuint64OneArg>;
 template class Unary<NodeType::Version>;
 template class Unary<NodeType::Write>;
 
+template class Binary<NodeType::BlockTwoArgs>;
 template class Binary<NodeType::Map>;
 
 template class Ternary<NodeType::IfThenElse>;
-template class Ternary<NodeType::Block>;
+template class Ternary<NodeType::BlockThreeArgs>;
 
 template class Nary<NodeType::AstToAst>;
 template class Nary<NodeType::AstToBit>;
