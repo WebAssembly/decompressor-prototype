@@ -417,6 +417,8 @@ private:
 template <class T>
 struct TemplateAllocator {
   typedef T value_type;
+  typedef T * pointer;
+  typedef const T *const_pointer;
   TemplateAllocator(Allocator *Alloc) : Alloc(Alloc) {}
   TemplateAllocator() : Alloc(Allocator::Default) {}
   template <class U> TemplateAllocator(const TemplateAllocator<U>& other)
