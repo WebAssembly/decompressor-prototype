@@ -36,7 +36,8 @@
 #include "ADT/arena_vector.h"
 #include "Ast.def"
 
-// #include <iterator>
+#include <array>
+#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
@@ -45,13 +46,34 @@ namespace wasm {
 
 namespace filt {
 
-enum class NodeType {
-#define X(tag, opcode) tag = opcode,
+enum NodeType {
+#define X(tag, opcode, sexp_name, type_name, TextNumArgs) Op##tag = opcode,
   AST_OPCODE_TABLE
 #undef X
 };
 
-static constexpr size_t NumNodeTypes = 0x102;
+static constexpr size_t NumNodeTypes =
+    0
+#define X(tag, opcode, sexp_name, type_name, TextNumArgs) + 1
+    AST_OPCODE_TABLE
+#undef X
+    ;
+
+static constexpr size_t MaxNodeType =
+    const_maximum(
+#define X(tag, opcode, sexp_name, type_name, TextNumArgs) size_t(opcode),
+  AST_OPCODE_TABLE
+#undef X
+  std::numeric_limits<size_t>::min());
+
+struct AstTraitsType {
+  const NodeType Type;
+  const char *SexpName;
+  const char *TypeName;
+  const int NumTextArgs;
+};
+
+extern AstTraitsType AstTraits[NumNodeTypes];
 
 // Returns the s-expression name
 const char *getNodeSexpName(NodeType Type);
@@ -153,12 +175,12 @@ public:
   // representation as when lexing s-expressions.
   enum ValueFormat { Decimal, SignedDecimal, Hexidecimal };
   IntegerNode(decode::IntType Value, ValueFormat Format = Decimal) :
-      NullaryNode(NodeType::Integer),
+      NullaryNode(OpInteger),
       Value(Value),
       Format(Format) {}
   IntegerNode(alloc::Allocator* Alloc, decode::IntType Value,
               ValueFormat Format = Decimal) :
-      NullaryNode(Alloc, NodeType::Integer),
+      NullaryNode(Alloc, OpInteger),
       Value(Value),
       Format(Format) {}
   ~IntegerNode() {}
@@ -182,11 +204,11 @@ public:
   using NameType = std::vector<uint8_t>;
   using InternalNameType = arena_vector<uint8_t>;
   SymbolNode(NameType &_Name)
-      : NullaryNode(NodeType::Symbol), Name(alloc::Allocator::Default) {
+      : NullaryNode(OpSymbol), Name(alloc::Allocator::Default) {
     init(_Name);
   }
   SymbolNode(alloc::Allocator *Alloc, NameType &_Name)
-      : NullaryNode(Alloc, NodeType::Symbol), Name(Alloc) {
+      : NullaryNode(Alloc, OpSymbol), Name(Alloc) {
     init(_Name);
   }
   ~SymbolNode() {}
