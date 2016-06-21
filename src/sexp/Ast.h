@@ -31,7 +31,9 @@
 #define DECOMPRESSOR_SRC_SEXP_AST_H
 
 #include "Defs.h"
+
 #include "Allocator.h"
+#include "ADT/arena_vector.h"
 
 // #include <iterator>
 #include <memory>
@@ -177,7 +179,7 @@ public:
   Iterator rend() const { return Iterator(this, -1); }
 protected:
   NodeType Type;
-  std::vector<Node*, alloc::TemplateAllocator<Node*>> Kids;
+  arena_vector<Node*> Kids;
   Node(NodeType Type)
       : Type(Type), Kids(alloc::Allocator::Default) {}
   Node(alloc::Allocator *Alloc, NodeType Type)
@@ -244,8 +246,7 @@ class SymbolNode final : public NullaryNode {
   virtual void forceCompilation() final;
 public:
   using NameType = std::vector<uint8_t>;
-  using InternalNameType =
-      std::vector<uint8_t, alloc::TemplateAllocator<uint8_t>>;
+  using InternalNameType = arena_vector<uint8_t>;
   SymbolNode(NameType &_Name)
       : NullaryNode(NodeType::Symbol), Name(alloc::Allocator::Default) {
     init(_Name);
