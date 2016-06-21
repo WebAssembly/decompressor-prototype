@@ -19,8 +19,11 @@
 
 #include "sexp/TextWriter.h"
 
+#include <cctype>
 #define __STDC_FORMAT_MACROS 1
 #include <inttypes.h>
+
+#include <iostream>
 
 namespace wasm {
 
@@ -28,55 +31,47 @@ namespace filt {
 
 namespace {
 
-constexpr const char *IndentString = "  ";
+decode::IntType divideByPower10(decode::IntType Value,
+                                decode::IntType Power10) {
+  if (Power10 <= 1)
+    return Value;
+  return Value / Power10;
+}
 
-struct {
-  NodeType Type;
-  Node::IndexType KidsCountSameLine;
-} KidCountData[] = {
-  // If not in list, assume 0.
-  {NodeType::AppendOneArg, 1},
-  {NodeType::Block, 3},
-  {NodeType::Case, 2},
-  {NodeType::Default, 1},
-  {NodeType::Define, 1},
-  {NodeType::Eval, 1},
-  {NodeType::IfThenElse, 1},
-  {NodeType::I32Const, 1},
-  {NodeType::I64Const, 1},
-  {NodeType::Lit, 1},
-  {NodeType::Loop, 1},
-  {NodeType::Map, 1},
-  {NodeType::Peek, 1},
-  {NodeType::Postorder, 1},
-  {NodeType::Preorder, 1},
-  {NodeType::Read, 1},
-  {NodeType::Section, 1},
-  {NodeType::Select, 1},
-  {NodeType::SymConst, 1},
-  {NodeType::Uint32OneArg, 1},
-  {NodeType::Uint64OneArg, 1},
-  {NodeType::Undefine, 1},
-  {NodeType::U32Const, 1},
-  {NodeType::U64Const, 1},
-  {NodeType::Varint32OneArg, 1},
-  {NodeType::Varint64OneArg, 1},
-  {NodeType::Varuint32OneArg, 1},
-  {NodeType::Varuint64OneArg, 1},
-  {NodeType::Version, 1}
-};
+decode::IntType moduloByPower10(decode::IntType Value,
+                                decode::IntType Power10) {
+  if (Power10 <= 1)
+    return Value;
+  return Value % Power10;
+}
+
+char getHexCharForDigit(uint8_t Digit) {
+  return Digit < 10 ? '0' + Digit : 'a' + (Digit - 10);
+}
+
+constexpr const char *IndentString = "  ";
 
 } // end of anonyous namespace
 
 bool TextWriter::UseNodeTypeNames = false;
 
 TextWriter::TextWriter() {
-  for (size_t i = 0; i < NumNodeTypes; ++i) {
+  // Build fast lookup for number of arguments to write on same line.
+  for (size_t i = 0; i < MaxNodeType; ++i) {
     KidCountSameLine.push_back(0);
   }
-  for (size_t i = 0; i < size(KidCountData); ++i)
-    KidCountSameLine[static_cast<int>(KidCountData[i].Type)]
-        = KidCountData[i].KidsCountSameLine;
+  for (size_t i = 0; i < NumNodeTypes; ++i) {
+    AstTraitsType &Traits = AstTraits[i];
+    KidCountSameLine[int(Traits.Type)] = Traits.NumTextArgs;
+  }
+  // Compute that maximum power of 10 that can still be an IntType.
+  decode::IntType MaxPower10 = 1;
+  decode::IntType NextMaxPower10 = MaxPower10 * 10;
+  while (NextMaxPower10 > MaxPower10) {
+    MaxPower10 = NextMaxPower10;
+    NextMaxPower10 *= 10;
+  }
+  IntTypeMaxPower10 = MaxPower10;
 }
 
 TextWriter::Indent::Indent(TextWriter *Writer, bool AddNewline)
@@ -155,25 +150,110 @@ void TextWriter::writeNode(Node *Node, bool AddNewline) {
       }
       return;
     }
-    case NodeType::File: {
+    case OpFile: {
       // Treat like hidden node. That is, visually just a list of s-expressions.
       for (auto *Kid : *Node)
         writeNode(Kid, true);
       return;
     }
-    case NodeType::Integer: {
+    case OpInteger: {
       Indent _(this, AddNewline);
       auto *Int = dynamic_cast<IntegerNode*>(Node);
-      // TODO: Get sign/format correct.
-      // TODO: Get format directive correct on all platforms!
-      fprintf(File, "%" PRIu64 "", Int->getValue());
+      decode::IntType Value = Int->getValue();
+      switch (Int->getFormat()) {
+        case IntegerNode::SignedDecimal: {
+          decode::SignedIntType SignedValue = decode::SignedIntType(Value);
+          if (SignedValue < 0) {
+            fputc('-', File);
+            Value = decode::IntType(-SignedValue);
+          }
+        }
+        // Intentionally fall to next case.
+        case IntegerNode::Decimal: {
+          decode::IntType Power10 = IntTypeMaxPower10;
+          bool StartPrinting = false;
+          while (Power10 > 0) {
+            decode::IntType Digit = divideByPower10(Value, Power10);
+            if (StartPrinting || Digit) {
+                if (StartPrinting || Digit != 0) {
+                  StartPrinting = true;
+                  fputc('0' + Digit, File);
+                }
+            }
+            Value = moduloByPower10(Value, Power10);
+            Power10 /= 10;
+          }
+          if (!StartPrinting)
+            fputc('0', File);
+          break;
+        }
+        case IntegerNode::Hexidecimal: {
+          constexpr decode::IntType BitsInHex = 4;
+          decode::IntType Shift = sizeof(decode::IntType) * CHAR_BIT;
+          bool StartPrinting = false;
+          fputc('0', File);
+          fputc('x', File);
+          while (Shift > 0) {
+            Shift >>= BitsInHex;
+            decode::IntType Digit = (Value >> Shift);
+            if (StartPrinting || Digit != 0) {
+              StartPrinting = true;
+              fputc(getHexCharForDigit(Digit), File);
+              Value &= (1 << Shift) - 1;
+            }
+          }
+          break;
+        }
+      }
       LineEmpty = false;
       return;
     }
-    case NodeType::Symbol: {
+    case OpSymbol: {
       Indent _(this, AddNewline);
       auto *Sym = dynamic_cast<SymbolNode*>(Node);
-      fprintf(File, "'%s'", Sym->getName().c_str());
+      fputc('\'', File);
+      for (uint8_t V : Sym->getName()) {
+        switch (V) {
+          case '\\':
+            fputc('\\', File);
+            fputc('\\', File);
+            continue;
+          case '\f':
+            fputc('\\', File);
+            fputc('f', File);
+            continue;
+          case '\n':
+            fputc('\\', File);
+            fputc('n', File);
+            continue;
+          case '\r':
+            fputc('\\', File);
+            fputc('r', File);
+            continue;
+          case '\t':
+            fputc('\\', File);
+            fputc('t', File);
+            continue;
+          case '\v':
+            fputc('\\', File);
+            fputc('v', File);
+            continue;
+        }
+        if (isprint(V)) {
+          fputc(V, File);
+          continue;
+        }
+        fputc('\\', File);
+        uint8_t BitsPerOctal = 3;
+        uint8_t Shift = 2 * BitsPerOctal;
+        for (int Count = 3; Count > 0; --Count) {
+          uint8_t Digit = V >> Shift;
+          fputc('0' + Digit, File);
+          V &= ((1 << Shift) - 1);
+          Shift -= BitsPerOctal;
+        }
+      }
+      fputc('\'', File);
       LineEmpty = false;
       return;
     }

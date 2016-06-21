@@ -53,7 +53,7 @@
 
   (default 'code.function'
     (preorder 0)
-    (block (varuint32) 0xFE 0xFF)
+    (block (varuint32) 0xFF)
     (loop (append (varuint32 6))
       (eval 'code.locals'))
     (loop.unbounded

@@ -35,6 +35,12 @@ namespace wasm {
 namespace filt {
 class Driver;
 class Node;
+
+struct IntegerValue {
+  wasm::decode::IntType Value;
+  wasm::filt::IntegerNode::ValueFormat Format;
+};
+
 }}
 
 #ifdef __clang__
@@ -61,6 +67,7 @@ class Node;
 {
 // Note: Must follow definitions above, so that location_type is declared.
 # include "Driver.h"
+
 }
 
 // Special tokens
@@ -116,7 +123,6 @@ class Node;
 %token UNDEFINE      "undefine"
 %token U32_CONST     "u32.const"
 %token U64_CONST     "u64.const"
-%token VALUE         "value"
 %token VARINT32      "varint32"
 %token VARINT64      "varint64"
 %token VARUINT1      "varuint1"
@@ -128,8 +134,8 @@ class Node;
 %token WRITE         "write"
 
 // Terminal classes
-%token <std::string> IDENTIFIER
-%token <uint64_t> INTEGER
+%token <std::vector<uint8_t>> IDENTIFIER
+%token <wasm::filt::IntegerValue> INTEGER
 
 // Nonterminal classes.
 %type <wasm::filt::Node *> case
@@ -140,11 +146,11 @@ class Node;
 %type <wasm::filt::Node *> declaration_stmt_list
 %type <wasm::filt::Node *> expression
 %type <wasm::filt::Node *> file
+%type <wasm::filt::Node *> integer
 %type <wasm::filt::Node *> stream_conv
 %type <wasm::filt::Node *> stream_conv_list
 %type <wasm::filt::Node *> stream_conv_stmt_list
 %type <wasm::filt::Node *> header
-%type <wasm::filt::Node *> integer
 %type <wasm::filt::Node *> loop_body
 %type <wasm::filt::Node *> section
 %type <wasm::filt::Node *> section_list
@@ -167,7 +173,7 @@ case    : "(" "case" case_statement_list ")" { $$ = $3; }
 
 case_list
         : expression statement { // selector / default statement.
-            $$ =  Nary<NodeType::Select>::create();
+            $$ = Driver.create<Nary<OpSelect>>();
             $$->append($1);
             $$->append($2);
           }
@@ -179,7 +185,7 @@ case_list
 
 case_statement_list
         : integer statement { // case index / first statement of case.
-            $$ = Nary<NodeType::Case>::create();
+            $$ = Driver.create<Nary<OpCase>>();
             $$->append($1);
             $$->append($2);
           }
@@ -194,18 +200,18 @@ declaration
             $$ = $2;
           }
         | "(" "undefine" symbol ")" {
-            $$ = Unary<NodeType::Undefine>::create($3);
+            $$ = Driver.create<Unary<OpUndefine>>($3);
           }
         ;
 
 declaration_stmt_list
         : "default" symbol statement {
-            $$ = Nary<NodeType::Default>::create();
+            $$ = Driver.create<Nary<OpDefault>>();
             $$->append($2);
             $$->append($3);
           }
         | "define" symbol statement {
-            $$ = Nary<NodeType::Define>::create();
+            $$ = Driver.create<Nary<OpDefine>>();
             $$->append($2);
             $$->append($3);
           }
@@ -218,7 +224,7 @@ declaration_stmt_list
 
 declaration_list
         : symbol declaration {  // Section name / first define.
-            $$ = Nary<NodeType::Section>::create();
+            $$ = Driver.create<Nary<OpSection>>();
             $$->append($1);
             $$->append($2);
           }
@@ -230,126 +236,149 @@ declaration_list
 
 expression
         : "(" "append" ")" {
-            $$ = Nullary<NodeType::AppendNoArgs>::create();
+            $$ = Driver.create<Nullary<OpAppendNoArgs>>();
           }
         | "(" "append" expression ")" {
-            $$ = Unary<NodeType::AppendOneArg>::create($3);
+            $$ = Driver.create<Unary<OpAppendOneArg>>($3);
+          }
+        | "(" "block" expression ")" {
+            // 1st argument is width in bytes
+            $$ = Driver.create<Unary<OpBlockOneArg>>($3);
+          }
+        | "(" "block" expression integer ")" {
+            // 1st argument is width in bytes
+            // 2nd argument is block.end value to inject
+            $$ = Driver.create<Binary<OpBlockTwoArgs>>($3, $4);
           }
         | "(" "block" expression integer integer ")" {
-            $$ = Ternary<NodeType::Block>::create($3, $4, $5);
+            // 1st argument is width in bytes
+            // 2nd argument is block.begin value to inject
+            // 3nd argument is block.end value to inject
+            $$ = Driver.create<Ternary<OpBlockThreeArgs>>($3, $4, $5);
           }
-        | "(" "block.begin" ")" { $$ = Nullary<NodeType::BlockBegin>::create(); }
-        | "(" "block.end" ")" { $$ = Nullary<NodeType::BlockEnd>::create(); }
+        | "(" "block.begin" ")" {
+            $$ = Driver.create<Nullary<OpBlockBegin>>();
+          }
+        | "(" "block.end" ")" {
+            $$ = Driver.create<Nullary<OpBlockEnd>>();
+          }
         | "(" "error" ")" {
-            $$ = Nullary<NodeType::Error>::create();
+            $$ = Driver.create<Nullary<OpError>>();
           }
         | "(" "eval" symbol ")" {
-            $$ = Unary<NodeType::Eval>::create($3);
+            $$ = Driver.create<Unary<OpEval>>($3);
           }
         | "(" "i32.const" integer ")" {
-            $$ = Unary<NodeType::I32Const>::create($3);
+            $$ = Driver.create<Unary<OpI32Const>>($3);
           }
         | "(" "i64.const" integer ")" {
-            $$ = Unary<NodeType::I64Const>::create($3);
+            $$ = Driver.create<Unary<OpI64Const>>($3);
           }
         | "(" "lit" integer ")" {
-            $$ = Unary<NodeType::Lit>::create($3);
+            $$ = Driver.create<Unary<OpLit>>($3);
           }
         | "(" "map" expression expression ")" {
-            $$ = Binary<NodeType::Map>::create($3, $4);
+            $$ = Driver.create<Binary<OpMap>>($3, $4);
           }
         | "(" "peek" expression ")" {
-            $$ = Unary<NodeType::Peek>::create($3);
+            $$ = Driver.create<Unary<OpPeek>>($3);
           }
         | "(" "postorder" integer ")" {
-            $$ = Unary<NodeType::Postorder>::create($3);
+            $$ = Driver.create<Unary<OpPostorder>>($3);
           }
         | "(" "preorder" integer ")" {
-            $$ = Unary<NodeType::Preorder>::create($3);
+            $$ = Driver.create<Unary<OpPreorder>>($3);
           }
         | "(" "read" expression ")" {
-            $$ = Unary<NodeType::Read>::create($3);
+            $$ = Driver.create<Unary<OpRead>>($3);
           }
         | "(" "sym.const" symbol ")" {
-            $$ = Unary<NodeType::SymConst>::create($3);
+            $$ = Driver.create<Unary<OpSymConst>>($3);
           }
         | "(" "uint8" ")" {
-            $$ = Nullary<NodeType::Uint8>::create();
+            $$ = Driver.create<Nullary<OpUint8NoArgs>>();
+          }
+        | "(" "uint8" integer ")" {
+            $$ = Driver.create<Unary<OpUint8OneArg>>($3);
           }
         | "(" "uint32" ")" {
-            $$ = Nullary<NodeType::Uint32NoArgs>::create();
+            $$ = Driver.create<Nullary<OpUint32NoArgs>>();
           }
         | "(" "uint32" integer ")"  {
-            $$ = Unary<NodeType::Uint32OneArg>::create($3);
+            $$ = Driver.create<Unary<OpUint32OneArg>>($3);
           }
         | "(" "uint64" ")" {
-            $$ = Nullary<NodeType::Uint64NoArgs>::create();
+            $$ = Driver.create<Nullary<OpUint64NoArgs>>();
           }
         | "(" "uint64" integer ")"  {
-            $$ = Unary<NodeType::Uint64OneArg>::create($3);
+            $$ = Driver.create<Unary<OpUint64OneArg>>($3);
           }
         | "(" "u32.const" integer ")" {
-            $$ = Unary<NodeType::U32Const>::create($3);
+            $$ = Driver.create<Unary<OpU32Const>>($3);
           }
         | "(" "u64.const" integer ")" {
-            $$ = Unary<NodeType::U64Const>::create($3);
-          }
-        | "(" "value" ")" {
-            $$ = Nullary<NodeType::Value>::create();
+            $$ = Driver.create<Unary<OpU64Const>>($3);
           }
         | "(" "varint32" ")" {
-            $$ = Nullary<NodeType::Varint32NoArgs>::create();
+            $$ = Driver.create<Nullary<OpVarint32NoArgs>>();
           }
         | "(" "varint32" integer ")" {
-            $$ = Unary<NodeType::Varint32OneArg>::create($3);
+            $$ = Driver.create<Unary<OpVarint32OneArg>>($3);
           }
         | "(" "varint64" ")" {
-            $$ = Nullary<NodeType::Varint64NoArgs>::create();
+            $$ = Driver.create<Nullary<OpVarint64NoArgs>>();
           }
         | "(" "varint64" integer ")" {
-            $$ = Unary<NodeType::Varint64OneArg>::create($3);
+            $$ = Driver.create<Unary<OpVarint64OneArg>>($3);
           }
         | "(" "varuint1" ")" {
-            $$ = Nullary<NodeType::Varuint1>::create();
+            $$ = Driver.create<Nullary<OpVaruint1NoArgs>>();
+          }
+        | "(" "varuint1" integer ")" {
+            $$ = Driver.create<Unary<OpVaruint1OneArg>>($3);
           }
         | "(" "varuint7" ")" {
-            $$ = Nullary<NodeType::Varuint7>::create();
+            $$ = Driver.create<Nullary<OpVaruint7NoArgs>>();
+          }
+        | "(" "varuint7" integer ")" {
+            $$ = Driver.create<Unary<OpVaruint7OneArg>>($3);
           }
         | "(" "varuint32" ")" {
-            $$ = Nullary<NodeType::Varuint32NoArgs>::create();
+            $$ = Driver.create<Nullary<OpVaruint32NoArgs>>();
           }
         | "(" "varuint32" integer ")" {
-            $$ = Unary<NodeType::Varuint32OneArg>::create($3);
+            $$ = Driver.create<Unary<OpVaruint32OneArg>>($3);
           }
         | "(" "varuint64" ")" {
-            $$ = Nullary<NodeType::Varuint64NoArgs>::create();
+            $$ = Driver.create<Nullary<OpVaruint64NoArgs>>();
           }
         | "(" "varuint64" integer ")" {
-            $$ = Unary<NodeType::Varuint64OneArg>::create($3);
+            $$ = Driver.create<Unary<OpVaruint64OneArg>>($3);
           }
         | "(" "void" ")" {
-            $$ = Nullary<NodeType::Void>::create();
+            $$ = Driver.create<Nullary<OpVoid>>();
           }
         | "(" "write" expression ")" {
-            $$ = Unary<NodeType::Write>::create($3);
+            $$ = Driver.create<Unary<OpWrite>>($3);
           }
         ;
 
 header  : "(" "version" integer ")" {
-            $$ = Unary<NodeType::Version>::create($3);
+            $$ = Driver.create<Unary<OpVersion>>($3);
           }
         ;
 
-integer : INTEGER { $$ = IntegerNode::create($1); }
-        ;
+integer : INTEGER {
+           $$ = Driver.create<IntegerNode>($1.Value, $1.Format);
+          }
 
 loop_body
         : "loop" expression {
-            $$ = Nary<NodeType::Loop>::create();
+           $$ = Driver.create<Nary<OpLoop>>();
             $$->append($2);
           }
         | "loop.unbounded" {
-            $$ = Nary<NodeType::LoopUnbounded>::create();
+            $$ = Driver.create<Nary<OpLoopUnbounded>>();
           }
         | loop_body statement {
             $$ = $1;
@@ -362,7 +391,7 @@ section : "(" "section" declaration_list ")" { $$ = $3; }
 
 section_list
         : header section { // Header / first section of file.
-            $$ = Nary<NodeType::File>::create();
+            $$ = Driver.create<Nary<OpFile>>();
             $$->append($1);
             $$->append($2);
           }
@@ -374,7 +403,7 @@ section_list
 
 seq_statement_list
         : %empty {
-            $$ = Nary<NodeType::Sequence>::create();
+            $$ = Driver.create<Nary<OpSequence>>();
           }
         | seq_statement_list statement {
             $$ = $1;
@@ -384,11 +413,13 @@ seq_statement_list
 
 statement
         : expression { $$ = $1; }
-        | "(" "copy" ")" { $$ = Nullary<NodeType::Copy>::create(); }
+        | "(" "copy" ")" {
+            $$ = Driver.create<Nullary<OpCopy>>();
+          }
         | stream_conv { $$ = $1; }
         | "(" "filter" stream_conv_list ")" { $$ = $3; }
         | "(" "if" expression statement statement ")" {
-            $$ = Ternary<NodeType::IfThenElse>::create($3, $4, $5);
+            $$ = Driver.create<Ternary<OpIfThenElse>>($3, $4, $5);
           }
         | "(" loop_body ")" { $$ = $2; }
         | "(" "select" case_list ")" { $$ = $3; }
@@ -402,7 +433,7 @@ stream_conv  : "(" stream_conv_stmt_list ")" {
 
 stream_conv_list
         : stream_conv {
-            $$ = Nary<NodeType::Filter>::create();
+            $$ = Driver.create<Nary<OpFilter>>();
             $$->append($1);
           }
         | stream_conv_list stream_conv {
@@ -413,67 +444,67 @@ stream_conv_list
 
 stream_conv_stmt_list
         : "ast.to.ast" statement {
-            $$ = Nary<NodeType::AstToAst>::create();
+           $$ = Driver.create<Nary<OpAstToAst>>();
             $$->append($2);
           }
         | "ast.to.bit" statement  {
-            $$ = Nary<NodeType::AstToBit>::create();
+            $$ = Driver.create<Nary<OpAstToBit>>();
             $$->append($2);
           }
         | "ast.to.byte" statement {
-            $$ = Nary<NodeType::AstToByte>::create();
+            $$ = Driver.create<Nary<OpAstToByte>>();
             $$->append($2);
           }
         | "ast.to.int" statement {
-            $$ = Nary<NodeType::AstToInt>::create();
+            $$ = Driver.create<Nary<OpAstToInt>>();
             $$->append($2);
           }
         | "bit.to.bit" statement {
-            $$ = Nary<NodeType::BitToBit>::create();
+            $$ = Driver.create<Nary<OpBitToBit>>();
             $$->append($2);
           }
         | "bit.to.byte" statement {
-            $$ = Nary<NodeType::BitToByte>::create();
+           $$ = Driver.create<Nary<OpBitToByte>>();
             $$->append($2);
           }
         | "bit.to.int" statement {
-            $$ = Nary<NodeType::BitToInt>::create();
+            $$ = Driver.create<Nary<OpBitToInt>>();
             $$->append($2);
           }
         | "bit.to.ast" statement {
-            $$ = Nary<NodeType::BitToAst>::create();
+            $$ = Driver.create<Nary<OpBitToAst>>();
             $$->append($2);
           }
         | "byte.to.bit" statement {
-            $$ = Nary<NodeType::ByteToBit>::create();
+            $$ = Driver.create<Nary<OpByteToBit>>();
             $$->append($2);
           }
         | "byte.to.byte" statement {
-            $$ = Nary<NodeType::ByteToByte>::create();
+            $$ = Driver.create<Nary<OpByteToByte>>();
             $$->append($2);
           }
         | "byte.to.int" statement {
-            $$ = Nary<NodeType::ByteToInt>::create();
+            $$ = Driver.create<Nary<OpByteToInt>>();
             $$->append($2);
           }
         | "byte.to.ast" statement {
-            $$ = Nary<NodeType::ByteToAst>::create();
+            $$ = Driver.create<Nary<OpByteToAst>>();
             $$->append($2);
           }
         | "int.to.bit" statement  {
-            $$ = Nary<NodeType::IntToBit>::create();
+            $$ = Driver.create<Nary<OpIntToBit>>();
             $$->append($2);
           }
         | "int.to.byte" statement {
-            $$ = Nary<NodeType::IntToByte>::create();
+            $$ = Driver.create<Nary<OpIntToByte>>();
             $$->append($2);
           }
         | "int.to.int" statement {
-            $$ = Nary<NodeType::IntToInt>::create();
+            $$ = Driver.create<Nary<OpIntToInt>>();
             $$->append($2);
           }
         | "int.to.ast" statement {
-            $$ = Nary<NodeType::IntToAst>::create();
+            $$ = Driver.create<Nary<OpIntToAst>>();
             $$->append($2);
           }
         | stream_conv_stmt_list statement {
@@ -482,7 +513,7 @@ stream_conv_stmt_list
           }
         ;
 
-symbol  : IDENTIFIER { $$ = SymbolNode::create($1); }
+symbol  : IDENTIFIER { $$ = Driver.create<SymbolNode>($1); }
         ;
 
 %%

@@ -20,9 +20,11 @@
 #ifndef DECOMPRESSOR_PROTOTYPE_SRC_SEXP_PARSER_DRIVER_H
 #define DECOMPRESSOR_PROTOTYPE_SRC_SEXP_PARSER_DRIVER_H
 
+#include "Allocator.h"
 #include "sexp-parser/Parser.tab.hpp"
 
 #include <map>
+#include <memory>
 #include <string>
 
 namespace wasm {
@@ -34,8 +36,22 @@ class Driver
   Driver(const Driver&) = delete;
   Driver &operator=(const Driver&) = delete;
 public:
-  Driver () {}
+  Driver (alloc::Allocator *_Alloc = nullptr)
+      : Alloc(_Alloc) {
+    if (Alloc == nullptr)
+      Alloc = new alloc::MallocArena();
+  }
+
   ~Driver () {}
+
+  template<typename T, typename... Args>
+  T *create(Args&&... args) {
+    return Alloc->create<T>(std::forward<Args>(args)...);
+  }
+
+  alloc::Allocator *getAllocator() {
+    return Alloc;
+  }
 
   // The name of the file being parsed.
   std::string& getFilename() {
@@ -83,8 +99,10 @@ public:
   void error (const wasm::filt::location& Loc,
               const std::string& Message) const;
   void error (const std::string& Message) const;
+  void tokenError(const std::string& Token) const;
 
 private:
+  alloc::Allocator *Alloc;
   std::string Filename;
   bool TraceLexing = false;
   bool TraceParsing = false;

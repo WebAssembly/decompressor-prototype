@@ -23,13 +23,21 @@
 //
 // This is done to force the compilation of virtuals associated with the
 // class in file Ast.cpp.
+//
+// Note: Classes allow an optional allocator as the first argument. This
+// allows the creator to decide what allocator will be used internally.
 
 #ifndef DECOMPRESSOR_SRC_SEXP_AST_H
 #define DECOMPRESSOR_SRC_SEXP_AST_H
 
 #include "Defs.h"
 
-// #include <iterator>
+#include "Allocator.h"
+#include "ADT/arena_vector.h"
+#include "Ast.def"
+
+#include <array>
+#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
@@ -38,78 +46,34 @@ namespace wasm {
 
 namespace filt {
 
-enum class NodeType {
-  AppendNoArgs,
-    AppendOneArg,
-    AstToAst,
-    AstToBit,
-    AstToByte,
-    AstToInt,
-    BitToAst,
-    BitToBit,
-    BitToByte,
-    BitToInt,
-    Block,
-    BlockBegin,
-    BlockEnd,
-    ByteToAst,
-    ByteToBit,
-    ByteToByte,
-    ByteToInt,
-    Case,
-    Copy,
-    Default,
-    Define,
-    Error,
-    Eval,
-    File,
-    Filter,
-    IfThenElse,
-    Integer,
-    IntToAst,
-    IntToBit,
-    IntToByte,
-    IntToInt,
-    I32Const,
-    I64Const,
-    Lit,
-    Loop,
-    LoopUnbounded,
-    Map,
-    Peek,
-    Postorder,
-    Preorder,
-    Read,
-    Section,
-    Select,
-    Sequence,
-    Symbol,
-    SymConst,
-    Uint32NoArgs,
-    Uint32OneArg,
-    Uint8,
-    Uint64NoArgs,
-    Uint64OneArg,
-    Undefine,
-    U32Const,
-    U64Const,
-    Value,
-    Varint32NoArgs,
-    Varint32OneArg,
-    Varint64NoArgs,
-    Varint64OneArg,
-    Varuint1,
-    Varuint7,
-    Varuint32NoArgs,
-    Varuint32OneArg,
-    Varuint64NoArgs,
-    Varuint64OneArg,
-    Version,
-    Void,
-    Write // Assumed to be last in list (see NumNodeTypes).
+enum NodeType {
+#define X(tag, opcode, sexp_name, type_name, TextNumArgs) Op##tag = opcode,
+  AST_OPCODE_TABLE
+#undef X
 };
 
-static constexpr size_t NumNodeTypes = static_cast<int>(NodeType::Write) + 1;
+static constexpr size_t NumNodeTypes =
+    0
+#define X(tag, opcode, sexp_name, type_name, TextNumArgs) + 1
+    AST_OPCODE_TABLE
+#undef X
+    ;
+
+static constexpr size_t MaxNodeType =
+    const_maximum(
+#define X(tag, opcode, sexp_name, type_name, TextNumArgs) size_t(opcode),
+  AST_OPCODE_TABLE
+#undef X
+  std::numeric_limits<size_t>::min());
+
+struct AstTraitsType {
+  const NodeType Type;
+  const char *SexpName;
+  const char *TypeName;
+  const int NumTextArgs;
+};
+
+extern AstTraitsType AstTraits[NumNodeTypes];
 
 // Returns the s-expression name
 const char *getNodeSexpName(NodeType Type);
@@ -117,29 +81,10 @@ const char *getNodeSexpName(NodeType Type);
 // Returns a unique (printable) type name
 const char *getNodeTypeName(NodeType Type);
 
-class Node;
-
-// Holds memory associated with nodes.
-// TODO: Make this an arena allocator.
-class NodeMemory {
-  NodeMemory(const NodeMemory&) = delete;
-  NodeMemory &operator=(const NodeMemory&) = delete;
-public:
-  NodeMemory() {}
-  ~NodeMemory() {}
-  static NodeMemory Default;
-private:
-  friend class Node;
-  void add(Node *N) {
-    std::unique_ptr<Node> Nptr(N);
-    Nodes.push_back(std::move(Nptr));
-  }
-  std::vector<std::unique_ptr<Node>> Nodes;
-};
-
 class Node {
   Node(const Node&) = delete;
   Node &operator=(const Node&) = delete;
+  Node() = delete;
 public:
   using IndexType = size_t;
   class Iterator {
@@ -176,8 +121,12 @@ public:
   NodeType getType() const {
     return Type;
   }
-  virtual IndexType getNumKids() const = 0;
-  virtual Node *getKid(IndexType Index) const = 0;
+  IndexType getNumKids() const {
+    return Kids.size();
+  }
+  Node *getKid(IndexType Index) const {
+    return Kids[Index];
+  }
   // WARNING: Only supported if underlying type allows.
   virtual void append(Node *Kid);
   Iterator begin() { return Iterator(this, 0); }
@@ -186,25 +135,23 @@ public:
   Iterator rend() const { return Iterator(this, -1); }
 protected:
   NodeType Type;
-  Node(NodeType Type) : Type(Type) {}
-  Node *add(NodeMemory &Memory) {
-    Memory.add(this);
-    return this;
-  }
+  arena_vector<Node*> Kids;
+  Node(NodeType Type)
+      : Type(Type), Kids(alloc::Allocator::Default) {}
+  Node(alloc::Allocator *Alloc, NodeType Type)
+      : Type(Type), Kids(Alloc) {}
 };
 
 class NullaryNode : public Node {
   NullaryNode(const NullaryNode&) = delete;
   NullaryNode &operator=(const NullaryNode&) = delete;
 public:
-  IndexType getNumKids() const final { return 0; }
-  Node *getKid(IndexType /*Index*/) const final {
-    assert(false);
-    return nullptr;
-  }
   ~NullaryNode() override {}
 protected:
-  NullaryNode(NodeType Type) : Node(Type) {}
+  NullaryNode(NodeType Type)
+      : Node(alloc::Allocator::Default, Type) {}
+  NullaryNode(alloc::Allocator *Alloc, NodeType Type)
+      : Node(Alloc, Type) {}
 };
 
 template<NodeType Kind>
@@ -213,15 +160,9 @@ class Nullary final : public NullaryNode {
   Nullary<Kind> &operator=(const Nullary<Kind>&) = delete;
   virtual void forceCompilation() final;
 public:
-  static Nullary<Kind> *create(
-      NodeMemory &Memory = NodeMemory::Default) {
-    Nullary<Kind> *Node = new Nullary<Kind>();
-    Node->add(Memory);
-    return Node;
-  }
-  ~Nullary() {}
-private:
   Nullary() : NullaryNode(Kind) {}
+  Nullary(alloc::Allocator *Alloc) : NullaryNode(Alloc, Kind) {}
+  ~Nullary() {}
 };
 
 class IntegerNode final : public NullaryNode {
@@ -230,21 +171,28 @@ class IntegerNode final : public NullaryNode {
   IntegerNode() = delete;
   virtual void forceCompilation() final;
 public:
+  // Note: ValueFormat provided so that we can echo back out same
+  // representation as when lexing s-expressions.
+  enum ValueFormat { Decimal, SignedDecimal, Hexidecimal };
+  IntegerNode(decode::IntType Value, ValueFormat Format = Decimal) :
+      NullaryNode(OpInteger),
+      Value(Value),
+      Format(Format) {}
+  IntegerNode(alloc::Allocator* Alloc, decode::IntType Value,
+              ValueFormat Format = Decimal) :
+      NullaryNode(Alloc, OpInteger),
+      Value(Value),
+      Format(Format) {}
   ~IntegerNode() {}
-  static IntegerNode *create(
-      decode::IntType Value,
-      NodeMemory &Memory = NodeMemory::Default) {
-    IntegerNode *Node = new IntegerNode(Value);
-    Node->add(Memory);
-    return Node;
+  ValueFormat getFormat() const {
+    return Format;
   }
   decode::IntType getValue() const {
     return Value;
   }
 private:
   decode::IntType Value;
-  IntegerNode(decode::IntType Value)
-      : NullaryNode(NodeType::Integer), Value(Value) {}
+  ValueFormat Format;
 };
 
 class SymbolNode final : public NullaryNode {
@@ -253,39 +201,44 @@ class SymbolNode final : public NullaryNode {
   SymbolNode() = delete;
   virtual void forceCompilation() final;
 public:
-  ~SymbolNode() {}
-  static SymbolNode *create(
-      std::string Name,
-      NodeMemory &Memory = NodeMemory::Default) {
-    SymbolNode *Node = new SymbolNode(Name);
-    Node->add(Memory);
-    return Node;
+  using NameType = std::vector<uint8_t>;
+  using InternalNameType = arena_vector<uint8_t>;
+  SymbolNode(NameType &_Name)
+      : NullaryNode(OpSymbol), Name(alloc::Allocator::Default) {
+    init(_Name);
   }
-  std::string getName() const {
+  SymbolNode(alloc::Allocator *Alloc, NameType &_Name)
+      : NullaryNode(Alloc, OpSymbol), Name(Alloc) {
+    init(_Name);
+  }
+  ~SymbolNode() {}
+  const InternalNameType &getName() const {
     return Name;
   }
 private:
-  std::string Name;
-  SymbolNode(std::string Name)
-      : NullaryNode(NodeType::Symbol), Name(Name) {}
+  InternalNameType Name;
+  void init(NameType &_Name) {
+    Name.reserve(Name.size());
+    for (const auto &V : _Name)
+      Name.emplace_back(V);
+  }
 };
 
 class UnaryNode : public Node {
   UnaryNode(const UnaryNode&) = delete;
   UnaryNode &operator=(const UnaryNode&) = delete;
 public:
-  IndexType getNumKids() const final { return 1; }
-  Node *getKid(IndexType Index) const final {
-    assert(Index == 0);
-    return Kid;
-  }
   ~UnaryNode() override {}
 protected:
-  Node *Kid;
   UnaryNode(NodeType Type, Node *Kid)
-      : Node(Type), Kid(Kid) {}
+      : Node(Type) {
+    Kids.emplace_back(Kid);
+  }
+  UnaryNode(alloc::Allocator *Alloc, NodeType Type, Node *Kid)
+      : Node(Alloc, Type) {
+    Kids.emplace_back(Kid);
+  }
 };
-
 
 template<NodeType Kind>
 class Unary final : public UnaryNode {
@@ -293,33 +246,26 @@ class Unary final : public UnaryNode {
   Unary<Kind> &operator=(const Unary<Kind>&) = delete;
   virtual void forceCompilation() final;
 public:
-  ~Unary() {}
-  static Unary<Kind> *create(
-      Node *Kid, NodeMemory &Memory = NodeMemory::Default) {
-    Unary<Kind> *Node = new Unary<Kind>(Kid);
-    Node->add(Memory);
-    return Node;
-  }
-private:
   Unary(Node *Kid) : UnaryNode(Kind, Kid) {}
+  Unary(alloc::Allocator* Alloc, Node *Kid) : UnaryNode(Alloc, Kind, Kid) {}
+  ~Unary() {}
 };
 
 class BinaryNode : public Node {
   BinaryNode(const BinaryNode&) = delete;
   BinaryNode &operator=(const BinaryNode&) = delete;
 public:
-  IndexType getNumKids() const final { return 2; }
-  Node *getKid(IndexType Index) const final {
-    assert(Index < 2);
-    return Kids[Index];
-  }
   ~BinaryNode() override {}
 protected:
-  Node *Kids[2];
   BinaryNode(NodeType Type, Node *Kid1, Node *Kid2)
       : Node(Type) {
-    Kids[0] = Kid1;
-    Kids[1] = Kid2;
+    Kids.emplace_back(Kid1);
+    Kids.emplace_back(Kid2);
+  }
+  BinaryNode(alloc::Allocator *Alloc, NodeType Type, Node *Kid1, Node *Kid2)
+      : Node(Alloc, Type) {
+    Kids.emplace_back(Kid1);
+    Kids.emplace_back(Kid2);
   }
 };
 
@@ -329,34 +275,30 @@ class Binary final : public BinaryNode {
   Binary<Kind> &operator=(const Binary<Kind>&) = delete;
   virtual void forceCompilation() final;
 public:
-  ~Binary() {}
-  static Binary<Kind> *create(
-      Node *Kid1, Node *Kid2, NodeMemory &Memory = NodeMemory::Default) {
-    Binary<Kind> *Node = new Binary<Kind>(Kid1, Kid2);
-    Node->add(Memory);
-    return Node;
-  }
-private:
   Binary(Node *Kid1, Node *Kid2) : BinaryNode(Kind, Kid1, Kid2) {}
+  Binary(alloc::Allocator *Alloc, Node *Kid1, Node *Kid2)
+      : BinaryNode(Alloc, Kind, Kid1, Kid2) {}
+  ~Binary() {}
 };
 
 class TernaryNode : public Node {
   TernaryNode(const TernaryNode&) = delete;
   TernaryNode &operator=(const TernaryNode&) = delete;
 public:
-  IndexType getNumKids() const final { return 3; }
-  Node *getKid(IndexType Index) const final {
-    assert(Index < 3);
-    return Kids[Index];
-  }
   ~TernaryNode() override {}
 protected:
-  Node *Kids[3];
   TernaryNode(NodeType Type, Node *Kid1, Node *Kid2, Node *Kid3)
       : Node(Type) {
-    Kids[0] = Kid1;
-    Kids[1] = Kid2;
-    Kids[2] = Kid3;
+    Kids.emplace_back(Kid1);
+    Kids.emplace_back(Kid2);
+    Kids.emplace_back(Kid3);
+  }
+  TernaryNode(alloc::Allocator *Alloc, NodeType Type,
+              Node *Kid1, Node *Kid2, Node *Kid3)
+      : Node(Alloc, Type) {
+    Kids.emplace_back(Kid1);
+    Kids.emplace_back(Kid2);
+    Kids.emplace_back(Kid3);
   }
 };
 
@@ -366,32 +308,25 @@ class Ternary final : public TernaryNode {
   Ternary<Kind> &operator=(const Ternary<Kind>&) = delete;
   virtual void forceCompilation() final;
 public:
-  ~Ternary() {}
-  static Ternary<Kind> *create(
-      Node *Kid1, Node *Kid2, Node *Kid3,
-      NodeMemory &Memory = NodeMemory::Default) {
-    Ternary<Kind> *Node = new Ternary<Kind>(Kid1, Kid2, Kid3);
-    Node->add(Memory);
-    return Node;
-  }
-private:
   Ternary(Node *Kid1, Node *Kid2, Node* Kid3)
       : TernaryNode(Kind, Kid1, Kid2, Kid3) {}
+  Ternary(alloc::Allocator *Alloc, Node *Kid1, Node *Kid2, Node* Kid3)
+      : TernaryNode(Alloc, Kind, Kid1, Kid2, Kid3) {}
+  ~Ternary() {}
 };
 
 class NaryNode : public Node {
   NaryNode(const NaryNode&) = delete;
   NaryNode &operator=(const NaryNode&) = delete;
+  virtual void forceCompilation();
 public:
-  IndexType getNumKids() const final { return Kids.size(); }
-  Node *getKid(IndexType Index) const final {
-    return Kids.at(Index);
+  void append(Node *Kid) final {
+    Kids.emplace_back(Kid);
   }
-  void append(Node *Kid) final;
   ~NaryNode() override {}
 protected:
-  std::vector<Node*> Kids;
   NaryNode(NodeType Type) : Node(Type) {}
+  NaryNode(alloc::Allocator *Alloc, NodeType Type) : Node(Alloc, Type) {}
 };
 
 template<NodeType Kind>
@@ -400,15 +335,9 @@ class Nary final : public NaryNode {
   Nary<Kind> &operator=(const Nary<Kind>&) = delete;
   virtual void forceCompilation() final;
 public:
-  ~Nary() {}
-  static Nary<Kind> *create(
-      NodeMemory &Memory = NodeMemory::Default) {
-    Nary<Kind> *Node = new Nary<Kind>();
-    Node->add(Memory);
-    return Node;
-  }
-private:
   Nary() : NaryNode(Kind) {}
+  Nary(alloc::Allocator *Alloc) : NaryNode(Alloc, Kind) {}
+  ~Nary() {}
 };
 
 } // end of namespace filt

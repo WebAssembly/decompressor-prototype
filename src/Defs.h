@@ -26,14 +26,31 @@
 #include <cstdint>
 #include <limits>
 
+namespace wasm {
+
 template<class T, size_t N>
 size_t size(T (&)[N]) { return N; }
 
-namespace wasm {
+template<typename T>
+constexpr T const_maximum(T V) {
+  return V;
+}
+
+template<typename T>
+constexpr T const_max(T V1, T V2) {
+  return V1 < V2 ? V2 : V1;
+}
+
+template<typename T, typename... Args>
+constexpr T const_maximum(T V, Args... args) {
+  return const_max(V, const_maximum(args...));
+}
 
 namespace decode {
 
 using IntType = uint64_t;
+using SignedIntType = int64_t;
+
 static constexpr size_t kBitsInIntType = 64;
 
 enum class StreamType {Bit, Byte, Int, Ast};

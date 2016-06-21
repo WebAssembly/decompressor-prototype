@@ -23,6 +23,7 @@ OBJDIR = $(BUILDDIR)/obj
 ###### Decoder objects and locations ######
 
 SRCS = \
+	Allocator.cpp \
 	Defs.cpp
 
 OBJS=$(patsubst %.cpp, $(OBJDIR)/%.o, $(SRCS))
