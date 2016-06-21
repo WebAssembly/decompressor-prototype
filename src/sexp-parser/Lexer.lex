@@ -253,7 +253,6 @@ id ({letter}|{digit}|[_.])*
 "undefine"        return Parser::make_UNDEFINE(Driver.getLoc());
 "u32.const"       return Parser::make_U32_CONST(Driver.getLoc());
 "u64.const"       return Parser::make_U64_CONST(Driver.getLoc());
-"value"           return Parser::make_VALUE(Driver.getLoc());
 "varint32"        return Parser::make_VARINT32(Driver.getLoc());
 "varint64"        return Parser::make_VARINT64(Driver.getLoc());
 "varuint1"        return Parser::make_VARUINT1(Driver.getLoc());

@@ -82,19 +82,21 @@ TypeNamePair SexpTypeNamePair[] = {
   {NodeType::SymConst, "sym.const"},
   {NodeType::Uint32NoArgs, "uint32"},
   {NodeType::Uint32OneArg, "uint32"},
-  {NodeType::Uint8, "uint8"},
+  {NodeType::Uint8NoArgs, "uint8"},
+  {NodeType::Uint8OneArg, "uint8"},
   {NodeType::Uint64NoArgs, "uint64"},
   {NodeType::Uint64OneArg, "uint64"},
   {NodeType::Undefine, "undefine"},
   {NodeType::U32Const, "u32.const"},
   {NodeType::U64Const, "u64.const"},
-  {NodeType::Value, "value"},
   {NodeType::Varint32NoArgs, "varint32"},
   {NodeType::Varint32OneArg, "varint32"},
   {NodeType::Varint64NoArgs, "varint64"},
   {NodeType::Varint64OneArg, "varint64"},
-  {NodeType::Varuint1, "varuint1"},
-  {NodeType::Varuint7, "varuint7"},
+  {NodeType::Varuint1NoArgs, "varuint1"},
+  {NodeType::Varuint1OneArg, "varuint1"},
+  {NodeType::Varuint7NoArgs, "varuint7"},
+  {NodeType::Varuint7OneArg, "varuint7"},
   {NodeType::Varuint32NoArgs, "varuint32"},
   {NodeType::Varuint32OneArg, "varuint32"},
   {NodeType::Varuint64NoArgs, "varuint64"},
@@ -111,6 +113,8 @@ TypeNamePair UniquifyingTypeNamePair[] = {
   {NodeType::BlockOneArg, "blockOneArg"},
   {NodeType::BlockThreeArgs, "blockThreeArgs"},
   {NodeType::BlockTwoArgs, "blockTwoArgs"},
+  {NodeType::Uint8NoArgs, "uint8NoArgs"},
+  {NodeType::Uint8OneArg, "uint8OneArg"},
   {NodeType::Uint32NoArgs, "uint32NoArgs"},
   {NodeType::Uint32OneArg, "uint32OneArg"},
   {NodeType::Uint64NoArgs, "uint64NoArgs"},
@@ -119,6 +123,10 @@ TypeNamePair UniquifyingTypeNamePair[] = {
   {NodeType::Varint32OneArg, "varint32OneArg"},
   {NodeType::Varint64NoArgs, "varint64NoArgs"},
   {NodeType::Varint64OneArg, "varint64OneArg"},
+  {NodeType::Varuint1NoArgs, "varuint1NoArgs"},
+  {NodeType::Varuint1OneArg, "varuint1OneArg"},
+  {NodeType::Varuint7NoArgs, "varuint7NoArgs"},
+  {NodeType::Varuint7OneArg, "varuint7OneArg"},
   {NodeType::Varuint32NoArgs, "varuint32NoArgs"},
   {NodeType::Varuint32OneArg, "varuint32OneArg"},
   {NodeType::Varuint64NoArgs, "varuint64NoArgs"},
@@ -205,14 +213,13 @@ template class Nullary<NodeType::BlockBegin>;
 template class Nullary<NodeType::BlockEnd>;
 template class Nullary<NodeType::Copy>;
 template class Nullary<NodeType::Error>;
-template class Nullary<NodeType::Uint8>;
+template class Nullary<NodeType::Uint8NoArgs>;
 template class Nullary<NodeType::Uint32NoArgs>;
 template class Nullary<NodeType::Uint64NoArgs>;
-template class Nullary<NodeType::Value>;
 template class Nullary<NodeType::Varint32NoArgs>;
 template class Nullary<NodeType::Varint64NoArgs>;
-template class Nullary<NodeType::Varuint1>;
-template class Nullary<NodeType::Varuint7>;
+template class Nullary<NodeType::Varuint1NoArgs>;
+template class Nullary<NodeType::Varuint7NoArgs>;
 template class Nullary<NodeType::Varuint32NoArgs>;
 template class Nullary<NodeType::Varuint64NoArgs>;
 template class Nullary<NodeType::Void>;
@@ -233,8 +240,11 @@ template class Unary<NodeType::Uint64OneArg>;
 template class Unary<NodeType::Undefine>;
 template class Unary<NodeType::U32Const>;
 template class Unary<NodeType::U64Const>;
+template class Unary<NodeType::Uint8OneArg>;
 template class Unary<NodeType::Varint32OneArg>;
 template class Unary<NodeType::Varint64OneArg>;
+template class Unary<NodeType::Varuint1OneArg>;
+template class Unary<NodeType::Varuint7OneArg>;
 template class Unary<NodeType::Varuint32OneArg>;
 template class Unary<NodeType::Varuint64OneArg>;
 template class Unary<NodeType::Version>;

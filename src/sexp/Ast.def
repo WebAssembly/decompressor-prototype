@@ -1,0 +1,114 @@
+/* -*- C++ -*- */
+/*
+ * Copyright 2016 WebAssembly Community Group participants
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// Defines Opcodes for Ast nodes.
+
+#ifndef DECOMPRESSOR_SRC_AST_DEF
+#define DECOMPRESSOR_SRC_AST_DEF
+
+#define AST_OPCODE_TABLE                                                       \
+  /* enum name, opcode */                                                      \
+                                                                               \
+  /* Control flow operators */                                                 \
+  X(BlockBegin,        0x00)                                                   \
+  X(BlockEnd,          0x01)                                                   \
+  X(BlockOneArg,       0x02)                                                   \
+  X(BlockThreeArgs,    0x03)                                                   \
+  X(BlockTwoArgs,      0x04)                                                   \
+  X(Case,              0x05)                                                   \
+  X(Copy,              0x06)                                                   \
+  X(Error,             0x07)                                                   \
+  X(Eval,              0x08)                                                   \
+  X(Filter,            0x09)                                                   \
+  X(IfThenElse,        0x0A)                                                   \
+  X(Loop,              0x0B)                                                   \
+  X(LoopUnbounded,     0x0C)                                                   \
+  X(Select,            0x0D)                                                   \
+  X(Sequence,          0x0E)                                                   \
+                                                                               \
+  /* Constants */                                                              \
+  X(Void,              0x10)                                                   \
+  X(I32Const,          0x11)                                                   \
+  X(I64Const,          0x12)                                                   \
+  X(U32Const,          0x13)                                                   \
+  X(U64Const,          0x14)                                                   \
+                                                                               \
+  /* Formatting */                                                             \
+  X(Uint32NoArgs,      0x20)                                                   \
+  X(Uint32OneArg,      0x21)                                                   \
+  X(Uint8NoArgs,       0x22)                                                   \
+  X(Uint8OneArg,       0x23)                                                   \
+  X(Uint64NoArgs,      0x24)                                                   \
+  X(Uint64OneArg,      0x25)                                                   \
+  X(Varint32NoArgs,    0x26)                                                   \
+  X(Varint32OneArg,    0x27)                                                   \
+  X(Varint64NoArgs,    0x28)                                                   \
+  X(Varint64OneArg,    0x29)                                                   \
+  X(Varuint1NoArgs,    0x2A)                                                   \
+  X(Varuint1OneArg,    0x2B)                                                   \
+  X(Varuint32NoArgs,   0x2C)                                                   \
+  X(Varuint32OneArg,   0x2D)                                                   \
+  X(Varuint64NoArgs,   0x2E)                                                   \
+  X(Varuint64OneArg,   0x2F)                                                   \
+  X(Varuint7NoArgs,    0x30)                                                   \
+  X(Varuint7OneArg,    0x31)                                                   \
+                                                                               \
+  /* I/O (and tree) operations  */                                             \
+  X(AppendNoArgs,      0x40)                                                   \
+  X(AppendOneArg,      0x41)                                                   \
+  X(Lit,               0x42)                                                   \
+  X(Map,               0x43)                                                   \
+  X(Peek,              0x44)                                                   \
+  X(Postorder,         0x45)                                                   \
+  X(Preorder,          0x46)                                                   \
+  X(Read,              0x47)                                                   \
+  X(Write,             0x48)                                                   \
+                                                                               \
+  /* Streams */                                                                \
+  X(AstToAst,          0x50)                                                   \
+  X(AstToBit,          0x51)                                                   \
+  X(AstToByte,         0x52)                                                   \
+  X(AstToInt,          0x53)                                                   \
+  X(BitToAst,          0x54)                                                   \
+  X(BitToBit,          0x55)                                                   \
+  X(BitToByte,         0x56)                                                   \
+  X(BitToInt,          0x57)                                                   \
+  X(ByteToAst,         0x58)                                                   \
+  X(ByteToBit,         0x59)                                                   \
+  X(ByteToByte,        0x5A)                                                   \
+  X(ByteToInt,         0x5B)                                                   \
+  X(IntToAst,          0x5C)                                                   \
+  X(IntToBit,          0x5D)                                                   \
+  X(IntToByte,         0x5E)                                                   \
+  X(IntToInt,          0x5F)                                                   \
+                                                                               \
+  /* Declarations */                                                           \
+  X(Define,            0x60)                                                   \
+  X(Default,           0x61)                                                   \
+  X(File,              0x62)                                                   \
+  X(Section,           0x63)                                                   \
+  X(Undefine,          0x64)                                                   \
+  X(Version,           0x65)                                                   \
+                                                                               \
+  /* Internal (not opcodes in compressed file) */                              \
+  X(Integer,           0x100)                                                  \
+  X(Symbol,            0x101)                                                  \
+  X(SymConst,          0x102)
+//#define X(tag, opcode)
+
+#endif // DECOMPRESSOR_SRC_AST_DEF
+

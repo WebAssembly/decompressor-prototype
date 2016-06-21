@@ -123,7 +123,6 @@ struct IntegerValue {
 %token UNDEFINE      "undefine"
 %token U32_CONST     "u32.const"
 %token U64_CONST     "u64.const"
-%token VALUE         "value"
 %token VARINT32      "varint32"
 %token VARINT64      "varint64"
 %token VARUINT1      "varuint1"
@@ -297,7 +296,10 @@ expression
             $$ = Driver.create<Unary<NodeType::SymConst>>($3);
           }
         | "(" "uint8" ")" {
-            $$ = Driver.create<Nullary<NodeType::Uint8>>();
+            $$ = Driver.create<Nullary<NodeType::Uint8NoArgs>>();
+          }
+        | "(" "uint8" integer ")" {
+            $$ = Driver.create<Unary<NodeType::Uint8OneArg>>($3);
           }
         | "(" "uint32" ")" {
             $$ = Driver.create<Nullary<NodeType::Uint32NoArgs>>();
@@ -317,9 +319,6 @@ expression
         | "(" "u64.const" integer ")" {
             $$ = Driver.create<Unary<NodeType::U64Const>>($3);
           }
-        | "(" "value" ")" {
-            $$ = Driver.create<Nullary<NodeType::Value>>();
-          }
         | "(" "varint32" ")" {
             $$ = Driver.create<Nullary<NodeType::Varint32NoArgs>>();
           }
@@ -333,10 +332,16 @@ expression
             $$ = Driver.create<Unary<NodeType::Varint64OneArg>>($3);
           }
         | "(" "varuint1" ")" {
-            $$ = Driver.create<Nullary<NodeType::Varuint1>>();
+            $$ = Driver.create<Nullary<NodeType::Varuint1NoArgs>>();
+          }
+        | "(" "varuint1" integer ")" {
+            $$ = Driver.create<Unary<NodeType::Varuint1OneArg>>($3);
           }
         | "(" "varuint7" ")" {
-            $$ = Driver.create<Nullary<NodeType::Varuint7>>();
+            $$ = Driver.create<Nullary<NodeType::Varuint7NoArgs>>();
+          }
+        | "(" "varuint7" integer ")" {
+            $$ = Driver.create<Unary<NodeType::Varuint7OneArg>>($3);
           }
         | "(" "varuint32" ")" {
             $$ = Driver.create<Nullary<NodeType::Varuint32NoArgs>>();

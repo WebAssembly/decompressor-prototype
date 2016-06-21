@@ -34,6 +34,7 @@
 
 #include "Allocator.h"
 #include "ADT/arena_vector.h"
+#include "Ast.def"
 
 // #include <iterator>
 #include <memory>
@@ -45,79 +46,12 @@ namespace wasm {
 namespace filt {
 
 enum class NodeType {
-  AppendNoArgs,
-    AppendOneArg,
-    AstToAst,
-    AstToBit,
-    AstToByte,
-    AstToInt,
-    BitToAst,
-    BitToBit,
-    BitToByte,
-    BitToInt,
-    BlockBegin,
-    BlockEnd,
-    BlockOneArg,
-    BlockThreeArgs,
-    BlockTwoArgs,
-    ByteToAst,
-    ByteToBit,
-    ByteToByte,
-    ByteToInt,
-    Case,
-    Copy,
-    Default,
-    Define,
-    Error,
-    Eval,
-    File,
-    Filter,
-    IfThenElse,
-    Integer,
-    IntToAst,
-    IntToBit,
-    IntToByte,
-    IntToInt,
-    I32Const,
-    I64Const,
-    Lit,
-    Loop,
-    LoopUnbounded,
-    Map,
-    Peek,
-    Postorder,
-    Preorder,
-    Read,
-    Section,
-    Select,
-    Sequence,
-    Symbol,
-    SymConst,
-    Uint32NoArgs,
-    Uint32OneArg,
-    Uint8,
-    Uint64NoArgs,
-    Uint64OneArg,
-    Undefine,
-    U32Const,
-    U64Const,
-    Value,
-    Varint32NoArgs,
-    Varint32OneArg,
-    Varint64NoArgs,
-    Varint64OneArg,
-    Varuint1,
-    Varuint7,
-    Varuint32NoArgs,
-    Varuint32OneArg,
-    Varuint64NoArgs,
-    Varuint64OneArg,
-    Version,
-    Void,
-    Write // Assumed to be last in list (see NumNodeTypes).
+#define X(tag, opcode) tag = opcode,
+  AST_OPCODE_TABLE
+#undef X
 };
 
-static constexpr size_t NumNodeTypes = static_cast<int>(NodeType::Write) + 1;
+static constexpr size_t NumNodeTypes = 0x102;
 
 // Returns the s-expression name
 const char *getNodeSexpName(NodeType Type);
