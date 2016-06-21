@@ -261,6 +261,7 @@ public:
 private:
   InternalNameType Name;
   void init(NameType &_Name) {
+    Name.reserve(Name.size());
     for (const auto &V : _Name)
       Name.emplace_back(V);
   }
