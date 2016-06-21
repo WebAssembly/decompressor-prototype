@@ -31,9 +31,13 @@
 #define DECOMPRESSOR_SRC_SEXP_AST_H
 
 #include "Defs.h"
-#include "Allocator.h"
 
-// #include <iterator>
+#include "Allocator.h"
+#include "ADT/arena_vector.h"
+#include "Ast.def"
+
+#include <array>
+#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
@@ -42,80 +46,34 @@ namespace wasm {
 
 namespace filt {
 
-enum class NodeType {
-  AppendNoArgs,
-    AppendOneArg,
-    AstToAst,
-    AstToBit,
-    AstToByte,
-    AstToInt,
-    BitToAst,
-    BitToBit,
-    BitToByte,
-    BitToInt,
-    BlockBegin,
-    BlockEnd,
-    BlockOneArg,
-    BlockThreeArgs,
-    BlockTwoArgs,
-    ByteToAst,
-    ByteToBit,
-    ByteToByte,
-    ByteToInt,
-    Case,
-    Copy,
-    Default,
-    Define,
-    Error,
-    Eval,
-    File,
-    Filter,
-    IfThenElse,
-    Integer,
-    IntToAst,
-    IntToBit,
-    IntToByte,
-    IntToInt,
-    I32Const,
-    I64Const,
-    Lit,
-    Loop,
-    LoopUnbounded,
-    Map,
-    Peek,
-    Postorder,
-    Preorder,
-    Read,
-    Section,
-    Select,
-    Sequence,
-    Symbol,
-    SymConst,
-    Uint32NoArgs,
-    Uint32OneArg,
-    Uint8,
-    Uint64NoArgs,
-    Uint64OneArg,
-    Undefine,
-    U32Const,
-    U64Const,
-    Value,
-    Varint32NoArgs,
-    Varint32OneArg,
-    Varint64NoArgs,
-    Varint64OneArg,
-    Varuint1,
-    Varuint7,
-    Varuint32NoArgs,
-    Varuint32OneArg,
-    Varuint64NoArgs,
-    Varuint64OneArg,
-    Version,
-    Void,
-    Write // Assumed to be last in list (see NumNodeTypes).
+enum NodeType {
+#define X(tag, opcode, sexp_name, type_name, TextNumArgs) Op##tag = opcode,
+  AST_OPCODE_TABLE
+#undef X
 };
 
-static constexpr size_t NumNodeTypes = static_cast<int>(NodeType::Write) + 1;
+static constexpr size_t NumNodeTypes =
+    0
+#define X(tag, opcode, sexp_name, type_name, TextNumArgs) + 1
+    AST_OPCODE_TABLE
+#undef X
+    ;
+
+static constexpr size_t MaxNodeType =
+    const_maximum(
+#define X(tag, opcode, sexp_name, type_name, TextNumArgs) size_t(opcode),
+  AST_OPCODE_TABLE
+#undef X
+  std::numeric_limits<size_t>::min());
+
+struct AstTraitsType {
+  const NodeType Type;
+  const char *SexpName;
+  const char *TypeName;
+  const int NumTextArgs;
+};
+
+extern AstTraitsType AstTraits[NumNodeTypes];
 
 // Returns the s-expression name
 const char *getNodeSexpName(NodeType Type);
@@ -177,7 +135,7 @@ public:
   Iterator rend() const { return Iterator(this, -1); }
 protected:
   NodeType Type;
-  std::vector<Node*, alloc::TemplateAllocator<Node*>> Kids;
+  arena_vector<Node*> Kids;
   Node(NodeType Type)
       : Type(Type), Kids(alloc::Allocator::Default) {}
   Node(alloc::Allocator *Alloc, NodeType Type)
@@ -217,12 +175,12 @@ public:
   // representation as when lexing s-expressions.
   enum ValueFormat { Decimal, SignedDecimal, Hexidecimal };
   IntegerNode(decode::IntType Value, ValueFormat Format = Decimal) :
-      NullaryNode(NodeType::Integer),
+      NullaryNode(OpInteger),
       Value(Value),
       Format(Format) {}
   IntegerNode(alloc::Allocator* Alloc, decode::IntType Value,
               ValueFormat Format = Decimal) :
-      NullaryNode(Alloc, NodeType::Integer),
+      NullaryNode(Alloc, OpInteger),
       Value(Value),
       Format(Format) {}
   ~IntegerNode() {}
@@ -244,14 +202,13 @@ class SymbolNode final : public NullaryNode {
   virtual void forceCompilation() final;
 public:
   using NameType = std::vector<uint8_t>;
-  using InternalNameType =
-      std::vector<uint8_t, alloc::TemplateAllocator<uint8_t>>;
+  using InternalNameType = arena_vector<uint8_t>;
   SymbolNode(NameType &_Name)
-      : NullaryNode(NodeType::Symbol), Name(alloc::Allocator::Default) {
+      : NullaryNode(OpSymbol), Name(alloc::Allocator::Default) {
     init(_Name);
   }
   SymbolNode(alloc::Allocator *Alloc, NameType &_Name)
-      : NullaryNode(Alloc, NodeType::Symbol), Name(Alloc) {
+      : NullaryNode(Alloc, OpSymbol), Name(Alloc) {
     init(_Name);
   }
   ~SymbolNode() {}
@@ -261,6 +218,7 @@ public:
 private:
   InternalNameType Name;
   void init(NameType &_Name) {
+    Name.reserve(Name.size());
     for (const auto &V : _Name)
       Name.emplace_back(V);
   }

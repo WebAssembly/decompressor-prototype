@@ -51,56 +51,19 @@ char getHexCharForDigit(uint8_t Digit) {
 
 constexpr const char *IndentString = "  ";
 
-struct {
-  NodeType Type;
-  Node::IndexType KidsCountSameLine;
-} KidCountData[] = {
-  // If not in list, assume 0.
-  {NodeType::AppendOneArg, 1},
-  {NodeType::BlockOneArg, 1},
-  {NodeType::BlockThreeArgs, 3},
-  {NodeType::BlockTwoArgs, 2},
-  {NodeType::Case, 2},
-  {NodeType::Default, 1},
-  {NodeType::Define, 1},
-  {NodeType::Eval, 1},
-  {NodeType::IfThenElse, 1},
-  {NodeType::I32Const, 1},
-  {NodeType::I64Const, 1},
-  {NodeType::Lit, 1},
-  {NodeType::Loop, 1},
-  {NodeType::Map, 1},
-  {NodeType::Peek, 1},
-  {NodeType::Postorder, 1},
-  {NodeType::Preorder, 1},
-  {NodeType::Read, 1},
-  {NodeType::Section, 1},
-  {NodeType::Select, 1},
-  {NodeType::SymConst, 1},
-  {NodeType::Uint32OneArg, 1},
-  {NodeType::Uint64OneArg, 1},
-  {NodeType::Undefine, 1},
-  {NodeType::U32Const, 1},
-  {NodeType::U64Const, 1},
-  {NodeType::Varint32OneArg, 1},
-  {NodeType::Varint64OneArg, 1},
-  {NodeType::Varuint32OneArg, 1},
-  {NodeType::Varuint64OneArg, 1},
-  {NodeType::Version, 1}
-};
-
 } // end of anonyous namespace
 
 bool TextWriter::UseNodeTypeNames = false;
 
 TextWriter::TextWriter() {
   // Build fast lookup for number of arguments to write on same line.
-  for (size_t i = 0; i < NumNodeTypes; ++i) {
+  for (size_t i = 0; i < MaxNodeType; ++i) {
     KidCountSameLine.push_back(0);
   }
-  for (size_t i = 0; i < size(KidCountData); ++i)
-    KidCountSameLine[static_cast<int>(KidCountData[i].Type)]
-        = KidCountData[i].KidsCountSameLine;
+  for (size_t i = 0; i < NumNodeTypes; ++i) {
+    AstTraitsType &Traits = AstTraits[i];
+    KidCountSameLine[int(Traits.Type)] = Traits.NumTextArgs;
+  }
   // Compute that maximum power of 10 that can still be an IntType.
   decode::IntType MaxPower10 = 1;
   decode::IntType NextMaxPower10 = MaxPower10 * 10;
@@ -187,13 +150,13 @@ void TextWriter::writeNode(Node *Node, bool AddNewline) {
       }
       return;
     }
-    case NodeType::File: {
+    case OpFile: {
       // Treat like hidden node. That is, visually just a list of s-expressions.
       for (auto *Kid : *Node)
         writeNode(Kid, true);
       return;
     }
-    case NodeType::Integer: {
+    case OpInteger: {
       Indent _(this, AddNewline);
       auto *Int = dynamic_cast<IntegerNode*>(Node);
       decode::IntType Value = Int->getValue();
@@ -245,7 +208,7 @@ void TextWriter::writeNode(Node *Node, bool AddNewline) {
       LineEmpty = false;
       return;
     }
-    case NodeType::Symbol: {
+    case OpSymbol: {
       Indent _(this, AddNewline);
       auto *Sym = dynamic_cast<SymbolNode*>(Node);
       fputc('\'', File);
