@@ -41,7 +41,7 @@ static void buffer_Text(const std::string Text) {
     Buffer.emplace_back(Ch);
 }
 
-static void buffer_Escape(const Driver &Driver, const std::string Text) {
+static void buffer_Escape(const std::string Text) {
   assert(Text.size() == 1);
   switch (Text[0]) {
     case '\\':
@@ -63,12 +63,35 @@ static void buffer_Escape(const Driver &Driver, const std::string Text) {
       Buffer.emplace_back('\v');
       return;
     default:
-      Driver.tokenError("\\" + Text);
-      Buffer.emplace_back('?');
+      Buffer.emplace_back(Text[0]);
       return;
   }
 }
 
+static void buffer_Control(const std::string Text) {
+  assert(Text.size() == 1);
+  switch (Text[0]) {
+    case 'f':
+      Buffer.emplace_back('\f');
+      return;
+    case 'n':
+      Buffer.emplace_back('\n');
+      return;
+    case 'r':
+      Buffer.emplace_back('\r');
+      return;
+    case 't':
+      Buffer.emplace_back('\t');
+      return;
+    case 'v':
+      Buffer.emplace_back('\v');
+      return;
+    default:
+      assert(false);
+      buffer_Escape(Text);
+      return;
+  }
+}
 
 static void buffer_Octal(const std::string Text) {
   uint8_t Value = 0;
@@ -76,16 +99,6 @@ static void buffer_Octal(const std::string Text) {
     Value = (Value << 3) + (Ch - '0');
   Buffer.emplace_back(Value);
 }
-
-#if 0
-static Parser::symbol_type make_QuotedID(
-    const Driver &Driver, const std::string &Name) {
-  std::vector<uint8_t> Contents;
-  for (size_t i = 1, Size = Name.size() - 1; i < Size; ++i)
-    Contents.emplace_back(Name[i]);
-  return Parser::make_IDENTIFIER(Contents, Driver.getLoc());
-}
-#endif
 
 static IntType read_Integer(const std::string &Name, size_t StartIndex = 0) {
   IntType Value = 0;
@@ -267,12 +280,8 @@ id ({letter}|{digit}|[_.])*
                     Driver.tokenError(yytext);
                     BEGIN(INITIAL);
                   }
-<Escape>"\\"      {
-                    buffer_Escape(Driver, yytext);
-                    BEGIN(Name);
-                  }
 <Escape>[f,n,r,t,v] {
-                    buffer_Escape(Driver, yytext);
+                    buffer_Control(yytext);
                     BEGIN(Name);
                   }
 <Escape>[0-3][0-7][0-7] {
@@ -280,7 +289,7 @@ id ({letter}|{digit}|[_.])*
                     BEGIN(Name);
                   }
 <Escape>.         {
-                     Driver.tokenError(yytext);
+                     buffer_Escape(yytext);
                      BEGIN(Name);
                   }
 .                 Driver.tokenError(yytext);
