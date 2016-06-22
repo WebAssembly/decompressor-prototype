@@ -76,7 +76,7 @@
                                                                                \
   /* I/O (and tree) operations  */                                             \
   X(AppendNoArgs,      0x40, "append",           "appendNoArgs",    0)         \
-  X(AppendOneArg,      0x41, "append",           "appendOneArg",    0)         \
+  X(AppendOneArg,      0x41, "append",           "appendOneArg",    1)         \
   X(Lit,               0x42, "lit",              nullptr,           1)         \
   X(Map,               0x43, "map",              nullptr,           2)         \
   X(Peek,              0x44, "peek",             nullptr,           1)         \
@@ -109,7 +109,7 @@
   X(File,              0x62, "file",             nullptr,           0)         \
   X(Section,           0x63, "section",          nullptr,           1)         \
   X(Undefine,          0x64, "undefine",         nullptr,           1)         \
-  X(Version,           0x65, "version",          nullptr,           0)         \
+  X(Version,           0x65, "version",          nullptr,           1)         \
                                                                                \
   /* Internal (not opcodes in compressed file) */                              \
   X(Integer,           0x100, "?integer?",       nullptr,           0)         \

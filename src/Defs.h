@@ -55,6 +55,12 @@ static constexpr size_t kBitsInIntType = 64;
 
 enum class StreamType {Bit, Byte, Int, Ast};
 
+// When true, converts EXIT_FAIL to EXIT_SUCCESS, and EXIT_SUCCESS to EXIT_FAIL.
+extern bool ExpectExitFail;
+
+// Converts exit status, based on ExpectExitFail.
+int exit_status(int Status);
+
 void fatal(const char *Message = "fatal: unable to continue");
 
 struct Utils {

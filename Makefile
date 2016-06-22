@@ -82,6 +82,8 @@ TEST_SRCS = \
 
 TEST_EXECS=$(patsubst %.cpp, $(TEST_EXECDIR)/%, $(TEST_SRCS))
 
+TEST_SRCS_DIR = $(TEST_DIR)/test-sources
+
 ###### General compilation definitions ######
 
 $(info -----------------------------------------------)
@@ -244,3 +246,14 @@ $(TEST_EXECDIR)/TestParser: $(TEST_DIR)/TestParser.cpp $(PARSER_OBJS) \
 $(TEST_EXECDIR)/TestRawStreams: $(TEST_DIR)/TestRawStreams.cpp $(STRM_OBJS) \
 				$(OBJS)
 	$(CXX) $(CXXFLAGS) $< $(STRM_OBJS) $(OBJS) -o $@
+
+###### Testing ######
+
+test: all test-parser
+
+.PHONY: test
+
+test-parser: $(TEST_EXECDIR)/TestParser
+	$< -w defaults.df | diff - $(TEST_SRCS_DIR)/defaults.df-w
+	$< --expect-fail $(TEST_SRCS_DIR)/MismatchedParens.df 2>&1 | \
+		diff - $(TEST_SRCS_DIR)/MismatchedParens.df-out

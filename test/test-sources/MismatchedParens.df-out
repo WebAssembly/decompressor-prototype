@@ -1,0 +1,2 @@
+1.9: syntax error, unexpected ), expecting INTEGER
+Errors detected: test/test-sources/MismatchedParens.df

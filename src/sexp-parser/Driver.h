@@ -36,10 +36,8 @@ class Driver
   Driver(const Driver&) = delete;
   Driver &operator=(const Driver&) = delete;
 public:
-  Driver (alloc::Allocator *_Alloc = nullptr)
-      : Alloc(_Alloc) {
-    if (Alloc == nullptr)
-      Alloc = new alloc::MallocArena();
+  Driver (alloc::Allocator *_Alloc)
+      : Alloc(_Alloc), Table(_Alloc) {
   }
 
   ~Driver () {}
@@ -47,6 +45,10 @@ public:
   template<typename T, typename... Args>
   T *create(Args&&... args) {
     return Alloc->create<T>(std::forward<Args>(args)...);
+  }
+
+  SymbolNode *getSymbol(ExternalName &Name) {
+    return Table.getSymbol(Name);
   }
 
   alloc::Allocator *getAllocator() {
@@ -97,18 +99,21 @@ public:
 
   // Error handling.
   void error (const wasm::filt::location& Loc,
-              const std::string& Message) const;
-  void error (const std::string& Message) const;
-  void tokenError(const std::string& Token) const;
+              const std::string& Message);
+  void error (const std::string& Message);
+  void tokenError(const std::string& Token);
+  void fatal(const std::string &Message);
 
 private:
   alloc::Allocator *Alloc;
+  SymbolTable Table;
   std::string Filename;
   bool TraceLexing = false;
   bool TraceParsing = false;
   // The location of the last token.
   location Loc;
   Node *ParsedAst = nullptr;
+  bool ErrorsReported = false;
 
   // Called before parsing for setup.
   void Begin ();
