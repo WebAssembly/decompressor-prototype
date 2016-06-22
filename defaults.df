@@ -230,7 +230,7 @@
   )
 
   (default 'type.return_type'
-    (if (append (uint32 1)) (eval 'value_type') (void))
+    (if (append (uint32 1)) (eval 'value_type'))
   )
 
   (default 'type.value_type'

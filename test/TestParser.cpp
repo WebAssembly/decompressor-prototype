@@ -24,6 +24,7 @@
 #include <iostream>
 
 using namespace wasm::filt;
+using namespace wasm::decode;
 
 void usage(const char *AppName) {
   fprintf(stderr, "usage: %s [options] [Filename ...]\n", AppName);
@@ -31,6 +32,7 @@ void usage(const char *AppName) {
   fprintf(stderr, "  Parses filter files (stdin if none).\n");
   fprintf(stderr, "\n");
   fprintf(stderr, "Options:\n");
+  fprintf(stderr, "  --expect-fail\tSucceed on failure/fail on success\n");
   fprintf(stderr, "  -l\t\tTrace lexing of file(s).\n");
   fprintf(stderr, "  -p\t\tTrace parsing of file(s).\n");
   fprintf(stderr, "  -t\t\tUse internal type names for s-expressions\n");
@@ -38,7 +40,9 @@ void usage(const char *AppName) {
 }
 
 int main(int Argc, char *Argv[]) {
-  Driver Driver;
+  // TODO(KarlSchimpf) Figure out why MallocArena doesn't work.
+  wasm::alloc::Malloc Allocator;
+  Driver Driver(&Allocator);
   bool PrintAst = false;
   std::vector<const char *> Files;
   for (int i = 1; i < Argc; ++i) {
@@ -46,6 +50,8 @@ int main(int Argc, char *Argv[]) {
       Driver.setTraceParsing(true);
     else if (Argv[i] == std::string("-l"))
       Driver.setTraceLexing(true);
+    else if (Argv[i] == std::string("--expect-fail"))
+      ExpectExitFail = true;
     else if (Argv[i] == std::string("-t"))
       TextWriter::UseNodeTypeNames = true;
     else if (Argv[i] == std::string("-w"))
@@ -53,7 +59,7 @@ int main(int Argc, char *Argv[]) {
     else if (Argv[i] == std::string("-h")
              || Argv[i] == std::string("--help")) {
       usage(Argv[i]);
-      return EXIT_SUCCESS;
+      return exit_status(EXIT_SUCCESS);
     } else
       Files.push_back(Argv[i]);
   }
@@ -65,7 +71,7 @@ int main(int Argc, char *Argv[]) {
     }
     if (!Driver.parse(Filename)) {
       fprintf(stderr, "Errors detected: %s\n", Filename);
-      return EXIT_FAILURE;
+      return exit_status(EXIT_FAILURE);
     }
     if (PrintAst) {
       if (Node *Root = Driver.getParsedAst()) {
@@ -76,5 +82,5 @@ int main(int Argc, char *Argv[]) {
       }
     }
   }
-  return EXIT_SUCCESS;
+  return exit_status(EXIT_SUCCESS);
 }

@@ -25,9 +25,17 @@ namespace wasm {
 
 namespace decode {
 
+bool ExpectExitFail = false;
+
+int exit_status(int Status) {
+  if (!ExpectExitFail)
+    return Status;
+  return Status ? EXIT_SUCCESS : EXIT_FAILURE;
+}
+
 void fatal(const char *Message) {
   fprintf(stderr, "%s\n", Message);
-  exit(EXIT_FAILURE);
+  exit(exit_status(EXIT_FAILURE));
 }
 
 } // end of namespace decode

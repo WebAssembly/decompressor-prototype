@@ -39,12 +39,16 @@
 #include <array>
 #include <limits>
 #include <memory>
+#include <map>
 #include <string>
 #include <vector>
 
 namespace wasm {
 
 namespace filt {
+
+using ExternalName = std::string;
+using InternalName = arena_vector<uint8_t>;
 
 enum NodeType {
 #define X(tag, opcode, sexp_name, type_name, TextNumArgs) Op##tag = opcode,
@@ -80,6 +84,8 @@ const char *getNodeSexpName(NodeType Type);
 
 // Returns a unique (printable) type name
 const char *getNodeTypeName(NodeType Type);
+
+
 
 class Node {
   Node(const Node&) = delete;
@@ -201,27 +207,44 @@ class SymbolNode final : public NullaryNode {
   SymbolNode() = delete;
   virtual void forceCompilation() final;
 public:
-  using NameType = std::vector<uint8_t>;
-  using InternalNameType = arena_vector<uint8_t>;
-  SymbolNode(NameType &_Name)
+  SymbolNode(ExternalName &_Name)
       : NullaryNode(OpSymbol), Name(alloc::Allocator::Default) {
     init(_Name);
   }
-  SymbolNode(alloc::Allocator *Alloc, NameType &_Name)
+  SymbolNode(alloc::Allocator *Alloc, ExternalName &_Name)
       : NullaryNode(Alloc, OpSymbol), Name(Alloc) {
     init(_Name);
   }
   ~SymbolNode() {}
-  const InternalNameType &getName() const {
+  const InternalName &getName() const {
     return Name;
   }
 private:
-  InternalNameType Name;
-  void init(NameType &_Name) {
+  InternalName Name;
+  void init(ExternalName &_Name) {
     Name.reserve(Name.size());
     for (const auto &V : _Name)
       Name.emplace_back(V);
   }
+};
+
+class SymbolTable {
+  SymbolTable(const SymbolTable &) = delete;
+  SymbolTable &operator=(const SymbolTable &) = delete;
+public:
+  explicit SymbolTable(alloc::Allocator *Alloc) : Alloc(Alloc) {}
+  SymbolNode *getSymbol(ExternalName &Name) {
+    SymbolNode *Node = SymbolMap[Name];
+    if (Node == nullptr) {
+      Node = Alloc->create<SymbolNode>(Alloc, Name);
+      SymbolMap[Name] = Node;
+    }
+    return Node;
+  }
+private:
+  alloc::Allocator *Alloc;
+  // TODO(KarlSchimpf): Use arena allocator on map.
+  std::map<ExternalName, SymbolNode*> SymbolMap;
 };
 
 class UnaryNode : public Node {

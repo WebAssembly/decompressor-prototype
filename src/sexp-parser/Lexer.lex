@@ -22,8 +22,6 @@
 #include "Parser.tab.hpp"
 #include "Driver.h"
 
-#include <iostream>
-
 using namespace wasm::decode;
 using namespace wasm::filt;
 
@@ -34,36 +32,39 @@ using namespace wasm::filt;
 # undef yywrap
 # define yywrap() 1
 
-static SymbolNode::NameType Buffer;
+// Override failure.
+#define YY_FATAL_ERROR(msg) LexDriver->fatal(msg)
+
+static Driver *LexDriver = nullptr;
+static ExternalName Buffer;
 
 static void buffer_Text(const std::string Text) {
-  for (char Ch : Text)
-    Buffer.emplace_back(Ch);
+  Buffer.append(Text);
 }
 
 static void buffer_Escape(const std::string Text) {
   assert(Text.size() == 1);
   switch (Text[0]) {
     case '\\':
-      Buffer.emplace_back('\\');
+      Buffer.push_back('\\');
       return;
     case 'f':
-      Buffer.emplace_back('\f');
+      Buffer.push_back('\f');
       return;
     case 'n':
-      Buffer.emplace_back('\n');
+      Buffer.push_back('\n');
       return;
     case 'r':
-      Buffer.emplace_back('\r');
+      Buffer.push_back('\r');
       return;
     case 't':
-      Buffer.emplace_back('\t');
+      Buffer.push_back('\t');
       return;
     case 'v':
-      Buffer.emplace_back('\v');
+      Buffer.push_back('\v');
       return;
     default:
-      Buffer.emplace_back(Text[0]);
+      Buffer.push_back(Text[0]);
       return;
   }
 }
@@ -72,19 +73,19 @@ static void buffer_Control(const std::string Text) {
   assert(Text.size() == 1);
   switch (Text[0]) {
     case 'f':
-      Buffer.emplace_back('\f');
+      Buffer.push_back('\f');
       return;
     case 'n':
-      Buffer.emplace_back('\n');
+      Buffer.push_back('\n');
       return;
     case 'r':
-      Buffer.emplace_back('\r');
+      Buffer.push_back('\r');
       return;
     case 't':
-      Buffer.emplace_back('\t');
+      Buffer.push_back('\t');
       return;
     case 'v':
-      Buffer.emplace_back('\v');
+      Buffer.push_back('\v');
       return;
     default:
       assert(false);
@@ -97,7 +98,7 @@ static void buffer_Octal(const std::string Text) {
   uint8_t Value = 0;
   for (uint8_t Ch : Text)
     Value = (Value << 3) + (Ch - '0');
-  Buffer.emplace_back(Value);
+  Buffer.push_back(Value);
 }
 
 static IntType read_Integer(const std::string &Name, size_t StartIndex = 0) {
@@ -300,6 +301,7 @@ namespace wasm {
 namespace filt {
 
 void Driver::Begin() {
+  LexDriver = this;
   yy_flex_debug = TraceLexing;
   if (Filename.empty() || Filename == "-")
     yyin = stdin;
@@ -312,6 +314,15 @@ void Driver::Begin() {
 void Driver::End() {
   if (!Filename.empty() && Filename != "-")
     fclose(yyin);
+}
+
+void Driver::fatal(const std::string &message) {
+  // Force reference to overwritten yy_fatal_error, to get rid
+  // of warning message.
+  if (0)
+    yy_fatal_error(message.c_str());
+  error(message);
+  exit(exit_status(EXIT_FAILURE));
 }
 
 } // end of namespace filt

@@ -23,9 +23,6 @@
 #include <cstring>
 #include <unordered_map>
 
-#include <iostream>
-
-
 namespace wasm {
 
 using namespace alloc;
@@ -88,7 +85,6 @@ void Node::append(Node *) {
 void IntegerNode::forceCompilation() {}
 
 void SymbolNode::forceCompilation() {}
-
 
 template<NodeType Kind>
 void Nullary<Kind>::forceCompilation() {}

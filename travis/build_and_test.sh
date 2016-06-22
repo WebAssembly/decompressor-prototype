@@ -12,3 +12,4 @@ cd ${ROOT_DIR}
 
 make clean
 make
+make test

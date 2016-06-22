@@ -27,18 +27,19 @@ bool Driver::parse (const std::string &Filename) {
   parser.set_debug_level(TraceParsing);
   int Result = parser.parse ();
   End ();
-  return Result == 0;
+  return Result == 0 && !ErrorsReported;
 }
 
-void Driver::error (const wasm::filt::location& L, const std::string& M) const {
+void Driver::error (const wasm::filt::location& L, const std::string& M) {
+  ErrorsReported = true;
   std::cerr << L << ": " << M << std::endl;
 }
 
-void Driver::error (const std::string& M) const {
+void Driver::error (const std::string& M) {
   error(Loc, M);
 }
 
-void Driver::tokenError(const std::string& Token) const {
+void Driver::tokenError(const std::string& Token) {
   std::string Message("Invalid token'");
   error(std::string("invalidToken '") + Token + "'");
 }

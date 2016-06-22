@@ -134,7 +134,7 @@ struct IntegerValue {
 %token WRITE         "write"
 
 // Terminal classes
-%token <std::vector<uint8_t>> IDENTIFIER
+%token <wasm::filt::ExternalName> IDENTIFIER
 %token <wasm::filt::IntegerValue> INTEGER
 
 // Nonterminal classes.
@@ -146,7 +146,7 @@ struct IntegerValue {
 %type <wasm::filt::Node *> declaration_stmt_list
 %type <wasm::filt::Node *> expression
 %type <wasm::filt::Node *> file
-%type <wasm::filt::Node *> integer
+%type <wasm::filt::IntegerNode *> integer
 %type <wasm::filt::Node *> stream_conv
 %type <wasm::filt::Node *> stream_conv_list
 %type <wasm::filt::Node *> stream_conv_stmt_list
@@ -299,18 +299,24 @@ expression
             $$ = Driver.create<Nullary<OpUint8NoArgs>>();
           }
         | "(" "uint8" integer ")" {
+            if ($3->getValue() > 8)
+              Driver.error("uint8 bitsize > 8");
             $$ = Driver.create<Unary<OpUint8OneArg>>($3);
           }
         | "(" "uint32" ")" {
             $$ = Driver.create<Nullary<OpUint32NoArgs>>();
           }
         | "(" "uint32" integer ")"  {
+            if ($3->getValue() > 32)
+              Driver.error("uint32 bitsize > 32");
             $$ = Driver.create<Unary<OpUint32OneArg>>($3);
           }
         | "(" "uint64" ")" {
             $$ = Driver.create<Nullary<OpUint64NoArgs>>();
           }
         | "(" "uint64" integer ")"  {
+            if ($3->getValue() > 64)
+              Driver.error("uint64 bitsize > 64");
             $$ = Driver.create<Unary<OpUint64OneArg>>($3);
           }
         | "(" "u32.const" integer ")" {
@@ -323,36 +329,52 @@ expression
             $$ = Driver.create<Nullary<OpVarint32NoArgs>>();
           }
         | "(" "varint32" integer ")" {
+            decode::IntType Bitsize = $3->getValue();
+            if (Bitsize < 2 || Bitsize > 32)
+              Driver.error("varint32 expects 2 <= bitsize <= 32");
             $$ = Driver.create<Unary<OpVarint32OneArg>>($3);
           }
         | "(" "varint64" ")" {
             $$ = Driver.create<Nullary<OpVarint64NoArgs>>();
           }
         | "(" "varint64" integer ")" {
+            decode::IntType Bitsize = $3->getValue();
+            if (Bitsize < 2 || Bitsize > 64)
+              Driver.error("varint64 expects 2 <= bitsize <= 64");
             $$ = Driver.create<Unary<OpVarint64OneArg>>($3);
           }
         | "(" "varuint1" ")" {
             $$ = Driver.create<Nullary<OpVaruint1NoArgs>>();
           }
         | "(" "varuint1" integer ")" {
+            if ($3->getValue() > 8)
+              Driver.error("varuint1 bitsize > 8");
             $$ = Driver.create<Unary<OpVaruint1OneArg>>($3);
           }
         | "(" "varuint7" ")" {
             $$ = Driver.create<Nullary<OpVaruint7NoArgs>>();
           }
         | "(" "varuint7" integer ")" {
+            if ($3->getValue() > 8)
+              Driver.error("varuint7 bitsize > 8");
             $$ = Driver.create<Unary<OpVaruint7OneArg>>($3);
           }
         | "(" "varuint32" ")" {
             $$ = Driver.create<Nullary<OpVaruint32NoArgs>>();
           }
         | "(" "varuint32" integer ")" {
+            decode::IntType Bitsize = $3->getValue();
+            if (Bitsize < 2 || Bitsize > 32)
+              Driver.error("varuint32 expects 2 <= bitsize <= 32");
             $$ = Driver.create<Unary<OpVaruint32OneArg>>($3);
           }
         | "(" "varuint64" ")" {
             $$ = Driver.create<Nullary<OpVaruint64NoArgs>>();
           }
         | "(" "varuint64" integer ")" {
+            decode::IntType Bitsize = $3->getValue();
+            if (Bitsize < 2 || Bitsize > 64)
+              Driver.error("varuint64 expects 2 <= bitsize <= 64");
             $$ = Driver.create<Unary<OpVaruint64OneArg>>($3);
           }
         | "(" "void" ")" {
@@ -364,6 +386,8 @@ expression
         ;
 
 header  : "(" "version" integer ")" {
+            if ($3->getValue() != 0)
+              Driver.error("Currently, only (version 0) is supported");
             $$ = Driver.create<Unary<OpVersion>>($3);
           }
         ;
@@ -420,6 +444,10 @@ statement
         | "(" "filter" stream_conv_list ")" { $$ = $3; }
         | "(" "if" expression statement statement ")" {
             $$ = Driver.create<Ternary<OpIfThenElse>>($3, $4, $5);
+          }
+        | "(" "if" expression statement ")" {
+            $$ = Driver.create<Ternary<OpIfThenElse>>(
+                $3, $4, Driver.create<Nullary<OpVoid>>());
           }
         | "(" loop_body ")" { $$ = $2; }
         | "(" "select" case_list ")" { $$ = $3; }
@@ -513,7 +541,8 @@ stream_conv_stmt_list
           }
         ;
 
-symbol  : IDENTIFIER { $$ = Driver.create<SymbolNode>($1); }
+//symbol  : IDENTIFIER { $$ = Driver.create<SymbolNode>($1); }
+symbol  : IDENTIFIER { $$ = Driver.getSymbol($1); }
         ;
 
 %%
