@@ -63,6 +63,7 @@ void usage(char *AppName) {
   fprintf(stderr, "Options:\n");
   fprintf(stderr,
           "  -c N\t\tRead N bytes (i.e. chunksize) at a time\n");
+  fprintf(stderr, "  --expect-fail\tSucceed on failure/fail on success\n");
   fprintf(stderr,
           "  -h\t\tShow usage\n");
   fprintf(stderr,
@@ -79,36 +80,38 @@ int main(int Argc, char *Argv[]) {
   int BufSize = 1;
   static constexpr int MaxBufSize = 4096;
   for (int i = 1; i < Argc; ++i) {
-    if (Argv[i] == std::string("-i")) {
+    if (Argv[i] == std::string("--expect-fail"))
+      ExpectExitFail = true;
+    else if (Argv[i] == std::string("-i")) {
       if (++i >= Argc) {
         fprintf(stderr, "No file specified after -i option\n");
         usage(Argv[0]);
-        return EXIT_FAILURE;
+        return exit_status(EXIT_FAILURE);
       }
       InputFilename = Argv[i];
     } else if (Argv[i] == std::string("-o")) {
       if (++i >= Argc) {
         fprintf(stderr, "No file specified after -o option\n");
         usage(Argv[0]);
-        return EXIT_FAILURE;
+        return exit_status(EXIT_FAILURE);
       }
       OutputFilename = Argv[i];
     } else if (Argv[i] == std::string("-c")) {
       if (++i >= Argc) {
         fprintf(stderr, "No byte count after -c option\n");
         usage(Argv[0]);
-        return EXIT_FAILURE;
+        return exit_status(EXIT_FAILURE);
       }
       int Size = atoi(Argv[i]);
       if (Size < 1) {
         fprintf(stderr, "Chunk size %d must be > 0\n", Size);
         usage(Argv[0]);
-        return EXIT_FAILURE;
+        return exit_status(EXIT_FAILURE);
       }
       if (Size > MaxBufSize) {
         fprintf(stderr, "Chunk size %d can't exceed %d\n", Size, MaxBufSize);
         usage(Argv[0]);
-        return EXIT_FAILURE;
+        return exit_status(EXIT_FAILURE);
       }
       BufSize = Size;
     } else if (Argv[i] == std::string("-s")) {
@@ -116,11 +119,11 @@ int main(int Argc, char *Argv[]) {
     } else if (Argv[i] == std::string("-h")
                || (Argv[i] == std::string("--help"))) {
       usage(Argv[0]);
-      return EXIT_SUCCESS;
+      return exit_status(EXIT_SUCCESS);
     } else {
       fprintf(stderr, "Unrecognized option: %s\n", Argv[i]);
       usage(Argv[0]);
-      return EXIT_FAILURE;
+      return exit_status(EXIT_FAILURE);
     }
   }
   std::unique_ptr<RawStream> Input = getInput();
@@ -129,8 +132,8 @@ int main(int Argc, char *Argv[]) {
   while (!Input->atEof()) {
     if (!Output->write(Buffer, Input->read(Buffer, BufSize))) {
       fprintf(stderr, "Write failed!\n");
-      return EXIT_FAILURE;
+      return exit_status(EXIT_FAILURE);
     }
   }
-  return EXIT_SUCCESS;
+  return exit_status(EXIT_SUCCESS);
 }
