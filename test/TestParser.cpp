@@ -42,7 +42,8 @@ void usage(const char *AppName) {
 int main(int Argc, char *Argv[]) {
   // TODO(KarlSchimpf) Figure out why MallocArena doesn't work.
   wasm::alloc::Malloc Allocator;
-  Driver Driver(&Allocator);
+  SymbolTable SymTab(&Allocator);
+  Driver Driver(SymTab);
   bool PrintAst = false;
   std::vector<const char *> Files;
   for (int i = 1; i < Argc; ++i) {
