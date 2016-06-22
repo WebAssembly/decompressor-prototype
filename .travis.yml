@@ -10,4 +10,4 @@ script: ./travis/build_and_test.sh
 
 os:
   - linux
-  - osx
+#  - osx
