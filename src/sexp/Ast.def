@@ -19,7 +19,7 @@
 #ifndef DECOMPRESSOR_SRC_AST_DEF
 #define DECOMPRESSOR_SRC_AST_DEF
 
-//#define X(tag, opcode, sexp_name, type_name, TextNumArgs)
+//#define X(tag, opcode, sexp_name, type_name, text_num_args, node_class)
 // where:
 //   tag: enumeration name.
 //   opcode: opcode value (also enum value).
@@ -113,6 +113,91 @@
                                                                                \
   /* Internal (not opcodes in compressed file) */                              \
   X(Integer,           0x100, "?integer?",       nullptr,           0)         \
-  X(Symbol,            0x101, "?symbol?",        nullptr,           0)
+  X(Symbol,            0x101, "?symbol?",        nullptr,           0)         \
+
+//#define X(tag)
+#define AST_NULLARYNODE_TABLE                                                  \
+  X(AppendNoArgs)                                                              \
+  X(BlockBegin)                                                                \
+  X(BlockEnd)                                                                  \
+  X(Copy)                                                                      \
+  X(Error)                                                                     \
+  X(Uint8NoArgs)                                                               \
+  X(Uint32NoArgs)                                                              \
+  X(Uint64NoArgs)                                                              \
+  X(Varint32NoArgs)                                                            \
+  X(Varint64NoArgs)                                                            \
+  X(Varuint1NoArgs)                                                            \
+  X(Varuint7NoArgs)                                                            \
+  X(Varuint32NoArgs)                                                           \
+  X(Varuint64NoArgs)                                                           \
+  X(Void)                                                                      \
+
+//#define X(tag)
+#define AST_UNARYNODE_TABLE                                                    \
+  X(AppendOneArg)                                                              \
+  X(BlockOneArg)                                                               \
+  X(Eval)                                                                      \
+  X(I32Const)                                                                  \
+  X(I64Const)                                                                  \
+  X(Lit)                                                                       \
+  X(Peek)                                                                      \
+  X(Postorder)                                                                 \
+  X(Preorder)                                                                  \
+  X(Read)                                                                      \
+  X(SymConst)                                                                  \
+  X(Uint32OneArg)                                                              \
+  X(Uint64OneArg)                                                              \
+  X(Undefine)                                                                  \
+  X(U32Const)                                                                  \
+  X(U64Const)                                                                  \
+  X(Uint8OneArg)                                                               \
+  X(Varint32OneArg)                                                            \
+  X(Varint64OneArg)                                                            \
+  X(Varuint1OneArg)                                                            \
+  X(Varuint7OneArg)                                                            \
+  X(Varuint32OneArg)                                                           \
+  X(Varuint64OneArg)                                                           \
+  X(Version)                                                                   \
+  X(Write)                                                                     \
+
+//#define X(tag)
+#define AST_BINARYNODE_TABLE                                                   \
+  X(BlockTwoArgs)                                                              \
+  X(Default)                                                                   \
+  X(Define)                                                                    \
+  X(Map)                                                                       \
+
+//#define X(tag)
+#define AST_TERNARYNODE_TABLE                                                  \
+  X(BlockThreeArgs)                                                            \
+  X(IfThenElse)                                                                \
+
+//#define X(tag)
+#define AST_NARYNODE_TABLE                                                     \
+  X(AstToAst)                                                                  \
+  X(AstToBit)                                                                  \
+  X(AstToByte)                                                                 \
+  X(AstToInt)                                                                  \
+  X(BitToAst)                                                                  \
+  X(BitToBit)                                                                  \
+  X(BitToByte)                                                                 \
+  X(BitToInt)                                                                  \
+  X(ByteToAst)                                                                 \
+  X(ByteToBit)                                                                 \
+  X(ByteToByte)                                                                \
+  X(ByteToInt)                                                                 \
+  X(Case)                                                                      \
+  X(File)                                                                      \
+  X(Filter)                                                                    \
+  X(IntToAst)                                                                  \
+  X(IntToBit)                                                                  \
+  X(IntToByte)                                                                 \
+  X(IntToInt)                                                                  \
+  X(Loop)                                                                      \
+  X(LoopUnbounded)                                                             \
+  X(Section)                                                                   \
+  X(Select)                                                                    \
+  X(Sequence)                                                                  \
 
 #endif // DECOMPRESSOR_SRC_AST_DEF

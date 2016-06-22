@@ -206,18 +206,21 @@ declaration
 
 declaration_stmt_list
         : "default" symbol statement {
-            $$ = Driver.create<Nary<OpDefault>>();
-            $$->append($2);
-            $$->append($3);
+            $$ = Driver.create<Binary<OpDefault>>($2, $3);
           }
         | "define" symbol statement {
-            $$ = Driver.create<Nary<OpDefine>>();
-            $$->append($2);
-            $$->append($3);
+            $$ = Driver.create<Binary<OpDefine>>($2, $3);
           }
         | declaration_stmt_list statement {
             $$ = $1;
-            $$->append($2);
+            Node *Statements = $1->getKid(1);
+            if (Statements->getType() != OpSequence) {
+              Node *Seq = Driver.create<Nary<OpSequence>>();
+              Seq->append(Statements);
+              $1->setKid(1, Seq);
+              Statements = Seq;
+            }
+            Statements->append($2);
           }
         ;
 

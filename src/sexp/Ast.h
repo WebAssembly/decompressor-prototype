@@ -51,21 +51,24 @@ using ExternalName = std::string;
 using InternalName = arena_vector<uint8_t>;
 
 enum NodeType {
-#define X(tag, opcode, sexp_name, type_name, TextNumArgs) Op##tag = opcode,
+#define X(tag, opcode, sexp_name, type_name, text_num_args) \
+  Op##tag = opcode,
   AST_OPCODE_TABLE
 #undef X
 };
 
 static constexpr size_t NumNodeTypes =
     0
-#define X(tag, opcode, sexp_name, type_name, TextNumArgs) + 1
+#define X(tag, opcode, sexp_name, type_name, text_num_args) \
+    + 1
     AST_OPCODE_TABLE
 #undef X
     ;
 
 static constexpr size_t MaxNodeType =
     const_maximum(
-#define X(tag, opcode, sexp_name, type_name, TextNumArgs) size_t(opcode),
+#define X(tag, opcode, sexp_name, type_name, text_num_args) \
+        size_t(opcode),
   AST_OPCODE_TABLE
 #undef X
   std::numeric_limits<size_t>::min());
@@ -84,8 +87,6 @@ const char *getNodeSexpName(NodeType Type);
 
 // Returns a unique (printable) type name
 const char *getNodeTypeName(NodeType Type);
-
-
 
 class Node {
   Node(const Node&) = delete;
@@ -124,21 +125,35 @@ public:
   };
 
   virtual ~Node() {}
+
   NodeType getType() const {
     return Type;
   }
+
+  // General API to children.
   IndexType getNumKids() const {
     return Kids.size();
   }
+
   Node *getKid(IndexType Index) const {
     return Kids[Index];
   }
+
+  void setKid(IndexType Index, Node *N) {
+    Kids[Index] = N;
+  }
+
   // WARNING: Only supported if underlying type allows.
   virtual void append(Node *Kid);
+
+  // General iterators for walking kids.
   Iterator begin() { return Iterator(this, 0); }
   Iterator end() { return Iterator(this, getNumKids()); }
   Iterator rbegin() { return Iterator(this, getNumKids() - 1); }
   Iterator rend() const { return Iterator(this, -1); }
+
+  static bool inClass(NodeType /*Type*/) { return true; }
+
 protected:
   NodeType Type;
   arena_vector<Node*> Kids;
@@ -148,11 +163,34 @@ protected:
       : Type(Type), Kids(Alloc) {}
 };
 
+
+
+// Test if an instance of class.
+template<class T>
+bool isa(Node *N) {
+  return T::inClass(N->getType());
+}
+
+// Cast (no type checking) to type T.
+template<class T>
+T *cast(Node *N) {
+  return reinterpret_cast<T *>(N);
+}
+
+// Cast to type T. Returns nullptr if unable.
+template<class T>
+T *dyn_cast(Node *N) {
+  return isa<T>(N) ? cast<T>(N) : nullptr;
+}
+
 class NullaryNode : public Node {
   NullaryNode(const NullaryNode&) = delete;
   NullaryNode &operator=(const NullaryNode&) = delete;
 public:
   ~NullaryNode() override {}
+
+  static bool inClass(NodeType Type);
+
 protected:
   NullaryNode(NodeType Type)
       : Node(alloc::Allocator::Default, Type) {}
@@ -169,6 +207,9 @@ public:
   Nullary() : NullaryNode(Kind) {}
   Nullary(alloc::Allocator *Alloc) : NullaryNode(Alloc, Kind) {}
   ~Nullary() {}
+
+  static bool inClass(NodeType Type) { return Type == Kind; }
+
 };
 
 class IntegerNode final : public NullaryNode {
@@ -196,6 +237,9 @@ public:
   decode::IntType getValue() const {
     return Value;
   }
+
+  static bool inClass(NodeType Type) { return Type == OpInteger; }
+
 private:
   decode::IntType Value;
   ValueFormat Format;
@@ -219,8 +263,23 @@ public:
   const InternalName &getName() const {
     return Name;
   }
+  const std::string getStringName() const;
+  const Node *getDefineDefinition() const {
+    return DefineDefinition;
+  }
+  void setDefineDefinition(Node *Defn);
+  const Node *getDefaultDefinition() const {
+    return DefaultDefinition;
+  }
+  void setDefaultDefinition(Node *Defn);
+
+  static bool inClass(NodeType Type) { return Type == OpSymbol; }
+
 private:
   InternalName Name;
+  Node *DefineDefinition = nullptr;
+  Node *DefaultDefinition = nullptr;
+  bool IsDefineUsingDefault = true;
   void init(ExternalName &_Name) {
     Name.reserve(Name.size());
     for (const auto &V : _Name)
@@ -232,17 +291,18 @@ class SymbolTable {
   SymbolTable(const SymbolTable &) = delete;
   SymbolTable &operator=(const SymbolTable &) = delete;
 public:
-  explicit SymbolTable(alloc::Allocator *Alloc) : Alloc(Alloc) {}
-  SymbolNode *getSymbol(ExternalName &Name) {
-    SymbolNode *Node = SymbolMap[Name];
-    if (Node == nullptr) {
-      Node = Alloc->create<SymbolNode>(Alloc, Name);
-      SymbolMap[Name] = Node;
-    }
-    return Node;
+  explicit SymbolTable(alloc::Allocator *Alloc);
+  // Gets existing symbol if known. Otherwise returns newly created symbol.
+  // Used to keep symbols unique within filter s-expressions.
+  SymbolNode *getSymbol(ExternalName &Name);
+  // Install definitions in tree defined by root.
+  void install(Node* Root);
+  alloc::Allocator *getAllocator() const {
+    return Alloc;
   }
 private:
   alloc::Allocator *Alloc;
+  Node *Error;
   // TODO(KarlSchimpf): Use arena allocator on map.
   std::map<ExternalName, SymbolNode*> SymbolMap;
 };
@@ -252,6 +312,9 @@ class UnaryNode : public Node {
   UnaryNode &operator=(const UnaryNode&) = delete;
 public:
   ~UnaryNode() override {}
+
+  static bool inClass(NodeType Type);
+
 protected:
   UnaryNode(NodeType Type, Node *Kid)
       : Node(Type) {
@@ -272,6 +335,8 @@ public:
   Unary(Node *Kid) : UnaryNode(Kind, Kid) {}
   Unary(alloc::Allocator* Alloc, Node *Kid) : UnaryNode(Alloc, Kind, Kid) {}
   ~Unary() {}
+
+  static bool inClass(NodeType Type) { return Kind == Type; }
 };
 
 class BinaryNode : public Node {
@@ -279,6 +344,9 @@ class BinaryNode : public Node {
   BinaryNode &operator=(const BinaryNode&) = delete;
 public:
   ~BinaryNode() override {}
+
+  static bool inClass(NodeType Type);
+
 protected:
   BinaryNode(NodeType Type, Node *Kid1, Node *Kid2)
       : Node(Type) {
@@ -297,6 +365,9 @@ class Binary final : public BinaryNode {
   Binary(const Binary<Kind>&) = delete;
   Binary<Kind> &operator=(const Binary<Kind>&) = delete;
   virtual void forceCompilation() final;
+
+  static bool inClass(NodeType Type) { return Kind == Type; }
+
 public:
   Binary(Node *Kid1, Node *Kid2) : BinaryNode(Kind, Kid1, Kid2) {}
   Binary(alloc::Allocator *Alloc, Node *Kid1, Node *Kid2)
@@ -309,6 +380,9 @@ class TernaryNode : public Node {
   TernaryNode &operator=(const TernaryNode&) = delete;
 public:
   ~TernaryNode() override {}
+
+  static bool inClass(NodeType Type);
+
 protected:
   TernaryNode(NodeType Type, Node *Kid1, Node *Kid2, Node *Kid3)
       : Node(Type) {
@@ -330,6 +404,9 @@ class Ternary final : public TernaryNode {
   Ternary(const Ternary<Kind>&) = delete;
   Ternary<Kind> &operator=(const Ternary<Kind>&) = delete;
   virtual void forceCompilation() final;
+
+  static bool inClass(NodeType Type) { return Kind == Type; }
+
 public:
   Ternary(Node *Kid1, Node *Kid2, Node* Kid3)
       : TernaryNode(Kind, Kid1, Kid2, Kid3) {}
@@ -347,6 +424,9 @@ public:
     Kids.emplace_back(Kid);
   }
   ~NaryNode() override {}
+
+  static bool inClass(NodeType Type);
+
 protected:
   NaryNode(NodeType Type) : Node(Type) {}
   NaryNode(alloc::Allocator *Alloc, NodeType Type) : Node(Alloc, Type) {}
@@ -357,6 +437,9 @@ class Nary final : public NaryNode {
   Nary(const Nary<Kind>&) = delete;
   Nary<Kind> &operator=(const Nary<Kind>&) = delete;
   virtual void forceCompilation() final;
+
+  static bool inClass(NodeType Type) { return Kind == Type; }
+
 public:
   Nary() : NaryNode(Kind) {}
   Nary(alloc::Allocator *Alloc) : NaryNode(Alloc, Kind) {}
