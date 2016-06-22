@@ -95,6 +95,7 @@ public:
 
   void setParsedAst(Node *Ast) {
     ParsedAst = Ast;
+    Table.install(ParsedAst);
   }
 
   // Error handling.

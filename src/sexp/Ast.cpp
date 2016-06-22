@@ -119,6 +119,8 @@ SymbolNode *SymbolTable::getSymbol(ExternalName &Name) {
 }
 
 void SymbolTable::install(Node *Root) {
+  if (Root == nullptr)
+    return;
   switch (Root->getType()) {
     default:
       return;
