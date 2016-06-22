@@ -30,8 +30,8 @@ using namespace alloc;
 namespace filt {
 
 AstTraitsType AstTraits[NumNodeTypes] = {
-#define X(tag, opcode, sexp_name, type_name, TextNumArgs) \
-  { Op##tag, sexp_name, type_name, TextNumArgs },
+#define X(tag, opcode, sexp_name, type_name, text_num_args) \
+  { Op##tag, sexp_name, type_name, text_num_args },
   AST_OPCODE_TABLE
 #undef X
 };
@@ -86,97 +86,157 @@ void IntegerNode::forceCompilation() {}
 
 void SymbolNode::forceCompilation() {}
 
+void SymbolNode::setDefineDefinition(Node *Defn) {
+  if (Defn) {
+    IsDefineUsingDefault = false;
+    DefineDefinition = Defn;
+  } else {
+    IsDefineUsingDefault = true;
+    DefineDefinition = DefaultDefinition;
+  }
+}
+
+void SymbolNode::setDefaultDefinition(Node *Defn) {
+  assert(Defn != nullptr);
+  DefaultDefinition = Defn;
+  if (IsDefineUsingDefault) {
+    DefineDefinition = Defn;
+  }
+}
+
+SymbolTable::SymbolTable(alloc::Allocator *Alloc) : Alloc(Alloc) {
+  Error = Alloc->create<Nullary<OpError>>();
+}
+
+SymbolNode *SymbolTable::getSymbol(ExternalName &Name) {
+  SymbolNode *Node = SymbolMap[Name];
+  if (Node == nullptr) {
+    Node = Alloc->create<SymbolNode>(Alloc, Name);
+    Node->setDefaultDefinition(Error);
+    SymbolMap[Name] = Node;
+  }
+  return Node;
+}
+
+void SymbolTable::install(Node *Root) {
+  switch (Root->getType()) {
+    default:
+      return;
+    case OpFile:
+    case OpSection:
+      for (Node *Kid : *Root)
+        install(Kid);
+      return;
+    case OpDefine: {
+      auto *DefineSymbol = dyn_cast<SymbolNode>(Root->getKid(0));
+      assert(DefineSymbol);
+      DefineSymbol->setDefineDefinition(Root->getKid(1));
+      return;
+    }
+    case OpDefault: {
+      auto *DefaultSymbol = dyn_cast<SymbolNode>(Root->getKid(0));
+      assert(DefaultSymbol);
+      DefaultSymbol->setDefaultDefinition(Root->getKid(1));
+      return;
+    }
+    case OpUndefine: {
+      auto *UndefineSymbol = dyn_cast<SymbolNode>(Root->getKid(0));
+      assert(UndefineSymbol);
+      UndefineSymbol->setDefineDefinition(nullptr);
+    }
+  }
+}
+
+bool NullaryNode::inClass(NodeType Type) {
+  switch (Type) {
+    default: return false;
+#define X(tag) \
+    case Op##tag: return true;
+    AST_NULLARYNODE_TABLE
+#undef X
+  }
+}
+
 template<NodeType Kind>
 void Nullary<Kind>::forceCompilation() {}
+
+bool UnaryNode::inClass(NodeType Type) {
+  switch (Type) {
+    default: return false;
+#define X(tag) \
+    case Op##tag: return true;
+    AST_UNARYNODE_TABLE
+#undef X
+  }
+}
 
 template<NodeType Kind>
 void Unary<Kind>::forceCompilation() {}
 
+bool BinaryNode::inClass(NodeType Type) {
+  switch (Type) {
+    default: return false;
+#define X(tag) \
+    case Op##tag: return true;
+    AST_BINARYNODE_TABLE
+#undef X
+  }
+}
 
 template<NodeType Kind>
 void Binary<Kind>::forceCompilation() {}
 
+bool TernaryNode::inClass(NodeType Type) {
+  switch (Type) {
+    default: return false;
+#define X(tag) \
+    case Op##tag: return true;
+    AST_TERNARYNODE_TABLE
+#undef X
+  }
+}
+
 template<NodeType Kind>
 void Ternary<Kind>::forceCompilation() {}
+
+bool NaryNode::inClass(NodeType Type) {
+  switch (Type) {
+    default: return false;
+#define X(tag) \
+    case Op##tag: return true;
+    AST_NARYNODE_TABLE
+#undef X
+  }
+}
 
 void NaryNode::forceCompilation() {}
 
 template<NodeType Kind>
 void Nary<Kind>::forceCompilation() {}
 
-template class Nullary<OpAppendNoArgs>;
-template class Nullary<OpBlockBegin>;
-template class Nullary<OpBlockEnd>;
-template class Nullary<OpCopy>;
-template class Nullary<OpError>;
-template class Nullary<OpUint8NoArgs>;
-template class Nullary<OpUint32NoArgs>;
-template class Nullary<OpUint64NoArgs>;
-template class Nullary<OpVarint32NoArgs>;
-template class Nullary<OpVarint64NoArgs>;
-template class Nullary<OpVaruint1NoArgs>;
-template class Nullary<OpVaruint7NoArgs>;
-template class Nullary<OpVaruint32NoArgs>;
-template class Nullary<OpVaruint64NoArgs>;
-template class Nullary<OpVoid>;
+#define X(tag) \
+  template class Nullary<Op##tag>;
+  AST_NULLARYNODE_TABLE
+#undef X
 
-template class Unary<OpAppendOneArg>;
-template class Unary<OpBlockOneArg>;
-template class Unary<OpEval>;
-template class Unary<OpI32Const>;
-template class Unary<OpI64Const>;
-template class Unary<OpLit>;
-template class Unary<OpPeek>;
-template class Unary<OpPostorder>;
-template class Unary<OpPreorder>;
-template class Unary<OpRead>;
-template class Unary<OpSymConst>;
-template class Unary<OpUint32OneArg>;
-template class Unary<OpUint64OneArg>;
-template class Unary<OpUndefine>;
-template class Unary<OpU32Const>;
-template class Unary<OpU64Const>;
-template class Unary<OpUint8OneArg>;
-template class Unary<OpVarint32OneArg>;
-template class Unary<OpVarint64OneArg>;
-template class Unary<OpVaruint1OneArg>;
-template class Unary<OpVaruint7OneArg>;
-template class Unary<OpVaruint32OneArg>;
-template class Unary<OpVaruint64OneArg>;
-template class Unary<OpVersion>;
-template class Unary<OpWrite>;
+#define X(tag) \
+  template class Unary<Op##tag>;
+  AST_UNARYNODE_TABLE
+#undef X
 
-template class Binary<OpBlockTwoArgs>;
-template class Binary<OpMap>;
+#define X(tag) \
+  template class Binary<Op##tag>;
+  AST_BINARYNODE_TABLE
+#undef X
 
-template class Ternary<OpIfThenElse>;
-template class Ternary<OpBlockThreeArgs>;
+#define X(tag) \
+  template class Ternary<Op##tag>;
+  AST_TERNARYNODE_TABLE
+#undef X
 
-template class Nary<OpAstToAst>;
-template class Nary<OpAstToBit>;
-template class Nary<OpAstToByte>;
-template class Nary<OpAstToInt>;
-template class Nary<OpBitToAst>;
-template class Nary<OpBitToBit>;
-template class Nary<OpBitToByte>;
-template class Nary<OpBitToInt>;
-template class Nary<OpByteToAst>;
-template class Nary<OpByteToBit>;
-template class Nary<OpByteToByte>;
-template class Nary<OpByteToInt>;
-template class Nary<OpCase>;
-template class Nary<OpDefault>;
-template class Nary<OpDefine>;
-template class Nary<OpFile>;
-template class Nary<OpFilter>;
-template class Nary<OpIntToAst>;
-template class Nary<OpIntToBit>;
-template class Nary<OpIntToByte>;
-template class Nary<OpIntToInt>;
-template class Nary<OpLoop>;
-template class Nary<OpLoopUnbounded>;
-template class Nary<OpSection>;
-template class Nary<OpSelect>;
-template class Nary<OpSequence>;
+#define X(tag) \
+  template class Nary<Op##tag>;
+  AST_NARYNODE_TABLE
+#undef X
 
 }}

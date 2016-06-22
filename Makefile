@@ -250,6 +250,7 @@ $(TEST_EXECDIR)/TestRawStreams: $(TEST_DIR)/TestRawStreams.cpp $(STRM_OBJS) \
 ###### Testing ######
 
 test: all test-parser
+	@echo "*** all tests passed ***"
 
 .PHONY: test
 
@@ -257,3 +258,4 @@ test-parser: $(TEST_EXECDIR)/TestParser
 	$< -w defaults.df | diff - $(TEST_SRCS_DIR)/defaults.df-w
 	$< --expect-fail $(TEST_SRCS_DIR)/MismatchedParens.df 2>&1 | \
 		diff - $(TEST_SRCS_DIR)/MismatchedParens.df-out
+	@echo "*** parser tests passed ***"

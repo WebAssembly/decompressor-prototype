@@ -36,8 +36,8 @@ class Driver
   Driver(const Driver&) = delete;
   Driver &operator=(const Driver&) = delete;
 public:
-  Driver (alloc::Allocator *_Alloc)
-      : Alloc(_Alloc), Table(_Alloc) {
+  Driver (SymbolTable &Table)
+      : Table(Table), Alloc(Table.getAllocator()) {
   }
 
   ~Driver () {}
@@ -105,8 +105,8 @@ public:
   void fatal(const std::string &Message);
 
 private:
+  SymbolTable &Table;
   alloc::Allocator *Alloc;
-  SymbolTable Table;
   std::string Filename;
   bool TraceLexing = false;
   bool TraceParsing = false;
