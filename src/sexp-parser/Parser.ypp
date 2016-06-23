@@ -97,7 +97,6 @@ struct IntegerValue {
 %token ERROR         "error"
 %token EVAL          "eval"
 %token FILTER        "filter"
-%token IF            "if"
 %token INT_TO_BIT    "int.to.bit"
 %token INT_TO_BYTE   "int.to.byte"
 %token INT_TO_INT    "int.to.int"
@@ -445,13 +444,6 @@ statement
           }
         | stream_conv { $$ = $1; }
         | "(" "filter" stream_conv_list ")" { $$ = $3; }
-        | "(" "if" expression statement statement ")" {
-            $$ = Driver.create<Ternary<OpIfThenElse>>($3, $4, $5);
-          }
-        | "(" "if" expression statement ")" {
-            $$ = Driver.create<Ternary<OpIfThenElse>>(
-                $3, $4, Driver.create<Nullary<OpVoid>>());
-          }
         | "(" loop_body ")" { $$ = $2; }
         | "(" "select" case_list ")" { $$ = $3; }
         | "(" "seq" seq_statement_list ")" { $$ = $3; }
