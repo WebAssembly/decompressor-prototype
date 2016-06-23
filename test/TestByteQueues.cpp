@@ -117,8 +117,8 @@ int main(int Argc, char *Argv[]) {
   // uint8_t Buffer[MaxBufSize];
   size_t Address = 0;
   while (Address < Input.currentSize()) {
-    size_t BytesAvailable;
-    uint8_t *In = Input.getReadLockedPointer(Address, BufSize, BytesAvailable);
+    size_t ReadBytesAvailable;
+    uint8_t *In = Input.getReadLockedPointer(Address, BufSize, ReadBytesAvailable);
     if (In == nullptr) {
       if (Input.isEobFrozen()) {
         Output.freezeEob(Address);
@@ -128,34 +128,35 @@ int main(int Argc, char *Argv[]) {
               int(Address));
       return exit_status(EXIT_FAILURE);
     }
-    if (BytesAvailable == 0) {
+    if (ReadBytesAvailable == 0) {
       fprintf(stderr, "Unable to read address %d, returned zero bytes",
               int(Address));
       return exit_status(EXIT_FAILURE);
     }
-    size_t NextAddress = Address + BytesAvailable;
-    while (BytesAvailable) {
-      size_t BytesWritten;
-      uint8_t *Out = Output.getWriteLockedPointer(Address, BytesAvailable, BytesWritten);
+    size_t NextAddress = Address + ReadBytesAvailable;
+    while (ReadBytesAvailable) {
+      size_t WriteBytesAvailable;
+      uint8_t *Out = Output.getWriteLockedPointer(Address, ReadBytesAvailable,
+                                                  WriteBytesAvailable);
       if (Out == nullptr) {
         fprintf(stderr, "Unable to write address %d, returned nullptr\n",
                 int(Address));
         return exit_status(EXIT_FAILURE);
       }
-      if (BytesWritten == 0) {
+      if (WriteBytesAvailable == 0) {
         fprintf(stderr, "Unable to write address %d, returned zero bytes",
                 int(Address));
         return exit_status(EXIT_FAILURE);
       }
-      if (BytesWritten > BytesAvailable) {
+      if (WriteBytesAvailable > ReadBytesAvailable) {
         fprintf(stderr, "Unable to write address %d, returned %d extra bytes",
-                int(Address), int(BytesWritten - BytesAvailable));
+                int(Address), int(WriteBytesAvailable - ReadBytesAvailable));
         return exit_status(EXIT_FAILURE);
       }
-      memcpy(Out, In, BytesWritten);
-      Out += BytesWritten;
-      In += BytesWritten;
-      BytesAvailable -= BytesWritten;
+      memcpy(Out, In, WriteBytesAvailable);
+      Out += WriteBytesAvailable;
+      In += WriteBytesAvailable;
+      ReadBytesAvailable -= WriteBytesAvailable;
     }
     Input.unlockAddress(Address);
     Output.unlockAddress(Address);

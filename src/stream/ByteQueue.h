@@ -164,7 +164,7 @@ public:
 
 protected:
 
-  static constexpr size_t BufferSizeLog2 = 4; // 12;
+  static constexpr size_t BufferSizeLog2 = 12;
   static constexpr size_t BufferSize = 1 << BufferSizeLog2;
   static constexpr size_t BufferMask = BufferSize - 1;
 
