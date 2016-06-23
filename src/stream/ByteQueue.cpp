@@ -76,7 +76,7 @@ public:
 
 ByteQueue::ByteQueue() {
   EobPage = FirstPage = new QueuePage(0);
-  PageMap[0] = EobPage;
+  PageMap.emplace_back(EobPage);
 }
 
 ByteQueue::~ByteQueue() {
@@ -166,7 +166,7 @@ uint8_t *ByteQueue::getWriteLockedPointer(size_t Address, size_t WantedSize,
     if (Address < EobPage->MaxAddress)
       break;
     QueuePage *Page = new QueuePage(EobPage->MaxAddress);
-    PageMap[page(Page->MinAddress)] = Page;
+    PageMap.emplace_back(Page);
     EobPage->Next = Page;
     Page->Last = EobPage;
     EobPage = Page;
@@ -262,7 +262,7 @@ bool ReadBackedByteQueue::readFill(size_t Address) {
       continue;
     }
     QueuePage *Page = new QueuePage(EobPage->MaxAddress);
-    PageMap[page(Page->MinAddress)] = Page;
+    PageMap.emplace_back(Page);
     EobPage->Next = Page;
     Page->Last = EobPage;
     EobPage = Page;

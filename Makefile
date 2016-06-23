@@ -77,6 +77,7 @@ TEST_DIR = test
 TEST_EXECDIR = $(BUILDDIR)/test
 
 TEST_SRCS = \
+	TestByteQueues.cpp \
 	TestParser.cpp \
 	TestRawStreams.cpp
 
@@ -246,6 +247,12 @@ $(TEST_EXECDIR)/TestParser: $(TEST_DIR)/TestParser.cpp $(PARSER_OBJS) \
 $(TEST_EXECDIR)/TestRawStreams: $(TEST_DIR)/TestRawStreams.cpp $(STRM_OBJS) \
 				$(OBJS)
 	$(CXX) $(CXXFLAGS) $< $(STRM_OBJS) $(OBJS) -o $@
+
+$(TEST_EXECDIR)/TestByteQueues: $(TEST_DIR)/TestByteQueues.cpp $(STRM_OBJS) \
+				$(OBJS)
+	$(CXX) $(CXXFLAGS) $< $(STRM_OBJS) $(OBJS) -o $@
+
+
 
 ###### Testing ######
 

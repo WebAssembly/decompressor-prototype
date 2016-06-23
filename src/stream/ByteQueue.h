@@ -47,6 +47,8 @@
 #include <queue>
 #include <vector>
 
+#include <iostream>
+
 namespace wasm {
 
 namespace decode {
@@ -202,9 +204,9 @@ class ReadBackedByteQueue final : public ByteQueue {
   ReadBackedByteQueue &operator=(const ReadBackedByteQueue &) = delete;
   ReadBackedByteQueue() = delete;
 public:
-  ReadBackedByteQueue(std::unique_ptr<RawStream> Reader)
-      : Reader(std::move(Reader)) {
-    assert(Reader);
+  ReadBackedByteQueue(std::unique_ptr<RawStream> _Reader) {
+    assert(_Reader);
+    Reader = std::move(_Reader);
   }
   ~ReadBackedByteQueue() override {}
 private:
@@ -220,9 +222,9 @@ class WriteBackedByteQueue final : public ByteQueue {
   WriteBackedByteQueue &operator=(const WriteBackedByteQueue &) = delete;
   WriteBackedByteQueue() = delete;
 public:
-  WriteBackedByteQueue(std::unique_ptr<RawStream> Writer)
-      : Writer(std::move(Writer)) {
-    assert(Writer);
+  WriteBackedByteQueue(std::unique_ptr<RawStream> _Writer) {
+    assert(_Writer);
+    Writer = std::move(_Writer);
   }
   ~WriteBackedByteQueue() override {}
 private:
