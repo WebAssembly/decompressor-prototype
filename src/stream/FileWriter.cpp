@@ -36,7 +36,7 @@ bool FdWriter::saveBuffer() {
     return true;
   uint8_t *Buf = Bytes;
   while (CurSize) {
-    ssize_t BytesWritten = ::write(Fd, Buf, CurSize);
+    size_t BytesWritten = ::write(Fd, Buf, CurSize);
     if (BytesWritten <= 0)
       return false;
     Buf += BytesWritten;
@@ -59,6 +59,7 @@ bool FdWriter::write(uint8_t *Buf, size_t Size) {
     }
     size_t Count = std::min(Size, kBufSize - CurSize);
     memcpy(Bytes + CurSize, Buf, Count);
+    Buf += Count;
     CurSize += Count;
     Size -= Count;
   }

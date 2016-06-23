@@ -17,66 +17,13 @@
 
 #include "stream/ByteQueue.h"
 
-#include <cstring>
-
 namespace wasm {
 
 namespace decode {
 
-namespace {
-
-constexpr size_t BufferSizeLog2 = 12;
-constexpr size_t BufferSize = 1 << BufferSizeLog2;
-constexpr size_t BufferMask = BufferSize - 1;
-
-// Page index associated with address in queue.
-static constexpr size_t page(size_t Address) {
-  return Address >> BufferSizeLog2;
-}
-
-// Returns address within a QueuePage that refers to address.
-size_t pageAddress(size_t Address) {
-  return Address | BufferMask;
-}
-
-} // end of anonymous namespace
-
-class QueuePage {
-  QueuePage(const QueuePage &) = delete;
-  QueuePage &operator=(const QueuePage &) = delete;
-public:
-  QueuePage(size_t MinAddress)
-      : PageIndex(page(MinAddress)), MinAddress(MinAddress),
-        MaxAddress(MinAddress) {
-    std::memset(&Buffer, BufferSize, 0);
-  }
-
-  void lockPage() { ++LockCount; }
-
-  void unlockPage() {
-    assert(LockCount > 1);
-    --LockCount;
-  }
-
-  bool isLocked() const { return LockCount > 0; }
-
-  size_t spaceRemaining() const {
-    return BufferSize - (MaxAddress | BufferMask);
-  }
-
-  uint8_t Buffer[BufferSize];
-  size_t PageIndex;
-  // Note: Buffer address range is [MinAddress, MaxAddress).
-  size_t MinAddress;
-  size_t MaxAddress;
-  size_t LockCount = 0;
-  QueuePage *Last = nullptr;
-  QueuePage *Next = nullptr;
-};
-
 ByteQueue::ByteQueue() {
   EobPage = FirstPage = new QueuePage(0);
-  PageMap.emplace_back(EobPage);
+  PageMap.push_back(EobPage);
 }
 
 ByteQueue::~ByteQueue() {
@@ -122,6 +69,17 @@ bool ByteQueue::write(size_t &Address, uint8_t *FromBuf, size_t WantedSize) {
   return true;
 }
 
+void ByteQueue::dumpPreviousPages(size_t Address) {
+  QueuePage *AddressPage = getPage(Address);
+  while (FirstPage != AddressPage) {
+    if (!FirstPage->isLocked())
+      break;
+    if (FirstPage->MaxAddress + MinPeekSize < Address)
+      break;
+    dumpFirstPage();
+  }
+}
+
 uint8_t *ByteQueue::getReadLockedPointer(size_t Address, size_t WantedSize,
                                          size_t &LockedSize) {
   // Start by read-filling if necessary.
@@ -139,14 +97,7 @@ uint8_t *ByteQueue::getReadLockedPointer(size_t Address, size_t WantedSize,
     return nullptr;
   }
   lockPage(ReadPage);
-  // Free up pages no longer used.
-  while (FirstPage != ReadPage) {
-    if (!FirstPage->isLocked())
-      break;
-    if (FirstPage->MaxAddress + MinPeekSize < Address)
-      break;
-    dumpFirstPage();
-  }
+  dumpPreviousPages(Address);
   // Compute largest contiguous range of bytes available.
   LockedSize =
       (Address + WantedSize > ReadPage->MaxAddress)
@@ -162,11 +113,11 @@ uint8_t *ByteQueue::getWriteLockedPointer(size_t Address, size_t WantedSize,
       LockedSize = 0;
       return nullptr;
     }
-    EobPage->MaxAddress = std::min(Address, EobPage->MinAddress + BufferSize);
+    EobPage->MaxAddress = EobPage->MinAddress + BufferSize;
     if (Address < EobPage->MaxAddress)
       break;
     QueuePage *Page = new QueuePage(EobPage->MaxAddress);
-    PageMap.emplace_back(Page);
+    PageMap.push_back(Page);
     EobPage->Next = Page;
     Page->Last = EobPage;
     EobPage = Page;
@@ -180,6 +131,7 @@ uint8_t *ByteQueue::getWriteLockedPointer(size_t Address, size_t WantedSize,
   LockedSize =
       (Address + WantedSize > Page->MaxAddress)
       ? Page->MaxAddress - Address : WantedSize;
+  dumpPreviousPages(Address);
   return &Page->Buffer[pageAddress(Address)];
 }
 
@@ -189,9 +141,10 @@ void ByteQueue::freezeEob(size_t Address) {
   // This call zero-fill pages if writing hasn't reached Address yet.
   assert(getWriteLockedPointer(Address, 0, LockedSize) != nullptr);
   QueuePage *Page = getPage(Address);
+  Page->MaxAddress = Address;
   assert(Page != nullptr);
   assert(Page->Next == nullptr);
-  assert(Page->MaxAddress == Address);
+  unlockAddress(Address);
 }
 
 bool ByteQueue::isAddressLocked(size_t Address) const {
@@ -207,11 +160,11 @@ void ByteQueue::unlockAddress(size_t Address) {
   unlockPage(Page);
 }
 
-QueuePage *ByteQueue::getPageAt(size_t PageIndex) const {
+ByteQueue::QueuePage *ByteQueue::getPageAt(size_t PageIndex) const {
   return (PageIndex >= PageMap.size()) ? nullptr : PageMap[PageIndex];
 }
 
-QueuePage *ByteQueue::getPage(size_t Address) const {
+ByteQueue::QueuePage *ByteQueue::getPage(size_t Address) const {
   return getPageAt(page(Address));
 }
 
@@ -253,7 +206,7 @@ bool ReadBackedByteQueue::readFill(size_t Address) {
   while (Address >= EobPage->MaxAddress) {
     if (size_t SpaceAvailable = EobPage->spaceRemaining()) {
       size_t NumBytes = Reader->read(
-          &EobPage->Buffer[pageAddress(Address)], SpaceAvailable);
+          &(EobPage->Buffer[pageAddress(Address)]), SpaceAvailable);
       EobPage->MaxAddress += NumBytes;
       if (NumBytes == 0) {
         EobFrozen = true;
@@ -262,7 +215,7 @@ bool ReadBackedByteQueue::readFill(size_t Address) {
       continue;
     }
     QueuePage *Page = new QueuePage(EobPage->MaxAddress);
-    PageMap.emplace_back(Page);
+    PageMap.push_back(Page);
     EobPage->Next = Page;
     Page->Last = EobPage;
     EobPage = Page;
@@ -270,16 +223,16 @@ bool ReadBackedByteQueue::readFill(size_t Address) {
   return true;
 }
 
+WriteBackedByteQueue::~WriteBackedByteQueue() {
+  while (FirstPage)
+    dumpFirstPage();
+}
+
 void WriteBackedByteQueue::dumpFirstPage() {
   size_t Address = 0;
   size_t Size = FirstPage->MaxAddress - FirstPage->MinAddress;
-  while (Size) {
-    size_t NumBytes = Writer->write(&FirstPage->Buffer[Address], Size);
-    if (NumBytes == 0)
-      fatal("Write to raw stream failed in ByteQueue::dumpFirstPage");
-    Address += NumBytes;
-    Size -= NumBytes;
-  }
+  if (!Writer->write(&FirstPage->Buffer[Address], Size))
+    fatal("Write to raw stream failed in ByteQueue::dumpFirstPage");
   ByteQueue::dumpFirstPage();
 }
 

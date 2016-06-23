@@ -111,35 +111,32 @@ int main(int Argc, char *Argv[]) {
       return exit_status(EXIT_FAILURE);
     }
   }
-  std::cerr << "Processed command line arguments\n";
   std::unique_ptr<RawStream> RawInput = getInput();
-  std::cerr << "Raw input: " << (void*)RawInput.get() << "\n";
   ReadBackedByteQueue Input(std::move(RawInput));
-  std::cerr << "Set up input\n";
   WriteBackedByteQueue Output(getOutput());
-  std::cerr << "Set up output\n";
   // uint8_t Buffer[MaxBufSize];
   size_t Address = 0;
-  while (!Input.isEobFrozen()) {
-    std::cerr << "Address = " << Address << "\n";
-    size_t BytesRead;
-    uint8_t *In = Input.getReadLockedPointer(Address, BufSize, BytesRead);
+  while (Address < Input.currentSize()) {
+    size_t BytesAvailable;
+    uint8_t *In = Input.getReadLockedPointer(Address, BufSize, BytesAvailable);
     if (In == nullptr) {
-      if (Input.isEobFrozen())
+      if (Input.isEobFrozen()) {
+        Output.freezeEob(Address);
         break;
+      }
       fprintf(stderr, "Unable to read address %d, returned nullptr\n",
               int(Address));
       return exit_status(EXIT_FAILURE);
     }
-    if (BytesRead == 0) {
+    if (BytesAvailable == 0) {
       fprintf(stderr, "Unable to read address %d, returned zero bytes",
               int(Address));
       return exit_status(EXIT_FAILURE);
     }
-    size_t NextAddress = Address + BytesRead;
-    while (BytesRead) {
+    size_t NextAddress = Address + BytesAvailable;
+    while (BytesAvailable) {
       size_t BytesWritten;
-      uint8_t *Out = Output.getWriteLockedPointer(Address, BytesRead, BytesWritten);
+      uint8_t *Out = Output.getWriteLockedPointer(Address, BytesAvailable, BytesWritten);
       if (Out == nullptr) {
         fprintf(stderr, "Unable to write address %d, returned nullptr\n",
                 int(Address));
@@ -150,15 +147,15 @@ int main(int Argc, char *Argv[]) {
                 int(Address));
         return exit_status(EXIT_FAILURE);
       }
-      if (BytesWritten > BytesRead) {
+      if (BytesWritten > BytesAvailable) {
         fprintf(stderr, "Unable to write address %d, returned %d extra bytes",
-                int(Address), int(BytesWritten - BytesRead));
+                int(Address), int(BytesWritten - BytesAvailable));
         return exit_status(EXIT_FAILURE);
       }
       memcpy(Out, In, BytesWritten);
       Out += BytesWritten;
       In += BytesWritten;
-      BytesRead -= BytesWritten;
+      BytesAvailable -= BytesWritten;
     }
     Input.unlockAddress(Address);
     Output.unlockAddress(Address);
