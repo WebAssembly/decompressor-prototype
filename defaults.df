@@ -225,12 +225,9 @@
       (append (varuint7))             # function type 0x40
       (loop (append (varuint32 6))    # parameters
         (eval 'type.value_type'))
-      (eval 'type.return_type')       # return type
+      (loop (append (uint8))          # return types
+        (eval 'type.value_type'))
     )
-  )
-
-  (default 'type.return_type'
-    (if (append (uint32 1)) (eval 'value_type'))
   )
 
   (default 'type.value_type'

@@ -233,14 +233,10 @@
         (loop (append (varuint32 6))
           (eval 'type.value_type')
         )
-        (eval 'type.return_type')
+        (loop (append (uint8))
+          (eval 'type.value_type')
+        )
       )
-    )
-  )
-  (default 'type.return_type'
-    (if (append (uint32 1))
-      (eval 'value_type')
-      (void)
     )
   )
   (default 'type.value_type'
