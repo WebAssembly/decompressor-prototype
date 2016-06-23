@@ -229,7 +229,6 @@ id ({letter}|{digit}|[_.])*
 "define"          return Parser::make_DEFINE(Driver.getLoc());
 "eval"            return Parser::make_EVAL(Driver.getLoc());
 "filter"          return Parser::make_FILTER(Driver.getLoc());
-"if"              return Parser::make_IF(Driver.getLoc());
 "int.to.bit"      return Parser::make_INT_TO_BIT(Driver.getLoc());
 "int.to.byte"     return Parser::make_INT_TO_BYTE(Driver.getLoc());
 "int.to.int"      return Parser::make_INT_TO_INT(Driver.getLoc());

@@ -40,7 +40,6 @@
   X(Error,             0x07, "error",            nullptr,           0)         \
   X(Eval,              0x08, "eval",             nullptr,           1)         \
   X(Filter,            0x09, "filter",           nullptr,           0)         \
-  X(IfThenElse,        0x0a, "if",               nullptr,           1)         \
   X(Loop,              0x0b, "loop",             nullptr,           1)         \
   X(LoopUnbounded,     0x0c, "loop.unbounded",   nullptr,           0)         \
   X(Select,            0x0d, "select",           nullptr,           1)         \
@@ -171,7 +170,6 @@
 //#define X(tag)
 #define AST_TERNARYNODE_TABLE                                                  \
   X(BlockThreeArgs)                                                            \
-  X(IfThenElse)                                                                \
 
 //#define X(tag)
 #define AST_NARYNODE_TABLE                                                     \
