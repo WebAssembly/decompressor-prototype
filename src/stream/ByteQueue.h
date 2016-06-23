@@ -43,6 +43,7 @@
 
 #include "stream/RawStream.h"
 
+#include <cstring>
 #include <memory>
 #include <queue>
 #include <vector>
@@ -56,6 +57,7 @@ class QueuePage;
 class ByteQueue {
   ByteQueue(const ByteQueue &) = delete;
   ByteQueue &operator=(const ByteQueue &) = delete;
+
 public:
   ByteQueue();
 
@@ -146,6 +148,12 @@ public:
 
   bool isEobFrozen() const { return EobFrozen; }
 
+  // Value unknown (returning maximum possible size) until frozen. When
+  // frozen, returns actual size.
+  size_t currentSize() {
+    return EobFrozen ? EobPage->MaxAddress : std::numeric_limits<ssize_t>::max();
+  }
+
   // Returns true if Address is locked.
   bool isAddressLocked(size_t Address) const;
 
@@ -155,6 +163,57 @@ public:
   void unlockAddress(size_t Address);
 
 protected:
+
+  static constexpr size_t BufferSizeLog2 = 12;
+  static constexpr size_t BufferSize = 1 << BufferSizeLog2;
+  static constexpr size_t BufferMask = BufferSize - 1;
+
+  class QueuePage {
+    QueuePage(const QueuePage &) = delete;
+    QueuePage &operator=(const QueuePage &) = delete;
+  public:
+    QueuePage(size_t MinAddress)
+        : PageIndex(page(MinAddress)), MinAddress(MinAddress),
+          MaxAddress(MinAddress) {
+      std::memset(&Buffer, BufferSize, 0);
+    }
+
+    void lockPage() { ++LockCount; }
+
+    void unlockPage() {
+      assert(LockCount >= 1);
+      --LockCount;
+    }
+
+    bool isLocked() const { return LockCount > 0; }
+
+    size_t spaceRemaining() const {
+      return
+          (MinAddress + BufferSize == MaxAddress)
+          ? 0
+          : (BufferSize - (MaxAddress & BufferMask));
+    }
+
+    uint8_t Buffer[BufferSize];
+    size_t PageIndex;
+    // Note: Buffer address range is [MinAddress, MaxAddress).
+    size_t MinAddress;
+    size_t MaxAddress;
+    size_t LockCount = 0;
+    QueuePage *Last = nullptr;
+    QueuePage *Next = nullptr;
+  };
+
+  // Page index associated with address in queue.
+  static constexpr size_t page(size_t Address) {
+    return Address >> BufferSizeLog2;
+  }
+
+  // Returns address within a QueuePage that refers to address.
+  static constexpr size_t pageAddress(size_t Address) {
+    return Address & BufferMask;
+  }
+
   // True if end of buffer has been frozen.
   bool EobFrozen = false;
   // First page still in queue.
@@ -193,6 +252,9 @@ protected:
   // Dumps and deletes the first page.  Note: Dumping only occurs if a
   // Writer is provided (see class WriteBackedByteQueue below).
   virtual void dumpFirstPage();
+
+  // Dumps ununsed pages before the given address.
+  void dumpPreviousPages(size_t Address);
 };
 
 // Read-only queue that is write-filled from a steam using the given
@@ -202,9 +264,9 @@ class ReadBackedByteQueue final : public ByteQueue {
   ReadBackedByteQueue &operator=(const ReadBackedByteQueue &) = delete;
   ReadBackedByteQueue() = delete;
 public:
-  ReadBackedByteQueue(std::unique_ptr<RawStream> Reader)
-      : Reader(std::move(Reader)) {
-    assert(Reader);
+  ReadBackedByteQueue(std::unique_ptr<RawStream> _Reader) {
+    assert(_Reader);
+    Reader = std::move(_Reader);
   }
   ~ReadBackedByteQueue() override {}
 private:
@@ -220,11 +282,11 @@ class WriteBackedByteQueue final : public ByteQueue {
   WriteBackedByteQueue &operator=(const WriteBackedByteQueue &) = delete;
   WriteBackedByteQueue() = delete;
 public:
-  WriteBackedByteQueue(std::unique_ptr<RawStream> Writer)
-      : Writer(std::move(Writer)) {
-    assert(Writer);
+  WriteBackedByteQueue(std::unique_ptr<RawStream> _Writer) {
+    assert(_Writer);
+    Writer = std::move(_Writer);
   }
-  ~WriteBackedByteQueue() override {}
+  ~WriteBackedByteQueue();
 private:
   // Writer to dump contents of queue, when the contents is no longer
   // needed by reader.

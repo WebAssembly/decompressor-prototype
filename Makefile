@@ -77,6 +77,7 @@ TEST_DIR = test
 TEST_EXECDIR = $(BUILDDIR)/test
 
 TEST_SRCS = \
+	TestByteQueues.cpp \
 	TestParser.cpp \
 	TestRawStreams.cpp
 
@@ -247,9 +248,15 @@ $(TEST_EXECDIR)/TestRawStreams: $(TEST_DIR)/TestRawStreams.cpp $(STRM_OBJS) \
 				$(OBJS)
 	$(CXX) $(CXXFLAGS) $< $(STRM_OBJS) $(OBJS) -o $@
 
+$(TEST_EXECDIR)/TestByteQueues: $(TEST_DIR)/TestByteQueues.cpp $(STRM_OBJS) \
+				$(OBJS)
+	$(CXX) $(CXXFLAGS) $< $(STRM_OBJS) $(OBJS) -o $@
+
+
+
 ###### Testing ######
 
-test: all test-parser test-raw-streams
+test: all test-parser test-raw-streams test-byte-queues
 	@echo "*** all tests passed ***"
 
 .PHONY: test
@@ -268,3 +275,20 @@ test-raw-streams: $(TEST_EXECDIR)/TestRawStreams
 	@echo "*** test raw streams passed ***"
 
 .PHONY: test-raw-streams
+
+test-byte-queues: $(TEST_EXECDIR)/TestByteQueues
+	$< -i defaults.df | diff - defaults.df
+	$< -c 2 -i defaults.df | diff - defaults.df
+	$< -c 3 -i defaults.df | diff - defaults.df
+	$< -c 4 -i defaults.df | diff - defaults.df
+	$< -c 5 -i defaults.df | diff - defaults.df
+	$< -c 6 -i defaults.df | diff - defaults.df
+	$< -c 7 -i defaults.df | diff - defaults.df
+	$< -c 13 -i defaults.df | diff - defaults.df
+	$< -c 119 -i defaults.df | diff - defaults.df
+	$< -c 2323 -i defaults.df | diff - defaults.df
+	$< -c 3231 -i defaults.df | diff - defaults.df
+	@echo "*** test byte queues passed ***"
+
+.PHONY: test-byte-queues
+

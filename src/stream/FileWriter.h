@@ -48,7 +48,7 @@ public:
 
 protected:
   int Fd;
-  static constexpr size_t kBufSize = 2; // 4096;
+  static constexpr size_t kBufSize = 4096;
   uint8_t Bytes[kBufSize];
   size_t CurSize = 0;
   bool IsFrozen = false;
