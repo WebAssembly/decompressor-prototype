@@ -64,7 +64,7 @@ TextWriter::TextWriter() {
   }
   // Build map of nodes that can have hidden seq as last kid.
 #define X(tag) \
-  HasHiddenSeqSet.emplace(int(Op##tag));
+  HasHiddenSeqSet.insert(int(Op##tag));
   AST_NODE_HAS_HIDDEN_SEQ
 #undef X
   // Compute that maximum power of 10 that can still be an IntType.
