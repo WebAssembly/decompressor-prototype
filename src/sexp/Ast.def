@@ -103,8 +103,8 @@
   X(IntToInt,          0x5f, "int.to.int",       nullptr,           0)         \
                                                                                \
   /* Declarations */                                                           \
-  X(Define,            0x60, "define",           nullptr,           1)         \
-  X(Default,           0x61, "default",          nullptr,           1)         \
+  X(Define,            0x60, "define",           nullptr,           2)         \
+  X(Default,           0x61, "default",          nullptr,           2)         \
   X(File,              0x62, "file",             nullptr,           0)         \
   X(Section,           0x63, "section",          nullptr,           1)         \
   X(Undefine,          0x64, "undefine",         nullptr,           1)         \
@@ -135,8 +135,24 @@
 //#define X(tag)
 #define AST_UNARYNODE_TABLE                                                    \
   X(AppendOneArg)                                                              \
+  X(AstToAst)                                                                  \
+  X(AstToBit)                                                                  \
+  X(AstToByte)                                                                 \
+  X(AstToInt)                                                                  \
+  X(BitToAst)                                                                  \
+  X(BitToBit)                                                                  \
+  X(BitToByte)                                                                 \
+  X(BitToInt)                                                                  \
   X(BlockOneArg)                                                               \
+  X(ByteToAst)                                                                 \
+  X(ByteToBit)                                                                 \
+  X(ByteToByte)                                                                \
+  X(ByteToInt)                                                                 \
   X(Eval)                                                                      \
+  X(IntToAst)                                                                  \
+  X(IntToBit)                                                                  \
+  X(IntToByte)                                                                 \
+  X(IntToInt)                                                                  \
   X(I32Const)                                                                  \
   X(I64Const)                                                                  \
   X(Lit)                                                                       \
@@ -163,6 +179,7 @@
 //#define X(tag)
 #define AST_BINARYNODE_TABLE                                                   \
   X(BlockTwoArgs)                                                              \
+  X(Case)                                                                      \
   X(Default)                                                                   \
   X(Define)                                                                    \
   X(Map)                                                                       \
@@ -173,6 +190,16 @@
 
 //#define X(tag)
 #define AST_NARYNODE_TABLE                                                     \
+  X(File)                                                                      \
+  X(Filter)                                                                    \
+  X(Loop)                                                                      \
+  X(LoopUnbounded)                                                             \
+  X(Section)                                                                   \
+  X(Select)                                                                    \
+  X(Sequence)                                                                  \
+
+//#define X(tag)
+#define AST_NODE_HAS_HIDDEN_SEQ                                                \
   X(AstToAst)                                                                  \
   X(AstToBit)                                                                  \
   X(AstToByte)                                                                 \
@@ -186,16 +213,11 @@
   X(ByteToByte)                                                                \
   X(ByteToInt)                                                                 \
   X(Case)                                                                      \
-  X(File)                                                                      \
-  X(Filter)                                                                    \
+  X(Define)                                                                    \
+  X(Default)                                                                   \
   X(IntToAst)                                                                  \
   X(IntToBit)                                                                  \
   X(IntToByte)                                                                 \
   X(IntToInt)                                                                  \
-  X(Loop)                                                                      \
-  X(LoopUnbounded)                                                             \
-  X(Section)                                                                   \
-  X(Select)                                                                    \
-  X(Sequence)                                                                  \
 
 #endif // DECOMPRESSOR_SRC_AST_DEF
