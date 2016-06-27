@@ -24,6 +24,7 @@
 #include "sexp/Ast.h"
 
 #include <cstdio>
+#include <unordered_set>
 
 namespace wasm {
 
@@ -66,13 +67,15 @@ private:
   size_t IndentCount = 0;
   bool LineEmpty = true;
   std::vector<Node::IndexType> KidCountSameLine;
+  std::unordered_set<Node::IndexType> HasHiddenSeqSet;
   // Special constant denoting maximum IntType value that is a power of 10.
   // Used to print out decimal values.
   decode::IntType IntTypeMaxPower10;
 
   void initialize(FILE *File);
 
-  void writeNode(Node *Node, bool AddNewline);
+  void writeNode(Node *Node, bool AddNewline, bool EmbedInParent = false);
+  void writeNodeKids(Node *Node);
 
   void writeIndent();
 

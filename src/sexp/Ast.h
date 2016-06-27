@@ -143,6 +143,12 @@ public:
     Kids[Index] = N;
   }
 
+  Node *getLastKid() const {
+    if (Kids.size() == 0)
+      return nullptr;
+    return Kids.back();
+  }
+
   // WARNING: Only supported if underlying type allows.
   virtual void append(Node *Kid);
 
@@ -438,12 +444,12 @@ class Nary final : public NaryNode {
   Nary<Kind> &operator=(const Nary<Kind>&) = delete;
   virtual void forceCompilation() final;
 
-  static bool inClass(NodeType Type) { return Kind == Type; }
-
 public:
   Nary() : NaryNode(Kind) {}
   Nary(alloc::Allocator *Alloc) : NaryNode(Alloc, Kind) {}
   ~Nary() {}
+
+  static bool inClass(NodeType Type) { return Kind == Type; }
 };
 
 } // end of namespace filt
