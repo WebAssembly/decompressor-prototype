@@ -66,10 +66,21 @@ STRM_SRCS = \
 	FileReader.cpp \
 	FileWriter.cpp \
 	ByteQueue.cpp \
+	Cursor.cpp \
 	StreamReader.cpp \
 	StreamWriter.cpp
 
 STRM_OBJS=$(patsubst %.cpp, $(STRM_OBJDIR)/%.o, $(STRM_SRCS))
+
+###### S-expression interpeter ######
+
+INTERP_SRCDIR = $(SRCDIR)/interp
+INTERP_OBJDIR = $(OBJDIR)/interp
+INTERP_SRCS = \
+	ReadStream.cpp \
+	State.cpp
+
+INTERP_OBJS=$(patsubst %.cpp, $(INTERP_OBJDIR)/%.o, $(INTERP_SRCS))
 
 ###### Test executables and locations ######
 
@@ -98,13 +109,14 @@ CXXFLAGS := -std=gnu++11 -Wall -Wextra -O2 -g -pedantic -MP -MD -Werror -Isrc
 
 ###### Default Rule ######
 
-all: gen objs parser-objs sexp-objs strm-objs test-execs
+all: gen objs parser-objs sexp-objs strm-objs interp-objs test-execs
 
 .PHONY: all
 
 ###### Cleaning Rules #######
 
-clean: clean-objs clean-parser clean-sexp-objs clean-strm-objs clean-test-execs
+clean: clean-objs clean-parser clean-sexp-objs clean-strm-objs clean-interp-objs \
+	clean-test-execs
 
 .PHONY: clean
 
@@ -137,6 +149,11 @@ clean-strm-objs:
 	rm -f $(STRM_OBJS)
 
 .PHONY: clean-strm-objs
+
+clean-interp-objs:
+	rm -f $(INTERP_OBJS)
+
+.PHONY: clean-interp-objs
 
 clean-test-execs:
 	rm -f $(TEST_EXECS)
@@ -171,6 +188,22 @@ $(OBJDIR):
 -include $(foreach dep,$(SRCS:.cpp=.d),$(OBJDIR)/$(dep))
 
 $(OBJS): $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
+	$(CXX) -c $(CXXFLAGS) $< -o $@
+
+###### Compiling s-expression interpeter sources ######
+
+interp-objs: $(INTERP_OBJS)
+
+.PHONY: interp-objs
+
+$(INTERP_OBJS): | $(INTERP_OBJDIR)
+
+$(INTERP_OBJDIR):
+	mkdir -p $@
+
+-include $(foreach dep,$(INTERP_SRCS:.cpp=.d),$(INTERP_OBJDIR)/$(dep))
+
+$(INTERP_OBJS): $(INTERP_OBJDIR)/%.o: $(INTERP_SRCDIR)/%.cpp
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 
 ###### Compiliing Sexp Sources ######

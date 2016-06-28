@@ -154,12 +154,6 @@ bool ByteQueue::isAddressLocked(size_t Address) const {
   return Page->isLocked();
 }
 
-void ByteQueue::unlockAddress(size_t Address) {
-  QueuePage *Page = getPage(Address);
-  assert(Page != nullptr);
-  unlockPage(Page);
-}
-
 ByteQueue::QueuePage *ByteQueue::getPageAt(size_t PageIndex) const {
   return (PageIndex >= PageMap.size()) ? nullptr : PageMap[PageIndex];
 }

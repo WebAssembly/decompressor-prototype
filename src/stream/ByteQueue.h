@@ -127,6 +127,10 @@ public:
   uint8_t *getReadLockedPointer(size_t Address, size_t WantedSize,
                                 size_t &LockedSize);
 
+  uint8_t *getReadLockedPointer(size_t Address, size_t &LockedSize) {
+    return getReadLockedPointer(Address, BufferSize, LockedSize);
+  }
+
   // Returns a pointer into the queue that can be written to. Must unlock the
   // address once writing has been completed.
   //
@@ -157,10 +161,14 @@ public:
   // Returns true if Address is locked.
   bool isAddressLocked(size_t Address) const;
 
+  // Increments the lock count for Address by 1. Assumes lock is already locked
+  // (and hence defined).
+  void lockAddress(size_t Address) { lockPage(getPage(Address)); }
+
   // Decrements the lock count for Address by 1. Assumes lock was
   // defined by previous (successful) calls to getReadLockedPointer()
   // and getWriteLockedPointer().
-  void unlockAddress(size_t Address);
+  void unlockAddress(size_t Address) { unlockPage(getPage(Address)); }
 
 protected:
 

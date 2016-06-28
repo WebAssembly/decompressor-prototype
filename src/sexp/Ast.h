@@ -153,9 +153,9 @@ public:
   virtual void append(Node *Kid);
 
   // General iterators for walking kids.
-  Iterator begin() { return Iterator(this, 0); }
-  Iterator end() { return Iterator(this, getNumKids()); }
-  Iterator rbegin() { return Iterator(this, getNumKids() - 1); }
+  Iterator begin() const { return Iterator(this, 0); }
+  Iterator end() const { return Iterator(this, getNumKids()); }
+  Iterator rbegin() const { return Iterator(this, getNumKids() - 1); }
   Iterator rend() const { return Iterator(this, -1); }
 
   static bool inClass(NodeType /*Type*/) { return true; }
@@ -177,15 +177,30 @@ bool isa(Node *N) {
   return T::inClass(N->getType());
 }
 
+template<class T>
+bool isa(const Node *N) {
+  return T::inClass(N->getType());
+}
+
 // Cast (no type checking) to type T.
 template<class T>
 T *cast(Node *N) {
   return reinterpret_cast<T *>(N);
 }
 
+template<class T>
+const T *cast(const Node *N) {
+  return reinterpret_cast<const T *>(N);
+}
+
 // Cast to type T. Returns nullptr if unable.
 template<class T>
 T *dyn_cast(Node *N) {
+  return isa<T>(N) ? cast<T>(N) : nullptr;
+}
+
+template<class T>
+const T *dyn_cast(const Node *N) {
   return isa<T>(N) ? cast<T>(N) : nullptr;
 }
 
