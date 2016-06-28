@@ -149,7 +149,7 @@ void SymbolTable::install(Node *Root) {
   }
 }
 
-bool NullaryNode::inClass(NodeType Type) {
+bool NullaryNode::implementsClass(NodeType Type) {
   switch (Type) {
     default: return false;
 #define X(tag) \
@@ -162,7 +162,7 @@ bool NullaryNode::inClass(NodeType Type) {
 template<NodeType Kind>
 void Nullary<Kind>::forceCompilation() {}
 
-bool UnaryNode::inClass(NodeType Type) {
+bool UnaryNode::implementsClass(NodeType Type) {
   switch (Type) {
     default: return false;
 #define X(tag) \
@@ -175,7 +175,7 @@ bool UnaryNode::inClass(NodeType Type) {
 template<NodeType Kind>
 void Unary<Kind>::forceCompilation() {}
 
-bool BinaryNode::inClass(NodeType Type) {
+bool BinaryNode::implementsClass(NodeType Type) {
   switch (Type) {
     default: return false;
 #define X(tag) \
@@ -188,7 +188,7 @@ bool BinaryNode::inClass(NodeType Type) {
 template<NodeType Kind>
 void Binary<Kind>::forceCompilation() {}
 
-bool TernaryNode::inClass(NodeType Type) {
+bool TernaryNode::implementsClass(NodeType Type) {
   switch (Type) {
     default: return false;
 #define X(tag) \
@@ -201,7 +201,7 @@ bool TernaryNode::inClass(NodeType Type) {
 template<NodeType Kind>
 void Ternary<Kind>::forceCompilation() {}
 
-bool NaryNode::inClass(NodeType Type) {
+bool NaryNode::implementsClass(NodeType Type) {
   switch (Type) {
     default: return false;
 #define X(tag) \
