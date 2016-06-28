@@ -34,7 +34,8 @@
 
 #include "Allocator.h"
 #include "ADT/arena_vector.h"
-#include "Ast.def"
+#include "sexp/Ast.def"
+#include "Casting.h"
 
 #include <array>
 #include <limits>
@@ -126,6 +127,10 @@ public:
 
   virtual ~Node() {}
 
+  NodeType getRtClassId() const {
+    return Type;
+  }
+
   NodeType getType() const {
     return Type;
   }
@@ -158,7 +163,7 @@ public:
   Iterator rbegin() const { return Iterator(this, getNumKids() - 1); }
   Iterator rend() const { return Iterator(this, -1); }
 
-  static bool inClass(NodeType /*Type*/) { return true; }
+  static bool implementsClass(NodeType /*Type*/) { return true; }
 
 protected:
   NodeType Type;
@@ -169,48 +174,13 @@ protected:
       : Type(Type), Kids(Alloc) {}
 };
 
-
-
-// Test if an instance of class.
-template<class T>
-bool isa(Node *N) {
-  return T::inClass(N->getType());
-}
-
-template<class T>
-bool isa(const Node *N) {
-  return T::inClass(N->getType());
-}
-
-// Cast (no type checking) to type T.
-template<class T>
-T *cast(Node *N) {
-  return reinterpret_cast<T *>(N);
-}
-
-template<class T>
-const T *cast(const Node *N) {
-  return reinterpret_cast<const T *>(N);
-}
-
-// Cast to type T. Returns nullptr if unable.
-template<class T>
-T *dyn_cast(Node *N) {
-  return isa<T>(N) ? cast<T>(N) : nullptr;
-}
-
-template<class T>
-const T *dyn_cast(const Node *N) {
-  return isa<T>(N) ? cast<T>(N) : nullptr;
-}
-
 class NullaryNode : public Node {
   NullaryNode(const NullaryNode&) = delete;
   NullaryNode &operator=(const NullaryNode&) = delete;
 public:
   ~NullaryNode() override {}
 
-  static bool inClass(NodeType Type);
+  static bool implementsClass(NodeType Type);
 
 protected:
   NullaryNode(NodeType Type)
@@ -229,7 +199,7 @@ public:
   Nullary(alloc::Allocator *Alloc) : NullaryNode(Alloc, Kind) {}
   ~Nullary() {}
 
-  static bool inClass(NodeType Type) { return Type == Kind; }
+  static bool implementsClass(NodeType Type) { return Type == Kind; }
 
 };
 
@@ -259,7 +229,7 @@ public:
     return Value;
   }
 
-  static bool inClass(NodeType Type) { return Type == OpInteger; }
+  static bool implementsClass(NodeType Type) { return Type == OpInteger; }
 
 private:
   decode::IntType Value;
@@ -294,7 +264,7 @@ public:
   }
   void setDefaultDefinition(Node *Defn);
 
-  static bool inClass(NodeType Type) { return Type == OpSymbol; }
+  static bool implementsClass(NodeType Type) { return Type == OpSymbol; }
 
 private:
   InternalName Name;
@@ -334,7 +304,7 @@ class UnaryNode : public Node {
 public:
   ~UnaryNode() override {}
 
-  static bool inClass(NodeType Type);
+  static bool implementsClass(NodeType Type);
 
 protected:
   UnaryNode(NodeType Type, Node *Kid)
@@ -357,7 +327,7 @@ public:
   Unary(alloc::Allocator* Alloc, Node *Kid) : UnaryNode(Alloc, Kind, Kid) {}
   ~Unary() {}
 
-  static bool inClass(NodeType Type) { return Kind == Type; }
+  static bool implementsClass(NodeType Type) { return Kind == Type; }
 };
 
 class BinaryNode : public Node {
@@ -366,7 +336,7 @@ class BinaryNode : public Node {
 public:
   ~BinaryNode() override {}
 
-  static bool inClass(NodeType Type);
+  static bool implementsClass(NodeType Type);
 
 protected:
   BinaryNode(NodeType Type, Node *Kid1, Node *Kid2)
@@ -387,7 +357,7 @@ class Binary final : public BinaryNode {
   Binary<Kind> &operator=(const Binary<Kind>&) = delete;
   virtual void forceCompilation() final;
 
-  static bool inClass(NodeType Type) { return Kind == Type; }
+  static bool implementsClass(NodeType Type) { return Kind == Type; }
 
 public:
   Binary(Node *Kid1, Node *Kid2) : BinaryNode(Kind, Kid1, Kid2) {}
@@ -402,7 +372,7 @@ class TernaryNode : public Node {
 public:
   ~TernaryNode() override {}
 
-  static bool inClass(NodeType Type);
+  static bool implementsClass(NodeType Type);
 
 protected:
   TernaryNode(NodeType Type, Node *Kid1, Node *Kid2, Node *Kid3)
@@ -426,7 +396,7 @@ class Ternary final : public TernaryNode {
   Ternary<Kind> &operator=(const Ternary<Kind>&) = delete;
   virtual void forceCompilation() final;
 
-  static bool inClass(NodeType Type) { return Kind == Type; }
+  static bool implementsClass(NodeType Type) { return Kind == Type; }
 
 public:
   Ternary(Node *Kid1, Node *Kid2, Node* Kid3)
@@ -446,7 +416,7 @@ public:
   }
   ~NaryNode() override {}
 
-  static bool inClass(NodeType Type);
+  static bool implementsClass(NodeType Type);
 
 protected:
   NaryNode(NodeType Type) : Node(Type) {}
@@ -464,7 +434,7 @@ public:
   Nary(alloc::Allocator *Alloc) : NaryNode(Alloc, Kind) {}
   ~Nary() {}
 
-  static bool inClass(NodeType Type) { return Kind == Type; }
+  static bool implementsClass(NodeType Type) { return Kind == Type; }
 };
 
 } // end of namespace filt
