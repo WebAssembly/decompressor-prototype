@@ -49,25 +49,9 @@ IntType State::eval(const Node *Nd) {
   // TODO(kschimpf): Fix for ast streams.
   // TODO(kschimpf) Handle blocks.
   switch (NodeType Type = Nd->getType()) {
-    case OpAstToAst:
-    case OpAstToBit:
-    case OpAstToByte:
-    case OpAstToInt:
-    case OpBitToAst:
-    case OpBitToBit:
-    case OpBitToByte:
-    case OpBitToInt:
-    case OpByteToAst:
-    case OpByteToBit:
     case OpByteToByte:
-    case OpByteToInt:
     case OpSymConst:
-    case OpCopy:
     case OpFilter:
-    case OpIntToAst:
-    case OpIntToBit:
-    case OpIntToByte:
-    case OpIntToInt:
     case OpSelect:
     case OpBlockBegin:
     case OpBlockEnd:
@@ -76,7 +60,6 @@ IntType State::eval(const Node *Nd) {
     case OpBlockThreeArgs:
     case OpCase:
     case OpSymbol:
-    case OpWrite:
       // TODO(kschimpf): Fix above cases.
       fprintf(stderr, "Not implemented: %s\n", getNodeTypeName(Type));
       fatal("Unable to evaluate filter s-expression");
@@ -91,15 +74,6 @@ IntType State::eval(const Node *Nd) {
       fprintf(stderr, "Not evaluatable: %s\n", getNodeTypeName(Type));
       fatal("Evaluating filter s-expression not defined");
       return 0;
-    case OpAppendNoArgs:
-    case OpPostorder:
-    case OpPreorder:
-      // TODO(kschimpf) Fix to do tree operations.
-      return 0;
-    case OpAppendOneArg: {
-      auto *Append = cast<Unary<OpAppendOneArg>>(Nd);
-      return eval(Append->getKid(0));
-    }
     case OpError:
       fatal("Error found during evaluation");
       return 0;
@@ -154,10 +128,6 @@ IntType State::eval(const Node *Nd) {
     case OpVarint32OneArg:
     case OpVarint64NoArgs:
     case OpVarint64OneArg:
-    case OpVaruint1NoArgs:
-    case OpVaruint1OneArg:
-    case OpVaruint7NoArgs:
-    case OpVaruint7OneArg:
     case OpVaruint32NoArgs:
     case OpVaruint32OneArg:
     case OpVaruint64NoArgs:
@@ -206,14 +176,6 @@ IntType State::read(const Node *Nd) {
       return Reader->readVarint64(ReadPos);
     case OpVarint64OneArg:
       return Reader->readVarint64(ReadPos, getIntegerValue(Nd->getKid(0)));
-    case OpVaruint1NoArgs:
-      return Reader->readVaruint1(ReadPos);
-    case OpVaruint1OneArg:
-      return Reader->readVaruint1(ReadPos, getIntegerValue(Nd->getKid(0)));
-    case OpVaruint7NoArgs:
-      return Reader->readVaruint7(ReadPos);
-    case OpVaruint7OneArg:
-      return Reader->readVaruint7(ReadPos, getIntegerValue(Nd->getKid(0)));
     case OpVaruint32NoArgs:
       return Reader->readVaruint32(ReadPos);
     case OpVaruint32OneArg:
@@ -270,18 +232,6 @@ IntType State::write(IntType Value, const wasm::filt::Node *Nd) {
       break;
     case OpVarint64OneArg:
       Writer->writeVarint64(Value, WritePos, getIntegerValue(Nd->getKid(0)));
-      break;
-    case OpVaruint1NoArgs:
-      Writer->writeVaruint1(Value, WritePos);
-      break;
-    case OpVaruint1OneArg:
-      Writer->writeVaruint1(Value, WritePos, getIntegerValue(Nd->getKid(0)));
-      break;
-    case OpVaruint7NoArgs:
-      Writer->writeVaruint7(Value, WritePos);
-      break;
-    case OpVaruint7OneArg:
-      Writer->writeVaruint7(Value, WritePos, getIntegerValue(Nd->getKid(0)));
       break;
     case OpVaruint32NoArgs:
       Writer->writeVaruint32(Value, WritePos);
