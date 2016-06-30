@@ -188,19 +188,6 @@ bool BinaryNode::implementsClass(NodeType Type) {
 template<NodeType Kind>
 void Binary<Kind>::forceCompilation() {}
 
-bool TernaryNode::implementsClass(NodeType Type) {
-  switch (Type) {
-    default: return false;
-#define X(tag) \
-    case Op##tag: return true;
-    AST_TERNARYNODE_TABLE
-#undef X
-  }
-}
-
-template<NodeType Kind>
-void Ternary<Kind>::forceCompilation() {}
-
 bool NaryNode::implementsClass(NodeType Type) {
   switch (Type) {
     default: return false;
@@ -229,11 +216,6 @@ void Nary<Kind>::forceCompilation() {}
 #define X(tag) \
   template class Binary<Op##tag>;
   AST_BINARYNODE_TABLE
-#undef X
-
-#define X(tag) \
-  template class Ternary<Op##tag>;
-  AST_TERNARYNODE_TABLE
 #undef X
 
 #define X(tag) \

@@ -209,7 +209,7 @@ id ({letter}|{digit}|[_.])*
 ")"               return Parser::make_CLOSEPAREN(Driver.getLoc());
 "("               return Parser::make_OPENPAREN(Driver.getLoc());
 "block"           return Parser::make_BLOCK(Driver.getLoc());
-"block.begin"     return Parser::make_BLOCKBEGIN(Driver.getLoc());
+"block.args"      return Parser::make_BLOCK_ARGS(Driver.getLoc());
 "block.end"       return Parser::make_BLOCKEND(Driver.getLoc());
 "byte.to.byte"    return Parser::make_BYTE_TO_BYTE(Driver.getLoc());
 "case"            return Parser::make_CASE(Driver.getLoc());

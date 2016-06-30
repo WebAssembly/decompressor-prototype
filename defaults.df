@@ -49,11 +49,13 @@
   )
 
   (default 'code.function'
-    (block (varuint32) 0xFF)     # number of bytes in function.
-    (loop (varuint32 6)          # number of locals in function.
-      (eval 'code.local'))
-    (loop.unbounded
-      (eval 'code.inst'))
+    (block 
+      (block.args (varuint32) 0xFF) # number of bytes in function.
+      (loop (varuint32 6)            # number of locals in function.
+        (eval 'code.local'))
+      (loop.unbounded                # instructions
+        (eval 'code.inst'))
+    )
   )
 
   (default 'code.local'

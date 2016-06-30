@@ -53,11 +53,10 @@ IntType State::eval(const Node *Nd) {
     case OpSymConst:
     case OpFilter:
     case OpSelect:
-    case OpBlockBegin:
+    case OpBlock:
+    case OpBlockArgsOne:
+    case OpBlockArgsTwo:
     case OpBlockEnd:
-    case OpBlockOneArg:
-    case OpBlockTwoArgs:
-    case OpBlockThreeArgs:
     case OpCase:
     case OpSymbol:
       // TODO(kschimpf): Fix above cases.

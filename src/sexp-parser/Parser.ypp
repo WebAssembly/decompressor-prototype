@@ -75,7 +75,7 @@ struct IntegerValue {
 
 // Keywords
 %token BLOCK         "block"
-%token BLOCKBEGIN    "block.begin"
+%token BLOCK_ARGS    "block.args"
 %token BLOCKEND      "block.end"
 %token BYTE_TO_BYTE  "byte.to.byte"
 %token CASE          "case"
@@ -116,9 +116,11 @@ struct IntegerValue {
 %token <wasm::filt::IntegerValue> INTEGER
 
 // Nonterminal classes.
+%type <wasm::filt::Node *> block_begin
+%type <wasm::filt::Node *> block_stmt_list
 %type <wasm::filt::Node *> case
 %type <wasm::filt::Node *> case_list
-%type <wasm::filt::Node *> case_statement_list
+%type <wasm::filt::Node *> case_stmt_list
 %type <wasm::filt::Node *> declaration
 %type <wasm::filt::Node *> declaration_list
 %type <wasm::filt::Node *> declaration_stmt_list
@@ -132,7 +134,7 @@ struct IntegerValue {
 %type <wasm::filt::Node *> loop_body
 %type <wasm::filt::Node *> section
 %type <wasm::filt::Node *> section_list
-%type <wasm::filt::Node *> seq_statement_list
+%type <wasm::filt::Node *> seq_stmt_list
 %type <wasm::filt::Node *> statement
 %type <wasm::filt::Node *> symbol
 
@@ -146,7 +148,7 @@ file    : section_list {
           }
         ;
 
-case    : "(" "case" case_statement_list ")" { $$ = $3; }
+case    : "(" "case" case_stmt_list ")" { $$ = $3; }
         ;
 
 case_list
@@ -161,11 +163,11 @@ case_list
           }
         ;
 
-case_statement_list
+case_stmt_list
         : integer statement { // case index / first statement of case.
             $$ = Driver.create<Binary<OpCase>>($1, $2);
           }
-        | case_statement_list statement { // remaining statements of case.
+        | case_stmt_list statement { // remaining statements of case.
             $$ = $1;
             Node *StmtList = $1->getKid(1);
             auto *Seq = dyn_cast<Nary<OpSequence>>(StmtList);
@@ -219,25 +221,34 @@ declaration_list
           }
         ;
 
+block_begin
+        : "(" "block.args" expression ")" {
+            $$ = Driver.create<Unary<OpBlockArgsOne>>($3);
+          }
+        | "(" "block.args" expression integer ")" {
+            $$ = Driver.create<Binary<OpBlockArgsTwo>>($3, $4);
+          }
+        ;
+
+block_stmt_list
+        : block_begin statement  {
+            $$ = Driver.create<Binary<OpBlock>>($1, $2);
+          }
+        | block_stmt_list statement {
+            $$ = $1;
+            Node *StmtList = $1->getKid(1);
+            auto *Seq = dyn_cast<Nary<OpSequence>>(StmtList);
+            if (Seq == nullptr) {
+              Seq = Driver.create<Nary<OpSequence>>();
+              Seq->append(StmtList);
+              $1->setKid(1, Seq);
+            }
+            Seq->append($2);
+          }
+        ;
+
 expression
-        : "(" "block" expression ")" {
-            // 1st argument is width in bytes
-            $$ = Driver.create<Unary<OpBlockOneArg>>($3);
-          }
-        | "(" "block" expression integer ")" {
-            // 1st argument is width in bytes
-            // 2nd argument is block.end value to inject
-            $$ = Driver.create<Binary<OpBlockTwoArgs>>($3, $4);
-          }
-        | "(" "block" expression integer integer ")" {
-            // 1st argument is width in bytes
-            // 2nd argument is block.begin value to inject
-            // 3nd argument is block.end value to inject
-            $$ = Driver.create<Ternary<OpBlockThreeArgs>>($3, $4, $5);
-          }
-        | "(" "block.begin" ")" {
-            $$ = Driver.create<Nullary<OpBlockBegin>>();
-          }
+        : "(" "block" block_stmt_list ")"  { $$ = $3; }
         | "(" "block.end" ")" {
             $$ = Driver.create<Nullary<OpBlockEnd>>();
           }
@@ -379,11 +390,11 @@ section_list
           }
         ;
 
-seq_statement_list
+seq_stmt_list
         : %empty {
             $$ = Driver.create<Nary<OpSequence>>();
           }
-        | seq_statement_list statement {
+        | seq_stmt_list statement {
             $$ = $1;
             $$->append($2);
           }
@@ -395,7 +406,7 @@ statement
         | "(" "filter" stream_conv_list ")" { $$ = $3; }
         | "(" loop_body ")" { $$ = $2; }
         | "(" "select" case_list ")" { $$ = $3; }
-        | "(" "seq" seq_statement_list ")" { $$ = $3; }
+        | "(" "seq" seq_stmt_list ")" { $$ = $3; }
         ;
 
 stream_conv  : "(" stream_conv_stmt_list ")" {
