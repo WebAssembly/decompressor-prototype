@@ -52,7 +52,7 @@ using ExternalName = std::string;
 using InternalName = arena_vector<uint8_t>;
 
 enum NodeType {
-#define X(tag, opcode, sexp_name, type_name, text_num_args) \
+#define X(tag, opcode, sexp_name, type_name, text_num_args, text_max_args) \
   Op##tag = opcode,
   AST_OPCODE_TABLE
 #undef X
@@ -60,7 +60,7 @@ enum NodeType {
 
 static constexpr size_t NumNodeTypes =
     0
-#define X(tag, opcode, sexp_name, type_name, text_num_args) \
+#define X(tag, opcode, sexp_name, type_name, text_num_args, text_max_args) \
     + 1
     AST_OPCODE_TABLE
 #undef X
@@ -68,7 +68,7 @@ static constexpr size_t NumNodeTypes =
 
 static constexpr size_t MaxNodeType =
     const_maximum(
-#define X(tag, opcode, sexp_name, type_name, text_num_args) \
+#define X(tag, opcode, sexp_name, type_name, text_num_args, text_max_args) \
         size_t(opcode),
   AST_OPCODE_TABLE
 #undef X
@@ -79,6 +79,7 @@ struct AstTraitsType {
   const char *SexpName;
   const char *TypeName;
   const int NumTextArgs;
+  const int AdditionalTextArgs;
 };
 
 extern AstTraitsType AstTraits[NumNodeTypes];

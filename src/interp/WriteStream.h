@@ -20,7 +20,9 @@
 #ifndef DECOMPRESSOR_SRC_INTERP_WRITESTREAM_H
 #define DECOMPRESSOR_SRC_INTERP_WRITESTREAM_H
 
+#include "interp/Streams.h"
 #include "sexp/Ast.h"
+#include "Casting.h"
 #include "stream/Cursor.h"
 
 namespace wasm {
@@ -33,87 +35,106 @@ class WriteStream {
   WriteStream(const WriteStream &) = delete;
   WriteStream &operator=(const WriteStream &) = delete;
 public:
-  void writeUint8(decode::WriteCursor &Pos, decode::IntType Value) {
-    writeUint8(Pos, 8, Value);
+  void writeUint8(uint8_t Value, decode::WriteCursor &Pos) {
+    writeUint8(Value, Pos, 8);
   }
-  virtual void writeUint8(decode::WriteCursor &Pos, decode::IntType NumBits,
-                          decode::IntType Value) = 0;
+  virtual void writeUint8(uint8_t ,decode::WriteCursor &Pos,
+                          uint32_t NumBits) = 0;
 
-  void writeUint32(decode::WriteCursor &Pos, decode::IntType Value) {
-    writeUint32(Pos, 8, Value);
+  void writeUint32(uint32_t Value, decode::WriteCursor &Pos) {
+    writeUint32(Value, Pos, 8);
   }
-  virtual void writeUint32(decode::WriteCursor &Pos, decode::IntType NumBits,
-                           decode::IntType Value) = 0;
+  virtual void writeUint32(uint32_t Value, decode::WriteCursor &Pos,
+                           uint32_t NumBits) = 0;
 
-  void writeUint64(decode::WriteCursor &Pos, decode::IntType Value) {
-    writeUint64(Pos, 8, Value);
+  void writeUint64(uint64_t Value, decode::WriteCursor &Pos) {
+    writeUint64(Value, Pos, 8);
   }
-  virtual void writeUint64(decode::WriteCursor &Pos, decode::IntType NumBits,
-                           decode::IntType Value) = 0;
+  virtual void writeUint64(uint64_t Value, decode::WriteCursor &Pos,
+                           uint32_t NumBits) = 0;
 
-  void writeVarint32(decode::WriteCursor &Pos, decode::IntType Value) {
-    writeVarint32(Pos, 8, Value);
+  void writeVarint32(int32_t Value, decode::WriteCursor &Pos) {
+    writeVarint32(Value, Pos, 8);
   }
-  virtual void writeVarint32(decode::WriteCursor &Pos, decode::IntType NumBits,
-                             decode::IntType Value) = 0;
+  virtual void writeVarint32(int32_t Value, decode::WriteCursor &Pos,
+                             uint32_t NumBits) = 0;
 
-  void writeVarint64(decode::WriteCursor &Pos, decode::IntType Value) {
-    return writeVarint64(Pos, 8, Value);
+  void writeVarint64(int64_t Value, decode::WriteCursor &Pos) {
+    return writeVarint64(Value, Pos, 8);
   }
-  virtual void writeVarint64(decode::WriteCursor &Pos, decode::IntType NumBits,
-                             decode::IntType Value) = 0;
+  virtual void writeVarint64(int64_t Value, decode::WriteCursor &Pos,
+                             uint32_t NumBits) = 0;
 
-  void writeVaruint1(decode::WriteCursor &Pos, decode::IntType Value) {
-    writeVaruint1(Pos, 8, Value);
+  void writeVaruint1(uint8_t Value, decode::WriteCursor &Pos) {
+    writeVaruint1(Value, Pos, 8);
   }
-  virtual void writeVaruint1(decode::WriteCursor &Pos, decode::IntType NumBits,
-                             decode::IntType Value) = 0;
+  virtual void writeVaruint1(uint8_t Value, decode::WriteCursor &Pos,
+                             uint32_t NumBits) = 0;
 
-  void writeVaruint7(decode::WriteCursor &Pos, decode::IntType Value) {
-    writeVaruint7(Pos, 8, Value);
+  void writeVaruint7(uint8_t Value, decode::WriteCursor &Pos) {
+    writeVaruint7(Value, Pos, 8);
   }
-  virtual void writeVaruint7(decode::WriteCursor &Pos, decode::IntType NumBits,
-                             decode::IntType Value) = 0;
+  virtual void writeVaruint7(uint8_t Value, decode::WriteCursor &Pos,
+                             uint32_t NumBits) = 0;
 
-  void writeVaruint32(decode::WriteCursor &Pos, decode::IntType Value) {
-    writeVaruint32(Pos, 8, Value);
+  void writeVaruint32(uint32_t Value, decode::WriteCursor &Pos) {
+    writeVaruint32(Value, Pos, 8);
   }
-  virtual void writeVaruint32(decode::WriteCursor &Pos, decode::IntType NumBits,
-                              decode::IntType Value) = 0;
+  virtual void writeVaruint32(uint32_t Value, decode::WriteCursor &Pos,
+                              uint32_t NumBits) = 0;
 
-  void writeVaruint64(decode::WriteCursor &Pos, decode::IntType Value) {
-    writeVaruint64(Pos, 8, Value);
+  void writeVaruint64(uint64_t Value, decode::WriteCursor &Pos) {
+    writeVaruint64(Value, Pos, 8);
   }
-  virtual void writeVaruint64(decode::WriteCursor &Pos, decode::IntType NumBits,
-                              decode::IntType Value) = 0;
+  virtual void writeVaruint64(uint64_t Value, decode::WriteCursor &Pos,
+                              uint32_t NumBits) = 0;
+
+  StreamType getType() const {
+    return Type;
+  }
+
+  StreamType getRtClassId() const {
+    return Type;
+  }
+
+  static bool implementsClass(StreamType /*RtClassId*/) {
+    return true;
+  }
 
 protected:
-  WriteStream() {}
+  WriteStream(StreamType Type) : Type(Type) {}
+  StreamType Type;
 };
 
 class ByteWriteStream final : public WriteStream {
   ByteWriteStream(const WriteStream &) = delete;
   ByteWriteStream &operator=(const ByteWriteStream &) = delete;
 public:
-  ByteWriteStream() {}
-  void writeUint8(decode::WriteCursor &Pos, decode::IntType NumBits,
-                  decode::IntType Value) override;
-  void writeUint32(decode::WriteCursor &Pos, decode::IntType NumBits,
-                   decode::IntType Value) override;
-  void writeUint64(decode::WriteCursor &Pos, decode::IntType NumBits,
-                   decode::IntType Value) override;
-  void writeVarint32(decode::WriteCursor &Pos, decode::IntType NumBits,
-                     decode::IntType Value) override;
-  void writeVarint64(decode::WriteCursor &Pos, decode::IntType NumBits,
-                     decode::IntType Value) override;
-  void writeVaruint1(decode::WriteCursor &Pos, decode::IntType NumBits,
-                     decode::IntType Value) override;
-  void writeVaruint7(decode::WriteCursor &Pos, decode::IntType NumBits,
-                        decode::IntType Value) override;
-  void writeVaruint32(decode::WriteCursor &Pos, decode::IntType NumBits,
-                      decode::IntType Value) override;
-  void writeVaruint64(decode::WriteCursor &Pos, decode::IntType NumBits,
-                      decode::IntType Value) override;
+  ByteWriteStream() : WriteStream(StreamType::Byte) {}
+  void writeUint8(uint8_t Value, decode::WriteCursor &Pos,
+                  uint32_t NumBits) override;
+  void writeUint32(uint32_t Value, decode::WriteCursor &Pos,
+                   uint32_t NumBits) override;
+  void writeUint64(uint64_t Value, decode::WriteCursor &Pos,
+                   uint32_t NumBits) override;
+  void writeVarint32(int32_t Value, decode::WriteCursor &Pos,
+                     uint32_t NumBits) override;
+  void writeVarint64(int64_t Value, decode::WriteCursor &Pos,
+                     uint32_t NumBits) override;
+  void writeVaruint1(uint8_t Value, decode::WriteCursor &Pos,
+                     uint32_t NumBits) override;
+  void writeVaruint7(uint8_t Value, decode::WriteCursor &Pos,
+                     uint32_t NumBits) override;
+  void writeVaruint32(uint32_t Value, decode::WriteCursor &Pos,
+                      uint32_t NumBits) override;
+  void writeVaruint64(uint64_t Value, decode::WriteCursor &Pos,
+                      uint32_t NumBits) override;
+
+  void writeFixedVaruint32(uint32_t Value, decode::WriteCursor &Pos);
+
+  static bool implementsClass(StreamType RtClassId) {
+    return RtClassId == StreamType::Byte;
+  }
 };
 
 

@@ -242,58 +242,58 @@ IntType State::write(IntType Value, const wasm::filt::Node *Nd) {
       write(Value, DefaultFormat);
       break;
     case OpUint8NoArgs:
-      Writer->writeUint8(WritePos, Value);
+      Writer->writeUint8(Value, WritePos);
       break;
     case OpUint8OneArg:
-      Writer->writeUint8(WritePos, getIntegerValue(Nd->getKid(0)), Value);
+      Writer->writeUint8(Value, WritePos, getIntegerValue(Nd->getKid(0)));
       break;
     case OpUint32NoArgs:
-      Writer->writeUint32(WritePos, Value);
+      Writer->writeUint32(Value, WritePos);
       break;
     case OpUint32OneArg:
-      Writer->writeUint32(WritePos, getIntegerValue(Nd->getKid(0)), Value);
+      Writer->writeUint32(Value, WritePos, getIntegerValue(Nd->getKid(0)));
       break;
     case OpUint64NoArgs:
-      Writer->writeUint64(WritePos, Value);
+      Writer->writeUint64(Value, WritePos);
       break;
     case OpUint64OneArg:
-      Writer->writeUint64(WritePos, getIntegerValue(Nd->getKid(0)), Value);
+      Writer->writeUint64(Value, WritePos, getIntegerValue(Nd->getKid(0)));
       break;
     case OpVarint32NoArgs:
-      Writer->writeVarint32(WritePos, Value);
+      Writer->writeVarint32(Value, WritePos);
       break;
     case OpVarint32OneArg:
-      Writer->writeVarint32(WritePos, getIntegerValue(Nd->getKid(0)), Value);
+      Writer->writeVarint32(Value, WritePos, getIntegerValue(Nd->getKid(0)));
       break;
     case OpVarint64NoArgs:
-      Writer->writeVarint64(WritePos, Value);
+      Writer->writeVarint64(Value, WritePos);
       break;
     case OpVarint64OneArg:
-      Writer->writeVarint64(WritePos, getIntegerValue(Nd->getKid(0)), Value);
+      Writer->writeVarint64(Value, WritePos, getIntegerValue(Nd->getKid(0)));
       break;
     case OpVaruint1NoArgs:
-      Writer->writeVaruint1(WritePos, Value);
+      Writer->writeVaruint1(Value, WritePos);
       break;
     case OpVaruint1OneArg:
-      Writer->writeVaruint1(WritePos, getIntegerValue(Nd->getKid(0)), Value);
+      Writer->writeVaruint1(Value, WritePos, getIntegerValue(Nd->getKid(0)));
       break;
     case OpVaruint7NoArgs:
-      Writer->writeVaruint7(WritePos, Value);
+      Writer->writeVaruint7(Value, WritePos);
       break;
     case OpVaruint7OneArg:
-      Writer->writeVaruint7(WritePos, getIntegerValue(Nd->getKid(0)), Value);
+      Writer->writeVaruint7(Value, WritePos, getIntegerValue(Nd->getKid(0)));
       break;
     case OpVaruint32NoArgs:
-      Writer->writeVaruint32(WritePos, Value);
+      Writer->writeVaruint32(Value, WritePos);
       break;
     case OpVaruint32OneArg:
-      Writer->writeVaruint32(WritePos, getIntegerValue(Nd->getKid(0)), Value);
+      Writer->writeVaruint32(Value, WritePos, getIntegerValue(Nd->getKid(0)));
       break;
     case OpVaruint64NoArgs:
-      Writer->writeVaruint64(WritePos, Value);
+      Writer->writeVaruint64(Value, WritePos);
       break;
     case OpVaruint64OneArg:
-      Writer->writeVaruint64(WritePos, getIntegerValue(Nd->getKid(0)), Value);
+      Writer->writeVaruint64(Value, WritePos, getIntegerValue(Nd->getKid(0)));
       break;
     case OpVoid:
       break;

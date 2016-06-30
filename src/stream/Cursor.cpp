@@ -21,22 +21,36 @@ namespace wasm {
 
 namespace decode {
 
-uint8_t ReadCursor::readByte() {
-  while (BytesRemaining == 0) {
-    if (Buffer) {
-      Queue->unlockAddress(LockedAddress);
-      Buffer = nullptr;
-    }
-    if (CurAddress >= EobAddress)
-      return 0;
-    Buffer = Queue->getReadLockedPointer(CurAddress, BytesRemaining);
-    if (BytesRemaining == 0) {
-      EobAddress = Queue->currentSize();
-    }
+bool ReadCursor::fillBuffer() {
+  if (CurAddress >= EobAddress)
+    return false;
+  size_t BufferSize;
+  uint8_t *NewBuffer = Queue->getReadLockedPointer(
+      CurAddress, ByteQueue::PageSize, BufferSize);
+  releaseLock();
+  if (BufferSize == 0) {
+    EobAddress = Queue->currentSize();
+    BufferEnd = Buffer = nullptr;
+    return false;
   }
-  --BytesRemaining;
-  ++CurAddress;
-  return *(Buffer++);
+  Buffer = NewBuffer;
+  BufferEnd = Buffer + BufferSize;
+  LockedAddress = CurAddress;
+  return true;
+}
+
+void WriteCursor::fillBuffer() {
+  if (CurAddress >= EobAddress)
+    fatal("Write past Eob");
+  size_t BufferSize;
+  uint8_t *NewBuffer = Queue->getWriteLockedPointer(
+      CurAddress, ByteQueue::PageSize, BufferSize);
+  releaseLock();
+  if (BufferSize == 0)
+    fatal("Write failed!\n");
+  Buffer = NewBuffer;
+  BufferEnd = Buffer + BufferSize;
+  LockedAddress = CurAddress;
 }
 
 } // end of namespace decode

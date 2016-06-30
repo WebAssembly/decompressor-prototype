@@ -16,75 +16,66 @@
 # This file defines the default algorithms for decompressing a WASM
 # module.
 
+# TODO(kschimpf) Generate AST's.
+
 (version 0)
 (section 'filter'
 
   (default 'code'
-    (preorder 0)
-    (loop (append (varuint32 6))
-      (eval 'code.function')
-      (append)
-    )
+    (loop (varuint32 6)         # Number of function bodies.
+      (eval 'code.function'))
   )
 
   (default 'code.address'
-    # flags bitfield encoding alignment as log2(alignment)
-    (append (varuint32 6))
-    # memory offset
-    (append (varuint32 6))
+    (varuint32 6)               # alignment
+    (varuint32 6)               # offset
   )
 
   (default 'code.br_table'
-    (append (uint32 1))        # argument_count
-    (loop (append (varuint32 6))
-       (append (varuint32 6))) # target entries indicating block/loop to break
-    (append (varuint32 6))     # default target
+    (uint8)                      # table arity.
+    (loop (varuint32 6)          # number of targets.
+       (varuint32 6))            # target depth.
+    (varuint32 6)                # default target depth.
   )
 
   (default 'code.br_target'
-     (append (uint32 1))       #   argument_count
-     (append (varuint32 6))    #   relative depth
+     (uint8)                     #   br arity.
+     (varuint32 6)               #   relative depth
   )
 
   (default 'code.call_args'
-    (append (uint32 1))        #   argument count
-    (append (varuint32 6))     #   funtion index
+    (varuint32 6)                #   function arity.
+    (varuint32 6)                #   function index
   )
 
   (default 'code.function'
-    (preorder 0)
-    (block (varuint32) 0xFF)
-    (loop (append (varuint32 6))
-      (eval 'code.locals'))
+    (block (varuint32) 0xFF)     # number of bytes in function.
+    (loop (varuint32 6)          # number of locals in function.
+      (eval 'code.local'))
     (loop.unbounded
-      (eval 'code.inst')
-      (append)
-    )
+      (eval 'code.inst'))
   )
 
-  (default 'code.locals'
-    (preorder 0)
-    (loop (append (varuint32 6))     # Type of each local variable.
-      (append (uint32 3))
-    )
+  (default 'code.local'
+    (varuint32 6)                # number of locals with type
+    (uint8 3)                    # type of locals.
   )
 
   (default 'code.inst'
-    (preorder 0)
-    (select (append (uint8))
+    (select (uint8)
       (void)                                 # simple one byte opcode.
       # control flow operators.
       (case 0x06 (eval 'code.br_target'))    # br
       (case 0x07 (eval 'code.br_target'))    # br_if
       (case 0x08 (eval 'code.br_table'))     # br_table
-      (case 0x09 (append (uint32 1)))        # return argument_count
+      (case 0x09 (uint8))                    # return arity
       # basic operators
-      (case 0x10 (append (varint32 6)))      # i32.const value
-      (case 0x11 (append (varint64 6)))      # i64.const value
-      (case 0x12 (append (uint64)))          # f64.const value
-      (case 0x13 (append (uint32)))          # f32.const value
-      (case 0x14 (append (varuint32 6)))     # get_local index
-      (case 0x15 (append (varuint32 6)))     # set_local index
+      (case 0x10 (varint32 6))               # i32.const value
+      (case 0x11 (varint64 6))               # i64.const value
+      (case 0x12 (uint64))                   # f64.const value
+      (case 0x13 (uint32))                   # f32.const value
+      (case 0x14 (varuint32 6))              # get_local index
+      (case 0x15 (varuint32 6))              # set_local index
       (case 0x16 (eval 'code.call_args'))    # call
       (case 0x17 (eval 'code.call_args'))    # call_indirect
       (case 0x18 (eval 'code.call_args'))    # call_import
@@ -112,125 +103,93 @@
       (case 0x34 (eval 'code.address'))      # i64.store address
       (case 0x35 (eval 'code.address'))      # f32.store address
       (case 0x36 (eval 'code.address'))      # f64.store address
+      # TODO(kschimpf) build asts base on arity of opcodes?
       (case 0xFF (block.end))                # end function block
     )
   )
 
   (default 'data'
-    (preorder 0)
-    (loop (append (varuint32 6))
-      (eval 'data_segment')
-      (append)
-    )
+    (loop (varuint32 6)        # number of data segments.
+      (eval 'data_segment'))
   )
 
   (default 'data.segment'
-    (preorder 0)
     # The offset in linear memory at which to store the data.
-    (append (varuint32 6))
+     (varuint32 6)
     # The data
-    (loop (append (varuint32 6))
-      (append (uint8))
-    )
+    (loop (varuint32 6) (uint8))
   )
 
   (default 'export'
-    (preorder 0)
-    (loop (append (varuint32 6))
-      (eval 'export.entry')
-    )
+    (loop (varuint32 6)        # number of exports
+      (eval 'export.entry'))
   )
 
   (default 'export.entry'
-    (preorder 0)
-    (append (varuint32 6))     # Index into the function table
-    (eval 'export.symbol')            # funtion name
-    (append)
+    (varuint32 6)              # function index
+    (eval 'export.symbol')     # funtion name
   )
 
-  (default 'export.symbol' # reads in a symbol name
-    (preorder 0)
-    (loop (append (varuint32 6)) (append (uint8)))
+  (default 'export.symbol'     # reads in a function name
+    (loop (varuint32 6) (uint8))
   )
 
   (default 'function'
-    (preorder 0)
-    (loop (append (varuint32 6))
-       (append (varuint32 6))    # list of type signature indices
-    )
+    (loop (varuint32 6)        # Number of type signatures.
+       (varuint32 6))          # type signature index
   )
 
   (default 'import'
-    (preorder 0)
-    (loop (append (varuint32 6)) (eval 'import_entry'))
+    (loop (varuint32 6) (eval 'import_entry'))
   )
 
   (default 'import.entry'
-    (preorder 0)
-    (append (varuint32 6))  # signature index of the import
-    (eval 'import.symbol')  # module string
-    (append)
-    (eval 'import.symbol')  # function string
-    (append)
+    (varuint32 6)              # signature index of the import
+    (eval 'import.symbol')     # module name
+    (eval 'import.symbol')     # function name
   )
 
   (default 'import.symbol'
-    (preorder 0)
-    (loop (append (varuint32 6)) (append (uint8)))
+    (loop (varuint32 6) (uint8))
   )
 
   (default 'memory'
-    (varuint32 6)   # Initial memory suze
-    (varuint32 6)   # maximum memory size
-    (uint32 1)      # 1 if the memory is visible outside the module
-    (preorder 3)
+    (varuint32 6)              # Initial memory suze
+    (varuint32 6)              # maximum memory size
+    (uint8)                    # 1 if the memory is visible outside the module
   )
 
   (default 'name'
-    (preorder 0)
-    (loop (append (varuint32 6))
-      (eval 'function_names')
-      (append)
-    )
+    (loop (varuint32 6)        # function name count.
+      (eval 'name.function'))
   )
 
   (default 'name.function'
-    (preorder 0)
-    (eval 'name.symbol')                  # fcn_name
-    (append)
-    (loop (append (varuint32 6))     # local names.
-      (eval 'name.symbol') 
-      (append)
-    )
+    (eval 'name.symbol')       # function name
+    (loop (varuint32 6)        # number of local names.
+      (eval 'name.symbol'))    # local name
   )
 
   (default 'name.symbol' # reads in a symbol name
-    (preorder 0)
-    (loop (append (varuint32 6)) (append (uint8)))
+    (loop (varuint32 6) (uint8))
   )
 
   (default 'start'
-    (varuint32 6)
+    (varuint32 6)                # start function index.
   )
 
   (default 'table'
-    (preorder 0)
-    (loop (append (varuint32 6))
-      (append (varuint32 6))) # indices into the function section
+    (loop (varuint32 6)          # Number of table entries.
+       (varuint32 6))            # function index.
   )
 
   (default 'type'
-    (preorder 0)
-    (loop (append (varuint32 6))
-      (append (varuint7))             # function type 0x40
-      (loop (append (varuint32 6))    # parameters
-        (eval 'type.value_type'))
-      (loop (append (uint8))          # return types
-        (eval 'type.value_type'))
+    (loop (varuint32 6)          # number of signatures.
+      (uint8)                    # type form (0x040)
+      (loop (varuint32 6)        # number of parameters parameters
+        (uint8))                 # parameter type.
+      (loop (varuint32 6)        # number of return types.
+        (uint8))                 # return type.
     )
-  )
-
-  (default 'type.value_type'
-    (append (uint32 3))
   )
 )

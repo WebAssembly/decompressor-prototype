@@ -20,19 +20,54 @@
 #include "interp/ReadStream.h"
 #include "interp/State.h"
 
+namespace {
+
+using namespace wasm::decode;
+
+template<class Type>
+Type readLEB128Loop(ReadCursor &Pos, uint32_t &Shift, uint8_t &Chunk) {
+  Type Value = 0;
+  Shift = 0;
+  while (true) {
+    Chunk = Pos.readByte();
+    Type Data = Chunk & ~(uint8_t(1) << 7);
+    Value |= Data << Shift;
+    Shift += 7;
+    if ((Chunk >> 7) == 0)
+      return Value;
+  }
+}
+
+template<class Type>
+Type readLEB128(ReadCursor &Pos) {
+  uint32_t Shift;
+  uint8_t Chunk;
+  return readLEB128Loop<Type>(Pos, Shift, Chunk);
+}
+
+template<class Type>
+Type readSignedLEB128(ReadCursor &Pos) {
+  uint32_t Shift;
+  uint8_t Chunk;
+  Type Value = readLEB128Loop<Type>(Pos, Shift, Chunk);
+  if (Chunk & 0x40)
+    Value |= ~Type(0) << Shift;
+  return Value;
+}
+
+} // end of anonymous namespace
+
 namespace wasm {
 
 using namespace decode;
 
 namespace interp {
 
-uint8_t ByteReadStream::readUint8(decode::ReadCursor &Pos,
-                                  decode::IntType /*NumBits*/) {
+uint8_t ByteReadStream::readUint8(ReadCursor &Pos, uint32_t /*NumBits*/) {
   return Pos.readByte();
 }
 
-uint32_t ByteReadStream::readUint32(decode::ReadCursor &Pos,
-                                    decode::IntType /*NumBits*/) {
+uint32_t ByteReadStream::readUint32(ReadCursor &Pos, uint32_t /*NumBits*/) {
   uint32_t Value = 0;
   constexpr uint32_t WordSize = sizeof(uint32_t);
   for (uint32_t i = 0; i < WordSize; ++i)
@@ -40,42 +75,15 @@ uint32_t ByteReadStream::readUint32(decode::ReadCursor &Pos,
   return Value;
 }
 
-int32_t ByteReadStream::readVarint32(decode::ReadCursor &Pos,
-                                     decode::IntType /*NumBits*/) {
-  uint32_t Value = 0;
-  uint32_t Shift = 0;
-  while (true) {
-    uint32_t Chunk = Pos.readByte();
-    uint32_t Data = Chunk & ~(uint8_t(1) << 7);
-    Value |= Data << Shift;
-    Shift += 7;
-    if ((Chunk >> 7) == 0) {
-      if (Shift < 32 && ((Data >> 6)  == 1))
-        Value |= ~(uint32_t(1) << Shift);
-      return int32_t(Value);
-    }
-  }
+int32_t ByteReadStream::readVarint32(ReadCursor &Pos, uint32_t /*NumBits*/) {
+  return readSignedLEB128<uint32_t>(Pos);
 }
 
-int32_t ByteReadStream::readVarint64(decode::ReadCursor &Pos,
-                                     decode::IntType /*NumBits*/) {
-  uint64_t Value = 0;
-  uint64_t Shift = 0;
-  while (true) {
-    uint32_t Chunk = Pos.readByte();
-    uint32_t Data = Chunk & ~(uint32_t(1) << 7);
-    Value |= uint64_t(Data) << Shift;
-    Shift += 7;
-    if ((Chunk >> 7) == 0) {
-      if (Shift < 64 && ((Data >> 6)  == 1))
-        Value |= ~(uint64_t(1) << Shift);
-      return int64_t(Value);
-    }
-  }
+int64_t ByteReadStream::readVarint64(ReadCursor &Pos, uint32_t /*NumBits*/) {
+  return readSignedLEB128<uint64_t>(Pos);
 }
 
-uint64_t ByteReadStream::readUint64(decode::ReadCursor &Pos,
-                                    decode::IntType /*NumBits*/) {
+uint64_t ByteReadStream::readUint64(ReadCursor &Pos, uint32_t /*NumBits*/) {
   uint64_t Value = 0;
   constexpr uint32_t WordSize = sizeof(uint64_t);
   for (uint32_t i = 0; i < WordSize; ++i)
@@ -83,42 +91,20 @@ uint64_t ByteReadStream::readUint64(decode::ReadCursor &Pos,
   return Value;
 }
 
-uint8_t ByteReadStream::readVaruint1(decode::ReadCursor &Pos,
-                                     decode::IntType /*NumBits*/) {
-  return Pos.readByte() & ~(uint32_t(1) << 7);
+uint8_t ByteReadStream::readVaruint1(ReadCursor &Pos, uint32_t /*NumBits*/) {
+  return Pos.readByte();
 }
 
-uint8_t ByteReadStream::readVaruint7(decode::ReadCursor &Pos,
-                                     decode::IntType /*NumBits*/) {
-  return Pos.readByte() & ~(uint32_t(1) << 7);
+uint8_t ByteReadStream::readVaruint7(ReadCursor &Pos, uint32_t /*NumBits*/) {
+  return Pos.readByte();
 }
 
-uint32_t ByteReadStream::readVaruint32(decode::ReadCursor &Pos,
-                                       decode::IntType /*NumBits*/) {
-  uint32_t Value = 0;
-  uint32_t Shift = 0;
-  while (true) {
-    uint32_t Chunk = Pos.readByte();
-    uint32_t Data = Chunk & ~(uint32_t(1) << 7);
-    Value |= Data << Shift;
-    if ((Chunk >> 7) == 0)
-      return Value;
-    Shift += 7;
-  }
+uint32_t ByteReadStream::readVaruint32(ReadCursor &Pos, uint32_t /*NumBits*/) {
+  return readLEB128<uint32_t>(Pos);
 }
 
-uint64_t ByteReadStream::readVaruint64(decode::ReadCursor &Pos,
-                                       decode::IntType /*NumBits*/) {
-  uint64_t Value = 0;
-  uint64_t Shift = 0;
-  while (true) {
-    uint32_t Chunk = Pos.readByte();
-    uint32_t Data = Chunk & ~(uint32_t(1) << 7);
-    Value |= uint64_t(Data) << Shift;
-    if ((Chunk >> 7) == 0)
-      return Value;
-    Shift += 7;
-  }
+uint64_t ByteReadStream::readVaruint64(ReadCursor &Pos, uint32_t /*NumBits*/) {
+  return readLEB128<uint64_t>(Pos);
 }
 
 } // end of namespace decode

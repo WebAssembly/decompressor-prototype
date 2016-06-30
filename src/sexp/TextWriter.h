@@ -66,8 +66,10 @@ private:
   FILE *File = 0;
   size_t IndentCount = 0;
   bool LineEmpty = true;
-  std::vector<Node::IndexType> KidCountSameLine;
-  std::unordered_set<Node::IndexType> HasHiddenSeqSet;
+  std::vector<int> KidCountSameLine;
+  std::vector<int> MaxKidCountSameLine;
+  std::unordered_set<int> HasHiddenSeqSet;
+  std::unordered_set<int> NeverSameLine;
   // Special constant denoting maximum IntType value that is a power of 10.
   // Used to print out decimal values.
   decode::IntType IntTypeMaxPower10;

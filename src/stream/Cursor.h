@@ -32,22 +32,21 @@ public:
       std::numeric_limits<size_t>::max();
 
   void assign(const Cursor& C) {
+    releaseLock();
     Queue = C.Queue;
     LockedAddress = C.LockedAddress;
     Buffer = C.Buffer;
+    BufferEnd = C.BufferEnd;
     CurAddress = C.CurAddress;
-    BytesRemaining = C.BytesRemaining;
     EobAddress = C.EobAddress;
-    if (Buffer)
-      Queue->lockAddress(LockedAddress);
   }
 
   void swap(Cursor &C) {
     std::swap(Queue, C.Queue);
     std::swap(LockedAddress, C.LockedAddress);
     std::swap(Buffer, C.Buffer);
+    std::swap(BufferEnd, C.BufferEnd);
     std::swap(CurAddress, C.CurAddress);
-    std::swap(BytesRemaining, C.BytesRemaining);
     std::swap(EobAddress, C.EobAddress);
   }
 
@@ -55,28 +54,38 @@ public:
     return CurAddress < EobAddress;
   }
 
+  void releaseLock() {
+    if (Buffer) {
+      Queue->lockAddress(LockedAddress);
+      Buffer = nullptr;
+      BufferEnd = nullptr;
+    }
+  }
+
 protected:
   // The byte queue the cursor points to.
   ByteQueue *Queue;
   // The address locked by this cursor, if Buffer != nullptr.
-  size_t LockedAddress;
+  size_t LockedAddress = 0;
   // The pointer to the locked buffer.
-  uint8_t *Buffer;
+  uint8_t *Buffer = nullptr;
+  // The pointer to the end of the locked buffer.
+  uint8_t *BufferEnd = nullptr;
   // The current address into the buffer.
-  size_t CurAddress;
-  // The number of bytes left in the buffer.
-  size_t BytesRemaining;
+  size_t CurAddress = 0;
   // End of block address.
-  size_t EobAddress;
+  size_t EobAddress = kUndefinedAddress;
 
-  explicit Cursor (ByteQueue *Queue) :
-      Queue(Queue), LockedAddress(0), Buffer(nullptr),
-      CurAddress(0), BytesRemaining(0), EobAddress(kUndefinedAddress) {}
+  explicit Cursor (ByteQueue *Queue) : Queue(Queue) {}
+
+  ~Cursor() {
+    releaseLock();
+  }
 
   explicit Cursor(const Cursor& C) :
       Queue(C.Queue), LockedAddress(C.LockedAddress),
-      Buffer(C.Buffer), CurAddress(C.CurAddress),
-      BytesRemaining(C.BytesRemaining), EobAddress(kUndefinedAddress) {
+      Buffer(C.Buffer), BufferEnd(C.BufferEnd), CurAddress(C.CurAddress),
+      EobAddress(kUndefinedAddress) {
     // Add local copy of lock, so that lifetime matches cursor.
     if (Buffer)
       Queue->lockAddress(LockedAddress);
@@ -92,7 +101,16 @@ public:
     return *this;
   }
   // Reads next byte. Returns zero if at end of buffer.
-  uint8_t readByte();
+  uint8_t readByte() {
+    if (Buffer == BufferEnd && !fillBuffer())
+      return 0;
+    ++CurAddress;
+    return *(Buffer++);
+  }
+
+protected:
+  // Fills buffer with more text, if possible.
+  bool fillBuffer();
 };
 
 class WriteCursor : public Cursor {
@@ -103,6 +121,17 @@ public:
     assign(C);
     return *this;
   }
+
+  // Writes next byte. Fails if at end of buffer.
+  void writeByte(uint8_t Byte) {
+    if (Buffer == BufferEnd)
+      fillBuffer();
+    ++CurAddress;
+    *(Buffer++) = Byte;
+  }
+
+protected:
+  void fillBuffer();
 };
 
 } // end of namespace decode

@@ -20,7 +20,9 @@
 #ifndef DECOMPRESSOR_SRC_INTERP_READSTREAM_H
 #define DECOMPRESSOR_SRC_INTERP_READSTREAM_H
 
+#include "interp/Streams.h"
 #include "sexp/Ast.h"
+#include "Casting.h"
 #include "stream/Cursor.h"
 
 namespace wasm {
@@ -37,83 +39,100 @@ public:
     return readUint8(Pos, 8);
   }
   virtual uint8_t readUint8(decode::ReadCursor &Pos,
-                            decode::IntType NumBits) = 0;
+                            uint32_t NumBits) = 0;
 
   uint32_t readUint32(decode::ReadCursor &Pos) {
     return readUint32(Pos, 8);
   }
   virtual uint32_t readUint32(decode::ReadCursor &Pos,
-                              decode::IntType NumBits) = 0;
+                              uint32_t NumBits) = 0;
 
   uint64_t readUint64(decode::ReadCursor &Pos) {
     return readUint64(Pos, 8);
   }
   virtual uint64_t readUint64(decode::ReadCursor &Pos,
-                              decode::IntType NumBits) = 0;
+                              uint32_t NumBits) = 0;
 
   int32_t readVarint32(decode::ReadCursor &Pos) {
     return readVarint32(Pos, 8);
   }
   virtual int32_t readVarint32(decode::ReadCursor &Pos,
-                               decode::IntType NumBits) = 0;
+                               uint32_t NumBits) = 0;
 
-  int32_t readVarint64(decode::ReadCursor &Pos) {
+  int64_t readVarint64(decode::ReadCursor &Pos) {
     return readVarint64(Pos, 8);
   }
-  virtual int32_t readVarint64(decode::ReadCursor &Pos,
-                               decode::IntType NumBits) = 0;
+  virtual int64_t readVarint64(decode::ReadCursor &Pos,
+                               uint32_t NumBits) = 0;
 
   uint8_t readVaruint1(decode::ReadCursor &Pos) {
     return readVaruint1(Pos, 8);
   }
   virtual uint8_t readVaruint1(decode::ReadCursor &Pos,
-                               decode::IntType NumBits) = 0;
+                               uint32_t NumBits) = 0;
 
   uint8_t readVaruint7(decode::ReadCursor &Pos) {
     return readVaruint7(Pos, 8);
   }
   virtual uint8_t readVaruint7(decode::ReadCursor &Pos,
-                               decode::IntType NumBits) = 0;
+                               uint32_t NumBits) = 0;
 
   uint32_t readVaruint32(decode::ReadCursor &Pos) {
     return readVaruint32(Pos, 8);
   }
   virtual uint32_t readVaruint32(decode::ReadCursor &Pos,
-                                 decode::IntType NumBits) = 0;
+                                 uint32_t NumBits) = 0;
 
   uint64_t readVaruint64(decode::ReadCursor &Pos) {
     return readVaruint64(Pos, 8);
   }
   virtual uint64_t readVaruint64(decode::ReadCursor &Pos,
-                                 decode::IntType NumBits) = 0;
+                                 uint32_t NumBits) = 0;
+
+  StreamType getType() const {
+    return Type;
+  }
+
+  StreamType getRtClassId() const {
+    return Type;
+  }
+
+  static bool implementsClass(StreamType /*RtClassID*/) {
+    return true;
+  }
 
 protected:
-  ReadStream() {}
+  ReadStream(StreamType Type) : Type(Type) {}
+  StreamType Type;
 };
 
 class ByteReadStream final : public ReadStream {
   ByteReadStream(const ReadStream &) = delete;
   ByteReadStream &operator=(const ByteReadStream &) = delete;
 public:
-  ByteReadStream() {}
+  ByteReadStream() : ReadStream(StreamType::Byte) {}
   uint8_t readUint8(decode::ReadCursor &Pos,
-                    decode::IntType NumBits) override;
+                    uint32_t NumBits) override;
   uint32_t readUint32(decode::ReadCursor &Pos,
-                      decode::IntType NumBits) override;
+                      uint32_t NumBits) override;
   uint64_t readUint64(decode::ReadCursor &Pos,
-                      decode::IntType NumBits) override;
+                      uint32_t NumBits) override;
   int32_t readVarint32(decode::ReadCursor &Pos,
-                       decode::IntType NumBits) override;
-  int32_t readVarint64(decode::ReadCursor &Pos,
-                       decode::IntType NumBits) override;
+                       uint32_t NumBits) override;
+  int64_t readVarint64(decode::ReadCursor &Pos,
+                       uint32_t NumBits) override;
+  // TODO(kschimpf): Remove varuint1 and varuint7?
   uint8_t readVaruint1(decode::ReadCursor &Pos,
-                       decode::IntType NumBits) override;
+                       uint32_t NumBits) override;
   uint8_t readVaruint7(decode::ReadCursor &Pos,
-                       decode::IntType NumBits) override;
+                       uint32_t NumBits) override;
   uint32_t readVaruint32(decode::ReadCursor &Pos,
-                         decode::IntType NumBits) override;
+                         uint32_t NumBits) override;
   uint64_t readVaruint64(decode::ReadCursor &Pos,
-                         decode::IntType NumBits) override;
+                         uint32_t NumBits) override;
+  static bool implementsClass(StreamType RtClassID) {
+    return RtClassID == StreamType::Byte;
+  }
 };
 
 } // end of namespace decode

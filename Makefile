@@ -78,7 +78,8 @@ INTERP_SRCDIR = $(SRCDIR)/interp
 INTERP_OBJDIR = $(OBJDIR)/interp
 INTERP_SRCS = \
 	ReadStream.cpp \
-	State.cpp
+	State.cpp \
+	WriteStream.cpp
 
 INTERP_OBJS=$(patsubst %.cpp, $(INTERP_OBJDIR)/%.o, $(INTERP_SRCS))
 
