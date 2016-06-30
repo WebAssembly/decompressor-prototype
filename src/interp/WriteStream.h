@@ -65,18 +65,6 @@ public:
   virtual void writeVarint64(int64_t Value, decode::WriteCursor &Pos,
                              uint32_t NumBits) = 0;
 
-  void writeVaruint1(uint8_t Value, decode::WriteCursor &Pos) {
-    writeVaruint1(Value, Pos, 8);
-  }
-  virtual void writeVaruint1(uint8_t Value, decode::WriteCursor &Pos,
-                             uint32_t NumBits) = 0;
-
-  void writeVaruint7(uint8_t Value, decode::WriteCursor &Pos) {
-    writeVaruint7(Value, Pos, 8);
-  }
-  virtual void writeVaruint7(uint8_t Value, decode::WriteCursor &Pos,
-                             uint32_t NumBits) = 0;
-
   void writeVaruint32(uint32_t Value, decode::WriteCursor &Pos) {
     writeVaruint32(Value, Pos, 8);
   }
@@ -120,10 +108,6 @@ public:
   void writeVarint32(int32_t Value, decode::WriteCursor &Pos,
                      uint32_t NumBits) override;
   void writeVarint64(int64_t Value, decode::WriteCursor &Pos,
-                     uint32_t NumBits) override;
-  void writeVaruint1(uint8_t Value, decode::WriteCursor &Pos,
-                     uint32_t NumBits) override;
-  void writeVaruint7(uint8_t Value, decode::WriteCursor &Pos,
                      uint32_t NumBits) override;
   void writeVaruint32(uint32_t Value, decode::WriteCursor &Pos,
                       uint32_t NumBits) override;

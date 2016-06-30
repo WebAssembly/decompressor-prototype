@@ -91,14 +91,6 @@ uint64_t ByteReadStream::readUint64(ReadCursor &Pos, uint32_t /*NumBits*/) {
   return Value;
 }
 
-uint8_t ByteReadStream::readVaruint1(ReadCursor &Pos, uint32_t /*NumBits*/) {
-  return Pos.readByte();
-}
-
-uint8_t ByteReadStream::readVaruint7(ReadCursor &Pos, uint32_t /*NumBits*/) {
-  return Pos.readByte();
-}
-
 uint32_t ByteReadStream::readVaruint32(ReadCursor &Pos, uint32_t /*NumBits*/) {
   return readLEB128<uint32_t>(Pos);
 }

@@ -74,33 +74,17 @@ struct IntegerValue {
 %token END 0 "$END"
 
 // Keywords
-%token APPEND        "append"
-%token AST_TO_BIT    "ast.to.bit"
-%token AST_TO_BYTE   "ast.to.byte"
-%token AST_TO_INT    "ast.to.int"
-%token BIT_TO_BIT    "bit.to.bit"
-%token BIT_TO_BYTE   "bit.to.byte"
-%token BIT_TO_INT    "bit.to.int"
-%token BIT_TO_AST    "bit.to.ast"
 %token BLOCK         "block"
 %token BLOCKBEGIN    "block.begin"
 %token BLOCKEND      "block.end"
-%token BYTE_TO_BIT   "byte.to.bit"
 %token BYTE_TO_BYTE  "byte.to.byte"
-%token BYTE_TO_INT   "byte.to.int"
-%token BYTE_TO_AST   "byte.to.ast"
 %token CASE          "case"
 %token CLOSEPAREN    ")"
-%token COPY          "copy"
 %token DEFAULT       "default"
 %token DEFINE        "define"
 %token ERROR         "error"
 %token EVAL          "eval"
 %token FILTER        "filter"
-%token INT_TO_BIT    "int.to.bit"
-%token INT_TO_BYTE   "int.to.byte"
-%token INT_TO_INT    "int.to.int"
-%token INT_TO_AST    "int.to.ast"
 %token I32_CONST     "i32.const"
 %token I64_CONST     "i64.const"
 %token LIT           "lit"
@@ -109,8 +93,6 @@ struct IntegerValue {
 %token OPENPAREN     "("
 %token MAP           "map"
 %token PEEK          "peek"
-%token POSTORDER     "postorder"
-%token PREORDER      "preorder"
 %token READ          "read"
 %token SECTION       "section"
 %token SELECT        "select"
@@ -124,13 +106,10 @@ struct IntegerValue {
 %token U64_CONST     "u64.const"
 %token VARINT32      "varint32"
 %token VARINT64      "varint64"
-%token VARUINT1      "varuint1"
-%token VARUINT7      "varuint7"
 %token VARUINT32     "varuint32"
 %token VARUINT64     "varuint64"
 %token VERSION       "version"
 %token VOID          "void"
-%token WRITE         "write"
 
 // Terminal classes
 %token <wasm::filt::ExternalName> IDENTIFIER
@@ -241,13 +220,7 @@ declaration_list
         ;
 
 expression
-        : "(" "append" ")" {
-            $$ = Driver.create<Nullary<OpAppendNoArgs>>();
-          }
-        | "(" "append" expression ")" {
-            $$ = Driver.create<Unary<OpAppendOneArg>>($3);
-          }
-        | "(" "block" expression ")" {
+        : "(" "block" expression ")" {
             // 1st argument is width in bytes
             $$ = Driver.create<Unary<OpBlockOneArg>>($3);
           }
@@ -288,12 +261,6 @@ expression
           }
         | "(" "peek" expression ")" {
             $$ = Driver.create<Unary<OpPeek>>($3);
-          }
-        | "(" "postorder" integer ")" {
-            $$ = Driver.create<Unary<OpPostorder>>($3);
-          }
-        | "(" "preorder" integer ")" {
-            $$ = Driver.create<Unary<OpPreorder>>($3);
           }
         | "(" "read" expression ")" {
             $$ = Driver.create<Unary<OpRead>>($3);
@@ -349,22 +316,6 @@ expression
               Driver.error("varint64 expects 2 <= bitsize <= 64");
             $$ = Driver.create<Unary<OpVarint64OneArg>>($3);
           }
-        | "(" "varuint1" ")" {
-            $$ = Driver.create<Nullary<OpVaruint1NoArgs>>();
-          }
-        | "(" "varuint1" integer ")" {
-            if ($3->getValue() > 8)
-              Driver.error("varuint1 bitsize > 8");
-            $$ = Driver.create<Unary<OpVaruint1OneArg>>($3);
-          }
-        | "(" "varuint7" ")" {
-            $$ = Driver.create<Nullary<OpVaruint7NoArgs>>();
-          }
-        | "(" "varuint7" integer ")" {
-            if ($3->getValue() > 8)
-              Driver.error("varuint7 bitsize > 8");
-            $$ = Driver.create<Unary<OpVaruint7OneArg>>($3);
-          }
         | "(" "varuint32" ")" {
             $$ = Driver.create<Nullary<OpVaruint32NoArgs>>();
           }
@@ -385,9 +336,6 @@ expression
           }
         | "(" "void" ")" {
             $$ = Driver.create<Nullary<OpVoid>>();
-          }
-        | "(" "write" expression ")" {
-            $$ = Driver.create<Unary<OpWrite>>($3);
           }
         ;
 
@@ -443,9 +391,6 @@ seq_statement_list
 
 statement
         : expression { $$ = $1; }
-        | "(" "copy" ")" {
-            $$ = Driver.create<Nullary<OpCopy>>();
-          }
         | stream_conv { $$ = $1; }
         | "(" "filter" stream_conv_list ")" { $$ = $3; }
         | "(" loop_body ")" { $$ = $2; }
@@ -470,53 +415,8 @@ stream_conv_list
         ;
 
 stream_conv_stmt_list
-        : "ast.to.ast" statement {
-           $$ = Driver.create<Unary<OpAstToAst>>($2);
-          }
-        | "ast.to.bit" statement  {
-            $$ = Driver.create<Unary<OpAstToBit>>($2);
-          }
-        | "ast.to.byte" statement {
-            $$ = Driver.create<Unary<OpAstToByte>>($2);
-          }
-        | "ast.to.int" statement {
-            $$ = Driver.create<Unary<OpAstToInt>>($2);
-          }
-        | "bit.to.bit" statement {
-            $$ = Driver.create<Unary<OpBitToBit>>($2);
-          }
-        | "bit.to.byte" statement {
-           $$ = Driver.create<Unary<OpBitToByte>>($2);
-          }
-        | "bit.to.int" statement {
-            $$ = Driver.create<Unary<OpBitToInt>>($2);
-          }
-        | "bit.to.ast" statement {
-            $$ = Driver.create<Unary<OpBitToAst>>($2);
-          }
-        | "byte.to.bit" statement {
-            $$ = Driver.create<Unary<OpByteToBit>>($2);
-          }
-        | "byte.to.byte" statement {
+       : "byte.to.byte" statement {
             $$ = Driver.create<Unary<OpByteToByte>>($2);
-          }
-        | "byte.to.int" statement {
-            $$ = Driver.create<Unary<OpByteToInt>>($2);
-          }
-        | "byte.to.ast" statement {
-            $$ = Driver.create<Unary<OpByteToAst>>($2);
-          }
-        | "int.to.bit" statement  {
-            $$ = Driver.create<Unary<OpIntToBit>>($2);
-          }
-        | "int.to.byte" statement {
-            $$ = Driver.create<Unary<OpIntToByte>>($2);
-          }
-        | "int.to.int" statement {
-            $$ = Driver.create<Unary<OpIntToInt>>($2);
-          }
-        | "int.to.ast" statement {
-            $$ = Driver.create<Unary<OpIntToAst>>($2);
           }
         | stream_conv_stmt_list statement {
             $$ = $1;

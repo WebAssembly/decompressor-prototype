@@ -65,18 +65,6 @@ public:
   virtual int64_t readVarint64(decode::ReadCursor &Pos,
                                uint32_t NumBits) = 0;
 
-  uint8_t readVaruint1(decode::ReadCursor &Pos) {
-    return readVaruint1(Pos, 8);
-  }
-  virtual uint8_t readVaruint1(decode::ReadCursor &Pos,
-                               uint32_t NumBits) = 0;
-
-  uint8_t readVaruint7(decode::ReadCursor &Pos) {
-    return readVaruint7(Pos, 8);
-  }
-  virtual uint8_t readVaruint7(decode::ReadCursor &Pos,
-                               uint32_t NumBits) = 0;
-
   uint32_t readVaruint32(decode::ReadCursor &Pos) {
     return readVaruint32(Pos, 8);
   }
@@ -120,11 +108,6 @@ public:
   int32_t readVarint32(decode::ReadCursor &Pos,
                        uint32_t NumBits) override;
   int64_t readVarint64(decode::ReadCursor &Pos,
-                       uint32_t NumBits) override;
-  // TODO(kschimpf): Remove varuint1 and varuint7?
-  uint8_t readVaruint1(decode::ReadCursor &Pos,
-                       uint32_t NumBits) override;
-  uint8_t readVaruint7(decode::ReadCursor &Pos,
                        uint32_t NumBits) override;
   uint32_t readVaruint32(decode::ReadCursor &Pos,
                          uint32_t NumBits) override;

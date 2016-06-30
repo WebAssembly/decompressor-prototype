@@ -99,16 +99,6 @@ void ByteWriteStream::writeUint64(
   writeFixed<uint64_t>(Value, Pos);
 }
 
-void ByteWriteStream::writeVaruint1(
-    uint8_t Value, WriteCursor &Pos, uint32_t /*NumBits*/) {
-  Pos.writeByte(Value);
-}
-
-void ByteWriteStream::writeVaruint7(
-    uint8_t Value, WriteCursor &Pos, uint32_t /*NumBits*/) {
-  Pos.writeByte(Value);
-}
-
 void ByteWriteStream::writeVarint32(
     int32_t Value, WriteCursor &Pos, uint32_t /*NumBits*/) {
   if (Value < 0)
