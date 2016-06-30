@@ -33,10 +33,9 @@
   /* enum name, opcode */                                                      \
                                                                                \
   /* Control flow operators */                                                 \
-  X(BlockArgsOne,      0x00, "block.args",       "blockArgsOne",    1, 0)      \
-  X(BlockArgsTwo,      0x01, "block.args",       "blockTwoArgs",    2, 0)      \
-  X(BlockEnd,          0x03, "block.end",        nullptr,           0, 0)      \
-  X(Block,             0x04, "block",            nullptr,           2, 0)      \
+  X(BlockEndNoArgs,    0x00, "block.end",        "BlockEndNoArgs",  0, 0)      \
+  X(BlockEndOneArg,    0x01, "block.end",        "BlockEndOneArg",  1, 0)      \
+  X(Block,             0x04, "block",            nullptr,           0, 0)      \
   X(Case,              0x05, "case",             nullptr,           2, 0)      \
   X(Error,             0x07, "error",            nullptr,           0, 0)      \
   X(Eval,              0x08, "eval",             nullptr,           1, 0)      \
@@ -113,7 +112,7 @@
 //#define X(tag)
 #define AST_NULLARYNODE_TABLE                                                  \
 /*  X(AppendNoArgs)                                                         */ \
-  X(BlockEnd)                                                                  \
+  X(BlockEndNoArgs)                                                            \
   X(Error)                                                                     \
   X(Uint8NoArgs)                                                               \
   X(Uint32NoArgs)                                                              \
@@ -135,7 +134,8 @@
 /*  X(BitToBit)                                                             */ \
 /*  X(BitToByte)                                                            */ \
 /*  X(BitToInt)                                                             */ \
-  X(BlockArgsOne)                                                              \
+  X(Block)                                                                     \
+  X(BlockEndOneArg)                                                            \
 /*  X(ByteToAst)                                                            */ \
 /*  X(ByteToBit)                                                            */ \
   X(ByteToByte)                                                                \
@@ -167,8 +167,6 @@
 
 //#define X(tag)
 #define AST_BINARYNODE_TABLE                                                   \
-  X(BlockArgsTwo)                                                              \
-  X(Block)                                                                     \
   X(Case)                                                                      \
   X(Default)                                                                   \
   X(Define)                                                                    \

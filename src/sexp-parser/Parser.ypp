@@ -75,7 +75,6 @@ struct IntegerValue {
 
 // Keywords
 %token BLOCK         "block"
-%token BLOCK_ARGS    "block.args"
 %token BLOCKEND      "block.end"
 %token BYTE_TO_BYTE  "byte.to.byte"
 %token CASE          "case"
@@ -116,7 +115,6 @@ struct IntegerValue {
 %token <wasm::filt::IntegerValue> INTEGER
 
 // Nonterminal classes.
-%type <wasm::filt::Node *> block_begin
 %type <wasm::filt::Node *> block_stmt_list
 %type <wasm::filt::Node *> case
 %type <wasm::filt::Node *> case_list
@@ -221,36 +219,26 @@ declaration_list
           }
         ;
 
-block_begin
-        : "(" "block.args" expression ")" {
-            $$ = Driver.create<Unary<OpBlockArgsOne>>($3);
-          }
-        | "(" "block.args" expression integer ")" {
-            $$ = Driver.create<Binary<OpBlockArgsTwo>>($3, $4);
-          }
-        ;
-
 block_stmt_list
-        : block_begin statement  {
-            $$ = Driver.create<Binary<OpBlock>>($1, $2);
+        : statement  {
+            $$ = Driver.create<Unary<OpBlock>>($1);
           }
         | block_stmt_list statement {
             $$ = $1;
-            Node *StmtList = $1->getKid(1);
+            Node *StmtList = $1->getKid(0);
             auto *Seq = dyn_cast<Nary<OpSequence>>(StmtList);
             if (Seq == nullptr) {
               Seq = Driver.create<Nary<OpSequence>>();
               Seq->append(StmtList);
-              $1->setKid(1, Seq);
+              $1->setKid(0, Seq);
             }
             Seq->append($2);
           }
         ;
 
 expression
-        : "(" "block" block_stmt_list ")"  { $$ = $3; }
-        | "(" "block.end" ")" {
-            $$ = Driver.create<Nullary<OpBlockEnd>>();
+        : "(" "block.end" ")" {
+            $$ = Driver.create<Nullary<OpBlockEndNoArgs>>();
           }
         | "(" "error" ")" {
             $$ = Driver.create<Nullary<OpError>>();
@@ -403,6 +391,10 @@ seq_stmt_list
 statement
         : expression { $$ = $1; }
         | stream_conv { $$ = $1; }
+        | "(" "block" block_stmt_list ")"  { $$ = $3; }
+        | "(" "block.end" statement ")" {
+            $$ = Driver.create<Unary<OpBlockEndOneArg>>($3);
+          }
         | "(" "filter" stream_conv_list ")" { $$ = $3; }
         | "(" loop_body ")" { $$ = $2; }
         | "(" "select" case_list ")" { $$ = $3; }
