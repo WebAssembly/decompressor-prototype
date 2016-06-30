@@ -53,7 +53,6 @@ IntType State::eval(const Node *Nd) {
     case OpSymConst:
     case OpFilter:
     case OpSelect:
-    case OpBlock:
     case OpBlockArgsOne:
     case OpBlockArgsTwo:
     case OpBlockEnd:
@@ -73,6 +72,23 @@ IntType State::eval(const Node *Nd) {
       fprintf(stderr, "Not evaluatable: %s\n", getNodeTypeName(Type));
       fatal("Evaluating filter s-expression not defined");
       return 0;
+    case OpBlock: {
+      WriteCursor BlockPos(WritePos);
+      size_t OldReadEobAddress = ReadPos.getEobAddress();
+      IntType BlockSize = read(Nd->getKid(0));
+      auto *ByteWriter = dyn_cast<ByteWriteStream>(Writer);
+      if (ByteWriter) {
+        ByteWriter->writeFixedVaruint32(0, WritePos);
+        ReadPos.setEobAddress(ReadPos.getCurAddress() + BlockSize);
+      }
+      eval(Nd->getKid(1));
+      if (ByteWriter) {
+        size_t NewSize = WritePos.getCurAddress() - BlockPos.getCurAddress();
+        ByteWriter->writeFixedVaruint32(NewSize, BlockPos);
+        ReadPos.setEobAddress(OldReadEobAddress);
+      }
+      return 0;
+    }
     case OpError:
       fatal("Error found during evaluation");
       return 0;

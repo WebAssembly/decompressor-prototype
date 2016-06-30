@@ -50,8 +50,20 @@ public:
     std::swap(EobAddress, C.EobAddress);
   }
 
+  size_t getEobAddress() const {
+    return EobAddress;
+  }
+
+  void setEobAddress(size_t NewValue) {
+    EobAddress = NewValue;
+  }
+
   bool atEob() {
     return CurAddress < EobAddress;
+  }
+
+  size_t getCurAddress() const {
+    return CurAddress;
   }
 
   void releaseLock() {
