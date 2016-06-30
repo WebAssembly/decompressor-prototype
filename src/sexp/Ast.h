@@ -367,46 +367,6 @@ public:
   ~Binary() {}
 };
 
-class TernaryNode : public Node {
-  TernaryNode(const TernaryNode&) = delete;
-  TernaryNode &operator=(const TernaryNode&) = delete;
-public:
-  ~TernaryNode() override {}
-
-  static bool implementsClass(NodeType Type);
-
-protected:
-  TernaryNode(NodeType Type, Node *Kid1, Node *Kid2, Node *Kid3)
-      : Node(Type) {
-    Kids.emplace_back(Kid1);
-    Kids.emplace_back(Kid2);
-    Kids.emplace_back(Kid3);
-  }
-  TernaryNode(alloc::Allocator *Alloc, NodeType Type,
-              Node *Kid1, Node *Kid2, Node *Kid3)
-      : Node(Alloc, Type) {
-    Kids.emplace_back(Kid1);
-    Kids.emplace_back(Kid2);
-    Kids.emplace_back(Kid3);
-  }
-};
-
-template<NodeType Kind>
-class Ternary final : public TernaryNode {
-  Ternary(const Ternary<Kind>&) = delete;
-  Ternary<Kind> &operator=(const Ternary<Kind>&) = delete;
-  virtual void forceCompilation() final;
-
-  static bool implementsClass(NodeType Type) { return Kind == Type; }
-
-public:
-  Ternary(Node *Kid1, Node *Kid2, Node* Kid3)
-      : TernaryNode(Kind, Kid1, Kid2, Kid3) {}
-  Ternary(alloc::Allocator *Alloc, Node *Kid1, Node *Kid2, Node* Kid3)
-      : TernaryNode(Alloc, Kind, Kid1, Kid2, Kid3) {}
-  ~Ternary() {}
-};
-
 class NaryNode : public Node {
   NaryNode(const NaryNode&) = delete;
   NaryNode &operator=(const NaryNode&) = delete;
