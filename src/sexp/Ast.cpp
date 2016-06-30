@@ -73,6 +73,8 @@ const char *getNodeTypeName(NodeType Type) {
   return Name;
 }
 
+void Node::forceCompilation() {}
+
 void Node::append(Node *) {
   decode::fatal("Node::append not supported for ast node!");
 }
@@ -149,6 +151,14 @@ void SymbolTable::install(Node *Root) {
   }
 }
 
+Node *NullaryNode::getKid(IndexType) const {
+  return nullptr;
+}
+
+void NullaryNode::setKid(IndexType, Node *) {
+  decode::fatal("NullaryNode::setKid not allowed");
+}
+
 bool NullaryNode::implementsClass(NodeType Type) {
   switch (Type) {
     default: return false;
@@ -162,6 +172,17 @@ bool NullaryNode::implementsClass(NodeType Type) {
 template<NodeType Kind>
 void Nullary<Kind>::forceCompilation() {}
 
+Node *UnaryNode::getKid(IndexType Index) const {
+  if (Index < 1)
+    return Kids[0];
+  return nullptr;
+}
+
+void UnaryNode::setKid(IndexType Index, Node *NewValue) {
+  assert(Index < 1);
+  Kids[0] = NewValue;
+}
+
 bool UnaryNode::implementsClass(NodeType Type) {
   switch (Type) {
     default: return false;
@@ -174,6 +195,17 @@ bool UnaryNode::implementsClass(NodeType Type) {
 
 template<NodeType Kind>
 void Unary<Kind>::forceCompilation() {}
+
+Node *BinaryNode::getKid(IndexType Index) const {
+  if (Index < 2)
+    return Kids[Index];
+  return nullptr;
+}
+
+void BinaryNode::setKid(IndexType Index, Node *NewValue) {
+  assert(Index < 2);
+  Kids[Index] = NewValue;
+}
 
 bool BinaryNode::implementsClass(NodeType Type) {
   switch (Type) {
