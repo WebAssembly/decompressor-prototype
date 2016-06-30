@@ -59,6 +59,11 @@ class ByteQueue {
   ByteQueue &operator=(const ByteQueue &) = delete;
 
 public:
+
+  static constexpr size_t PageSizeLog2 = 12;
+  static constexpr size_t PageSize = 1 << PageSizeLog2;
+  static constexpr size_t PageMask = PageSize - 1;
+
   ByteQueue();
 
   virtual ~ByteQueue();
@@ -127,6 +132,10 @@ public:
   uint8_t *getReadLockedPointer(size_t Address, size_t WantedSize,
                                 size_t &LockedSize);
 
+  uint8_t *getReadLockedPointer(size_t Address, size_t &LockedSize) {
+    return getReadLockedPointer(Address, PageSize, LockedSize);
+  }
+
   // Returns a pointer into the queue that can be written to. Must unlock the
   // address once writing has been completed.
   //
@@ -157,16 +166,16 @@ public:
   // Returns true if Address is locked.
   bool isAddressLocked(size_t Address) const;
 
+  // Increments the lock count for Address by 1. Assumes lock is already locked
+  // (and hence defined).
+  void lockAddress(size_t Address) { lockPage(getPage(Address)); }
+
   // Decrements the lock count for Address by 1. Assumes lock was
   // defined by previous (successful) calls to getReadLockedPointer()
   // and getWriteLockedPointer().
-  void unlockAddress(size_t Address);
+  void unlockAddress(size_t Address) { unlockPage(getPage(Address)); }
 
 protected:
-
-  static constexpr size_t BufferSizeLog2 = 12;
-  static constexpr size_t BufferSize = 1 << BufferSizeLog2;
-  static constexpr size_t BufferMask = BufferSize - 1;
 
   class QueuePage {
     QueuePage(const QueuePage &) = delete;
@@ -175,7 +184,7 @@ protected:
     QueuePage(size_t MinAddress)
         : PageIndex(page(MinAddress)), MinAddress(MinAddress),
           MaxAddress(MinAddress) {
-      std::memset(&Buffer, BufferSize, 0);
+      std::memset(&Buffer, PageSize, 0);
     }
 
     void lockPage() { ++LockCount; }
@@ -189,12 +198,12 @@ protected:
 
     size_t spaceRemaining() const {
       return
-          (MinAddress + BufferSize == MaxAddress)
+          (MinAddress + PageSize == MaxAddress)
           ? 0
-          : (BufferSize - (MaxAddress & BufferMask));
+          : (PageSize - (MaxAddress & PageMask));
     }
 
-    uint8_t Buffer[BufferSize];
+    uint8_t Buffer[PageSize];
     size_t PageIndex;
     // Note: Buffer address range is [MinAddress, MaxAddress).
     size_t MinAddress;
@@ -206,12 +215,12 @@ protected:
 
   // Page index associated with address in queue.
   static constexpr size_t page(size_t Address) {
-    return Address >> BufferSizeLog2;
+    return Address >> PageSizeLog2;
   }
 
   // Returns address within a QueuePage that refers to address.
   static constexpr size_t pageAddress(size_t Address) {
-    return Address & BufferMask;
+    return Address & PageMask;
   }
 
   // True if end of buffer has been frozen.

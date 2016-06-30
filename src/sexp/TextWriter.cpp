@@ -57,15 +57,24 @@ TextWriter::TextWriter() {
   // Build fast lookup for number of arguments to write on same line.
   for (size_t i = 0; i < MaxNodeType; ++i) {
     KidCountSameLine.push_back(0);
+    MaxKidCountSameLine.push_back(0);
   }
   for (size_t i = 0; i < NumNodeTypes; ++i) {
     AstTraitsType &Traits = AstTraits[i];
     KidCountSameLine[int(Traits.Type)] = Traits.NumTextArgs;
+    MaxKidCountSameLine[int(Traits.Type)] =
+        Traits.NumTextArgs + Traits.AdditionalTextArgs;
   }
   // Build map of nodes that can have hidden seq as last kid.
 #define X(tag) \
   HasHiddenSeqSet.insert(int(Op##tag));
   AST_NODE_HAS_HIDDEN_SEQ
+#undef X
+  // Build map of nodes that never should be on the same line
+  // as its parent.
+#define X(tag) \
+  NeverSameLine.insert(int(Op##tag));
+  AST_NODE_NEVER_SAME_LINE
 #undef X
   // Compute that maximum power of 10 that can still be an IntType.
   decode::IntType MaxPower10 = 1;
@@ -128,31 +137,50 @@ void TextWriter::writeNodeKids(Node *Nd) {
   // Write out with number of kids specified to be on same line,
   // with remaining kids on separate (indented) lines.
   int Type = int(Nd->getType());
-  Node::IndexType Count = 0;
-  Node::IndexType KidsSameLine = KidCountSameLine[static_cast<int>(Type)];
-  Node::IndexType NumKids = Nd->getNumKids();
+  int Count = 0;
+  int KidsSameLine = KidCountSameLine[int(Type)];
+  int NumKids = Nd->getNumKids();
+  if (NumKids <= MaxKidCountSameLine[int(Type)])
+    KidsSameLine = MaxKidCountSameLine[int(Type)];
   Node *LastKid = Nd->getLastKid();
   bool HasHiddenSeq = HasHiddenSeqSet.count(Type);
+  bool ForceNewline = false;
   for (auto *Kid : *Nd) {
-        if (HasHiddenSeq && Kid == LastKid && isa<Nary<OpSequence>>(LastKid)) {
-          writeNode(Kid, true, HasHiddenSeq);
-          return;
-        }
-        ++Count;
-        if (Count <= KidsSameLine) {
-          writeSpace();
-          bool AddNewline = Count == KidsSameLine && Count < NumKids;
-          writeNode(Kid, AddNewline);
-        } else {
-          if (Count == 1)
-            writeNewline();
-          writeNode(Kid, true);
-        }
-      }
+    if (HasHiddenSeq && Kid == LastKid && isa<Nary<OpSequence>>(LastKid)) {
+      writeNode(Kid, true, HasHiddenSeq);
+      return;
+    }
+    ++Count;
+    if (ForceNewline) {
+      writeNode(Kid, true);
+      continue;
+    }
+    if (NeverSameLine.count(Kid->getType())) {
+      writeNewline();
+      ForceNewline = true;
+      writeNode(Kid, true);
+      continue;
+    }
+    if (Count < KidsSameLine) {
+      writeSpace();
+      writeNode(Kid, false);
+      continue;
+    }
+    if (Count == KidsSameLine) {
+      writeSpace();
+      ForceNewline = Count < NumKids;
+      writeNode(Kid, ForceNewline);
+      continue;
+    }
+    if (Count == 1)
+      writeNewline();
+    ForceNewline = true;
+    writeNode(Kid, true);
+  }
 }
 
 void TextWriter::writeNode(Node *Nd, bool AddNewline,
-                               bool EmbedInParent) {
+                           bool EmbedInParent) {
   switch (NodeType Type = Nd->getType()) {
     default: {
       if (EmbedInParent) {
