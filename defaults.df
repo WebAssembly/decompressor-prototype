@@ -49,12 +49,14 @@
   )
 
   (default 'code.function'
-    (block 
-      (block.args (varuint32) 0xFF) # number of bytes in function.
+    (block
+      # block implicitly reads # bytes using (varuint32) on byte stream.
       (loop (varuint32 6)            # number of locals in function.
         (eval 'code.local'))
       (loop.unbounded                # instructions
         (eval 'code.inst'))
+      # Insert 0xFF eob opcode if byte stream.
+      (block.end (map (i32.const  0xFF) (uint8)))
     )
   )
 

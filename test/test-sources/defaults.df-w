@@ -21,9 +21,10 @@
     (varuint32 6)
   )
   (default 'code.function'
-    (block (block.args (varuint32) 0xff)
+    (block
       (loop (varuint32 6) (eval 'code.local'))
       (loop.unbounded (eval 'code.inst'))
+      (block.end (map (i32.const 0xff) (uint8)))
     )
   )
   (default 'code.local'
