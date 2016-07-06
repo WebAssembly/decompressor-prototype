@@ -220,17 +220,17 @@ declaration_list
         ;
 
 block_stmt_list
-        : statement  {
-            $$ = Driver.create<Unary<OpBlock>>($1);
+        : "block" expression statement  {
+            $$ = Driver.create<Binary<OpBlock>>($2, $3);
           }
         | block_stmt_list statement {
             $$ = $1;
-            Node *StmtList = $1->getKid(0);
+            Node *StmtList = $1->getKid(1);
             auto *Seq = dyn_cast<Nary<OpSequence>>(StmtList);
             if (Seq == nullptr) {
               Seq = Driver.create<Nary<OpSequence>>();
               Seq->append(StmtList);
-              $1->setKid(0, Seq);
+              $1->setKid(1, Seq);
             }
             Seq->append($2);
           }
@@ -391,7 +391,7 @@ seq_stmt_list
 statement
         : expression { $$ = $1; }
         | stream_conv { $$ = $1; }
-        | "(" "block" block_stmt_list ")"  { $$ = $3; }
+        | "(" block_stmt_list ")"  { $$ = $2; }
         | "(" "block.end" statement ")" {
             $$ = Driver.create<Unary<OpBlockEndOneArg>>($3);
           }
