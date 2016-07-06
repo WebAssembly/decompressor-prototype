@@ -34,17 +34,36 @@ class State {
   State &operator=(const State &) = delete;
 public:
   // TODO(kschimpf): Add Output.
-  State(decode::ByteQueue *Input, decode::ByteQueue *Output);
+  State(decode::ByteQueue *Input, decode::ByteQueue *Output,
+        filt::SymbolTable *Algorithms);
+
+  // Processes each section in input, and decompresses it (if applicable)
+  // to the corresponding output.
+  void decompress();
+
+private:
   decode::ReadCursor ReadPos;
   ReadStream *Reader;
   decode::WriteCursor WritePos;
   WriteStream *Writer;
   alloc::Allocator *Alloc;
   wasm::filt::Node *DefaultFormat;
+  filt::SymbolTable *Algorithms;
+  // The magic number of the input.
+  uint32_t MagicNumber;
+  // The version of the input.
+  uint32_t Version;
+  // The current section name (if applicable).
+  std::string CurSectionName;
+  void decompressSection();
   // Evaluates Nd. Returns read value if applicable. Zero otherwise.
   decode::IntType eval(const wasm::filt::Node *Nd);
+  // Reads input as defined by Nd. Returns read value.
   decode::IntType read(const wasm::filt::Node *Nd);
+  // Writes to output the given value, using format defined by Nd.
+  // For convenience, returns written value.
   decode::IntType write(decode::IntType Value, const wasm::filt::Node *Nd);
+  void readSectionName();
 };
 
 } // end of namespace interp.

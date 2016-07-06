@@ -434,7 +434,7 @@ stream_conv_stmt_list
           }
         ;
 
-symbol  : IDENTIFIER { $$ = Driver.getSymbol($1); }
+symbol  : IDENTIFIER { $$ = Driver.getSymbolDefinition($1); }
         ;
 
 %%
