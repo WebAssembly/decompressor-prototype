@@ -72,20 +72,23 @@ IntType State::eval(const Node *Nd) {
       fatal("Evaluating filter s-expression not defined");
       return 0;
     case OpBlock: {
-      WriteCursor BlockPos(WritePos);
-      size_t OldReadEobAddress = ReadPos.getEobAddress();
-      IntType BlockSize = read(Nd->getKid(0));
       auto *ByteWriter = dyn_cast<ByteWriteStream>(Writer);
-      if (ByteWriter) {
-        ByteWriter->writeFixedVaruint32(0, WritePos);
+      size_t OldReadEobAddress = ReadPos.getEobAddress();
+      if (isa<ByteReadStream>(Reader)) {
+        const uint32_t BlockSize = read(Nd->getKid(0));
         ReadPos.setEobAddress(ReadPos.getCurAddress() + BlockSize);
       }
-      eval(Nd->getKid(1));
       if (ByteWriter) {
-        size_t NewSize = WritePos.getCurAddress() - BlockPos.getCurAddress();
+        WriteCursor BlockPos(WritePos);
+        ByteWriter->writeFixedVaruint32(0, WritePos);
+        eval(Nd->getKid(1));
+        const size_t NewSize =
+            WritePos.getCurAddress() - BlockPos.getCurAddress();
         ByteWriter->writeFixedVaruint32(NewSize, BlockPos);
-        ReadPos.setEobAddress(OldReadEobAddress);
+      } else {
+        eval(Nd->getKid(1));
       }
+      ReadPos.setEobAddress(OldReadEobAddress);
       return 0;
     }
     case OpError:

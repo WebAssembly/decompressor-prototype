@@ -133,7 +133,7 @@ void TextWriter::writeIndent() {
   LineEmpty = IndentCount == 0;
 }
 
-void TextWriter::writeNodeKids(Node *Nd) {
+void TextWriter::writeNodeKids(Node *Nd, bool EmbeddedInParent) {
   // Write out with number of kids specified to be on same line,
   // with remaining kids on separate (indented) lines.
   int Type = int(Nd->getType());
@@ -156,7 +156,8 @@ void TextWriter::writeNodeKids(Node *Nd) {
       continue;
     }
     if (NeverSameLine.count(Kid->getType())) {
-      writeNewline();
+      if (!(Count == 1 && EmbeddedInParent))
+        writeNewline();
       ForceNewline = true;
       writeNode(Kid, true);
       continue;
@@ -172,7 +173,7 @@ void TextWriter::writeNodeKids(Node *Nd) {
       writeNode(Kid, ForceNewline);
       continue;
     }
-    if (Count == 1)
+    if (Count == 1 && EmbeddedInParent)
       writeNewline();
     ForceNewline = true;
     writeNode(Kid, true);
@@ -184,10 +185,10 @@ void TextWriter::writeNode(Node *Nd, bool AddNewline,
   switch (NodeType Type = Nd->getType()) {
     default: {
       if (EmbedInParent) {
-        writeNodeKids(Nd);
+        writeNodeKids(Nd, true);
       } else {
         Parenthesize _(this, Nd->getType(), AddNewline);
-        writeNodeKids(Nd);
+        writeNodeKids(Nd, false);
       }
       return;
     }

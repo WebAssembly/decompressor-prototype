@@ -77,7 +77,7 @@ private:
   void initialize(FILE *File);
 
   void writeNode(Node *Node, bool AddNewline, bool EmbedInParent = false);
-  void writeNodeKids(Node *Node);
+  void writeNodeKids(Node *Node, bool EmbeddedInParent);
 
   void writeIndent();
 

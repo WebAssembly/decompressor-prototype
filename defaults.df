@@ -49,7 +49,7 @@
   )
 
   (default 'code.function'
-    (block
+    (block (varuint32 6)
       # block implicitly reads # bytes using (varuint32) on byte stream.
       (loop (varuint32 6)            # number of locals in function.
         (eval 'code.local'))
