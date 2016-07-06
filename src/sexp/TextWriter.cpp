@@ -146,7 +146,7 @@ void TextWriter::writeNodeKids(Node *Nd, bool EmbeddedInParent) {
   bool HasHiddenSeq = HasHiddenSeqSet.count(Type);
   bool ForceNewline = false;
   for (auto *Kid : *Nd) {
-    if (HasHiddenSeq && Kid == LastKid && isa<Nary<OpSequence>>(LastKid)) {
+    if (HasHiddenSeq && Kid == LastKid && isa<SequenceNode>(LastKid)) {
       writeNode(Kid, true, HasHiddenSeq);
       return;
     }

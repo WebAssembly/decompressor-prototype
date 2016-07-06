@@ -189,19 +189,19 @@ protected:
       : Node(Alloc, Type) {}
 };
 
-template<NodeType Kind>
-class Nullary final : public NullaryNode {
-  Nullary(const Nullary<Kind>&) = delete;
-  Nullary<Kind> &operator=(const Nullary<Kind>&) = delete;
-  virtual void forceCompilation() final;
-public:
-  Nullary() : NullaryNode(alloc::Allocator::Default, Kind) {}
-  Nullary(alloc::Allocator *Alloc) : NullaryNode(Alloc, Kind) {}
-  ~Nullary() {}
-
-  static bool implementsClass(NodeType Type) { return Type == Kind; }
-
-};
+#define X(tag)                                                                 \
+  class tag##Node final : public NullaryNode {                                 \
+    tag##Node(const tag##Node&) = delete;                                      \
+    tag##Node &operator=(const tag##Node&) = delete;                           \
+    virtual void forceCompilation() final;                                     \
+  public:                                                                      \
+    tag##Node() : NullaryNode(alloc::Allocator::Default, Op##tag) {}           \
+    tag##Node(alloc::Allocator *Alloc) : NullaryNode(Alloc, Op##tag) {}        \
+    ~tag##Node() override {}                                                   \
+    static bool implementsClass(NodeType Type) { return Type == Op##tag; }     \
+  };
+  AST_NULLARYNODE_TABLE
+#undef X
 
 class IntegerNode final : public NullaryNode {
   IntegerNode(const IntegerNode&) = delete;
@@ -221,7 +221,7 @@ public:
       NullaryNode(Alloc, OpInteger),
       Value(Value),
       Format(Format) {}
-  ~IntegerNode() {}
+  ~IntegerNode() override {}
   ValueFormat getFormat() const {
     return Format;
   }
@@ -251,7 +251,7 @@ public:
       : NullaryNode(Alloc, OpSymbol), Name(Alloc) {
     init(_Name);
   }
-  ~SymbolNode() {}
+  ~SymbolNode() override {}
   const InternalName &getName() const {
     return Name;
   }
@@ -323,18 +323,21 @@ protected:
   }
 };
 
-template<NodeType Kind>
-class Unary final : public UnaryNode {
-  Unary(const Unary<Kind>&) = delete;
-  Unary<Kind> &operator=(const Unary<Kind>&) = delete;
-  virtual void forceCompilation() final;
-public:
-  Unary(Node *Kid) : UnaryNode(alloc::Allocator::Default, Kind, Kid) {}
-  Unary(alloc::Allocator* Alloc, Node *Kid) : UnaryNode(Alloc, Kind, Kid) {}
-  ~Unary() {}
-
-  static bool implementsClass(NodeType Type) { return Kind == Type; }
-};
+#define X(tag)                                                                 \
+  class tag##Node final : public UnaryNode {                                   \
+    tag##Node(const tag##Node&) = delete;                                      \
+    tag##Node &operator=(const tag##Node&) = delete;                           \
+    virtual void forceCompilation() final;                                     \
+  public:                                                                      \
+    tag##Node(Node *Kid)                                                       \
+      : UnaryNode(alloc::Allocator::Default, Op##tag, Kid) {}                  \
+    tag##Node(alloc::Allocator* Alloc, Node *Kid)                              \
+      : UnaryNode(Alloc, Op##tag, Kid) {}                                      \
+    ~tag##Node() override {}                                                   \
+    static bool implementsClass(NodeType Type) { return Op##tag == Type; }     \
+  };
+  AST_UNARYNODE_TABLE
+#undef X
 
 class BinaryNode : public Node {
   BinaryNode(const BinaryNode&) = delete;
@@ -366,20 +369,20 @@ protected:
   }
 };
 
-template<NodeType Kind>
-class Binary final : public BinaryNode {
-  Binary(const Binary<Kind>&) = delete;
-  Binary<Kind> &operator=(const Binary<Kind>&) = delete;
-  virtual void forceCompilation() final;
-
-  static bool implementsClass(NodeType Type) { return Kind == Type; }
-
-public:
-  Binary(Node *Kid1, Node *Kid2) : BinaryNode(Kind, Kid1, Kid2) {}
-  Binary(alloc::Allocator *Alloc, Node *Kid1, Node *Kid2)
-      : BinaryNode(Alloc, Kind, Kid1, Kid2) {}
-  ~Binary() {}
-};
+#define X(tag)                                                                 \
+  class tag##Node final : public BinaryNode {                                  \
+    tag##Node(const tag##Node&) = delete;                                      \
+    tag##Node &operator=(const tag##Node&) = delete;                           \
+    virtual void forceCompilation() final;                                     \
+  public:                                                                      \
+    tag##Node(Node *Kid1, Node *Kid2) : BinaryNode(Op##tag, Kid1, Kid2) {}     \
+    tag##Node(alloc::Allocator *Alloc, Node *Kid1, Node *Kid2)                 \
+        : BinaryNode(Alloc, Op##tag, Kid1, Kid2) {}                            \
+    ~tag##Node() override {}                                                   \
+    static bool implementsClass(NodeType Type) { return Op##tag == Type; }     \
+  };
+  AST_BINARYNODE_TABLE
+#undef X
 
 class NaryNode : public Node {
   NaryNode(const NaryNode&) = delete;
@@ -411,19 +414,19 @@ protected:
   NaryNode(alloc::Allocator *Alloc, NodeType Type) : Node(Alloc, Type) {}
 };
 
-template<NodeType Kind>
-class Nary final : public NaryNode {
-  Nary(const Nary<Kind>&) = delete;
-  Nary<Kind> &operator=(const Nary<Kind>&) = delete;
-  virtual void forceCompilation() final;
-
-public:
-  Nary() : NaryNode(Kind) {}
-  Nary(alloc::Allocator *Alloc) : NaryNode(Alloc, Kind) {}
-  ~Nary() {}
-
-  static bool implementsClass(NodeType Type) { return Kind == Type; }
-};
+#define X(tag)                                                                 \
+  class tag##Node final : public NaryNode {                                    \
+    tag##Node(const tag##Node&) = delete;                                      \
+    tag##Node &operator=(const tag##Node&) = delete;                           \
+    virtual void forceCompilation() final;                                     \
+  public:                                                                      \
+    tag##Node() : NaryNode(Op##tag) {}                                         \
+    tag##Node(alloc::Allocator *Alloc) : NaryNode(Alloc, Op##tag) {}           \
+    ~tag##Node() override {}                                                   \
+    static bool implementsClass(NodeType Type) { return Op##tag == Type; }     \
+  };
+  AST_NARYNODE_TABLE
+#undef X
 
 } // end of namespace filt
 

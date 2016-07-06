@@ -107,7 +107,7 @@ void SymbolNode::setDefaultDefinition(Node *Defn) {
 }
 
 SymbolTable::SymbolTable(alloc::Allocator *Alloc) : Alloc(Alloc) {
-  Error = Alloc->create<Nullary<OpError>>();
+  Error = Alloc->create<ErrorNode>();
 }
 
 SymbolNode *SymbolTable::getSymbol(ExternalName &Name) {
@@ -169,8 +169,10 @@ bool NullaryNode::implementsClass(NodeType Type) {
   }
 }
 
-template<NodeType Kind>
-void Nullary<Kind>::forceCompilation() {}
+#define X(tag)                                                                 \
+  void tag##Node::forceCompilation() {}
+  AST_NULLARYNODE_TABLE
+#undef X
 
 Node *UnaryNode::getKid(IndexType Index) const {
   if (Index < 1)
@@ -193,8 +195,10 @@ bool UnaryNode::implementsClass(NodeType Type) {
   }
 }
 
-template<NodeType Kind>
-void Unary<Kind>::forceCompilation() {}
+#define X(tag)                                                                 \
+  void tag##Node::forceCompilation() {}
+  AST_UNARYNODE_TABLE
+#undef X
 
 Node *BinaryNode::getKid(IndexType Index) const {
   if (Index < 2)
@@ -217,8 +221,10 @@ bool BinaryNode::implementsClass(NodeType Type) {
   }
 }
 
-template<NodeType Kind>
-void Binary<Kind>::forceCompilation() {}
+#define X(tag)                                                                 \
+  void tag##Node::forceCompilation() {}
+  AST_BINARYNODE_TABLE
+#undef X
 
 bool NaryNode::implementsClass(NodeType Type) {
   switch (Type) {
@@ -232,26 +238,8 @@ bool NaryNode::implementsClass(NodeType Type) {
 
 void NaryNode::forceCompilation() {}
 
-template<NodeType Kind>
-void Nary<Kind>::forceCompilation() {}
-
-#define X(tag) \
-  template class Nullary<Op##tag>;
-  AST_NULLARYNODE_TABLE
-#undef X
-
-#define X(tag) \
-  template class Unary<Op##tag>;
-  AST_UNARYNODE_TABLE
-#undef X
-
-#define X(tag) \
-  template class Binary<Op##tag>;
-  AST_BINARYNODE_TABLE
-#undef X
-
-#define X(tag) \
-  template class Nary<Op##tag>;
+#define X(tag)                                                                 \
+  void tag##Node::forceCompilation() {}
   AST_NARYNODE_TABLE
 #undef X
 
