@@ -42,7 +42,7 @@ State::State(ByteQueue *Input, ByteQueue *Output) :
     ReadPos(Input), WritePos(Output), Alloc(Allocator::Default) {
   Reader = Alloc->create<ByteReadStream>();
   Writer = Alloc->create<ByteWriteStream>();
-  DefaultFormat = Alloc->create<Nullary<OpVaruint64NoArgs>>();
+  DefaultFormat = Alloc->create<Varuint64NoArgsNode>();
 }
 
 IntType State::eval(const Node *Nd) {

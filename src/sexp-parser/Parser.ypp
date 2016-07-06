@@ -151,7 +151,7 @@ case    : "(" "case" case_stmt_list ")" { $$ = $3; }
 
 case_list
         : expression statement { // selector / default statement.
-            $$ = Driver.create<Nary<OpSelect>>();
+            $$ = Driver.create<SelectNode>();
             $$->append($1);
             $$->append($2);
           }
@@ -163,14 +163,14 @@ case_list
 
 case_stmt_list
         : integer statement { // case index / first statement of case.
-            $$ = Driver.create<Binary<OpCase>>($1, $2);
+            $$ = Driver.create<CaseNode>($1, $2);
           }
         | case_stmt_list statement { // remaining statements of case.
             $$ = $1;
             Node *StmtList = $1->getKid(1);
-            auto *Seq = dyn_cast<Nary<OpSequence>>(StmtList);
+            auto *Seq = dyn_cast<SequenceNode>(StmtList);
             if (Seq == nullptr) {
-              Seq = Driver.create<Nary<OpSequence>>();
+              Seq = Driver.create<SequenceNode>();
               Seq->append(StmtList);
               $1->setKid(1, Seq);
             }
@@ -183,23 +183,23 @@ declaration
             $$ = $2;
           }
         | "(" "undefine" symbol ")" {
-            $$ = Driver.create<Unary<OpUndefine>>($3);
+            $$ = Driver.create<UndefineNode>($3);
           }
         ;
 
 declaration_stmt_list
         : "default" symbol statement {
-            $$ = Driver.create<Binary<OpDefault>>($2, $3);
+            $$ = Driver.create<DefaultNode>($2, $3);
           }
         | "define" symbol statement {
-            $$ = Driver.create<Binary<OpDefine>>($2, $3);
+            $$ = Driver.create<DefineNode>($2, $3);
           }
         | declaration_stmt_list statement {
             $$ = $1;
             Node *StmtList = $1->getKid(1);
-            auto *Seq = dyn_cast<Nary<OpSequence>>(StmtList);
+            auto *Seq = dyn_cast<SequenceNode>(StmtList);
             if (Seq == nullptr) {
-              Seq = Driver.create<Nary<OpSequence>>();
+              Seq = Driver.create<SequenceNode>();
               Seq->append(StmtList);
               $1->setKid(1, Seq);
             }
@@ -209,7 +209,7 @@ declaration_stmt_list
 
 declaration_list
         : symbol declaration {  // Section name / first define.
-            $$ = Driver.create<Nary<OpSection>>();
+            $$ = Driver.create<SectionNode>();
             $$->append($1);
             $$->append($2);
           }
@@ -221,14 +221,14 @@ declaration_list
 
 block_stmt_list
         : "block" expression statement  {
-            $$ = Driver.create<Binary<OpBlock>>($2, $3);
+            $$ = Driver.create<BlockNode>($2, $3);
           }
         | block_stmt_list statement {
             $$ = $1;
             Node *StmtList = $1->getKid(1);
-            auto *Seq = dyn_cast<Nary<OpSequence>>(StmtList);
+            auto *Seq = dyn_cast<SequenceNode>(StmtList);
             if (Seq == nullptr) {
-              Seq = Driver.create<Nary<OpSequence>>();
+              Seq = Driver.create<SequenceNode>();
               Seq->append(StmtList);
               $1->setKid(1, Seq);
             }
@@ -238,110 +238,110 @@ block_stmt_list
 
 expression
         : "(" "block.end" ")" {
-            $$ = Driver.create<Nullary<OpBlockEndNoArgs>>();
+            $$ = Driver.create<BlockEndNoArgsNode>();
           }
         | "(" "error" ")" {
-            $$ = Driver.create<Nullary<OpError>>();
+            $$ = Driver.create<ErrorNode>();
           }
         | "(" "eval" symbol ")" {
-            $$ = Driver.create<Unary<OpEval>>($3);
+            $$ = Driver.create<EvalNode>($3);
           }
         | "(" "i32.const" integer ")" {
-            $$ = Driver.create<Unary<OpI32Const>>($3);
+            $$ = Driver.create<I32ConstNode>($3);
           }
         | "(" "i64.const" integer ")" {
-            $$ = Driver.create<Unary<OpI64Const>>($3);
+            $$ = Driver.create<I64ConstNode>($3);
           }
         | "(" "lit" integer ")" {
-            $$ = Driver.create<Unary<OpLit>>($3);
+            $$ = Driver.create<LitNode>($3);
           }
         | "(" "map" expression expression ")" {
-            $$ = Driver.create<Binary<OpMap>>($3, $4);
+            $$ = Driver.create<MapNode>($3, $4);
           }
         | "(" "peek" expression ")" {
-            $$ = Driver.create<Unary<OpPeek>>($3);
+            $$ = Driver.create<PeekNode>($3);
           }
         | "(" "read" expression ")" {
-            $$ = Driver.create<Unary<OpRead>>($3);
+            $$ = Driver.create<ReadNode>($3);
           }
         | "(" "sym.const" symbol ")" {
-            $$ = Driver.create<Unary<OpSymConst>>($3);
+            $$ = Driver.create<SymConstNode>($3);
           }
         | "(" "uint8" ")" {
-            $$ = Driver.create<Nullary<OpUint8NoArgs>>();
+            $$ = Driver.create<Uint8NoArgsNode>();
           }
         | "(" "uint8" integer ")" {
             if ($3->getValue() > 8)
               Driver.error("uint8 bitsize > 8");
-            $$ = Driver.create<Unary<OpUint8OneArg>>($3);
+            $$ = Driver.create<Uint8OneArgNode>($3);
           }
         | "(" "uint32" ")" {
-            $$ = Driver.create<Nullary<OpUint32NoArgs>>();
+            $$ = Driver.create<Uint32NoArgsNode>();
           }
         | "(" "uint32" integer ")"  {
             if ($3->getValue() > 32)
               Driver.error("uint32 bitsize > 32");
-            $$ = Driver.create<Unary<OpUint32OneArg>>($3);
+            $$ = Driver.create<Uint32OneArgNode>($3);
           }
         | "(" "uint64" ")" {
-            $$ = Driver.create<Nullary<OpUint64NoArgs>>();
+            $$ = Driver.create<Uint64NoArgsNode>();
           }
         | "(" "uint64" integer ")"  {
             if ($3->getValue() > 64)
               Driver.error("uint64 bitsize > 64");
-            $$ = Driver.create<Unary<OpUint64OneArg>>($3);
+            $$ = Driver.create<Uint64OneArgNode>($3);
           }
         | "(" "u32.const" integer ")" {
-            $$ = Driver.create<Unary<OpU32Const>>($3);
+            $$ = Driver.create<U32ConstNode>($3);
           }
         | "(" "u64.const" integer ")" {
-            $$ = Driver.create<Unary<OpU64Const>>($3);
+            $$ = Driver.create<U64ConstNode>($3);
           }
         | "(" "varint32" ")" {
-            $$ = Driver.create<Nullary<OpVarint32NoArgs>>();
+            $$ = Driver.create<Varint32NoArgsNode>();
           }
         | "(" "varint32" integer ")" {
             decode::IntType Bitsize = $3->getValue();
             if (Bitsize < 2 || Bitsize > 32)
               Driver.error("varint32 expects 2 <= bitsize <= 32");
-            $$ = Driver.create<Unary<OpVarint32OneArg>>($3);
+            $$ = Driver.create<Varint32OneArgNode>($3);
           }
         | "(" "varint64" ")" {
-            $$ = Driver.create<Nullary<OpVarint64NoArgs>>();
+            $$ = Driver.create<Varint64NoArgsNode>();
           }
         | "(" "varint64" integer ")" {
             decode::IntType Bitsize = $3->getValue();
             if (Bitsize < 2 || Bitsize > 64)
               Driver.error("varint64 expects 2 <= bitsize <= 64");
-            $$ = Driver.create<Unary<OpVarint64OneArg>>($3);
+            $$ = Driver.create<Varint64OneArgNode>($3);
           }
         | "(" "varuint32" ")" {
-            $$ = Driver.create<Nullary<OpVaruint32NoArgs>>();
+            $$ = Driver.create<Varuint32NoArgsNode>();
           }
         | "(" "varuint32" integer ")" {
             decode::IntType Bitsize = $3->getValue();
             if (Bitsize < 2 || Bitsize > 32)
               Driver.error("varuint32 expects 2 <= bitsize <= 32");
-            $$ = Driver.create<Unary<OpVaruint32OneArg>>($3);
+            $$ = Driver.create<Varuint32OneArgNode>($3);
           }
         | "(" "varuint64" ")" {
-            $$ = Driver.create<Nullary<OpVaruint64NoArgs>>();
+            $$ = Driver.create<Varuint64NoArgsNode>();
           }
         | "(" "varuint64" integer ")" {
             decode::IntType Bitsize = $3->getValue();
             if (Bitsize < 2 || Bitsize > 64)
               Driver.error("varuint64 expects 2 <= bitsize <= 64");
-            $$ = Driver.create<Unary<OpVaruint64OneArg>>($3);
+            $$ = Driver.create<Varuint64OneArgNode>($3);
           }
         | "(" "void" ")" {
-            $$ = Driver.create<Nullary<OpVoid>>();
+            $$ = Driver.create<VoidNode>();
           }
         ;
 
 header  : "(" "version" integer ")" {
             if ($3->getValue() != 0)
               Driver.error("Currently, only (version 0) is supported");
-            $$ = Driver.create<Unary<OpVersion>>($3);
+            $$ = Driver.create<VersionNode>($3);
           }
         ;
 
@@ -351,11 +351,11 @@ integer : INTEGER {
 
 loop_body
         : "loop" expression {
-           $$ = Driver.create<Nary<OpLoop>>();
+           $$ = Driver.create<LoopNode>();
             $$->append($2);
           }
         | "loop.unbounded" {
-            $$ = Driver.create<Nary<OpLoopUnbounded>>();
+            $$ = Driver.create<LoopUnboundedNode>();
           }
         | loop_body statement {
             $$ = $1;
@@ -368,7 +368,7 @@ section : "(" "section" declaration_list ")" { $$ = $3; }
 
 section_list
         : header section { // Header / first section of file.
-            $$ = Driver.create<Nary<OpFile>>();
+            $$ = Driver.create<FileNode>();
             $$->append($1);
             $$->append($2);
           }
@@ -380,7 +380,7 @@ section_list
 
 seq_stmt_list
         : %empty {
-            $$ = Driver.create<Nary<OpSequence>>();
+            $$ = Driver.create<SequenceNode>();
           }
         | seq_stmt_list statement {
             $$ = $1;
@@ -393,7 +393,7 @@ statement
         | stream_conv { $$ = $1; }
         | "(" block_stmt_list ")"  { $$ = $2; }
         | "(" "block.end" statement ")" {
-            $$ = Driver.create<Unary<OpBlockEndOneArg>>($3);
+            $$ = Driver.create<BlockEndOneArgNode>($3);
           }
         | "(" "filter" stream_conv_list ")" { $$ = $3; }
         | "(" loop_body ")" { $$ = $2; }
@@ -408,7 +408,7 @@ stream_conv  : "(" stream_conv_stmt_list ")" {
 
 stream_conv_list
         : stream_conv {
-            $$ = Driver.create<Nary<OpFilter>>();
+            $$ = Driver.create<FilterNode>();
             $$->append($1);
           }
         | stream_conv_list stream_conv {
@@ -419,14 +419,14 @@ stream_conv_list
 
 stream_conv_stmt_list
        : "byte.to.byte" statement {
-            $$ = Driver.create<Unary<OpByteToByte>>($2);
+            $$ = Driver.create<ByteToByteNode>($2);
           }
         | stream_conv_stmt_list statement {
             $$ = $1;
             Node *StmtList = $1->getKid(0);
-            auto *Seq = dyn_cast<Nary<OpSequence>>(StmtList);
+            auto *Seq = dyn_cast<SequenceNode>(StmtList);
             if (Seq == nullptr) {
-              Seq = Driver.create<Nary<OpSequence>>();
+              Seq = Driver.create<SequenceNode>();
               Seq->append(StmtList);
               $1->setKid(0, Seq);
             }
