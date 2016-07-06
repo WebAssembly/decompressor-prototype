@@ -17,6 +17,7 @@
 
 // Reads a filter file.
 
+#include "Defs.h"
 #include "sexp/TextWriter.h"
 #include "sexp-parser/Parser.tab.hpp"
 #include "sexp-parser/Driver.h"
@@ -33,6 +34,7 @@ void usage(const char *AppName) {
   fprintf(stderr, "\n");
   fprintf(stderr, "Options:\n");
   fprintf(stderr, "  --expect-fail\tSucceed on failure/fail on success\n");
+  fprintf(stderr, "  -h\t\tPrint this usage message.\n");
   fprintf(stderr, "  -l\t\tTrace lexing of file(s).\n");
   fprintf(stderr, "  -p\t\tTrace parsing of file(s).\n");
   fprintf(stderr, "  -t\t\tUse internal type names for s-expressions\n");

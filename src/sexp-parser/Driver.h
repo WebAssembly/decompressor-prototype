@@ -47,8 +47,8 @@ public:
     return Alloc->create<T>(std::forward<Args>(args)...);
   }
 
-  SymbolNode *getSymbol(ExternalName &Name) {
-    return Table.getSymbol(Name);
+  SymbolNode *getSymbolDefinition(ExternalName &Name) {
+    return Table.getSymbolDefinition(Name);
   }
 
   alloc::Allocator *getAllocator() {
