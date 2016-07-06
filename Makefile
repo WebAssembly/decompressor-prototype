@@ -83,6 +83,16 @@ INTERP_SRCS = \
 
 INTERP_OBJS=$(patsubst %.cpp, $(INTERP_OBJDIR)/%.o, $(INTERP_SRCS))
 
+###### Executables ######
+
+EXEC_DIR = exec
+BUILD_EXECDIR = $(BUILDDIR)/bin
+
+EXEC_SRCS = \
+	decompress.cpp
+
+EXECS = $(patsubst %.cpp, $(BUILD_EXECDIR)/%, $(EXEC_SRCS))
+
 ###### Test executables and locations ######
 
 TEST_DIR = test
@@ -110,14 +120,14 @@ CXXFLAGS := -std=gnu++11 -Wall -Wextra -O2 -g -pedantic -MP -MD -Werror -Isrc
 
 ###### Default Rule ######
 
-all: gen objs parser-objs sexp-objs strm-objs interp-objs test-execs
+all: gen objs parser-objs sexp-objs strm-objs interp-objs execs test-execs
 
 .PHONY: all
 
 ###### Cleaning Rules #######
 
 clean: clean-objs clean-parser clean-sexp-objs clean-strm-objs clean-interp-objs \
-	clean-test-execs
+	clean-execs clean-test-execs
 
 .PHONY: clean
 
@@ -155,6 +165,11 @@ clean-interp-objs:
 	rm -f $(INTERP_OBJS)
 
 .PHONY: clean-interp-objs
+
+clean-execs:
+	rm -f $(EXECS)
+
+.PHONY: clean-execs
 
 clean-test-execs:
 	rm -f $(TEST_EXECS)
@@ -261,6 +276,24 @@ $(PARSER_OBJDIR):
 $(PARSER_OBJS): $(PARSER_OBJDIR)/%.o: $(PARSER_DIR)/%.cpp
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 
+###### Compiling executables ######
+
+execs: $(EXECS)
+
+.PHONY: execs
+
+$(BUILD_EXECDIR):
+	mkdir -p $@
+
+$(EXECS): | $(BUILD_EXECDIR)
+
+-include $(foreach dep,$(EXEC_SRCS:.cpp=.d),$(BUILD_EXECDIR)/$(dep))
+
+$(BUILD_EXECDIR)/decompress: $(EXEC_DIR)/decompress.cpp $(PARSER_OBJS) \
+                            $(SEXP_OBJS) $(OBJS) $(STRM_OBJS) $(INTERP_OBJS)
+	$(CXX) $(CXXFLAGS) $< $(PARSER_OBJS) $(SEXP_OBJS) $(OBJS) \
+		$(STRM_OBJS) $(INTERP_OBJS) -o $@
+
 ###### Compiling Test Executables #######
 
 test-execs: $(TEST_EXECS)
@@ -285,8 +318,6 @@ $(TEST_EXECDIR)/TestRawStreams: $(TEST_DIR)/TestRawStreams.cpp $(STRM_OBJS) \
 $(TEST_EXECDIR)/TestByteQueues: $(TEST_DIR)/TestByteQueues.cpp $(STRM_OBJS) \
 				$(OBJS)
 	$(CXX) $(CXXFLAGS) $< $(STRM_OBJS) $(OBJS) -o $@
-
-
 
 ###### Testing ######
 

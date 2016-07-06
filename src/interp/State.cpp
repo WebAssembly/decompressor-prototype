@@ -29,6 +29,11 @@ namespace interp {
 
 namespace {
 
+static constexpr uint32_t WasmBinaryMagic = 0x0061736d;
+static constexpr uint32_t WasmBinaryVersion = 0x0b;
+
+static constexpr uint32_t MaxExpectedSectionNameSize = 32;
+
 IntType getIntegerValue(Node *N) {
   if (auto *IntVal = dyn_cast<IntegerNode>(N))
     return IntVal->getValue();
@@ -38,11 +43,14 @@ IntType getIntegerValue(Node *N) {
 
 } // end of anonymous namespace
 
-State::State(ByteQueue *Input, ByteQueue *Output) :
-    ReadPos(Input), WritePos(Output), Alloc(Allocator::Default) {
+State::State(ByteQueue *Input, ByteQueue *Output,
+             SymbolTable *Algorithms) :
+    ReadPos(Input), WritePos(Output), Alloc(Allocator::Default),
+    Algorithms(Algorithms) {
   Reader = Alloc->create<ByteReadStream>();
   Writer = Alloc->create<ByteWriteStream>();
   DefaultFormat = Alloc->create<Varuint64NoArgsNode>();
+  CurSectionName.reserve(MaxExpectedSectionNameSize);
 }
 
 IntType State::eval(const Node *Nd) {
@@ -266,6 +274,57 @@ IntType State::write(IntType Value, const wasm::filt::Node *Nd) {
       break;
   }
   return Value;
+}
+
+void State::decompress() {
+  MagicNumber = Reader->readUint32(ReadPos);
+  // TODO(kschimpf): Fix reading of uintX. Current implementation not same as
+  // WASM binary reader.
+  fprintf(stderr, "MagicNumber = %x\n", MagicNumber);
+  if (MagicNumber != WasmBinaryMagic)
+    fatal("Unable to decompress, did not find WASM binary magic number");
+  Writer->writeUint32(MagicNumber, WritePos);
+  Version = Reader->readUint32(ReadPos);
+  fprintf(stderr, "Version = %x\n", Version);
+  if (Version != WasmBinaryVersion)
+    fatal("Unable to decompress, WASM version number not known");
+  Writer->writeUint32(MagicNumber, WritePos);
+  while (ReadPos.atEob()) {
+    decompressSection();
+  }
+}
+
+void State::decompressSection() {
+  assert(isa<ByteReadStream>(Reader));
+  readSectionName();
+  size_t OldReadEobAddress = ReadPos.getEobAddress();
+  const uint32_t BlockSize = Reader->readUint32(ReadPos);
+  ReadPos.setEobAddress(ReadPos.getCurAddress() + BlockSize);
+  WriteCursor BlockPos(WritePos);
+  auto *ByteWriter = dyn_cast<ByteWriteStream>(Writer);
+  ByteWriter->writeFixedVaruint32(0, WritePos);
+  if (SymbolNode *Sym = Algorithms->getSymbol(CurSectionName)) {
+    eval(Sym);
+  } else {
+    // Copy bytes till eob.
+    while (!ReadPos.atEob())
+      Writer->writeUint8(Reader->readUint8(ReadPos), WritePos);
+  }
+  const size_t NewSize =
+      WritePos.getCurAddress() - BlockPos.getCurAddress();
+  ByteWriter->writeFixedVaruint32(NewSize, BlockPos);
+  ReadPos.setEobAddress(OldReadEobAddress);
+}
+
+void State::readSectionName() {
+  CurSectionName.clear();
+  uint32_t NameSize = Reader->readUint32(ReadPos);
+  Writer->writeUint32(NameSize, WritePos);
+  for (uint32_t i = 0; i < NameSize; ++i) {
+    uint8_t Byte = Reader->readUint8(ReadPos);
+    Writer->writeUint8(Byte, WritePos);
+    CurSectionName.push_back(char(Byte));
+  }
 }
 
 } // end of namespace interp.

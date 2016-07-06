@@ -110,7 +110,7 @@ SymbolTable::SymbolTable(alloc::Allocator *Alloc) : Alloc(Alloc) {
   Error = Alloc->create<ErrorNode>();
 }
 
-SymbolNode *SymbolTable::getSymbol(ExternalName &Name) {
+SymbolNode *SymbolTable::getSymbolDefinition(ExternalName &Name) {
   SymbolNode *Node = SymbolMap[Name];
   if (Node == nullptr) {
     Node = Alloc->create<SymbolNode>(Alloc, Name);

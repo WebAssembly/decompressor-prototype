@@ -284,9 +284,13 @@ class SymbolTable {
   SymbolTable &operator=(const SymbolTable &) = delete;
 public:
   explicit SymbolTable(alloc::Allocator *Alloc);
+  // Gets existing symbol if known. Otherwise returns nullptr.
+  SymbolNode *getSymbol(ExternalName &Name) {
+    return SymbolMap[Name];
+  }
   // Gets existing symbol if known. Otherwise returns newly created symbol.
   // Used to keep symbols unique within filter s-expressions.
-  SymbolNode *getSymbol(ExternalName &Name);
+  SymbolNode *getSymbolDefinition(ExternalName &Name);
   // Install definitions in tree defined by root.
   void install(Node* Root);
   alloc::Allocator *getAllocator() const {
@@ -411,7 +415,8 @@ public:
 protected:
   arena_vector<Node*> Kids;
   NaryNode(NodeType Type) : Node(alloc::Allocator::Default, Type) {}
-  NaryNode(alloc::Allocator *Alloc, NodeType Type) : Node(Alloc, Type) {}
+  NaryNode(alloc::Allocator *Alloc, NodeType Type)
+      : Node(Alloc, Type), Kids(alloc::TemplateAllocator<Node*>(Alloc)) {}
 };
 
 #define X(tag)                                                                 \
