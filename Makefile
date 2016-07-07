@@ -68,7 +68,8 @@ STRM_SRCS = \
 	ByteQueue.cpp \
 	Cursor.cpp \
 	StreamReader.cpp \
-	StreamWriter.cpp
+	StreamWriter.cpp \
+	WriteUtils.cpp
 
 STRM_OBJS=$(patsubst %.cpp, $(STRM_OBJDIR)/%.o, $(STRM_SRCS))
 
@@ -308,8 +309,9 @@ $(TEST_EXECS): | $(TEST_EXECDIR)
 -include $(foreach dep,$(TEST_SRCS:.cpp=.d),$(TEST_EXECDIR)/$(dep))
 
 $(TEST_EXECDIR)/TestParser: $(TEST_DIR)/TestParser.cpp $(PARSER_OBJS) \
-                            $(SEXP_OBJS) $(OBJS)
-	$(CXX) $(CXXFLAGS) $< $(PARSER_OBJS) $(SEXP_OBJS) $(OBJS) -o $@
+                            $(SEXP_OBJS) $(OBJS) $(STRM_OBJS)
+	$(CXX) $(CXXFLAGS) $< $(PARSER_OBJS) $(SEXP_OBJS) $(OBJS) \
+		$(STRM_OBJS) -o $@
 
 $(TEST_EXECDIR)/TestRawStreams: $(TEST_DIR)/TestRawStreams.cpp $(STRM_OBJS) \
 				$(OBJS)
@@ -321,10 +323,17 @@ $(TEST_EXECDIR)/TestByteQueues: $(TEST_DIR)/TestByteQueues.cpp $(STRM_OBJS) \
 
 ###### Testing ######
 
-test: all test-parser test-raw-streams test-byte-queues
+test: all test-parser test-raw-streams test-byte-queues test-decompress
 	@echo "*** all tests passed ***"
 
 .PHONY: test
+
+test-decompress: $(BUILD_EXECDIR)/decompress
+	$< -d defaults.df -i $(TEST_SRCS_DIR)/toy.wasm -o - \
+		| diff - $(TEST_SRCS_DIR)/toy.wasm
+	@echo "*** decompress tests passed ***"
+
+.PHONY: test-decompress
 
 test-parser: $(TEST_EXECDIR)/TestParser
 	$< -w defaults.df | diff - $(TEST_SRCS_DIR)/defaults.df-w

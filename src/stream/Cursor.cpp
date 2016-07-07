@@ -53,6 +53,10 @@ void WriteCursor::fillBuffer() {
   LockedAddress = CurAddress;
 }
 
+void WriteCursor::writeCurPage(FILE *File) {
+  Queue->writePageAt(File, CurAddress);
+}
+
 } // end of namespace decode
 
 } // end of namespace wasm

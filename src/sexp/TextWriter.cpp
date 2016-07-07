@@ -30,20 +30,6 @@ namespace filt {
 
 namespace {
 
-decode::IntType divideByPower10(decode::IntType Value,
-                                decode::IntType Power10) {
-  if (Power10 <= 1)
-    return Value;
-  return Value / Power10;
-}
-
-decode::IntType moduloByPower10(decode::IntType Value,
-                                decode::IntType Power10) {
-  if (Power10 <= 1)
-    return Value;
-  return Value % Power10;
-}
-
 constexpr const char *IndentString = "  ";
 
 } // end of anonyous namespace
@@ -73,14 +59,6 @@ TextWriter::TextWriter() {
   NeverSameLine.insert(int(Op##tag));
   AST_NODE_NEVER_SAME_LINE
 #undef X
-  // Compute that maximum power of 10 that can still be an IntType.
-  decode::IntType MaxPower10 = 1;
-  decode::IntType NextMaxPower10 = MaxPower10 * 10;
-  while (NextMaxPower10 > MaxPower10) {
-    MaxPower10 = NextMaxPower10;
-    NextMaxPower10 *= 10;
-  }
-  IntTypeMaxPower10 = MaxPower10;
 }
 
 TextWriter::Indent::Indent(TextWriter *Writer, bool AddNewline)
@@ -203,52 +181,7 @@ void TextWriter::writeNode(const Node *Nd, bool AddNewline,
     case OpInteger: {
       Indent _(this, AddNewline);
       const auto *Int = cast<IntegerNode>(Nd);
-      decode::IntType Value = Int->getValue();
-      switch (Int->getFormat()) {
-        case ValueFormat::SignedDecimal: {
-          decode::SignedIntType SignedValue = decode::SignedIntType(Value);
-          if (SignedValue < 0) {
-            fputc('-', File);
-            Value = decode::IntType(-SignedValue);
-          }
-        }
-        // Intentionally fall to next case.
-        case ValueFormat::Decimal: {
-          decode::IntType Power10 = IntTypeMaxPower10;
-          bool StartPrinting = false;
-          while (Power10 > 0) {
-            decode::IntType Digit = divideByPower10(Value, Power10);
-            if (StartPrinting || Digit) {
-                if (StartPrinting || Digit != 0) {
-                  StartPrinting = true;
-                  fputc('0' + Digit, File);
-                }
-            }
-            Value = moduloByPower10(Value, Power10);
-            Power10 /= 10;
-          }
-          if (!StartPrinting)
-            fputc('0', File);
-          break;
-        }
-        case ValueFormat::Hexidecimal: {
-          constexpr decode::IntType BitsInHex = 4;
-          decode::IntType Shift = sizeof(decode::IntType) * CHAR_BIT;
-          bool StartPrinting = false;
-          fputc('0', File);
-          fputc('x', File);
-          while (Shift > 0) {
-            Shift >>= BitsInHex;
-            decode::IntType Digit = (Value >> Shift);
-            if (StartPrinting || Digit != 0) {
-              StartPrinting = true;
-              fputc(getHexCharForDigit(Digit), File);
-              Value &= (1 << Shift) - 1;
-            }
-          }
-          break;
-        }
-      }
+      writeInt(File, Int->getValue(), Int->getFormat());
       LineEmpty = false;
       return;
     }

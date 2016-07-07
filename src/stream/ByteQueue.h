@@ -173,6 +173,9 @@ public:
   // and getWriteLockedPointer().
   void unlockAddress(size_t Address) { unlockPage(getPage(Address)); }
 
+  // For debugging
+  void writePageAt(FILE *File, size_t Address);
+
 protected:
 
   class QueuePage {

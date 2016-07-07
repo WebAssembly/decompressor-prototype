@@ -16,10 +16,32 @@
  */
 
 #include "stream/ByteQueue.h"
+#include "stream/WriteUtils.h"
 
 namespace wasm {
 
 namespace decode {
+
+void ByteQueue::writePageAt(FILE *File, size_t Address) {
+  size_t StartAddress = page(Address) << PageSizeLog2;
+  fprintf(File, "@%" PRIuMAX ":\n", intmax_t(StartAddress));
+  QueuePage *Page = getPage(Address);
+  if (Page == nullptr)
+    return;
+  size_t Size = pageAddress(Address);
+  size_t Count = 0;
+  for (size_t i = 0; i < Size; ++i, ++Count) {
+    if (Count % 16 == 0) {
+      if (Count)
+        fputc('\n', File);
+      fprintf(File, "  ");
+    } else {
+      fputc(' ', File);
+    }
+    writeInt(File, Page->Buffer[i], ValueFormat::Hexidecimal);
+  }
+  fputc('\n', File);
+}
 
 ByteQueue::ByteQueue() {
   EobPage = FirstPage = new QueuePage(0);
