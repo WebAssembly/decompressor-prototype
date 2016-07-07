@@ -60,7 +60,8 @@ public:
   // names.
   static bool UseNodeTypeNames;
   TextWriter();
-  void write(FILE *file, Node *Root);
+  void write(FILE *file, const Node *Root);
+  void writeAbbrev(FILE *file, const Node *Root);
 
 private:
   FILE *File = 0;
@@ -76,8 +77,12 @@ private:
 
   void initialize(FILE *File);
 
-  void writeNode(Node *Node, bool AddNewline, bool EmbedInParent = false);
-  void writeNodeKids(Node *Node, bool EmbeddedInParent);
+  void writeNode(const Node *Node, bool AddNewline, bool EmbedInParent = false);
+  void writeNodeKids(const Node *Node, bool EmbeddedInParent);
+
+  void writeNodeAbbrev(const Node *Node, bool AddNewline,
+                       bool EmbedInParent = false);
+  void writeNodeKidsAbbrev(const Node *Node, bool EmbeddedInParent);
 
   void writeIndent();
 

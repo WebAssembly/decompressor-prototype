@@ -114,7 +114,7 @@ static Parser::symbol_type make_Integer(Driver &Driver,
                                         const std::string &Name) {
   IntegerValue Value;
   Value.Value = read_Integer(Name);
-  Value.Format = IntegerNode::Decimal;
+  Value.Format = ValueFormat::Decimal;
   return Parser::make_INTEGER(Value, Driver.getLoc());
 }
 
@@ -123,7 +123,7 @@ static Parser::symbol_type make_SignedInteger(Driver &Driver,
   IntType UnsignedValue = read_Integer(Name, 1);
   IntegerValue Value;
   Value.Value = IntType(- SignedIntType(UnsignedValue));
-  Value.Format = IntegerNode::SignedDecimal;
+  Value.Format = ValueFormat::SignedDecimal;
   return Parser::make_INTEGER(Value, Driver.getLoc());
 }
 
@@ -170,7 +170,7 @@ static Parser::symbol_type make_HexInteger(Driver &Driver,
   }
   IntegerValue Value;
   Value.Value = HexValue;
-  Value.Format = IntegerNode::Hexidecimal;
+  Value.Format = ValueFormat::Hexidecimal;
   return Parser::make_INTEGER(Value, Driver.getLoc());
 }
 

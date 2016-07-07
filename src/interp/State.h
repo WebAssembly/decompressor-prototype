@@ -26,6 +26,10 @@
 
 namespace wasm {
 
+namespace filt {
+class TextWriter;
+};
+
 namespace interp {
 
 class State {
@@ -41,13 +45,15 @@ public:
   // to the corresponding output.
   void decompress();
 
+  void setTraceProgress(bool NewValue);
+
 private:
   decode::ReadCursor ReadPos;
   ReadStream *Reader;
   decode::WriteCursor WritePos;
   WriteStream *Writer;
   alloc::Allocator *Alloc;
-  wasm::filt::Node *DefaultFormat;
+  filt::Node *DefaultFormat;
   filt::SymbolTable *Algorithms;
   // The magic number of the input.
   uint32_t MagicNumber;
@@ -55,15 +61,36 @@ private:
   uint32_t Version;
   // The current section name (if applicable).
   std::string CurSectionName;
+  bool TraceProgress = false;
+  filt::TextWriter *TraceWriter;
+  int IndentLevel = 0;
   void decompressSection();
   // Evaluates Nd. Returns read value if applicable. Zero otherwise.
-  decode::IntType eval(const wasm::filt::Node *Nd);
+  decode::IntType eval(const filt::Node *Nd);
   // Reads input as defined by Nd. Returns read value.
-  decode::IntType read(const wasm::filt::Node *Nd);
+  decode::IntType read(const filt::Node *Nd);
   // Writes to output the given value, using format defined by Nd.
   // For convenience, returns written value.
-  decode::IntType write(decode::IntType Value, const wasm::filt::Node *Nd);
+  decode::IntType write(decode::IntType Value, const filt::Node *Nd);
   void readSectionName();
+  void writeIndent();
+  void IndentBegin() {
+    writeIndent();
+    ++IndentLevel;
+  }
+  void IndentEnd() {
+    --IndentLevel;
+    writeIndent();
+  }
+  void enter(const char *Name, bool AddNewline=true);
+  void exit(const char *Name);
+  IntType returnValue(const char *Name, IntType Value) {
+    if (!TraceProgress)
+      return Value;
+    return returnValueInternal(Name, Value);
+  }
+  IntType returnValueInternal(const char *Name, IntType Value);
+  void traceStreamLocs();
 };
 
 } // end of namespace interp.

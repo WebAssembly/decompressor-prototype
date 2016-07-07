@@ -54,12 +54,8 @@ public:
     return EobAddress;
   }
 
-  void setEobAddress(size_t NewValue) {
-    EobAddress = NewValue;
-  }
-
-  bool atEob() {
-    return CurAddress < EobAddress;
+  bool atEob() const {
+    return CurAddress >= EobAddress;
   }
 
   size_t getCurAddress() const {
@@ -112,6 +108,7 @@ public:
     assign(C);
     return *this;
   }
+
   // Reads next byte. Returns zero if at end of buffer.
   uint8_t readByte() {
     if (Buffer == BufferEnd && !fillBuffer())
@@ -120,7 +117,32 @@ public:
     return *(Buffer++);
   }
 
+  size_t getEobAddress() const {
+    return LocalEobOverrides.empty()
+        ? Cursor::getEobAddress() : LocalEobOverrides.back();
+  }
+
+
+  bool atEob() {
+    if (BufferEnd > Buffer)
+      return false;
+    if (CurAddress >= EobAddress)
+      return true;
+    return !fillBuffer();
+  }
+
+  void pushEobAddress(size_t newLocalEob) {
+    LocalEobOverrides.push_back(newLocalEob);
+  }
+
+  void popEobAddress() {
+    assert(!LocalEobOverrides.empty());
+    LocalEobOverrides.pop_back();
+  }
+
 protected:
+  // Stack of local Eob addresses.
+  std::vector<size_t> LocalEobOverrides;
   // Fills buffer with more text, if possible.
   bool fillBuffer();
 };
@@ -140,6 +162,10 @@ public:
       fillBuffer();
     ++CurAddress;
     *(Buffer++) = Byte;
+  }
+
+  void freezeEob() {
+    Queue->freezeEob(CurAddress);
   }
 
 protected:

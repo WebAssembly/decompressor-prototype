@@ -19,6 +19,7 @@
 
 #include "Defs.h"
 #include "sexp/Ast.h"
+#include "sexp/TextWriter.h"
 
 #include <cstring>
 #include <unordered_map>
@@ -151,11 +152,11 @@ void SymbolTable::install(Node *Root) {
   }
 }
 
-Node *NullaryNode::getKid(IndexType) const {
+Node *NullaryNode::getKid(int) const {
   return nullptr;
 }
 
-void NullaryNode::setKid(IndexType, Node *) {
+void NullaryNode::setKid(int, Node *) {
   decode::fatal("NullaryNode::setKid not allowed");
 }
 
@@ -174,13 +175,13 @@ bool NullaryNode::implementsClass(NodeType Type) {
   AST_NULLARYNODE_TABLE
 #undef X
 
-Node *UnaryNode::getKid(IndexType Index) const {
+Node *UnaryNode::getKid(int Index) const {
   if (Index < 1)
     return Kids[0];
   return nullptr;
 }
 
-void UnaryNode::setKid(IndexType Index, Node *NewValue) {
+void UnaryNode::setKid(int Index, Node *NewValue) {
   assert(Index < 1);
   Kids[0] = NewValue;
 }
@@ -200,13 +201,13 @@ bool UnaryNode::implementsClass(NodeType Type) {
   AST_UNARYNODE_TABLE
 #undef X
 
-Node *BinaryNode::getKid(IndexType Index) const {
+Node *BinaryNode::getKid(int Index) const {
   if (Index < 2)
     return Kids[Index];
   return nullptr;
 }
 
-void BinaryNode::setKid(IndexType Index, Node *NewValue) {
+void BinaryNode::setKid(int Index, Node *NewValue) {
   assert(Index < 2);
   Kids[Index] = NewValue;
 }
@@ -237,6 +238,25 @@ bool NaryNode::implementsClass(NodeType Type) {
 }
 
 void NaryNode::forceCompilation() {}
+
+void SelectNode::forceCompilation() {}
+
+const Node *SelectNode::getCase(IntType Key) const {
+  if (LookupMap.count(Key))
+    return LookupMap.at(Key);
+  return nullptr;
+}
+
+void SelectNode::installFastLookup() {
+  TextWriter Writer;
+  for (auto *Kid : *this) {
+    if (const auto *Case = dyn_cast<CaseNode>(Kid)) {
+      if (const auto *Key = dyn_cast<IntegerNode>(Case->getKid(0))) {
+        LookupMap[Key->getValue()] = Kid;
+      }
+    }
+  }
+}
 
 #define X(tag)                                                                 \
   void tag##Node::forceCompilation() {}
