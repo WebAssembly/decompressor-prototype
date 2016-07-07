@@ -214,9 +214,6 @@ class IntegerNode final : public NullaryNode {
 public:
   // Note: ValueFormat provided so that we can echo back out same
   // representation as when lexing s-expressions.
-#if 0
-  enum ValueFormat { Decimal, SignedDecimal, Hexidecimal };
-#endif
   IntegerNode(decode::IntType Value, ValueFormat Format = ValueFormat::Decimal) :
       NullaryNode(alloc::Allocator::Default, OpInteger),
       Value(Value),

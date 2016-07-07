@@ -144,6 +144,11 @@ IntType State::eval(const Node *Nd) {
       bool IsByteReader = isa<ByteReadStream>(Reader);
       if (IsByteReader) {
         const size_t BlockSize = read(Nd->getKid(0));
+        if (TraceProgress) {
+          writeIndent();
+          traceStreamLocs();
+          fprintf(stderr, "block size: %" PRIuMAX "\n", intmax_t(BlockSize));
+        }
         ReadPos.pushEobAddress(ReadPos.getCurAddress() + BlockSize);
       }
       if (ByteWriter) {
@@ -365,7 +370,7 @@ void State::decompress() {
   }
   if (Version != WasmBinaryVersion)
     fatal("Unable to decompress, WASM version number not known");
-  Writer->writeUint32(MagicNumber, WritePos);
+  Writer->writeUint32(Version, WritePos);
 
   while (!ReadPos.atEob()) {
     decompressSection();
@@ -385,6 +390,11 @@ void State::decompressSection() {
     fprintf(stderr, "section: '%s'\n", CurSectionName.c_str());
   }
   const uint32_t BlockSize = Reader->readVaruint32(ReadPos);
+  if (TraceProgress) {
+    writeIndent();
+    traceStreamLocs();
+    fprintf(stderr, " section size: %" PRIuMAX "\n", intmax_t(BlockSize));
+  }
   ReadPos.pushEobAddress(ReadPos.getCurAddress() + BlockSize);
   WriteCursor BlockPos(WritePos);
   auto *ByteWriter = dyn_cast<ByteWriteStream>(Writer);

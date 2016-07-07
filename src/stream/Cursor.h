@@ -168,6 +168,9 @@ public:
     Queue->freezeEob(CurAddress);
   }
 
+  // For debugging.
+  void writeCurPage(FILE *File);
+
 protected:
   void fillBuffer();
 };

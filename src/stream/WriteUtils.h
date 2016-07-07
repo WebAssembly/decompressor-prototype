@@ -15,7 +15,8 @@
  * limitations under the License.
  */
 
-// Defines write utilities for writing.
+// Defines write utilities.
+
 #ifndef DECOMPRESSOR_SRC_STREAM_WRITEUTILS_H
 #define DECOMPRESSOR_SRC_STREAM_WRITEUTILS_H
 
@@ -33,8 +34,7 @@ constexpr char getHexCharForDigit(uint8_t Digit) {
   return Digit < 10 ? '0' + Digit : 'a' + (Digit - 10);
 }
 
-void writeUnsignedInt(FILE *File, IntType Value, ValueFormat Format);
-void writeSignedInt(FILE *File, SignedIntType Value);
+void writeInt(FILE *File, IntType Value, ValueFormat Format);
 
 } // end of namespace decode
 

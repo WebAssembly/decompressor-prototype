@@ -71,9 +71,6 @@ private:
   std::vector<int> MaxKidCountSameLine;
   std::unordered_set<int> HasHiddenSeqSet;
   std::unordered_set<int> NeverSameLine;
-  // Special constant denoting maximum IntType value that is a power of 10.
-  // Used to print out decimal values.
-  decode::IntType IntTypeMaxPower10;
 
   void initialize(FILE *File);
 
