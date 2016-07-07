@@ -73,6 +73,7 @@ void usage(const char *AppName) {
   fprintf(stderr, "  -i File\tFile to decompress ('-' implies stdin).\n");
   fprintf(stderr,
           "  -o File\tGenerated Decompressed File ('-' implies stdout).\n");
+  fprintf(stderr, "  -t\t\tTrace progress decompressing.\n");
 }
 
 int main(int Argc, char *Argv[]) {
@@ -80,6 +81,7 @@ int main(int Argc, char *Argv[]) {
   SymbolTable SymTab(&Allocator);
   Driver Driver(SymTab);
   std::vector<const char *> Files;
+  bool TraceProgress = false;
   for (int i = 1; i < Argc; ++i) {
     if (Argv[i] == std::string("-d")) {
       if (++i >= Argc) {
@@ -113,6 +115,8 @@ int main(int Argc, char *Argv[]) {
       OutputFilename = Argv[i];
     } else if (Argv[i] == std::string("-s")) {
         UseFileStreams = true;
+    } else if (Argv[i] == std::string("-t")) {
+        TraceProgress = true;
     } else {
       fprintf(stderr, "Unrecognized option: %s\n", Argv[i]);
       usage(Argv[0]);
@@ -123,6 +127,7 @@ int main(int Argc, char *Argv[]) {
   ReadBackedByteQueue Input(getInput());
   WriteBackedByteQueue Output(getOutput());
   State Decompressor(&Input, &Output, &SymTab);
+  Decompressor.setTraceProgress(TraceProgress);
   Decompressor.decompress();
   return exit_status(EXIT_SUCCESS);
 }

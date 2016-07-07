@@ -18,6 +18,7 @@
 /* Implements a textual writer of filter s-expressions */
 
 #include "sexp/TextWriter.h"
+#include "stream/WriteUtils.h"
 
 #include <cctype>
 #define __STDC_FORMAT_MACROS 1
@@ -43,9 +44,11 @@ decode::IntType moduloByPower10(decode::IntType Value,
   return Value % Power10;
 }
 
+#if 0
 char getHexCharForDigit(uint8_t Digit) {
   return Digit < 10 ? '0' + Digit : 'a' + (Digit - 10);
 }
+#endif
 
 constexpr const char *IndentString = "  ";
 
@@ -114,9 +117,14 @@ TextWriter::Parenthesize::~Parenthesize() {
   Writer->maybeWriteNewline(AddNewline);
 }
 
-void TextWriter::write(FILE *File, Node *Root) {
+void TextWriter::write(FILE *File, const Node *Root) {
   initialize(File);
   writeNode(Root, true);
+}
+
+void TextWriter::writeAbbrev(FILE *File, const Node *Root) {
+  initialize(File);
+  writeNodeAbbrev(Root, true);
 }
 
 void TextWriter::initialize(FILE *File) {
@@ -133,7 +141,7 @@ void TextWriter::writeIndent() {
   LineEmpty = IndentCount == 0;
 }
 
-void TextWriter::writeNodeKids(Node *Nd, bool EmbeddedInParent) {
+void TextWriter::writeNodeKids(const Node *Nd, bool EmbeddedInParent) {
   // Write out with number of kids specified to be on same line,
   // with remaining kids on separate (indented) lines.
   int Type = int(Nd->getType());
@@ -143,7 +151,7 @@ void TextWriter::writeNodeKids(Node *Nd, bool EmbeddedInParent) {
   if (NumKids <= MaxKidCountSameLine[int(Type)])
     KidsSameLine = MaxKidCountSameLine[int(Type)];
   Node *LastKid = Nd->getLastKid();
-  bool HasHiddenSeq = HasHiddenSeqSet.count(Type);
+  int HasHiddenSeq = HasHiddenSeqSet.count(Type);
   bool ForceNewline = false;
   for (auto *Kid : *Nd) {
     if (HasHiddenSeq && Kid == LastKid && isa<SequenceNode>(LastKid)) {
@@ -180,7 +188,7 @@ void TextWriter::writeNodeKids(Node *Nd, bool EmbeddedInParent) {
   }
 }
 
-void TextWriter::writeNode(Node *Nd, bool AddNewline,
+void TextWriter::writeNode(const Node *Nd, bool AddNewline,
                            bool EmbedInParent) {
   switch (NodeType Type = Nd->getType()) {
     default: {
@@ -200,10 +208,10 @@ void TextWriter::writeNode(Node *Nd, bool AddNewline,
     }
     case OpInteger: {
       Indent _(this, AddNewline);
-      auto *Int = dynamic_cast<IntegerNode*>(Nd);
+      const auto *Int = cast<IntegerNode>(Nd);
       decode::IntType Value = Int->getValue();
       switch (Int->getFormat()) {
-        case IntegerNode::SignedDecimal: {
+        case ValueFormat::SignedDecimal: {
           decode::SignedIntType SignedValue = decode::SignedIntType(Value);
           if (SignedValue < 0) {
             fputc('-', File);
@@ -211,7 +219,7 @@ void TextWriter::writeNode(Node *Nd, bool AddNewline,
           }
         }
         // Intentionally fall to next case.
-        case IntegerNode::Decimal: {
+        case ValueFormat::Decimal: {
           decode::IntType Power10 = IntTypeMaxPower10;
           bool StartPrinting = false;
           while (Power10 > 0) {
@@ -229,7 +237,7 @@ void TextWriter::writeNode(Node *Nd, bool AddNewline,
             fputc('0', File);
           break;
         }
-        case IntegerNode::Hexidecimal: {
+        case ValueFormat::Hexidecimal: {
           constexpr decode::IntType BitsInHex = 4;
           decode::IntType Shift = sizeof(decode::IntType) * CHAR_BIT;
           bool StartPrinting = false;
@@ -252,7 +260,7 @@ void TextWriter::writeNode(Node *Nd, bool AddNewline,
     }
     case OpSymbol: {
       Indent _(this, AddNewline);
-      auto *Sym = dynamic_cast<SymbolNode*>(Nd);
+      const auto *Sym = cast<SymbolNode>(Nd);
       fputc('\'', File);
       for (uint8_t V : Sym->getName()) {
         switch (V) {
@@ -299,6 +307,71 @@ void TextWriter::writeNode(Node *Nd, bool AddNewline,
       LineEmpty = false;
       return;
     }
+  }
+}
+
+void TextWriter::writeNodeKidsAbbrev(const Node *Nd, bool EmbeddedInParent) {
+  // Write out with number of kids specified to be on same line,
+  // with remaining kids on separate (indented) lines.
+  int Type = int(Nd->getType());
+  int Count = 0;
+  int KidsSameLine = KidCountSameLine[int(Type)];
+  int NumKids = Nd->getNumKids();
+  if (NumKids <= MaxKidCountSameLine[int(Type)])
+    KidsSameLine = MaxKidCountSameLine[int(Type)];
+  Node *LastKid = Nd->getLastKid();
+  int HasHiddenSeq = HasHiddenSeqSet.count(Type);
+  bool ForceNewline = false;
+  for (auto *Kid : *Nd) {
+    if ((HasHiddenSeq && Kid == LastKid && isa<SequenceNode>(LastKid))
+        || NeverSameLine.count(Kid->getType())) {
+      fprintf(File, " ...");
+      return;
+    }
+    ++Count;
+    if (Count < KidsSameLine) {
+      writeSpace();
+      writeNodeAbbrev(Kid, false);
+      continue;
+    }
+    if (Count == KidsSameLine) {
+      writeSpace();
+      ForceNewline = Count < NumKids;
+      writeNode(Kid, false);
+      if (Kid != LastKid)
+        fprintf(File, " ...");
+      return;
+    }
+    if (Count == 1 && EmbeddedInParent) {
+      fprintf(File, " ...");
+      return;
+    }
+    writeNode(Kid, false);
+    return;
+  }
+}
+
+void TextWriter::writeNodeAbbrev(const Node *Nd, bool AddNewline,
+                                 bool EmbedInParent) {
+  switch (NodeType Type = Nd->getType()) {
+    default: {
+      if (EmbedInParent) {
+        fprintf(File, " ...");
+      } else {
+        Parenthesize _(this, Nd->getType(), AddNewline);
+        writeNodeKidsAbbrev(Nd, false);
+      }
+      return;
+    }
+    case OpFile: {
+      // Treat like hidden node. That is, visually just a list of s-expressions.
+      fprintf(File, "(file ...)\n");
+      return;
+    }
+    case OpInteger:
+    case OpSymbol:
+      writeNode(Nd, AddNewline, EmbedInParent);
+      return;
   }
 }
 

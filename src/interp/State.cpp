@@ -18,6 +18,9 @@
 // Implements the interpreter for filter s-expressions.
 
 #include "interp/State.h"
+#include "sexp/TextWriter.h"
+
+#include <iostream>
 
 namespace wasm {
 
@@ -29,7 +32,7 @@ namespace interp {
 
 namespace {
 
-static constexpr uint32_t WasmBinaryMagic = 0x0061736d;
+static constexpr uint32_t WasmBinaryMagic = 0x6d736100;
 static constexpr uint32_t WasmBinaryVersion = 0x0b;
 
 static constexpr uint32_t MaxExpectedSectionNameSize = 32;
@@ -46,29 +49,75 @@ IntType getIntegerValue(Node *N) {
 State::State(ByteQueue *Input, ByteQueue *Output,
              SymbolTable *Algorithms) :
     ReadPos(Input), WritePos(Output), Alloc(Allocator::Default),
-    Algorithms(Algorithms) {
+    Algorithms(Algorithms), TraceWriter(nullptr) {
   Reader = Alloc->create<ByteReadStream>();
   Writer = Alloc->create<ByteWriteStream>();
   DefaultFormat = Alloc->create<Varuint64NoArgsNode>();
   CurSectionName.reserve(MaxExpectedSectionNameSize);
 }
 
+void State::setTraceProgress(bool NewValue) {
+  if (TraceProgress == NewValue)
+    return;
+  if (TraceProgress) {
+    delete TraceWriter;
+    TraceProgress = false;
+  }
+  TraceProgress = true;
+  TraceWriter = new TextWriter();
+}
+
+void State::writeIndent() {
+  for (int i = 0; i < IndentLevel; ++i)
+    fprintf(stderr, "  ");
+}
+
+void State::traceStreamLocs() {
+  fprintf(stderr, "@%" PRIuMAX "/@%" PRIuMAX, intmax_t(ReadPos.getCurAddress()),
+          intmax_t(WritePos.getCurAddress()));
+}
+
+void State::enter(const char *Name, bool AddNewline) {
+  IndentBegin();
+  fprintf(stderr, "-> ");
+  traceStreamLocs();
+  fprintf(stderr, " %s", Name);
+  if (AddNewline)
+    fputc('\n', stderr);
+}
+
+void State::exit(const char *Name) {
+  IndentEnd();
+  fprintf(stderr, "<- ");
+  traceStreamLocs();
+  fprintf(stderr, " %s\n", Name);
+}
+
+IntType State::returnValueInternal(const char *Name, IntType Value) {
+  IndentEnd();
+  fprintf(stderr, "<- ");
+  traceStreamLocs();
+  fprintf(stderr, " %s = %" PRI_IntType "\n", Name, Value);
+  return Value;
+}
+
 IntType State::eval(const Node *Nd) {
   // TODO(kschimpf): Fix for ast streams.
   // TODO(kschimpf) Handle blocks.
+  if (TraceProgress) {
+    enter("eval ", false);
+    TraceWriter->writeAbbrev(stderr, Nd);
+  }
   switch (NodeType Type = Nd->getType()) {
     case OpByteToByte:
     case OpSymConst:
     case OpFilter:
-    case OpSelect:
     case OpBlockEndNoArgs:
-    case OpBlockEndOneArg:
-    case OpCase:
     case OpSymbol:
       // TODO(kschimpf): Fix above cases.
       fprintf(stderr, "Not implemented: %s\n", getNodeTypeName(Type));
       fatal("Unable to evaluate filter s-expression");
-      return 0;
+      break;
     case OpDefault:
     case OpDefine:
     case OpFile:
@@ -76,15 +125,26 @@ IntType State::eval(const Node *Nd) {
     case OpUndefine:
     case OpVersion:
     case OpInteger:
-      fprintf(stderr, "Not evaluatable: %s\n", getNodeTypeName(Type));
       fatal("Evaluating filter s-expression not defined");
-      return 0;
+      break;
+    case OpSelect: {
+      const SelectNode *Sel = cast<SelectNode>(Nd);
+      IntType Selector = eval(Sel->getKid(0));
+      if (const auto *Case = Sel->getCase(Selector))
+        eval(Case);
+      else
+        eval(Sel->getKid(1));
+      break;
+    }
+    case OpCase:
+      eval(Nd->getKid(1));
+      break;
     case OpBlock: {
       auto *ByteWriter = dyn_cast<ByteWriteStream>(Writer);
-      size_t OldReadEobAddress = ReadPos.getEobAddress();
-      if (isa<ByteReadStream>(Reader)) {
-        const uint32_t BlockSize = read(Nd->getKid(0));
-        ReadPos.setEobAddress(ReadPos.getCurAddress() + BlockSize);
+      bool IsByteReader = isa<ByteReadStream>(Reader);
+      if (IsByteReader) {
+        const size_t BlockSize = read(Nd->getKid(0));
+        ReadPos.pushEobAddress(ReadPos.getCurAddress() + BlockSize);
       }
       if (ByteWriter) {
         WriteCursor BlockPos(WritePos);
@@ -96,53 +156,59 @@ IntType State::eval(const Node *Nd) {
       } else {
         eval(Nd->getKid(1));
       }
-      ReadPos.setEobAddress(OldReadEobAddress);
-      return 0;
+      if (IsByteReader)
+        ReadPos.popEobAddress();
+      break;
+    }
+    case OpBlockEndOneArg: {
+      if (!isa<ByteReadStream>(Reader) || isa<ByteWriteStream>(Writer))
+        break;
+      return returnValue("eval", eval(Nd->getKid(0)));
     }
     case OpError:
       fatal("Error found during evaluation");
-      return 0;
+      break;
     case OpEval: {
       if (auto *Sym = dyn_cast<SymbolNode>(Nd->getKid(0))) {
-        return eval(Sym->getDefineDefinition());
+        return returnValue("eval", eval(Sym->getDefineDefinition()));
       }
       fatal("Can't evaluate symbol");
-      return 0;
+      break;
     }
     case OpI32Const:
     case OpI64Const:
     case OpU32Const:
     case OpU64Const:
-      return read(Nd);
+      return returnValue("eval", read(Nd));
     case OpLit:
       // TOOD(kschimpf): Merge OpLit with OpWrite (really do same thing).
-      return write(read(Nd), DefaultFormat);
+      return returnValue("eval", write(read(Nd), DefaultFormat));
     case OpLoop: {
-      size_t Count = eval(Nd->getKid(0));
-      size_t NumKids = Nd->getNumKids();
-      for (size_t i = 0; i < Count; ++i) {
-        for (size_t j = 1; j < NumKids; ++j) {
+      IntType Count = eval(Nd->getKid(0));
+      int NumKids = Nd->getNumKids();
+      for (IntType i = 0; i < Count; ++i) {
+        for (int j = 1; j < NumKids; ++j) {
           eval(Nd->getKid(j));
         }
       }
-      return 0;
+      break;
     }
     case OpLoopUnbounded: {
       while (! ReadPos.atEob())
         for (auto *Kid : *Nd)
           eval(Kid);
-      return 0;
+      break;
     }
     case OpMap:
-      return write(read(Nd->getKid(0)), Nd->getKid(1));
+      return returnValue("eval", write(read(Nd->getKid(0)), Nd->getKid(1)));
     case OpPeek:
-      return read(Nd);
+      return returnValue("eval", read(Nd));
     case OpRead:
-      return read(Nd->getKid(1));
+      return returnValue("eval", read(Nd->getKid(1)));
     case OpSequence:
       for (auto *Kid : *Nd)
         eval(Kid);
-      return 0;
+      break;
     case OpUint8NoArgs:
     case OpUint8OneArg:
     case OpUint32NoArgs:
@@ -157,10 +223,11 @@ IntType State::eval(const Node *Nd) {
     case OpVaruint32OneArg:
     case OpVaruint64NoArgs:
     case OpVaruint64OneArg:
-      return write(read(Nd), Nd);
+      return returnValue("eval", write(read(Nd), Nd));
     case OpVoid:
-      return 0;
+      break;
   }
+  return returnValue("eval", 0);
 }
 
 IntType State::read(const Node *Nd) {
@@ -277,34 +344,53 @@ IntType State::write(IntType Value, const wasm::filt::Node *Nd) {
 }
 
 void State::decompress() {
+  if (TraceProgress)
+    enter("decompress");
   MagicNumber = Reader->readUint32(ReadPos);
   // TODO(kschimpf): Fix reading of uintX. Current implementation not same as
   // WASM binary reader.
-  fprintf(stderr, "MagicNumber = %x\n", MagicNumber);
+  if (TraceProgress) {
+    writeIndent();
+    traceStreamLocs();
+    fprintf(stderr, " MagicNumber = %x\n", MagicNumber);
+  }
   if (MagicNumber != WasmBinaryMagic)
     fatal("Unable to decompress, did not find WASM binary magic number");
   Writer->writeUint32(MagicNumber, WritePos);
   Version = Reader->readUint32(ReadPos);
-  fprintf(stderr, "Version = %x\n", Version);
+  if (TraceProgress) {
+    writeIndent();
+    traceStreamLocs();
+    fprintf(stderr, " Version = %x\n", Version);
+  }
   if (Version != WasmBinaryVersion)
     fatal("Unable to decompress, WASM version number not known");
   Writer->writeUint32(MagicNumber, WritePos);
-  while (ReadPos.atEob()) {
+
+  while (!ReadPos.atEob()) {
     decompressSection();
   }
+  WritePos.freezeEob();
+  if (TraceProgress)
+    exit("decompress");
 }
 
 void State::decompressSection() {
   assert(isa<ByteReadStream>(Reader));
+  if (TraceProgress)
+    enter("section");
   readSectionName();
-  size_t OldReadEobAddress = ReadPos.getEobAddress();
-  const uint32_t BlockSize = Reader->readUint32(ReadPos);
-  ReadPos.setEobAddress(ReadPos.getCurAddress() + BlockSize);
+  if (TraceProgress) {
+    writeIndent();
+    fprintf(stderr, "section: '%s'\n", CurSectionName.c_str());
+  }
+  const uint32_t BlockSize = Reader->readVaruint32(ReadPos);
+  ReadPos.pushEobAddress(ReadPos.getCurAddress() + BlockSize);
   WriteCursor BlockPos(WritePos);
   auto *ByteWriter = dyn_cast<ByteWriteStream>(Writer);
   ByteWriter->writeFixedVaruint32(0, WritePos);
   if (SymbolNode *Sym = Algorithms->getSymbol(CurSectionName)) {
-    eval(Sym);
+    eval(Sym->getDefineDefinition());
   } else {
     // Copy bytes till eob.
     while (!ReadPos.atEob())
@@ -313,13 +399,15 @@ void State::decompressSection() {
   const size_t NewSize =
       WritePos.getCurAddress() - BlockPos.getCurAddress();
   ByteWriter->writeFixedVaruint32(NewSize, BlockPos);
-  ReadPos.setEobAddress(OldReadEobAddress);
+  ReadPos.popEobAddress();
+  if (TraceProgress)
+    exit("section");
 }
 
 void State::readSectionName() {
   CurSectionName.clear();
-  uint32_t NameSize = Reader->readUint32(ReadPos);
-  Writer->writeUint32(NameSize, WritePos);
+  uint32_t NameSize = Reader->readVaruint32(ReadPos);
+  Writer->writeVaruint32(NameSize, WritePos);
   for (uint32_t i = 0; i < NameSize; ++i) {
     uint8_t Byte = Reader->readUint8(ReadPos);
     Writer->writeUint8(Byte, WritePos);

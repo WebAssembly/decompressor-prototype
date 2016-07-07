@@ -179,7 +179,6 @@
   X(Loop)                                                                      \
   X(LoopUnbounded)                                                             \
   X(Section)                                                                   \
-  X(Select)                                                                    \
   X(Sequence)                                                                  \
 
 //#define X(tag)

@@ -52,8 +52,6 @@ namespace wasm {
 
 namespace decode {
 
-class QueuePage;
-
 class ByteQueue {
   ByteQueue(const ByteQueue &) = delete;
   ByteQueue &operator=(const ByteQueue &) = delete;

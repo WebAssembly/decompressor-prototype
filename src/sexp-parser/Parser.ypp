@@ -29,6 +29,7 @@
 
 %code requires {
 #include "sexp/Ast.h"
+#include "stream/WriteUtils.h"
 #include <string>
 
 namespace wasm {
@@ -38,7 +39,7 @@ class Node;
 
 struct IntegerValue {
   wasm::decode::IntType Value;
-  wasm::filt::IntegerNode::ValueFormat Format;
+  wasm::decode::ValueFormat Format;
 };
 
 }}
@@ -117,7 +118,7 @@ struct IntegerValue {
 // Nonterminal classes.
 %type <wasm::filt::Node *> block_stmt_list
 %type <wasm::filt::Node *> case
-%type <wasm::filt::Node *> case_list
+%type <wasm::filt::SelectNode *> case_list
 %type <wasm::filt::Node *> case_stmt_list
 %type <wasm::filt::Node *> declaration
 %type <wasm::filt::Node *> declaration_list
@@ -397,7 +398,10 @@ statement
           }
         | "(" "filter" stream_conv_list ")" { $$ = $3; }
         | "(" loop_body ")" { $$ = $2; }
-        | "(" "select" case_list ")" { $$ = $3; }
+        | "(" "select" case_list ")" {
+            $$ = $3;
+            $3->installFastLookup();
+          }
         | "(" "seq" seq_stmt_list ")" { $$ = $3; }
         ;
 

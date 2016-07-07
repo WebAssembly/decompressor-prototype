@@ -35,6 +35,7 @@
 #include "Allocator.h"
 #include "ADT/arena_vector.h"
 #include "sexp/Ast.def"
+#include "stream/WriteUtils.h"
 #include "Casting.h"
 
 #include <array>
@@ -42,6 +43,7 @@
 #include <memory>
 #include <map>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace wasm {
@@ -101,7 +103,7 @@ public:
   using IndexType = size_t;
   class Iterator {
   public:
-    explicit Iterator(const Node *Node, IndexType Index)
+    explicit Iterator(const Node *Node, int Index)
         : Node(Node), Index(Index) {}
     Iterator(const Iterator &Iter): Node(Iter.Node), Index(Iter.Index) {}
     Iterator &operator=(const Iterator &Iter) {
@@ -126,7 +128,7 @@ public:
     }
   private:
     const Node *Node;
-    IndexType Index;
+    int Index;
   };
 
   virtual ~Node() {}
@@ -140,14 +142,14 @@ public:
   }
 
   // General API to children.
-  virtual IndexType getNumKids() const = 0;
+  virtual int getNumKids() const = 0;
 
-  virtual Node *getKid(IndexType Index) const = 0;
+  virtual Node *getKid(int Index) const = 0;
 
-  virtual void setKid(IndexType Index, Node *N) = 0;
+  virtual void setKid(int Index, Node *N) = 0;
 
   Node *getLastKid() const {
-    if (IndexType Size = getNumKids())
+    if (int Size = getNumKids())
       return getKid(Size-1);
     return nullptr;
   }
@@ -176,13 +178,13 @@ public:
 
   static bool implementsClass(NodeType Type);
 
-  IndexType getNumKids() const final {
+  int getNumKids() const final {
     return 0;
   }
 
-  Node *getKid(IndexType Index) const final;
+  Node *getKid(int Index) const final;
 
-  void setKid(IndexType Index, Node *N) final;
+  void setKid(int Index, Node *N) final;
 
 protected:
   NullaryNode(alloc::Allocator *Alloc, NodeType Type)
@@ -196,7 +198,8 @@ protected:
     virtual void forceCompilation() final;                                     \
   public:                                                                      \
     tag##Node() : NullaryNode(alloc::Allocator::Default, Op##tag) {}           \
-    tag##Node(alloc::Allocator *Alloc) : NullaryNode(Alloc, Op##tag) {}        \
+    explicit tag##Node(alloc::Allocator *Alloc)                                \
+         : NullaryNode(Alloc, Op##tag) {}                                      \
     ~tag##Node() override {}                                                   \
     static bool implementsClass(NodeType Type) { return Type == Op##tag; }     \
   };
@@ -211,13 +214,15 @@ class IntegerNode final : public NullaryNode {
 public:
   // Note: ValueFormat provided so that we can echo back out same
   // representation as when lexing s-expressions.
+#if 0
   enum ValueFormat { Decimal, SignedDecimal, Hexidecimal };
-  IntegerNode(decode::IntType Value, ValueFormat Format = Decimal) :
+#endif
+  IntegerNode(decode::IntType Value, ValueFormat Format = ValueFormat::Decimal) :
       NullaryNode(alloc::Allocator::Default, OpInteger),
       Value(Value),
       Format(Format) {}
   IntegerNode(alloc::Allocator *Alloc, decode::IntType Value,
-              ValueFormat Format = Decimal) :
+              ValueFormat Format = ValueFormat::Decimal) :
       NullaryNode(Alloc, OpInteger),
       Value(Value),
       Format(Format) {}
@@ -242,7 +247,7 @@ class SymbolNode final : public NullaryNode {
   SymbolNode() = delete;
   virtual void forceCompilation() final;
 public:
-  SymbolNode(ExternalName &_Name) :
+  explicit SymbolNode(ExternalName &_Name) :
       NullaryNode(alloc::Allocator::Default, OpSymbol),
       Name(alloc::Allocator::Default) {
     init(_Name);
@@ -309,13 +314,13 @@ class UnaryNode : public Node {
 public:
   ~UnaryNode() override {}
 
-  IndexType getNumKids() const final {
+  int getNumKids() const final {
     return 1;
   }
 
-  Node *getKid(IndexType Index) const final;
+  Node *getKid(int Index) const final;
 
-  void setKid(IndexType Index, Node *N) final;
+  void setKid(int Index, Node *N) final;
 
   static bool implementsClass(NodeType Type);
 
@@ -333,7 +338,7 @@ protected:
     tag##Node &operator=(const tag##Node&) = delete;                           \
     virtual void forceCompilation() final;                                     \
   public:                                                                      \
-    tag##Node(Node *Kid)                                                       \
+    explicit tag##Node(Node *Kid)                                              \
       : UnaryNode(alloc::Allocator::Default, Op##tag, Kid) {}                  \
     tag##Node(alloc::Allocator* Alloc, Node *Kid)                              \
       : UnaryNode(Alloc, Op##tag, Kid) {}                                      \
@@ -349,13 +354,13 @@ class BinaryNode : public Node {
 public:
   ~BinaryNode() override {}
 
-  IndexType getNumKids() const final {
+  int getNumKids() const final {
     return 2;
   }
 
-  Node *getKid(IndexType Index) const final;
+  Node *getKid(int Index) const final;
 
-  void setKid(IndexType Index, Node *N) final;
+  void setKid(int Index, Node *N) final;
 
   static bool implementsClass(NodeType Type);
 
@@ -393,15 +398,15 @@ class NaryNode : public Node {
   NaryNode &operator=(const NaryNode&) = delete;
   virtual void forceCompilation();
 public:
-  IndexType getNumKids() const override final {
+  int getNumKids() const override final {
     return Kids.size();
   }
 
-  Node *getKid(IndexType Index) const override final {
+  Node *getKid(int Index) const override final {
     return Kids[Index];
   }
 
-  void setKid(IndexType Index, Node *N) override final {
+  void setKid(int Index, Node *N) override final {
     Kids[Index] = N;
   }
 
@@ -414,9 +419,25 @@ public:
 
 protected:
   arena_vector<Node*> Kids;
-  NaryNode(NodeType Type) : Node(alloc::Allocator::Default, Type) {}
+  explicit NaryNode(NodeType Type) : Node(alloc::Allocator::Default, Type) {}
   NaryNode(alloc::Allocator *Alloc, NodeType Type)
       : Node(Alloc, Type), Kids(alloc::TemplateAllocator<Node*>(Alloc)) {}
+};
+
+class SelectNode final : public NaryNode {
+  SelectNode(const SelectNode &) = delete;
+  SelectNode &operator=(const SelectNode &) = delete;
+  virtual void forceCompilation() final;
+public:
+  SelectNode() : NaryNode(OpSelect) {}
+  explicit SelectNode(alloc::Allocator *Alloc)
+      : NaryNode(Alloc, OpSelect) {}
+  static bool implementsClass(NodeType Type) { return OpSelect == Type; }
+  void installFastLookup();
+  const Node *getCase(IntType Key) const;
+private:
+  // TODO(kschimpf) Hook this up to allocator.
+  std::unordered_map<IntType, Node *> LookupMap;
 };
 
 #define X(tag)                                                                 \
@@ -426,7 +447,7 @@ protected:
     virtual void forceCompilation() final;                                     \
   public:                                                                      \
     tag##Node() : NaryNode(Op##tag) {}                                         \
-    tag##Node(alloc::Allocator *Alloc) : NaryNode(Alloc, Op##tag) {}           \
+    explicit tag##Node(alloc::Allocator *Alloc) : NaryNode(Alloc, Op##tag) {}  \
     ~tag##Node() override {}                                                   \
     static bool implementsClass(NodeType Type) { return Op##tag == Type; }     \
   };

@@ -20,6 +20,8 @@
 #include "interp/WriteStream.h"
 #include "interp/State.h"
 
+#include <iostream>
+
 namespace wasm {
 
 using namespace decode;
@@ -76,9 +78,14 @@ void writeFixedLEB128(Type Value, WriteCursor &Pos) {
 template<class Type>
 void writeFixed(Type Value, WriteCursor &Pos) {
   constexpr uint32_t WordSize = sizeof(Type);
+  constexpr Type Mask = (Type(1) << CHAR_BIT) - 1;
   for (uint32_t i = 0; i < WordSize; ++i) {
+    Pos.writeByte(uint8_t(Value & Mask));
+    Value >>= CHAR_BIT;
+#if 0
     Pos.writeByte(Value >> (WordSize - 1) * CHAR_BIT);
     Value <<= CHAR_BIT;
+#endif
   }
 }
 
@@ -102,9 +109,9 @@ void ByteWriteStream::writeUint64(
 void ByteWriteStream::writeVarint32(
     int32_t Value, WriteCursor &Pos, uint32_t /*NumBits*/) {
   if (Value < 0)
-    writePositiveLEB128<int32_t>(Value, Pos);
-  else
     writeNegativeLEB128<int32_t>(Value, Pos);
+  else
+    writePositiveLEB128<int32_t>(Value, Pos);
 }
 
 void ByteWriteStream::writeVarint64(

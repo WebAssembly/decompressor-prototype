@@ -25,6 +25,18 @@ namespace {
 using namespace wasm::decode;
 
 template<class Type>
+Type readFixed(ReadCursor &Pos) {
+  uint32_t Value = 0;
+  constexpr uint32_t WordSize = sizeof(uint32_t);
+  uint32_t Shift = 0;
+  for (uint32_t i = 0; i < WordSize; ++i) {
+    Value |= uint32_t(Pos.readByte()) << Shift;
+    Shift += CHAR_BIT;
+  }
+  return Value;
+}
+
+template<class Type>
 Type readLEB128Loop(ReadCursor &Pos, uint32_t &Shift, uint8_t &Chunk) {
   Type Value = 0;
   Shift = 0;
@@ -68,11 +80,7 @@ uint8_t ByteReadStream::readUint8(ReadCursor &Pos, uint32_t /*NumBits*/) {
 }
 
 uint32_t ByteReadStream::readUint32(ReadCursor &Pos, uint32_t /*NumBits*/) {
-  uint32_t Value = 0;
-  constexpr uint32_t WordSize = sizeof(uint32_t);
-  for (uint32_t i = 0; i < WordSize; ++i)
-    Value = (Value << CHAR_BIT) | uint32_t(Pos.readByte());
-  return Value;
+  return readFixed<uint32_t>(Pos);
 }
 
 int32_t ByteReadStream::readVarint32(ReadCursor &Pos, uint32_t /*NumBits*/) {
@@ -84,11 +92,7 @@ int64_t ByteReadStream::readVarint64(ReadCursor &Pos, uint32_t /*NumBits*/) {
 }
 
 uint64_t ByteReadStream::readUint64(ReadCursor &Pos, uint32_t /*NumBits*/) {
-  uint64_t Value = 0;
-  constexpr uint32_t WordSize = sizeof(uint64_t);
-  for (uint32_t i = 0; i < WordSize; ++i)
-    Value = (Value << CHAR_BIT) | uint64_t(Pos.readByte());
-  return Value;
+  return readFixed<uint64_t>(Pos);
 }
 
 uint32_t ByteReadStream::readVaruint32(ReadCursor &Pos, uint32_t /*NumBits*/) {

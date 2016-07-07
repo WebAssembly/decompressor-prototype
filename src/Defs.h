@@ -21,6 +21,7 @@
 #define DECOMPRESSOR_SRC_DEFS_H
 
 #include <cassert>
+#include <cinttypes>
 #include <climits>
 #include <cstddef>
 #include <cstdint>
@@ -50,6 +51,8 @@ namespace decode {
 
 using IntType = uint64_t;
 using SignedIntType = int64_t;
+
+#define PRI_IntType PRIu64
 
 static constexpr size_t kBitsInIntType = 64;
 
