@@ -44,12 +44,6 @@ decode::IntType moduloByPower10(decode::IntType Value,
   return Value % Power10;
 }
 
-#if 0
-char getHexCharForDigit(uint8_t Digit) {
-  return Digit < 10 ? '0' + Digit : 'a' + (Digit - 10);
-}
-#endif
-
 constexpr const char *IndentString = "  ";
 
 } // end of anonyous namespace
