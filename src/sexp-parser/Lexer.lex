@@ -215,6 +215,7 @@ id ({letter}|{digit}|[_.])*
 "default"         return Parser::make_DEFAULT(Driver.getLoc());
 "define"          return Parser::make_DEFINE(Driver.getLoc());
 "eval"            return Parser::make_EVAL(Driver.getLoc());
+"eval.default"    return Parser::make_EVAL_DEFAULT(Driver.getLoc());
 "filter"          return Parser::make_FILTER(Driver.getLoc());
 "i32.const"       return Parser::make_I32_CONST(Driver.getLoc());
 "i64.const"       return Parser::make_I64_CONST(Driver.getLoc());

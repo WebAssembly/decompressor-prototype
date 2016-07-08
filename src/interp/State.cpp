@@ -125,7 +125,8 @@ IntType State::eval(const Node *Nd) {
     case OpUndefine:
     case OpVersion:
     case OpInteger:
-      fatal("Evaluating filter s-expression not defined");
+      fprintf(stderr, "Evaluating not allowed: %s\n", getNodeTypeName(Type));
+      fatal("Unable to evaluate filter s-expression");
       break;
     case OpSelect: {
       const SelectNode *Sel = cast<SelectNode>(Nd);
@@ -176,6 +177,13 @@ IntType State::eval(const Node *Nd) {
     case OpEval: {
       if (auto *Sym = dyn_cast<SymbolNode>(Nd->getKid(0))) {
         return returnValue("eval", eval(Sym->getDefineDefinition()));
+      }
+      fatal("Can't evaluate symbol");
+      break;
+    }
+    case OpEvalDefault: {
+      if (auto *Sym = dyn_cast<SymbolNode>(Nd->getKid(0))) {
+        return returnValue("eval", eval(Sym->getDefaultDefinition()));
       }
       fatal("Can't evaluate symbol");
       break;

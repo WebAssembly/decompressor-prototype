@@ -84,6 +84,7 @@ struct IntegerValue {
 %token DEFINE        "define"
 %token ERROR         "error"
 %token EVAL          "eval"
+%token EVAL_DEFAULT  "eval.default"
 %token FILTER        "filter"
 %token I32_CONST     "i32.const"
 %token I64_CONST     "i64.const"
@@ -246,6 +247,9 @@ expression
           }
         | "(" "eval" symbol ")" {
             $$ = Driver.create<EvalNode>($3);
+          }
+        | "(" "eval.default" symbol ")" {
+            $$ = Driver.create<EvalDefaultNode>($3);
           }
         | "(" "i32.const" integer ")" {
             $$ = Driver.create<I32ConstNode>($3);
