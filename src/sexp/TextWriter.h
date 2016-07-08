@@ -60,8 +60,12 @@ public:
   // names.
   static bool UseNodeTypeNames;
   TextWriter();
-  void write(FILE *file, const Node *Root);
-  void writeAbbrev(FILE *file, const Node *Root);
+
+  // Pretty prints s-expression (defined by Root) to File.
+  void write(FILE *File, const Node *Root);
+
+  // Prints one-line summary of s-expression (defined by Root) to File.
+  void writeAbbrev(FILE *File, const Node *Root);
 
 private:
   FILE *File = 0;
