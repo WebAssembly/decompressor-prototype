@@ -70,6 +70,17 @@ public:
     }
   }
 
+  ByteQueue* getQueue() {
+    return Queue;
+  }
+
+  // WARNING: Assumes that you have a lock before NewAddress when this is
+  // called.
+  void jumpToAddress(size_t NewAddress) {
+    releaseLock();
+    CurAddress = NewAddress;
+  }
+
 protected:
   // The byte queue the cursor points to.
   ByteQueue *Queue;
@@ -166,6 +177,7 @@ public:
 
   void freezeEob() {
     Queue->freezeEob(CurAddress);
+    EobAddress = CurAddress;
   }
 
   // For debugging.

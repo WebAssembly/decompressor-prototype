@@ -23,8 +23,6 @@ namespace wasm {
 namespace decode {
 
 void ByteQueue::writePageAt(FILE *File, size_t Address) {
-  size_t StartAddress = page(Address) << PageSizeLog2;
-  fprintf(File, "@%" PRIuMAX ":\n", intmax_t(StartAddress));
   QueuePage *Page = getPage(Address);
   if (Page == nullptr)
     return;
@@ -34,7 +32,6 @@ void ByteQueue::writePageAt(FILE *File, size_t Address) {
     if (Count % 16 == 0) {
       if (Count)
         fputc('\n', File);
-      fprintf(File, "  ");
     } else {
       fputc(' ', File);
     }
@@ -114,7 +111,7 @@ uint8_t *ByteQueue::getReadLockedPointer(size_t Address, size_t WantedSize,
   // Find page associated with Address.
   QueuePage *ReadPage = getPage(Address);
   if (ReadPage == nullptr
-      || (!LockedPages.empty() && ReadPage->PageIndex >= LockedPages.top())) {
+      || (!LockedPages.empty() && ReadPage->PageIndex < LockedPages.top())) {
     LockedSize = 0;
     return nullptr;
   }
