@@ -87,22 +87,22 @@ void writeFixed(Type Value, WriteCursor &Pos) {
 
 } // end of anonymous namespace
 
-void ByteWriteStream::writeUint8(
+void ByteWriteStream::writeUint8Bits(
     uint8_t Value, WriteCursor &Pos, uint32_t /*NumBits*/) {
   Pos.writeByte(uint8_t(Value));
 }
 
-void ByteWriteStream::writeUint32(
+void ByteWriteStream::writeUint32Bits(
     uint32_t Value, WriteCursor &Pos, uint32_t /*NumBits*/) {
   writeFixed<uint32_t>(Value, Pos);
 }
 
-void ByteWriteStream::writeUint64(
+void ByteWriteStream::writeUint64Bits(
     uint64_t Value, WriteCursor &Pos, uint32_t /*NumBits*/) {
   writeFixed<uint64_t>(Value, Pos);
 }
 
-void ByteWriteStream::writeVarint32(
+void ByteWriteStream::writeVarint32Bits(
     int32_t Value, WriteCursor &Pos, uint32_t /*NumBits*/) {
   if (Value < 0)
     writeNegativeLEB128<int32_t>(Value, Pos);
@@ -110,7 +110,7 @@ void ByteWriteStream::writeVarint32(
     writePositiveLEB128<int32_t>(Value, Pos);
 }
 
-void ByteWriteStream::writeVarint64(
+void ByteWriteStream::writeVarint64Bits(
     int64_t Value, WriteCursor &Pos, uint32_t /*NumBits*/) {
   if (Value < 0)
     writePositiveLEB128<int64_t>(Value, Pos);
@@ -118,12 +118,12 @@ void ByteWriteStream::writeVarint64(
     writeNegativeLEB128<int64_t>(Value, Pos);
 }
 
-void ByteWriteStream::writeVaruint32(
+void ByteWriteStream::writeVaruint32Bits(
     uint32_t Value, WriteCursor &Pos, uint32_t /*NumBits*/) {
   writeLEB128<uint32_t>(Value, Pos);
 }
 
-void ByteWriteStream::writeVaruint64(
+void ByteWriteStream::writeVaruint64Bits(
     uint64_t Value, WriteCursor &Pos, uint32_t /*NumBits*/) {
   writeLEB128<uint64_t>(Value, Pos);
 }

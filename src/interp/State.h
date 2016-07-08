@@ -47,6 +47,10 @@ public:
 
   void setTraceProgress(bool NewValue);
 
+  void setMinimizeBlockSize(bool NewValue) {
+    MinimizeBlockSize = true;
+  }
+
 private:
   decode::ReadCursor ReadPos;
   ReadStream *Reader;
@@ -61,6 +65,7 @@ private:
   uint32_t Version;
   // The current section name (if applicable).
   std::string CurSectionName;
+  bool MinimizeBlockSize = false;
 
   void decompressSection();
   void readSectionName();

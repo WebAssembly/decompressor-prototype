@@ -99,6 +99,8 @@ void writeInt(FILE *File, IntType Value, ValueFormat Format) {
           Value &= (1 << Shift) - 1;
         }
       }
+      if (!StartPrinting)
+        fputc(getHexCharForDigit(0), File);
       break;
     }
   }

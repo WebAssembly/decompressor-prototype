@@ -258,31 +258,31 @@ IntType State::read(const Node *Nd) {
     case OpUint8NoArgs:
       return Reader->readUint8(ReadPos);
     case OpUint8OneArg:
-      return Reader->readUint8(ReadPos, getIntegerValue(Nd->getKid(0)));
+      return Reader->readUint8Bits(ReadPos, getIntegerValue(Nd->getKid(0)));
     case OpUint32NoArgs:
       return Reader->readUint32(ReadPos);
     case OpUint32OneArg:
-      return Reader->readUint32(ReadPos, getIntegerValue(Nd->getKid(0)));
+      return Reader->readUint32Bits(ReadPos, getIntegerValue(Nd->getKid(0)));
     case OpUint64NoArgs:
       return Reader->readUint64(ReadPos);
     case OpUint64OneArg:
-      return Reader->readUint64(ReadPos, getIntegerValue(Nd->getKid(0)));
+      return Reader->readUint64Bits(ReadPos, getIntegerValue(Nd->getKid(0)));
     case OpVarint32NoArgs:
       return Reader->readVarint32(ReadPos);
     case OpVarint32OneArg:
-      return Reader->readVarint32(ReadPos, getIntegerValue(Nd->getKid(0)));
+      return Reader->readVarint32Bits(ReadPos, getIntegerValue(Nd->getKid(0)));
     case OpVarint64NoArgs:
       return Reader->readVarint64(ReadPos);
     case OpVarint64OneArg:
-      return Reader->readVarint64(ReadPos, getIntegerValue(Nd->getKid(0)));
+      return Reader->readVarint64Bits(ReadPos, getIntegerValue(Nd->getKid(0)));
     case OpVaruint32NoArgs:
       return Reader->readVaruint32(ReadPos);
     case OpVaruint32OneArg:
-      return Reader->readVaruint32(ReadPos, getIntegerValue(Nd->getKid(0)));
+      return Reader->readVaruint32Bits(ReadPos, getIntegerValue(Nd->getKid(0)));
     case OpVaruint64NoArgs:
       return Reader->readVaruint64(ReadPos);
     case OpVaruint64OneArg:
-      return Reader->readVaruint64(ReadPos, getIntegerValue(Nd->getKid(0)));
+      return Reader->readVaruint64Bits(ReadPos, getIntegerValue(Nd->getKid(0)));
     case OpVoid:
       return 0;
   }
@@ -306,43 +306,47 @@ IntType State::write(IntType Value, const wasm::filt::Node *Nd) {
       Writer->writeUint8(Value, WritePos);
       break;
     case OpUint8OneArg:
-      Writer->writeUint8(Value, WritePos, getIntegerValue(Nd->getKid(0)));
+      Writer->writeUint8Bits(Value, WritePos, getIntegerValue(Nd->getKid(0)));
       break;
     case OpUint32NoArgs:
       Writer->writeUint32(Value, WritePos);
       break;
     case OpUint32OneArg:
-      Writer->writeUint32(Value, WritePos, getIntegerValue(Nd->getKid(0)));
+      Writer->writeUint32Bits(Value, WritePos, getIntegerValue(Nd->getKid(0)));
       break;
     case OpUint64NoArgs:
       Writer->writeUint64(Value, WritePos);
       break;
     case OpUint64OneArg:
-      Writer->writeUint64(Value, WritePos, getIntegerValue(Nd->getKid(0)));
+      Writer->writeUint64Bits(Value, WritePos, getIntegerValue(Nd->getKid(0)));
       break;
     case OpVarint32NoArgs:
       Writer->writeVarint32(Value, WritePos);
       break;
     case OpVarint32OneArg:
-      Writer->writeVarint32(Value, WritePos, getIntegerValue(Nd->getKid(0)));
+      Writer->writeVarint32Bits(Value, WritePos,
+                                getIntegerValue(Nd->getKid(0)));
       break;
     case OpVarint64NoArgs:
       Writer->writeVarint64(Value, WritePos);
       break;
     case OpVarint64OneArg:
-      Writer->writeVarint64(Value, WritePos, getIntegerValue(Nd->getKid(0)));
+      Writer->writeVarint64Bits(Value, WritePos,
+                                getIntegerValue(Nd->getKid(0)));
       break;
     case OpVaruint32NoArgs:
       Writer->writeVaruint32(Value, WritePos);
       break;
     case OpVaruint32OneArg:
-      Writer->writeVaruint32(Value, WritePos, getIntegerValue(Nd->getKid(0)));
+      Writer->writeVaruint32Bits(Value, WritePos,
+                                 getIntegerValue(Nd->getKid(0)));
       break;
     case OpVaruint64NoArgs:
       Writer->writeVaruint64(Value, WritePos);
       break;
     case OpVaruint64OneArg:
-      Writer->writeVaruint64(Value, WritePos, getIntegerValue(Nd->getKid(0)));
+      Writer->writeVaruint64Bits(Value, WritePos,
+                                 getIntegerValue(Nd->getKid(0)));
       break;
     case OpVoid:
       break;
@@ -378,6 +382,7 @@ void State::decompress() {
     decompressSection();
   }
   WritePos.freezeEob();
+  fprintf(stderr, "Write eob = %d\n", int(WritePos.getEobAddress()));
   if (TraceProgress)
     exit("decompress");
 }
@@ -397,10 +402,25 @@ void State::decompressBlock(const Node *Code) {
   if (ByteWriter) {
     WriteCursor BlockPos(WritePos);
     ByteWriter->writeFixedVaruint32(0, WritePos);
+    size_t SizeAfterWrite = WritePos.getCurAddress();
     evalOrCopy(Code);
     const size_t NewSize =
-        WritePos.getCurAddress() - BlockPos.getCurAddress();
-    ByteWriter->writeFixedVaruint32(NewSize, BlockPos);
+        WritePos.getCurAddress() - (BlockPos.getCurAddress() + 5);
+    if (!MinimizeBlockSize)
+      ByteWriter->writeFixedVaruint32(NewSize, BlockPos);
+    else {
+      ByteWriter->writeVaruint32(NewSize, BlockPos);
+      size_t SizeAfterBackPatch = BlockPos.getCurAddress();
+      size_t Diff = SizeAfterWrite - SizeAfterBackPatch;
+      if (Diff) {
+        size_t End = WritePos.getCurAddress() - Diff;
+        ReadCursor CopyPos(WritePos.getQueue());
+        CopyPos.jumpToAddress(SizeAfterWrite);
+        for (size_t i = SizeAfterBackPatch; i < End; ++ i)
+          BlockPos.writeByte(CopyPos.readByte());
+        WritePos.jumpToAddress(BlockPos.getCurAddress());
+      }
+    }
   } else {
     evalOrCopy(Code);
   }
