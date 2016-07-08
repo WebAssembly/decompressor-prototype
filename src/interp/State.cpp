@@ -136,32 +136,9 @@ IntType State::eval(const Node *Nd) {
     case OpCase:
       eval(Nd->getKid(1));
       break;
-    case OpBlock: {
-      auto *ByteWriter = dyn_cast<ByteWriteStream>(Writer);
-      bool IsByteReader = isa<ByteReadStream>(Reader);
-      if (IsByteReader) {
-        const size_t BlockSize = Reader->readVaruint32(ReadPos);
-        if (TraceProgress) {
-          writeIndent();
-          traceStreamLocs();
-          fprintf(stderr, " block size: %" PRIuMAX "\n", intmax_t(BlockSize));
-        }
-        ReadPos.pushEobAddress(ReadPos.getCurAddress() + BlockSize);
-      }
-      if (ByteWriter) {
-        WriteCursor BlockPos(WritePos);
-        ByteWriter->writeFixedVaruint32(0, WritePos);
-        eval(Nd->getKid(0));
-        const size_t NewSize =
-            WritePos.getCurAddress() - BlockPos.getCurAddress();
-        ByteWriter->writeFixedVaruint32(NewSize, BlockPos);
-      } else {
-        eval(Nd->getKid(0));
-      }
-      if (IsByteReader)
-        ReadPos.popEobAddress();
+    case OpBlock:
+      decompressBlock(Nd->getKid(0));
       break;
-    }
     case OpAnd:
       if (eval(Nd->getKid(0)) != 0 && eval(Nd->getKid(1)) != 0)
         return returnValue("eval", 1);
@@ -405,6 +382,41 @@ void State::decompress() {
     exit("decompress");
 }
 
+void State::decompressBlock(const Node *Code) {
+  auto *ByteWriter = dyn_cast<ByteWriteStream>(Writer);
+  bool IsByteReader = isa<ByteReadStream>(Reader);
+  if (IsByteReader) {
+    const size_t BlockSize = Reader->readVaruint32(ReadPos);
+    if (TraceProgress) {
+      writeIndent();
+      traceStreamLocs();
+      fprintf(stderr, " block size: %" PRIuMAX "\n", intmax_t(BlockSize));
+    }
+    ReadPos.pushEobAddress(ReadPos.getCurAddress() + BlockSize);
+  }
+  if (ByteWriter) {
+    WriteCursor BlockPos(WritePos);
+    ByteWriter->writeFixedVaruint32(0, WritePos);
+    evalOrCopy(Code);
+    const size_t NewSize =
+        WritePos.getCurAddress() - BlockPos.getCurAddress();
+    ByteWriter->writeFixedVaruint32(NewSize, BlockPos);
+  } else {
+    evalOrCopy(Code);
+  }
+  if (IsByteReader)
+    ReadPos.popEobAddress();
+}
+
+void State::evalOrCopy(const Node *Nd) {
+  if (Nd) {
+    eval(Nd);
+    return;
+  }
+  while (!ReadPos.atEob())
+    Writer->writeUint8(Reader->readUint8(ReadPos), WritePos);
+}
+
 void State::decompressSection() {
   assert(isa<ByteReadStream>(Reader));
   if (TraceProgress)
@@ -415,27 +427,8 @@ void State::decompressSection() {
     traceStreamLocs();
     fprintf(stderr, " section: '%s'\n", CurSectionName.c_str());
   }
-  const uint32_t BlockSize = Reader->readVaruint32(ReadPos);
-  if (TraceProgress) {
-    writeIndent();
-    traceStreamLocs();
-    fprintf(stderr, " section size: %" PRIuMAX "\n", intmax_t(BlockSize));
-  }
-  ReadPos.pushEobAddress(ReadPos.getCurAddress() + BlockSize);
-  WriteCursor BlockPos(WritePos);
-  auto *ByteWriter = dyn_cast<ByteWriteStream>(Writer);
-  ByteWriter->writeFixedVaruint32(0, WritePos);
-  if (SymbolNode *Sym = Algorithms->getSymbol(CurSectionName)) {
-    eval(Sym->getDefineDefinition());
-  } else {
-    // Copy bytes till eob.
-    while (!ReadPos.atEob())
-      Writer->writeUint8(Reader->readUint8(ReadPos), WritePos);
-  }
-  const size_t NewSize =
-      WritePos.getCurAddress() - BlockPos.getCurAddress();
-  ByteWriter->writeFixedVaruint32(NewSize, BlockPos);
-  ReadPos.popEobAddress();
+  SymbolNode *Sym = Algorithms->getSymbol(CurSectionName);
+  decompressBlock(Sym ? Sym->getDefineDefinition() : nullptr);
   if (TraceProgress)
     exit("section");
 }
