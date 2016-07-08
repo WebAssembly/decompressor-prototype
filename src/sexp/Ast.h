@@ -390,6 +390,54 @@ protected:
   AST_BINARYNODE_TABLE
 #undef X
 
+class TernaryNode : public Node {
+  TernaryNode(const TernaryNode&) = delete;
+  TernaryNode &operator=(const TernaryNode&) = delete;
+public:
+  ~TernaryNode() override {}
+
+  int getNumKids() const final {
+    return 3;
+  }
+
+  Node *getKid(int Index) const final;
+
+  void setKid(int Index, Node *N) final;
+
+  static bool implementsClass(NodeType Type);
+
+protected:
+  Node *Kids[3];
+  TernaryNode(NodeType Type, Node *Kid1, Node *Kid2, Node *Kid3)
+      : Node(alloc::Allocator::Default, Type) {
+    Kids[0] = Kid1;
+    Kids[1] = Kid2;
+    Kids[2] = Kid3;
+  }
+  TernaryNode(alloc::Allocator *Alloc, NodeType Type, Node *Kid1, Node *Kid2,
+              Node *Kid3) : Node(Alloc, Type) {
+    Kids[0] = Kid1;
+    Kids[1] = Kid2;
+    Kids[1] = Kid3;
+  }
+};
+
+#define X(tag)                                                                 \
+  class tag##Node final : public TernaryNode {                                 \
+    tag##Node(const tag##Node&) = delete;                                      \
+    tag##Node &operator=(const tag##Node&) = delete;                           \
+    virtual void forceCompilation() final;                                     \
+  public:                                                                      \
+    tag##Node(Node *Kid1, Node *Kid2, Node *Kid3)                              \
+        : TernaryNode(Op##tag, Kid1, Kid2, Kid3) {}                            \
+    tag##Node(alloc::Allocator *Alloc, Node *Kid1, Node *Kid2, Node *Kid3)     \
+        : TernaryNode(Alloc, Op##tag, Kid1, Kid2, Kid3) {}                     \
+    ~tag##Node() override {}                                                   \
+    static bool implementsClass(NodeType Type) { return Op##tag == Type; }     \
+  };
+  AST_TERNARYNODE_TABLE
+#undef X
+
 class NaryNode : public Node {
   NaryNode(const NaryNode&) = delete;
   NaryNode &operator=(const NaryNode&) = delete;

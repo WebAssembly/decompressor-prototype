@@ -127,6 +127,7 @@ void TextWriter::writeNodeKids(const Node *Nd, bool EmbeddedInParent) {
   bool ForceNewline = false;
   for (auto *Kid : *Nd) {
     if (HasHiddenSeq && Kid == LastKid && isa<SequenceNode>(LastKid)) {
+      writeNewline();
       writeNode(Kid, true, HasHiddenSeq);
       return;
     }
@@ -153,8 +154,6 @@ void TextWriter::writeNodeKids(const Node *Nd, bool EmbeddedInParent) {
       writeNode(Kid, ForceNewline);
       continue;
     }
-    if (Count == 1 && EmbeddedInParent)
-      writeNewline();
     ForceNewline = true;
     writeNode(Kid, true);
   }

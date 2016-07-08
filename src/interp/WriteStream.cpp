@@ -82,10 +82,6 @@ void writeFixed(Type Value, WriteCursor &Pos) {
   for (uint32_t i = 0; i < WordSize; ++i) {
     Pos.writeByte(uint8_t(Value & Mask));
     Value >>= CHAR_BIT;
-#if 0
-    Pos.writeByte(Value >> (WordSize - 1) * CHAR_BIT);
-    Value <<= CHAR_BIT;
-#endif
   }
 }
 

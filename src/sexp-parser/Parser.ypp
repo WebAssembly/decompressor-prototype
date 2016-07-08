@@ -75,6 +75,7 @@ struct IntegerValue {
 %token END 0 "$END"
 
 // Keywords
+%token AND           "and"
 %token BLOCK         "block"
 %token BLOCKEND      "block.end"
 %token BYTE_TO_BYTE  "byte.to.byte"
@@ -86,13 +87,18 @@ struct IntegerValue {
 %token EVAL          "eval"
 %token EVAL_DEFAULT  "eval.default"
 %token FILTER        "filter"
+%token IF            "if"
+%token IS_BYTE_IN    "is.byte.in"
+%token IS_BYTE_OUT   "is.byte.out"
 %token I32_CONST     "i32.const"
 %token I64_CONST     "i64.const"
 %token LIT           "lit"
 %token LOOP          "loop"
 %token LOOP_UNBOUNDED "loop.unbounded"
 %token OPENPAREN     "("
+%token NOT           "not"
 %token MAP           "map"
+%token OR            "or"
 %token PEEK          "peek"
 %token READ          "read"
 %token SECTION       "section"
@@ -222,24 +228,27 @@ declaration_list
         ;
 
 block_stmt_list
-        : "block" expression statement  {
-            $$ = Driver.create<BlockNode>($2, $3);
+        : "block" statement  {
+            $$ = Driver.create<BlockNode>($2);
           }
         | block_stmt_list statement {
             $$ = $1;
-            Node *StmtList = $1->getKid(1);
+            Node *StmtList = $1->getKid(0);
             auto *Seq = dyn_cast<SequenceNode>(StmtList);
             if (Seq == nullptr) {
               Seq = Driver.create<SequenceNode>();
               Seq->append(StmtList);
-              $1->setKid(1, Seq);
+              $1->setKid(0, Seq);
             }
             Seq->append($2);
           }
         ;
 
 expression
-        : "(" "block.end" ")" {
+        : "(" "and" expression expression ")" {
+            $$ = Driver.create<AndNode>($3, $4);
+          }
+        | "(" "block.end" ")" {
             $$ = Driver.create<BlockEndNoArgsNode>();
           }
         | "(" "error" ")" {
@@ -250,6 +259,12 @@ expression
           }
         | "(" "eval.default" symbol ")" {
             $$ = Driver.create<EvalDefaultNode>($3);
+          }
+        | "(" "is.byte.in" ")" {
+            $$ = Driver.create<IsByteInNode>();
+          }
+        | "(" "is.byte.out" ")" {
+            $$ = Driver.create<IsByteOutNode>();
           }
         | "(" "i32.const" integer ")" {
             $$ = Driver.create<I32ConstNode>($3);
@@ -262,6 +277,12 @@ expression
           }
         | "(" "map" expression expression ")" {
             $$ = Driver.create<MapNode>($3, $4);
+          }
+        | "(" "not" expression ")" {
+            $$ = Driver.create<NotNode>($3);
+          }
+        | "(" "or" expression expression ")" {
+            $$ = Driver.create<OrNode>($3, $4);
           }
         | "(" "peek" expression ")" {
             $$ = Driver.create<PeekNode>($3);
@@ -397,10 +418,13 @@ statement
         : expression { $$ = $1; }
         | stream_conv { $$ = $1; }
         | "(" block_stmt_list ")"  { $$ = $2; }
-        | "(" "block.end" statement ")" {
-            $$ = Driver.create<BlockEndOneArgNode>($3);
-          }
         | "(" "filter" stream_conv_list ")" { $$ = $3; }
+        | "(" "if" expression statement ")" {
+            $$ = Driver.create<IfThenNode>($3, $4);
+          }
+        | "(" "if" expression statement statement ")" {
+            $$ = Driver.create<IfThenElseNode>($3, $4, $5);
+          }
         | "(" loop_body ")" { $$ = $2; }
         | "(" "select" case_list ")" {
             $$ = $3;

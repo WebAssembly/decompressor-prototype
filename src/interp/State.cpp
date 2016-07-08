@@ -79,25 +79,22 @@ void State::traceStreamLocs() {
 
 void State::enter(const char *Name, bool AddNewline) {
   IndentBegin();
-  fprintf(stderr, "-> ");
   traceStreamLocs();
-  fprintf(stderr, " %s", Name);
+  fprintf(stderr, " ->  %s", Name);
   if (AddNewline)
     fputc('\n', stderr);
 }
 
 void State::exit(const char *Name) {
   IndentEnd();
-  fprintf(stderr, "<- ");
   traceStreamLocs();
-  fprintf(stderr, " %s\n", Name);
+  fprintf(stderr, " <- %s\n", Name);
 }
 
 IntType State::returnValueInternal(const char *Name, IntType Value) {
   IndentEnd();
-  fprintf(stderr, "<- ");
   traceStreamLocs();
-  fprintf(stderr, " %s = %" PRI_IntType "\n", Name, Value);
+  fprintf(stderr, " <-  %s = %" PRI_IntType "\n", Name, Value);
   return Value;
 }
 
@@ -144,33 +141,44 @@ IntType State::eval(const Node *Nd) {
       auto *ByteWriter = dyn_cast<ByteWriteStream>(Writer);
       bool IsByteReader = isa<ByteReadStream>(Reader);
       if (IsByteReader) {
-        const size_t BlockSize = read(Nd->getKid(0));
+        const size_t BlockSize = Reader->readVaruint32(ReadPos);
         if (TraceProgress) {
           writeIndent();
           traceStreamLocs();
-          fprintf(stderr, "block size: %" PRIuMAX "\n", intmax_t(BlockSize));
+          fprintf(stderr, " block size: %" PRIuMAX "\n", intmax_t(BlockSize));
         }
         ReadPos.pushEobAddress(ReadPos.getCurAddress() + BlockSize);
       }
       if (ByteWriter) {
         WriteCursor BlockPos(WritePos);
         ByteWriter->writeFixedVaruint32(0, WritePos);
-        eval(Nd->getKid(1));
+        eval(Nd->getKid(0));
         const size_t NewSize =
             WritePos.getCurAddress() - BlockPos.getCurAddress();
         ByteWriter->writeFixedVaruint32(NewSize, BlockPos);
       } else {
-        eval(Nd->getKid(1));
+        eval(Nd->getKid(0));
       }
       if (IsByteReader)
         ReadPos.popEobAddress();
       break;
     }
-    case OpBlockEndOneArg: {
-      if (!isa<ByteReadStream>(Reader) || isa<ByteWriteStream>(Writer))
-        break;
-      return returnValue("eval", eval(Nd->getKid(0)));
-    }
+    case OpAnd:
+      if (eval(Nd->getKid(0)) != 0 && eval(Nd->getKid(1)) != 0)
+        return returnValue("eval", 1);
+      break;
+    case OpNot:
+      if (eval(Nd->getKid(0)) == 0)
+        return returnValue("eval", 1);
+      break;
+    case OpOr:
+      if (eval(Nd->getKid(0)) != 0 || eval(Nd->getKid(1)) != 0)
+        return returnValue("eval", 1);
+      break;
+    case OpIsByteIn:
+      return returnValue("eval", isa<ByteReadStream>(Reader));
+    case OpIsByteOut:
+      return returnValue("eval", isa<ByteWriteStream>(Writer));
     case OpError:
       fatal("Error found during evaluation");
       break;
@@ -188,6 +196,16 @@ IntType State::eval(const Node *Nd) {
       fatal("Can't evaluate symbol");
       break;
     }
+    case OpIfThen:
+      if (eval(Nd->getKid(0)) != 0)
+        eval(Nd->getKid(1));
+      break;
+    case OpIfThenElse:
+      if (eval(Nd->getKid(0)) != 0)
+        eval(Nd->getKid(1));
+      else
+        eval(Nd->getKid(2));
+      break;
     case OpI32Const:
     case OpI64Const:
     case OpU32Const:
@@ -395,7 +413,8 @@ void State::decompressSection() {
   readSectionName();
   if (TraceProgress) {
     writeIndent();
-    fprintf(stderr, "section: '%s'\n", CurSectionName.c_str());
+    traceStreamLocs();
+    fprintf(stderr, " section: '%s'\n", CurSectionName.c_str());
   }
   const uint32_t BlockSize = Reader->readVaruint32(ReadPos);
   if (TraceProgress) {
