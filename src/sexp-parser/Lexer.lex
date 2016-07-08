@@ -234,7 +234,6 @@ id ({letter}|{digit}|[_.])*
 "section"         return Parser::make_SECTION(Driver.getLoc());
 "select"          return Parser::make_SELECT(Driver.getLoc());
 "seq"             return Parser::make_SEQ(Driver.getLoc());
-"sym.const"       return Parser::make_SYM_CONST(Driver.getLoc());
 "uint8"           return Parser::make_UINT8(Driver.getLoc());
 "uint32"          return Parser::make_UINT32(Driver.getLoc());
 "uint64"          return Parser::make_UINT64(Driver.getLoc());

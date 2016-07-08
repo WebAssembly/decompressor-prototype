@@ -53,7 +53,6 @@
   X(I64Const,          0x12, "i64.const",        nullptr,           1, 0)      \
   X(U32Const,          0x13, "u32.const",        nullptr,           1, 0)      \
   X(U64Const,          0x14, "u64.const",        nullptr,           1, 0)      \
-  X(SymConst,          0x15, "sym.const",        nullptr,           1, 0)      \
                                                                                \
   /* Formatting */                                                             \
   X(Uint32NoArgs,      0x20, "uint32",           "uint32NoArgs",    0, 0)      \
@@ -164,7 +163,6 @@
 /*  X(Postorder)                                                            */ \
 /*  X(Preorder)                                                             */ \
   X(Read)                                                                      \
-  X(SymConst)                                                                  \
   X(Uint32OneArg)                                                              \
   X(Uint64OneArg)                                                              \
   X(Undefine)                                                                  \

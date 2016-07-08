@@ -104,7 +104,6 @@ struct IntegerValue {
 %token SECTION       "section"
 %token SELECT        "select"
 %token SEQ           "seq"
-%token SYM_CONST     "sym.const"
 %token UINT8         "uint8"
 %token UINT32        "uint32"
 %token UINT64        "uint64"
@@ -289,9 +288,6 @@ expression
           }
         | "(" "read" expression ")" {
             $$ = Driver.create<ReadNode>($3);
-          }
-        | "(" "sym.const" symbol ")" {
-            $$ = Driver.create<SymConstNode>($3);
           }
         | "(" "uint8" ")" {
             $$ = Driver.create<Uint8NoArgsNode>();

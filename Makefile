@@ -20,13 +20,17 @@ SRCDIR = src
 BUILDDIR = build
 OBJDIR = $(BUILDDIR)/obj
 
+LIBDIR = $(BUILDDIR)/lib
+
 ###### Decoder objects and locations ######
 
-SRCS = \
+TL_SRCS = \
 	Allocator.cpp \
 	Defs.cpp
 
-OBJS=$(patsubst %.cpp, $(OBJDIR)/%.o, $(SRCS))
+TL_OBJS=$(patsubst %.cpp, $(OBJDIR)/%.o, $(TL_SRCS))
+
+TL_LIB = $(LIBDIR)/tl.a
 
 ###### Parse objects and locations ######
 
@@ -48,6 +52,8 @@ PARSER_SRCS = \
 
 PARSER_OBJS=$(patsubst %.cpp, $(PARSER_OBJDIR)/%.o, $(PARSER_SRCS))
 
+PARSER_LIB = $(LIBDIR)/parser.a
+
 ###### Filter s-expressions ######
 
 SEXP_SRCDIR = $(SRCDIR)/sexp
@@ -57,6 +63,8 @@ SEXP_SRCS = \
 	TextWriter.cpp
 
 SEXP_OBJS=$(patsubst %.cpp, $(SEXP_OBJDIR)/%.o, $(SEXP_SRCS))
+
+SEXP_LIB = $(LIBDIR)/sexp.a
 
 ###### Stream handlers ######
 
@@ -73,6 +81,8 @@ STRM_SRCS = \
 
 STRM_OBJS=$(patsubst %.cpp, $(STRM_OBJDIR)/%.o, $(STRM_SRCS))
 
+STRM_LIB = $(LIBDIR)/strm.a
+
 ###### S-expression interpeter ######
 
 INTERP_SRCDIR = $(SRCDIR)/interp
@@ -83,6 +93,8 @@ INTERP_SRCS = \
 	WriteStream.cpp
 
 INTERP_OBJS=$(patsubst %.cpp, $(INTERP_OBJDIR)/%.o, $(INTERP_SRCS))
+
+INTERP_LIB = $(LIBDIR)/interp.a
 
 ###### Executables ######
 
@@ -110,6 +122,8 @@ TEST_SRCS_DIR = $(TEST_DIR)/test-sources
 
 ###### General compilation definitions ######
 
+LIBS = $(TL_LIB) $(PARSER_LIB) $(SEXP_LIB) $(INTERP_LIB) $(STRM_LIB)
+
 $(info -----------------------------------------------)
 $(info Using CPP_COMPILER = $(CPP_COMPILER))
 $(info -----------------------------------------------)
@@ -117,18 +131,21 @@ $(info -----------------------------------------------)
 CCACHE := `command -v ccache`
 CXX :=  CCACHE_CPP2=yes $(CCACHE) $(CPP_COMPILER)
 
-CXXFLAGS := -std=gnu++11 -Wall -Wextra -O2 -g -pedantic -MP -MD -Werror -Isrc
+# Note: On WIN32 replace -fPIC with -D_GNU_SOURCE
+CXXFLAGS := -std=gnu++11 -Wall -Wextra -O2 -g -pedantic -MP -MD -Werror \
+	-Wno-unused-parameter -fno-omit-frame-pointer -fPIC -Isrc
 
 ###### Default Rule ######
 
-all: gen objs parser-objs sexp-objs strm-objs interp-objs execs test-execs
+all: tl-objs parser-objs sexp-objs strm-objs interp-objs libs execs \
+     test-execs
 
 .PHONY: all
 
 ###### Cleaning Rules #######
 
-clean: clean-objs clean-parser clean-sexp-objs clean-strm-objs clean-interp-objs \
-	clean-execs clean-test-execs
+clean: clean-tl-objs clean-parser clean-sexp-objs clean-strm-objs \
+       clean-interp-objs clean-execs clean-libs clean-test-execs
 
 .PHONY: clean
 
@@ -137,10 +154,15 @@ clean-all: clean
 
 .PHONY: clean-all
 
-clean-objs:
-	rm -f $(OBJS)
+clean-libs:
+	rm -f $(LIBS)
 
-.PHONY: clean-objs
+.PHONY: clean-libs
+
+clean-tl-objs:
+	rm -f $(TL_OBJS)
+
+.PHONY: clean-tl-objs
 
 clean-parser: clean-parser-objs
 	cd $(PARSER_DIR); rm -f $(PARSER_GENSRCS)
@@ -193,19 +215,22 @@ gen-parser: $(PARSER_DIR)/Parser.tab.cpp
 
 ###### Compiliing Sources ######
 
-objs: $(OBJS)
+tl-objs: $(TL_OBJS)
 
-.PHONY: objs
+.PHONY: tl-objs
 
-$(OBJS): | $(OBJDIR)
+$(TL_OBJS): | $(OBJDIR)
 
 $(OBJDIR):
 	mkdir -p $@
 
--include $(foreach dep,$(SRCS:.cpp=.d),$(OBJDIR)/$(dep))
+-include $(foreach dep,$(TL_SRCS:.cpp=.d),$(OBJDIR)/$(dep))
 
-$(OBJS): $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
+$(TL_OBJS): $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
 	$(CXX) -c $(CXXFLAGS) $< -o $@
+
+$(TL_LIB): $(TL_OBJS)
+	ar -rs $@ $(TL_OBJS)
 
 ###### Compiling s-expression interpeter sources ######
 
@@ -223,6 +248,9 @@ $(INTERP_OBJDIR):
 $(INTERP_OBJS): $(INTERP_OBJDIR)/%.o: $(INTERP_SRCDIR)/%.cpp
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 
+$(INTERP_LIB): $(INTERP_OBJS)
+	ar -rs $@ $(INTERP_OBJS)
+
 ###### Compiliing Sexp Sources ######
 
 sexp-objs: $(SEXP_OBJS)
@@ -239,6 +267,9 @@ $(SEXP_OBJDIR):
 $(SEXP_OBJS): $(SEXP_OBJDIR)/%.o: $(SEXP_SRCDIR)/%.cpp
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 
+$(SEXP_LIB): $(SEXP_OBJS)
+	ar -rs $@ $(SEXP_OBJS)
+
 ###### Compiling stream sources ######
 
 strm-objs: $(STRM_OBJS)
@@ -254,6 +285,9 @@ $(STRM_OBJDIR):
 
 $(STRM_OBJS): $(STRM_OBJDIR)/%.o: $(STRM_SRCDIR)/%.cpp
 	$(CXX) -c $(CXXFLAGS) $< -o $@
+
+$(STRM_LIB): $(STRM_OBJS)
+	ar -rs $@ $(STRM_OBJS)
 
 ###### Compiling Filter Parser #######
 
@@ -274,12 +308,27 @@ $(PARSER_OBJDIR):
 
 -include $(foreach dep,$(PARSER_SRCS:.cpp=.d),$(PARSER_OBJDIR)/$(dep))
 
-$(PARSER_OBJS): $(PARSER_OBJDIR)/%.o: $(PARSER_DIR)/%.cpp
+$(PARSER_OBJS): $(PARSER_OBJDIR)/%.o: $(PARSER_DIR)/%.cpp \
+	        $(PARSER_DIR)/Lexer.cpp $(PARSER_DIR)/Parser.tab.cpp
 	$(CXX) -c $(CXXFLAGS) $< -o $@
+
+$(PARSER_LIB): $(PARSER_OBJS)
+	ar -rs $@ $(PARSER_OBJS)
+
+###### Building libraries ######
+
+libs: $(LIBS)
+
+.PHONY: libs
+
+$(LIBDIR):
+	mkdir -p $@
+
+$(LIBS): | $(LIBDIR)
 
 ###### Compiling executables ######
 
-execs: $(EXECS)
+execs: $(LIBS) $(EXECS)
 
 .PHONY: execs
 
@@ -290,10 +339,8 @@ $(EXECS): | $(BUILD_EXECDIR)
 
 -include $(foreach dep,$(EXEC_SRCS:.cpp=.d),$(BUILD_EXECDIR)/$(dep))
 
-$(BUILD_EXECDIR)/decompress: $(EXEC_DIR)/decompress.cpp $(PARSER_OBJS) \
-                            $(SEXP_OBJS) $(OBJS) $(STRM_OBJS) $(INTERP_OBJS)
-	$(CXX) $(CXXFLAGS) $< $(PARSER_OBJS) $(SEXP_OBJS) $(OBJS) \
-		$(STRM_OBJS) $(INTERP_OBJS) -o $@
+$(BUILD_EXECDIR)/decompress: $(EXEC_DIR)/decompress.cpp $(LIBS)
+	$(CXX) $(CXXFLAGS) $< $(LIBS) -o $@
 
 ###### Compiling Test Executables #######
 
@@ -308,18 +355,14 @@ $(TEST_EXECS): | $(TEST_EXECDIR)
 
 -include $(foreach dep,$(TEST_SRCS:.cpp=.d),$(TEST_EXECDIR)/$(dep))
 
-$(TEST_EXECDIR)/TestParser: $(TEST_DIR)/TestParser.cpp $(PARSER_OBJS) \
-                            $(SEXP_OBJS) $(OBJS) $(STRM_OBJS)
-	$(CXX) $(CXXFLAGS) $< $(PARSER_OBJS) $(SEXP_OBJS) $(OBJS) \
-		$(STRM_OBJS) -o $@
+$(TEST_EXECDIR)/TestParser: $(TEST_DIR)/TestParser.cpp $(LIBS)
+	$(CXX) $(CXXFLAGS) $< $(LIBS) -o $@
 
-$(TEST_EXECDIR)/TestRawStreams: $(TEST_DIR)/TestRawStreams.cpp $(STRM_OBJS) \
-				$(OBJS)
-	$(CXX) $(CXXFLAGS) $< $(STRM_OBJS) $(OBJS) -o $@
+$(TEST_EXECDIR)/TestRawStreams: $(TEST_DIR)/TestRawStreams.cpp $(LIBS)
+	$(CXX) $(CXXFLAGS) $< $(LIBS) -o $@
 
-$(TEST_EXECDIR)/TestByteQueues: $(TEST_DIR)/TestByteQueues.cpp $(STRM_OBJS) \
-				$(OBJS)
-	$(CXX) $(CXXFLAGS) $< $(STRM_OBJS) $(OBJS) -o $@
+$(TEST_EXECDIR)/TestByteQueues: $(TEST_DIR)/TestByteQueues.cpp $(LIBS)
+	$(CXX) $(CXXFLAGS) $< $(LIBS) -o $@
 
 ###### Testing ######
 
