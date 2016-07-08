@@ -227,6 +227,32 @@ bool BinaryNode::implementsClass(NodeType Type) {
   AST_BINARYNODE_TABLE
 #undef X
 
+Node *TernaryNode::getKid(int Index) const {
+  if (Index < 3)
+    return Kids[Index];
+  return nullptr;
+}
+
+void TernaryNode::setKid(int Index, Node *NewValue) {
+  assert(Index < 3);
+  Kids[Index] = NewValue;
+}
+
+bool TernaryNode::implementsClass(NodeType Type) {
+  switch (Type) {
+    default: return false;
+#define X(tag) \
+    case Op##tag: return true;
+    AST_TERNARYNODE_TABLE
+#undef X
+  }
+}
+
+#define X(tag)                                                                 \
+  void tag##Node::forceCompilation() {}
+  AST_TERNARYNODE_TABLE
+#undef X
+
 bool NaryNode::implementsClass(NodeType Type) {
   switch (Type) {
     default: return false;

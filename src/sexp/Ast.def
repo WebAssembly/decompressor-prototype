@@ -34,17 +34,18 @@
                                                                                \
   /* Control flow operators */                                                 \
   X(BlockEndNoArgs,    0x00, "block.end",        "BlockEndNoArgs",  0, 0)      \
-  X(BlockEndOneArg,    0x01, "block.end",        "BlockEndOneArg",  1, 0)      \
-  X(Block,             0x04, "block",            nullptr,           1, 0)      \
-  X(Case,              0x05, "case",             nullptr,           2, 0)      \
-  X(Error,             0x07, "error",            nullptr,           0, 0)      \
-  X(Eval,              0x08, "eval",             nullptr,           1, 0)      \
-  X(EvalDefault,       0x09, "eval.default",     nullptr,           1, 0)      \
-  X(Filter,            0x0a, "filter",           nullptr,           0, 0)      \
-  X(Loop,              0x0b, "loop",             nullptr,           1, 1)      \
-  X(LoopUnbounded,     0x0c, "loop.unbounded",   nullptr,           0, 1)      \
-  X(Select,            0x0d, "select",           nullptr,           1, 0)      \
-  X(Sequence,          0x0e, "seq",              nullptr,           0, 0)      \
+  X(Block,             0x01, "block",            nullptr,           1, 0)      \
+  X(Case,              0x02, "case",             nullptr,           2, 0)      \
+  X(Error,             0x03, "error",            nullptr,           0, 0)      \
+  X(Eval,              0x04, "eval",             nullptr,           1, 0)      \
+  X(EvalDefault,       0x05, "eval.default",     nullptr,           1, 0)      \
+  X(Filter,            0x06, "filter",           nullptr,           0, 0)      \
+  X(Loop,              0x07, "loop",             nullptr,           1, 1)      \
+  X(LoopUnbounded,     0x08, "loop.unbounded",   nullptr,           0, 1)      \
+  X(Select,            0x09, "select",           nullptr,           1, 0)      \
+  X(Sequence,          0x0a, "seq",              nullptr,           0, 0)      \
+  X(IfThen,            0x0b, "if",               "IfThen",          1, 0)      \
+  X(IfThenElse,        0x0c, "if",               "IfThenElse",      1, 0)      \
                                                                                \
   /* Constants */                                                              \
   X(Void,              0x10, "void",             nullptr,           0, 0)      \
@@ -69,6 +70,13 @@
   X(Varuint32OneArg,   0x2d, "varuint32",        "varuint32OneArg", 1, 0)      \
   X(Varuint64NoArgs,   0x2e, "varuint64",        "varuint64NoArgs", 0, 0)      \
   X(Varuint64OneArg,   0x2f, "varuint64",        "varuint64OneArg", 1, 0)      \
+                                                                               \
+  /* Boolean tests */                                                          \
+  X(And,               0x30, "and",              nullptr,           2, 0)      \
+  X(Or,                0x31, "or",               nullptr,           2, 0)      \
+  X(Not,               0x32, "not",              nullptr,           1, 0)      \
+  X(IsByteIn,          0x33, "is.byte.in",       nullptr,           0, 0)      \
+  X(IsByteOut,         0x34, "is.byte.out",      nullptr,           0, 0)      \
                                                                                \
   /* I/O (and tree) operations  */                                             \
 /*  X(AppendNoArgs,      0x40, "append",           "appendNoArgs",    0, 0) */ \
@@ -115,6 +123,8 @@
 /*  X(AppendNoArgs)                                                         */ \
   X(BlockEndNoArgs)                                                            \
   X(Error)                                                                     \
+  X(IsByteIn)                                                                  \
+  X(IsByteOut)                                                                 \
   X(Uint8NoArgs)                                                               \
   X(Uint32NoArgs)                                                              \
   X(Uint64NoArgs)                                                              \
@@ -135,7 +145,7 @@
 /*  X(BitToBit)                                                             */ \
 /*  X(BitToByte)                                                            */ \
 /*  X(BitToInt)                                                             */ \
-  X(BlockEndOneArg)                                                            \
+  X(Block)                                                                     \
 /*  X(ByteToAst)                                                            */ \
 /*  X(ByteToBit)                                                            */ \
   X(ByteToByte)                                                                \
@@ -149,6 +159,7 @@
   X(I32Const)                                                                  \
   X(I64Const)                                                                  \
   X(Lit)                                                                       \
+  X(Not)                                                                       \
   X(Peek)                                                                      \
 /*  X(Postorder)                                                            */ \
 /*  X(Preorder)                                                             */ \
@@ -168,11 +179,13 @@
 
 //#define X(tag)
 #define AST_BINARYNODE_TABLE                                                   \
-  X(Block)                                                                     \
+  X(And)                                                                       \
   X(Case)                                                                      \
   X(Default)                                                                   \
   X(Define)                                                                    \
+  X(IfThen)                                                                    \
   X(Map)                                                                       \
+  X(Or)                                                                       \
 
 //#define X(tag)
 #define AST_NARYNODE_TABLE                                                     \
@@ -182,6 +195,10 @@
   X(LoopUnbounded)                                                             \
   X(Section)                                                                   \
   X(Sequence)                                                                  \
+
+//#define X(tag)
+#define AST_TERNARYNODE_TABLE                                                  \
+  X(IfThenElse)                                                                \
 
 //#define X(tag)
 #define AST_NODE_HAS_HIDDEN_SEQ                                                \
@@ -224,6 +241,8 @@
   X(Case)                                                                      \
   X(Default)                                                                   \
   X(Define)                                                                    \
+  X(IfThen)                                                                    \
+  X(IfThenElse)                                                                \
 /*  X(IntToAst)                                                             */ \
 /*  X(IntToBit)                                                             */ \
 /*  X(IntToByte)                                                            */ \
