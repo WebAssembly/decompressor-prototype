@@ -61,10 +61,13 @@ private:
   uint32_t Version;
   // The current section name (if applicable).
   std::string CurSectionName;
-  bool TraceProgress = false;
-  filt::TextWriter *TraceWriter;
-  int IndentLevel = 0;
+
   void decompressSection();
+  void readSectionName();
+  void decompressBlock(const filt::Node *Code);
+  // Evaluates code if nonnull. Otherwise copies to end of block.
+  void evalOrCopy(const filt::Node *Code);
+
   // Evaluates Nd. Returns read value if applicable. Zero otherwise.
   decode::IntType eval(const filt::Node *Nd);
   // Reads input as defined by Nd. Returns read value.
@@ -72,7 +75,12 @@ private:
   // Writes to output the given value, using format defined by Nd.
   // For convenience, returns written value.
   decode::IntType write(decode::IntType Value, const filt::Node *Nd);
-  void readSectionName();
+
+  // The remaining methods and fields are for tracing progress.
+  bool TraceProgress = false;
+  int IndentLevel = 0;
+  filt::TextWriter *TraceWriter;
+
   void writeIndent();
   void IndentBegin() {
     writeIndent();
