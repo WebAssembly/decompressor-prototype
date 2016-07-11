@@ -166,10 +166,10 @@ void ByteQueue::freezeEob(size_t Address) {
 }
 
 bool ByteQueue::isAddressLocked(size_t Address) const {
-  QueuePage *Page = getPage(Address);
-  if (Page == nullptr)
+  QueuePage *P = getPage(Address);
+  if (P == nullptr)
     return false;
-  return Page->isLocked();
+  return P->isLocked();
 }
 
 ByteQueue::QueuePage *ByteQueue::getPageAt(size_t PageIndex) const {
@@ -184,9 +184,9 @@ bool ByteQueue::readFill(size_t Address) {
   return Address < EobPage->MaxAddress;
 }
 
-void ByteQueue::lock(QueuePage *Page) {
-  Page->lock();
-  LockedPages.emplace(Page->Index);
+void ByteQueue::lock(QueuePage *P) {
+  P->lock();
+  LockedPages.emplace(P->Index);
 }
 
 void ByteQueue::unlock(QueuePage *Page) {
