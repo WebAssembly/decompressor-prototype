@@ -189,22 +189,22 @@ void ByteQueue::lock(QueuePage *P) {
   LockedPages.emplace(P->Index);
 }
 
-void ByteQueue::unlock(QueuePage *Page) {
-  Page->unlock();
+void ByteQueue::unlock(QueuePage *P) {
+  P->unlock();
   // Remove smallest page indices from queue that no longer have locks.
   while (!LockedPages.empty()) {
     size_t PageIndex = LockedPages.top();
-    QueuePage *Page = getPageAt(PageIndex);
-    if (Page && Page->isLocked())
+    QueuePage *P = getPageAt(PageIndex);
+    if (P && P->isLocked())
       return;
     LockedPages.pop();
   }
 }
 
 void ByteQueue::dumpFirstPage() {
-  QueuePage *Tmp = FirstPage;
+  QueuePage *TmpPage = FirstPage;
   FirstPage = FirstPage->Next;
-  delete Tmp;
+  delete TmpPage;
   if (FirstPage)
     FirstPage->Last = nullptr;
 }
