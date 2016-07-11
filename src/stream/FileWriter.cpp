@@ -82,7 +82,7 @@ bool FdWriter::atEof() {
 }
 
 FileWriter::FileWriter(const char *Filename)
-    : FdWriter(open(Filename, O_WRONLY | O_CREAT, S_IRWXU)) {}
+    : FdWriter(open(Filename, O_WRONLY | O_CREAT | O_TRUNC, S_IRWXU)) {}
 
 FileWriter::~FileWriter() {}
 

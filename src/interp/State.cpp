@@ -382,7 +382,6 @@ void State::decompress() {
     decompressSection();
   }
   WritePos.freezeEob();
-  fprintf(stderr, "Write eob = %d\n", int(WritePos.getEobAddress()));
   if (TraceProgress)
     exit("decompress");
 }
@@ -406,9 +405,9 @@ void State::decompressBlock(const Node *Code) {
     evalOrCopy(Code);
     const size_t NewSize =
         WritePos.getCurAddress() - (BlockPos.getCurAddress() + 5);
-    if (!MinimizeBlockSize)
+    if (!MinimizeBlockSize) {
       ByteWriter->writeFixedVaruint32(NewSize, BlockPos);
-    else {
+    } else {
       ByteWriter->writeVaruint32(NewSize, BlockPos);
       size_t SizeAfterBackPatch = BlockPos.getCurAddress();
       size_t Diff = SizeAfterWrite - SizeAfterBackPatch;

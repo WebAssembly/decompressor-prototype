@@ -48,7 +48,7 @@ public:
   void setTraceProgress(bool NewValue);
 
   void setMinimizeBlockSize(bool NewValue) {
-    MinimizeBlockSize = true;
+    MinimizeBlockSize = NewValue;
   }
 
 private:
