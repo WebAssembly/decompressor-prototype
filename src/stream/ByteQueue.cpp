@@ -64,7 +64,7 @@ size_t ByteQueue::read(size_t &Address, uint8_t *ToBuf, size_t WantedSize) {
       // TODO: Block if Count == 0 and blocked by a lock.
       return Count;
     memcpy(ToBuf, FromBuf, FoundSize);
-    unlockAddress(Address);
+    unlock(Address);
     Count += FoundSize;
     WantedSize -= FoundSize;
     Address += FoundSize;
@@ -81,7 +81,7 @@ bool ByteQueue::write(size_t &Address, uint8_t *FromBuf, size_t WantedSize) {
     if (FromBuf == nullptr)
       return false;
     memcpy(ToBuf, FromBuf, FoundSize);
-    unlockAddress(Address);
+    unlock(Address);
     Address += FoundSize;
     WantedSize -= FoundSize;
   }
@@ -163,7 +163,7 @@ void ByteQueue::freezeEob(size_t Address) {
   Page->MaxAddress = Address;
   assert(Page != nullptr);
   assert(Page->Next == nullptr);
-  unlockAddress(Address);
+  unlock(Address);
 }
 
 bool ByteQueue::isAddressLocked(size_t Address) const {

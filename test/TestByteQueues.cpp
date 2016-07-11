@@ -158,8 +158,8 @@ int main(int Argc, char *Argv[]) {
       In += WriteBytesAvailable;
       ReadBytesAvailable -= WriteBytesAvailable;
     }
-    Input.unlockAddress(Address);
-    Output.unlockAddress(Address);
+    Input.unlock(Address);
+    Output.unlock(Address);
     Address = NextAddress;
   }
   return exit_status(EXIT_SUCCESS);

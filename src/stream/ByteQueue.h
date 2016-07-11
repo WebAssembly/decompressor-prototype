@@ -166,12 +166,12 @@ public:
 
   // Increments the lock count for Address by 1. Assumes lock is already locked
   // (and hence defined).
-  void lockAddress(size_t Address) { lockPage(getPage(Address)); }
+  void lock(size_t Address) { lockPage(getPage(Address)); }
 
   // Decrements the lock count for Address by 1. Assumes lock was
   // defined by previous (successful) calls to getReadLockedPointer()
   // and getWriteLockedPointer().
-  void unlockAddress(size_t Address) { unlockPage(getPage(Address)); }
+  void unlock(size_t Address) { unlockPage(getPage(Address)); }
 
   // For debugging
   void writePageAt(FILE *File, size_t Address);
