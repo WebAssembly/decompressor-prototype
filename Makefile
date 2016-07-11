@@ -21,6 +21,7 @@ BUILDDIR = build
 OBJDIR = $(BUILDDIR)/obj
 
 LIBDIR = $(BUILDDIR)/lib
+LIBPREFIX = wasm-decomp-
 
 ###### Decoder objects and locations ######
 
@@ -30,7 +31,7 @@ TL_SRCS = \
 
 TL_OBJS=$(patsubst %.cpp, $(OBJDIR)/%.o, $(TL_SRCS))
 
-TL_LIB = $(LIBDIR)/tl.a
+TL_LIB = $(LIBDIR)/$(LIBPREFIX)tl.a
 
 ###### Parse objects and locations ######
 
@@ -52,7 +53,7 @@ PARSER_SRCS = \
 
 PARSER_OBJS=$(patsubst %.cpp, $(PARSER_OBJDIR)/%.o, $(PARSER_SRCS))
 
-PARSER_LIB = $(LIBDIR)/parser.a
+PARSER_LIB = $(LIBDIR)/$(LIBPREFIX)parser.a
 
 ###### Filter s-expressions ######
 
@@ -64,7 +65,7 @@ SEXP_SRCS = \
 
 SEXP_OBJS=$(patsubst %.cpp, $(SEXP_OBJDIR)/%.o, $(SEXP_SRCS))
 
-SEXP_LIB = $(LIBDIR)/sexp.a
+SEXP_LIB = $(LIBDIR)$(LIBPREFIX)sexp.a
 
 ###### Stream handlers ######
 
@@ -81,7 +82,7 @@ STRM_SRCS = \
 
 STRM_OBJS=$(patsubst %.cpp, $(STRM_OBJDIR)/%.o, $(STRM_SRCS))
 
-STRM_LIB = $(LIBDIR)/strm.a
+STRM_LIB = $(LIBDIR)/$(LIBPREFIX)strm.a
 
 ###### S-expression interpeter ######
 
@@ -94,7 +95,7 @@ INTERP_SRCS = \
 
 INTERP_OBJS=$(patsubst %.cpp, $(INTERP_OBJDIR)/%.o, $(INTERP_SRCS))
 
-INTERP_LIB = $(LIBDIR)/interp.a
+INTERP_LIB = $(LIBDIR)/$(LIBPREFIX)interp.a
 
 ###### Executables ######
 
