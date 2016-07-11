@@ -22,6 +22,27 @@ namespace wasm {
 
 namespace decode {
 
+template<class Base>
+Queue<Base>::Queue() {
+  EobPage = FirstPage = new Page(0);
+  PageMap.push_back(EobPage);
+}
+
+template<class Base>
+Queue<Base>::~Queue() {
+  while (FirstPage)
+    dumpFirstPage();
+}
+
+template<class Base>
+void Queue<Base>::dumpFirstPage() {
+  Page *TmpPage = FirstPage;
+  FirstPage = FirstPage->Next;
+  delete TmpPage;
+  if (FirstPage)
+    FirstPage->Last = nullptr;
+}
+
 void ByteQueue::writePageAt(FILE *File, size_t Address) {
   Page *P = getPage(Address);
   if (P == nullptr)
@@ -40,14 +61,7 @@ void ByteQueue::writePageAt(FILE *File, size_t Address) {
   fputc('\n', File);
 }
 
-ByteQueue::ByteQueue() {
-  EobPage = FirstPage = new Page(0);
-  PageMap.push_back(EobPage);
-}
-
-ByteQueue::~ByteQueue() {
-  while (FirstPage)
-    dumpFirstPage();
+ByteQueue::ByteQueue() : Queue<uint8_t>() {
 }
 
 size_t ByteQueue::size() const {
@@ -172,14 +186,6 @@ bool ByteQueue::isAddressLocked(size_t Address) const {
   return P->isLocked();
 }
 
-Page *ByteQueue::getPageAt(size_t PageIndex) const {
-  return (PageIndex >= PageMap.size()) ? nullptr : PageMap[PageIndex];
-}
-
-Page *ByteQueue::getPage(size_t Address) const {
-  return getPageAt(Page::index(Address));
-}
-
 bool ByteQueue::readFill(size_t Address) {
   return Address < EobPage->getMaxAddress();
 }
@@ -199,14 +205,6 @@ void ByteQueue::unlock(Page *P) {
       return;
     LockedPages.pop();
   }
-}
-
-void ByteQueue::dumpFirstPage() {
-  Page *TmpPage = FirstPage;
-  FirstPage = FirstPage->Next;
-  delete TmpPage;
-  if (FirstPage)
-    FirstPage->Last = nullptr;
 }
 
 bool ReadBackedByteQueue::readFill(size_t Address) {
@@ -247,6 +245,8 @@ void WriteBackedByteQueue::dumpFirstPage() {
     fatal("Write to raw stream failed in ByteQueue::dumpFirstPage");
   ByteQueue::dumpFirstPage();
 }
+
+template class Queue<uint8_t>;
 
 } // end of decode namespace
 

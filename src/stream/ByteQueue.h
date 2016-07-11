@@ -53,14 +53,49 @@ namespace wasm {
 
 namespace decode {
 
-class ByteQueue {
+template<class Base>
+class Queue {
+  Queue(const Queue &) = delete;
+  Queue &operator=(const Queue &) = delete;
+
+public:
+  Queue();
+
+  virtual ~Queue();
+
+protected:
+  // First page still in queue.
+  Page *FirstPage;
+  // Page at the current end of buffer.
+  Page *EobPage;
+  // Fast page lookup map (from page index)
+  using PageMapType = std::vector<Page*>;
+  PageMapType PageMap;
+  // Returns the page in the queue referred to Address, or nullptr if no
+  // such page is in the byte queue.
+  Page *getPage(size_t Address) const {
+    return getPageAt(Page::index(Address));
+  }
+
+  // Returns the page with the given PageIndex, or nullptr if no such
+  // page is in the byte queue.
+  Page *getPageAt(size_t PageIndex) const {
+    return (PageIndex >= PageMap.size()) ? nullptr : PageMap[PageIndex];
+  }
+
+  // Dumps and deletes the first page.  Note: Dumping only occurs if a
+  // Writer is provided (see class WriteBackedByteQueue below).
+  virtual void dumpFirstPage();
+};
+
+class ByteQueue : public Queue<uint8_t> {
   ByteQueue(const ByteQueue &) = delete;
   ByteQueue &operator=(const ByteQueue &) = delete;
 
 public:
   ByteQueue();
 
-  virtual ~ByteQueue();
+  ~ByteQueue() override {}
 
   // Returns the current size of the buffer.
   size_t size() const;
@@ -177,28 +212,14 @@ protected:
 
   // True if end of buffer has been frozen.
   bool EobFrozen = false;
-  // First page still in queue.
-  Page *FirstPage;
-  // Page at the current end of buffer.
-  Page *EobPage;
+
   // Minimum peek size to maintain. That is, the minimal number of
   // bytes that the read can back up without freezing an address.
   size_t MinPeekSize = 32;
-  // Fast page lookup map (from page index)
-  using PageMapType = std::vector<Page*>;
-  PageMapType PageMap;
 
   // Heap to keep track of pages locks, sorted by page index.
   std::priority_queue<size_t, std::vector<size_t>,
                       std::less<size_t>> LockedPages;
-
-  // Returns the page in the queue referred to Address, or nullptr if no
-  // such page is in the byte queue.
-  Page *getPage(size_t Address) const;
-
-  // Returns the page with the given PageIndex, or nullptr if no such
-  // page is in the byte queue.
-  Page *getPageAt(size_t PageIndex) const;
 
   // Increments the lock count on the given page.
   void lock(Page *P);
@@ -209,10 +230,6 @@ protected:
   // Fills buffer until we can read 1 or more bytes at the given address.
   // Returns true if successful.
   virtual bool readFill(size_t Address);
-
-  // Dumps and deletes the first page.  Note: Dumping only occurs if a
-  // Writer is provided (see class WriteBackedByteQueue below).
-  virtual void dumpFirstPage();
 
   // Dumps ununsed pages before the given address.
   void dumpPreviousPages(size_t Address);
