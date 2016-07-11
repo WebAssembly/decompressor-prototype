@@ -135,23 +135,22 @@ uint8_t *ByteQueue::getWriteLockedPointer(size_t Address, size_t WantedSize,
     EobPage->MaxAddress = EobPage->MinAddress + Page::Size;
     if (Address < EobPage->MaxAddress)
       break;
-    QueuePage *Page = new QueuePage(EobPage->MaxAddress);
-    PageMap.push_back(Page);
-    EobPage->Next = Page;
-    Page->Last = EobPage;
-    EobPage = Page;
+    QueuePage *NewPage = new QueuePage(EobPage->MaxAddress);
+    PageMap.push_back(NewPage);
+    EobPage->Next = NewPage;
+    NewPage->Last = EobPage;
+    EobPage = NewPage;
   }
-  QueuePage *Page = getPage(Address);
-  if (Page == nullptr) {
+  QueuePage *P = getPage(Address);
+  if (P == nullptr) {
     LockedSize = 0;
     return nullptr;
   }
-  lock(Page);
-  LockedSize =
-      (Address + WantedSize > Page->MaxAddress)
-      ? Page->MaxAddress - Address : WantedSize;
+  lock(P);
+  LockedSize = (Address + WantedSize > P->MaxAddress)
+      ? P->MaxAddress - Address : WantedSize;
   dumpPreviousPages(Address);
-  return &Page->Buffer[Page::address(Address)];
+  return &P->Buffer[Page::address(Address)];
 }
 
 void ByteQueue::freezeEob(size_t Address) {
