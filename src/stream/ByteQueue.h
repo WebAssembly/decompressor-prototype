@@ -63,6 +63,43 @@ public:
 
   virtual ~Queue();
 
+  // Returns the current size of the buffer.
+  size_t size() const {
+    return EobPage->getMaxAddress() - FirstPage->getMinAddress();
+  }
+
+  // Returns true if Address is locked.
+  bool isAddressLocked(size_t Address) const {
+    Page *P = getPage(Address);
+    if (P == nullptr)
+      return false;
+    return P->isLocked();
+  }
+
+  // Heap to keep track of pages locks, sorted by page index.
+  std::priority_queue<size_t, std::vector<size_t>,
+                      std::less<size_t>> LockedPages;
+
+  // Increments the lock count on the given page.
+  void lockPage(Page *P) {
+    P->lock();
+    LockedPages.emplace(P->Index);
+  }
+
+  // Decrements the lock count on the given page.
+  void unlockPage(Page *P) {
+    P->unlock();
+    // Remove smallest page indices from queue that no longer have locks.
+    while (!LockedPages.empty()) {
+      size_t PageIndex = LockedPages.top();
+      Page *P = getPageAt(PageIndex);
+      if (P && P->isLocked())
+        return;
+      LockedPages.pop();
+    }
+  }
+
+
 protected:
   // First page still in queue.
   Page *FirstPage;
@@ -93,12 +130,9 @@ class ByteQueue : public Queue<uint8_t> {
   ByteQueue &operator=(const ByteQueue &) = delete;
 
 public:
-  ByteQueue();
+  ByteQueue() {}
 
   ~ByteQueue() override {}
-
-  // Returns the current size of the buffer.
-  size_t size() const;
 
   // Defines the maximum Peek size into the queue when reading. That
   // is, The minimal number of bytes that the reader can back up without
@@ -193,17 +227,14 @@ public:
         ? EobPage->getMaxAddress() : std::numeric_limits<ssize_t>::max();
   }
 
-  // Returns true if Address is locked.
-  bool isAddressLocked(size_t Address) const;
-
   // Increments the lock count for Address by 1. Assumes lock is already locked
   // (and hence defined).
-  void lock(size_t Address) { lock(getPage(Address)); }
+  void lock(size_t Address) { lockPage(getPage(Address)); }
 
   // Decrements the lock count for Address by 1. Assumes lock was
   // defined by previous (successful) calls to getReadLockedPointer()
   // and getWriteLockedPointer().
-  void unlock(size_t Address) { unlock(getPage(Address)); }
+  void unlock(size_t Address) { unlockPage(getPage(Address)); }
 
   // For debugging
   void writePageAt(FILE *File, size_t Address);
@@ -216,16 +247,6 @@ protected:
   // Minimum peek size to maintain. That is, the minimal number of
   // bytes that the read can back up without freezing an address.
   size_t MinPeekSize = 32;
-
-  // Heap to keep track of pages locks, sorted by page index.
-  std::priority_queue<size_t, std::vector<size_t>,
-                      std::less<size_t>> LockedPages;
-
-  // Increments the lock count on the given page.
-  void lock(Page *P);
-
-  // Decrements the lock count on the given page.
-  void unlock(Page *P);
 
   // Fills buffer until we can read 1 or more bytes at the given address.
   // Returns true if successful.
