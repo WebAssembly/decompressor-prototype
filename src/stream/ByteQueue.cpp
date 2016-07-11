@@ -158,10 +158,10 @@ void ByteQueue::freezeEob(size_t Address) {
   size_t LockedSize;
   // This call zero-fill pages if writing hasn't reached Address yet.
   assert(getWriteLockedPointer(Address, 0, LockedSize) != nullptr);
-  QueuePage *Page = getPage(Address);
-  Page->MaxAddress = Address;
-  assert(Page != nullptr);
-  assert(Page->Next == nullptr);
+  QueuePage *P = getPage(Address);
+  P->MaxAddress = Address;
+  assert(P != nullptr);
+  assert(P->Next == nullptr);
   unlock(Address);
 }
 
