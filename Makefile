@@ -65,7 +65,7 @@ SEXP_SRCS = \
 
 SEXP_OBJS=$(patsubst %.cpp, $(SEXP_OBJDIR)/%.o, $(SEXP_SRCS))
 
-SEXP_LIB = $(LIBDIR)$(LIBPREFIX)sexp.a
+SEXP_LIB = $(LIBDIR)/$(LIBPREFIX)sexp.a
 
 ###### Stream handlers ######
 
