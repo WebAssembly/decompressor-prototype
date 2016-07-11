@@ -53,6 +53,8 @@ namespace wasm {
 namespace decode {
 
 class Page {
+  Page(const Page &) = delete;
+  Page &operator=(const Page &) = delete;
 public:
   static constexpr size_t SizeLog2 = 12;
   static constexpr size_t Size = 1 << SizeLog2;
@@ -63,10 +65,40 @@ public:
     return Address >> Page::SizeLog2;
   }
 
-  // Returns address within a QueuePage that refers to address.
+  // Returns address within a Page that refers to address.
   static constexpr size_t address(size_t Address) {
     return Address & Page::Mask;
   }
+    Page(size_t MinAddress)
+        : Index(Page::index(MinAddress)), MinAddress(MinAddress),
+          MaxAddress(MinAddress) {
+      std::memset(&Buffer, Page::Size, 0);
+    }
+
+    void lock() { ++LockCount; }
+
+    void unlock() {
+      assert(LockCount >= 1);
+      --LockCount;
+    }
+
+    bool isLocked() const { return LockCount > 0; }
+
+    size_t spaceRemaining() const {
+      return
+          (MinAddress + Page::Size == MaxAddress)
+          ? 0
+          : (Page::Size - (MaxAddress & Page::Mask));
+    }
+
+    uint8_t Buffer[Page::Size];
+    size_t Index;
+    // Note: Buffer address range is [MinAddress, MaxAddress).
+    size_t MinAddress;
+    size_t MaxAddress;
+    size_t LockCount = 0;
+    Page *Last = nullptr;
+    Page *Next = nullptr;
 };
 
 class ByteQueue {
@@ -190,53 +222,17 @@ public:
 
 protected:
 
-  class QueuePage {
-    QueuePage(const QueuePage &) = delete;
-    QueuePage &operator=(const QueuePage &) = delete;
-  public:
-    QueuePage(size_t MinAddress)
-        : Index(Page::index(MinAddress)), MinAddress(MinAddress),
-          MaxAddress(MinAddress) {
-      std::memset(&Buffer, Page::Size, 0);
-    }
-
-    void lock() { ++LockCount; }
-
-    void unlock() {
-      assert(LockCount >= 1);
-      --LockCount;
-    }
-
-    bool isLocked() const { return LockCount > 0; }
-
-    size_t spaceRemaining() const {
-      return
-          (MinAddress + Page::Size == MaxAddress)
-          ? 0
-          : (Page::Size - (MaxAddress & Page::Mask));
-    }
-
-    uint8_t Buffer[Page::Size];
-    size_t Index;
-    // Note: Buffer address range is [MinAddress, MaxAddress).
-    size_t MinAddress;
-    size_t MaxAddress;
-    size_t LockCount = 0;
-    QueuePage *Last = nullptr;
-    QueuePage *Next = nullptr;
-  };
-
   // True if end of buffer has been frozen.
   bool EobFrozen = false;
   // First page still in queue.
-  QueuePage *FirstPage;
+  Page *FirstPage;
   // Page at the current end of buffer.
-  QueuePage *EobPage;
+  Page *EobPage;
   // Minimum peek size to maintain. That is, the minimal number of
   // bytes that the read can back up without freezing an address.
   size_t MinPeekSize = 32;
   // Fast page lookup map (from page index)
-  using PageMapType = std::vector<QueuePage*>;
+  using PageMapType = std::vector<Page*>;
   PageMapType PageMap;
 
   // Heap to keep track of pages locks, sorted by page index.
@@ -245,17 +241,17 @@ protected:
 
   // Returns the page in the queue referred to Address, or nullptr if no
   // such page is in the byte queue.
-  QueuePage *getPage(size_t Address) const;
+  Page *getPage(size_t Address) const;
 
   // Returns the page with the given PageIndex, or nullptr if no such
   // page is in the byte queue.
-  QueuePage *getPageAt(size_t PageIndex) const;
+  Page *getPageAt(size_t PageIndex) const;
 
   // Increments the lock count on the given page.
-  void lock(QueuePage *P);
+  void lock(Page *P);
 
   // Decrements the lock count on the given page.
-  void unlock(QueuePage *P);
+  void unlock(Page *P);
 
   // Fills buffer until we can read 1 or more bytes at the given address.
   // Returns true if successful.
