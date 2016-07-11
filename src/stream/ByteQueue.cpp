@@ -226,11 +226,11 @@ bool ReadBackedByteQueue::readFill(size_t Address) {
       }
       continue;
     }
-    QueuePage *Page = new QueuePage(EobPage->MaxAddress);
-    PageMap.push_back(Page);
-    EobPage->Next = Page;
-    Page->Last = EobPage;
-    EobPage = Page;
+    QueuePage *NewPage = new QueuePage(EobPage->MaxAddress);
+    PageMap.push_back(NewPage);
+    EobPage->Next = NewPage;
+    NewPage->Last = EobPage;
+    EobPage = NewPage;
   }
   return true;
 }
