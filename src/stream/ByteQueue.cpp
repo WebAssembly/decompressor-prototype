@@ -186,12 +186,12 @@ bool ByteQueue::readFill(size_t Address) {
 }
 
 void ByteQueue::lockPage(QueuePage *Page) {
-  Page->lockPage();
+  Page->lock();
   LockedPages.emplace(Page->PageIndex);
 }
 
 void ByteQueue::unlockPage(QueuePage *Page) {
-  Page->unlockPage();
+  Page->unlock();
   // Remove smallest page indices from queue that no longer have locks.
   while (!LockedPages.empty()) {
     size_t PageIndex = LockedPages.top();

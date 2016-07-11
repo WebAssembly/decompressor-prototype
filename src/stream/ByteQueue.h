@@ -188,9 +188,9 @@ protected:
       std::memset(&Buffer, PageSize, 0);
     }
 
-    void lockPage() { ++LockCount; }
+    void lock() { ++LockCount; }
 
-    void unlockPage() {
+    void unlock() {
       assert(LockCount >= 1);
       --LockCount;
     }
