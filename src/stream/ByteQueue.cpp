@@ -89,8 +89,8 @@ bool ByteQueue::write(size_t &Address, uint8_t *FromBuf, size_t WantedSize) {
 }
 
 void ByteQueue::dumpPreviousPages(size_t Address) {
-  QueuePage *AddressPage = getPage(Address);
-  while (FirstPage != AddressPage) {
+  QueuePage *AddrPage = getPage(Address);
+  while (FirstPage != AddrPage) {
     if (!FirstPage->isLocked())
       break;
     if (FirstPage->MaxAddress + MinPeekSize < Address)
