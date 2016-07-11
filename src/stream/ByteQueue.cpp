@@ -23,8 +23,8 @@ namespace wasm {
 namespace decode {
 
 void ByteQueue::writePageAt(FILE *File, size_t Address) {
-  QueuePage *Page = getPage(Address);
-  if (Page == nullptr)
+  QueuePage *P = getPage(Address);
+  if (P == nullptr)
     return;
   size_t Size = Page::address(Address);
   size_t Count = 0;
@@ -35,7 +35,7 @@ void ByteQueue::writePageAt(FILE *File, size_t Address) {
     } else {
       fputc(' ', File);
     }
-    writeInt(File, Page->Buffer[i], ValueFormat::Hexidecimal);
+    writeInt(File, P->Buffer[i], ValueFormat::Hexidecimal);
   }
   fputc('\n', File);
 }

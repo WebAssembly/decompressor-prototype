@@ -252,10 +252,10 @@ protected:
   QueuePage *getPageAt(size_t PageIndex) const;
 
   // Increments the lock count on the given page.
-  void lock(QueuePage *Page);
+  void lock(QueuePage *P);
 
   // Decrements the lock count on the given page.
-  void unlock(QueuePage *Page);
+  void unlock(QueuePage *P);
 
   // Fills buffer until we can read 1 or more bytes at the given address.
   // Returns true if successful.
