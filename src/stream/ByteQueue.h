@@ -100,12 +100,49 @@ public:
   // and getWriteLockedPointer().
   void unlock(size_t Address) { unlockPage(getPage(Address)); }
 
-#if 0
+
+  // The following two methods allows one to lock the memory of the queue
+  // directly, and read/write directly into the buffer. Also locks the
+  // address, which must be released with a call to unlockAddress().
+  //
+  // WARNING: Never access beyond LockedSize elements after the call,
+  // and only while you haven't unlocked the address.  There is no
+  // guarantee that such pointer accesses are vaild, once it has been
+  // unlocked.
+
+  // Returns a pointer into the queue that can be read. Must unlock the address
+  // once reading has been completed.
+  //
+  // @param Address    The address within the queue to Access.
+  // @param WantedSize The number of elements requested to be read
+  //                   locked.  Note: Zero is allowed.
+  // @param LockedSize The actual number of elements locked down (may
+  //                   be smaller than wanted size, due to eob or
+  //                   internal paging).
+  // @result           Pointer to locked address, or nullptr if unable to read
+  //                   lock.
+  uint8_t *getReadLockedPointer(size_t Address, size_t WantedSize,
+                                size_t &LockedSize);
+
+  // Returns a pointer into the queue that can be written to. Must unlock the
+  // address once writing has been completed.
+  //
+  // @param Address    The address within the queue to Access.
+  // @param WantedSize The number of elements requested to bewrite
+  //                   locked.  Note: Zero is allowed, and just locks
+  //                   address.
+  // @param LockedSize The actual number of elements locked down (may
+  //                   be smaller than wanted size, due to eob or
+  //                   internal paging).
+  // @result           Pointer to locked address, or nullptr if unable to write
+  //                   lock.
+  uint8_t *getWriteLockedPointer(size_t Address, size_t WantedSize,
+                                 size_t &LockedSize);
+
   // Freezes eob of the queue. Not valid to read/write past the eob, once set.
   void freezeEob(size_t Address);
 
   bool isEobFrozen() const { return EobFrozen; }
-#endif
 
 protected:
   // Minimum peek size to maintain. That is, the minimal number of
@@ -120,6 +157,10 @@ protected:
   // Fast page lookup map (from page index)
   using PageMapType = std::vector<Page*>;
   PageMapType PageMap;
+  // Heap to keep track of pages locks, sorted by page index.
+  std::priority_queue<size_t, std::vector<size_t>,
+                      std::less<size_t>> LockedPages;
+
   // Returns the page in the queue referred to Address, or nullptr if no
   // such page is in the byte queue.
   Page *getPage(size_t Address) const {
@@ -131,10 +172,6 @@ protected:
   Page *getPageAt(size_t PageIndex) const {
     return (PageIndex >= PageMap.size()) ? nullptr : PageMap[PageIndex];
   }
-
-  // Heap to keep track of pages locks, sorted by page index.
-  std::priority_queue<size_t, std::vector<size_t>,
-                      std::less<size_t>> LockedPages;
 
   // Increments the lock count on the given page.
   void lockPage(Page *P) {
@@ -207,57 +244,8 @@ public:
   // @result           True if successful (i.e. not beyond eob address).
   bool write(size_t &Address, uint8_t *Buffer, size_t Size=1);
 
-  // The following two methods allows one to lock the memory of the queue
-  // directly, and read/write directly into the buffer. Also locks the
-  // address, which must be released with a call to unlockAddress().
-  //
-  // WARNING: Never access beyond Size elements after the call, and
-  // only while you haven't unlocked the address.  There is no
-  // quarantee that such pointer accesses are vaild. It is left to an
-  // implementation detail on how much can be locked down at one time.
-
-  // Returns a pointer into the queue that can be read. Must unlock the address
-  // once reading has been completed.
-  //
-  // TODO: bocking not implemented. Currently, reads fail if they try to read from
-  // a locked page.
-  //
-  // @param Address    The address within the queue to Access.
-  // @param WantedSize The number of bytess requested to read lock.
-  //                   Note: Zero is allowed
-  // @param LockedSize The actual number of bytes locked down (may be smaller
-  //                   than wanted size, due to eob or internal paging).
-  // @result           Pointer to locked address, or nullptr if unable to read
-  //                   lock.
-  uint8_t *getReadLockedPointer(size_t Address, size_t WantedSize,
-                                size_t &LockedSize);
-
-  uint8_t *getReadLockedPointer(size_t Address, size_t &LockedSize) {
-    return getReadLockedPointer(Address, Page::Size, LockedSize);
-  }
-
-  // Returns a pointer into the queue that can be written to. Must unlock the
-  // address once writing has been completed.
-  //
-  // Note: Assumes that caller will fill the wanted size. If not, call
-  // freezeEob() to reset to the right size.
-
-  // @param Address    The address within the queue to Access.
-  // @param WantedSize The number of bytess requested to write lock.
-  //                   Note: Zero is allowed
-  // @param LockedSize The actual number of bytes locked down (may be smaller
-  //                   than wanted size, due to eob or internal paging).
-  // @result           Pointer to locked address, or nullptr if unable to write
-  //                   lock.
-  uint8_t *getWriteLockedPointer(size_t Address, size_t WantedSize,
-                                 size_t &LockedSize);
-
-  // Freezes eob of the queue. Not valid to read/write past the eob, once set.
-  void freezeEob(size_t Address);
-
-  bool isEobFrozen() const { return EobFrozen; }
-
-  // For debugging
+  // For debugging. Writes out sequence of bytes (on page associated with
+  // Address) in the queue.
   void writePageAt(FILE *File, size_t Address);
 };
 
