@@ -98,6 +98,10 @@ class ByteWriteStream final : public WriteStream {
   ByteWriteStream(const WriteStream &) = delete;
   ByteWriteStream &operator=(const ByteWriteStream &) = delete;
 public:
+  static constexpr uint32_t BitsInWord = sizeof(uint32_t) * CHAR_BIT;
+  static constexpr uint32_t ChunkSize = CHAR_BIT - 1;
+  static constexpr uint32_t ChunksInWord =
+      (BitsInWord + ChunkSize - 1) / ChunkSize;
   ByteWriteStream() : WriteStream(StreamType::Byte) {}
   void writeUint8Bits(uint8_t Value, decode::WriteCursor &Pos,
                       uint32_t NumBits) override;

@@ -22,13 +22,13 @@
 (section 'filter'
 
   (default 'code'
-    (loop (varuint32 6)         # Number of function bodies.
+    (loop (varuint32 6)          # Number of function bodies.
       (eval 'code.function'))
   )
 
   (default 'code.address'
-    (varuint32 6)               # alignment
-    (varuint32 6)               # offset
+    (varuint32 6)                # alignment
+    (varuint32 6)                # offset
   )
 
   (default 'code.br_table'
@@ -39,24 +39,23 @@
   )
 
   (default 'code.br_target'
-     (uint8)                     #   br arity.
-     (varuint32 6)               #   relative depth
+     (uint8)                     # br arity.
+     (varuint32 6)               # relative depth
   )
 
   (default 'code.call_args'
-    (varuint32 6)                #   function arity.
-    (varuint32 6)                #   function index
+    (varuint32 6)                # function arity.
+    (varuint32 6)                # function index
   )
 
   (default 'code.function'
     (block
-      # block implicitly reads # bytes using (varuint32) on byte stream.
-      (loop (varuint32 6)            # number of locals in function.
+      # block implicitly reads   # bytes using (varuint32) on byte stream.
+      (loop (varuint32 6)        # number of locals in function.
         (eval 'code.local'))
-      (loop.unbounded                # instructions
+      (loop.unbounded            # instructions
         (eval 'code.inst'))
-      # Insert 0xFF eob opcode if byte stream.
-      # (block.end (map (i32.const 0xff) (uint8)))
+      # Insert 0xFF eob opcode if not byte stream.
       (if (and (is.byte.in) (not (is.byte.out)))
         (map (i32.const 0xff) (uint8)))
     )
@@ -183,21 +182,21 @@
   )
 
   (default 'start'
-    (varuint32 6)                # start function index.
+    (varuint32 6)              # start function index.
   )
 
   (default 'table'
-    (loop (varuint32 6)          # Number of table entries.
-       (varuint32 6))            # function index.
+    (loop (varuint32 6)        # Number of table entries.
+       (varuint32 6))          # function index.
   )
 
   (default 'type'
-    (loop (varuint32 6)          # number of signatures.
-      (uint8)                    # type form (0x040)
-      (loop (varuint32 6)        # number of parameters parameters
-        (uint8))                 # parameter type.
-      (loop (varuint32 6)        # number of return types.
-        (uint8))                 # return type.
+    (loop (varuint32 6)        # number of signatures.
+      (uint8)                  # type form (0x040)
+      (loop (varuint32 6)      # number of parameters parameters
+        (uint8))               # parameter type.
+      (loop (varuint32 6)      # number of return types.
+        (uint8))               # return type.
     )
   )
 )

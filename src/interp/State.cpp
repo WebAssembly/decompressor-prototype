@@ -404,7 +404,8 @@ void State::decompressBlock(const Node *Code) {
     size_t SizeAfterWrite = WritePos.getCurAddress();
     evalOrCopy(Code);
     const size_t NewSize =
-        WritePos.getCurAddress() - (BlockPos.getCurAddress() + 5);
+        WritePos.getCurAddress() - (BlockPos.getCurAddress() +
+                                    ByteWriteStream::ChunksInWord);
     if (!MinimizeBlockSize) {
       ByteWriter->writeFixedVaruint32(NewSize, BlockPos);
     } else {
