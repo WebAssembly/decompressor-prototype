@@ -63,6 +63,13 @@ public:
 
   virtual ~Queue();
 
+  // Defines the maximum Peek size into the queue when reading. That
+  // is, The minimal number of bytes that the reader can back up without
+  // freezing an address. Defaults to 32.
+  void setMinPeekSize(size_t NewValue) {
+    MinPeekSize = NewValue * sizeof(Base);
+  }
+
   // Value unknown (returning maximum possible size) until frozen. When
   // frozen, returns the size of the buffer.
   size_t currentSize() {
@@ -93,7 +100,17 @@ public:
   // and getWriteLockedPointer().
   void unlock(size_t Address) { unlockPage(getPage(Address)); }
 
+#if 0
+  // Freezes eob of the queue. Not valid to read/write past the eob, once set.
+  void freezeEob(size_t Address);
+
+  bool isEobFrozen() const { return EobFrozen; }
+#endif
+
 protected:
+  // Minimum peek size to maintain. That is, the minimal number of
+  // bytes that the read can back up without freezing an address.
+  size_t MinPeekSize = 32 * sizeof(Base);
   // True if end of queue buffer has been frozen.
   bool EobFrozen = false;
   // First page still in queue.
@@ -141,6 +158,13 @@ protected:
   // Dumps and deletes the first page.  Note: Dumping only occurs if a
   // Writer is provided (see class WriteBackedByteQueue below).
   virtual void dumpFirstPage();
+
+  // Dumps ununsed pages before the given address to recover memory.
+  void dumpPreviousPages(size_t Address);
+
+  // Fills buffer until we can read 1 or more bytes at the given address.
+  // Returns true if successful.
+  virtual bool readFill(size_t Address);
 };
 
 class ByteQueue : public Queue<uint8_t> {
@@ -151,11 +175,6 @@ public:
   ByteQueue() {}
 
   ~ByteQueue() override {}
-
-  // Defines the maximum Peek size into the queue when reading. That
-  // is, The minimal number of bytes that the reader can back up without
-  // freezing an address. Defaults to 32.
-  void setMinPeekSize(size_t NewValue) { MinPeekSize = NewValue; }
 
   // Reads a contiguous range of elements into a buffer.
   //
@@ -240,18 +259,6 @@ public:
 
   // For debugging
   void writePageAt(FILE *File, size_t Address);
-
-protected:
-  // Minimum peek size to maintain. That is, the minimal number of
-  // bytes that the read can back up without freezing an address.
-  size_t MinPeekSize = 32;
-
-  // Fills buffer until we can read 1 or more bytes at the given address.
-  // Returns true if successful.
-  virtual bool readFill(size_t Address);
-
-  // Dumps ununsed pages before the given address.
-  void dumpPreviousPages(size_t Address);
 };
 
 // Read-only queue that is write-filled from a steam using the given

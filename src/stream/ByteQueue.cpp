@@ -43,6 +43,23 @@ void Queue<Base>::dumpFirstPage() {
     FirstPage->Last = nullptr;
 }
 
+template<class Base>
+void Queue<Base>::dumpPreviousPages(size_t Address) {
+  Page *AddrPage = getPage(Address);
+  while (FirstPage != AddrPage) {
+    if (!FirstPage->isLocked())
+      break;
+    if (FirstPage->getMaxAddress() + MinPeekSize < Address)
+      break;
+    dumpFirstPage();
+  }
+}
+
+template<class Base>
+bool Queue<Base>::readFill(size_t Address) {
+  return Address < EobPage->getMaxAddress();
+}
+
 void ByteQueue::writePageAt(FILE *File, size_t Address) {
   Page *P = getPage(Address);
   if (P == nullptr)
@@ -93,17 +110,6 @@ bool ByteQueue::write(size_t &Address, uint8_t *FromBuf, size_t WantedSize) {
     WantedSize -= FoundSize;
   }
   return true;
-}
-
-void ByteQueue::dumpPreviousPages(size_t Address) {
-  Page *AddrPage = getPage(Address);
-  while (FirstPage != AddrPage) {
-    if (!FirstPage->isLocked())
-      break;
-    if (FirstPage->getMaxAddress() + MinPeekSize < Address)
-      break;
-    dumpFirstPage();
-  }
 }
 
 uint8_t *ByteQueue::getReadLockedPointer(size_t Address, size_t WantedSize,
@@ -170,10 +176,6 @@ void ByteQueue::freezeEob(size_t Address) {
   assert(P != nullptr);
   assert(P->Next == nullptr);
   unlock(Address);
-}
-
-bool ByteQueue::readFill(size_t Address) {
-  return Address < EobPage->getMaxAddress();
 }
 
 bool ReadBackedByteQueue::readFill(size_t Address) {
