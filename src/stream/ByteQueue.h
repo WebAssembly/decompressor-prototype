@@ -63,8 +63,16 @@ public:
 
   virtual ~Queue();
 
-  // Returns the current size of the buffer.
-  size_t size() const {
+  // Value unknown (returning maximum possible size) until frozen. When
+  // frozen, returns the size of the buffer.
+  size_t currentSize() {
+    return EobFrozen
+        ? EobPage->getMaxAddress() : std::numeric_limits<ssize_t>::max();
+  }
+
+  // Returns the actual size of the buffer (i.e. only those with pages still
+  // in memory).
+  size_t actualSize() const {
     return EobPage->getMaxAddress() - FirstPage->getMinAddress();
   }
 
@@ -74,6 +82,37 @@ public:
     if (P == nullptr)
       return false;
     return P->isLocked();
+  }
+
+  // Increments the lock count for Address by 1. Assumes lock is already locked
+  // (and hence defined).
+  void lock(size_t Address) { lockPage(getPage(Address)); }
+
+  // Decrements the lock count for Address by 1. Assumes lock was
+  // defined by previous (successful) calls to getReadLockedPointer()
+  // and getWriteLockedPointer().
+  void unlock(size_t Address) { unlockPage(getPage(Address)); }
+
+protected:
+  // True if end of queue buffer has been frozen.
+  bool EobFrozen = false;
+  // First page still in queue.
+  Page *FirstPage;
+  // Page at the current end of buffer.
+  Page *EobPage;
+  // Fast page lookup map (from page index)
+  using PageMapType = std::vector<Page*>;
+  PageMapType PageMap;
+  // Returns the page in the queue referred to Address, or nullptr if no
+  // such page is in the byte queue.
+  Page *getPage(size_t Address) const {
+    return getPageAt(Page::index(Address));
+  }
+
+  // Returns the page with the given PageIndex, or nullptr if no such
+  // page is in the byte queue.
+  Page *getPageAt(size_t PageIndex) const {
+    return (PageIndex >= PageMap.size()) ? nullptr : PageMap[PageIndex];
   }
 
   // Heap to keep track of pages locks, sorted by page index.
@@ -97,27 +136,6 @@ public:
         return;
       LockedPages.pop();
     }
-  }
-
-
-protected:
-  // First page still in queue.
-  Page *FirstPage;
-  // Page at the current end of buffer.
-  Page *EobPage;
-  // Fast page lookup map (from page index)
-  using PageMapType = std::vector<Page*>;
-  PageMapType PageMap;
-  // Returns the page in the queue referred to Address, or nullptr if no
-  // such page is in the byte queue.
-  Page *getPage(size_t Address) const {
-    return getPageAt(Page::index(Address));
-  }
-
-  // Returns the page with the given PageIndex, or nullptr if no such
-  // page is in the byte queue.
-  Page *getPageAt(size_t PageIndex) const {
-    return (PageIndex >= PageMap.size()) ? nullptr : PageMap[PageIndex];
   }
 
   // Dumps and deletes the first page.  Note: Dumping only occurs if a
@@ -220,30 +238,10 @@ public:
 
   bool isEobFrozen() const { return EobFrozen; }
 
-  // Value unknown (returning maximum possible size) until frozen. When
-  // frozen, returns actual size.
-  size_t currentSize() {
-    return EobFrozen
-        ? EobPage->getMaxAddress() : std::numeric_limits<ssize_t>::max();
-  }
-
-  // Increments the lock count for Address by 1. Assumes lock is already locked
-  // (and hence defined).
-  void lock(size_t Address) { lockPage(getPage(Address)); }
-
-  // Decrements the lock count for Address by 1. Assumes lock was
-  // defined by previous (successful) calls to getReadLockedPointer()
-  // and getWriteLockedPointer().
-  void unlock(size_t Address) { unlockPage(getPage(Address)); }
-
   // For debugging
   void writePageAt(FILE *File, size_t Address);
 
 protected:
-
-  // True if end of buffer has been frozen.
-  bool EobFrozen = false;
-
   // Minimum peek size to maintain. That is, the minimal number of
   // bytes that the read can back up without freezing an address.
   size_t MinPeekSize = 32;
