@@ -373,6 +373,12 @@ test: all test-parser test-raw-streams test-byte-queues test-decompress
 
 test-decompress: $(BUILD_EXECDIR)/decompress
 	$< -d defaults.df -i $(TEST_SRCS_DIR)/toy.wasm -o - \
+		| diff - $(TEST_SRCS_DIR)/toy.wasm-w
+	$< -d defaults.df -m -i $(TEST_SRCS_DIR)/toy.wasm -o - \
+		| diff - $(TEST_SRCS_DIR)/toy.wasm
+	$< -d defaults.df -i $(TEST_SRCS_DIR)/toy.wasm-w -o - \
+		| diff - $(TEST_SRCS_DIR)/toy.wasm-w
+	$< -d defaults.df -m -i $(TEST_SRCS_DIR)/toy.wasm-w -o - \
 		| diff - $(TEST_SRCS_DIR)/toy.wasm
 	@echo "*** decompress tests passed ***"
 

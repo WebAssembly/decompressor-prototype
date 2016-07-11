@@ -71,8 +71,10 @@ void usage(const char *AppName) {
   fprintf(stderr, "  --expect-fail\tSucceed on failure/fail on success\n");
   fprintf(stderr, "  -h\t\tPrint this usage message.\n");
   fprintf(stderr, "  -i File\tFile to decompress ('-' implies stdin).\n");
+  fprintf(stderr, "  -m\t\tMinimize block sizes in output stream.\n");
   fprintf(stderr,
           "  -o File\tGenerated Decompressed File ('-' implies stdout).\n");
+  fprintf(stderr, "  -s\t\tUse C++ streams instead of C file descriptors.\n");
   fprintf(stderr, "  -t\t\tTrace progress decompressing.\n");
 }
 
@@ -82,6 +84,7 @@ int main(int Argc, char *Argv[]) {
   Driver Driver(SymTab);
   std::vector<const char *> Files;
   bool TraceProgress = false;
+  bool MinimizeBlockSize = false;
   for (int i = 1; i < Argc; ++i) {
     if (Argv[i] == std::string("-d")) {
       if (++i >= Argc) {
@@ -106,6 +109,8 @@ int main(int Argc, char *Argv[]) {
         return exit_status(EXIT_FAILURE);
       }
       InputFilename = Argv[i];
+    } else if (Argv[i] == std::string("-m")) {
+      MinimizeBlockSize = true;
     } else if (Argv[i] == std::string("-o")) {
       if (++i >= Argc) {
         fprintf(stderr, "No file specified after -o option\n");
@@ -128,6 +133,7 @@ int main(int Argc, char *Argv[]) {
   WriteBackedByteQueue Output(getOutput());
   State Decompressor(&Input, &Output, &SymTab);
   Decompressor.setTraceProgress(TraceProgress);
+  Decompressor.setMinimizeBlockSize(MinimizeBlockSize);
   Decompressor.decompress();
   return exit_status(EXIT_SUCCESS);
 }
