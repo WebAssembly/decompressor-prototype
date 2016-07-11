@@ -69,36 +69,57 @@ public:
   static constexpr size_t address(size_t Address) {
     return Address & Page::Mask;
   }
-    Page(size_t MinAddress)
-        : Index(Page::index(MinAddress)), MinAddress(MinAddress),
-          MaxAddress(MinAddress) {
-      std::memset(&Buffer, Page::Size, 0);
-    }
 
-    void lock() { ++LockCount; }
+  Page(size_t MinAddress)
+      : Index(Page::index(MinAddress)), MinAddress(MinAddress),
+        MaxAddress(MinAddress) {
+    std::memset(&Buffer, Page::Size, 0);
+  }
 
-    void unlock() {
-      assert(LockCount >= 1);
-      --LockCount;
-    }
+  void lock() { ++LockCount; }
 
-    bool isLocked() const { return LockCount > 0; }
+  void unlock() {
+    assert(LockCount >= 1);
+    --LockCount;
+  }
 
-    size_t spaceRemaining() const {
-      return
-          (MinAddress + Page::Size == MaxAddress)
-          ? 0
-          : (Page::Size - (MaxAddress & Page::Mask));
-    }
+  bool isLocked() const { return LockCount > 0; }
 
-    uint8_t Buffer[Page::Size];
-    size_t Index;
-    // Note: Buffer address range is [MinAddress, MaxAddress).
-    size_t MinAddress;
-    size_t MaxAddress;
-    size_t LockCount = 0;
-    Page *Last = nullptr;
-    Page *Next = nullptr;
+  size_t spaceRemaining() const {
+    return
+        (MinAddress + Page::Size == MaxAddress)
+        ? 0
+        : (Page::Size - (MaxAddress & Page::Mask));
+  }
+
+  size_t getMinAddress() const {
+    return MinAddress;
+  }
+
+  size_t getMaxAddress() const {
+    return MaxAddress;
+  }
+
+  void setMaxAddress(size_t NewValue) {
+    MaxAddress = NewValue;
+  }
+
+  void incrementMaxAddress(size_t Increment=1) {
+    MaxAddress += Increment;
+  }
+
+  // The contents of the page.
+  uint8_t Buffer[Page::Size];
+  // The page index of the page.
+  size_t Index;
+  // Note: Buffer address range is [MinAddress, MaxAddress).
+private:
+  size_t MinAddress;
+  size_t MaxAddress;
+ public:
+  size_t LockCount = 0;
+  Page *Last = nullptr;
+  Page *Next = nullptr;
 };
 
 class ByteQueue {
@@ -202,7 +223,8 @@ public:
   // Value unknown (returning maximum possible size) until frozen. When
   // frozen, returns actual size.
   size_t currentSize() {
-    return EobFrozen ? EobPage->MaxAddress : std::numeric_limits<ssize_t>::max();
+    return EobFrozen
+        ? EobPage->getMaxAddress() : std::numeric_limits<ssize_t>::max();
   }
 
   // Returns true if Address is locked.

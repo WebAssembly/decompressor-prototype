@@ -51,7 +51,7 @@ ByteQueue::~ByteQueue() {
 }
 
 size_t ByteQueue::size() const {
-  return EobPage->MaxAddress - FirstPage->MinAddress;
+  return EobPage->getMaxAddress() - FirstPage->getMinAddress();
 }
 
 size_t ByteQueue::read(size_t &Address, uint8_t *ToBuf, size_t WantedSize) {
@@ -68,8 +68,8 @@ size_t ByteQueue::read(size_t &Address, uint8_t *ToBuf, size_t WantedSize) {
     Count += FoundSize;
     WantedSize -= FoundSize;
     Address += FoundSize;
-    if (EobFrozen && Address >= EobPage->MaxAddress)
-      return EobPage->MaxAddress;
+    if (EobFrozen && Address >= EobPage->getMaxAddress())
+      return EobPage->getMaxAddress();
   }
   return Count;
 }
@@ -93,7 +93,7 @@ void ByteQueue::dumpPreviousPages(size_t Address) {
   while (FirstPage != AddrPage) {
     if (!FirstPage->isLocked())
       break;
-    if (FirstPage->MaxAddress + MinPeekSize < Address)
+    if (FirstPage->getMaxAddress() + MinPeekSize < Address)
       break;
     dumpFirstPage();
   }
@@ -102,7 +102,7 @@ void ByteQueue::dumpPreviousPages(size_t Address) {
 uint8_t *ByteQueue::getReadLockedPointer(size_t Address, size_t WantedSize,
                                          size_t &LockedSize) {
   // Start by read-filling if necessary.
-  if (Address >= EobPage->MaxAddress) {
+  if (Address >= EobPage->getMaxAddress()) {
     if (!readFill(Address)) {
       LockedSize = 0;
       return nullptr;
@@ -119,23 +119,23 @@ uint8_t *ByteQueue::getReadLockedPointer(size_t Address, size_t WantedSize,
   dumpPreviousPages(Address);
   // Compute largest contiguous range of bytes available.
   LockedSize =
-      (Address + WantedSize > ReadPage->MaxAddress)
-      ? ReadPage->MaxAddress - Address : WantedSize;
+      (Address + WantedSize > ReadPage->getMaxAddress())
+      ? ReadPage->getMaxAddress() - Address : WantedSize;
   return &ReadPage->Buffer[Page::address(Address)];
 }
 
 uint8_t *ByteQueue::getWriteLockedPointer(size_t Address, size_t WantedSize,
                                           size_t &LockedSize) {
   // Page doesn't exist. Expand queue if necessary.
-  while (Address >= EobPage->MaxAddress) {
+  while (Address >= EobPage->getMaxAddress()) {
     if (EobFrozen) {
       LockedSize = 0;
       return nullptr;
     }
-    EobPage->MaxAddress = EobPage->MinAddress + Page::Size;
-    if (Address < EobPage->MaxAddress)
+    EobPage->setMaxAddress(EobPage->getMinAddress() + Page::Size);
+    if (Address < EobPage->getMaxAddress())
       break;
-    Page *NewPage = new Page(EobPage->MaxAddress);
+    Page *NewPage = new Page(EobPage->getMaxAddress());
     PageMap.push_back(NewPage);
     EobPage->Next = NewPage;
     NewPage->Last = EobPage;
@@ -147,8 +147,8 @@ uint8_t *ByteQueue::getWriteLockedPointer(size_t Address, size_t WantedSize,
     return nullptr;
   }
   lock(P);
-  LockedSize = (Address + WantedSize > P->MaxAddress)
-      ? P->MaxAddress - Address : WantedSize;
+  LockedSize = (Address + WantedSize > P->getMaxAddress())
+      ? P->getMaxAddress() - Address : WantedSize;
   dumpPreviousPages(Address);
   return &P->Buffer[Page::address(Address)];
 }
@@ -159,7 +159,7 @@ void ByteQueue::freezeEob(size_t Address) {
   // This call zero-fill pages if writing hasn't reached Address yet.
   assert(getWriteLockedPointer(Address, 0, LockedSize) != nullptr);
   Page *P = getPage(Address);
-  P->MaxAddress = Address;
+  P->setMaxAddress(Address);
   assert(P != nullptr);
   assert(P->Next == nullptr);
   unlock(Address);
@@ -181,7 +181,7 @@ Page *ByteQueue::getPage(size_t Address) const {
 }
 
 bool ByteQueue::readFill(size_t Address) {
-  return Address < EobPage->MaxAddress;
+  return Address < EobPage->getMaxAddress();
 }
 
 void ByteQueue::lock(Page *P) {
@@ -210,23 +210,23 @@ void ByteQueue::dumpFirstPage() {
 }
 
 bool ReadBackedByteQueue::readFill(size_t Address) {
-  if (Address < EobPage->MaxAddress)
+  if (Address < EobPage->getMaxAddress())
     return true;
   if (EobFrozen)
     return false;
   // Read fill if possible, until at least one byte is available.
-  while (Address >= EobPage->MaxAddress) {
+  while (Address >= EobPage->getMaxAddress()) {
     if (size_t SpaceAvailable = EobPage->spaceRemaining()) {
       size_t NumBytes = Reader->read(
           &(EobPage->Buffer[Page::address(Address)]), SpaceAvailable);
-      EobPage->MaxAddress += NumBytes;
+      EobPage->incrementMaxAddress(NumBytes);
       if (NumBytes == 0) {
         EobFrozen = true;
         return false;
       }
       continue;
     }
-    Page *NewPage = new Page(EobPage->MaxAddress);
+    Page *NewPage = new Page(EobPage->getMaxAddress());
     PageMap.push_back(NewPage);
     EobPage->Next = NewPage;
     NewPage->Last = EobPage;
@@ -242,7 +242,7 @@ WriteBackedByteQueue::~WriteBackedByteQueue() {
 
 void WriteBackedByteQueue::dumpFirstPage() {
   size_t Address = 0;
-  size_t Size = FirstPage->MaxAddress - FirstPage->MinAddress;
+  size_t Size = FirstPage->getMaxAddress() - FirstPage->getMinAddress();
   if (!Writer->write(&FirstPage->Buffer[Address], Size))
     fatal("Write to raw stream failed in ByteQueue::dumpFirstPage");
   ByteQueue::dumpFirstPage();
