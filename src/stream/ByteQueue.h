@@ -57,6 +57,16 @@ public:
   static constexpr size_t SizeLog2 = 12;
   static constexpr size_t Size = 1 << SizeLog2;
   static constexpr size_t Mask = Size - 1;
+
+  // Page index associated with address in queue.
+  static constexpr size_t index(size_t Address) {
+    return Address >> Page::SizeLog2;
+  }
+
+  // Returns address within a QueuePage that refers to address.
+  static constexpr size_t address(size_t Address) {
+    return Address & Page::Mask;
+  }
 };
 
 class ByteQueue {
@@ -185,7 +195,7 @@ protected:
     QueuePage &operator=(const QueuePage &) = delete;
   public:
     QueuePage(size_t MinAddress)
-        : PageIndex(page(MinAddress)), MinAddress(MinAddress),
+        : PageIndex(Page::index(MinAddress)), MinAddress(MinAddress),
           MaxAddress(MinAddress) {
       std::memset(&Buffer, Page::Size, 0);
     }
@@ -215,7 +225,7 @@ protected:
     QueuePage *Last = nullptr;
     QueuePage *Next = nullptr;
   };
-
+#if 0
   // Page index associated with address in queue.
   static constexpr size_t page(size_t Address) {
     return Address >> Page::SizeLog2;
@@ -225,6 +235,7 @@ protected:
   static constexpr size_t pageAddress(size_t Address) {
     return Address & Page::Mask;
   }
+#endif
 
   // True if end of buffer has been frozen.
   bool EobFrozen = false;

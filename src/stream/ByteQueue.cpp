@@ -26,7 +26,7 @@ void ByteQueue::writePageAt(FILE *File, size_t Address) {
   QueuePage *Page = getPage(Address);
   if (Page == nullptr)
     return;
-  size_t Size = pageAddress(Address);
+  size_t Size = Page::address(Address);
   size_t Count = 0;
   for (size_t i = 0; i < Size; ++i, ++Count) {
     if (Count % 16 == 0) {
@@ -121,7 +121,7 @@ uint8_t *ByteQueue::getReadLockedPointer(size_t Address, size_t WantedSize,
   LockedSize =
       (Address + WantedSize > ReadPage->MaxAddress)
       ? ReadPage->MaxAddress - Address : WantedSize;
-  return &ReadPage->Buffer[pageAddress(Address)];
+  return &ReadPage->Buffer[Page::address(Address)];
 }
 
 uint8_t *ByteQueue::getWriteLockedPointer(size_t Address, size_t WantedSize,
@@ -151,7 +151,7 @@ uint8_t *ByteQueue::getWriteLockedPointer(size_t Address, size_t WantedSize,
       (Address + WantedSize > Page->MaxAddress)
       ? Page->MaxAddress - Address : WantedSize;
   dumpPreviousPages(Address);
-  return &Page->Buffer[pageAddress(Address)];
+  return &Page->Buffer[Page::address(Address)];
 }
 
 void ByteQueue::freezeEob(size_t Address) {
@@ -178,7 +178,7 @@ ByteQueue::QueuePage *ByteQueue::getPageAt(size_t PageIndex) const {
 }
 
 ByteQueue::QueuePage *ByteQueue::getPage(size_t Address) const {
-  return getPageAt(page(Address));
+  return getPageAt(Page::index(Address));
 }
 
 bool ByteQueue::readFill(size_t Address) {
@@ -219,7 +219,7 @@ bool ReadBackedByteQueue::readFill(size_t Address) {
   while (Address >= EobPage->MaxAddress) {
     if (size_t SpaceAvailable = EobPage->spaceRemaining()) {
       size_t NumBytes = Reader->read(
-          &(EobPage->Buffer[pageAddress(Address)]), SpaceAvailable);
+          &(EobPage->Buffer[Page::address(Address)]), SpaceAvailable);
       EobPage->MaxAddress += NumBytes;
       if (NumBytes == 0) {
         EobFrozen = true;
