@@ -115,7 +115,7 @@ uint8_t *ByteQueue::getReadLockedPointer(size_t Address, size_t WantedSize,
     LockedSize = 0;
     return nullptr;
   }
-  lockPage(ReadPage);
+  lock(ReadPage);
   dumpPreviousPages(Address);
   // Compute largest contiguous range of bytes available.
   LockedSize =
@@ -146,7 +146,7 @@ uint8_t *ByteQueue::getWriteLockedPointer(size_t Address, size_t WantedSize,
     LockedSize = 0;
     return nullptr;
   }
-  lockPage(Page);
+  lock(Page);
   LockedSize =
       (Address + WantedSize > Page->MaxAddress)
       ? Page->MaxAddress - Address : WantedSize;
@@ -185,12 +185,12 @@ bool ByteQueue::readFill(size_t Address) {
   return Address < EobPage->MaxAddress;
 }
 
-void ByteQueue::lockPage(QueuePage *Page) {
+void ByteQueue::lock(QueuePage *Page) {
   Page->lock();
   LockedPages.emplace(Page->Index);
 }
 
-void ByteQueue::unlockPage(QueuePage *Page) {
+void ByteQueue::unlock(QueuePage *Page) {
   Page->unlock();
   // Remove smallest page indices from queue that no longer have locks.
   while (!LockedPages.empty()) {

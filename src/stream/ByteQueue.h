@@ -178,12 +178,12 @@ public:
 
   // Increments the lock count for Address by 1. Assumes lock is already locked
   // (and hence defined).
-  void lock(size_t Address) { lockPage(getPage(Address)); }
+  void lock(size_t Address) { lock(getPage(Address)); }
 
   // Decrements the lock count for Address by 1. Assumes lock was
   // defined by previous (successful) calls to getReadLockedPointer()
   // and getWriteLockedPointer().
-  void unlock(size_t Address) { unlockPage(getPage(Address)); }
+  void unlock(size_t Address) { unlock(getPage(Address)); }
 
   // For debugging
   void writePageAt(FILE *File, size_t Address);
@@ -252,10 +252,10 @@ protected:
   QueuePage *getPageAt(size_t PageIndex) const;
 
   // Increments the lock count on the given page.
-  void lockPage(QueuePage *Page);
+  void lock(QueuePage *Page);
 
   // Decrements the lock count on the given page.
-  void unlockPage(QueuePage *Page);
+  void unlock(QueuePage *Page);
 
   // Fills buffer until we can read 1 or more bytes at the given address.
   // Returns true if successful.
