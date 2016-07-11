@@ -112,14 +112,13 @@ public:
   uint8_t Buffer[Page::Size];
   // The page index of the page.
   size_t Index;
-  // Note: Buffer address range is [MinAddress, MaxAddress).
-private:
-  size_t MinAddress;
-  size_t MaxAddress;
- public:
-  size_t LockCount = 0;
   Page *Last = nullptr;
   Page *Next = nullptr;
+protected:
+  // Note: Buffer address range is [MinAddress, MaxAddress).
+  size_t MinAddress;
+  size_t MaxAddress;
+  size_t LockCount = 0;
 };
 
 class ByteQueue {
