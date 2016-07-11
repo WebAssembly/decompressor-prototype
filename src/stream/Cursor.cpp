@@ -26,7 +26,7 @@ bool ReadCursor::fillBuffer() {
     return false;
   size_t BufferSize;
   uint8_t *NewBuffer = Queue->getReadLockedPointer(
-      CurAddress, ByteQueue::PageSize, BufferSize);
+      CurAddress, Page::Size, BufferSize);
   releaseLock();
   if (BufferSize == 0) {
     EobAddress = Queue->currentSize();
@@ -44,7 +44,7 @@ void WriteCursor::fillBuffer() {
     fatal("Write past Eob");
   size_t BufferSize;
   uint8_t *NewBuffer = Queue->getWriteLockedPointer(
-      CurAddress, ByteQueue::PageSize, BufferSize);
+      CurAddress, Page::Size, BufferSize);
   releaseLock();
   if (BufferSize == 0)
     fatal("Write failed!\n");

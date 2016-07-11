@@ -132,7 +132,7 @@ uint8_t *ByteQueue::getWriteLockedPointer(size_t Address, size_t WantedSize,
       LockedSize = 0;
       return nullptr;
     }
-    EobPage->MaxAddress = EobPage->MinAddress + PageSize;
+    EobPage->MaxAddress = EobPage->MinAddress + Page::Size;
     if (Address < EobPage->MaxAddress)
       break;
     QueuePage *Page = new QueuePage(EobPage->MaxAddress);

@@ -52,16 +52,18 @@ namespace wasm {
 
 namespace decode {
 
+class Page {
+public:
+  static constexpr size_t SizeLog2 = 12;
+  static constexpr size_t Size = 1 << SizeLog2;
+  static constexpr size_t Mask = Size - 1;
+};
+
 class ByteQueue {
   ByteQueue(const ByteQueue &) = delete;
   ByteQueue &operator=(const ByteQueue &) = delete;
 
 public:
-
-  static constexpr size_t PageSizeLog2 = 12;
-  static constexpr size_t PageSize = 1 << PageSizeLog2;
-  static constexpr size_t PageMask = PageSize - 1;
-
   ByteQueue();
 
   virtual ~ByteQueue();
@@ -131,7 +133,7 @@ public:
                                 size_t &LockedSize);
 
   uint8_t *getReadLockedPointer(size_t Address, size_t &LockedSize) {
-    return getReadLockedPointer(Address, PageSize, LockedSize);
+    return getReadLockedPointer(Address, Page::Size, LockedSize);
   }
 
   // Returns a pointer into the queue that can be written to. Must unlock the
@@ -185,7 +187,7 @@ protected:
     QueuePage(size_t MinAddress)
         : PageIndex(page(MinAddress)), MinAddress(MinAddress),
           MaxAddress(MinAddress) {
-      std::memset(&Buffer, PageSize, 0);
+      std::memset(&Buffer, Page::Size, 0);
     }
 
     void lock() { ++LockCount; }
@@ -199,12 +201,12 @@ protected:
 
     size_t spaceRemaining() const {
       return
-          (MinAddress + PageSize == MaxAddress)
+          (MinAddress + Page::Size == MaxAddress)
           ? 0
-          : (PageSize - (MaxAddress & PageMask));
+          : (Page::Size - (MaxAddress & Page::Mask));
     }
 
-    uint8_t Buffer[PageSize];
+    uint8_t Buffer[Page::Size];
     size_t PageIndex;
     // Note: Buffer address range is [MinAddress, MaxAddress).
     size_t MinAddress;
@@ -216,12 +218,12 @@ protected:
 
   // Page index associated with address in queue.
   static constexpr size_t page(size_t Address) {
-    return Address >> PageSizeLog2;
+    return Address >> Page::SizeLog2;
   }
 
   // Returns address within a QueuePage that refers to address.
   static constexpr size_t pageAddress(size_t Address) {
-    return Address & PageMask;
+    return Address & Page::Mask;
   }
 
   // True if end of buffer has been frozen.
