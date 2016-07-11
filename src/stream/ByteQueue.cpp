@@ -111,7 +111,7 @@ uint8_t *ByteQueue::getReadLockedPointer(size_t Address, size_t WantedSize,
   // Find page associated with Address.
   QueuePage *ReadPage = getPage(Address);
   if (ReadPage == nullptr
-      || (!LockedPages.empty() && ReadPage->PageIndex < LockedPages.top())) {
+      || (!LockedPages.empty() && ReadPage->Index < LockedPages.top())) {
     LockedSize = 0;
     return nullptr;
   }
@@ -187,7 +187,7 @@ bool ByteQueue::readFill(size_t Address) {
 
 void ByteQueue::lockPage(QueuePage *Page) {
   Page->lock();
-  LockedPages.emplace(Page->PageIndex);
+  LockedPages.emplace(Page->Index);
 }
 
 void ByteQueue::unlockPage(QueuePage *Page) {

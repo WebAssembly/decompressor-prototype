@@ -195,7 +195,7 @@ protected:
     QueuePage &operator=(const QueuePage &) = delete;
   public:
     QueuePage(size_t MinAddress)
-        : PageIndex(Page::index(MinAddress)), MinAddress(MinAddress),
+        : Index(Page::index(MinAddress)), MinAddress(MinAddress),
           MaxAddress(MinAddress) {
       std::memset(&Buffer, Page::Size, 0);
     }
@@ -217,7 +217,7 @@ protected:
     }
 
     uint8_t Buffer[Page::Size];
-    size_t PageIndex;
+    size_t Index;
     // Note: Buffer address range is [MinAddress, MaxAddress).
     size_t MinAddress;
     size_t MaxAddress;
@@ -225,17 +225,6 @@ protected:
     QueuePage *Last = nullptr;
     QueuePage *Next = nullptr;
   };
-#if 0
-  // Page index associated with address in queue.
-  static constexpr size_t page(size_t Address) {
-    return Address >> Page::SizeLog2;
-  }
-
-  // Returns address within a QueuePage that refers to address.
-  static constexpr size_t pageAddress(size_t Address) {
-    return Address & Page::Mask;
-  }
-#endif
 
   // True if end of buffer has been frozen.
   bool EobFrozen = false;
