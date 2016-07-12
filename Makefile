@@ -103,7 +103,8 @@ EXEC_DIR = exec
 BUILD_EXECDIR = $(BUILDDIR)/bin
 
 EXEC_SRCS = \
-	decompress.cpp
+	decompress.cpp \
+	decompsexp-wasm.cpp
 
 EXECS = $(patsubst %.cpp, $(BUILD_EXECDIR)/%, $(EXEC_SRCS))
 
@@ -340,8 +341,11 @@ $(EXECS): | $(BUILD_EXECDIR)
 
 -include $(foreach dep,$(EXEC_SRCS:.cpp=.d),$(BUILD_EXECDIR)/$(dep))
 
-$(BUILD_EXECDIR)/decompress: $(EXEC_DIR)/decompress.cpp $(LIBS)
+$(EXECS): $(BUILD_EXECDIR)/%: $(EXEC_DIR)/%.cpp $(LIBS)
 	$(CXX) $(CXXFLAGS) $< $(LIBS) -o $@
+
+#$(BUILD_EXECDIR)/decompress: $(EXEC_DIR)/decompress.cpp $(LIBS)
+#	$(CXX) $(CXXFLAGS) $< $(LIBS) -o $@
 
 ###### Compiling Test Executables #######
 

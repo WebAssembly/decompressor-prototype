@@ -16,7 +16,6 @@
  */
 
 #include "Defs.h"
-#include "interp/State.h"
 #include "sexp-parser/Driver.h"
 #include "stream/ByteQueue.h"
 #include "stream/FileReader.h"
@@ -30,23 +29,10 @@
 
 using namespace wasm::filt;
 using namespace wasm::decode;
-using namespace wasm::interp;
 
 bool UseFileStreams = true;
 const char *InputFilename = "-";
 const char *OutputFilename = "-";
-
-std::unique_ptr<RawStream> getInput() {
-  if (InputFilename == std::string("-")) {
-    if (UseFileStreams)
-      return FdReader::create(STDIN_FILENO, false);
-    else
-      return StreamReader::create(std::cin);
-  }
-  if (UseFileStreams)
-    return FileReader::create(InputFilename);
-  return FstreamReader::create(OutputFilename);
-}
 
 std::unique_ptr<RawStream> getOutput() {
   if (OutputFilename == std::string("-")) {
@@ -63,38 +49,20 @@ std::unique_ptr<RawStream> getOutput() {
 void usage(const char *AppName) {
   fprintf(stderr, "usage: %s [options]\n", AppName);
   fprintf(stderr, "\n");
-  fprintf(stderr, "  Decompress WASM binary file.\n");
+  fprintf(stderr, "  Convert WASM filter s-expressions to WASM binary.\n");
   fprintf(stderr, "\n");
   fprintf(stderr, "Options:\n");
-  fprintf(stderr, "  -d File\tFile containing default algorithms\n");
   fprintf(stderr, "  --expect-fail\tSucceed on failure/fail on success\n");
   fprintf(stderr, "  -h\t\tPrint this usage message.\n");
-  fprintf(stderr, "  -i File\tFile to decompress ('-' implies stdin).\n");
-  fprintf(stderr, "  -m\t\tMinimize block sizes in output stream.\n");
+  fprintf(stderr, "  -i File\tFile of s-expressions ('-' implies stdin).\n");
   fprintf(stderr,
-          "  -o File\tGenerated Decompressed File ('-' implies stdout).\n");
+          "  -o File\tGenerated WASM binary ('-' implies stdout).\n");
   fprintf(stderr, "  -s\t\tUse C++ streams instead of C file descriptors.\n");
-  fprintf(stderr, "  -t\t\tTrace progress decompressing.\n");
 }
 
 int main(int Argc, char *Argv[]) {
-  wasm::alloc::Malloc Allocator;
-  SymbolTable SymTab(&Allocator);
-  Driver FileDriver(SymTab);
-  bool TraceProgress = false;
-  bool MinimizeBlockSize = false;
   for (int i = 1; i < Argc; ++i) {
-    if (Argv[i] == std::string("-d")) {
-      if (++i >= Argc) {
-        fprintf(stderr, "No file specified after -d option\n");
-        usage(Argv[0]);
-        return exit_status(EXIT_FAILURE);
-      }
-      if (!FileDriver.parse(Argv[i])) {
-        fprintf(stderr, "Unable to parse default algorithms: %s\n", Argv[i]);
-        return exit_status(EXIT_FAILURE);
-      }
-    } else if (Argv[i] == std::string("--expect-fail")) {
+    if (Argv[i] == std::string("--expect-fail")) {
       ExpectExitFail = true;
     } else if (Argv[i] == std::string("-h")
              || Argv[i] == std::string("--help")) {
@@ -107,8 +75,6 @@ int main(int Argc, char *Argv[]) {
         return exit_status(EXIT_FAILURE);
       }
       InputFilename = Argv[i];
-    } else if (Argv[i] == std::string("-m")) {
-      MinimizeBlockSize = true;
     } else if (Argv[i] == std::string("-o")) {
       if (++i >= Argc) {
         fprintf(stderr, "No file specified after -o option\n");
@@ -118,8 +84,6 @@ int main(int Argc, char *Argv[]) {
       OutputFilename = Argv[i];
     } else if (Argv[i] == std::string("-s")) {
         UseFileStreams = true;
-    } else if (Argv[i] == std::string("-t")) {
-        TraceProgress = true;
     } else {
       fprintf(stderr, "Unrecognized option: %s\n", Argv[i]);
       usage(Argv[0]);
@@ -127,11 +91,14 @@ int main(int Argc, char *Argv[]) {
     }
 
   }
-  ReadBackedByteQueue Input(getInput());
+  wasm::alloc::Malloc Allocator;
+  SymbolTable SymTab(&Allocator);
+  Driver FileDriver(SymTab);
+  if (!FileDriver.parse(InputFilename)) {
+    fprintf(stderr, "Unable to parse s-expressions: %s\n", InputFilename);
+    return exit_status(EXIT_FAILURE);
+  }
   WriteBackedByteQueue Output(getOutput());
-  State Decompressor(&Input, &Output, &SymTab);
-  Decompressor.setTraceProgress(TraceProgress);
-  Decompressor.setMinimizeBlockSize(MinimizeBlockSize);
-  Decompressor.decompress();
-  return exit_status(EXIT_SUCCESS);
+  fprintf(stderr, "Binary conversion not implemented yet!\n");
+  return exit_status(EXIT_FAILURE);
 }
