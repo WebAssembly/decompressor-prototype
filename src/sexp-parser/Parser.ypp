@@ -135,13 +135,13 @@ struct IntegerValue {
 %type <wasm::filt::Node *> stream_conv
 %type <wasm::filt::Node *> stream_conv_list
 %type <wasm::filt::Node *> stream_conv_stmt_list
-%type <wasm::filt::Node *> header
 %type <wasm::filt::Node *> loop_body
 %type <wasm::filt::Node *> section
 %type <wasm::filt::Node *> section_list
 %type <wasm::filt::Node *> seq_stmt_list
 %type <wasm::filt::Node *> statement
 %type <wasm::filt::Node *> symbol
+%type <wasm::filt::Node *> version
 
 %start file
 
@@ -215,12 +215,12 @@ declaration_stmt_list
         ;
 
 declaration_list
-        : symbol declaration {  // Section name / first define.
+        : symbol version {  // Section name / version.
             $$ = Driver.create<SectionNode>();
             $$->append($1);
             $$->append($2);
           }
-          | declaration_list declaration { // Additional defines.
+          | declaration_list declaration { // defines etc.
             $$ = $1;
             $$->append($2);
           }
@@ -360,7 +360,7 @@ expression
           }
         ;
 
-header  : "(" "version" integer ")" {
+version : "(" "version" integer ")" {
             if ($3->getValue() != 0)
               Driver.error("Currently, only (version 0) is supported");
             $$ = Driver.create<VersionNode>($3);
@@ -389,10 +389,9 @@ section : "(" "section" declaration_list ")" { $$ = $3; }
         ;
 
 section_list
-        : header section { // Header / first section of file.
+        : section { // first section of file.
             $$ = Driver.create<FileNode>();
             $$->append($1);
-            $$->append($2);
           }
         | section_list section { // Remaining sections in file.
             $$ = $1;

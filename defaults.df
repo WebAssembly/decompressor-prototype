@@ -18,8 +18,8 @@
 
 # TODO(kschimpf) Generate AST's.
 
-(version 0)
 (section 'filter'
+  (version 0)
 
   (default 'code'
     (loop (varuint32 6)          # Number of function bodies.

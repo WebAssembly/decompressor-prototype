@@ -1,5 +1,5 @@
-(version 0)
 (section 'filter'
+  (version 0)
   (default 'code'
     (loop (varuint32 6) (eval 'code.function'))
   )
