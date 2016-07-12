@@ -32,7 +32,6 @@
 // TODO(KarlSchimpf): Locking of reads/writes for threading has not yet been
 // addressed, and the current implementation is NOT thread safe.
 
-
 #ifndef DECOMPRESSOR_SRC_STREAM_QUEUE_H
 #define DECOMPRESSOR_SRC_STREAM_QUEUE_H
 

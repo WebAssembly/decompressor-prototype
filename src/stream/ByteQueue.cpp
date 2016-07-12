@@ -16,124 +16,14 @@
  */
 
 #include "stream/ByteQueue.h"
+#include "stream/QueueImpl.h"
 #include "stream/WriteUtils.h"
 
 namespace wasm {
 
 namespace decode {
 
-template<class Base>
-Queue<Base>::Queue() {
-  EobPage = FirstPage = new Page(0);
-  PageMap.push_back(EobPage);
-  // Double check that we can evenly fit elements of Base in a page.
-  assert(Page::Size % sizeof(Base) == 0);
-}
-
-template<class Base>
-Queue<Base>::~Queue() {
-  while (FirstPage)
-    dumpFirstPage();
-}
-
-template<class Base>
-void Queue<Base>::dumpFirstPage() {
-  Page *TmpPage = FirstPage;
-  FirstPage = FirstPage->Next;
-  delete TmpPage;
-  if (FirstPage)
-    FirstPage->Last = nullptr;
-}
-
-template<class Base>
-void Queue<Base>::dumpPreviousPages(size_t Address) {
-  Page *AddrPage = getPage(Address);
-  while (FirstPage != AddrPage) {
-    if (!FirstPage->isLocked())
-      break;
-    if (FirstPage->getMaxAddress() + MinPeekSize < Address)
-      break;
-    dumpFirstPage();
-  }
-}
-
-template<class Base>
-bool Queue<Base>::readFill(size_t Address) {
-  return Address < EobPage->getMaxAddress();
-}
-
-template<class Base>
-Base *Queue<Base>::getReadLockedPointer(size_t Address, size_t WantedSize,
-                                           size_t &LockedSize) {
-  // Start by read-filling if necessary.
-  if (Address >= EobPage->getMaxAddress()) {
-    if (!readFill(Address)) {
-      LockedSize = 0;
-      return nullptr;
-    }
-  }
-  // Find page associated with Address.
-  Page *ReadPage = getPage(Address);
-  if (ReadPage == nullptr
-      || (!LockedPages.empty() && ReadPage->Index < LockedPages.top())) {
-    LockedSize = 0;
-    return nullptr;
-  }
-  lockPage(ReadPage);
-  dumpPreviousPages(Address);
-  // Compute largest contiguous range of elements available.
-  WantedSize *= sizeof(Base);
-  LockedSize = WantedSize;
-  if (Address + WantedSize > ReadPage->getMaxAddress()) {
-    LockedSize = (ReadPage->getMaxAddress() - Address) / sizeof(Base);
-  }
-  return (Base*)(ReadPage->Buffer + Page::address(Address));
-}
-
-template<class Base>
-Base *Queue<Base>::getWriteLockedPointer(size_t Address, size_t WantedSize,
-                                            size_t &LockedSize) {
-  // Page doesn't exist. Expand queue if necessary.
-  while (Address >= EobPage->getMaxAddress()) {
-    if (EobFrozen) {
-      LockedSize = 0;
-      return nullptr;
-    }
-    EobPage->setMaxAddress(EobPage->getMinAddress() + Page::Size);
-    if (Address < EobPage->getMaxAddress())
-      break;
-    Page *NewPage = new Page(EobPage->getMaxAddress());
-    PageMap.push_back(NewPage);
-    EobPage->Next = NewPage;
-    NewPage->Last = EobPage;
-    EobPage = NewPage;
-  }
-  Page *P = getPage(Address);
-  if (P == nullptr) {
-    LockedSize = 0;
-    return nullptr;
-  }
-  lockPage(P);
-  dumpPreviousPages(Address);
-  // Compute largest contiguous range of bytes available.
-  WantedSize *= sizeof(Base);
-  LockedSize = WantedSize;
-  if (Address + WantedSize > P->getMaxAddress()) {
-    LockedSize = (P->getMaxAddress() - Address) / sizeof(Base);
-  }
-  return (Base*)(P->Buffer + Page::address(Address));
-}
-
-template<class Base>
-void Queue<Base>::freezeEob(size_t Address) {
-  assert(!EobFrozen);
-  size_t LockedSize;
-  // This call zero-fill pages if writing hasn't reached Address yet.
-  assert(getWriteLockedPointer(Address, 0, LockedSize) != nullptr);
-  Page *P = getPage(Address);
-  P->setMaxAddress(Address);
-  unlock(Address);
-}
+template class Queue<uint8_t>;
 
 void ByteQueue::writePageAt(FILE *File, size_t Address) {
   Page *P = getPage(Address);
@@ -225,8 +115,6 @@ void WriteBackedByteQueue::dumpFirstPage() {
     fatal("Write to raw stream failed in ByteQueue::dumpFirstPage");
   ByteQueue::dumpFirstPage();
 }
-
-template class Queue<uint8_t>;
 
 } // end of decode namespace
 

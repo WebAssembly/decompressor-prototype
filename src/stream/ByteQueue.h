@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-// Defines a byte queue for hold bit and byte streams.
+// Defines a byte queue to buffer bit and byte streams.
 
 #ifndef DECOMPRESSOR_SRC_STREAM_BYTEQUEUE_H
 #define DECOMPRESSOR_SRC_STREAM_BYTEQUEUE_H
