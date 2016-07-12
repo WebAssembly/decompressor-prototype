@@ -63,7 +63,7 @@ bool Queue<Base>::readFill(size_t Address) {
 }
 
 template<class Base>
-uint8_t *Queue<Base>::getReadLockedPointer(size_t Address, size_t WantedSize,
+Base *Queue<Base>::getReadLockedPointer(size_t Address, size_t WantedSize,
                                            size_t &LockedSize) {
   // Start by read-filling if necessary.
   if (Address >= EobPage->getMaxAddress()) {
@@ -81,16 +81,17 @@ uint8_t *Queue<Base>::getReadLockedPointer(size_t Address, size_t WantedSize,
   }
   lockPage(ReadPage);
   dumpPreviousPages(Address);
-  // Compute largest contiguous range of bytes available.
+  // Compute largest contiguous range of elements available.
   WantedSize *= sizeof(Base);
-  LockedSize =
-      (Address + WantedSize > ReadPage->getMaxAddress())
-      ? ReadPage->getMaxAddress() - Address : WantedSize;
-  return &ReadPage->Buffer[Page::address(Address)];
+  LockedSize = WantedSize;
+  if (Address + WantedSize > ReadPage->getMaxAddress()) {
+    LockedSize = (ReadPage->getMaxAddress() - Address) / sizeof(Base);
+  }
+  return (Base*)(ReadPage->Buffer + Page::address(Address));
 }
 
 template<class Base>
-uint8_t *Queue<Base>::getWriteLockedPointer(size_t Address, size_t WantedSize,
+Base *Queue<Base>::getWriteLockedPointer(size_t Address, size_t WantedSize,
                                             size_t &LockedSize) {
   // Page doesn't exist. Expand queue if necessary.
   while (Address >= EobPage->getMaxAddress()) {
@@ -113,12 +114,14 @@ uint8_t *Queue<Base>::getWriteLockedPointer(size_t Address, size_t WantedSize,
     return nullptr;
   }
   lockPage(P);
+  dumpPreviousPages(Address);
   // Compute largest contiguous range of bytes available.
   WantedSize *= sizeof(Base);
-  LockedSize = (Address + WantedSize > P->getMaxAddress())
-      ? P->getMaxAddress() - Address : WantedSize;
-  dumpPreviousPages(Address);
-  return &P->Buffer[Page::address(Address)];
+  LockedSize = WantedSize;
+  if (Address + WantedSize > P->getMaxAddress()) {
+    LockedSize = (P->getMaxAddress() - Address) / sizeof(Base);
+  }
+  return (Base*)(P->Buffer + Page::address(Address));
 }
 
 template<class Base>
@@ -183,20 +186,6 @@ bool ByteQueue::write(size_t &Address, uint8_t *FromBuf, size_t WantedSize) {
   }
   return true;
 }
-
-#if 0
-void ByteQueue::freezeEob(size_t Address) {
-  assert(!EobFrozen);
-  size_t LockedSize;
-  // This call zero-fill pages if writing hasn't reached Address yet.
-  assert(getWriteLockedPointer(Address, 0, LockedSize) != nullptr);
-  Page *P = getPage(Address);
-  P->setMaxAddress(Address);
-  assert(P != nullptr);
-  assert(P->Next == nullptr);
-  unlock(Address);
-}
-#endif
 
 bool ReadBackedByteQueue::readFill(size_t Address) {
   if (Address < EobPage->getMaxAddress())
