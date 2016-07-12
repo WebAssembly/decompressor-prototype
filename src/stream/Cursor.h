@@ -64,7 +64,7 @@ public:
 
   void releaseLock() {
     if (Buffer) {
-      Queue->lockAddress(LockedAddress);
+      Queue->lock(LockedAddress);
       Buffer = nullptr;
       BufferEnd = nullptr;
     }
@@ -107,7 +107,7 @@ protected:
       EobAddress(kUndefinedAddress) {
     // Add local copy of lock, so that lifetime matches cursor.
     if (Buffer)
-      Queue->lockAddress(LockedAddress);
+      Queue->lock(LockedAddress);
   }
 };
 
