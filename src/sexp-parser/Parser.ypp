@@ -126,7 +126,7 @@ struct IntegerValue {
 %type <wasm::filt::SelectNode *> case_list
 %type <wasm::filt::Node *> case_stmt_list
 %type <wasm::filt::Node *> declaration
-%type <wasm::filt::Node *> declaration_list
+%type <wasm::filt::SectionNode *> declaration_list
 %type <wasm::filt::Node *> declaration_stmt_list
 %type <wasm::filt::Node *> expression
 %type <wasm::filt::Node *> file

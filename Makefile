@@ -407,7 +407,8 @@ $(TEST_EXECDIR)/TestByteQueues: $(TEST_DIR)/TestByteQueues.cpp $(LIBS)
 
 ###### Testing ######
 
-test: all test-parser test-raw-streams test-byte-queues test-decompress
+test: all test-parser test-raw-streams test-byte-queues test-decompress \
+	test-decompsexp-wasm
 	@echo "*** all tests passed ***"
 
 .PHONY: test
@@ -424,6 +425,10 @@ test-decompress: $(BUILD_EXECDIR)/decompress
 	@echo "*** decompress tests passed ***"
 
 .PHONY: test-decompress
+
+test-decompsexp-wasm: $(BUILD_EXECDIR)/decompsexp-wasm
+	$< -m < defaults.df | diff - $(TEST_SRCS_DIR)/defaults.wasm
+	@echo "*** sexp2wasm tests passed ***"
 
 test-parser: $(TEST_EXECDIR)/TestParser
 	$< -w defaults.df | diff - $(TEST_SRCS_DIR)/defaults.df-w

@@ -78,7 +78,7 @@
     )
   )
   (default 'data'
-    (loop (varuint32 6) (eval 'data_segment'))
+    (loop (varuint32 6) (eval 'data.segment'))
   )
   (default 'data.segment'
     (varuint32 6)
@@ -98,7 +98,7 @@
     (loop (varuint32 6) (varuint32 6))
   )
   (default 'import'
-    (loop (varuint32 6) (eval 'import_entry'))
+    (loop (varuint32 6) (eval 'import.entry'))
   )
   (default 'import.entry'
     (varuint32 6)
