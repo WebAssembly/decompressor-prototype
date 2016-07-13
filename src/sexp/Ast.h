@@ -469,19 +469,32 @@ protected:
       : Node(Alloc, Type), Kids(alloc::TemplateAllocator<Node*>(Alloc)) {}
 };
 
+class SectionNode final : public NaryNode {
+  SectionNode(const SectionNode &) = delete;
+  SectionNode &operator=(const SectionNode &) = delete;
+  virtual void forceCompilation() final;
+public:
+  SectionNode() : NaryNode(OpSection) {}
+  explicit SectionNode(alloc::Allocator *Alloc) : NaryNode(Alloc, OpSelect) {}
+  void installStringTable();
+  const uint32_t getStringIndex(SymbolNode *Symbol);
+private:
+  // TODO(karlschimpf) Hook this up to allocator.
+  std::unordered_map<SymbolNode *, uint32_t> LookupMap;
+};
+
 class SelectNode final : public NaryNode {
   SelectNode(const SelectNode &) = delete;
   SelectNode &operator=(const SelectNode &) = delete;
   virtual void forceCompilation() final;
 public:
   SelectNode() : NaryNode(OpSelect) {}
-  explicit SelectNode(alloc::Allocator *Alloc)
-      : NaryNode(Alloc, OpSelect) {}
+  explicit SelectNode(alloc::Allocator *Alloc) : NaryNode(Alloc, OpSelect) {}
   static bool implementsClass(NodeType Type) { return OpSelect == Type; }
   void installFastLookup();
   const Node *getCase(IntType Key) const;
 private:
-  // TODO(kschimpf) Hook this up to allocator.
+  // TODO(karlschimpf) Hook this up to allocator.
   std::unordered_map<IntType, Node *> LookupMap;
 };
 
