@@ -41,8 +41,8 @@ IntType getIntegerValue(Node *N) {
 
 } // end of anonymous namespace
 
-BinGen::BinGen(decode::ByteQueue *Output) :
-    WritePos(Output), Alloc(Allocator::Default) {
+BinGen::BinGen(decode::ByteQueue *Output, Allocator *Alloc) :
+    WritePos(Output), SectionSymtab(Alloc) {
   Writer = Alloc->create<ByteWriteStream>();
 }
 
@@ -68,15 +68,12 @@ void BinGen::writeIndent() {
 }
 
 template<class Type>
-Type BinGen::returnValue(const char *Name, Type Value) {
-  if (!TraceProgress)
-    return Value;
+Type BinGen::returnValueInternal(const char *Name, Type Value) {
   IndentEnd();
   fprintf(stderr, "<- %s = %d\n", Name, int(Value));
-  return Value;
 }
 
-void BinGen::enter(const char *Name, bool AddNewline) {
+void BinGen::enterInternal(const char *Name, bool AddNewline) {
   IndentBegin();
   fprintf(stderr, "-> %s", Name);
   if (AddNewline)
@@ -85,7 +82,7 @@ void BinGen::enter(const char *Name, bool AddNewline) {
     fputc(' ', stderr);
 }
 
-void BinGen::exit(const char *Name) {
+void BinGen::exitInternal(const char *Name) {
   IndentEnd();
   fprintf(stderr, "<- %s\n", Name);
 }
@@ -100,7 +97,8 @@ void BinGen::writeFile(const FileNode *File) {
     enter("writeFile");
   }
   writeNode(File);
-  exit("writeFile");
+  if (TraceProgress)
+    exit("writeFile");
 }
 
 void BinGen::writeSection(const SectionNode *Section) {
@@ -109,7 +107,8 @@ void BinGen::writeSection(const SectionNode *Section) {
     getTraceWriter()->writeAbbrev(stderr, Section);
   }
   writeNode(Section);
-  exit("writeSection");
+  if (TraceProgress)
+    exit("writeSection");
 }
 
 void BinGen::writeNode(const Node *Nd) {
@@ -172,12 +171,20 @@ void BinGen::writeNode(const Node *Nd) {
       break;
     }
     case OpSection: {
-      writeNode(Nd->getKid(0)); // name of section
+      writeSymbol(Nd->getKid(0)); // name of section
       writeBlock(
           [&]() {
+            const auto *Section = cast<SectionNode>(Nd);
+            SectionSymtab.installSection(Section);
+            const SectionSymbolTable::VectorType &Vector =
+                SectionSymtab.getVector();
+            Writer->writeVaruint32(Vector.size(), WritePos);
+            for (const SymbolNode *Symbol : Vector)
+              writeSymbol(Symbol);
             for (int i = 1, len = Nd->getNumKids(); i < len; ++i)
               writeNode(Nd->getKid(i));
           });
+      SectionSymtab.clear();
       break;
     }
     case OpFilter:
@@ -193,10 +200,7 @@ void BinGen::writeNode(const Node *Nd) {
     }
     case OpSymbol: {
       const SymbolNode *Sym = cast<SymbolNode>(Nd);
-      InternalName SymName = Sym->getName();
-      Writer->writeVaruint32(SymName.size(), WritePos);
-      for (size_t i = 0, len = SymName.size(); i < len; ++i)
-        Writer->writeUint8(SymName[i], WritePos);
+      Writer->writeVaruint32(SectionSymtab.getStringIndex(Sym), WritePos);
       break;
     }
     case OpUint32OneArg:
@@ -222,7 +226,8 @@ void BinGen::writeNode(const Node *Nd) {
       break;
     }
   }
-  exit("writeNode");
+  if (TraceProgress)
+    exit("writeNode");
 }
 
 void BinGen::writeBlock(std::function<void()> ApplyFn) {
@@ -248,6 +253,21 @@ void BinGen::writeBlock(std::function<void()> ApplyFn) {
       WritePos.jumpToAddress(BlockPos.getCurAddress());
     }
   }
+}
+
+void BinGen::writeSymbol(const Node *Symbol) {
+  if (TraceProgress) {
+    enter("writeSymbol", false);
+    getTraceWriter()->writeAbbrev(stderr, Symbol);
+  }
+  assert(isa<SymbolNode>(Symbol) && "BinGen::writeSymbol called on non-symbol");
+  const auto *Sym = cast<SymbolNode>(Symbol);
+  InternalName SymName = Sym->getName();
+  Writer->writeVaruint32(SymName.size(), WritePos);
+  for (size_t i = 0, len = SymName.size(); i < len; ++i)
+    Writer->writeUint8(SymName[i], WritePos);
+  if (TraceProgress)
+    exit("writeSymbol");
 }
 
 } // end of namespace filt

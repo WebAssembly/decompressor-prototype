@@ -39,7 +39,7 @@ class BinGen {
   BinGen(const BinGen &) = delete;
   BinGen &operator=(const BinGen &) = delete;
 public:
-  BinGen(decode::ByteQueue *Output);
+  BinGen(decode::ByteQueue *Output,alloc::Allocator *Alloc);
 
   ~BinGen();
 
@@ -57,13 +57,14 @@ public:
 private:
   decode::WriteCursor WritePos;
   interp::ByteWriteStream *Writer;
-  alloc::Allocator *Alloc;
+  SectionSymbolTable SectionSymtab;
   bool MinimizeBlockSize = false;
   bool TraceProgress = false;
   int IndentLevel = 0;
 
-  void writeNode(const Node *Symbol);
+  void writeNode(const Node *Nd);
   void writeBlock(std::function<void()> ApplyFn);
+  void writeSymbol(const Node *Symbol);
 
   // The following are for tracing progress duing binary translation.
   TextWriter *TraceWriter = nullptr;
@@ -77,10 +78,24 @@ private:
     --IndentLevel;
     writeIndent();
   }
-  void enter(const char *Name, bool AddNewline=true);
-  void exit(const char *Name);
+  void enterInternal(const char *Name, bool AddNewline=true);
+  void enter(const char *Name, bool AddNewline=true) {
+    if (TraceProgress)
+      enterInternal(Name, AddNewline);
+  }
+  void exitInternal(const char *Name);
+  void exit(const char *Name) {
+    if (TraceProgress)
+      exitInternal(Name);
+  }
   template<class Type>
-  Type returnValue(const char *Name, Type Value);
+  Type returnValueInternal(const char *Name, Type Value);
+  template<class Type>
+  Type returnValue(const char *Name, Type Value) {
+    if (TraceProgress)
+      returnValueInternal(Name, Value);
+    return Value;
+  }
 };
 
 } // end of namespace filt
