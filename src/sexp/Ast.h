@@ -48,8 +48,6 @@
 
 namespace wasm {
 
-using namespace decode;
-
 namespace filt {
 
 using ExternalName = std::string;
@@ -148,6 +146,10 @@ public:
 
   virtual void setKid(int Index, Node *N) = 0;
 
+  void setLastKid(Node *N) {
+    setKid(getNumKids() - 1, N);
+  }
+
   Node *getLastKid() const {
     if (int Size = getNumKids())
       return getKid(Size-1);
@@ -214,17 +216,18 @@ class IntegerNode final : public NullaryNode {
 public:
   // Note: ValueFormat provided so that we can echo back out same
   // representation as when lexing s-expressions.
-  IntegerNode(decode::IntType Value, ValueFormat Format = ValueFormat::Decimal) :
+  IntegerNode(decode::IntType Value,
+              decode::ValueFormat Format = decode::ValueFormat::Decimal) :
       NullaryNode(alloc::Allocator::Default, OpInteger),
       Value(Value),
       Format(Format) {}
   IntegerNode(alloc::Allocator *Alloc, decode::IntType Value,
-              ValueFormat Format = ValueFormat::Decimal) :
+              decode::ValueFormat Format = decode::ValueFormat::Decimal) :
       NullaryNode(Alloc, OpInteger),
       Value(Value),
       Format(Format) {}
   ~IntegerNode() override {}
-  ValueFormat getFormat() const {
+  decode::ValueFormat getFormat() const {
     return Format;
   }
   decode::IntType getValue() const {
@@ -235,7 +238,7 @@ public:
 
 private:
   decode::IntType Value;
-  ValueFormat Format;
+  decode::ValueFormat Format;
 };
 
 class SymbolNode final : public NullaryNode {
@@ -257,7 +260,7 @@ public:
   const InternalName &getName() const {
     return Name;
   }
-  const std::string getStringName() const;
+  std::string getStringName() const;
   const Node *getDefineDefinition() const {
     return DefineDefinition;
   }
@@ -297,6 +300,9 @@ public:
   void install(Node* Root);
   alloc::Allocator *getAllocator() const {
     return Alloc;
+  }
+  void clear() {
+    SymbolMap.clear();
   }
 private:
   alloc::Allocator *Alloc;
@@ -469,20 +475,6 @@ protected:
       : Node(Alloc, Type), Kids(alloc::TemplateAllocator<Node*>(Alloc)) {}
 };
 
-class SectionNode final : public NaryNode {
-  SectionNode(const SectionNode &) = delete;
-  SectionNode &operator=(const SectionNode &) = delete;
-  virtual void forceCompilation() final;
-public:
-  SectionNode() : NaryNode(OpSection) {}
-  explicit SectionNode(alloc::Allocator *Alloc) : NaryNode(Alloc, OpSelect) {}
-  void installStringTable();
-  const uint32_t getStringIndex(SymbolNode *Symbol);
-private:
-  // TODO(karlschimpf) Hook this up to allocator.
-  std::unordered_map<SymbolNode *, uint32_t> LookupMap;
-};
-
 class SelectNode final : public NaryNode {
   SelectNode(const SelectNode &) = delete;
   SelectNode &operator=(const SelectNode &) = delete;
@@ -492,10 +484,10 @@ public:
   explicit SelectNode(alloc::Allocator *Alloc) : NaryNode(Alloc, OpSelect) {}
   static bool implementsClass(NodeType Type) { return OpSelect == Type; }
   void installFastLookup();
-  const Node *getCase(IntType Key) const;
+  const Node *getCase(decode::IntType Key) const;
 private:
   // TODO(karlschimpf) Hook this up to allocator.
-  std::unordered_map<IntType, Node *> LookupMap;
+  std::unordered_map<decode::IntType, Node *> LookupMap;
 };
 
 #define X(tag)                                                                 \
@@ -511,6 +503,35 @@ private:
   };
   AST_NARYNODE_TABLE
 #undef X
+
+class SectionSymbolTable {
+  SectionSymbolTable(const SectionSymbolTable &) = delete;
+  SectionSymbolTable &operator=(const SectionSymbolTable &) = delete;
+public:
+  using MapType = std::unordered_map<const SymbolNode *, uint32_t>;
+  using VectorType = std::vector<const SymbolNode *>;
+  SectionSymbolTable(alloc::Allocator *Alloc) : Symtab(Alloc) {}
+  ~SectionSymbolTable() {}
+  void installSection(const SectionNode *Section);
+  const VectorType &getVector() {
+    return SymbolVector;
+  }
+  uint32_t getStringIndex(const SymbolNode *Symbol);
+  void clear() {
+    Symtab.clear();
+    SymbolMap.clear();
+    SymbolVector.clear();
+  }
+  bool empty() const {
+    return SymbolVector.empty();
+  }
+private:
+  // Cache that holds the set of uniquified symbols.
+  SymbolTable Symtab;
+  MapType SymbolMap;
+  VectorType SymbolVector;
+  void installSymbols(const Node *Nd);
+};
 
 } // end of namespace filt
 

@@ -32,9 +32,6 @@ namespace interp {
 
 namespace {
 
-static constexpr uint32_t WasmBinaryMagic = 0x6d736100;
-static constexpr uint32_t WasmBinaryVersion = 0x0b;
-
 static constexpr uint32_t MaxExpectedSectionNameSize = 32;
 
 IntType getIntegerValue(Node *N) {
@@ -49,22 +46,21 @@ IntType getIntegerValue(Node *N) {
 State::State(ByteQueue *Input, ByteQueue *Output,
              SymbolTable *Algorithms) :
     ReadPos(Input), WritePos(Output), Alloc(Allocator::Default),
-    Algorithms(Algorithms), TraceWriter(nullptr) {
+    Algorithms(Algorithms) {
   Reader = Alloc->create<ByteReadStream>();
   Writer = Alloc->create<ByteWriteStream>();
   DefaultFormat = Alloc->create<Varuint64NoArgsNode>();
   CurSectionName.reserve(MaxExpectedSectionNameSize);
 }
 
+State::~State() {
+  delete TraceWriter;
+}
+
 void State::setTraceProgress(bool NewValue) {
-  if (TraceProgress == NewValue)
-    return;
-  if (TraceProgress) {
-    delete TraceWriter;
-    TraceProgress = false;
-  }
-  TraceProgress = true;
-  TraceWriter = new TextWriter();
+  TraceProgress = NewValue;
+  if (TraceProgress && TraceWriter == nullptr)
+    TraceWriter = new TextWriter();
 }
 
 void State::writeIndent() {
@@ -80,7 +76,7 @@ void State::traceStreamLocs() {
 void State::enter(const char *Name, bool AddNewline) {
   IndentBegin();
   traceStreamLocs();
-  fprintf(stderr, " ->  %s", Name);
+  fprintf(stderr, " -> %s", Name);
   if (AddNewline)
     fputc('\n', stderr);
 }
@@ -94,7 +90,7 @@ void State::exit(const char *Name) {
 IntType State::returnValueInternal(const char *Name, IntType Value) {
   IndentEnd();
   traceStreamLocs();
-  fprintf(stderr, " <-  %s = %" PRI_IntType "\n", Name, Value);
+  fprintf(stderr, " <- %s = %" PRI_IntType "\n", Name, Value);
   return Value;
 }
 
@@ -187,9 +183,6 @@ IntType State::eval(const Node *Nd) {
     case OpU32Const:
     case OpU64Const:
       return returnValue("eval", read(Nd));
-    case OpLit:
-      // TOOD(kschimpf): Merge OpLit with OpWrite (really do same thing).
-      return returnValue("eval", write(read(Nd), DefaultFormat));
     case OpLoop: {
       IntType Count = eval(Nd->getKid(0));
       int NumKids = Nd->getNumKids();
@@ -247,8 +240,6 @@ IntType State::read(const Node *Nd) {
     case OpI64Const:
     case OpU32Const:
     case OpU64Const:
-    case OpLit:
-      return getIntegerValue(Nd->getKid(0));
     case OpPeek: {
       ReadCursor InitialPos(ReadPos);
       IntType Value = read(Nd->getKid(0));
@@ -299,9 +290,6 @@ IntType State::write(IntType Value, const wasm::filt::Node *Nd) {
     case OpU32Const:
     case OpU64Const:
     case OpPeek:
-    case OpLit:
-      write(Value, DefaultFormat);
-      break;
     case OpUint8NoArgs:
       Writer->writeUint8(Value, WritePos);
       break;
@@ -401,7 +389,7 @@ void State::decompressBlock(const Node *Code) {
   if (ByteWriter) {
     WriteCursor BlockPos(WritePos);
     ByteWriter->writeFixedVaruint32(0, WritePos);
-    size_t SizeAfterWrite = WritePos.getCurAddress();
+    size_t SizeAfterSizeWrite = WritePos.getCurAddress();
     evalOrCopy(Code);
     const size_t NewSize =
         WritePos.getCurAddress() - (BlockPos.getCurAddress() +
@@ -411,11 +399,11 @@ void State::decompressBlock(const Node *Code) {
     } else {
       ByteWriter->writeVaruint32(NewSize, BlockPos);
       size_t SizeAfterBackPatch = BlockPos.getCurAddress();
-      size_t Diff = SizeAfterWrite - SizeAfterBackPatch;
+      size_t Diff = SizeAfterSizeWrite - SizeAfterBackPatch;
       if (Diff) {
         size_t End = WritePos.getCurAddress() - Diff;
         ReadCursor CopyPos(WritePos.getQueue());
-        CopyPos.jumpToAddress(SizeAfterWrite);
+        CopyPos.jumpToAddress(SizeAfterSizeWrite);
         for (size_t i = SizeAfterBackPatch; i < End; ++ i)
           BlockPos.writeByte(CopyPos.readByte());
         WritePos.jumpToAddress(BlockPos.getCurAddress());

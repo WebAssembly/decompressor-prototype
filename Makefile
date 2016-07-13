@@ -33,6 +33,17 @@ TL_OBJS=$(patsubst %.cpp, $(OBJDIR)/%.o, $(TL_SRCS))
 
 TL_LIB = $(LIBDIR)/$(LIBPREFIX)tl.a
 
+###### Binary generation objects and locations ######
+
+BINARY_DIR = $(SRCDIR)/binary
+BINARY_OBJDIR = $(OBJDIR)/binary
+BINARY_SRCS = \
+	BinGen.cpp
+
+BINARY_OBJS=$(patsubst %.cpp, $(BINARY_OBJDIR)/%.o, $(BINARY_SRCS))
+
+BINARY_LIB = $(LIBDIR)/$(LIBPREFIX)binary.a
+
 ###### Parse objects and locations ######
 
 PARSER_DIR = $(SRCDIR)/sexp-parser
@@ -124,7 +135,8 @@ TEST_SRCS_DIR = $(TEST_DIR)/test-sources
 
 ###### General compilation definitions ######
 
-LIBS = $(TL_LIB) $(PARSER_LIB) $(SEXP_LIB) $(INTERP_LIB) $(STRM_LIB)
+LIBS = $(TL_LIB) $(PARSER_LIB) $(BINARY_LIB) $(INTERP_LIB) $(SEXP_LIB) \
+       $(STRM_LIB)
 
 $(info -----------------------------------------------)
 $(info Using CPP_COMPILER = $(CPP_COMPILER))
@@ -139,15 +151,15 @@ CXXFLAGS := -std=gnu++11 -Wall -Wextra -O2 -g -pedantic -MP -MD -Werror \
 
 ###### Default Rule ######
 
-all: tl-objs parser-objs sexp-objs strm-objs interp-objs libs execs \
-     test-execs
+all: libs execs test-execs
 
 .PHONY: all
 
 ###### Cleaning Rules #######
 
 clean: clean-tl-objs clean-parser clean-sexp-objs clean-strm-objs \
-       clean-interp-objs clean-execs clean-libs clean-test-execs
+       clean-interp-objs clean-binary-objs clean-execs clean-libs \
+       clean-test-execs
 
 .PHONY: clean
 
@@ -160,6 +172,11 @@ clean-libs:
 	rm -f $(LIBS)
 
 .PHONY: clean-libs
+
+clean-binary-objs:
+	rm -f $(BINARY_OBJS)
+
+.PHONY: clean-binary-objs
 
 clean-tl-objs:
 	rm -f $(TL_OBJS)
@@ -213,9 +230,28 @@ gen-lexer: $(PARSER_DIR)/Lexer.cpp
 
 gen-parser: $(PARSER_DIR)/Parser.tab.cpp
 
-.PHONY: ge-parser
+.PHONY: gen-parser
 
-###### Compiliing Sources ######
+###### Compiliing binary generation Sources ######
+
+binary-objs: $(BINARY_OBJS)
+
+.PHONY: binary-objs
+
+$(BINARY_OBJS): | $(BINARY_OBJDIR)
+
+$(BINARY_OBJDIR):
+	mkdir -p $@
+
+-include $(foreach dep,$(BINARY_SRCS:.cpp=.d),$(BINARY_OBJDIR)/$(dep))
+
+$(BINARY_OBJS): $(BINARY_OBJDIR)/%.o: $(BINARY_DIR)/%.cpp
+	$(CXX) -c $(CXXFLAGS) $< -o $@
+
+$(BINARY_LIB): $(BINARY_OBJS)
+	ar -rs $@ $(BINARY_OBJS)
+
+###### Compiliing top-level Sources ######
 
 tl-objs: $(TL_OBJS)
 
