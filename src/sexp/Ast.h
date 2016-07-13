@@ -260,6 +260,7 @@ public:
   const InternalName &getName() const {
     return Name;
   }
+  std::string getStringName() const;
   const Node *getDefineDefinition() const {
     return DefineDefinition;
   }
@@ -299,6 +300,9 @@ public:
   void install(Node* Root);
   alloc::Allocator *getAllocator() const {
     return Alloc;
+  }
+  void clear() {
+    SymbolMap.clear();
   }
 private:
   alloc::Allocator *Alloc;
@@ -477,13 +481,12 @@ class SelectNode final : public NaryNode {
   virtual void forceCompilation() final;
 public:
   SelectNode() : NaryNode(OpSelect) {}
-  explicit SelectNode(alloc::Allocator *Alloc)
-      : NaryNode(Alloc, OpSelect) {}
+  explicit SelectNode(alloc::Allocator *Alloc) : NaryNode(Alloc, OpSelect) {}
   static bool implementsClass(NodeType Type) { return OpSelect == Type; }
   void installFastLookup();
   const Node *getCase(decode::IntType Key) const;
 private:
-  // TODO(kschimpf) Hook this up to allocator.
+  // TODO(karlschimpf) Hook this up to allocator.
   std::unordered_map<decode::IntType, Node *> LookupMap;
 };
 

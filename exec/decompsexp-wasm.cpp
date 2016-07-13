@@ -100,6 +100,7 @@ int main(int Argc, char *Argv[]) {
     }
 
   }
+  // TODO(karlschimpf) Use arena allocator once working.
   wasm::alloc::Malloc Allocator;
   SymbolTable SymTab(&Allocator);
   Driver Parser(SymTab);
@@ -108,7 +109,7 @@ int main(int Argc, char *Argv[]) {
     return exit_status(EXIT_FAILURE);
   }
   WriteBackedByteQueue Output(getOutput());
-  BinGen Generator(&Output);
+  BinGen Generator(&Output, &Allocator);
   Generator.setTraceProgress(TraceProgress);
   Generator.setMinimizeBlockSize(MinimizeBlockSize);
   Generator.writePreamble();

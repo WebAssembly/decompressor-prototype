@@ -90,6 +90,13 @@ void IntegerNode::forceCompilation() {}
 
 void SymbolNode::forceCompilation() {}
 
+std::string SymbolNode::getStringName() const {
+  std::string Str(Name.size(), '\0');
+  for (size_t i = 0; i < Name.size(); ++i)
+    Str[i] = char(Name[i]);
+  return Str;
+}
+
 void SymbolNode::setDefineDefinition(Node *Defn) {
   if (Defn) {
     IsDefineUsingDefault = false;
@@ -287,7 +294,9 @@ void SelectNode::installFastLookup() {
 
 #define X(tag)                                                                 \
   void tag##Node::forceCompilation() {}
-  AST_NARYNODE_TABLE
+AST_NARYNODE_TABLE;
 #undef X
 
-}}
+} // end of namespace filt
+
+} // end of namespace wasm

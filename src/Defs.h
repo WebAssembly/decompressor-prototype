@@ -26,6 +26,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <string>
 
 namespace wasm {
 
@@ -65,6 +66,8 @@ extern bool ExpectExitFail;
 int exit_status(int Status);
 
 void fatal(const char *Message = "fatal: unable to continue");
+
+void fatal(const std::string &Message);
 
 struct Utils {
   static constexpr size_t floorByte(size_t Bit) {

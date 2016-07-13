@@ -34,12 +34,41 @@ namespace filt {
 
 class TextWriter;
 
+class SectionSymbolTable {
+  SectionSymbolTable(const SectionSymbolTable &) = delete;
+  SectionSymbolTable &operator=(const SectionSymbolTable &) = delete;
+public:
+  using MapType = std::unordered_map<const SymbolNode *, uint32_t>;
+  using VectorType = std::vector<const SymbolNode *>;
+  SectionSymbolTable(alloc::Allocator *Alloc) : Symtab(Alloc) {}
+  ~SectionSymbolTable() {}
+  void installSection(const SectionNode *Section);
+  const VectorType &getVector() {
+    return SymbolVector;
+  }
+  uint32_t getStringIndex(const SymbolNode *Symbol);
+  void clear() {
+    Symtab.clear();
+    SymbolMap.clear();
+    SymbolVector.clear();
+  }
+  bool empty() const {
+    return SymbolVector.empty();
+  }
+private:
+  // Cache that holds the set of uniquified symbols.
+  SymbolTable Symtab;
+  MapType SymbolMap;
+  VectorType SymbolVector;
+  void installSymbols(const Node *Nd);
+};
+
 class BinGen {
   BinGen() = delete;
   BinGen(const BinGen &) = delete;
   BinGen &operator=(const BinGen &) = delete;
 public:
-  BinGen(decode::ByteQueue *Output);
+  BinGen(decode::ByteQueue *Output,alloc::Allocator *Alloc);
 
   ~BinGen();
 
@@ -57,13 +86,14 @@ public:
 private:
   decode::WriteCursor WritePos;
   interp::ByteWriteStream *Writer;
-  alloc::Allocator *Alloc;
+  SectionSymbolTable SectionSymtab;
   bool MinimizeBlockSize = false;
   bool TraceProgress = false;
   int IndentLevel = 0;
 
-  void writeNode(const Node *Symbol);
+  void writeNode(const Node *Nd);
   void writeBlock(std::function<void()> ApplyFn);
+  void writeSymbol(const Node *Symbol);
 
   // The following are for tracing progress duing binary translation.
   TextWriter *TraceWriter = nullptr;
@@ -77,10 +107,24 @@ private:
     --IndentLevel;
     writeIndent();
   }
-  void enter(const char *Name, bool AddNewline=true);
-  void exit(const char *Name);
+  void enterInternal(const char *Name, bool AddNewline=true);
+  void enter(const char *Name, bool AddNewline=true) {
+    if (TraceProgress)
+      enterInternal(Name, AddNewline);
+  }
+  void exitInternal(const char *Name);
+  void exit(const char *Name) {
+    if (TraceProgress)
+      exitInternal(Name);
+  }
   template<class Type>
-  Type returnValue(const char *Name, Type Value);
+  Type returnValueInternal(const char *Name, Type Value);
+  template<class Type>
+  Type returnValue(const char *Name, Type Value) {
+    if (TraceProgress)
+      returnValueInternal(Name, Value);
+    return Value;
+  }
 };
 
 } // end of namespace filt

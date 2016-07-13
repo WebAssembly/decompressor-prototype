@@ -117,7 +117,7 @@
 
   (default 'data'
     (loop (varuint32 6)        # number of data segments.
-      (eval 'data_segment'))
+      (eval 'data.segment'))
   )
 
   (default 'data.segment'
@@ -147,7 +147,7 @@
   )
 
   (default 'import'
-    (loop (varuint32 6) (eval 'import_entry'))
+    (loop (varuint32 6) (eval 'import.entry'))
   )
 
   (default 'import.entry'
