@@ -92,7 +92,6 @@ struct IntegerValue {
 %token IS_BYTE_OUT   "is.byte.out"
 %token I32_CONST     "i32.const"
 %token I64_CONST     "i64.const"
-%token LIT           "lit"
 %token LOOP          "loop"
 %token LOOP_UNBOUNDED "loop.unbounded"
 %token OPENPAREN     "("
@@ -174,12 +173,12 @@ case_stmt_list
           }
         | case_stmt_list statement { // remaining statements of case.
             $$ = $1;
-            Node *StmtList = $1->getKid(1);
+            Node *StmtList = $1->getLastKid();
             auto *Seq = dyn_cast<SequenceNode>(StmtList);
             if (Seq == nullptr) {
               Seq = Driver.create<SequenceNode>();
               Seq->append(StmtList);
-              $1->setKid(1, Seq);
+              $1->setLastKid(Seq);
             }
             Seq->append($2);
           }
@@ -203,12 +202,12 @@ declaration_stmt_list
           }
         | declaration_stmt_list statement {
             $$ = $1;
-            Node *StmtList = $1->getKid(1);
+            Node *StmtList = $1->getLastKid();
             auto *Seq = dyn_cast<SequenceNode>(StmtList);
             if (Seq == nullptr) {
               Seq = Driver.create<SequenceNode>();
               Seq->append(StmtList);
-              $1->setKid(1, Seq);
+              $1->setLastKid(Seq);
             }
             Seq->append($2);
           }
@@ -232,12 +231,12 @@ block_stmt_list
           }
         | block_stmt_list statement {
             $$ = $1;
-            Node *StmtList = $1->getKid(0);
+            Node *StmtList = $1->getLastKid();
             auto *Seq = dyn_cast<SequenceNode>(StmtList);
             if (Seq == nullptr) {
               Seq = Driver.create<SequenceNode>();
               Seq->append(StmtList);
-              $1->setKid(0, Seq);
+              $1->setLastKid(Seq);
             }
             Seq->append($2);
           }
@@ -270,9 +269,6 @@ expression
           }
         | "(" "i64.const" integer ")" {
             $$ = Driver.create<I64ConstNode>($3);
-          }
-        | "(" "lit" integer ")" {
-            $$ = Driver.create<LitNode>($3);
           }
         | "(" "map" expression expression ")" {
             $$ = Driver.create<MapNode>($3, $4);
@@ -372,16 +368,22 @@ integer : INTEGER {
           }
 
 loop_body
-        : "loop" expression {
-           $$ = Driver.create<LoopNode>();
-            $$->append($2);
+        : "loop" expression statement {
+            $$ = Driver.create<LoopNode>($2, $3);
           }
-        | "loop.unbounded" {
-            $$ = Driver.create<LoopUnboundedNode>();
+        | "loop.unbounded" statement {
+            $$ = Driver.create<LoopUnboundedNode>($2);
           }
         | loop_body statement {
             $$ = $1;
-            $$->append($2);
+            Node *StmtList = $1->getLastKid();
+            auto *Seq = dyn_cast<SequenceNode>(StmtList);
+            if (Seq == nullptr) {
+              Seq = Driver.create<SequenceNode>();
+              Seq->append(StmtList);
+              $1->setLastKid(Seq);
+            }
+            Seq->append($2);
           }
         ;
 
@@ -450,12 +452,12 @@ stream_conv_stmt_list
           }
         | stream_conv_stmt_list statement {
             $$ = $1;
-            Node *StmtList = $1->getKid(0);
+            Node *StmtList = $1->getLastKid();
             auto *Seq = dyn_cast<SequenceNode>(StmtList);
             if (Seq == nullptr) {
               Seq = Driver.create<SequenceNode>();
               Seq->append(StmtList);
-              $1->setKid(0, Seq);
+              $1->setLastKid(Seq);
             }
             Seq->append($2);
           }
