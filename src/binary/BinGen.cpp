@@ -41,6 +41,39 @@ IntType getIntegerValue(Node *N) {
 
 } // end of anonymous namespace
 
+void SectionSymbolTable::installSymbols(const Node *Nd) {
+  if (const SymbolNode *Symbol = dyn_cast<SymbolNode>(Nd)) {
+    std::string SymName = Symbol->getStringName();
+    SymbolNode *Sym = Symtab.getSymbolDefinition(SymName);
+    if (SymbolMap.count(Sym) == 0) {
+      SymbolMap[Sym] = SymbolMap.size();
+    }
+  }
+  for (const auto *Kid : *Nd)
+    installSymbols(Kid);
+}
+
+void SectionSymbolTable::installSection(const SectionNode *Section) {
+  // Install all kids but the first (i.e. the section name), since section
+  // names must be explicitly defined.
+  for (size_t i = 1, len = Section->getNumKids(); i < len; ++i)
+    installSymbols(Section->getKid(i));
+  std::unordered_map<uint32_t, const SymbolNode *> InverseMap;
+  for (const auto &Pair : SymbolMap)
+    InverseMap[Pair.second] = Pair.first;
+  for (size_t i = 0, len = SymbolMap.size(); i < len; ++i)
+    SymbolVector.push_back(InverseMap[i]);
+}
+
+uint32_t SectionSymbolTable::getStringIndex(const SymbolNode *Symbol) {
+  std::string SymName = Symbol->getStringName();
+  SymbolNode *Sym = Symtab.getSymbolDefinition(SymName);
+  const auto Iter = SymbolMap.find(Sym);
+  if (Iter == SymbolMap.end())
+    fatal("Can't find string index for: " + Sym->getStringName());
+  return Iter->second;
+}
+
 BinGen::BinGen(decode::ByteQueue *Output, Allocator *Alloc) :
     WritePos(Output), SectionSymtab(Alloc) {
   Writer = Alloc->create<ByteWriteStream>();
