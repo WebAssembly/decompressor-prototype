@@ -158,7 +158,7 @@ all: libs execs test-execs
 ###### Cleaning Rules #######
 
 clean: clean-tl-objs clean-parser clean-sexp-objs clean-strm-objs \
-       clean-interp-objs clean-bingen-objs clean-execs clean-libs \
+       clean-interp-objs clean-binary-objs clean-execs clean-libs \
        clean-test-execs
 
 .PHONY: clean
@@ -173,10 +173,10 @@ clean-libs:
 
 .PHONY: clean-libs
 
-clean bingen-objs:
+clean-binary-objs:
 	rm -f $(BINARY_OBJS)
 
-.PHONY: bingen-objs
+.PHONY: clean-binary-objs
 
 clean-tl-objs:
 	rm -f $(TL_OBJS)
@@ -234,9 +234,9 @@ gen-parser: $(PARSER_DIR)/Parser.tab.cpp
 
 ###### Compiliing binary generation Sources ######
 
-bingen-objs: $(BINARY_OBJS)
+binary-objs: $(BINARY_OBJS)
 
-.PHONY: bingen-objs
+.PHONY: binary-objs
 
 $(BINARY_OBJS): | $(BINARY_OBJDIR)
 
