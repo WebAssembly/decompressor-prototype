@@ -27,6 +27,7 @@
 namespace wasm {
 
 using namespace alloc;
+using namespace decode;
 
 namespace filt {
 

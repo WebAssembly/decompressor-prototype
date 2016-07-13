@@ -247,7 +247,6 @@ void TextWriter::writeNodeKidsAbbrev(const Node *Nd, bool EmbeddedInParent) {
     KidsSameLine = MaxKidCountSameLine[int(Type)];
   Node *LastKid = Nd->getLastKid();
   int HasHiddenSeq = HasHiddenSeqSet.count(Type);
-  bool ForceNewline = false;
   for (auto *Kid : *Nd) {
     if ((HasHiddenSeq && Kid == LastKid && isa<SequenceNode>(LastKid))
         || NeverSameLine.count(Kid->getType())) {
@@ -262,7 +261,6 @@ void TextWriter::writeNodeKidsAbbrev(const Node *Nd, bool EmbeddedInParent) {
     }
     if (Count == KidsSameLine) {
       writeSpace();
-      ForceNewline = Count < NumKids;
       writeNode(Kid, false);
       if (Kid != LastKid)
         fprintf(File, " ...");
@@ -272,7 +270,10 @@ void TextWriter::writeNodeKidsAbbrev(const Node *Nd, bool EmbeddedInParent) {
       fprintf(File, " ...");
       return;
     }
+    writeSpace();
     writeNode(Kid, false);
+    if (Kid != LastKid)
+      fprintf(File, " ...");
     return;
   }
 }

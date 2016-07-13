@@ -57,18 +57,18 @@
   /* Formatting */                                                             \
   X(Uint32NoArgs,      0x20, "uint32",           "uint32NoArgs",    0, 0)      \
   X(Uint32OneArg,      0x21, "uint32",           "uint32OneArg",    1, 0)      \
-  X(Uint8NoArgs,       0x22, "uint8",            "uint8NoArgs",     0, 0)      \
-  X(Uint8OneArg,       0x23, "uint8",            "uint8OneArg",     1, 0)      \
-  X(Uint64NoArgs,      0x24, "uint64",           "uint64NoArgs",    0, 0)      \
-  X(Uint64OneArg,      0x25, "uint64",           "uint64OneArg",    1, 0)      \
+  X(Uint64NoArgs,      0x22, "uint64",           "uint64NoArgs",    0, 0)      \
+  X(Uint64OneArg,      0x23, "uint64",           "uint64OneArg",    1, 0)      \
+  X(Uint8NoArgs,       0x24, "uint8",            "uint8NoArgs",     0, 0)      \
+  X(Uint8OneArg,       0x25, "uint8",            "uint8OneArg",     1, 0)      \
   X(Varint32NoArgs,    0x26, "varint32",         "varint32NoArgs",  0, 0)      \
   X(Varint32OneArg,    0x27, "varint32",         "varint32OneArg",  1, 0)      \
   X(Varint64NoArgs,    0x28, "varint64",         "varint64NoArgs",  0, 0)      \
   X(Varint64OneArg,    0x29, "varint64",         "varint64OneArg",  1, 0)      \
-  X(Varuint32NoArgs,   0x2c, "varuint32",        "varuint32NoArgs", 0, 0)      \
-  X(Varuint32OneArg,   0x2d, "varuint32",        "varuint32OneArg", 1, 0)      \
-  X(Varuint64NoArgs,   0x2e, "varuint64",        "varuint64NoArgs", 0, 0)      \
-  X(Varuint64OneArg,   0x2f, "varuint64",        "varuint64OneArg", 1, 0)      \
+  X(Varuint32NoArgs,   0x2a, "varuint32",        "varuint32NoArgs", 0, 0)      \
+  X(Varuint32OneArg,   0x2b, "varuint32",        "varuint32OneArg", 1, 0)      \
+  X(Varuint64NoArgs,   0x2c, "varuint64",        "varuint64NoArgs", 0, 0)      \
+  X(Varuint64OneArg,   0x2d, "varuint64",        "varuint64OneArg", 1, 0)      \
                                                                                \
   /* Boolean tests */                                                          \
   X(And,               0x30, "and",              nullptr,           2, 0)      \
@@ -78,14 +78,13 @@
   X(IsByteOut,         0x34, "is.byte.out",      nullptr,           0, 0)      \
                                                                                \
   /* I/O (and tree) operations  */                                             \
+  X(Map,               0x42, "map",              nullptr,           2, 0)      \
+  X(Peek,              0x43, "peek",             nullptr,           1, 0)      \
 /*  X(AppendNoArgs,      0x40, "append",           "appendNoArgs",    0, 0) */ \
 /*  X(AppendOneArg,      0x41, "append",           "appendOneArg",    1, 0) */ \
-  X(Lit,               0x42, "lit",              nullptr,           1, 0)      \
-  X(Map,               0x43, "map",              nullptr,           2, 0)      \
-  X(Peek,              0x44, "peek",             nullptr,           1, 0)      \
-/*  X(Postorder,         0x45, "postorder",        nullptr,           1, 0) */ \
-/*  X(Preorder,          0x46, "preorder",         nullptr,           1, 0) */ \
-  X(Read,              0x47, "read",             nullptr,           1, 0)      \
+/*  X(Postorder,         0x44, "postorder",        nullptr,           1, 0) */ \
+/*  X(Preorder,          0x45, "preorder",         nullptr,           1, 0) */ \
+  X(Read,              0x46, "read",             nullptr,           1, 0)      \
                                                                                \
   /* Streams */                                                                \
 /*  X(AstToAst,          0x50, "ast.to.ast",       nullptr,           0, 0) */ \
@@ -157,7 +156,7 @@
 /*  X(IntToInt)                                                             */ \
   X(I32Const)                                                                  \
   X(I64Const)                                                                  \
-  X(Lit)                                                                       \
+  X(LoopUnbounded)                                                             \
   X(Not)                                                                       \
   X(Peek)                                                                      \
 /*  X(Postorder)                                                            */ \
@@ -182,6 +181,7 @@
   X(Default)                                                                   \
   X(Define)                                                                    \
   X(IfThen)                                                                    \
+  X(Loop)                                                                      \
   X(Map)                                                                       \
   X(Or)                                                                       \
 
@@ -189,8 +189,6 @@
 #define AST_NARYNODE_TABLE                                                     \
   X(File)                                                                      \
   X(Filter)                                                                    \
-  X(Loop)                                                                      \
-  X(LoopUnbounded)                                                             \
   X(Section)                                                                   \
   X(Sequence)                                                                  \
 
@@ -216,6 +214,8 @@
   X(Case)                                                                      \
   X(Define)                                                                    \
   X(Default)                                                                   \
+  X(Loop)                                                                      \
+  X(LoopUnbounded)                                                             \
 /*  X(IntToAst)                                                             */ \
 /*  X(IntToBit)                                                             */ \
 /*  X(IntToByte)                                                            */ \
