@@ -16,6 +16,7 @@
  */
 
 #include "Defs.h"
+#include "binary/BinGen.h"
 #include "sexp-parser/Driver.h"
 #include "stream/ByteQueue.h"
 #include "stream/FileReader.h"
@@ -55,12 +56,16 @@ void usage(const char *AppName) {
   fprintf(stderr, "  --expect-fail\tSucceed on failure/fail on success\n");
   fprintf(stderr, "  -h\t\tPrint this usage message.\n");
   fprintf(stderr, "  -i File\tFile of s-expressions ('-' implies stdin).\n");
+  fprintf(stderr, "  -m\t\tMinimize block sizes in output stream.\n");
   fprintf(stderr,
           "  -o File\tGenerated WASM binary ('-' implies stdout).\n");
   fprintf(stderr, "  -s\t\tUse C++ streams instead of C file descriptors.\n");
+  fprintf(stderr, "  -t\t\tTrace progress decompressing.\n");
 }
 
 int main(int Argc, char *Argv[]) {
+  bool TraceProgress = false;
+  bool MinimizeBlockSize = false;
   for (int i = 1; i < Argc; ++i) {
     if (Argv[i] == std::string("--expect-fail")) {
       ExpectExitFail = true;
@@ -75,6 +80,8 @@ int main(int Argc, char *Argv[]) {
         return exit_status(EXIT_FAILURE);
       }
       InputFilename = Argv[i];
+    } else if (Argv[i] == std::string("-m")) {
+      MinimizeBlockSize = true;
     } else if (Argv[i] == std::string("-o")) {
       if (++i >= Argc) {
         fprintf(stderr, "No file specified after -o option\n");
@@ -84,6 +91,8 @@ int main(int Argc, char *Argv[]) {
       OutputFilename = Argv[i];
     } else if (Argv[i] == std::string("-s")) {
         UseFileStreams = true;
+    } else if (Argv[i] == std::string("-t")) {
+        TraceProgress = true;
     } else {
       fprintf(stderr, "Unrecognized option: %s\n", Argv[i]);
       usage(Argv[0]);
@@ -93,12 +102,16 @@ int main(int Argc, char *Argv[]) {
   }
   wasm::alloc::Malloc Allocator;
   SymbolTable SymTab(&Allocator);
-  Driver FileDriver(SymTab);
-  if (!FileDriver.parse(InputFilename)) {
+  Driver Parser(SymTab);
+  if (!Parser.parse(InputFilename)) {
     fprintf(stderr, "Unable to parse s-expressions: %s\n", InputFilename);
     return exit_status(EXIT_FAILURE);
   }
   WriteBackedByteQueue Output(getOutput());
-  fprintf(stderr, "Binary conversion not implemented yet!\n");
+  BinGen Generator(&Output);
+  Generator.setTraceProgress(TraceProgress);
+  Generator.setMinimizeBlockSize(MinimizeBlockSize);
+  Generator.writePreamble();
+  Generator.writeFile(wasm::dyn_cast<FileNode>(Parser.getParsedAst()));
   return exit_status(EXIT_FAILURE);
 }

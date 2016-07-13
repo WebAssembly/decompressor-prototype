@@ -223,7 +223,6 @@ id ({letter}|{digit}|[_.])*
 "is.byte.out"     return Parser::make_IS_BYTE_OUT(Driver.getLoc());
 "i32.const"       return Parser::make_I32_CONST(Driver.getLoc());
 "i64.const"       return Parser::make_I64_CONST(Driver.getLoc());
-"lit"             return Parser::make_LIT(Driver.getLoc());
 "loop.unbounded"  return Parser::make_LOOP_UNBOUNDED(Driver.getLoc());
 "loop"            return Parser::make_LOOP(Driver.getLoc());
 "map"             return Parser::make_MAP(Driver.getLoc());

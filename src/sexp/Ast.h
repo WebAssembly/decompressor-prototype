@@ -48,8 +48,6 @@
 
 namespace wasm {
 
-using namespace decode;
-
 namespace filt {
 
 using ExternalName = std::string;
@@ -148,6 +146,10 @@ public:
 
   virtual void setKid(int Index, Node *N) = 0;
 
+  void setLastKid(Node *N) {
+    setKid(getNumKids() - 1, N);
+  }
+
   Node *getLastKid() const {
     if (int Size = getNumKids())
       return getKid(Size-1);
@@ -214,17 +216,18 @@ class IntegerNode final : public NullaryNode {
 public:
   // Note: ValueFormat provided so that we can echo back out same
   // representation as when lexing s-expressions.
-  IntegerNode(decode::IntType Value, ValueFormat Format = ValueFormat::Decimal) :
+  IntegerNode(decode::IntType Value,
+              decode::ValueFormat Format = decode::ValueFormat::Decimal) :
       NullaryNode(alloc::Allocator::Default, OpInteger),
       Value(Value),
       Format(Format) {}
   IntegerNode(alloc::Allocator *Alloc, decode::IntType Value,
-              ValueFormat Format = ValueFormat::Decimal) :
+              decode::ValueFormat Format = decode::ValueFormat::Decimal) :
       NullaryNode(Alloc, OpInteger),
       Value(Value),
       Format(Format) {}
   ~IntegerNode() override {}
-  ValueFormat getFormat() const {
+  decode::ValueFormat getFormat() const {
     return Format;
   }
   decode::IntType getValue() const {
@@ -235,7 +238,7 @@ public:
 
 private:
   decode::IntType Value;
-  ValueFormat Format;
+  decode::ValueFormat Format;
 };
 
 class SymbolNode final : public NullaryNode {
@@ -257,7 +260,6 @@ public:
   const InternalName &getName() const {
     return Name;
   }
-  const std::string getStringName() const;
   const Node *getDefineDefinition() const {
     return DefineDefinition;
   }
@@ -479,10 +481,10 @@ public:
       : NaryNode(Alloc, OpSelect) {}
   static bool implementsClass(NodeType Type) { return OpSelect == Type; }
   void installFastLookup();
-  const Node *getCase(IntType Key) const;
+  const Node *getCase(decode::IntType Key) const;
 private:
   // TODO(kschimpf) Hook this up to allocator.
-  std::unordered_map<IntType, Node *> LookupMap;
+  std::unordered_map<decode::IntType, Node *> LookupMap;
 };
 
 #define X(tag)                                                                 \

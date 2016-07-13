@@ -20,6 +20,7 @@
 #ifndef DECOMPRESSOR_SRC_INTERP_INTERPSTATE_H
 #define DECOMPRESSOR_SRC_INTERP_INTERPSTATE_H
 
+#include "stream/ByteQueue.h"
 #include "stream/Cursor.h"
 #include "interp/ReadStream.h"
 #include "interp/WriteStream.h"
@@ -32,6 +33,9 @@ class TextWriter;
 
 namespace interp {
 
+static constexpr uint32_t WasmBinaryMagic = 0x6d736100;
+static constexpr uint32_t WasmBinaryVersion = 0x0b;
+
 class State {
   State() = delete;
   State(const State &) = delete;
@@ -40,6 +44,8 @@ public:
   // TODO(kschimpf): Add Output.
   State(decode::ByteQueue *Input, decode::ByteQueue *Output,
         filt::SymbolTable *Algorithms);
+
+  ~State();
 
   // Processes each section in input, and decompresses it (if applicable)
   // to the corresponding output.
@@ -84,7 +90,7 @@ private:
   // The remaining methods and fields are for tracing progress.
   bool TraceProgress = false;
   int IndentLevel = 0;
-  filt::TextWriter *TraceWriter;
+  filt::TextWriter *TraceWriter = nullptr;
 
   void writeIndent();
   void IndentBegin() {
@@ -97,12 +103,12 @@ private:
   }
   void enter(const char *Name, bool AddNewline=true);
   void exit(const char *Name);
-  IntType returnValue(const char *Name, IntType Value) {
+  decode::IntType returnValue(const char *Name, decode::IntType Value) {
     if (!TraceProgress)
       return Value;
     return returnValueInternal(Name, Value);
   }
-  IntType returnValueInternal(const char *Name, IntType Value);
+  decode::IntType returnValueInternal(const char *Name, decode::IntType Value);
   void traceStreamLocs();
 };
 
