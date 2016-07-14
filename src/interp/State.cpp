@@ -117,6 +117,7 @@ IntType State::eval(const Node *Nd) {
     case OpUndefine:
     case OpVersion:
     case OpInteger:
+    case OpUnknownSection:
       fprintf(stderr, "Evaluating not allowed: %s\n", getNodeTypeName(Type));
       fatal("Unable to evaluate filter s-expression");
       break;

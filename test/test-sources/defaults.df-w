@@ -74,7 +74,10 @@
         (case 0x35 (eval 'code.address'))
         (case 0x36 (eval 'code.address'))
       )
-      (case 0xff (block.end))
+      (case 0xff
+        (read (uint8))
+        (block.end)
+      )
     )
   )
   (default 'data'

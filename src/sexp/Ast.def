@@ -49,10 +49,12 @@
                                                                                \
   /* Constants */                                                              \
   X(Void,              0x10, "void",             nullptr,           0, 0)      \
-  X(I32Const,          0x11, "i32.const",        nullptr,           1, 0)      \
-  X(I64Const,          0x12, "i64.const",        nullptr,           1, 0)      \
-  X(U32Const,          0x13, "u32.const",        nullptr,           1, 0)      \
-  X(U64Const,          0x14, "u64.const",        nullptr,           1, 0)      \
+  X(Integer,           0x11, "integer",          nullptr,           0, 0)      \
+  X(Symbol,            0x12, "symbol",           nullptr,           0, 0)      \
+  X(I32Const,          0x13, "i32.const",        nullptr,           1, 0)      \
+  X(I64Const,          0x14, "i64.const",        nullptr,           1, 0)      \
+  X(U32Const,          0x15, "u32.const",        nullptr,           1, 0)      \
+  X(U64Const,          0x16, "u64.const",        nullptr,           1, 0)      \
                                                                                \
   /* Formatting */                                                             \
   X(Uint32NoArgs,      0x20, "uint32",           "uint32NoArgs",    0, 0)      \
@@ -113,8 +115,7 @@
   X(Version,           0x65, "version",          nullptr,           1, 0)      \
                                                                                \
   /* Internal (not opcodes in compressed file) */                              \
-  X(Integer,           0xFE, "?integer?",       nullptr,           0, 0)       \
-  X(Symbol,            0xFF, "?symbol?",        nullptr,           0, 0)       \
+  X(UnknownSection,    0xFF, "unknown.section", nullptr,           1, 0)       \
 
 //#define X(tag)
 #define AST_NULLARYNODE_TABLE                                                  \
@@ -165,6 +166,7 @@
   X(Uint32OneArg)                                                              \
   X(Uint64OneArg)                                                              \
   X(Undefine)                                                                  \
+  X(UnknownSection)                                                            \
   X(U32Const)                                                                  \
   X(U64Const)                                                                  \
   X(Uint8OneArg)                                                               \
@@ -251,5 +253,6 @@
   X(Sequence)                                                                  \
   X(Section)                                                                   \
   X(Undefine)                                                                  \
+  X(UnknownSection)                                                            \
 
 #endif // DECOMPRESSOR_SRC_AST_DEF

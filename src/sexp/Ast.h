@@ -348,7 +348,7 @@ protected:
     ~tag##Node() override {}                                                   \
     static bool implementsClass(NodeType Type) { return Op##tag == Type; }     \
   };
-  AST_UNARYNODE_TABLE
+AST_UNARYNODE_TABLE;
 #undef X
 
 class BinaryNode : public Node {

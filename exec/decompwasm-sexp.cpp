@@ -16,7 +16,7 @@
  */
 
 #include "Defs.h"
-#include "binary/BinGen.h"
+#include "binary/BinaryReader.h"
 #include "sexp-parser/Driver.h"
 #include "stream/ByteQueue.h"
 #include "stream/FileReader.h"
@@ -28,6 +28,7 @@
 #include <unistd.h>
 #include <iostream>
 
+using namespace wasm::alloc;
 using namespace wasm::filt;
 using namespace wasm::decode;
 
@@ -35,37 +36,36 @@ bool UseFileStreams = true;
 const char *InputFilename = "-";
 const char *OutputFilename = "-";
 
-std::unique_ptr<RawStream> getOutput() {
-  if (OutputFilename == std::string("-")) {
+
+std::unique_ptr<RawStream> getInput() {
+  if (InputFilename == std::string("-")) {
     if (UseFileStreams)
-      return FdWriter::create(STDOUT_FILENO, false);
+      return FdReader::create(STDIN_FILENO, false);
     else
-      return StreamWriter::create(std::cout);
+      return StreamReader::create(std::cin);
   }
   if (UseFileStreams)
-    return FileWriter::create(OutputFilename);
-  return FstreamWriter::create(OutputFilename);
+    return FileReader::create(InputFilename);
+  return FstreamReader::create(OutputFilename);
 }
 
 void usage(const char *AppName) {
   fprintf(stderr, "usage: %s [options]\n", AppName);
   fprintf(stderr, "\n");
-  fprintf(stderr, "  Convert WASM filter s-expressions to WASM binary.\n");
+  fprintf(stderr, "  Extract out filter s-expressions from WASM binary.\n");
   fprintf(stderr, "\n");
   fprintf(stderr, "Options:\n");
   fprintf(stderr, "  --expect-fail\tSucceed on failure/fail on success\n");
   fprintf(stderr, "  -h\t\tPrint this usage message.\n");
-  fprintf(stderr, "  -i File\tFile of s-expressions ('-' implies stdin).\n");
-  fprintf(stderr, "  -m\t\tMinimize block sizes in output stream.\n");
+  fprintf(stderr, "  -i File\tWasm file to read ('-' implies stdin).\n");
   fprintf(stderr,
-          "  -o File\tGenerated WASM binary ('-' implies stdout).\n");
+          "  -o File\tFile with found s-expressions ('-' implies stdout).\n");
   fprintf(stderr, "  -s\t\tUse C++ streams instead of C file descriptors.\n");
   fprintf(stderr, "  -t\t\tTrace progress decompressing.\n");
 }
 
 int main(int Argc, char *Argv[]) {
   bool TraceProgress = false;
-  bool MinimizeBlockSize = false;
   for (int i = 1; i < Argc; ++i) {
     if (Argv[i] == std::string("--expect-fail")) {
       ExpectExitFail = true;
@@ -80,8 +80,6 @@ int main(int Argc, char *Argv[]) {
         return exit_status(EXIT_FAILURE);
       }
       InputFilename = Argv[i];
-    } else if (Argv[i] == std::string("-m")) {
-      MinimizeBlockSize = true;
     } else if (Argv[i] == std::string("-o")) {
       if (++i >= Argc) {
         fprintf(stderr, "No file specified after -o option\n");
@@ -101,18 +99,16 @@ int main(int Argc, char *Argv[]) {
 
   }
   // TODO(karlschimpf) Use arena allocator once working.
-  wasm::alloc::Malloc Allocator;
-  SymbolTable SymTab(&Allocator);
-  Driver Parser(SymTab);
-  if (!Parser.parse(InputFilename)) {
-    fprintf(stderr, "Unable to parse s-expressions: %s\n", InputFilename);
+  Malloc Allocator;
+  ReadBackedByteQueue Input(getInput());
+  BinaryReader Reader(&Input, &Allocator);
+  Reader.setTraceProgress(TraceProgress);
+  FileNode *File = Reader.readFile();
+  if (File == nullptr) {
+    fprintf(stderr, "Unable to parse WASM module!\n");
     return exit_status(EXIT_FAILURE);
   }
-  WriteBackedByteQueue Output(getOutput());
-  BinGen Generator(&Output, &Allocator);
-  Generator.setTraceProgress(TraceProgress);
-  Generator.setMinimizeBlockSize(MinimizeBlockSize);
-  Generator.writePreamble();
-  Generator.writeFile(wasm::dyn_cast<FileNode>(Parser.getParsedAst()));
-  return exit_status(EXIT_SUCCESS);
+  TextWriter Writer;
+  Writer.write(stdout, File);
+  return exit_status(EXIT_FAILURE);
 }
