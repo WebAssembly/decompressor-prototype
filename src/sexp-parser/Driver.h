@@ -60,6 +60,14 @@ public:
     return Filename;
   }
 
+  bool getMaintainIntegerFormatting() const {
+    return MaintainIntegerFormatting;
+  }
+
+  void setMaintainIntegerFormatting(bool NewValue) {
+    MaintainIntegerFormatting = NewValue;
+  }
+
   void setTraceLexing(bool NewValue) {
     TraceLexing = NewValue;
   }
@@ -111,6 +119,7 @@ private:
   std::string Filename;
   bool TraceLexing = false;
   bool TraceParsing = false;
+  bool MaintainIntegerFormatting = false;
   // The location of the last token.
   location Loc;
   Node *ParsedAst = nullptr;

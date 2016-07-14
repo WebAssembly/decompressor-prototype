@@ -411,7 +411,7 @@ $(TEST_EXECDIR)/TestByteQueues: $(TEST_DIR)/TestByteQueues.cpp $(LIBS)
 ###### Testing ######
 
 test: all test-parser test-raw-streams test-byte-queues test-decompress \
-	test-decompsexp-wasm
+	test-decompsexp-wasm test-decompwasm-sexp
 	@echo "*** all tests passed ***"
 
 .PHONY: test
@@ -431,10 +431,19 @@ test-decompress: $(BUILD_EXECDIR)/decompress
 
 test-decompsexp-wasm: $(BUILD_EXECDIR)/decompsexp-wasm
 	$< -m < defaults.df | diff - $(TEST_SRCS_DIR)/defaults.wasm
+	$< < defaults.df | diff - $(TEST_SRCS_DIR)/defaults.wasm-w
 	@echo "*** sexp2wasm tests passed ***"
 
+test-decompwasm-sexp: $(BUILD_EXECDIR)/decompwasm-sexp
+	$< < test/test-sources/defaults.wasm \
+		| diff - $(TEST_SRCS_DIR)/defaults.df
+	$< < test/test-sources/defaults.wasm-w \
+		| diff - $(TEST_SRCS_DIR)/defaults.df
+	@echo "*** wasm2sexp tests passed ***"
+
 test-parser: $(TEST_EXECDIR)/TestParser
-	$< -w defaults.df | diff - $(TEST_SRCS_DIR)/defaults.df-w
+	$< -w -f defaults.df | diff - $(TEST_SRCS_DIR)/defaults.dff
+	$< -w defaults.df | diff - $(TEST_SRCS_DIR)/defaults.df
 	$< --expect-fail $(TEST_SRCS_DIR)/MismatchedParens.df 2>&1 | \
 		diff - $(TEST_SRCS_DIR)/MismatchedParens.df-out
 	@echo "*** parser tests passed ***"
