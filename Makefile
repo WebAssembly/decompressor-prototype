@@ -38,7 +38,9 @@ TL_LIB = $(LIBDIR)/$(LIBPREFIX)tl.a
 BINARY_DIR = $(SRCDIR)/binary
 BINARY_OBJDIR = $(OBJDIR)/binary
 BINARY_SRCS = \
-	BinGen.cpp
+	BinGen.cpp \
+	BinaryReader.cpp \
+	SectionSymbolTable.cpp
 
 BINARY_OBJS=$(patsubst %.cpp, $(BINARY_OBJDIR)/%.o, $(BINARY_SRCS))
 
@@ -115,7 +117,8 @@ BUILD_EXECDIR = $(BUILDDIR)/bin
 
 EXEC_SRCS = \
 	decompress.cpp \
-	decompsexp-wasm.cpp
+	decompsexp-wasm.cpp \
+	decompwasm-sexp.cpp
 
 EXECS = $(patsubst %.cpp, $(BUILD_EXECDIR)/%, $(EXEC_SRCS))
 

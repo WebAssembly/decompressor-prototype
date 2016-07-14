@@ -48,6 +48,9 @@ constexpr T const_maximum(T V, Args... args) {
   return const_max(V, const_maximum(args...));
 }
 
+static constexpr uint32_t WasmBinaryMagic = 0x6d736100;
+static constexpr uint32_t WasmBinaryVersion = 0x0b;
+
 namespace decode {
 
 using IntType = uint64_t;

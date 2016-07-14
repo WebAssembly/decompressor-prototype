@@ -15,60 +15,73 @@
  * limitations under the License.
  */
 
-// Defines a binary generator for filter s-expressions.
+// Defines how to read filter sections in a WASM file.
 
-#ifndef DECOMPRESSOR_SRC_BINARY_BINGEN_H
-#define DECOMPRESSOR_SRC_BINARY_BINGEN_H
+#ifndef DECOMPRESSOR_SRC_BINARY_BINARYREADER_H
+#define DECOMPRESSOR_SRC_BINARY_BINARYREADER_H
 
 #include "Defs.h"
 #include "binary/SectionSymbolTable.h"
 #include "stream/ByteQueue.h"
+#include "sexp/Ast.h"
+#include "sexp/TextWriter.h"
 #include "stream/Cursor.h"
-#include "interp/WriteStream.h"
+#include "interp/ReadStream.h"
 
 #include <functional>
+#include <vector>
+
+using namespace wasm::interp;
 
 namespace wasm {
 
 namespace filt {
 
-class TextWriter;
-
-class BinGen {
-  BinGen() = delete;
-  BinGen(const BinGen &) = delete;
-  BinGen &operator=(const BinGen &) = delete;
+class BinaryReader {
+  BinaryReader() = delete;
+  BinaryReader(const BinaryReader &) = delete;
+  BinaryReader &operator=(const BinaryReader &) = delete;
 public:
-  BinGen(decode::ByteQueue *Output, alloc::Allocator *Alloc);
+  BinaryReader(decode::ByteQueue *Input, alloc::Allocator *Alloc);
 
-  ~BinGen();
+  ~BinaryReader() {
+    delete TraceWriter;
+  }
 
-  void writePreamble();
+  FileNode *readFile();
 
-  void writeFile(const FileNode *File);
-  void writeSection(const SectionNode *Section);
+  SectionNode *readSection();
 
-  void setTraceProgress(bool NewValue);
-
-  void setMinimizeBlockSize(bool NewValue) {
-    MinimizeBlockSize = NewValue;
+  void setTraceProgress(bool NewValue) {
+    TraceProgress = NewValue;
   }
 
 private:
-  decode::WriteCursor WritePos;
-  interp::ByteWriteStream *Writer;
+  alloc::Allocator *Alloc;
+  interp::ByteReadStream *Reader;
+  decode::ReadCursor ReadPos;
   SectionSymbolTable SectionSymtab;
-  bool MinimizeBlockSize = false;
+  // The magic number of the input.
+  uint32_t MagicNumber;
+  // The version of the input.
+  uint32_t Version;
+  std::vector<Node *> NodeStack;
 
-  void writeNode(const Node *Nd);
-  void writeBlock(std::function<void()> ApplyFn);
-  void writeSymbol(const Node *Symbol);
+  // Reads in a name and returns the read name. Reference is only good till
+  // next call to readInternalName() or ReadExternalName().
+  InternalName &readInternalName();
+  ExternalName &readExternalName();
+
+  void readBlock(std::function<void()> ApplyFn);
+  void readSymbolTable();
+  void readNode();
 
   // The following are for tracing progress duing binary translation.
-  bool TraceProgress = false;
   int IndentLevel = 0;
+  bool TraceProgress = false;
   TextWriter *TraceWriter = nullptr;
   TextWriter *getTraceWriter();
+  void writeReadPos(FILE *File);
   void writeIndent();
   void IndentBegin() {
     writeIndent();
@@ -89,7 +102,7 @@ private:
       exitInternal(Name);
   }
   template<class Type>
-  Type returnValueInternal(const char *Name, Type Value);
+  void returnValueInternal(const char *Name, Type Value);
   template<class Type>
   Type returnValue(const char *Name, Type Value) {
     if (TraceProgress)
@@ -102,4 +115,4 @@ private:
 
 } // end of namespace wasm
 
-#endif // DECOMPRESSOR_SRC_BINARY_BINGEN_H
+#endif // DECOMPRESSOR_SRC_BINARY_BINARYREADER_H

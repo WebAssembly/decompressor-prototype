@@ -111,7 +111,7 @@
         (case 0x35 (eval 'code.address'))      # f32.store address
         (case 0x36 (eval 'code.address'))      # f64.store address
       )
-      (case 0xFF (block.end))                # end function block
+      (case 0xFF (read (uint8)) (block.end))   # end function block
     )
   )
 

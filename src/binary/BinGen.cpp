@@ -41,39 +41,6 @@ IntType getIntegerValue(Node *N) {
 
 } // end of anonymous namespace
 
-void SectionSymbolTable::installSymbols(const Node *Nd) {
-  if (const SymbolNode *Symbol = dyn_cast<SymbolNode>(Nd)) {
-    std::string SymName = Symbol->getStringName();
-    SymbolNode *Sym = Symtab.getSymbolDefinition(SymName);
-    if (SymbolMap.count(Sym) == 0) {
-      SymbolMap[Sym] = SymbolMap.size();
-    }
-  }
-  for (const auto *Kid : *Nd)
-    installSymbols(Kid);
-}
-
-void SectionSymbolTable::installSection(const SectionNode *Section) {
-  // Install all kids but the first (i.e. the section name), since section
-  // names must be explicitly defined.
-  for (size_t i = 1, len = Section->getNumKids(); i < len; ++i)
-    installSymbols(Section->getKid(i));
-  std::unordered_map<uint32_t, const SymbolNode *> InverseMap;
-  for (const auto &Pair : SymbolMap)
-    InverseMap[Pair.second] = Pair.first;
-  for (size_t i = 0, len = SymbolMap.size(); i < len; ++i)
-    SymbolVector.push_back(InverseMap[i]);
-}
-
-uint32_t SectionSymbolTable::getStringIndex(const SymbolNode *Symbol) {
-  std::string SymName = Symbol->getStringName();
-  SymbolNode *Sym = Symtab.getSymbolDefinition(SymName);
-  const auto Iter = SymbolMap.find(Sym);
-  if (Iter == SymbolMap.end())
-    fatal("Can't find string index for: " + Sym->getStringName());
-  return Iter->second;
-}
-
 BinGen::BinGen(decode::ByteQueue *Output, Allocator *Alloc) :
     WritePos(Output), SectionSymtab(Alloc) {
   Writer = Alloc->create<ByteWriteStream>();
@@ -150,6 +117,7 @@ void BinGen::writeNode(const Node *Nd) {
     getTraceWriter()->writeAbbrev(stderr, Nd);
   }
   switch (NodeType Type = Nd->getType()) {
+    case OpUnknownSection:
     case OpInteger: {
       // TODO(kschimpf) Fix this list.
       fprintf(stderr, "Misplaced s-expression: %s\n", getNodeTypeName(Type));
@@ -162,11 +130,7 @@ void BinGen::writeNode(const Node *Nd) {
     case OpOr:
     case OpNot:
     case OpBlockEndNoArgs:
-    case OpDefault:
-    case OpDefine:
     case OpError:
-    case OpEval:
-    case OpEvalDefault:
     case OpIfThen:
     case OpIfThenElse:
     case OpIsByteIn:
@@ -209,7 +173,7 @@ void BinGen::writeNode(const Node *Nd) {
           [&]() {
             const auto *Section = cast<SectionNode>(Nd);
             SectionSymtab.installSection(Section);
-            const SectionSymbolTable::VectorType &Vector =
+            const SectionSymbolTable::IndexLookupType &Vector =
                 SectionSymtab.getVector();
             Writer->writeVaruint32(Vector.size(), WritePos);
             for (const SymbolNode *Symbol : Vector)
@@ -232,31 +196,58 @@ void BinGen::writeNode(const Node *Nd) {
       break;
     }
     case OpSymbol: {
-      const SymbolNode *Sym = cast<SymbolNode>(Nd);
-      Writer->writeVaruint32(SectionSymtab.getStringIndex(Sym), WritePos);
+      SymbolNode *Sym = cast<SymbolNode>(const_cast<Node*>(Nd));
+      Writer->writeVaruint32(SectionSymtab.getSymbolIndex(Sym), WritePos);
       break;
     }
     case OpUint32OneArg:
     case OpUint64OneArg:
     case OpUint8OneArg:
-    case OpU32Const:
-    case OpU64Const:
     case OpVarint32OneArg:
     case OpVarint64OneArg:
     case OpVaruint32OneArg:
-    case OpVaruint64OneArg:
-    case OpVersion: {
-      // Operations that get an unsigned integer argument.
+    case OpVaruint64OneArg: {
+      // Operations that get a value in [1, 64]
+      Writer->writeUint8(Type, WritePos);
+      Writer->writeUint8(getIntegerValue(Nd->getKid(0)), WritePos);
+      break;
+    }
+    case OpU32Const: {
       Writer->writeUint8(Type, WritePos);
       Writer->writeVaruint32(getIntegerValue(Nd->getKid(0)), WritePos);
       break;
     }
-    case OpI32Const:
-    case OpI64Const: {
-      // Operations that get a signed integer argument.
+    case OpU64Const: {
+      Writer->writeUint8(Type, WritePos);
+      Writer->writeVaruint64(getIntegerValue(Nd->getKid(0)), WritePos);
+      break;
+    }
+    case OpVersion: {
+      Writer->writeUint8(Type, WritePos);
+      Writer->writeVaruint32(getIntegerValue(Nd->getKid(0)), WritePos);
+      break;
+    }
+    case OpI32Const: {
       Writer->writeUint8(Type, WritePos);
       Writer->writeVarint32(getIntegerValue(Nd->getKid(0)), WritePos);
       break;
+    }
+    case OpI64Const: {
+      Writer->writeUint8(Type, WritePos);
+      Writer->writeVarint64(getIntegerValue(Nd->getKid(0)), WritePos);
+      break;
+    }
+    case OpEval:
+    case OpEvalDefault: {
+      Writer->writeUint8(Type, WritePos);
+      writeNode(Nd->getKid(0));
+      break;
+    }
+    case OpDefault:
+    case OpDefine: {
+      writeNode(Nd->getKid(1));
+      Writer->writeUint8(Type, WritePos);
+      writeNode(Nd->getKid(0));
     }
   }
   if (TraceProgress)

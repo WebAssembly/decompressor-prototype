@@ -33,9 +33,6 @@ class TextWriter;
 
 namespace interp {
 
-static constexpr uint32_t WasmBinaryMagic = 0x6d736100;
-static constexpr uint32_t WasmBinaryVersion = 0x0b;
-
 class State {
   State() = delete;
   State(const State &) = delete;
