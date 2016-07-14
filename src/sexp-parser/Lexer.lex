@@ -123,7 +123,10 @@ static Parser::symbol_type make_SignedInteger(Driver &Driver,
   IntType UnsignedValue = read_Integer(Name, 1);
   IntegerValue Value;
   Value.Value = IntType(- SignedIntType(UnsignedValue));
-  Value.Format = ValueFormat::SignedDecimal;
+  Value.Format =
+      Driver.getMaintainIntegerFormatting()
+      ? ValueFormat::SignedDecimal
+      : ValueFormat::Decimal;
   return Parser::make_INTEGER(Value, Driver.getLoc());
 }
 
@@ -170,7 +173,10 @@ static Parser::symbol_type make_HexInteger(Driver &Driver,
   }
   IntegerValue Value;
   Value.Value = HexValue;
-  Value.Format = ValueFormat::Hexidecimal;
+  Value.Format =
+      Driver.getMaintainIntegerFormatting()
+      ? ValueFormat::Hexidecimal
+      : ValueFormat::Decimal;
   return Parser::make_INTEGER(Value, Driver.getLoc());
 }
 

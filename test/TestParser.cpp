@@ -33,7 +33,8 @@ void usage(const char *AppName) {
   fprintf(stderr, "  Parses filter files (stdin if none).\n");
   fprintf(stderr, "\n");
   fprintf(stderr, "Options:\n");
-  fprintf(stderr, "  --expect-fail\tSucceed on failure/fail on success\n");
+  fprintf(stderr, "  --expect-fail\tSucceed on failure/fail on success.\n");
+  fprintf(stderr, "  -f\t\tMaintain integer format when reading.\n");
   fprintf(stderr, "  -h\t\tPrint this usage message.\n");
   fprintf(stderr, "  -l\t\tTrace lexing of file(s).\n");
   fprintf(stderr, "  -p\t\tTrace parsing of file(s).\n");
@@ -53,6 +54,8 @@ int main(int Argc, char *Argv[]) {
       Driver.setTraceParsing(true);
     else if (Argv[i] == std::string("-l"))
       Driver.setTraceLexing(true);
+    else if (Argv[i] == std::string("-f"))
+      Driver.setMaintainIntegerFormatting(true);
     else if (Argv[i] == std::string("--expect-fail"))
       ExpectExitFail = true;
     else if (Argv[i] == std::string("-t"))
