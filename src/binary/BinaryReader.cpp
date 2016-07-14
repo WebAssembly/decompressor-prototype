@@ -25,11 +25,6 @@ namespace wasm {
 
 namespace filt {
 
-BinaryReader::BinaryReader(decode::ByteQueue *Input, alloc::Allocator *Alloc) :
-    Alloc(Alloc), ReadPos(Input), SectionSymtab(Alloc) {
-  Reader = Alloc->create<ByteReadStream>();
-}
-
 TextWriter *BinaryReader::getTraceWriter() {
   if (TraceWriter == nullptr)
     TraceWriter = new TextWriter();
@@ -72,6 +67,170 @@ void BinaryReader::enterInternal(const char *Name, bool AddNewline) {
 void BinaryReader::exitInternal(const char *Name) {
   IndentEnd();
   fprintf(stderr, "<- %s\n", Name);
+}
+
+BinaryReader::BinaryReader(decode::ByteQueue *Input, alloc::Allocator *Alloc) :
+    Alloc(Alloc), ReadPos(Input), SectionSymtab(Alloc) {
+  Reader = Alloc->create<ByteReadStream>();
+}
+
+template<class T>
+void BinaryReader::readNullary() {
+  auto *Node = Alloc->create<T>();
+  if (TraceProgress) {
+    writeIndent();
+    getTraceWriter()->writeAbbrev(stderr, Node);
+  }
+  NodeStack.push_back(Node);
+}
+
+template<class T>
+void BinaryReader::readUnary() {
+  if (NodeStack.size() < 1)
+    fatal("Can't find arguments for s-expression");
+  Node *Arg = NodeStack.back();
+  NodeStack.pop_back();
+  auto *Node = Alloc->create<T>(Arg);
+  if (TraceProgress) {
+    writeIndent();
+    getTraceWriter()->writeAbbrev(stderr, Node);
+  }
+  NodeStack.push_back(Node);
+}
+
+template<class T>
+void BinaryReader::readUnarySymbol() {
+  auto *Symbol =
+      SectionSymtab.getIndexSymbol(Reader->readVaruint32(ReadPos));
+  auto *Node = Alloc->create<T>(Symbol);
+  if (TraceProgress) {
+    writeIndent();
+    getTraceWriter()->writeAbbrev(stderr, Node);
+  }
+  NodeStack.push_back(Node);
+}
+
+template<class T>
+void BinaryReader::readUnaryUint8() {
+  auto *Number = Alloc->create<IntegerNode>(Reader->readUint8(ReadPos));
+  auto *Node = Alloc->create<T>(Number);
+  if (TraceProgress) {
+    writeIndent();
+    getTraceWriter()->writeAbbrev(stderr, Node);
+  }
+  NodeStack.push_back(Node);
+}
+
+template<class T>
+void BinaryReader::readUnaryVarint32() {
+  auto *Number = Alloc->create<IntegerNode>(Reader->readVarint32(ReadPos));
+  auto *Node = Alloc->create<T>(Number);
+  if (TraceProgress) {
+    writeIndent();
+    getTraceWriter()->writeAbbrev(stderr, Node);
+  }
+  NodeStack.push_back(Node);
+}
+
+
+template<class T>
+void BinaryReader::readUnaryVarint64() {
+  auto *Number = Alloc->create<IntegerNode>(Reader->readVarint64(ReadPos));
+  auto *Node = Alloc->create<T>(Number);
+  if (TraceProgress) {
+    writeIndent();
+    getTraceWriter()->writeAbbrev(stderr, Node);
+  }
+  NodeStack.push_back(Node);
+}
+
+template<class T>
+void BinaryReader::readUnaryVaruint32() {
+  auto *Number = Alloc->create<IntegerNode>(Reader->readVaruint32(ReadPos));
+  auto *Node = Alloc->create<T>(Number);
+  if (TraceProgress) {
+    writeIndent();
+    getTraceWriter()->writeAbbrev(stderr, Node);
+  }
+  NodeStack.push_back(Node);
+}
+
+template<class T>
+void BinaryReader::readUnaryVaruint64() {
+  auto *Number =
+      Alloc->create<IntegerNode>(Reader->readVarint64(ReadPos));
+  auto *Node = Alloc->create<T>(Number);
+  if (TraceProgress) {
+    writeIndent();
+    getTraceWriter()->writeAbbrev(stderr, Node);
+  }
+  NodeStack.push_back(Node);
+}
+
+template<class T>
+void BinaryReader::readBinary() {
+  if (NodeStack.size() < 2)
+    fatal("Can't find arguments for s-expression");
+  Node *Arg2 = NodeStack.back();
+  NodeStack.pop_back();
+  Node *Arg1 = NodeStack.back();
+  NodeStack.pop_back();
+  auto *Node = Alloc->create<T>(Arg1, Arg2);
+  if (TraceProgress) {
+    writeIndent();
+    getTraceWriter()->writeAbbrev(stderr, Node);
+  }
+  NodeStack.push_back(Node);
+}
+
+template<class T>
+void BinaryReader::readBinarySymbol() {
+  auto *Symbol =
+      SectionSymtab.getIndexSymbol(Reader->readVaruint32(ReadPos));
+  auto *Body = NodeStack.back();
+  NodeStack.pop_back();
+  auto *Node = Alloc->create<T>(Symbol, Body);
+  if (TraceProgress) {
+    writeIndent();
+    getTraceWriter()->writeAbbrev(stderr, Node);
+  }
+  NodeStack.push_back(Node);
+}
+
+template<class T>
+void BinaryReader::readTernary() {
+  if (NodeStack.size() < 3)
+    fatal("Can't find arguments for s-expression");
+  Node *Arg3 = NodeStack.back();
+  NodeStack.pop_back();
+  Node *Arg2 = NodeStack.back();
+  NodeStack.pop_back();
+  Node *Arg1 = NodeStack.back();
+  NodeStack.pop_back();
+  auto *Node = Alloc->create<T>(Arg1, Arg2, Arg3);
+  if (TraceProgress) {
+    writeIndent();
+    getTraceWriter()->writeAbbrev(stderr, Node);
+  }
+  NodeStack.push_back(Node);
+}
+
+template<class T>
+void BinaryReader::readNary() {
+  uint32_t NumKids = Reader->readVaruint32(ReadPos);
+  size_t StackSize = NodeStack.size();
+  if (StackSize < NumKids)
+    fatal("Can't find arguments for s-expression");
+  auto *Node = Alloc->create<T>();
+  for (size_t i = StackSize - NumKids; i < StackSize; ++i)
+    Node->append(NodeStack[i]);
+  for (uint32_t i = 0; i < NumKids; ++i)
+    NodeStack.pop_back();
+  if (TraceProgress) {
+    writeIndent();
+    getTraceWriter()->writeAbbrev(stderr, Node);
+  }
+  NodeStack.push_back(Node);
 }
 
 FileNode *BinaryReader::readFile() {
@@ -194,43 +353,18 @@ void BinaryReader::readNode() {
   enter("readNode");
   NodeType Opcode = (NodeType)Reader->readUint8(ReadPos);
   switch(Opcode) {
-    case OpAnd: {
-      if (NodeStack.size() < 2)
-        fatal("Can't find arguments for and s-expression");
-      Node *Arg2 = NodeStack.back();
-      NodeStack.pop_back();
-      Node *Arg1 = NodeStack.back();
-      NodeStack.pop_back();
-      auto *Test = Alloc->create<AndNode>(Arg1, Arg2);
-      if (TraceProgress) {
-        writeIndent();
-        getTraceWriter()->writeAbbrev(stderr, Test);
-      }
-      NodeStack.push_back(Test);
+    case OpAnd:
+      readBinary<AndNode>();
       break;
-    }
-    case OpBlock: {
-      if (NodeStack.size() < 1)
-        fatal("Can't find arguments for block s-expression");
-      Node *Arg1 = NodeStack.back();
-      NodeStack.pop_back();
-      auto *Block = Alloc->create<BlockNode>(Arg1);
-      if (TraceProgress) {
-        writeIndent();
-        getTraceWriter()->writeAbbrev(stderr, Block);
-      }
-      NodeStack.push_back(Block);
+    case OpBlock:
+      readUnary<BlockNode>();
       break;
-    }
-    case OpBlockEndNoArgs: {
-      auto *End = Alloc->create<BlockEndNoArgsNode>();
-      if (TraceProgress) {
-        writeIndent();
-        getTraceWriter()->writeAbbrev(stderr, End);
-      }
-      NodeStack.push_back(End);
+    case OpBlockEndNoArgs:
+      readNullary<BlockEndNoArgsNode>();
       break;
-    }
+    case OpByteToByte:
+      readUnary<ByteToByteNode>();
+      break;
     case OpCase: {
       auto *Key =
           Alloc->create<IntegerNode>(Reader->readVarint32(ReadPos));
@@ -244,441 +378,130 @@ void BinaryReader::readNode() {
       NodeStack.push_back(Case);
       break;
     }
-    case OpDefault: {
-      auto *Symbol =
-          SectionSymtab.getIndexSymbol(Reader->readVaruint32(ReadPos));
-      auto *Body = NodeStack.back();
-      NodeStack.pop_back();
-      auto *Default = Alloc->create<DefaultNode>(Symbol, Body);
-      if (TraceProgress) {
-        writeIndent();
-        getTraceWriter()->writeAbbrev(stderr, Default);
-      }
-      NodeStack.push_back(Default);
+    case OpDefault:
+      readBinarySymbol<DefaultNode>();
       break;
-    }
-    case OpDefine: {
-      auto *Symbol =
-          SectionSymtab.getIndexSymbol(Reader->readVaruint32(ReadPos));
-      auto *Body = NodeStack.back();
-      NodeStack.pop_back();
-      auto *Define = Alloc->create<DefineNode>(Symbol, Body);
-      if (TraceProgress) {
-        writeIndent();
-        getTraceWriter()->writeAbbrev(stderr, Define);
-      }
-      NodeStack.push_back(Define);
+    case OpDefine:
+      readBinarySymbol<DefineNode>();
       break;
-    }
-    case OpEval: {
-      SymbolNode *Symbol =
-          SectionSymtab.getIndexSymbol(Reader->readVaruint32(ReadPos));
-      auto *Eval = Alloc->create<EvalNode>(Symbol);
-      if (TraceProgress) {
-        writeIndent();
-        getTraceWriter()->writeAbbrev(stderr, Eval);
-      }
-      NodeStack.push_back(Eval);
+    case OpError:
+      readNullary<ErrorNode>();
       break;
-    };
-    case OpEvalDefault: {
-      SymbolNode *Symbol =
-          SectionSymtab.getIndexSymbol(Reader->readVaruint32(ReadPos));
-      auto *Eval = Alloc->create<EvalDefaultNode>(Symbol);
-      if (TraceProgress) {
-        writeIndent();
-        getTraceWriter()->writeAbbrev(stderr, Eval);
-      }
-      NodeStack.push_back(Eval);
+    case OpEval:
+      readUnarySymbol<EvalNode>();
       break;
-    };
-    case OpIfThen: {
-      if (NodeStack.size() < 2)
-        fatal("Can't find arguments for if-then s-expression");
-      Node *Arg2 = NodeStack.back();
-      NodeStack.pop_back();
-      Node *Arg1 = NodeStack.back();
-      NodeStack.pop_back();
-      auto *If = Alloc->create<IfThenNode>(Arg1, Arg2);
-      if (TraceProgress) {
-        writeIndent();
-        getTraceWriter()->writeAbbrev(stderr, If);
-      }
-      NodeStack.push_back(If);
-      break;
-    }
-    case OpIfThenElse: {
-      if (NodeStack.size() < 3)
-        fatal("Can't find arguments for if-then-else s-expression");
-      Node *Arg3 = NodeStack.back();
-      NodeStack.pop_back();
-      Node *Arg2 = NodeStack.back();
-      NodeStack.pop_back();
-      Node *Arg1 = NodeStack.back();
-      NodeStack.pop_back();
-      auto *If = Alloc->create<IfThenElseNode>(Arg1, Arg2, Arg3);
-      if (TraceProgress) {
-        writeIndent();
-        getTraceWriter()->writeAbbrev(stderr, If);
-      }
-      NodeStack.push_back(If);
-      break;
-    }
-    case OpIsByteIn: {
-      auto *Test = Alloc->create<IsByteInNode>();
-      if (TraceProgress) {
-        writeIndent();
-        getTraceWriter()->writeAbbrev(stderr, Test);
-      }
-      NodeStack.push_back(Test);
-      break;
-    }
-    case OpIsByteOut: {
-      auto *Test = Alloc->create<IsByteOutNode>();
-      if (TraceProgress) {
-        writeIndent();
-        getTraceWriter()->writeAbbrev(stderr, Test);
-      }
-      NodeStack.push_back(Test);
-      break;
-    }
-    case OpI32Const: {
-      auto *Number =
-          Alloc->create<IntegerNode>(Reader->readVarint32(ReadPos));
-      auto *Constant = Alloc->create<I32ConstNode>(Number);
-      if (TraceProgress) {
-        writeIndent();
-        getTraceWriter()->writeAbbrev(stderr, Constant);
-      }
-      NodeStack.push_back(Constant);
-      break;
-    }
-    case OpI64Const: {
-      auto *Number =
-          Alloc->create<IntegerNode>(Reader->readVarint64(ReadPos));
-      auto *Constant = Alloc->create<I64ConstNode>(Number);
-      if (TraceProgress) {
-        writeIndent();
-        getTraceWriter()->writeAbbrev(stderr, Constant);
-      }
-      NodeStack.push_back(Constant);
-      break;
-    }
-    case OpLoop: {
-      if (NodeStack.size() < 2)
-        fatal("Can't find arguments for loop s-expression");
-      Node *Arg2 = NodeStack.back();
-      NodeStack.pop_back();
-      Node *Arg1 = NodeStack.back();
-      NodeStack.pop_back();
-      auto *Loop = Alloc->create<LoopNode>(Arg1, Arg2);
-      if (TraceProgress) {
-        writeIndent();
-        getTraceWriter()->writeAbbrev(stderr, Loop);
-      }
-      NodeStack.push_back(Loop);
-      break;
-    }
-    case OpLoopUnbounded: {
-      if (NodeStack.size() < 1)
-        fatal("Can't find arguments for unbounded loop s-expression");
-      Node *Arg1 = NodeStack.back();
-      NodeStack.pop_back();
-      auto *Loop = Alloc->create<LoopUnboundedNode>(Arg1);
-      if (TraceProgress) {
-        writeIndent();
-        getTraceWriter()->writeAbbrev(stderr, Loop);
-      }
-      NodeStack.push_back(Loop);
-      break;
-    }
-    case OpOr: {
-      if (NodeStack.size() < 2)
-        fatal("Can't find arguments for or s-expression");
-      Node *Arg2 = NodeStack.back();
-      NodeStack.pop_back();
-      Node *Arg1 = NodeStack.back();
-      NodeStack.pop_back();
-      auto *Test = Alloc->create<OrNode>(Arg1, Arg2);
-      if (TraceProgress) {
-        writeIndent();
-        getTraceWriter()->writeAbbrev(stderr, Test);
-      }
-      NodeStack.push_back(Test);
-      break;
-    }
-    case OpPeek: {
-      if (NodeStack.size() < 1)
-        fatal("Can't find arguments for peek s-expression");
-      Node *Arg1 = NodeStack.back();
-      NodeStack.pop_back();
-      auto *Peek = Alloc->create<PeekNode>(Arg1);
-      if (TraceProgress) {
-        writeIndent();
-        getTraceWriter()->writeAbbrev(stderr, Peek);
-      }
-      NodeStack.push_back(Peek);
-      break;
-    }
-    case OpNot: {
-      if (NodeStack.size() < 1)
-        fatal("Can't find arguments for not s-expression");
-      Node *Arg1 = NodeStack.back();
-      NodeStack.pop_back();
-      auto *Test = Alloc->create<NotNode>(Arg1);
-      if (TraceProgress) {
-        writeIndent();
-        getTraceWriter()->writeAbbrev(stderr, Test);
-      }
-      NodeStack.push_back(Test);
-      break;
-    }
-    case OpMap: {
-      if (NodeStack.size() < 2)
-        fatal("Can't find arguments for map s-expression");
-      Node *Arg2 = NodeStack.back();
-      NodeStack.pop_back();
-      Node *Arg1 = NodeStack.back();
-      NodeStack.pop_back();
-      auto *Expression = Alloc->create<MapNode>(Arg1, Arg2);
-      if (TraceProgress) {
-        writeIndent();
-        getTraceWriter()->writeAbbrev(stderr, Expression);
-      }
-      NodeStack.push_back(Expression);
-      break;
-    }
-    case OpRead: {
-      if (NodeStack.size() < 1)
-        fatal("Can't find arguments for read s-expression");
-      Node *Arg1 = NodeStack.back();
-      NodeStack.pop_back();
-      auto *Read = Alloc->create<ReadNode>(Arg1);
-      if (TraceProgress) {
-        writeIndent();
-        getTraceWriter()->writeAbbrev(stderr, Read);
-      }
-      NodeStack.push_back(Read);
-      break;
-    }
-    case OpSelect: {
-      uint32_t NumKids = Reader->readVaruint32(ReadPos);
-      size_t StackSize = NodeStack.size();
-      if (StackSize < NumKids)
-        fatal("Can't find arguments for select s-expression");
-      auto *Select = Alloc->create<SelectNode>();
-      for (size_t i = StackSize - NumKids; i < StackSize; ++i)
-        Select->append(NodeStack[i]);
-      for (uint32_t i = 0; i < NumKids; ++i)
-        NodeStack.pop_back();
-      if (TraceProgress) {
-        writeIndent();
-        getTraceWriter()->writeAbbrev(stderr, Select);
-      }
-      NodeStack.push_back(Select);
-      break;
-    }
-    case OpSequence: {
-      uint32_t NumKids = Reader->readVaruint32(ReadPos);
-      size_t StackSize = NodeStack.size();
-      if (StackSize < NumKids)
-        fatal("Can't find arguments for sequence s-expression");
-      auto *Seq = Alloc->create<SequenceNode>();
-      for (size_t i = StackSize - NumKids; i < StackSize; ++i)
-        Seq->append(NodeStack[i]);
-      for (uint32_t i = 0; i < NumKids; ++i)
-        NodeStack.pop_back();
-      if (TraceProgress) {
-        writeIndent();
-        getTraceWriter()->writeAbbrev(stderr, Seq);
-      }
-      NodeStack.push_back(Seq);
-      break;
-    }
-    case OpUint32NoArgs: {
-      auto *Format = Alloc->create<Uint8NoArgsNode>();
-      if (TraceProgress) {
-        writeIndent();
-        getTraceWriter()->writeAbbrev(stderr, Format);
-      }
-      NodeStack.push_back(Format);
-      break;
-    }
-    case OpUint32OneArg: {
-      auto *BitCount =
-          Alloc->create<IntegerNode>(Reader->readUint8(ReadPos));
-      auto *Format = Alloc->create<Uint32OneArgNode>(BitCount);
-      if (TraceProgress) {
-        writeIndent();
-        getTraceWriter()->writeAbbrev(stderr, Format);
-      }
-      NodeStack.push_back(Format);
-      break;
-    }
-    case OpUint64NoArgs: {
-      auto *Format = Alloc->create<Uint64NoArgsNode>();
-      if (TraceProgress) {
-        writeIndent();
-        getTraceWriter()->writeAbbrev(stderr, Format);
-      }
-      NodeStack.push_back(Format);
-      break;
-    }
-    case OpUint64OneArg: {
-      auto *BitCount =
-          Alloc->create<IntegerNode>(Reader->readUint8(ReadPos));
-      auto *Format = Alloc->create<Uint64OneArgNode>(BitCount);
-      if (TraceProgress) {
-        writeIndent();
-        getTraceWriter()->writeAbbrev(stderr, Format);
-      }
-      NodeStack.push_back(Format);
-      break;
-    }
-    case OpUint8NoArgs: {
-      auto *Format = Alloc->create<Uint8NoArgsNode>();
-      if (TraceProgress) {
-        writeIndent();
-        getTraceWriter()->writeAbbrev(stderr, Format);
-      }
-      NodeStack.push_back(Format);
-      break;
-    }
-    case OpUint8OneArg: {
-      auto *BitCount =
-          Alloc->create<IntegerNode>(Reader->readUint8(ReadPos));
-      auto *Format = Alloc->create<Uint8OneArgNode>(BitCount);
-      if (TraceProgress) {
-        writeIndent();
-        getTraceWriter()->writeAbbrev(stderr, Format);
-      }
-      NodeStack.push_back(Format);
-      break;
-    }
-    case OpU32Const: {
-      auto *Number =
-          Alloc->create<IntegerNode>(Reader->readVaruint32(ReadPos));
-      auto *Constant = Alloc->create<U32ConstNode>(Number);
-      if (TraceProgress) {
-        writeIndent();
-        getTraceWriter()->writeAbbrev(stderr, Constant);
-      }
-      NodeStack.push_back(Constant);
-      break;
-    }
-    case OpU64Const: {
-      auto *Number =
-          Alloc->create<IntegerNode>(Reader->readVaruint64(ReadPos));
-      auto *Constant = Alloc->create<U64ConstNode>(Number);
-      if (TraceProgress) {
-        writeIndent();
-        getTraceWriter()->writeAbbrev(stderr, Constant);
-      }
-      NodeStack.push_back(Constant);
-      break;
-    }
-    case OpVarint32NoArgs: {
-      auto *Format = Alloc->create<Varint32NoArgsNode>();
-      if (TraceProgress) {
-        writeIndent();
-        getTraceWriter()->writeAbbrev(stderr, Format);
-      }
-      NodeStack.push_back(Format);
-      break;
-    }
-    case OpVarint32OneArg: {
-      auto *BitCount =
-          Alloc->create<IntegerNode>(Reader->readUint8(ReadPos));
-      auto *Format = Alloc->create<Varint32OneArgNode>(BitCount);
-      if (TraceProgress) {
-        writeIndent();
-        getTraceWriter()->writeAbbrev(stderr, Format);
-      }
-      NodeStack.push_back(Format);
-      break;
-    }
-    case OpVarint64NoArgs: {
-      auto *Format = Alloc->create<Varint64NoArgsNode>();
-      if (TraceProgress) {
-        writeIndent();
-        getTraceWriter()->writeAbbrev(stderr, Format);
-      }
-      NodeStack.push_back(Format);
-      break;
-    }
-    case OpVarint64OneArg: {
-      auto *BitCount =
-          Alloc->create<IntegerNode>(Reader->readUint8(ReadPos));
-      auto *Format = Alloc->create<Varint64OneArgNode>(BitCount);
-      if (TraceProgress) {
-        writeIndent();
-        getTraceWriter()->writeAbbrev(stderr, Format);
-      }
-      NodeStack.push_back(Format);
-      break;
-    }
-    case OpVaruint32NoArgs: {
-      auto *Format = Alloc->create<Varuint32NoArgsNode>();
-      if (TraceProgress) {
-        writeIndent();
-        getTraceWriter()->writeAbbrev(stderr, Format);
-      }
-      NodeStack.push_back(Format);
-      break;
-    }
-    case OpVaruint32OneArg: {
-      auto *BitCount =
-          Alloc->create<IntegerNode>(Reader->readUint8(ReadPos));
-      auto *Format = Alloc->create<Varuint32OneArgNode>(BitCount);
-      if (TraceProgress) {
-        writeIndent();
-        getTraceWriter()->writeAbbrev(stderr, Format);
-      }
-      NodeStack.push_back(Format);
-      break;
-    }
-    case OpVaruint64NoArgs: {
-      auto *Format = Alloc->create<Varuint64NoArgsNode>();
-      if (TraceProgress) {
-        writeIndent();
-        getTraceWriter()->writeAbbrev(stderr, Format);
-      }
-      NodeStack.push_back(Format);
-      break;
-    }
-    case OpVaruint64OneArg: {
-      auto *BitCount =
-          Alloc->create<IntegerNode>(Reader->readUint8(ReadPos));
-      auto *Format = Alloc->create<Varuint64OneArgNode>(BitCount);
-      if (TraceProgress) {
-        writeIndent();
-        getTraceWriter()->writeAbbrev(stderr, Format);
-      }
-      NodeStack.push_back(Format);
-      break;
-    }
-    case OpVersion: {
-      auto *Number =
-          Alloc->create<IntegerNode>(Reader->readVaruint32(ReadPos));
-      auto *Version = Alloc->create<VersionNode>(Number);
-      if (TraceProgress) {
-        writeIndent();
-        getTraceWriter()->writeAbbrev(stderr, Version);
-      }
-      NodeStack.push_back(Version);
-      break;
-    }
-    case OpVoid:
-      NodeStack.push_back(Alloc->create<VoidNode>());
+    case OpEvalDefault:
+      readUnarySymbol<EvalDefaultNode>();
       break;
     case OpFilter:
+      readNary<FilterNode>();
+      break;
+    case OpIfThen:
+      readBinary<IfThenNode>();
+      break;
+    case OpIfThenElse:
+      readTernary<IfThenElseNode>();
+      break;
+    case OpIsByteIn:
+      readNullary<IsByteInNode>();
+      break;
+    case OpIsByteOut:
+      readNullary<IsByteOutNode>();
+      break;
+    case OpI32Const:
+      readUnaryVarint32<I32ConstNode>();
+      break;
+    case OpI64Const:
+      readUnaryVarint64<I64ConstNode>();
+      break;
+    case OpLoop:
+      readBinary<LoopNode>();
+      break;
+    case OpLoopUnbounded:
+      readUnary<LoopUnboundedNode>();
+      break;
+    case OpOr:
+      readBinary<OrNode>();
+      break;
+    case OpPeek:
+      readUnary<PeekNode>();
+      break;
+    case OpNot:
+      readUnary<NotNode>();
+      break;
+    case OpMap:
+      readBinary<MapNode>();
+      break;
+    case OpRead:
+      readUnary<ReadNode>();
+      break;
+    case OpSelect:
+      readNary<SelectNode>();
+      break;
+    case OpSequence:
+      readNary<SequenceNode>();
+      break;
+    case OpUint32NoArgs:
+      readNullary<Uint32NoArgsNode>();
+      break;
+    case OpUint32OneArg:
+      readUnaryUint8<Uint32OneArgNode>();
+      break;
+    case OpUint64NoArgs:
+      readNullary<Uint64NoArgsNode>();
+      break;
+    case OpUint64OneArg:
+      readUnaryUint8<Uint64OneArgNode>();
+      break;
+    case OpUint8NoArgs:
+      readNullary<Uint8NoArgsNode>();
+      break;
+    case OpUint8OneArg:
+      readUnaryUint8<Uint8OneArgNode>();
+      break;
+    case OpUndefine:
+      readUnary<UndefineNode>();
+      break;
+    case OpU32Const:
+      readUnaryVaruint32<U32ConstNode>();
+      break;
+    case OpU64Const:
+      readUnaryVaruint64<U64ConstNode>();
+      break;
+    case OpVarint32NoArgs:
+      readNullary<Varint32NoArgsNode>();
+      break;
+    case OpVarint32OneArg:
+      readUnaryUint8<Varint32OneArgNode>();
+      break;
+    case OpVarint64NoArgs:
+      readNullary<Varint64NoArgsNode>();
+      break;
+    case OpVarint64OneArg:
+      readUnaryUint8<Varint64OneArgNode>();
+      break;
+    case OpVaruint32NoArgs:
+      readNullary<Varuint32NoArgsNode>();
+      break;
+    case OpVaruint32OneArg:
+      readUnaryUint8<Varuint32OneArgNode>();
+      break;
+    case OpVaruint64NoArgs:
+      readNullary<Varuint64NoArgsNode>();
+      break;
+    case OpVaruint64OneArg:
+      readUnary<Varuint64OneArgNode>();
+      break;
+    case OpVersion:
+      readUnaryVaruint32<VersionNode>();
+      break;
+    case OpVoid:
+      readNullary<VoidNode>();
+      break;
     case OpInteger:
-    case OpError:
-    case OpByteToByte:
     case OpFile:
     case OpSection:
     case OpSymbol:
-    case OpUndefine:
     case OpUnknownSection:
       if (TraceProgress) {
         writeIndent();

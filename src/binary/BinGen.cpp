@@ -41,16 +41,6 @@ IntType getIntegerValue(Node *N) {
 
 } // end of anonymous namespace
 
-BinGen::BinGen(decode::ByteQueue *Output, Allocator *Alloc) :
-    WritePos(Output), SectionSymtab(Alloc) {
-  Writer = Alloc->create<ByteWriteStream>();
-}
-
-BinGen::~BinGen() {
-  WritePos.freezeEob();
-  delete TraceWriter;
-}
-
 void BinGen::setTraceProgress(bool NewValue) {
   TraceProgress = NewValue;
 }
@@ -85,6 +75,16 @@ void BinGen::enterInternal(const char *Name, bool AddNewline) {
 void BinGen::exitInternal(const char *Name) {
   IndentEnd();
   fprintf(stderr, "<- %s\n", Name);
+}
+
+BinGen::BinGen(decode::ByteQueue *Output, Allocator *Alloc) :
+    WritePos(Output), SectionSymtab(Alloc) {
+  Writer = Alloc->create<ByteWriteStream>();
+}
+
+BinGen::~BinGen() {
+  WritePos.freezeEob();
+  delete TraceWriter;
 }
 
 void BinGen::writePreamble() {
@@ -126,10 +126,10 @@ void BinGen::writeNode(const Node *Nd) {
     }
     case OpAnd:
     case OpBlock:
+    case OpBlockEndNoArgs:
     case OpByteToByte:
     case OpOr:
     case OpNot:
-    case OpBlockEndNoArgs:
     case OpError:
     case OpIfThen:
     case OpIfThenElse:

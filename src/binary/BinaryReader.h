@@ -76,6 +76,20 @@ private:
   void readSymbolTable();
   void readNode();
 
+  // General ast readers.
+  template<class T> void readNullary();
+  template<class T> void readUnary();
+  template<class T> void readUnarySymbol();
+  template<class T> void readUnaryUint8();
+  template<class T> void readUnaryVarint32();
+  template<class T> void readUnaryVarint64();
+  template<class T> void readUnaryVaruint32();
+  template<class T> void readUnaryVaruint64();
+  template<class T> void readBinary();
+  template<class T> void readBinarySymbol();
+  template<class T> void readTernary();
+  template<class T> void readNary();
+
   // The following are for tracing progress duing binary translation.
   int IndentLevel = 0;
   bool TraceProgress = false;
