@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-#include "Defs.h"
 #include "binary/BinaryReader.h"
 #include "sexp-parser/Driver.h"
 #include "stream/ByteQueue.h"
@@ -23,6 +22,7 @@
 #include "stream/FileWriter.h"
 #include "stream/StreamReader.h"
 #include "stream/StreamWriter.h"
+#include "utils/Defs.h"
 
 #include <cstring>
 #include <unistd.h>

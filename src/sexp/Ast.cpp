@@ -17,9 +17,9 @@
 
 /* Implements AST's for modeling filter s-expressions */
 
-#include "Defs.h"
 #include "sexp/Ast.h"
 #include "sexp/TextWriter.h"
+#include "utils/Defs.h"
 
 #include <cstring>
 #include <unordered_map>

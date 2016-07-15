@@ -30,13 +30,12 @@
 #ifndef DECOMPRESSOR_SRC_SEXP_AST_H
 #define DECOMPRESSOR_SRC_SEXP_AST_H
 
-#include "Defs.h"
-
-#include "Allocator.h"
 #include "ADT/arena_vector.h"
 #include "sexp/Ast.def"
 #include "stream/WriteUtils.h"
-#include "Casting.h"
+#include "utils/Allocator.h"
+#include "utils/Casting.h"
+#include "utils/Defs.h"
 
 #include <array>
 #include <limits>

@@ -23,15 +23,17 @@ OBJDIR = $(BUILDDIR)/obj
 LIBDIR = $(BUILDDIR)/lib
 LIBPREFIX = wasm-decomp-
 
-###### Decoder objects and locations ######
+###### Utilities ######
 
-TL_SRCS = \
+UTILS_DIR = $(SRCDIR)/utils
+UTILS_OBJDIR = $(OBJDIR)/utils
+UTILS_SRCS = \
 	Allocator.cpp \
 	Defs.cpp
 
-TL_OBJS=$(patsubst %.cpp, $(OBJDIR)/%.o, $(TL_SRCS))
+UTILS_OBJS=$(patsubst %.cpp, $(UTILS_OBJDIR)/%.o, $(UTILS_SRCS))
 
-TL_LIB = $(LIBDIR)/$(LIBPREFIX)tl.a
+UTILS_LIB = $(LIBDIR)/$(LIBPREFIX)utis.a
 
 ###### Binary generation objects and locations ######
 
@@ -138,7 +140,7 @@ TEST_SRCS_DIR = $(TEST_DIR)/test-sources
 
 ###### General compilation definitions ######
 
-LIBS = $(TL_LIB) $(PARSER_LIB) $(BINARY_LIB) $(INTERP_LIB) $(SEXP_LIB) \
+LIBS = $(UTILS_LIB) $(PARSER_LIB) $(BINARY_LIB) $(INTERP_LIB) $(SEXP_LIB) \
        $(STRM_LIB)
 
 $(info -----------------------------------------------)
@@ -160,7 +162,7 @@ all: libs execs test-execs
 
 ###### Cleaning Rules #######
 
-clean: clean-tl-objs clean-parser clean-sexp-objs clean-strm-objs \
+clean: clean-utils-objs clean-parser clean-sexp-objs clean-strm-objs \
        clean-interp-objs clean-binary-objs clean-execs clean-libs \
        clean-test-execs
 
@@ -181,10 +183,10 @@ clean-binary-objs:
 
 .PHONY: clean-binary-objs
 
-clean-tl-objs:
-	rm -f $(TL_OBJS)
+clean-utils-objs:
+	rm -f $(UTILS_OBJS)
 
-.PHONY: clean-tl-objs
+.PHONY: clean-utils-objs
 
 clean-parser: clean-parser-objs
 	cd $(PARSER_DIR); rm -f $(PARSER_GENSRCS)
@@ -256,22 +258,22 @@ $(BINARY_LIB): $(BINARY_OBJS)
 
 ###### Compiliing top-level Sources ######
 
-tl-objs: $(TL_OBJS)
+utils-objs: $(UTILS_OBJS)
 
-.PHONY: tl-objs
+.PHONY: utils-objs
 
-$(TL_OBJS): | $(OBJDIR)
+$(UTILS_OBJS): | $(UTILS_OBJDIR)
 
-$(OBJDIR):
+$(UTILS_OBJDIR):
 	mkdir -p $@
 
--include $(foreach dep,$(TL_SRCS:.cpp=.d),$(OBJDIR)/$(dep))
+-include $(foreach dep,$(UTILS_SRCS:.cpp=.d),$(OBJDIR)/$(dep))
 
-$(TL_OBJS): $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
+$(UTILS_OBJS): $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 
-$(TL_LIB): $(TL_OBJS)
-	ar -rs $@ $(TL_OBJS)
+$(UTILS_LIB): $(UTILS_OBJS)
+	ar -rs $@ $(UTILS_OBJS)
 
 ###### Compiling s-expression interpeter sources ######
 

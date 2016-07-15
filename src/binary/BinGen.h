@@ -20,11 +20,11 @@
 #ifndef DECOMPRESSOR_SRC_BINARY_BINGEN_H
 #define DECOMPRESSOR_SRC_BINARY_BINGEN_H
 
-#include "Defs.h"
 #include "binary/SectionSymbolTable.h"
 #include "stream/ByteQueue.h"
 #include "stream/Cursor.h"
 #include "interp/WriteStream.h"
+#include "utils/Defs.h"
 
 #include <functional>
 

@@ -20,13 +20,13 @@
 #ifndef DECOMPRESSOR_SRC_BINARY_BINARYREADER_H
 #define DECOMPRESSOR_SRC_BINARY_BINARYREADER_H
 
-#include "Defs.h"
 #include "binary/SectionSymbolTable.h"
+#include "interp/ReadStream.h"
 #include "stream/ByteQueue.h"
 #include "sexp/Ast.h"
 #include "sexp/TextWriter.h"
 #include "stream/Cursor.h"
-#include "interp/ReadStream.h"
+#include "utils/Defs.h"
 
 #include <functional>
 #include <vector>

@@ -17,10 +17,10 @@
 
 // Reads a filter file.
 
-#include "Defs.h"
 #include "sexp/TextWriter.h"
 #include "sexp-parser/Parser.tab.hpp"
 #include "sexp-parser/Driver.h"
+#include "utils/Defs.h"
 
 #include <iostream>
 

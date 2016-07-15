@@ -21,8 +21,8 @@
 #ifndef DECOMPRESSOR_SRC_BINARY_SECTIONSYMBOLTABLE_H
 #define DECOMPRESSOR_SRC_BINARY_SECTIONSYMBOLTABLE_H
 
-#include "Defs.h"
 #include "sexp/Ast.h"
+#include "utils/Defs.h"
 
 #include <unordered_map>
 #include <vector>
