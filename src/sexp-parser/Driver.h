@@ -20,8 +20,8 @@
 #ifndef DECOMPRESSOR_PROTOTYPE_SRC_SEXP_PARSER_DRIVER_H
 #define DECOMPRESSOR_PROTOTYPE_SRC_SEXP_PARSER_DRIVER_H
 
-#include "Allocator.h"
 #include "sexp-parser/Parser.tab.hpp"
+#include "utils/Allocator.h"
 
 #include <map>
 #include <memory>

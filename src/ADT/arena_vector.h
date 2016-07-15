@@ -20,7 +20,7 @@
 #ifndef DECOMPRESSOR_SRC_ADT_ARENA_VECTOR_H
 #define DECOMPRESSOR_SRC_ADT_ARENA_VECTOR_H
 
-#include "Allocator.h"
+#include "utils/Allocator.h"
 
 #include <vector>
 

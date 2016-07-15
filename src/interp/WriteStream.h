@@ -22,8 +22,8 @@
 
 #include "interp/Streams.h"
 #include "sexp/Ast.h"
-#include "Casting.h"
 #include "stream/Cursor.h"
+#include "utils/Casting.h"
 
 namespace wasm {
 

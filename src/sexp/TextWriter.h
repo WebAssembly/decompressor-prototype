@@ -20,8 +20,8 @@
 #ifndef DECOMPRESSOR_SRC_EXP_TEXTWRITER_H
 #define DECOMPRESSOR_SRC_EXP_TEXTWRITER_H
 
-#include "Defs.h"
 #include "sexp/Ast.h"
+#include "utils/Defs.h"
 
 #include <cstdio>
 #include <unordered_set>

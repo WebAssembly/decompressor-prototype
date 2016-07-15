@@ -20,7 +20,7 @@
 #ifndef DECOMPRESSOR_SRC_STREAM_WRITEUTILS_H
 #define DECOMPRESSOR_SRC_STREAM_WRITEUTILS_H
 
-#include "Defs.h"
+#include "utils/Defs.h"
 
 #include <cstdio>
 
