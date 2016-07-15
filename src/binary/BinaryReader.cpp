@@ -20,67 +20,22 @@
 #include "binary/BinaryReader.h"
 
 using namespace wasm::decode;
+using namespace wasm::utils;
 
 namespace wasm {
 
 namespace filt {
 
-TextWriter *BinaryReader::getTraceWriter() {
-  if (TraceWriter == nullptr)
-    TraceWriter = new TextWriter();
-  return TraceWriter;
-}
-
-void BinaryReader::writeReadPos(FILE *File) {
-  fprintf(stderr, "@%" PRIuMAX " ", intmax_t(ReadPos.getCurAddress()));
-}
-
-void BinaryReader::writeIndent() {
-  for (int i = 0; i < IndentLevel; ++i)
-    fprintf(stderr, "  ");
-  writeReadPos(stderr);
-}
-
-template<class Type>
-void BinaryReader::returnValueInternal(const char *Name, Type Value) {
-  IndentEnd();
-  fprintf(stderr, "<- %s = %" PRIuMAX"\n", Name, intmax_t(Value));
-
-}
-
-template<> void BinaryReader::returnValueInternal<const Node *>(
-    const char *Name, const Node *Value) {
-  IndentEnd();
-  fprintf(stderr, "<- %s = %p\n", Name, (void*)(Value));
-}
-
-
-void BinaryReader::enterInternal(const char *Name, bool AddNewline) {
-  IndentBegin();
-  fprintf(stderr, "-> %s", Name);
-  if (AddNewline)
-    fputc('\n', stderr);
-  else
-    fputc(' ', stderr);
-}
-
-void BinaryReader::exitInternal(const char *Name) {
-  IndentEnd();
-  fprintf(stderr, "<- %s\n", Name);
-}
-
 BinaryReader::BinaryReader(decode::ByteQueue *Input, alloc::Allocator *Alloc) :
-    Alloc(Alloc), ReadPos(Input), SectionSymtab(Alloc) {
+    Alloc(Alloc), ReadPos(Input), SectionSymtab(Alloc),
+    Trace(ReadPos, "BinaryReader") {
   Reader = Alloc->create<ByteReadStream>();
 }
 
 template<class T>
 void BinaryReader::readNullary() {
   auto *Node = Alloc->create<T>();
-  if (TraceProgress) {
-    writeIndent();
-    getTraceWriter()->writeAbbrev(stderr, Node);
-  }
+  Trace.traceSexp(Node);
   NodeStack.push_back(Node);
 }
 
@@ -91,10 +46,7 @@ void BinaryReader::readUnary() {
   Node *Arg = NodeStack.back();
   NodeStack.pop_back();
   auto *Node = Alloc->create<T>(Arg);
-  if (TraceProgress) {
-    writeIndent();
-    getTraceWriter()->writeAbbrev(stderr, Node);
-  }
+  Trace.traceSexp(Node);
   NodeStack.push_back(Node);
 }
 
@@ -103,10 +55,7 @@ void BinaryReader::readUnarySymbol() {
   auto *Symbol =
       SectionSymtab.getIndexSymbol(Reader->readVaruint32(ReadPos));
   auto *Node = Alloc->create<T>(Symbol);
-  if (TraceProgress) {
-    writeIndent();
-    getTraceWriter()->writeAbbrev(stderr, Node);
-  }
+  Trace.traceSexp(Node);
   NodeStack.push_back(Node);
 }
 
@@ -114,10 +63,7 @@ template<class T>
 void BinaryReader::readUnaryUint8() {
   auto *Number = Alloc->create<IntegerNode>(Reader->readUint8(ReadPos));
   auto *Node = Alloc->create<T>(Number);
-  if (TraceProgress) {
-    writeIndent();
-    getTraceWriter()->writeAbbrev(stderr, Node);
-  }
+  Trace.traceSexp(Node);
   NodeStack.push_back(Node);
 }
 
@@ -125,10 +71,7 @@ template<class T>
 void BinaryReader::readUnaryVarint32() {
   auto *Number = Alloc->create<IntegerNode>(Reader->readVarint32(ReadPos));
   auto *Node = Alloc->create<T>(Number);
-  if (TraceProgress) {
-    writeIndent();
-    getTraceWriter()->writeAbbrev(stderr, Node);
-  }
+  Trace.traceSexp(Node);
   NodeStack.push_back(Node);
 }
 
@@ -137,10 +80,7 @@ template<class T>
 void BinaryReader::readUnaryVarint64() {
   auto *Number = Alloc->create<IntegerNode>(Reader->readVarint64(ReadPos));
   auto *Node = Alloc->create<T>(Number);
-  if (TraceProgress) {
-    writeIndent();
-    getTraceWriter()->writeAbbrev(stderr, Node);
-  }
+  Trace.traceSexp(Node);
   NodeStack.push_back(Node);
 }
 
@@ -148,10 +88,7 @@ template<class T>
 void BinaryReader::readUnaryVaruint32() {
   auto *Number = Alloc->create<IntegerNode>(Reader->readVaruint32(ReadPos));
   auto *Node = Alloc->create<T>(Number);
-  if (TraceProgress) {
-    writeIndent();
-    getTraceWriter()->writeAbbrev(stderr, Node);
-  }
+  Trace.traceSexp(Node);
   NodeStack.push_back(Node);
 }
 
@@ -160,10 +97,7 @@ void BinaryReader::readUnaryVaruint64() {
   auto *Number =
       Alloc->create<IntegerNode>(Reader->readVarint64(ReadPos));
   auto *Node = Alloc->create<T>(Number);
-  if (TraceProgress) {
-    writeIndent();
-    getTraceWriter()->writeAbbrev(stderr, Node);
-  }
+  Trace.traceSexp(Node);
   NodeStack.push_back(Node);
 }
 
@@ -176,10 +110,7 @@ void BinaryReader::readBinary() {
   Node *Arg1 = NodeStack.back();
   NodeStack.pop_back();
   auto *Node = Alloc->create<T>(Arg1, Arg2);
-  if (TraceProgress) {
-    writeIndent();
-    getTraceWriter()->writeAbbrev(stderr, Node);
-  }
+  Trace.traceSexp(Node);
   NodeStack.push_back(Node);
 }
 
@@ -190,10 +121,7 @@ void BinaryReader::readBinarySymbol() {
   auto *Body = NodeStack.back();
   NodeStack.pop_back();
   auto *Node = Alloc->create<T>(Symbol, Body);
-  if (TraceProgress) {
-    writeIndent();
-    getTraceWriter()->writeAbbrev(stderr, Node);
-  }
+  Trace.traceSexp(Node);
   NodeStack.push_back(Node);
 }
 
@@ -208,10 +136,7 @@ void BinaryReader::readTernary() {
   Node *Arg1 = NodeStack.back();
   NodeStack.pop_back();
   auto *Node = Alloc->create<T>(Arg1, Arg2, Arg3);
-  if (TraceProgress) {
-    writeIndent();
-    getTraceWriter()->writeAbbrev(stderr, Node);
-  }
+  Trace.traceSexp(Node);
   NodeStack.push_back(Node);
 }
 
@@ -226,50 +151,34 @@ void BinaryReader::readNary() {
     Node->append(NodeStack[i]);
   for (uint32_t i = 0; i < NumKids; ++i)
     NodeStack.pop_back();
-  if (TraceProgress) {
-    writeIndent();
-    getTraceWriter()->writeAbbrev(stderr, Node);
-  }
+  Trace.traceSexp(Node);
   NodeStack.push_back(Node);
 }
 
 FileNode *BinaryReader::readFile() {
-  enter("readFile");
+  TraceClass::Method _("readFile", Trace);
   MagicNumber = Reader->readUint32(ReadPos);
   // TODO(kschimpf): Fix reading of uintX. Current implementation not same as
   // WASM binary reader.
-  if (TraceProgress) {
-    writeIndent();
-    fprintf(stderr, "MagicNumber = %x\n", MagicNumber);
-  }
+  Trace.traceUint32_t("MagicNumber", MagicNumber);
   if (MagicNumber != WasmBinaryMagic)
     fatal("Unable to read, did not find WASM binary magic number");
   Version = Reader->readUint32(ReadPos);
-  if (TraceProgress) {
-    writeIndent();
-    fprintf(stderr, "Version = %x\n", Version);
-  }
+  Trace.traceHexUint32_t("Version", Version);
   auto *File = Alloc->create<FileNode>();
   while (!ReadPos.atEob())
     File->append(readSection());
-  if (TraceProgress) {
-    writeIndent();
-    getTraceWriter()->writeAbbrev(stderr, File);
-  }
-  exit("readFile");
+  Trace.traceSexp(File);
   return File;
 }
 
 SectionNode *BinaryReader::readSection() {
-  enter("readSection");
+  TraceClass::Method _("readSection", Trace);
   ExternalName Name = readExternalName();
   auto *SectionName = Alloc->create<SymbolNode>(Name);
   auto *Section = Alloc->create<SectionNode>();
   Section->append(SectionName);
-  if (TraceProgress) {
-    writeIndent();
-    fprintf(stderr, "Name = %s\n", Name.c_str());
-  }
+  Trace.traceString("Name", Name);
   size_t StartStackSize = NodeStack.size();
   readBlock(
       [&]() {
@@ -279,8 +188,8 @@ SectionNode *BinaryReader::readSection() {
             readNode();
         } else {
           // TODO(karlschimpf) Fix to actually read!
-          writeReadPos(stderr);
-          fprintf(stderr, "Skipping unknown section\n");
+          Trace.traceMessage("Skipping unknown Section" + Name);
+          fatal("Handling non-filter sections not implemented yet!");
         }
       });
   size_t StackSize = NodeStack.size();
@@ -290,28 +199,20 @@ SectionNode *BinaryReader::readSection() {
     Section->append(NodeStack[i]);
   for (size_t i = StartStackSize; i < StackSize; ++i)
     NodeStack.pop_back();
-  if (TraceProgress) {
-    writeIndent();
-    getTraceWriter()->writeAbbrev(stderr, Section);
-  }
-  exit("readSection");
+  Trace.traceSexp(Section);
   return Section;
 }
 
 void BinaryReader::readSymbolTable() {
-  enter("readSymbolTable");
+  TraceClass::Method _("readSymbolTable", Trace);
   SectionSymtab.clear();
   uint32_t NumSymbols = Reader->readVaruint32(ReadPos);
   for (uint32_t i = 0; i < NumSymbols; ++i) {
     ExternalName &Name = readExternalName();
-    if (TraceProgress) {
-      writeIndent();
-      fprintf(stderr, "Symbol %" PRIuMAX ": %s\n",
-              intmax_t(i), Name.c_str());
-    }
+    Trace.traceUint32_t("Index", i);
+    Trace.traceString("Symbol", Name);
     SectionSymtab.addSymbol(Name);
   }
-  exit("readSymbolTable");
 }
 
 ExternalName &BinaryReader::readExternalName() {
@@ -337,20 +238,16 @@ InternalName &BinaryReader::readInternalName() {
 }
 
 void BinaryReader::readBlock(std::function<void()> ApplyFn) {
-  enter("readBlock");
+  TraceClass::Method _("readBlock", Trace);
   const size_t BlockSize = Reader->readVaruint32(ReadPos);
-  if (TraceProgress) {
-    writeIndent();
-    fprintf(stderr, "block size: %" PRIuMAX "\n", intmax_t(BlockSize));
-  }
+  Trace.traceSize_t("Block size", BlockSize);
   ReadPos.pushEobAddress(ReadPos.getCurAddress() + BlockSize);
   ApplyFn();
   ReadPos.popEobAddress();
-  exit("readBlock");
 }
 
 void BinaryReader::readNode() {
-  enter("readNode");
+  TraceClass::Method _("readNode", Trace);
   NodeType Opcode = (NodeType)Reader->readUint8(ReadPos);
   switch(Opcode) {
     case OpAnd:
@@ -371,10 +268,7 @@ void BinaryReader::readNode() {
       Node *Code = NodeStack.back();
       NodeStack.pop_back();
       auto *Case = Alloc->create<CaseNode>(Key, Code);
-      if (TraceProgress) {
-        writeIndent();
-        getTraceWriter()->writeAbbrev(stderr, Case);
-      }
+      Trace.traceSexp(Case);
       NodeStack.push_back(Case);
       break;
     }
@@ -503,14 +397,10 @@ void BinaryReader::readNode() {
     case OpSection:
     case OpSymbol:
     case OpUnknownSection:
-      if (TraceProgress) {
-        writeIndent();
-        fprintf(stderr, "Unimplemented opcode = %x\n", Opcode);
-      }
+      Trace.traceHexUint32_t("Opcode", Opcode);
       fatal("Uses construct not implemented yet!");
       break;
   }
-  exit("readNode");
 }
 
 } // end of namespace filt

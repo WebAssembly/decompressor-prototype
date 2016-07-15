@@ -29,7 +29,8 @@ UTILS_DIR = $(SRCDIR)/utils
 UTILS_OBJDIR = $(OBJDIR)/utils
 UTILS_SRCS = \
 	Allocator.cpp \
-	Defs.cpp
+	Defs.cpp \
+	Trace.cpp
 
 UTILS_OBJS=$(patsubst %.cpp, $(UTILS_OBJDIR)/%.o, $(UTILS_SRCS))
 
@@ -76,7 +77,8 @@ SEXP_SRCDIR = $(SRCDIR)/sexp
 SEXP_OBJDIR = $(OBJDIR)/sexp
 SEXP_SRCS = \
 	Ast.cpp \
-	TextWriter.cpp
+	TextWriter.cpp \
+	TraceSexp.cpp
 
 SEXP_OBJS=$(patsubst %.cpp, $(SEXP_OBJDIR)/%.o, $(SEXP_SRCS))
 
@@ -106,6 +108,7 @@ INTERP_OBJDIR = $(OBJDIR)/interp
 INTERP_SRCS = \
 	ReadStream.cpp \
 	State.cpp \
+	TraceSexpReader.cpp \
 	WriteStream.cpp
 
 INTERP_OBJS=$(patsubst %.cpp, $(INTERP_OBJDIR)/%.o, $(INTERP_SRCS))
@@ -140,8 +143,8 @@ TEST_SRCS_DIR = $(TEST_DIR)/test-sources
 
 ###### General compilation definitions ######
 
-LIBS = $(UTILS_LIB) $(PARSER_LIB) $(BINARY_LIB) $(INTERP_LIB) $(SEXP_LIB) \
-       $(STRM_LIB)
+LIBS = $(PARSER_LIB) $(BINARY_LIB) $(INTERP_LIB) $(SEXP_LIB) \
+       $(STRM_LIB) $(UTILS_LIB)
 
 $(info -----------------------------------------------)
 $(info Using CPP_COMPILER = $(CPP_COMPILER))
