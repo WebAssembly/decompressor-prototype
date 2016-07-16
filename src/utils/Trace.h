@@ -145,6 +145,10 @@ public:
     if (TraceProgress)
       traceUintInternal(Name, Value);
   }
+  void traceIntType(const char *Name, decode::IntType Value) {
+    if (TraceProgress)
+      traceUintInternal(Name, Value);
+  }
   void traceSize_t(const char *Name, size_t Value) {
     if (TraceProgress)
       traceUintInternal(Name, Value);
