@@ -41,7 +41,7 @@ UTILS_LIB = $(LIBDIR)/$(LIBPREFIX)utis.a
 BINARY_DIR = $(SRCDIR)/binary
 BINARY_OBJDIR = $(OBJDIR)/binary
 BINARY_SRCS = \
-	BinGen.cpp \
+	BinaryWriter.cpp \
 	BinaryReader.cpp \
 	SectionSymbolTable.cpp
 
