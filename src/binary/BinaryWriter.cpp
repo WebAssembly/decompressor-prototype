@@ -19,7 +19,7 @@
 
 #include "sexp/Ast.h"
 #include "sexp/TextWriter.h"
-#include "binary/BinGen.h"
+#include "binary/BinaryWriter.h"
 #include "interp/State.h"
 
 namespace wasm {

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#include "binary/BinGen.h"
+#include "binary/BinaryWriter.h"
 #include "sexp-parser/Driver.h"
 #include "stream/ByteQueue.h"
 #include "stream/FileReader.h"
