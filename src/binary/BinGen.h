@@ -23,6 +23,7 @@
 #include "binary/SectionSymbolTable.h"
 #include "stream/ByteQueue.h"
 #include "stream/Cursor.h"
+#include "interp/TraceSexpWriter.h"
 #include "interp/WriteStream.h"
 #include "utils/Defs.h"
 
@@ -41,14 +42,18 @@ class BinGen {
 public:
   BinGen(decode::ByteQueue *Output, alloc::Allocator *Alloc);
 
-  ~BinGen();
+  ~BinGen() {
+    WritePos.freezeEob();
+  }
 
   void writePreamble();
 
   void writeFile(const FileNode *File);
   void writeSection(const SectionNode *Section);
 
-  void setTraceProgress(bool NewValue);
+  void setTraceProgress(bool NewValue) {
+    Trace.setTraceProgress(NewValue);
+  }
 
   void setMinimizeBlockSize(bool NewValue) {
     MinimizeBlockSize = NewValue;
@@ -59,11 +64,13 @@ private:
   interp::ByteWriteStream *Writer;
   SectionSymbolTable SectionSymtab;
   bool MinimizeBlockSize = false;
+  interp::TraceClassSexpWriter Trace;
 
   void writeNode(const Node *Nd);
   void writeBlock(std::function<void()> ApplyFn);
   void writeSymbol(const Node *Symbol);
 
+#if 0
   // The following are for tracing progress duing binary translation.
   bool TraceProgress = false;
   int IndentLevel = 0;
@@ -96,6 +103,7 @@ private:
       returnValueInternal(Name, Value);
     return Value;
   }
+#endif
 };
 
 } // end of namespace filt

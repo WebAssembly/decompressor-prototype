@@ -27,6 +27,7 @@ namespace wasm {
 using namespace alloc;
 using namespace decode;
 using namespace interp;
+using namespace utils;
 
 namespace filt {
 
@@ -41,50 +42,9 @@ IntType getIntegerValue(Node *N) {
 
 } // end of anonymous namespace
 
-void BinGen::setTraceProgress(bool NewValue) {
-  TraceProgress = NewValue;
-}
-
-TextWriter *BinGen::getTraceWriter() {
-  if (TraceWriter == nullptr)
-    TraceWriter = new TextWriter();
-  return TraceWriter;
-}
-
-void BinGen::writeIndent() {
-  for (int i = 0; i < IndentLevel; ++i)
-    fprintf(stderr, "  ");
-  fprintf(stderr, "@%" PRIuMAX " ", intmax_t(WritePos.getCurAddress()));
-}
-
-template<class Type>
-Type BinGen::returnValueInternal(const char *Name, Type Value) {
-  IndentEnd();
-  fprintf(stderr, "<- %s = %d\n", Name, int(Value));
-}
-
-void BinGen::enterInternal(const char *Name, bool AddNewline) {
-  IndentBegin();
-  fprintf(stderr, "-> %s", Name);
-  if (AddNewline)
-    fputc('\n', stderr);
-  else
-    fputc(' ', stderr);
-}
-
-void BinGen::exitInternal(const char *Name) {
-  IndentEnd();
-  fprintf(stderr, "<- %s\n", Name);
-}
-
 BinGen::BinGen(decode::ByteQueue *Output, Allocator *Alloc) :
-    WritePos(Output), SectionSymtab(Alloc) {
+    WritePos(Output), SectionSymtab(Alloc), Trace(WritePos, "BinaryWriter") {
   Writer = Alloc->create<ByteWriteStream>();
-}
-
-BinGen::~BinGen() {
-  WritePos.freezeEob();
-  delete TraceWriter;
 }
 
 void BinGen::writePreamble() {
@@ -93,29 +53,20 @@ void BinGen::writePreamble() {
 }
 
 void BinGen::writeFile(const FileNode *File) {
-  if (TraceProgress) {
-    enter("writeFile");
-  }
+  TraceClass::Method _("writeFile", Trace);
+  Trace.traceSexp(File);
   writeNode(File);
-  if (TraceProgress)
-    exit("writeFile");
 }
 
 void BinGen::writeSection(const SectionNode *Section) {
-  if (TraceProgress) {
-    enter("writeSection", false);
-    getTraceWriter()->writeAbbrev(stderr, Section);
-  }
+  TraceClass::Method _("writeSection", Trace);
+  Trace.traceSexp(Section);
   writeNode(Section);
-  if (TraceProgress)
-    exit("writeSection");
 }
 
 void BinGen::writeNode(const Node *Nd) {
-  if (TraceProgress) {
-    enter("writeNode", false);
-    getTraceWriter()->writeAbbrev(stderr, Nd);
-  }
+  TraceClass::Method _("writeNode", Trace);
+  Trace.traceSexp(Nd);
   switch (NodeType Type = Nd->getType()) {
     case OpUnknownSection:
     case OpInteger: {
@@ -250,8 +201,6 @@ void BinGen::writeNode(const Node *Nd) {
       writeNode(Nd->getKid(0));
     }
   }
-  if (TraceProgress)
-    exit("writeNode");
 }
 
 void BinGen::writeBlock(std::function<void()> ApplyFn) {
@@ -280,18 +229,14 @@ void BinGen::writeBlock(std::function<void()> ApplyFn) {
 }
 
 void BinGen::writeSymbol(const Node *Symbol) {
-  if (TraceProgress) {
-    enter("writeSymbol", false);
-    getTraceWriter()->writeAbbrev(stderr, Symbol);
-  }
+  TraceClass::Method _("writeSymbol", Trace);
+  Trace.traceSexp(Symbol);
   assert(isa<SymbolNode>(Symbol) && "BinGen::writeSymbol called on non-symbol");
   const auto *Sym = cast<SymbolNode>(Symbol);
   InternalName SymName = Sym->getName();
   Writer->writeVaruint32(SymName.size(), WritePos);
   for (size_t i = 0, len = SymName.size(); i < len; ++i)
     Writer->writeUint8(SymName[i], WritePos);
-  if (TraceProgress)
-    exit("writeSymbol");
 }
 
 } // end of namespace filt

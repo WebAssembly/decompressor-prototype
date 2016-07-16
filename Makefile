@@ -110,6 +110,7 @@ INTERP_SRCS = \
 	State.cpp \
 	TraceSexpReader.cpp \
 	TraceSexpReaderWriter.cpp \
+	TraceSexpWriter.cpp \
 	WriteStream.cpp
 
 INTERP_OBJS=$(patsubst %.cpp, $(INTERP_OBJDIR)/%.o, $(INTERP_SRCS))
