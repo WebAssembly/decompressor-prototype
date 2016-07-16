@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef DECOMPRESSOR_SRC_INTERP_TRACESEXPREADER_H
-#define DECOMPRESSOR_SRC_INTERP_TRACESEXPREADER_H
+#ifndef DECOMPRESSOR_SRC_INTERP_TRACESEXPREADERWRITER_H
+#define DECOMPRESSOR_SRC_INTERP_TRACESEXPREADERWRITER_H
 
 #include "sexp/TraceSexp.h"
 #include "stream/Cursor.h"
@@ -26,25 +26,31 @@ namespace wasm {
 namespace interp {
 
 // Extends the sexpression trace class to add a read cursor context.
-class TraceClassSexpReader : public filt::TraceClassSexp {
-  TraceClassSexpReader(const TraceClassSexpReader &) = delete;
-  TraceClassSexpReader &operator=(const TraceClassSexpReader &) = delete;
+class TraceClassSexpReaderWriter : public filt::TraceClassSexp {
+  TraceClassSexpReaderWriter(const TraceClassSexpReaderWriter &) = delete;
+  TraceClassSexpReaderWriter &operator=(
+      const TraceClassSexpReaderWriter &) = delete;
 public:
-  explicit TraceClassSexpReader(decode::ReadCursor &ReadPos);
-  TraceClassSexpReader(decode::ReadCursor &ReadPos, const char *Label);
-  TraceClassSexpReader(decode::ReadCursor &ReadPos, FILE *File);
-  TraceClassSexpReader(decode::ReadCursor &ReadPos, const char *Label,
+  explicit TraceClassSexpReaderWriter(decode::ReadCursor &ReadPos,
+                                decode::WriteCursor &WritePos);
+  TraceClassSexpReaderWriter(decode::ReadCursor &ReadPos,
+                       decode::WriteCursor &WritePos, const char *Label);
+  TraceClassSexpReaderWriter(decode::ReadCursor &ReadPos,
+                       decode::WriteCursor &WritePos, FILE *File);
+  TraceClassSexpReaderWriter(decode::ReadCursor &ReadPos,
+                       decode::WriteCursor &WritePos, const char *Label,
                        FILE *File);
-  ~TraceClassSexpReader();
+  ~TraceClassSexpReaderWriter();
 
   void traceContext() const override;
 
 protected:
   decode::ReadCursor &ReadPos;
+  decode::WriteCursor &WritePos;
 };
 
 } // end of namespace interp
 
 } // end of namespace wasm
 
-#endif // DECOMPRESSOR_SRC_INTERP_TRACESEXPREADER_H
+#endif // DECOMPRESSOR_SRC_INTERP_TRACESEXPREADERWRITER_H

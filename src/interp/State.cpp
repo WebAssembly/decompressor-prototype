@@ -27,6 +27,7 @@ namespace wasm {
 using namespace alloc;
 using namespace decode;
 using namespace filt;
+using namespace utils;
 
 namespace interp {
 
@@ -46,61 +47,19 @@ IntType getIntegerValue(Node *N) {
 State::State(ByteQueue *Input, ByteQueue *Output,
              SymbolTable *Algorithms) :
     ReadPos(Input), WritePos(Output), Alloc(Allocator::Default),
-    Algorithms(Algorithms) {
+    Algorithms(Algorithms), Trace(ReadPos, WritePos, "InterpSexp") {
   Reader = Alloc->create<ByteReadStream>();
   Writer = Alloc->create<ByteWriteStream>();
   DefaultFormat = Alloc->create<Varuint64NoArgsNode>();
   CurSectionName.reserve(MaxExpectedSectionNameSize);
 }
 
-State::~State() {
-  delete TraceWriter;
-}
-
-void State::setTraceProgress(bool NewValue) {
-  TraceProgress = NewValue;
-  if (TraceProgress && TraceWriter == nullptr)
-    TraceWriter = new TextWriter();
-}
-
-void State::writeIndent() {
-  for (int i = 0; i < IndentLevel; ++i)
-    fprintf(stderr, "  ");
-}
-
-void State::traceStreamLocs() {
-  fprintf(stderr, "@%" PRIuMAX "/@%" PRIuMAX, intmax_t(ReadPos.getCurAddress()),
-          intmax_t(WritePos.getCurAddress()));
-}
-
-void State::enter(const char *Name, bool AddNewline) {
-  IndentBegin();
-  traceStreamLocs();
-  fprintf(stderr, " -> %s", Name);
-  if (AddNewline)
-    fputc('\n', stderr);
-}
-
-void State::exit(const char *Name) {
-  IndentEnd();
-  traceStreamLocs();
-  fprintf(stderr, " <- %s\n", Name);
-}
-
-IntType State::returnValueInternal(const char *Name, IntType Value) {
-  IndentEnd();
-  traceStreamLocs();
-  fprintf(stderr, " <- %s = %" PRI_IntType "\n", Name, Value);
-  return Value;
-}
-
 IntType State::eval(const Node *Nd) {
   // TODO(kschimpf): Fix for ast streams.
   // TODO(kschimpf) Handle blocks.
-  if (TraceProgress) {
-    enter("eval ", false);
-    TraceWriter->writeAbbrev(stderr, Nd);
-  }
+  TraceClass::Method _("eval", Trace);
+  Trace.traceSexp(Nd);
+  IntType ReturnValue = 0;
   switch (NodeType Type = Nd->getType()) {
     case OpByteToByte:
     case OpFilter:
@@ -138,33 +97,37 @@ IntType State::eval(const Node *Nd) {
       break;
     case OpAnd:
       if (eval(Nd->getKid(0)) != 0 && eval(Nd->getKid(1)) != 0)
-        return returnValue("eval", 1);
+        ReturnValue = 1;
       break;
     case OpNot:
       if (eval(Nd->getKid(0)) == 0)
-        return returnValue("eval", 1);
+        ReturnValue = 1;
       break;
     case OpOr:
       if (eval(Nd->getKid(0)) != 0 || eval(Nd->getKid(1)) != 0)
-        return returnValue("eval", 1);
+        ReturnValue = 1;
       break;
     case OpIsByteIn:
-      return returnValue("eval", isa<ByteReadStream>(Reader));
+      ReturnValue = int(isa<ByteReadStream>(Reader));
+      break;
     case OpIsByteOut:
-      return returnValue("eval", isa<ByteWriteStream>(Writer));
+      ReturnValue = int(isa<ByteWriteStream>(Writer));
+      break;
     case OpError:
       fatal("Error found during evaluation");
       break;
     case OpEval: {
       if (auto *Sym = dyn_cast<SymbolNode>(Nd->getKid(0))) {
-        return returnValue("eval", eval(Sym->getDefineDefinition()));
+        ReturnValue = eval(Sym->getDefineDefinition());
+        break;
       }
       fatal("Can't evaluate symbol");
       break;
     }
     case OpEvalDefault: {
       if (auto *Sym = dyn_cast<SymbolNode>(Nd->getKid(0))) {
-        return returnValue("eval", eval(Sym->getDefaultDefinition()));
+        ReturnValue = eval(Sym->getDefaultDefinition());
+        break;
       }
       fatal("Can't evaluate symbol");
       break;
@@ -183,7 +146,8 @@ IntType State::eval(const Node *Nd) {
     case OpI64Const:
     case OpU32Const:
     case OpU64Const:
-      return returnValue("eval", read(Nd));
+      ReturnValue = read(Nd);
+      break;
     case OpLoop: {
       IntType Count = eval(Nd->getKid(0));
       int NumKids = Nd->getNumKids();
@@ -201,11 +165,14 @@ IntType State::eval(const Node *Nd) {
       break;
     }
     case OpMap:
-      return returnValue("eval", write(read(Nd->getKid(0)), Nd->getKid(1)));
+      ReturnValue = write(read(Nd->getKid(0)), Nd->getKid(1));
+      break;
     case OpPeek:
-      return returnValue("eval", read(Nd));
+      ReturnValue = read(Nd);
+      break;
     case OpRead:
-      return returnValue("eval", read(Nd->getKid(1)));
+      ReturnValue = read(Nd->getKid(1));
+      break;
     case OpSequence:
       for (auto *Kid : *Nd)
         eval(Kid);
@@ -224,11 +191,13 @@ IntType State::eval(const Node *Nd) {
     case OpVaruint32OneArg:
     case OpVaruint64NoArgs:
     case OpVaruint64OneArg:
-      return returnValue("eval", write(read(Nd), Nd));
+      ReturnValue = write(read(Nd), Nd);
+      break;
     case OpVoid:
       break;
   }
-  return returnValue("eval", 0);
+  Trace.traceIntType("return value", ReturnValue);
+  return ReturnValue;
 }
 
 IntType State::read(const Node *Nd) {
@@ -344,25 +313,16 @@ IntType State::write(IntType Value, const wasm::filt::Node *Nd) {
 }
 
 void State::decompress() {
-  if (TraceProgress)
-    enter("decompress");
+  TraceClass::Method _("decompress", Trace);
   MagicNumber = Reader->readUint32(ReadPos);
   // TODO(kschimpf): Fix reading of uintX. Current implementation not same as
   // WASM binary reader.
-  if (TraceProgress) {
-    writeIndent();
-    traceStreamLocs();
-    fprintf(stderr, " MagicNumber = %x\n", MagicNumber);
-  }
+  Trace.traceUint32_t("magic number", MagicNumber);
   if (MagicNumber != WasmBinaryMagic)
     fatal("Unable to decompress, did not find WASM binary magic number");
   Writer->writeUint32(MagicNumber, WritePos);
   Version = Reader->readUint32(ReadPos);
-  if (TraceProgress) {
-    writeIndent();
-    traceStreamLocs();
-    fprintf(stderr, " Version = %x\n", Version);
-  }
+  Trace.traceHexUint32_t("version", Version);
   if (Version != WasmBinaryVersion)
     fatal("Unable to decompress, WASM version number not known");
   Writer->writeUint32(Version, WritePos);
@@ -371,20 +331,15 @@ void State::decompress() {
     decompressSection();
   }
   WritePos.freezeEob();
-  if (TraceProgress)
-    exit("decompress");
 }
 
 void State::decompressBlock(const Node *Code) {
+  TraceClass::Method _("decompressBlock", Trace);
   auto *ByteWriter = dyn_cast<ByteWriteStream>(Writer);
   bool IsByteReader = isa<ByteReadStream>(Reader);
   if (IsByteReader) {
-    const size_t BlockSize = Reader->readVaruint32(ReadPos);
-    if (TraceProgress) {
-      writeIndent();
-      traceStreamLocs();
-      fprintf(stderr, " block size: %" PRIuMAX "\n", intmax_t(BlockSize));
-    }
+    const uint32_t BlockSize = Reader->readVaruint32(ReadPos);
+    Trace.traceUint32_t("block size", BlockSize);
     ReadPos.pushEobAddress(ReadPos.getCurAddress() + BlockSize);
   }
   if (ByteWriter) {
@@ -427,19 +382,12 @@ void State::evalOrCopy(const Node *Nd) {
 }
 
 void State::decompressSection() {
+  TraceClass::Method _("decompressSection", Trace);
   assert(isa<ByteReadStream>(Reader));
-  if (TraceProgress)
-    enter("section");
   readSectionName();
-  if (TraceProgress) {
-    writeIndent();
-    traceStreamLocs();
-    fprintf(stderr, " section: '%s'\n", CurSectionName.c_str());
-  }
+  Trace.traceString("name", CurSectionName);
   SymbolNode *Sym = Algorithms->getSymbol(CurSectionName);
   decompressBlock(Sym ? Sym->getDefineDefinition() : nullptr);
-  if (TraceProgress)
-    exit("section");
 }
 
 void State::readSectionName() {

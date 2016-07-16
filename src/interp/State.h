@@ -23,6 +23,7 @@
 #include "stream/ByteQueue.h"
 #include "stream/Cursor.h"
 #include "interp/ReadStream.h"
+#include "interp/TraceSexpReaderWriter.h"
 #include "interp/WriteStream.h"
 
 namespace wasm {
@@ -42,13 +43,15 @@ public:
   State(decode::ByteQueue *Input, decode::ByteQueue *Output,
         filt::SymbolTable *Algorithms);
 
-  ~State();
+  ~State() {}
 
   // Processes each section in input, and decompresses it (if applicable)
   // to the corresponding output.
   void decompress();
 
-  void setTraceProgress(bool NewValue);
+  void setTraceProgress(bool NewValue) {
+    Trace.setTraceProgress(NewValue);
+  }
 
   void setMinimizeBlockSize(bool NewValue) {
     MinimizeBlockSize = NewValue;
@@ -69,6 +72,7 @@ private:
   // The current section name (if applicable).
   std::string CurSectionName;
   bool MinimizeBlockSize = false;
+  TraceClassSexpReaderWriter Trace;
 
   void decompressSection();
   void readSectionName();
@@ -83,30 +87,6 @@ private:
   // Writes to output the given value, using format defined by Nd.
   // For convenience, returns written value.
   decode::IntType write(decode::IntType Value, const filt::Node *Nd);
-
-  // The remaining methods and fields are for tracing progress.
-  bool TraceProgress = false;
-  int IndentLevel = 0;
-  filt::TextWriter *TraceWriter = nullptr;
-
-  void writeIndent();
-  void IndentBegin() {
-    writeIndent();
-    ++IndentLevel;
-  }
-  void IndentEnd() {
-    --IndentLevel;
-    writeIndent();
-  }
-  void enter(const char *Name, bool AddNewline=true);
-  void exit(const char *Name);
-  decode::IntType returnValue(const char *Name, decode::IntType Value) {
-    if (!TraceProgress)
-      return Value;
-    return returnValueInternal(Name, Value);
-  }
-  decode::IntType returnValueInternal(const char *Name, decode::IntType Value);
-  void traceStreamLocs();
 };
 
 } // end of namespace interp.
