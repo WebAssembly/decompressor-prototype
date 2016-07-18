@@ -42,29 +42,29 @@ IntType getIntegerValue(Node* N) {
 
 }  // end of anonymous namespace
 
-BinGen::BinGen(decode::ByteQueue* Output, Allocator* Alloc)
-    : WritePos(Output), SectionSymtab(Alloc), Trace(WritePos, "BinaryWriter") {
-  Writer = Alloc->create<ByteWriteStream>();
+BinaryWriter::BinaryWriter(decode::ByteQueue* Output, SymbolTable& Symtab)
+    : WritePos(Output), SectionSymtab(Symtab), Trace(WritePos, "BinaryWriter") {
+  Writer = Symtab.getAllocator()->create<ByteWriteStream>();
 }
 
-void BinGen::writePreamble() {
+void BinaryWriter::writePreamble() {
   Writer->writeUint32(WasmBinaryMagic, WritePos);
   Writer->writeUint32(WasmBinaryVersion, WritePos);
 }
 
-void BinGen::writeFile(const FileNode* File) {
+void BinaryWriter::writeFile(const FileNode* File) {
   TraceClass::Method _("writeFile", Trace);
   Trace.traceSexp(File);
   writeNode(File);
 }
 
-void BinGen::writeSection(const SectionNode* Section) {
+void BinaryWriter::writeSection(const SectionNode* Section) {
   TraceClass::Method _("writeSection", Trace);
   Trace.traceSexp(Section);
   writeNode(Section);
 }
 
-void BinGen::writeNode(const Node* Nd) {
+void BinaryWriter::writeNode(const Node* Nd) {
   TraceClass::Method _("writeNode", Trace);
   Trace.traceSexp(Nd);
   switch (NodeType Type = Nd->getType()) {
@@ -202,7 +202,7 @@ void BinGen::writeNode(const Node* Nd) {
   }
 }
 
-void BinGen::writeBlock(std::function<void()> ApplyFn) {
+void BinaryWriter::writeBlock(std::function<void()> ApplyFn) {
   WriteCursor BlockPos(WritePos);
   Writer->writeFixedVaruint32(0, WritePos);
   size_t SizeAfterSizeWrite = WritePos.getCurAddress();
@@ -227,10 +227,11 @@ void BinGen::writeBlock(std::function<void()> ApplyFn) {
   }
 }
 
-void BinGen::writeSymbol(const Node* Symbol) {
+void BinaryWriter::writeSymbol(const Node* Symbol) {
   TraceClass::Method _("writeSymbol", Trace);
   Trace.traceSexp(Symbol);
-  assert(isa<SymbolNode>(Symbol) && "BinGen::writeSymbol called on non-symbol");
+  assert(isa<SymbolNode>(Symbol) &&
+         "BinaryWriter::writeSymbol called on non-symbol");
   const auto* Sym = cast<SymbolNode>(Symbol);
   InternalName SymName = Sym->getName();
   Writer->writeVaruint32(SymName.size(), WritePos);

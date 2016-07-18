@@ -101,7 +101,8 @@ int main(int Argc, char *Argv[]) {
   // TODO(karlschimpf) Use arena allocator once working.
   Malloc Allocator;
   ReadBackedByteQueue Input(getInput());
-  BinaryReader Reader(&Input, &Allocator);
+  SymbolTable Symtab(&Allocator);
+  BinaryReader Reader(&Input, Symtab);
   Reader.setTraceProgress(TraceProgress);
   FileNode *File = Reader.readFile();
   if (File == nullptr) {

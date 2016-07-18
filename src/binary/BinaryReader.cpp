@@ -26,10 +26,10 @@ namespace wasm {
 
 namespace filt {
 
-BinaryReader::BinaryReader(decode::ByteQueue* Input, alloc::Allocator* Alloc)
-    : Alloc(Alloc),
+BinaryReader::BinaryReader(decode::ByteQueue* Input, SymbolTable& Symtab)
+    : Alloc(Symtab.getAllocator()),
       ReadPos(Input),
-      SectionSymtab(Alloc),
+      SectionSymtab(Symtab),
       Trace(ReadPos, "BinaryReader") {
   Reader = Alloc->create<ByteReadStream>();
 }
@@ -327,6 +327,7 @@ void BinaryReader::readNode() {
       break;
     case OpSelect:
       readNary<SelectNode>();
+      cast<SelectNode>(NodeStack.back())->installFastLookup();
       break;
     case OpSequence:
       readNary<SequenceNode>();
