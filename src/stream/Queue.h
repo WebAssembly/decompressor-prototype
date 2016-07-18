@@ -45,12 +45,12 @@ namespace wasm {
 
 namespace decode {
 
-template<class Base>
+template <class Base>
 class Queue {
-  Queue(const Queue &) = delete;
-  Queue &operator=(const Queue &) = delete;
+  Queue(const Queue&) = delete;
+  Queue& operator=(const Queue&) = delete;
 
-public:
+ public:
   Queue();
 
   virtual ~Queue();
@@ -65,8 +65,8 @@ public:
   // Value unknown (returning maximum possible size) until frozen. When
   // frozen, returns the size of the buffer.
   size_t currentSize() {
-    return EobFrozen
-        ? EobPage->getMaxAddress() : std::numeric_limits<ssize_t>::max();
+    return EobFrozen ? EobPage->getMaxAddress()
+                     : std::numeric_limits<ssize_t>::max();
   }
 
   // Returns the actual size of the buffer (i.e. only those with pages still
@@ -77,7 +77,7 @@ public:
 
   // Returns true if Address is locked.
   bool isAddressLocked(size_t Address) const {
-    Page *P = getPage(Address);
+    Page* P = getPage(Address);
     if (P == nullptr)
       return false;
     return P->isLocked();
@@ -91,7 +91,6 @@ public:
   // defined by previous (successful) calls to getReadLockedPointer()
   // and getWriteLockedPointer().
   void unlock(size_t Address) { unlockPage(getPage(Address)); }
-
 
   // The following two methods allows one to lock the memory of the queue
   // directly, and read/write directly into the buffer. Also locks the
@@ -113,8 +112,9 @@ public:
   //                   internal paging).
   // @result           Pointer to locked address, or nullptr if unable to read
   //                   lock.
-  Base *getReadLockedPointer(size_t Address, size_t WantedSize,
-                             size_t &LockedSize);
+  Base* getReadLockedPointer(size_t Address,
+                             size_t WantedSize,
+                             size_t& LockedSize);
 
   // Returns a pointer into the queue that can be written to. Must unlock the
   // address once writing has been completed.
@@ -128,56 +128,57 @@ public:
   //                   internal paging).
   // @result           Pointer to locked address, or nullptr if unable to write
   //                   lock.
-  Base *getWriteLockedPointer(size_t Address, size_t WantedSize,
-                              size_t &LockedSize);
+  Base* getWriteLockedPointer(size_t Address,
+                              size_t WantedSize,
+                              size_t& LockedSize);
 
   // Freezes eob of the queue. Not valid to read/write past the eob, once set.
   void freezeEob(size_t Address);
 
   bool isEobFrozen() const { return EobFrozen; }
 
-protected:
+ protected:
   // Minimum peek size to maintain. That is, the minimal number of
   // bytes that the read can back up without freezing an address.
   size_t MinPeekSize = 32 * sizeof(Base);
   // True if end of queue buffer has been frozen.
   bool EobFrozen = false;
   // First page still in queue.
-  Page *FirstPage;
+  Page* FirstPage;
   // Page at the current end of buffer.
-  Page *EobPage;
+  Page* EobPage;
   // Fast page lookup map (from page index)
   using PageMapType = std::vector<Page*>;
   PageMapType PageMap;
   // Heap to keep track of pages locks, sorted by page index.
-  std::priority_queue<size_t, std::vector<size_t>,
-                      std::less<size_t>> LockedPages;
+  std::priority_queue<size_t, std::vector<size_t>, std::less<size_t>>
+      LockedPages;
 
   // Returns the page in the queue referred to Address, or nullptr if no
   // such page is in the byte queue.
-  Page *getPage(size_t Address) const {
+  Page* getPage(size_t Address) const {
     return getPageAt(Page::index(Address));
   }
 
   // Returns the page with the given PageIndex, or nullptr if no such
   // page is in the byte queue.
-  Page *getPageAt(size_t PageIndex) const {
+  Page* getPageAt(size_t PageIndex) const {
     return (PageIndex >= PageMap.size()) ? nullptr : PageMap[PageIndex];
   }
 
   // Increments the lock count on the given page.
-  void lockPage(Page *P) {
+  void lockPage(Page* P) {
     P->lock();
     LockedPages.emplace(P->Index);
   }
 
   // Decrements the lock count on the given page.
-  void unlockPage(Page *P) {
+  void unlockPage(Page* P) {
     P->unlock();
     // Remove smallest page indices from queue that no longer have locks.
     while (!LockedPages.empty()) {
       size_t PageIndex = LockedPages.top();
-      Page *P = getPageAt(PageIndex);
+      Page* P = getPageAt(PageIndex);
       if (P && P->isLocked())
         return;
       LockedPages.pop();
@@ -196,8 +197,8 @@ protected:
   virtual bool readFill(size_t Address);
 };
 
-} // end of namespace decode
+}  // end of namespace decode
 
-} // end of namespace wasm
+}  // end of namespace wasm
 
-#endif // DECOMPRESSOR_SRC_STREAM_QUEUE_H
+#endif  // DECOMPRESSOR_SRC_STREAM_QUEUE_H

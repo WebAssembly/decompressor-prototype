@@ -30,9 +30,9 @@ namespace filt {
 
 namespace {
 
-constexpr const char *IndentString = "  ";
+constexpr const char* IndentString = "  ";
 
-} // end of anonyous namespace
+}  // end of anonyous namespace
 
 bool TextWriter::UseNodeTypeNames = false;
 
@@ -43,25 +43,23 @@ TextWriter::TextWriter() {
     MaxKidCountSameLine.push_back(0);
   }
   for (size_t i = 0; i < NumNodeTypes; ++i) {
-    AstTraitsType &Traits = AstTraits[i];
+    AstTraitsType& Traits = AstTraits[i];
     KidCountSameLine[int(Traits.Type)] = Traits.NumTextArgs;
     MaxKidCountSameLine[int(Traits.Type)] =
         Traits.NumTextArgs + Traits.AdditionalTextArgs;
   }
-  // Build map of nodes that can have hidden seq as last kid.
-#define X(tag) \
-  HasHiddenSeqSet.insert(int(Op##tag));
+// Build map of nodes that can have hidden seq as last kid.
+#define X(tag) HasHiddenSeqSet.insert(int(Op##tag));
   AST_NODE_HAS_HIDDEN_SEQ
 #undef X
-  // Build map of nodes that never should be on the same line
-  // as its parent.
-#define X(tag) \
-  NeverSameLine.insert(int(Op##tag));
+// Build map of nodes that never should be on the same line
+// as its parent.
+#define X(tag) NeverSameLine.insert(int(Op##tag));
   AST_NODE_NEVER_SAME_LINE
 #undef X
 }
 
-TextWriter::Indent::Indent(TextWriter *Writer, bool AddNewline)
+TextWriter::Indent::Indent(TextWriter* Writer, bool AddNewline)
     : Writer(Writer), AddNewline(AddNewline) {
   Writer->writeIndent();
 }
@@ -70,8 +68,9 @@ TextWriter::Indent::~Indent() {
   Writer->maybeWriteNewline(AddNewline);
 }
 
-TextWriter::Parenthesize::Parenthesize(
-    TextWriter *Writer, NodeType Type, bool AddNewline)
+TextWriter::Parenthesize::Parenthesize(TextWriter* Writer,
+                                       NodeType Type,
+                                       bool AddNewline)
     : Writer(Writer), AddNewline(AddNewline) {
   Writer->writeIndent();
   fputc('(', Writer->File);
@@ -89,17 +88,17 @@ TextWriter::Parenthesize::~Parenthesize() {
   Writer->maybeWriteNewline(AddNewline);
 }
 
-void TextWriter::write(FILE *File, const Node *Root) {
+void TextWriter::write(FILE* File, const Node* Root) {
   initialize(File);
   writeNode(Root, true);
 }
 
-void TextWriter::writeAbbrev(FILE *File, const Node *Root) {
+void TextWriter::writeAbbrev(FILE* File, const Node* Root) {
   initialize(File);
   writeNodeAbbrev(Root, true);
 }
 
-void TextWriter::initialize(FILE *File) {
+void TextWriter::initialize(FILE* File) {
   this->File = File;
   IndentCount = 0;
   LineEmpty = true;
@@ -113,7 +112,7 @@ void TextWriter::writeIndent() {
   LineEmpty = IndentCount == 0;
 }
 
-void TextWriter::writeNodeKids(const Node *Nd, bool EmbeddedInParent) {
+void TextWriter::writeNodeKids(const Node* Nd, bool EmbeddedInParent) {
   // Write out with number of kids specified to be on same line,
   // with remaining kids on separate (indented) lines.
   int Type = int(Nd->getType());
@@ -122,10 +121,10 @@ void TextWriter::writeNodeKids(const Node *Nd, bool EmbeddedInParent) {
   int NumKids = Nd->getNumKids();
   if (NumKids <= MaxKidCountSameLine[int(Type)])
     KidsSameLine = MaxKidCountSameLine[int(Type)];
-  Node *LastKid = Nd->getLastKid();
+  Node* LastKid = Nd->getLastKid();
   int HasHiddenSeq = HasHiddenSeqSet.count(Type);
   bool ForceNewline = false;
-  for (auto *Kid : *Nd) {
+  for (auto* Kid : *Nd) {
     if (HasHiddenSeq && Kid == LastKid && isa<SequenceNode>(LastKid)) {
       writeNewline();
       writeNode(Kid, true, HasHiddenSeq);
@@ -159,7 +158,8 @@ void TextWriter::writeNodeKids(const Node *Nd, bool EmbeddedInParent) {
   }
 }
 
-void TextWriter::writeNode(const Node *Nd, bool AddNewline,
+void TextWriter::writeNode(const Node* Nd,
+                           bool AddNewline,
                            bool EmbedInParent) {
   switch (NodeType Type = Nd->getType()) {
     default: {
@@ -173,20 +173,20 @@ void TextWriter::writeNode(const Node *Nd, bool AddNewline,
     }
     case OpFile: {
       // Treat like hidden node. That is, visually just a list of s-expressions.
-      for (auto *Kid : *Nd)
+      for (auto* Kid : *Nd)
         writeNode(Kid, true);
       return;
     }
     case OpInteger: {
       Indent _(this, AddNewline);
-      const auto *Int = cast<IntegerNode>(Nd);
+      const auto* Int = cast<IntegerNode>(Nd);
       writeInt(File, Int->getValue(), Int->getFormat());
       LineEmpty = false;
       return;
     }
     case OpSymbol: {
       Indent _(this, AddNewline);
-      const auto *Sym = cast<SymbolNode>(Nd);
+      const auto* Sym = cast<SymbolNode>(Nd);
       fputc('\'', File);
       for (uint8_t V : Sym->getName()) {
         switch (V) {
@@ -236,7 +236,7 @@ void TextWriter::writeNode(const Node *Nd, bool AddNewline,
   }
 }
 
-void TextWriter::writeNodeKidsAbbrev(const Node *Nd, bool EmbeddedInParent) {
+void TextWriter::writeNodeKidsAbbrev(const Node* Nd, bool EmbeddedInParent) {
   // Write out with number of kids specified to be on same line,
   // with remaining kids on separate (indented) lines.
   int Type = int(Nd->getType());
@@ -245,9 +245,9 @@ void TextWriter::writeNodeKidsAbbrev(const Node *Nd, bool EmbeddedInParent) {
   int NumKids = Nd->getNumKids();
   if (NumKids <= MaxKidCountSameLine[int(Type)])
     KidsSameLine = MaxKidCountSameLine[int(Type)];
-  Node *LastKid = Nd->getLastKid();
+  Node* LastKid = Nd->getLastKid();
   int HasHiddenSeq = HasHiddenSeqSet.count(Type);
-  for (auto *Kid : *Nd) {
+  for (auto* Kid : *Nd) {
     if (HasHiddenSeq && Kid == LastKid && isa<SequenceNode>(Kid)) {
       fprintf(File, " ...[%d]", Kid->getNumKids());
       return;
@@ -281,7 +281,8 @@ void TextWriter::writeNodeKidsAbbrev(const Node *Nd, bool EmbeddedInParent) {
   }
 }
 
-void TextWriter::writeNodeAbbrev(const Node *Nd, bool AddNewline,
+void TextWriter::writeNodeAbbrev(const Node* Nd,
+                                 bool AddNewline,
                                  bool EmbedInParent) {
   switch (NodeType Type = Nd->getType()) {
     default: {
@@ -305,6 +306,6 @@ void TextWriter::writeNodeAbbrev(const Node *Nd, bool AddNewline,
   }
 }
 
-} // end of namespace filt
+}  // end of namespace filt
 
-} // end of namespace wasm
+}  // end of namespace wasm

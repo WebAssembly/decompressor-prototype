@@ -27,7 +27,7 @@ namespace wasm {
 namespace decode {
 
 class Cursor {
-public:
+ public:
   static constexpr size_t kUndefinedAddress =
       std::numeric_limits<size_t>::max();
 
@@ -41,7 +41,7 @@ public:
     EobAddress = C.EobAddress;
   }
 
-  void swap(Cursor &C) {
+  void swap(Cursor& C) {
     std::swap(Queue, C.Queue);
     std::swap(LockedAddress, C.LockedAddress);
     std::swap(Buffer, C.Buffer);
@@ -50,17 +50,11 @@ public:
     std::swap(EobAddress, C.EobAddress);
   }
 
-  size_t getEobAddress() const {
-    return EobAddress;
-  }
+  size_t getEobAddress() const { return EobAddress; }
 
-  bool atEob() const {
-    return CurAddress >= EobAddress;
-  }
+  bool atEob() const { return CurAddress >= EobAddress; }
 
-  size_t getCurAddress() const {
-    return CurAddress;
-  }
+  size_t getCurAddress() const { return CurAddress; }
 
   void releaseLock() {
     if (Buffer) {
@@ -70,9 +64,7 @@ public:
     }
   }
 
-  ByteQueue* getQueue() {
-    return Queue;
-  }
+  ByteQueue* getQueue() { return Queue; }
 
   // WARNING: Assumes that you have a lock before NewAddress when this is
   // called.
@@ -81,30 +73,31 @@ public:
     CurAddress = NewAddress;
   }
 
-protected:
+ protected:
   // The byte queue the cursor points to.
-  ByteQueue *Queue;
+  ByteQueue* Queue;
   // The address locked by this cursor, if Buffer != nullptr.
   size_t LockedAddress = 0;
   // The pointer to the locked buffer.
-  uint8_t *Buffer = nullptr;
+  uint8_t* Buffer = nullptr;
   // The pointer to the end of the locked buffer.
-  uint8_t *BufferEnd = nullptr;
+  uint8_t* BufferEnd = nullptr;
   // The current address into the buffer.
   size_t CurAddress = 0;
   // End of block address.
   size_t EobAddress = kUndefinedAddress;
 
-  explicit Cursor (ByteQueue *Queue) : Queue(Queue) {}
+  explicit Cursor(ByteQueue* Queue) : Queue(Queue) {}
 
-  ~Cursor() {
-    releaseLock();
-  }
+  ~Cursor() { releaseLock(); }
 
-  explicit Cursor(const Cursor& C) :
-      Queue(C.Queue), LockedAddress(C.LockedAddress),
-      Buffer(C.Buffer), BufferEnd(C.BufferEnd), CurAddress(C.CurAddress),
-      EobAddress(kUndefinedAddress) {
+  explicit Cursor(const Cursor& C)
+      : Queue(C.Queue),
+        LockedAddress(C.LockedAddress),
+        Buffer(C.Buffer),
+        BufferEnd(C.BufferEnd),
+        CurAddress(C.CurAddress),
+        EobAddress(kUndefinedAddress) {
     // Add local copy of lock, so that lifetime matches cursor.
     if (Buffer)
       Queue->lock(LockedAddress);
@@ -112,10 +105,10 @@ protected:
 };
 
 class ReadCursor : public Cursor {
-public:
-  explicit ReadCursor(ByteQueue *Queue) : Cursor(Queue) {}
-  explicit ReadCursor(const ReadCursor &C) : Cursor(C) {}
-  ReadCursor &operator=(const ReadCursor &C) {
+ public:
+  explicit ReadCursor(ByteQueue* Queue) : Cursor(Queue) {}
+  explicit ReadCursor(const ReadCursor& C) : Cursor(C) {}
+  ReadCursor& operator=(const ReadCursor& C) {
     assign(C);
     return *this;
   }
@@ -129,10 +122,9 @@ public:
   }
 
   size_t getEobAddress() const {
-    return LocalEobOverrides.empty()
-        ? Cursor::getEobAddress() : LocalEobOverrides.back();
+    return LocalEobOverrides.empty() ? Cursor::getEobAddress()
+                                     : LocalEobOverrides.back();
   }
-
 
   bool atEob() {
     if (BufferEnd > Buffer)
@@ -151,7 +143,7 @@ public:
     LocalEobOverrides.pop_back();
   }
 
-protected:
+ protected:
   // Stack of local Eob addresses.
   std::vector<size_t> LocalEobOverrides;
   // Fills buffer with more text, if possible.
@@ -159,10 +151,10 @@ protected:
 };
 
 class WriteCursor : public Cursor {
-public:
-  explicit WriteCursor(ByteQueue *Queue) : Cursor(Queue) {}
-  explicit WriteCursor(const WriteCursor &C) : Cursor(C) {}
-  WriteCursor &operator=(const WriteCursor &C) {
+ public:
+  explicit WriteCursor(ByteQueue* Queue) : Cursor(Queue) {}
+  explicit WriteCursor(const WriteCursor& C) : Cursor(C) {}
+  WriteCursor& operator=(const WriteCursor& C) {
     assign(C);
     return *this;
   }
@@ -181,14 +173,14 @@ public:
   }
 
   // For debugging.
-  void writeCurPage(FILE *File);
+  void writeCurPage(FILE* File);
 
-protected:
+ protected:
   void fillBuffer();
 };
 
-} // end of namespace decode
+}  // end of namespace decode
 
-} // end of namespace wasm
+}  // end of namespace wasm
 
-#endif // DECOMPRESSOR_SRC_STREAM_CURSOR_H
+#endif  // DECOMPRESSOR_SRC_STREAM_CURSOR_H

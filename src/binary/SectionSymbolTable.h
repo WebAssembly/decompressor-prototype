@@ -32,39 +32,37 @@ namespace wasm {
 namespace filt {
 
 class SectionSymbolTable {
-  SectionSymbolTable(const SectionSymbolTable &) = delete;
-  SectionSymbolTable &operator=(const SectionSymbolTable &) = delete;
-public:
+  SectionSymbolTable(const SectionSymbolTable&) = delete;
+  SectionSymbolTable& operator=(const SectionSymbolTable&) = delete;
+
+ public:
   using IndexType = uint32_t;
-  using SymbolLookupType = std::unordered_map<SymbolNode *, IndexType>;
-  using IndexLookupType = std::vector<SymbolNode *>;
-  SectionSymbolTable(alloc::Allocator *Alloc) : Symtab(Alloc) {}
+  using SymbolLookupType = std::unordered_map<SymbolNode*, IndexType>;
+  using IndexLookupType = std::vector<SymbolNode*>;
+  SectionSymbolTable(alloc::Allocator* Alloc) : Symtab(Alloc) {}
   ~SectionSymbolTable() {}
-  void installSection(const SectionNode *Section);
-  const IndexLookupType &getVector() {
-    return IndexLookup;
-  }
-  void addSymbol(std::string &Name);
-  uint32_t getSymbolIndex(SymbolNode *Symbol);
+  void installSection(const SectionNode* Section);
+  const IndexLookupType& getVector() { return IndexLookup; }
+  void addSymbol(std::string& Name);
+  uint32_t getSymbolIndex(SymbolNode* Symbol);
   void clear() {
     Symtab.clear();
     SymbolLookup.clear();
     IndexLookup.clear();
   }
-  SymbolNode *getIndexSymbol(IndexType Index);
-  bool empty() const {
-    return IndexLookup.empty();
-  }
-private:
+  SymbolNode* getIndexSymbol(IndexType Index);
+  bool empty() const { return IndexLookup.empty(); }
+
+ private:
   // Cache that holds the set of uniquified symbols.
   SymbolTable Symtab;
   SymbolLookupType SymbolLookup;
   IndexLookupType IndexLookup;
-  void installSymbols(const Node *Nd);
+  void installSymbols(const Node* Nd);
 };
 
-} // end of namespace filt
+}  // end of namespace filt
 
-} // end of namespace wasm
+}  // end of namespace wasm
 
-#endif // DECOMPRESSOR_SRC_BINARY_SECTIONSYMBOLTABLE_H
+#endif  // DECOMPRESSOR_SRC_BINARY_SECTIONSYMBOLTABLE_H

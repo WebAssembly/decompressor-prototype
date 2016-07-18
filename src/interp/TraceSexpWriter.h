@@ -27,24 +27,26 @@ namespace interp {
 
 // Extends the sexpression trace class to add a read cursor context.
 class TraceClassSexpWriter : public filt::TraceClassSexp {
-  TraceClassSexpWriter(const TraceClassSexpWriter &) = delete;
-  TraceClassSexpWriter &operator=(const TraceClassSexpWriter &) = delete;
-public:
-  explicit TraceClassSexpWriter(decode::WriteCursor &Writepos);
-  TraceClassSexpWriter(decode::WriteCursor &Writepos, const char *Label);
-  TraceClassSexpWriter(decode::WriteCursor &Writepos, FILE *File);
-  TraceClassSexpWriter(decode::WriteCursor &Writepos, const char *Label,
-                       FILE *File);
+  TraceClassSexpWriter(const TraceClassSexpWriter&) = delete;
+  TraceClassSexpWriter& operator=(const TraceClassSexpWriter&) = delete;
+
+ public:
+  explicit TraceClassSexpWriter(decode::WriteCursor& Writepos);
+  TraceClassSexpWriter(decode::WriteCursor& Writepos, const char* Label);
+  TraceClassSexpWriter(decode::WriteCursor& Writepos, FILE* File);
+  TraceClassSexpWriter(decode::WriteCursor& Writepos,
+                       const char* Label,
+                       FILE* File);
   ~TraceClassSexpWriter();
 
   void traceContext() const override;
 
-protected:
-  decode::WriteCursor &Writepos;
+ protected:
+  decode::WriteCursor& Writepos;
 };
 
-} // end of namespace interp
+}  // end of namespace interp
 
-} // end of namespace wasm
+}  // end of namespace wasm
 
-#endif // DECOMPRESSOR_SRC_INTERP_TRACESEXPWRITER_H
+#endif  // DECOMPRESSOR_SRC_INTERP_TRACESEXPWRITER_H

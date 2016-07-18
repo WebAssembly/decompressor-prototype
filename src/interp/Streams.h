@@ -26,8 +26,8 @@ namespace interp {
 
 enum class StreamType { Bit, Byte, Int, Ast };
 
-} // end of namespace decode
+}  // end of namespace decode
 
-} // end of namespace wasm
+}  // end of namespace wasm
 
-#endif // DECOMPRESSOR_SRC_INTERP_STREAMS_H
+#endif  // DECOMPRESSOR_SRC_INTERP_STREAMS_H

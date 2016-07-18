@@ -44,7 +44,7 @@ void FdReader::closeFd() {
   }
 }
 
-size_t FdReader::read(uint8_t *Buf, size_t Size) {
+size_t FdReader::read(uint8_t* Buf, size_t Size) {
   size_t Count = 0;
   while (Size) {
     if (BytesRemaining >= Size) {
@@ -67,9 +67,9 @@ size_t FdReader::read(uint8_t *Buf, size_t Size) {
   return Count;
 }
 
-bool FdReader::write(uint8_t *Buf, size_t Size) {
-  (void) Buf;
-  (void) Size;
+bool FdReader::write(uint8_t* Buf, size_t Size) {
+  (void)Buf;
+  (void)Size;
   return false;
 }
 
@@ -89,11 +89,13 @@ bool FdReader::atEof() {
   return AtEof;
 }
 
-FileReader::FileReader(const char *Filename)
-    : FdReader(open(Filename, O_RDONLY), true) {}
+FileReader::FileReader(const char* Filename)
+    : FdReader(open(Filename, O_RDONLY), true) {
+}
 
-FileReader::~FileReader() {}
+FileReader::~FileReader() {
+}
 
-} // end of namespace decode
+}  // end of namespace decode
 
-} // end of namespace wasm
+}  // end of namespace wasm

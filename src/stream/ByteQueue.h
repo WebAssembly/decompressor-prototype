@@ -28,10 +28,10 @@ namespace wasm {
 namespace decode {
 
 class ByteQueue : public Queue<uint8_t> {
-  ByteQueue(const ByteQueue &) = delete;
-  ByteQueue &operator=(const ByteQueue &) = delete;
+  ByteQueue(const ByteQueue&) = delete;
+  ByteQueue& operator=(const ByteQueue&) = delete;
 
-public:
+ public:
   ByteQueue() {}
 
   ~ByteQueue() override {}
@@ -50,7 +50,7 @@ public:
   // @param Size    The number of requested elements to read.
   // @result        The actual number of elements read. If zero, the eob was
   //                reached. Valid return values are in [0..Size].
-  size_t read(size_t &Address, uint8_t *Buffer, size_t Size=1);
+  size_t read(size_t& Address, uint8_t* Buffer, size_t Size = 1);
 
   // Writes a contiquous sequence of bytes in the given buffer.
   //
@@ -62,26 +62,28 @@ public:
   // @param Buffer  A pointer to the buffer of elements to write.
   // @param Size    The number of elements in the buffer to write.
   // @result        True if successful (i.e. not beyond eob address).
-  bool write(size_t &Address, uint8_t *Buffer, size_t Size=1);
+  bool write(size_t& Address, uint8_t* Buffer, size_t Size = 1);
 
   // For debugging. Writes out sequence of bytes (on page associated with
   // Address) in the queue.
-  void writePageAt(FILE *File, size_t Address);
+  void writePageAt(FILE* File, size_t Address);
 };
 
 // Read-only queue that is write-filled from a steam using the given
 // Reader.
 class ReadBackedByteQueue final : public ByteQueue {
-  ReadBackedByteQueue(const ReadBackedByteQueue &) = delete;
-  ReadBackedByteQueue &operator=(const ReadBackedByteQueue &) = delete;
+  ReadBackedByteQueue(const ReadBackedByteQueue&) = delete;
+  ReadBackedByteQueue& operator=(const ReadBackedByteQueue&) = delete;
   ReadBackedByteQueue() = delete;
-public:
+
+ public:
   ReadBackedByteQueue(std::unique_ptr<RawStream> _Reader) {
     assert(_Reader);
     Reader = std::move(_Reader);
   }
   ~ReadBackedByteQueue() override {}
-private:
+
+ private:
   // Reader to write fill buffer as needed.
   std::unique_ptr<RawStream> Reader;
 
@@ -90,16 +92,18 @@ private:
 
 // Write-only queue that is dumped to a stream using the given Writer.
 class WriteBackedByteQueue final : public ByteQueue {
-  WriteBackedByteQueue(const WriteBackedByteQueue &) = delete;
-  WriteBackedByteQueue &operator=(const WriteBackedByteQueue &) = delete;
+  WriteBackedByteQueue(const WriteBackedByteQueue&) = delete;
+  WriteBackedByteQueue& operator=(const WriteBackedByteQueue&) = delete;
   WriteBackedByteQueue() = delete;
-public:
+
+ public:
   WriteBackedByteQueue(std::unique_ptr<RawStream> _Writer) {
     assert(_Writer);
     Writer = std::move(_Writer);
   }
   ~WriteBackedByteQueue();
-private:
+
+ private:
   // Writer to dump contents of queue, when the contents is no longer
   // needed by reader.
   std::unique_ptr<RawStream> Writer;
@@ -107,8 +111,8 @@ private:
   void dumpFirstPage() override;
 };
 
-} // end of namespace decode
+}  // end of namespace decode
 
-} // end of namespace wasm
+}  // end of namespace wasm
 
-#endif // DECOMPRESSOR_SRC_STREAM_BYTEQUEUE_H
+#endif  // DECOMPRESSOR_SRC_STREAM_BYTEQUEUE_H

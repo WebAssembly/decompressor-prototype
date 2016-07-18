@@ -40,13 +40,13 @@ bool StreamWriter::saveBuffer() {
   return true;
 }
 
-size_t StreamWriter::read(uint8_t *Buf, size_t Size) {
-  (void) Buf;
-  (void) Size;
+size_t StreamWriter::read(uint8_t* Buf, size_t Size) {
+  (void)Buf;
+  (void)Size;
   return 0;
 }
 
-bool StreamWriter::write(uint8_t *Buf, size_t Size) {
+bool StreamWriter::write(uint8_t* Buf, size_t Size) {
   while (Size) {
     if (CurSize == kBufSize) {
       if (!saveBuffer())
@@ -72,16 +72,18 @@ bool StreamWriter::atEof() {
   return IsFrozen;
 }
 
-FstreamWriter::FstreamWriter(const char *Filename)
-    : StreamWriter(FileOutput), FileOutput(Filename) {}
+FstreamWriter::FstreamWriter(const char* Filename)
+    : StreamWriter(FileOutput), FileOutput(Filename) {
+}
 
-FstreamWriter::~FstreamWriter() {}
+FstreamWriter::~FstreamWriter() {
+}
 
 void FstreamWriter::close() {
   if (FileOutput.is_open())
     FileOutput.close();
 }
 
-} // end of namespace decode
+}  // end of namespace decode
 
-} // end of namespace wasm
+}  // end of namespace wasm

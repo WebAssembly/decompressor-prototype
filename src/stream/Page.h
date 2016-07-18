@@ -43,7 +43,6 @@
 // TODO(KarlSchimpf): bocking not implemented. Currently, reads fail if they try
 // to read from a locked page.
 
-
 #ifndef DECOMPRESSOR_SRC_STREAM_PAGE_H
 #define DECOMPRESSOR_SRC_STREAM_PAGE_H
 
@@ -56,9 +55,10 @@ namespace wasm {
 namespace decode {
 
 class Page {
-  Page(const Page &) = delete;
-  Page &operator=(const Page &) = delete;
-public:
+  Page(const Page&) = delete;
+  Page& operator=(const Page&) = delete;
+
+ public:
   static constexpr size_t SizeLog2 = 12;
   static constexpr size_t Size = 1 << SizeLog2;
   static constexpr size_t Mask = Size - 1;
@@ -74,7 +74,8 @@ public:
   }
 
   Page(size_t MinAddress)
-      : Index(Page::index(MinAddress)), MinAddress(MinAddress),
+      : Index(Page::index(MinAddress)),
+        MinAddress(MinAddress),
         MaxAddress(MinAddress) {
     std::memset(&Buffer, Page::Size, 0);
   }
@@ -89,98 +90,35 @@ public:
   bool isLocked() const { return LockCount > 0; }
 
   size_t spaceRemaining() const {
-    return
-        (MinAddress + Page::Size == MaxAddress)
-        ? 0
-        : (Page::Size - (MaxAddress & Page::Mask));
+    return (MinAddress + Page::Size == MaxAddress)
+               ? 0
+               : (Page::Size - (MaxAddress & Page::Mask));
   }
 
-  size_t getMinAddress() const {
-    return MinAddress;
-  }
+  size_t getMinAddress() const { return MinAddress; }
 
-  size_t getMaxAddress() const {
-    return MaxAddress;
-  }
+  size_t getMaxAddress() const { return MaxAddress; }
 
-  void setMaxAddress(size_t NewValue) {
-    MaxAddress = NewValue;
-  }
+  void setMaxAddress(size_t NewValue) { MaxAddress = NewValue; }
 
-  void incrementMaxAddress(size_t Increment=1) {
-    MaxAddress += Increment;
-  }
+  void incrementMaxAddress(size_t Increment = 1) { MaxAddress += Increment; }
 
   // The contents of the page.
   uint8_t Buffer[Page::Size];
   // The page index of the page.
   size_t Index;
-  Page *Last = nullptr;
-  Page *Next = nullptr;
-protected:
+  Page* Last = nullptr;
+  Page* Next = nullptr;
+
+ protected:
   // Note: Buffer address range is [MinAddress, MaxAddress).
   size_t MinAddress;
   size_t MaxAddress;
   size_t LockCount = 0;
 };
 
-#if 0
-class Page {
-  Page(const Page &) = delete;
-  Page &operator=(const Page &) = delete;
- public:
+}  // end of namespace decode
 
-  static constexpr size_t SizeLog2 = 12;
-  static constexpr size_t Size = 1 << SizeLog2;
-  static constexpr size_t PageMask = Size - 1;
+}  // end of namespace wasm
 
-  // Page index associated with address in queue.
-  static constexpr size_t index(size_t Address) {
-    return Address >> SizeLog2;
-  }
-
-  // Returns address within a Page that refers to address.
-  static constexpr size_t address(size_t Address) {
-    return Address & PageMask;
-  }
-
-  Page(size_t MinAddress)
-      : Index(index(MinAddress)), MinAddress(MinAddress),
-        MaxAddress(MinAddress) {
-    std::memset(&Buffer, Size, 0);
-  }
-
-  void lock() { ++LockCount; }
-
-  void unlock() {
-    assert(LockCount >= 1);
-    --LockCount;
-  }
-
-  bool isLocked() const { return LockCount > 0; }
-
-  size_t spaceRemaining() const {
-    return
-        (MinAddress + Size == MaxAddress)
-        ? 0
-        : (Size - (MaxAddress & PageMask));
-  }
-
-  // Contents of page.
-  uint8_t Buffer[Size];
-  // Index of page.
-  size_t Index;
-  // Note: Buffer address range is [MinAddress, MaxAddress).
-  size_t MinAddress;
-  size_t MaxAddress;
-  size_t LockCount = 0;
-  Page *Last = nullptr;
-  Page *Next = nullptr;
-};
-#endif
-
-} // end of namespace decode
-
-} // end of namespace wasm
-
-#endif // DECOMPRESSOR_SRC_STREAM_PAGE_H
+#endif  // DECOMPRESSOR_SRC_STREAM_PAGE_H

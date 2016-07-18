@@ -33,17 +33,17 @@ namespace filt {
 
 namespace {
 
-IntType getIntegerValue(Node *N) {
-  if (auto *IntVal = dyn_cast<IntegerNode>(N))
+IntType getIntegerValue(Node* N) {
+  if (auto* IntVal = dyn_cast<IntegerNode>(N))
     return IntVal->getValue();
   fatal("Integer value expected but not found");
   return 0;
 }
 
-} // end of anonymous namespace
+}  // end of anonymous namespace
 
-BinGen::BinGen(decode::ByteQueue *Output, Allocator *Alloc) :
-    WritePos(Output), SectionSymtab(Alloc), Trace(WritePos, "BinaryWriter") {
+BinGen::BinGen(decode::ByteQueue* Output, Allocator* Alloc)
+    : WritePos(Output), SectionSymtab(Alloc), Trace(WritePos, "BinaryWriter") {
   Writer = Alloc->create<ByteWriteStream>();
 }
 
@@ -52,19 +52,19 @@ void BinGen::writePreamble() {
   Writer->writeUint32(WasmBinaryVersion, WritePos);
 }
 
-void BinGen::writeFile(const FileNode *File) {
+void BinGen::writeFile(const FileNode* File) {
   TraceClass::Method _("writeFile", Trace);
   Trace.traceSexp(File);
   writeNode(File);
 }
 
-void BinGen::writeSection(const SectionNode *Section) {
+void BinGen::writeSection(const SectionNode* Section) {
   TraceClass::Method _("writeSection", Trace);
   Trace.traceSexp(Section);
   writeNode(Section);
 }
 
-void BinGen::writeNode(const Node *Nd) {
+void BinGen::writeNode(const Node* Nd) {
   TraceClass::Method _("writeNode", Trace);
   Trace.traceSexp(Nd);
   switch (NodeType Type = Nd->getType()) {
@@ -102,7 +102,7 @@ void BinGen::writeNode(const Node *Nd) {
     case OpVoid: {
       // Operations that are written out in postorder, with a fixed number of
       // arguments.
-      for (const auto *Kid : *Nd)
+      for (const auto* Kid : *Nd)
         writeNode(Kid);
       Writer->writeUint8(Type, WritePos);
       break;
@@ -114,24 +114,23 @@ void BinGen::writeNode(const Node *Nd) {
       break;
     }
     case OpFile: {
-      for (const auto *Kid : *Nd)
+      for (const auto* Kid : *Nd)
         writeNode(Kid);
       break;
     }
     case OpSection: {
-      writeSymbol(Nd->getKid(0)); // name of section
-      writeBlock(
-          [&]() {
-            const auto *Section = cast<SectionNode>(Nd);
-            SectionSymtab.installSection(Section);
-            const SectionSymbolTable::IndexLookupType &Vector =
-                SectionSymtab.getVector();
-            Writer->writeVaruint32(Vector.size(), WritePos);
-            for (const SymbolNode *Symbol : Vector)
-              writeSymbol(Symbol);
-            for (int i = 1, len = Nd->getNumKids(); i < len; ++i)
-              writeNode(Nd->getKid(i));
-          });
+      writeSymbol(Nd->getKid(0));  // name of section
+      writeBlock([&]() {
+        const auto* Section = cast<SectionNode>(Nd);
+        SectionSymtab.installSection(Section);
+        const SectionSymbolTable::IndexLookupType& Vector =
+            SectionSymtab.getVector();
+        Writer->writeVaruint32(Vector.size(), WritePos);
+        for (const SymbolNode* Symbol : Vector)
+          writeSymbol(Symbol);
+        for (int i = 1, len = Nd->getNumKids(); i < len; ++i)
+          writeNode(Nd->getKid(i));
+      });
       SectionSymtab.clear();
       break;
     }
@@ -140,14 +139,14 @@ void BinGen::writeNode(const Node *Nd) {
     case OpSequence: {
       // Operations that are written out in postorder, and have a variable
       // number of arguments.
-      for (const auto *Kid : *Nd)
+      for (const auto* Kid : *Nd)
         writeNode(Kid);
       Writer->writeUint8(Type, WritePos);
       Writer->writeVaruint32(Nd->getNumKids(), WritePos);
       break;
     }
     case OpSymbol: {
-      SymbolNode *Sym = cast<SymbolNode>(const_cast<Node*>(Nd));
+      SymbolNode* Sym = cast<SymbolNode>(const_cast<Node*>(Nd));
       Writer->writeVaruint32(SectionSymtab.getSymbolIndex(Sym), WritePos);
       break;
     }
@@ -209,8 +208,8 @@ void BinGen::writeBlock(std::function<void()> ApplyFn) {
   size_t SizeAfterSizeWrite = WritePos.getCurAddress();
   ApplyFn();
   const size_t NewSize =
-      WritePos.getCurAddress() - (BlockPos.getCurAddress() +
-                                  ByteWriteStream::ChunksInWord);
+      WritePos.getCurAddress() -
+      (BlockPos.getCurAddress() + ByteWriteStream::ChunksInWord);
   if (!MinimizeBlockSize) {
     Writer->writeFixedVaruint32(NewSize, BlockPos);
   } else {
@@ -221,24 +220,24 @@ void BinGen::writeBlock(std::function<void()> ApplyFn) {
       size_t End = WritePos.getCurAddress() - Diff;
       ReadCursor CopyPos(WritePos.getQueue());
       CopyPos.jumpToAddress(SizeAfterSizeWrite);
-      for (size_t i = SizeAfterBackPatch; i < End; ++ i)
+      for (size_t i = SizeAfterBackPatch; i < End; ++i)
         BlockPos.writeByte(CopyPos.readByte());
       WritePos.jumpToAddress(BlockPos.getCurAddress());
     }
   }
 }
 
-void BinGen::writeSymbol(const Node *Symbol) {
+void BinGen::writeSymbol(const Node* Symbol) {
   TraceClass::Method _("writeSymbol", Trace);
   Trace.traceSexp(Symbol);
   assert(isa<SymbolNode>(Symbol) && "BinGen::writeSymbol called on non-symbol");
-  const auto *Sym = cast<SymbolNode>(Symbol);
+  const auto* Sym = cast<SymbolNode>(Symbol);
   InternalName SymName = Sym->getName();
   Writer->writeVaruint32(SymName.size(), WritePos);
   for (size_t i = 0, len = SymName.size(); i < len; ++i)
     Writer->writeUint8(SymName[i], WritePos);
 }
 
-} // end of namespace filt
+}  // end of namespace filt
 
-} // end of namespace wasm
+}  // end of namespace wasm

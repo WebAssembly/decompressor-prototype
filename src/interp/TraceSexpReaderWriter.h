@@ -27,30 +27,34 @@ namespace interp {
 
 // Extends the sexpression trace class to add a read cursor context.
 class TraceClassSexpReaderWriter : public filt::TraceClassSexp {
-  TraceClassSexpReaderWriter(const TraceClassSexpReaderWriter &) = delete;
-  TraceClassSexpReaderWriter &operator=(
-      const TraceClassSexpReaderWriter &) = delete;
-public:
-  explicit TraceClassSexpReaderWriter(decode::ReadCursor &ReadPos,
-                                decode::WriteCursor &WritePos);
-  TraceClassSexpReaderWriter(decode::ReadCursor &ReadPos,
-                       decode::WriteCursor &WritePos, const char *Label);
-  TraceClassSexpReaderWriter(decode::ReadCursor &ReadPos,
-                       decode::WriteCursor &WritePos, FILE *File);
-  TraceClassSexpReaderWriter(decode::ReadCursor &ReadPos,
-                       decode::WriteCursor &WritePos, const char *Label,
-                       FILE *File);
+  TraceClassSexpReaderWriter(const TraceClassSexpReaderWriter&) = delete;
+  TraceClassSexpReaderWriter& operator=(const TraceClassSexpReaderWriter&) =
+      delete;
+
+ public:
+  explicit TraceClassSexpReaderWriter(decode::ReadCursor& ReadPos,
+                                      decode::WriteCursor& WritePos);
+  TraceClassSexpReaderWriter(decode::ReadCursor& ReadPos,
+                             decode::WriteCursor& WritePos,
+                             const char* Label);
+  TraceClassSexpReaderWriter(decode::ReadCursor& ReadPos,
+                             decode::WriteCursor& WritePos,
+                             FILE* File);
+  TraceClassSexpReaderWriter(decode::ReadCursor& ReadPos,
+                             decode::WriteCursor& WritePos,
+                             const char* Label,
+                             FILE* File);
   ~TraceClassSexpReaderWriter();
 
   void traceContext() const override;
 
-protected:
-  decode::ReadCursor &ReadPos;
-  decode::WriteCursor &WritePos;
+ protected:
+  decode::ReadCursor& ReadPos;
+  decode::WriteCursor& WritePos;
 };
 
-} // end of namespace interp
+}  // end of namespace interp
 
-} // end of namespace wasm
+}  // end of namespace wasm
 
-#endif // DECOMPRESSOR_SRC_INTERP_TRACESEXPREADERWRITER_H
+#endif  // DECOMPRESSOR_SRC_INTERP_TRACESEXPREADERWRITER_H

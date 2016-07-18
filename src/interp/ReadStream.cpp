@@ -24,8 +24,8 @@ namespace {
 
 using namespace wasm::decode;
 
-template<class Type>
-Type readFixed(ReadCursor &Pos) {
+template <class Type>
+Type readFixed(ReadCursor& Pos) {
   uint32_t Value = 0;
   constexpr uint32_t WordSize = sizeof(uint32_t);
   uint32_t Shift = 0;
@@ -36,8 +36,8 @@ Type readFixed(ReadCursor &Pos) {
   return Value;
 }
 
-template<class Type>
-Type readLEB128Loop(ReadCursor &Pos, uint32_t &Shift, uint8_t &Chunk) {
+template <class Type>
+Type readLEB128Loop(ReadCursor& Pos, uint32_t& Shift, uint8_t& Chunk) {
   Type Value = 0;
   Shift = 0;
   while (true) {
@@ -50,15 +50,15 @@ Type readLEB128Loop(ReadCursor &Pos, uint32_t &Shift, uint8_t &Chunk) {
   }
 }
 
-template<class Type>
-Type readLEB128(ReadCursor &Pos) {
+template <class Type>
+Type readLEB128(ReadCursor& Pos) {
   uint32_t Shift;
   uint8_t Chunk;
   return readLEB128Loop<Type>(Pos, Shift, Chunk);
 }
 
-template<class Type>
-Type readSignedLEB128(ReadCursor &Pos) {
+template <class Type>
+Type readSignedLEB128(ReadCursor& Pos) {
   uint32_t Shift;
   uint8_t Chunk;
   Type Value = readLEB128Loop<Type>(Pos, Shift, Chunk);
@@ -67,7 +67,7 @@ Type readSignedLEB128(ReadCursor &Pos) {
   return Value;
 }
 
-} // end of anonymous namespace
+}  // end of anonymous namespace
 
 namespace wasm {
 
@@ -75,41 +75,38 @@ using namespace decode;
 
 namespace interp {
 
-uint8_t ByteReadStream::readUint8Bits(
-    ReadCursor &Pos, uint32_t /*NumBits*/) {
+uint8_t ByteReadStream::readUint8Bits(ReadCursor& Pos, uint32_t /*NumBits*/) {
   return Pos.readByte();
 }
 
-uint32_t ByteReadStream::readUint32Bits(
-    ReadCursor &Pos, uint32_t /*NumBits*/) {
+uint32_t ByteReadStream::readUint32Bits(ReadCursor& Pos, uint32_t /*NumBits*/) {
   return readFixed<uint32_t>(Pos);
 }
 
-int32_t ByteReadStream::readVarint32Bits(
-    ReadCursor &Pos, uint32_t /*NumBits*/) {
+int32_t ByteReadStream::readVarint32Bits(ReadCursor& Pos,
+                                         uint32_t /*NumBits*/) {
   return readSignedLEB128<uint32_t>(Pos);
 }
 
-int64_t ByteReadStream::readVarint64Bits(
-    ReadCursor &Pos, uint32_t /*NumBits*/) {
+int64_t ByteReadStream::readVarint64Bits(ReadCursor& Pos,
+                                         uint32_t /*NumBits*/) {
   return readSignedLEB128<uint64_t>(Pos);
 }
 
-uint64_t ByteReadStream::readUint64Bits(
-    ReadCursor &Pos, uint32_t /*NumBits*/) {
+uint64_t ByteReadStream::readUint64Bits(ReadCursor& Pos, uint32_t /*NumBits*/) {
   return readFixed<uint64_t>(Pos);
 }
 
-uint32_t ByteReadStream::readVaruint32Bits(
-    ReadCursor &Pos, uint32_t /*NumBits*/) {
+uint32_t ByteReadStream::readVaruint32Bits(ReadCursor& Pos,
+                                           uint32_t /*NumBits*/) {
   return readLEB128<uint32_t>(Pos);
 }
 
-uint64_t ByteReadStream::readVaruint64Bits(
-    ReadCursor &Pos, uint32_t /*NumBits*/) {
+uint64_t ByteReadStream::readVaruint64Bits(ReadCursor& Pos,
+                                           uint32_t /*NumBits*/) {
   return readLEB128<uint64_t>(Pos);
 }
 
-} // end of namespace decode
+}  // end of namespace decode
 
-} // end of namespace wasm
+}  // end of namespace wasm

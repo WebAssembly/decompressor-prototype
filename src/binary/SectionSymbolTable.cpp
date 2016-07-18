@@ -26,8 +26,8 @@ namespace wasm {
 
 namespace filt {
 
-void SectionSymbolTable::addSymbol(std::string &Name) {
-  SymbolNode *Sym = Symtab.getSymbolDefinition(Name);
+void SectionSymbolTable::addSymbol(std::string& Name) {
+  SymbolNode* Sym = Symtab.getSymbolDefinition(Name);
   if (SymbolLookup.count(Sym) == 0) {
     IndexType Index = IndexLookup.size();
     SymbolLookup[Sym] = Index;
@@ -35,37 +35,37 @@ void SectionSymbolTable::addSymbol(std::string &Name) {
   }
 }
 
-void SectionSymbolTable::installSymbols(const Node *Nd) {
-  if (const SymbolNode *Symbol = dyn_cast<SymbolNode>(Nd)) {
+void SectionSymbolTable::installSymbols(const Node* Nd) {
+  if (const SymbolNode* Symbol = dyn_cast<SymbolNode>(Nd)) {
     std::string SymName = Symbol->getStringName();
     addSymbol(SymName);
   }
-  for (const auto *Kid : *Nd)
+  for (const auto* Kid : *Nd)
     installSymbols(Kid);
 }
 
-void SectionSymbolTable::installSection(const SectionNode *Section) {
+void SectionSymbolTable::installSection(const SectionNode* Section) {
   // Install all kids but the first (i.e. the section name), since section
   // names must be explicitly defined.
   for (size_t i = 1, len = Section->getNumKids(); i < len; ++i)
     installSymbols(Section->getKid(i));
 }
 
-uint32_t SectionSymbolTable::getSymbolIndex(SymbolNode *Symbol) {
+uint32_t SectionSymbolTable::getSymbolIndex(SymbolNode* Symbol) {
   std::string SymName = Symbol->getStringName();
-  SymbolNode *Sym = Symtab.getSymbolDefinition(SymName);
+  SymbolNode* Sym = Symtab.getSymbolDefinition(SymName);
   const auto Iter = SymbolLookup.find(Sym);
   if (Iter == SymbolLookup.end())
     fatal("Can't find index for symbol: " + Sym->getStringName());
   return Iter->second;
 }
 
-SymbolNode *SectionSymbolTable::getIndexSymbol(IndexType Index) {
+SymbolNode* SectionSymbolTable::getIndexSymbol(IndexType Index) {
   if (Index >= IndexLookup.size())
     fatal("Can't find symbol for index: " + std::to_string(Index));
   return IndexLookup[Index];
 }
 
-} // end of namespace filt
+}  // end of namespace filt
 
-} // end of namespace wasm
+}  // end of namespace wasm

@@ -40,59 +40,70 @@ namespace filt {
 
 class BinaryReader {
   BinaryReader() = delete;
-  BinaryReader(const BinaryReader &) = delete;
-  BinaryReader &operator=(const BinaryReader &) = delete;
-public:
-  BinaryReader(decode::ByteQueue *Input, alloc::Allocator *Alloc);
+  BinaryReader(const BinaryReader&) = delete;
+  BinaryReader& operator=(const BinaryReader&) = delete;
+
+ public:
+  BinaryReader(decode::ByteQueue* Input, alloc::Allocator* Alloc);
 
   ~BinaryReader() {}
 
-  FileNode *readFile();
+  FileNode* readFile();
 
-  SectionNode *readSection();
+  SectionNode* readSection();
 
-  void setTraceProgress(bool NewValue) {
-    Trace.setTraceProgress(NewValue);
-  }
+  void setTraceProgress(bool NewValue) { Trace.setTraceProgress(NewValue); }
 
-private:
-  alloc::Allocator *Alloc;
-  interp::ByteReadStream *Reader;
+ private:
+  alloc::Allocator* Alloc;
+  interp::ByteReadStream* Reader;
   decode::ReadCursor ReadPos;
   SectionSymbolTable SectionSymtab;
   // The magic number of the input.
   uint32_t MagicNumber;
   // The version of the input.
   uint32_t Version;
-  std::vector<Node *> NodeStack;
+  std::vector<Node*> NodeStack;
   TraceClassSexpReader Trace;
 
   // Reads in a name and returns the read name. Reference is only good till
   // next call to readInternalName() or ReadExternalName().
-  InternalName &readInternalName();
-  ExternalName &readExternalName();
+  InternalName& readInternalName();
+  ExternalName& readExternalName();
 
   void readBlock(std::function<void()> ApplyFn);
   void readSymbolTable();
   void readNode();
 
   // General ast readers.
-  template<class T> void readNullary();
-  template<class T> void readUnary();
-  template<class T> void readUnarySymbol();
-  template<class T> void readUnaryUint8();
-  template<class T> void readUnaryVarint32();
-  template<class T> void readUnaryVarint64();
-  template<class T> void readUnaryVaruint32();
-  template<class T> void readUnaryVaruint64();
-  template<class T> void readBinary();
-  template<class T> void readBinarySymbol();
-  template<class T> void readTernary();
-  template<class T> void readNary();
+  template <class T>
+  void readNullary();
+  template <class T>
+  void readUnary();
+  template <class T>
+  void readUnarySymbol();
+  template <class T>
+  void readUnaryUint8();
+  template <class T>
+  void readUnaryVarint32();
+  template <class T>
+  void readUnaryVarint64();
+  template <class T>
+  void readUnaryVaruint32();
+  template <class T>
+  void readUnaryVaruint64();
+  template <class T>
+  void readBinary();
+  template <class T>
+  void readBinarySymbol();
+  template <class T>
+  void readTernary();
+  template <class T>
+  void readNary();
 };
 
-} // end of namespace filt
+}  // end of namespace filt
 
-} // end of namespace wasm
+}  // end of namespace wasm
 
-#endif // DECOMPRESSOR_SRC_BINARY_BINARYREADER_H
+#endif  // DECOMPRESSOR_SRC_BINARY_BINARYREADER_H
