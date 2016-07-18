@@ -29,30 +29,32 @@ namespace wasm {
 namespace filt {
 
 class TraceClassSexp : public utils::TraceClass {
-  TraceClassSexp(const TraceClassSexp &) = delete;
-  TraceClassSexp &operator=(const TraceClassSexp &) = delete;
-public:
+  TraceClassSexp(const TraceClassSexp&) = delete;
+  TraceClassSexp& operator=(const TraceClassSexp&) = delete;
+
+ public:
   TraceClassSexp();
-  TraceClassSexp(const char *Label);
-  TraceClassSexp(FILE *File);
-  TraceClassSexp(const char *Label, FILE *File);
+  TraceClassSexp(const char* Label);
+  TraceClassSexp(FILE* File);
+  TraceClassSexp(const char* Label, FILE* File);
   ~TraceClassSexp();
-  void traceSexp(const Node *Node) {
+  void traceSexp(const Node* Node) {
     if (TraceProgress)
       traceSexpInternal(Node);
   }
-protected:
-  TextWriter *Writer = nullptr;
-  void traceSexpInternal(const Node *Node);
-  TextWriter *getTextWriter() {
+
+ protected:
+  TextWriter* Writer = nullptr;
+  void traceSexpInternal(const Node* Node);
+  TextWriter* getTextWriter() {
     if (Writer == nullptr)
       Writer = new TextWriter();
     return Writer;
   }
 };
 
-} // end of namespace filt
+}  // end of namespace filt
 
-} // end of namespace wasm
+}  // end of namespace wasm
 
-#endif // DECOMPRESSOR_SRC_SEXP_TRACEEXP_H
+#endif  // DECOMPRESSOR_SRC_SEXP_TRACEEXP_H

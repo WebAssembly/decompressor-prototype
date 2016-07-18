@@ -36,12 +36,14 @@ namespace interp {
 
 class State {
   State() = delete;
-  State(const State &) = delete;
-  State &operator=(const State &) = delete;
-public:
+  State(const State&) = delete;
+  State& operator=(const State&) = delete;
+
+ public:
   // TODO(kschimpf): Add Output.
-  State(decode::ByteQueue *Input, decode::ByteQueue *Output,
-        filt::SymbolTable *Algorithms);
+  State(decode::ByteQueue* Input,
+        decode::ByteQueue* Output,
+        filt::SymbolTable* Algorithms);
 
   ~State() {}
 
@@ -49,22 +51,18 @@ public:
   // to the corresponding output.
   void decompress();
 
-  void setTraceProgress(bool NewValue) {
-    Trace.setTraceProgress(NewValue);
-  }
+  void setTraceProgress(bool NewValue) { Trace.setTraceProgress(NewValue); }
 
-  void setMinimizeBlockSize(bool NewValue) {
-    MinimizeBlockSize = NewValue;
-  }
+  void setMinimizeBlockSize(bool NewValue) { MinimizeBlockSize = NewValue; }
 
-private:
+ private:
   decode::ReadCursor ReadPos;
-  ReadStream *Reader;
+  ReadStream* Reader;
   decode::WriteCursor WritePos;
-  WriteStream *Writer;
-  alloc::Allocator *Alloc;
-  filt::Node *DefaultFormat;
-  filt::SymbolTable *Algorithms;
+  WriteStream* Writer;
+  alloc::Allocator* Alloc;
+  filt::Node* DefaultFormat;
+  filt::SymbolTable* Algorithms;
   // The magic number of the input.
   uint32_t MagicNumber;
   // The version of the input.
@@ -76,21 +74,21 @@ private:
 
   void decompressSection();
   void readSectionName();
-  void decompressBlock(const filt::Node *Code);
+  void decompressBlock(const filt::Node* Code);
   // Evaluates code if nonnull. Otherwise copies to end of block.
-  void evalOrCopy(const filt::Node *Code);
+  void evalOrCopy(const filt::Node* Code);
 
   // Evaluates Nd. Returns read value if applicable. Zero otherwise.
-  decode::IntType eval(const filt::Node *Nd);
+  decode::IntType eval(const filt::Node* Nd);
   // Reads input as defined by Nd. Returns read value.
-  decode::IntType read(const filt::Node *Nd);
+  decode::IntType read(const filt::Node* Nd);
   // Writes to output the given value, using format defined by Nd.
   // For convenience, returns written value.
-  decode::IntType write(decode::IntType Value, const filt::Node *Nd);
+  decode::IntType write(decode::IntType Value, const filt::Node* Nd);
 };
 
-} // end of namespace interp.
+}  // end of namespace interp.
 
-} // end of namespace wasm.
+}  // end of namespace wasm.
 
-#endif // DECOMPRESSOR_SRC_INTERP_INTERPSTATE_H
+#endif  // DECOMPRESSOR_SRC_INTERP_INTERPSTATE_H

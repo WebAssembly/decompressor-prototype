@@ -33,16 +33,16 @@ int exit_status(int Status) {
   return Status ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
-void fatal(const char *Message) {
+void fatal(const char* Message) {
   fprintf(stderr, "%s\n", Message);
   exit(exit_status(EXIT_FAILURE));
 }
 
-void fatal(const std::string &Message) {
+void fatal(const std::string& Message) {
   fprintf(stderr, "%s\n", Message.c_str());
   exit(exit_status(EXIT_FAILURE));
 }
 
-} // end of namespace decode
+}  // end of namespace decode
 
-} // end of namespace wasm
+}  // end of namespace wasm

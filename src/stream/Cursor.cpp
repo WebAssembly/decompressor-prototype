@@ -25,8 +25,8 @@ bool ReadCursor::fillBuffer() {
   if (CurAddress >= EobAddress)
     return false;
   size_t BufferSize;
-  uint8_t *NewBuffer = Queue->getReadLockedPointer(
-      CurAddress, Page::Size, BufferSize);
+  uint8_t* NewBuffer =
+      Queue->getReadLockedPointer(CurAddress, Page::Size, BufferSize);
   releaseLock();
   if (BufferSize == 0) {
     EobAddress = Queue->currentSize();
@@ -43,8 +43,8 @@ void WriteCursor::fillBuffer() {
   if (CurAddress >= EobAddress)
     fatal("Write past Eob");
   size_t BufferSize;
-  uint8_t *NewBuffer = Queue->getWriteLockedPointer(
-      CurAddress, Page::Size, BufferSize);
+  uint8_t* NewBuffer =
+      Queue->getWriteLockedPointer(CurAddress, Page::Size, BufferSize);
   releaseLock();
   if (BufferSize == 0)
     fatal("Write failed!\n");
@@ -53,10 +53,10 @@ void WriteCursor::fillBuffer() {
   LockedAddress = CurAddress;
 }
 
-void WriteCursor::writeCurPage(FILE *File) {
+void WriteCursor::writeCurPage(FILE* File) {
   Queue->writePageAt(File, CurAddress);
 }
 
-} // end of namespace decode
+}  // end of namespace decode
 
-} // end of namespace wasm
+}  // end of namespace wasm

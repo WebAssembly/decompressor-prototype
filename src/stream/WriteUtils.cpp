@@ -25,7 +25,7 @@ namespace decode {
 
 namespace {
 
-IntType IntTypeMaxPower10 = 0; // Zero implies need computing.
+IntType IntTypeMaxPower10 = 0;  // Zero implies need computing.
 
 IntType getIntTypeMaxPower10() {
   if (IntTypeMaxPower10)
@@ -54,9 +54,9 @@ decode::IntType moduloByPower10(decode::IntType Value,
   return Value % Power10;
 }
 
-} // end of anonymous namespace
+}  // end of anonymous namespace
 
-void writeInt(FILE *File, IntType Value, ValueFormat Format) {
+void writeInt(FILE* File, IntType Value, ValueFormat Format) {
   switch (Format) {
     case ValueFormat::SignedDecimal: {
       decode::SignedIntType SignedValue = decode::SignedIntType(Value);
@@ -65,7 +65,7 @@ void writeInt(FILE *File, IntType Value, ValueFormat Format) {
         Value = decode::IntType(-SignedValue);
       }
     }
-      // Intentionally fall to next case.
+    // Intentionally fall to next case.
     case ValueFormat::Decimal: {
       decode::IntType Power10 = getIntTypeMaxPower10();
       bool StartPrinting = false;
@@ -106,7 +106,6 @@ void writeInt(FILE *File, IntType Value, ValueFormat Format) {
   }
 }
 
+}  // end of namespace decode
 
-} // end of namespace decode
-
-} // end of namespace wasm
+}  // end of namespace wasm

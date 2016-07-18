@@ -23,20 +23,26 @@ namespace wasm {
 
 namespace utils {
 
-TraceClass::TraceClass() {}
+TraceClass::TraceClass() {
+}
 
-TraceClass::TraceClass(const char *Label) : Label(Label) {}
+TraceClass::TraceClass(const char* Label) : Label(Label) {
+}
 
-TraceClass::TraceClass(FILE *File) : File(File) {}
+TraceClass::TraceClass(FILE* File) : File(File) {
+}
 
-TraceClass::TraceClass(const char *Label, FILE *File) :
-    Label(Label), File(File) {}
+TraceClass::TraceClass(const char* Label, FILE* File)
+    : Label(Label), File(File) {
+}
 
-TraceClass::~TraceClass() {}
+TraceClass::~TraceClass() {
+}
 
-void TraceClass::traceContext() const {}
+void TraceClass::traceContext() const {
+}
 
-void TraceClass::enter(const char *Name) {
+void TraceClass::enter(const char* Name) {
   indent();
   ++IndentLevel;
   CallStack.push_back(Name);
@@ -45,7 +51,7 @@ void TraceClass::enter(const char *Name) {
 
 void TraceClass::exit() {
   assert(~CallStack.empty());
-  const char *Name = CallStack.back();
+  const char* Name = CallStack.back();
   CallStack.pop_back();
   --IndentLevel;
   indent();
@@ -70,41 +76,41 @@ void TraceClass::indent() {
   traceContext();
 }
 
-void TraceClass::traceMessageInternal(const std::string &Message) {
+void TraceClass::traceMessageInternal(const std::string& Message) {
   indent();
   fprintf(File, "%s\n", Message.c_str());
 }
 
-void TraceClass::traceBoolInternal(const char *Name, bool Value) {
+void TraceClass::traceBoolInternal(const char* Name, bool Value) {
   indent();
   fprintf(File, "%s = %s\n", Name, Value ? "t" : "f");
 }
 
-void TraceClass::traceCharInternal(const char *Name, char Ch) {
+void TraceClass::traceCharInternal(const char* Name, char Ch) {
   indent();
   fprintf(File, "%s = '%c'\n", Name, Ch);
 }
 
-void TraceClass::traceStringInternal(const char *Name, std::string &Value) {
+void TraceClass::traceStringInternal(const char* Name, std::string& Value) {
   indent();
   fprintf(File, "%s = '%s'\n", Name, Value.c_str());
 }
 
-void TraceClass::traceIntInternal(const char *Name, intmax_t Value) {
+void TraceClass::traceIntInternal(const char* Name, intmax_t Value) {
   indent();
   fprintf(File, "%s = %" PRIiMAX "\n", Name, Value);
 }
 
-void TraceClass::traceUintInternal(const char *Name, uintmax_t Value) {
+void TraceClass::traceUintInternal(const char* Name, uintmax_t Value) {
   indent();
   fprintf(File, "%s = %" PRIuMAX "\n", Name, Value);
 }
 
-void TraceClass::traceHexInternal(const char *Name, uintmax_t Value) {
+void TraceClass::traceHexInternal(const char* Name, uintmax_t Value) {
   indent();
   fprintf(File, "%s = %" PRIxMAX "\n", Name, uintmax_t(Value));
 }
 
-} // end of namespace utils
+}  // end of namespace utils
 
-} // end of namespace wasm
+}  // end of namespace wasm

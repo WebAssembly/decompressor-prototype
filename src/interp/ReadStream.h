@@ -32,94 +32,82 @@ namespace interp {
 class State;
 
 class ReadStream {
-  ReadStream(const ReadStream &) = delete;
-  ReadStream &operator=(const ReadStream &) = delete;
-public:
-  uint8_t readUint8(decode::ReadCursor &Pos) {
-    return readUint8Bits(Pos, 8);
-  }
-  virtual uint8_t readUint8Bits(decode::ReadCursor &Pos,
-                                uint32_t NumBits) = 0;
+  ReadStream(const ReadStream&) = delete;
+  ReadStream& operator=(const ReadStream&) = delete;
 
-  uint32_t readUint32(decode::ReadCursor &Pos) {
+ public:
+  uint8_t readUint8(decode::ReadCursor& Pos) { return readUint8Bits(Pos, 8); }
+  virtual uint8_t readUint8Bits(decode::ReadCursor& Pos, uint32_t NumBits) = 0;
+
+  uint32_t readUint32(decode::ReadCursor& Pos) {
     return readUint32Bits(Pos, 8);
   }
-  virtual uint32_t readUint32Bits(decode::ReadCursor &Pos,
+  virtual uint32_t readUint32Bits(decode::ReadCursor& Pos,
                                   uint32_t NumBits) = 0;
 
-  uint64_t readUint64(decode::ReadCursor &Pos) {
+  uint64_t readUint64(decode::ReadCursor& Pos) {
     return readUint64Bits(Pos, 8);
   }
-  virtual uint64_t readUint64Bits(decode::ReadCursor &Pos,
+  virtual uint64_t readUint64Bits(decode::ReadCursor& Pos,
                                   uint32_t NumBits) = 0;
 
-  int32_t readVarint32(decode::ReadCursor &Pos) {
+  int32_t readVarint32(decode::ReadCursor& Pos) {
     return readVarint32Bits(Pos, 8);
   }
-  virtual int32_t readVarint32Bits(decode::ReadCursor &Pos,
+  virtual int32_t readVarint32Bits(decode::ReadCursor& Pos,
                                    uint32_t NumBits) = 0;
 
-  int64_t readVarint64(decode::ReadCursor &Pos) {
+  int64_t readVarint64(decode::ReadCursor& Pos) {
     return readVarint64Bits(Pos, 8);
   }
-  virtual int64_t readVarint64Bits(decode::ReadCursor &Pos,
+  virtual int64_t readVarint64Bits(decode::ReadCursor& Pos,
                                    uint32_t NumBits) = 0;
 
-  uint32_t readVaruint32(decode::ReadCursor &Pos) {
+  uint32_t readVaruint32(decode::ReadCursor& Pos) {
     return readVaruint32Bits(Pos, 8);
   }
-  virtual uint32_t readVaruint32Bits(decode::ReadCursor &Pos,
+  virtual uint32_t readVaruint32Bits(decode::ReadCursor& Pos,
                                      uint32_t NumBits) = 0;
 
-  uint64_t readVaruint64(decode::ReadCursor &Pos) {
+  uint64_t readVaruint64(decode::ReadCursor& Pos) {
     return readVaruint64Bits(Pos, 8);
   }
-  virtual uint64_t readVaruint64Bits(decode::ReadCursor &Pos,
+  virtual uint64_t readVaruint64Bits(decode::ReadCursor& Pos,
                                      uint32_t NumBits) = 0;
 
-  StreamType getType() const {
-    return Type;
-  }
+  StreamType getType() const { return Type; }
 
-  StreamType getRtClassId() const {
-    return Type;
-  }
+  StreamType getRtClassId() const { return Type; }
 
-  static bool implementsClass(StreamType /*RtClassID*/) {
-    return true;
-  }
+  static bool implementsClass(StreamType /*RtClassID*/) { return true; }
 
-protected:
+ protected:
   ReadStream(StreamType Type) : Type(Type) {}
   StreamType Type;
 };
 
 class ByteReadStream final : public ReadStream {
-  ByteReadStream(const ReadStream &) = delete;
-  ByteReadStream &operator=(const ByteReadStream &) = delete;
-public:
+  ByteReadStream(const ReadStream&) = delete;
+  ByteReadStream& operator=(const ByteReadStream&) = delete;
+
+ public:
   ByteReadStream() : ReadStream(StreamType::Byte) {}
-  uint8_t readUint8Bits(decode::ReadCursor &Pos,
-                        uint32_t NumBits) override;
-  uint32_t readUint32Bits(decode::ReadCursor &Pos,
-                          uint32_t NumBits) override;
-  uint64_t readUint64Bits(decode::ReadCursor &Pos,
-                      uint32_t NumBits) override;
-  int32_t readVarint32Bits(decode::ReadCursor &Pos,
-                           uint32_t NumBits) override;
-  int64_t readVarint64Bits(decode::ReadCursor &Pos,
-                           uint32_t NumBits) override;
-  uint32_t readVaruint32Bits(decode::ReadCursor &Pos,
+  uint8_t readUint8Bits(decode::ReadCursor& Pos, uint32_t NumBits) override;
+  uint32_t readUint32Bits(decode::ReadCursor& Pos, uint32_t NumBits) override;
+  uint64_t readUint64Bits(decode::ReadCursor& Pos, uint32_t NumBits) override;
+  int32_t readVarint32Bits(decode::ReadCursor& Pos, uint32_t NumBits) override;
+  int64_t readVarint64Bits(decode::ReadCursor& Pos, uint32_t NumBits) override;
+  uint32_t readVaruint32Bits(decode::ReadCursor& Pos,
                              uint32_t NumBits) override;
-  uint64_t readVaruint64Bits(decode::ReadCursor &Pos,
+  uint64_t readVaruint64Bits(decode::ReadCursor& Pos,
                              uint32_t NumBits) override;
   static bool implementsClass(StreamType RtClassID) {
     return RtClassID == StreamType::Byte;
   }
 };
 
-} // end of namespace decode
+}  // end of namespace decode
 
-} // end of namespace wasm
+}  // end of namespace wasm
 
-#endif // DECOMPRESSOR_SRC_INTERP_READSTREAM_H
+#endif  // DECOMPRESSOR_SRC_INTERP_READSTREAM_H

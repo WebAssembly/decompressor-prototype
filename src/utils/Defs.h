@@ -30,20 +30,22 @@
 
 namespace wasm {
 
-template<class T, size_t N>
-size_t size(T (&)[N]) { return N; }
+template <class T, size_t N>
+size_t size(T(&)[N]) {
+  return N;
+}
 
-template<typename T>
+template <typename T>
 constexpr T const_maximum(T V) {
   return V;
 }
 
-template<typename T>
+template <typename T>
 constexpr T const_max(T V1, T V2) {
   return V1 < V2 ? V2 : V1;
 }
 
-template<typename T, typename... Args>
+template <typename T, typename... Args>
 constexpr T const_maximum(T V, Args... args) {
   return const_max(V, const_maximum(args...));
 }
@@ -60,7 +62,7 @@ using SignedIntType = int64_t;
 
 static constexpr size_t kBitsInIntType = 64;
 
-enum class StreamType {Bit, Byte, Int, Ast};
+enum class StreamType { Bit, Byte, Int, Ast };
 
 // When true, converts EXIT_FAIL to EXIT_SUCCESS, and EXIT_SUCCESS to EXIT_FAIL.
 extern bool ExpectExitFail;
@@ -68,25 +70,21 @@ extern bool ExpectExitFail;
 // Converts exit status, based on ExpectExitFail.
 int exit_status(int Status);
 
-void fatal(const char *Message = "fatal: unable to continue");
+void fatal(const char* Message = "fatal: unable to continue");
 
-void fatal(const std::string &Message);
+void fatal(const std::string& Message);
 
 struct Utils {
-  static constexpr size_t floorByte(size_t Bit) {
-    return Bit >> 3;
-  }
+  static constexpr size_t floorByte(size_t Bit) { return Bit >> 3; }
 
   static size_t ceilByte(size_t Bit) {
     size_t Byte = floorByte(Bit);
-    return (Byte & 0x7)
-        ? Byte + 1
-        : Byte;
+    return (Byte & 0x7) ? Byte + 1 : Byte;
   }
 };
 
-} // end of namespace decode
+}  // end of namespace decode
 
-} // end of namespace wasm
+}  // end of namespace wasm
 
-#endif // DECOMPRESSOR_SRC_DEFS_H
+#endif  // DECOMPRESSOR_SRC_DEFS_H

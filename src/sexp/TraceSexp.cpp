@@ -23,24 +23,28 @@ namespace wasm {
 
 namespace filt {
 
-TraceClassSexp::TraceClassSexp() : TraceClass() {}
+TraceClassSexp::TraceClassSexp() : TraceClass() {
+}
 
-TraceClassSexp::TraceClassSexp(const char *Label) : TraceClass(Label) {}
+TraceClassSexp::TraceClassSexp(const char* Label) : TraceClass(Label) {
+}
 
-TraceClassSexp::TraceClassSexp(FILE *File) : TraceClass(File) {}
+TraceClassSexp::TraceClassSexp(FILE* File) : TraceClass(File) {
+}
 
-TraceClassSexp::TraceClassSexp(const char *Label, FILE *File) :
-    TraceClass(Label, File) {}
+TraceClassSexp::TraceClassSexp(const char* Label, FILE* File)
+    : TraceClass(Label, File) {
+}
 
 TraceClassSexp::~TraceClassSexp() {
   delete Writer;
 }
 
-void TraceClassSexp::traceSexpInternal(const Node *Node) {
+void TraceClassSexp::traceSexpInternal(const Node* Node) {
   indent();
   getTextWriter()->writeAbbrev(File, Node);
 }
 
-} // end of namespace filt
+}  // end of namespace filt
 
-} // end of namespace wasm
+}  // end of namespace wasm

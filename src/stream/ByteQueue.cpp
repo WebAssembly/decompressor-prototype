@@ -25,8 +25,8 @@ namespace decode {
 
 template class Queue<uint8_t>;
 
-void ByteQueue::writePageAt(FILE *File, size_t Address) {
-  Page *P = getPage(Address);
+void ByteQueue::writePageAt(FILE* File, size_t Address) {
+  Page* P = getPage(Address);
   if (P == nullptr)
     return;
   size_t Size = Page::address(Address);
@@ -43,12 +43,11 @@ void ByteQueue::writePageAt(FILE *File, size_t Address) {
   fputc('\n', File);
 }
 
-size_t ByteQueue::read(size_t &Address, uint8_t *ToBuf, size_t WantedSize) {
+size_t ByteQueue::read(size_t& Address, uint8_t* ToBuf, size_t WantedSize) {
   size_t Count = 0;
   while (WantedSize) {
     size_t FoundSize;
-    uint8_t *FromBuf = getReadLockedPointer(Address, WantedSize,
-                                            FoundSize);
+    uint8_t* FromBuf = getReadLockedPointer(Address, WantedSize, FoundSize);
     if (FromBuf == nullptr)
       // TODO: Block if Count == 0 and blocked by a lock.
       return Count;
@@ -63,10 +62,10 @@ size_t ByteQueue::read(size_t &Address, uint8_t *ToBuf, size_t WantedSize) {
   return Count;
 }
 
-bool ByteQueue::write(size_t &Address, uint8_t *FromBuf, size_t WantedSize) {
+bool ByteQueue::write(size_t& Address, uint8_t* FromBuf, size_t WantedSize) {
   while (WantedSize) {
     size_t FoundSize;
-    uint8_t *ToBuf = getWriteLockedPointer(Address, WantedSize, FoundSize);
+    uint8_t* ToBuf = getWriteLockedPointer(Address, WantedSize, FoundSize);
     if (FromBuf == nullptr)
       return false;
     memcpy(ToBuf, FromBuf, FoundSize);
@@ -85,8 +84,8 @@ bool ReadBackedByteQueue::readFill(size_t Address) {
   // Read fill if possible, until at least one byte is available.
   while (Address >= EobPage->getMaxAddress()) {
     if (size_t SpaceAvailable = EobPage->spaceRemaining()) {
-      size_t NumBytes = Reader->read(
-          &(EobPage->Buffer[Page::address(Address)]), SpaceAvailable);
+      size_t NumBytes = Reader->read(&(EobPage->Buffer[Page::address(Address)]),
+                                     SpaceAvailable);
       EobPage->incrementMaxAddress(NumBytes);
       if (NumBytes == 0) {
         EobFrozen = true;
@@ -94,7 +93,7 @@ bool ReadBackedByteQueue::readFill(size_t Address) {
       }
       continue;
     }
-    Page *NewPage = new Page(EobPage->getMaxAddress());
+    Page* NewPage = new Page(EobPage->getMaxAddress());
     PageMap.push_back(NewPage);
     EobPage->Next = NewPage;
     NewPage->Last = EobPage;
@@ -116,6 +115,6 @@ void WriteBackedByteQueue::dumpFirstPage() {
   ByteQueue::dumpFirstPage();
 }
 
-} // end of decode namespace
+}  // end of decode namespace
 
-} // end of wasm namespace
+}  // end of wasm namespace

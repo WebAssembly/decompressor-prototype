@@ -34,10 +34,10 @@ constexpr char getHexCharForDigit(uint8_t Digit) {
   return Digit < 10 ? '0' + Digit : 'a' + (Digit - 10);
 }
 
-void writeInt(FILE *File, IntType Value, ValueFormat Format);
+void writeInt(FILE* File, IntType Value, ValueFormat Format);
 
-} // end of namespace decode
+}  // end of namespace decode
 
-} // end of namespace wasm
+}  // end of namespace wasm
 
-#endif // DECOMPRESSOR_SRC_STREAM_WRITEUTILS_H
+#endif  // DECOMPRESSOR_SRC_STREAM_WRITEUTILS_H

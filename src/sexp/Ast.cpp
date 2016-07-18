@@ -33,51 +33,53 @@ namespace filt {
 
 AstTraitsType AstTraits[NumNodeTypes] = {
 #define X(tag, opcode, sexp_name, type_name, text_num_args, text_max_args) \
-  { Op##tag, sexp_name, type_name, text_num_args, text_max_args },
-  AST_OPCODE_TABLE
+  { Op##tag, sexp_name, type_name, text_num_args, text_max_args }          \
+  ,
+    AST_OPCODE_TABLE
 #undef X
 };
 
-const char *getNodeSexpName(NodeType Type) {
+const char* getNodeSexpName(NodeType Type) {
   // TODO(KarlSchimpf): Make thread safe
   static std::unordered_map<int, const char*> Mapping;
   if (Mapping.empty()) {
     for (size_t i = 0; i < NumNodeTypes; ++i) {
-      AstTraitsType &Traits = AstTraits[i];
+      AstTraitsType& Traits = AstTraits[i];
       Mapping[int(Traits.Type)] = Traits.SexpName;
     }
   }
-  char *Name = const_cast<char*>(Mapping[static_cast<int>(Type)]);
+  char* Name = const_cast<char*>(Mapping[static_cast<int>(Type)]);
   if (Name == nullptr) {
-    std::string NewName(
-        std::string("NodeType::") + std::to_string(static_cast<int>(Type)));
+    std::string NewName(std::string("NodeType::") +
+                        std::to_string(static_cast<int>(Type)));
     Name = new char[NewName.size() + 1];
-    Name[NewName.size()] ='\0';
+    Name[NewName.size()] = '\0';
     memcpy(Name, NewName.data(), NewName.size());
     Mapping[static_cast<int>(Type)] = Name;
   }
   return Name;
 }
 
-const char *getNodeTypeName(NodeType Type) {
+const char* getNodeTypeName(NodeType Type) {
   // TODO(KarlSchimpf): Make thread safe
   static std::unordered_map<int, const char*> Mapping;
   if (Mapping.empty()) {
     for (size_t i = 0; i < NumNodeTypes; ++i) {
-      AstTraitsType &Traits = AstTraits[i];
+      AstTraitsType& Traits = AstTraits[i];
       if (Traits.TypeName)
         Mapping[int(Traits.Type)] = Traits.TypeName;
     }
   }
-  const char *Name = Mapping[static_cast<int>(Type)];
+  const char* Name = Mapping[static_cast<int>(Type)];
   if (Name == nullptr)
-    Mapping[static_cast<int>(Type)] =  Name = getNodeSexpName(Type);
+    Mapping[static_cast<int>(Type)] = Name = getNodeSexpName(Type);
   return Name;
 }
 
-void Node::forceCompilation() {}
+void Node::forceCompilation() {
+}
 
-void Node::append(Node *) {
+void Node::append(Node*) {
   decode::fatal("Node::append not supported for ast node!");
 }
 
@@ -86,9 +88,11 @@ void Node::append(Node *) {
 // instantiated here will not link. This used to force an error if
 // a node type is not defined with the correct template class.
 
-void IntegerNode::forceCompilation() {}
+void IntegerNode::forceCompilation() {
+}
 
-void SymbolNode::forceCompilation() {}
+void SymbolNode::forceCompilation() {
+}
 
 std::string SymbolNode::getStringName() const {
   std::string Str(Name.size(), '\0');
@@ -97,7 +101,7 @@ std::string SymbolNode::getStringName() const {
   return Str;
 }
 
-void SymbolNode::setDefineDefinition(Node *Defn) {
+void SymbolNode::setDefineDefinition(Node* Defn) {
   if (Defn) {
     IsDefineUsingDefault = false;
     DefineDefinition = Defn;
@@ -107,7 +111,7 @@ void SymbolNode::setDefineDefinition(Node *Defn) {
   }
 }
 
-void SymbolNode::setDefaultDefinition(Node *Defn) {
+void SymbolNode::setDefaultDefinition(Node* Defn) {
   assert(Defn != nullptr);
   DefaultDefinition = Defn;
   if (IsDefineUsingDefault) {
@@ -115,12 +119,12 @@ void SymbolNode::setDefaultDefinition(Node *Defn) {
   }
 }
 
-SymbolTable::SymbolTable(alloc::Allocator *Alloc) : Alloc(Alloc) {
+SymbolTable::SymbolTable(alloc::Allocator* Alloc) : Alloc(Alloc) {
   Error = Alloc->create<ErrorNode>();
 }
 
-SymbolNode *SymbolTable::getSymbolDefinition(ExternalName &Name) {
-  SymbolNode *Node = SymbolMap[Name];
+SymbolNode* SymbolTable::getSymbolDefinition(ExternalName& Name) {
+  SymbolNode* Node = SymbolMap[Name];
   if (Node == nullptr) {
     Node = Alloc->create<SymbolNode>(Alloc, Name);
     Node->setDefaultDefinition(Error);
@@ -129,7 +133,7 @@ SymbolNode *SymbolTable::getSymbolDefinition(ExternalName &Name) {
   return Node;
 }
 
-void SymbolTable::install(Node *Root) {
+void SymbolTable::install(Node* Root) {
   if (Root == nullptr)
     return;
   switch (Root->getType()) {
@@ -137,145 +141,157 @@ void SymbolTable::install(Node *Root) {
       return;
     case OpFile:
     case OpSection:
-      for (Node *Kid : *Root)
+      for (Node* Kid : *Root)
         install(Kid);
       return;
     case OpDefine: {
-      auto *DefineSymbol = dyn_cast<SymbolNode>(Root->getKid(0));
+      auto* DefineSymbol = dyn_cast<SymbolNode>(Root->getKid(0));
       assert(DefineSymbol);
       DefineSymbol->setDefineDefinition(Root->getKid(1));
       return;
     }
     case OpDefault: {
-      auto *DefaultSymbol = dyn_cast<SymbolNode>(Root->getKid(0));
+      auto* DefaultSymbol = dyn_cast<SymbolNode>(Root->getKid(0));
       assert(DefaultSymbol);
       DefaultSymbol->setDefaultDefinition(Root->getKid(1));
       return;
     }
     case OpUndefine: {
-      auto *UndefineSymbol = dyn_cast<SymbolNode>(Root->getKid(0));
+      auto* UndefineSymbol = dyn_cast<SymbolNode>(Root->getKid(0));
       assert(UndefineSymbol);
       UndefineSymbol->setDefineDefinition(nullptr);
     }
   }
 }
 
-Node *NullaryNode::getKid(int) const {
+Node* NullaryNode::getKid(int) const {
   return nullptr;
 }
 
-void NullaryNode::setKid(int, Node *) {
+void NullaryNode::setKid(int, Node*) {
   decode::fatal("NullaryNode::setKid not allowed");
 }
 
 bool NullaryNode::implementsClass(NodeType Type) {
   switch (Type) {
-    default: return false;
-#define X(tag) \
-    case Op##tag: return true;
-    AST_NULLARYNODE_TABLE
+    default:
+      return false;
+#define X(tag)  \
+  case Op##tag: \
+    return true;
+      AST_NULLARYNODE_TABLE
 #undef X
   }
 }
 
-#define X(tag)                                                                 \
+#define X(tag) \
   void tag##Node::forceCompilation() {}
-  AST_NULLARYNODE_TABLE
+AST_NULLARYNODE_TABLE
 #undef X
 
-Node *UnaryNode::getKid(int Index) const {
+Node* UnaryNode::getKid(int Index) const {
   if (Index < 1)
     return Kids[0];
   return nullptr;
 }
 
-void UnaryNode::setKid(int Index, Node *NewValue) {
+void UnaryNode::setKid(int Index, Node* NewValue) {
   assert(Index < 1);
   Kids[0] = NewValue;
 }
 
 bool UnaryNode::implementsClass(NodeType Type) {
   switch (Type) {
-    default: return false;
-#define X(tag) \
-    case Op##tag: return true;
-    AST_UNARYNODE_TABLE
+    default:
+      return false;
+#define X(tag)  \
+  case Op##tag: \
+    return true;
+      AST_UNARYNODE_TABLE
 #undef X
   }
 }
 
-#define X(tag)                                                                 \
+#define X(tag) \
   void tag##Node::forceCompilation() {}
-  AST_UNARYNODE_TABLE
+AST_UNARYNODE_TABLE
 #undef X
 
-Node *BinaryNode::getKid(int Index) const {
+Node* BinaryNode::getKid(int Index) const {
   if (Index < 2)
     return Kids[Index];
   return nullptr;
 }
 
-void BinaryNode::setKid(int Index, Node *NewValue) {
+void BinaryNode::setKid(int Index, Node* NewValue) {
   assert(Index < 2);
   Kids[Index] = NewValue;
 }
 
 bool BinaryNode::implementsClass(NodeType Type) {
   switch (Type) {
-    default: return false;
-#define X(tag) \
-    case Op##tag: return true;
-    AST_BINARYNODE_TABLE
+    default:
+      return false;
+#define X(tag)  \
+  case Op##tag: \
+    return true;
+      AST_BINARYNODE_TABLE
 #undef X
   }
 }
 
-#define X(tag)                                                                 \
+#define X(tag) \
   void tag##Node::forceCompilation() {}
-  AST_BINARYNODE_TABLE
+AST_BINARYNODE_TABLE
 #undef X
 
-Node *TernaryNode::getKid(int Index) const {
+Node* TernaryNode::getKid(int Index) const {
   if (Index < 3)
     return Kids[Index];
   return nullptr;
 }
 
-void TernaryNode::setKid(int Index, Node *NewValue) {
+void TernaryNode::setKid(int Index, Node* NewValue) {
   assert(Index < 3);
   Kids[Index] = NewValue;
 }
 
 bool TernaryNode::implementsClass(NodeType Type) {
   switch (Type) {
-    default: return false;
-#define X(tag) \
-    case Op##tag: return true;
-    AST_TERNARYNODE_TABLE
+    default:
+      return false;
+#define X(tag)  \
+  case Op##tag: \
+    return true;
+      AST_TERNARYNODE_TABLE
 #undef X
   }
 }
 
-#define X(tag)                                                                 \
+#define X(tag) \
   void tag##Node::forceCompilation() {}
-  AST_TERNARYNODE_TABLE
+AST_TERNARYNODE_TABLE
 #undef X
 
 bool NaryNode::implementsClass(NodeType Type) {
   switch (Type) {
-    default: return false;
-#define X(tag) \
-    case Op##tag: return true;
-    AST_NARYNODE_TABLE
+    default:
+      return false;
+#define X(tag)  \
+  case Op##tag: \
+    return true;
+      AST_NARYNODE_TABLE
 #undef X
   }
 }
 
-void NaryNode::forceCompilation() {}
+void NaryNode::forceCompilation() {
+}
 
-void SelectNode::forceCompilation() {}
+void SelectNode::forceCompilation() {
+}
 
-const Node *SelectNode::getCase(IntType Key) const {
+const Node* SelectNode::getCase(IntType Key) const {
   if (LookupMap.count(Key))
     return LookupMap.at(Key);
   return nullptr;
@@ -283,20 +299,20 @@ const Node *SelectNode::getCase(IntType Key) const {
 
 void SelectNode::installFastLookup() {
   TextWriter Writer;
-  for (auto *Kid : *this) {
-    if (const auto *Case = dyn_cast<CaseNode>(Kid)) {
-      if (const auto *Key = dyn_cast<IntegerNode>(Case->getKid(0))) {
+  for (auto* Kid : *this) {
+    if (const auto* Case = dyn_cast<CaseNode>(Kid)) {
+      if (const auto* Key = dyn_cast<IntegerNode>(Case->getKid(0))) {
         LookupMap[Key->getValue()] = Kid;
       }
     }
   }
 }
 
-#define X(tag)                                                                 \
+#define X(tag) \
   void tag##Node::forceCompilation() {}
 AST_NARYNODE_TABLE;
 #undef X
 
-} // end of namespace filt
+}  // end of namespace filt
 
-} // end of namespace wasm
+}  // end of namespace wasm

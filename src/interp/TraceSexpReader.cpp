@@ -21,27 +21,33 @@ namespace wasm {
 
 namespace interp {
 
-TraceClassSexpReader::TraceClassSexpReader(decode::ReadCursor &ReadPos) :
-    TraceClassSexp(), ReadPos(ReadPos) {}
+TraceClassSexpReader::TraceClassSexpReader(decode::ReadCursor& ReadPos)
+    : TraceClassSexp(), ReadPos(ReadPos) {
+}
 
-TraceClassSexpReader::TraceClassSexpReader(
-    decode::ReadCursor &ReadPos, const char *Label) :
-    TraceClassSexp(Label), ReadPos(ReadPos) {}
+TraceClassSexpReader::TraceClassSexpReader(decode::ReadCursor& ReadPos,
+                                           const char* Label)
+    : TraceClassSexp(Label), ReadPos(ReadPos) {
+}
 
-TraceClassSexpReader::TraceClassSexpReader(
-    decode::ReadCursor &ReadPos, FILE *File) :
-    TraceClassSexp(File), ReadPos(ReadPos) {}
+TraceClassSexpReader::TraceClassSexpReader(decode::ReadCursor& ReadPos,
+                                           FILE* File)
+    : TraceClassSexp(File), ReadPos(ReadPos) {
+}
 
-TraceClassSexpReader::TraceClassSexpReader(
-    decode::ReadCursor &ReadPos, const char *Label, FILE *File) :
-    TraceClassSexp(Label, File), ReadPos(ReadPos) {}
+TraceClassSexpReader::TraceClassSexpReader(decode::ReadCursor& ReadPos,
+                                           const char* Label,
+                                           FILE* File)
+    : TraceClassSexp(Label, File), ReadPos(ReadPos) {
+}
 
-TraceClassSexpReader::~TraceClassSexpReader() {}
+TraceClassSexpReader::~TraceClassSexpReader() {
+}
 
 void TraceClassSexpReader::traceContext() const {
   fprintf(File, "@%" PRIuMAX " ", uintmax_t(ReadPos.getCurAddress()));
 }
 
-} // end of namespace interp
+}  // end of namespace interp
 
-} // end of namespace wasm
+}  // end of namespace wasm

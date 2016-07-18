@@ -29,15 +29,17 @@ namespace wasm {
 namespace utils {
 
 class TraceClass {
-  TraceClass(const TraceClass &) = delete;
-  TraceClass &operator=(const TraceClass&) = delete;
-public:
+  TraceClass(const TraceClass&) = delete;
+  TraceClass& operator=(const TraceClass&) = delete;
+
+ public:
   class Method {
     Method() = delete;
-    Method(const Method &) = delete;
-    Method &operator=(const Method &) = delete;
-  public:
-    Method(const char *Name, TraceClass &Cls) : Cls(Cls) {
+    Method(const Method&) = delete;
+    Method& operator=(const Method&) = delete;
+
+   public:
+    Method(const char* Name, TraceClass& Cls) : Cls(Cls) {
       if (Cls.TraceProgress) {
         Cls.enter(Name);
       }
@@ -47,140 +49,137 @@ public:
         Cls.exit();
       }
     }
-  private:
-    TraceClass &Cls;
+
+   private:
+    TraceClass& Cls;
   };
 
   TraceClass();
-  explicit TraceClass(const char *Label);
-  explicit TraceClass(FILE *File);
-  TraceClass(const char *Label, FILE *File);
+  explicit TraceClass(const char* Label);
+  explicit TraceClass(FILE* File);
+  TraceClass(const char* Label, FILE* File);
   virtual ~TraceClass();
   virtual void traceContext() const;
-  void traceMessage(const char *Message) {
+  void traceMessage(const char* Message) {
     if (TraceProgress)
       traceMessageInternal(Message);
   }
-  void traceMessage(const std::string &Message) {
+  void traceMessage(const std::string& Message) {
     if (TraceProgress)
       traceMessageInternal(Message);
   }
-  void traceBool(const char *Name, bool Value) {
+  void traceBool(const char* Name, bool Value) {
     if (TraceProgress)
-      traceBoolInternal(Name,Value);
+      traceBoolInternal(Name, Value);
   }
-  void traceChar(const char *Name, char Ch) {
+  void traceChar(const char* Name, char Ch) {
     if (TraceProgress)
       traceCharInternal(Name, Ch);
   }
-  void traceSignedChar(const char *Name, signed char Ch) {
+  void traceSignedChar(const char* Name, signed char Ch) {
     if (TraceProgress)
       traceCharInternal(Name, char(Ch));
   }
-  void traceUnsignedChar(const char *Name, unsigned char Ch) {
+  void traceUnsignedChar(const char* Name, unsigned char Ch) {
     if (TraceProgress)
       traceCharInternal(Name, char(Ch));
   }
-  void traceString(const char *Name, std::string &Value) {
+  void traceString(const char* Name, std::string& Value) {
     if (TraceProgress)
       traceStringInternal(Name, Value);
   }
-  void traceShort(const char *Name, short Value) {
+  void traceShort(const char* Name, short Value) {
     if (TraceProgress)
       traceIntInternal(Name, Value);
   }
-  void traceUnsignedShort(const char *Name, unsigned short Value) {
+  void traceUnsignedShort(const char* Name, unsigned short Value) {
     if (TraceProgress)
       traceUintInternal(Name, Value);
   }
-  void traceInt(const char *Name, int Value) {
+  void traceInt(const char* Name, int Value) {
     if (TraceProgress)
       traceIntInternal(Name, Value);
   }
-  void traceUnsignedInt(const char *Name, unsigned int Value) {
+  void traceUnsignedInt(const char* Name, unsigned int Value) {
     if (TraceProgress)
       traceUintInternal(Name, Value);
   }
-  void traceLong(const char *Name, long Value) {
+  void traceLong(const char* Name, long Value) {
     if (TraceProgress)
       traceIntInternal(Name, Value);
   }
-  void traceUnsignedLong(const char *Name, unsigned long Value) {
+  void traceUnsignedLong(const char* Name, unsigned long Value) {
     if (TraceProgress)
       traceUintInternal(Name, Value);
   }
-  void traceInt8_t(const char *Name, int8_t Value) {
+  void traceInt8_t(const char* Name, int8_t Value) {
     if (TraceProgress)
       traceIntInternal(Name, Value);
   }
-  void traceUint8_t(const char *Name, uint8_t Value) {
+  void traceUint8_t(const char* Name, uint8_t Value) {
     if (TraceProgress)
       traceUintInternal(Name, Value);
   }
-  void traceInt16_t(const char *Name, int16_t Value) {
+  void traceInt16_t(const char* Name, int16_t Value) {
     if (TraceProgress)
       traceIntInternal(Name, Value);
   }
-  void traceUint16_t(const char *Name, uint16_t Value) {
+  void traceUint16_t(const char* Name, uint16_t Value) {
     if (TraceProgress)
       traceUintInternal(Name, Value);
   }
-  void traceInt32_t(const char *Name, int32_t Value) {
+  void traceInt32_t(const char* Name, int32_t Value) {
     if (TraceProgress)
       traceIntInternal(Name, Value);
   }
-  void traceUint32_t(const char *Name, uint32_t Value) {
+  void traceUint32_t(const char* Name, uint32_t Value) {
     if (TraceProgress)
       traceUintInternal(Name, Value);
   }
-  void traceHexUint32_t(const char *Name, uint32_t Value) {
+  void traceHexUint32_t(const char* Name, uint32_t Value) {
     if (TraceProgress)
       traceHexInternal(Name, Value);
   }
-  void traceInt64_t(const char *Name, int64_t Value) {
+  void traceInt64_t(const char* Name, int64_t Value) {
     if (TraceProgress)
       traceIntInternal(Name, Value);
   }
-  void traceUint64_t(const char *Name, uint64_t Value) {
+  void traceUint64_t(const char* Name, uint64_t Value) {
     if (TraceProgress)
       traceUintInternal(Name, Value);
   }
-  void traceIntType(const char *Name, decode::IntType Value) {
+  void traceIntType(const char* Name, decode::IntType Value) {
     if (TraceProgress)
       traceUintInternal(Name, Value);
   }
-  void traceSize_t(const char *Name, size_t Value) {
+  void traceSize_t(const char* Name, size_t Value) {
     if (TraceProgress)
       traceUintInternal(Name, Value);
   }
-  bool getTraceProgress() const {
-    return TraceProgress;
-  }
-  void setTraceProgress(bool NewValue) {
-    TraceProgress = NewValue;
-  }
+  bool getTraceProgress() const { return TraceProgress; }
+  void setTraceProgress(bool NewValue) { TraceProgress = NewValue; }
 
-protected:
-  const char *Label = nullptr;
-  FILE *File = stderr;
+ protected:
+  const char* Label = nullptr;
+  FILE* File = stderr;
   int IndentLevel = 0;
   bool TraceProgress = false;
-  std::vector<const char *> CallStack;
+  std::vector<const char*> CallStack;
 
-  void enter(const char *Name);
+  void enter(const char* Name);
   void exit();
   void indent();
-  void traceMessageInternal(const std::string &Message);
-  void traceBoolInternal(const char *Name, bool Value);
-  void traceCharInternal(const char *Name, char Ch);
-  void traceStringInternal(const char *Name, std::string &Value);
-  void traceIntInternal(const char *Name, intmax_t Value);
-  void traceUintInternal(const char *Name, uintmax_t Value);
-  void traceHexInternal(const char *Name, uintmax_t Value);
+  void traceMessageInternal(const std::string& Message);
+  void traceBoolInternal(const char* Name, bool Value);
+  void traceCharInternal(const char* Name, char Ch);
+  void traceStringInternal(const char* Name, std::string& Value);
+  void traceIntInternal(const char* Name, intmax_t Value);
+  void traceUintInternal(const char* Name, uintmax_t Value);
+  void traceHexInternal(const char* Name, uintmax_t Value);
 };
 
-} // end of namespace utils
+}  // end of namespace utils
 
-} // end of namespace wasm
+}  // end of namespace wasm
 
-#endif // DECOMPRESSOR_SRC_UTILS_TRACE_H
+#endif  // DECOMPRESSOR_SRC_UTILS_TRACE_H

@@ -34,7 +34,7 @@ FdWriter::~FdWriter() {
 bool FdWriter::saveBuffer() {
   if (CurSize == 0)
     return true;
-  uint8_t *Buf = Bytes;
+  uint8_t* Buf = Bytes;
   while (CurSize) {
     size_t BytesWritten = ::write(Fd, Buf, CurSize);
     if (BytesWritten <= 0)
@@ -45,13 +45,13 @@ bool FdWriter::saveBuffer() {
   return true;
 }
 
-size_t FdWriter::read(uint8_t *Buf, size_t Size) {
-  (void) Buf;
-  (void) Size;
+size_t FdWriter::read(uint8_t* Buf, size_t Size) {
+  (void)Buf;
+  (void)Size;
   return 0;
 }
 
-bool FdWriter::write(uint8_t *Buf, size_t Size) {
+bool FdWriter::write(uint8_t* Buf, size_t Size) {
   while (Size) {
     if (CurSize == kBufSize) {
       if (!saveBuffer())
@@ -81,11 +81,13 @@ bool FdWriter::atEof() {
   return IsFrozen;
 }
 
-FileWriter::FileWriter(const char *Filename)
-    : FdWriter(open(Filename, O_WRONLY | O_CREAT | O_TRUNC, S_IRWXU)) {}
+FileWriter::FileWriter(const char* Filename)
+    : FdWriter(open(Filename, O_WRONLY | O_CREAT | O_TRUNC, S_IRWXU)) {
+}
 
-FileWriter::~FileWriter() {}
+FileWriter::~FileWriter() {
+}
 
-} // end of namespace decode
+}  // end of namespace decode
 
-} // end of namespace wasm
+}  // end of namespace wasm

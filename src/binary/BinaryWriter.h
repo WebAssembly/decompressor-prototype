@@ -37,77 +37,37 @@ class TextWriter;
 
 class BinGen {
   BinGen() = delete;
-  BinGen(const BinGen &) = delete;
-  BinGen &operator=(const BinGen &) = delete;
-public:
-  BinGen(decode::ByteQueue *Output, alloc::Allocator *Alloc);
+  BinGen(const BinGen&) = delete;
+  BinGen& operator=(const BinGen&) = delete;
 
-  ~BinGen() {
-    WritePos.freezeEob();
-  }
+ public:
+  BinGen(decode::ByteQueue* Output, alloc::Allocator* Alloc);
+
+  ~BinGen() { WritePos.freezeEob(); }
 
   void writePreamble();
 
-  void writeFile(const FileNode *File);
-  void writeSection(const SectionNode *Section);
+  void writeFile(const FileNode* File);
+  void writeSection(const SectionNode* Section);
 
-  void setTraceProgress(bool NewValue) {
-    Trace.setTraceProgress(NewValue);
-  }
+  void setTraceProgress(bool NewValue) { Trace.setTraceProgress(NewValue); }
 
-  void setMinimizeBlockSize(bool NewValue) {
-    MinimizeBlockSize = NewValue;
-  }
+  void setMinimizeBlockSize(bool NewValue) { MinimizeBlockSize = NewValue; }
 
-private:
+ private:
   decode::WriteCursor WritePos;
-  interp::ByteWriteStream *Writer;
+  interp::ByteWriteStream* Writer;
   SectionSymbolTable SectionSymtab;
   bool MinimizeBlockSize = false;
   interp::TraceClassSexpWriter Trace;
 
-  void writeNode(const Node *Nd);
+  void writeNode(const Node* Nd);
   void writeBlock(std::function<void()> ApplyFn);
-  void writeSymbol(const Node *Symbol);
-
-#if 0
-  // The following are for tracing progress duing binary translation.
-  bool TraceProgress = false;
-  int IndentLevel = 0;
-  TextWriter *TraceWriter = nullptr;
-  TextWriter *getTraceWriter();
-  void writeIndent();
-  void IndentBegin() {
-    writeIndent();
-    ++IndentLevel;
-  }
-  void IndentEnd() {
-    --IndentLevel;
-    writeIndent();
-  }
-  void enterInternal(const char *Name, bool AddNewline=true);
-  void enter(const char *Name, bool AddNewline=true) {
-    if (TraceProgress)
-      enterInternal(Name, AddNewline);
-  }
-  void exitInternal(const char *Name);
-  void exit(const char *Name) {
-    if (TraceProgress)
-      exitInternal(Name);
-  }
-  template<class Type>
-  Type returnValueInternal(const char *Name, Type Value);
-  template<class Type>
-  Type returnValue(const char *Name, Type Value) {
-    if (TraceProgress)
-      returnValueInternal(Name, Value);
-    return Value;
-  }
-#endif
+  void writeSymbol(const Node* Symbol);
 };
 
-} // end of namespace filt
+}  // end of namespace filt
 
-} // end of namespace wasm
+}  // end of namespace wasm
 
-#endif // DECOMPRESSOR_SRC_BINARY_BINGEN_H
+#endif  // DECOMPRESSOR_SRC_BINARY_BINGEN_H

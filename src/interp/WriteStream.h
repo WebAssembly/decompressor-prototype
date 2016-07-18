@@ -32,102 +32,111 @@ namespace interp {
 class State;
 
 class WriteStream {
-  WriteStream(const WriteStream &) = delete;
-  WriteStream &operator=(const WriteStream &) = delete;
-public:
-  void writeUint8(uint8_t Value, decode::WriteCursor &Pos) {
+  WriteStream(const WriteStream&) = delete;
+  WriteStream& operator=(const WriteStream&) = delete;
+
+ public:
+  void writeUint8(uint8_t Value, decode::WriteCursor& Pos) {
     writeUint8Bits(Value, Pos, 8);
   }
-  virtual void writeUint8Bits(uint8_t ,decode::WriteCursor &Pos,
+  virtual void writeUint8Bits(uint8_t,
+                              decode::WriteCursor& Pos,
                               uint32_t NumBits) = 0;
 
-  void writeUint32(uint32_t Value, decode::WriteCursor &Pos) {
+  void writeUint32(uint32_t Value, decode::WriteCursor& Pos) {
     writeUint32Bits(Value, Pos, 8);
   }
-  virtual void writeUint32Bits(uint32_t Value, decode::WriteCursor &Pos,
+  virtual void writeUint32Bits(uint32_t Value,
+                               decode::WriteCursor& Pos,
                                uint32_t NumBits) = 0;
 
-  void writeUint64(uint64_t Value, decode::WriteCursor &Pos) {
+  void writeUint64(uint64_t Value, decode::WriteCursor& Pos) {
     writeUint64Bits(Value, Pos, 8);
   }
-  virtual void writeUint64Bits(uint64_t Value, decode::WriteCursor &Pos,
+  virtual void writeUint64Bits(uint64_t Value,
+                               decode::WriteCursor& Pos,
                                uint32_t NumBits) = 0;
 
-  void writeVarint32(int32_t Value, decode::WriteCursor &Pos) {
+  void writeVarint32(int32_t Value, decode::WriteCursor& Pos) {
     writeVarint32Bits(Value, Pos, 8);
   }
-  virtual void writeVarint32Bits(int32_t Value, decode::WriteCursor &Pos,
+  virtual void writeVarint32Bits(int32_t Value,
+                                 decode::WriteCursor& Pos,
                                  uint32_t NumBits) = 0;
 
-  void writeVarint64(int64_t Value, decode::WriteCursor &Pos) {
+  void writeVarint64(int64_t Value, decode::WriteCursor& Pos) {
     return writeVarint64Bits(Value, Pos, 8);
   }
-  virtual void writeVarint64Bits(int64_t Value, decode::WriteCursor &Pos,
+  virtual void writeVarint64Bits(int64_t Value,
+                                 decode::WriteCursor& Pos,
                                  uint32_t NumBits) = 0;
 
-  void writeVaruint32(uint32_t Value, decode::WriteCursor &Pos) {
+  void writeVaruint32(uint32_t Value, decode::WriteCursor& Pos) {
     writeVaruint32Bits(Value, Pos, 8);
   }
-  virtual void writeVaruint32Bits(uint32_t Value, decode::WriteCursor &Pos,
+  virtual void writeVaruint32Bits(uint32_t Value,
+                                  decode::WriteCursor& Pos,
                                   uint32_t NumBits) = 0;
 
-  void writeVaruint64(uint64_t Value, decode::WriteCursor &Pos) {
+  void writeVaruint64(uint64_t Value, decode::WriteCursor& Pos) {
     writeVaruint64Bits(Value, Pos, 8);
   }
-  virtual void writeVaruint64Bits(uint64_t Value, decode::WriteCursor &Pos,
+  virtual void writeVaruint64Bits(uint64_t Value,
+                                  decode::WriteCursor& Pos,
                                   uint32_t NumBits) = 0;
 
-  StreamType getType() const {
-    return Type;
-  }
+  StreamType getType() const { return Type; }
 
-  StreamType getRtClassId() const {
-    return Type;
-  }
+  StreamType getRtClassId() const { return Type; }
 
-  static bool implementsClass(StreamType /*RtClassId*/) {
-    return true;
-  }
+  static bool implementsClass(StreamType /*RtClassId*/) { return true; }
 
-protected:
+ protected:
   WriteStream(StreamType Type) : Type(Type) {}
   StreamType Type;
 };
 
 class ByteWriteStream final : public WriteStream {
-  ByteWriteStream(const WriteStream &) = delete;
-  ByteWriteStream &operator=(const ByteWriteStream &) = delete;
-public:
+  ByteWriteStream(const WriteStream&) = delete;
+  ByteWriteStream& operator=(const ByteWriteStream&) = delete;
+
+ public:
   static constexpr uint32_t BitsInWord = sizeof(uint32_t) * CHAR_BIT;
   static constexpr uint32_t ChunkSize = CHAR_BIT - 1;
   static constexpr uint32_t ChunksInWord =
       (BitsInWord + ChunkSize - 1) / ChunkSize;
   ByteWriteStream() : WriteStream(StreamType::Byte) {}
-  void writeUint8Bits(uint8_t Value, decode::WriteCursor &Pos,
+  void writeUint8Bits(uint8_t Value,
+                      decode::WriteCursor& Pos,
                       uint32_t NumBits) override;
-  void writeUint32Bits(uint32_t Value, decode::WriteCursor &Pos,
+  void writeUint32Bits(uint32_t Value,
+                       decode::WriteCursor& Pos,
                        uint32_t NumBits) override;
-  void writeUint64Bits(uint64_t Value, decode::WriteCursor &Pos,
+  void writeUint64Bits(uint64_t Value,
+                       decode::WriteCursor& Pos,
                        uint32_t NumBits) override;
-  void writeVarint32Bits(int32_t Value, decode::WriteCursor &Pos,
+  void writeVarint32Bits(int32_t Value,
+                         decode::WriteCursor& Pos,
                          uint32_t NumBits) override;
-  void writeVarint64Bits(int64_t Value, decode::WriteCursor &Pos,
+  void writeVarint64Bits(int64_t Value,
+                         decode::WriteCursor& Pos,
                          uint32_t NumBits) override;
-  void writeVaruint32Bits(uint32_t Value, decode::WriteCursor &Pos,
+  void writeVaruint32Bits(uint32_t Value,
+                          decode::WriteCursor& Pos,
                           uint32_t NumBits) override;
-  void writeVaruint64Bits(uint64_t Value, decode::WriteCursor &Pos,
+  void writeVaruint64Bits(uint64_t Value,
+                          decode::WriteCursor& Pos,
                           uint32_t NumBits) override;
 
-  void writeFixedVaruint32(uint32_t Value, decode::WriteCursor &Pos);
+  void writeFixedVaruint32(uint32_t Value, decode::WriteCursor& Pos);
 
   static bool implementsClass(StreamType RtClassId) {
     return RtClassId == StreamType::Byte;
   }
 };
 
+}  // end of namespace decode
 
-} // end of namespace decode
+}  // end of namespace wasm
 
-} // end of namespace wasm
-
-#endif // DECOMPRESSOR_SRC_INTERP_WRITESTREAM_H
+#endif  // DECOMPRESSOR_SRC_INTERP_WRITESTREAM_H

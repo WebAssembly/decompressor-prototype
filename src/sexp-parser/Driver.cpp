@@ -19,23 +19,23 @@
 
 using namespace wasm::filt;
 
-bool Driver::parse (const std::string &Filename) {
+bool Driver::parse(const std::string& Filename) {
   this->Filename = Filename;
   ParsedAst = nullptr;
   Begin();
-  wasm::filt::Parser parser (*this);
+  wasm::filt::Parser parser(*this);
   parser.set_debug_level(TraceParsing);
-  int Result = parser.parse ();
-  End ();
+  int Result = parser.parse();
+  End();
   return Result == 0 && !ErrorsReported;
 }
 
-void Driver::error (const wasm::filt::location& L, const std::string& M) {
+void Driver::error(const wasm::filt::location& L, const std::string& M) {
   ErrorsReported = true;
   std::cerr << L << ": " << M << std::endl;
 }
 
-void Driver::error (const std::string& M) {
+void Driver::error(const std::string& M) {
   error(Loc, M);
 }
 

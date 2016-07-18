@@ -35,26 +35,28 @@ namespace {
 
 static constexpr uint32_t MaxExpectedSectionNameSize = 32;
 
-IntType getIntegerValue(Node *N) {
-  if (auto *IntVal = dyn_cast<IntegerNode>(N))
+IntType getIntegerValue(Node* N) {
+  if (auto* IntVal = dyn_cast<IntegerNode>(N))
     return IntVal->getValue();
   fatal("Integer value expected but not found");
   return 0;
 }
 
-} // end of anonymous namespace
+}  // end of anonymous namespace
 
-State::State(ByteQueue *Input, ByteQueue *Output,
-             SymbolTable *Algorithms) :
-    ReadPos(Input), WritePos(Output), Alloc(Allocator::Default),
-    Algorithms(Algorithms), Trace(ReadPos, WritePos, "InterpSexp") {
+State::State(ByteQueue* Input, ByteQueue* Output, SymbolTable* Algorithms)
+    : ReadPos(Input),
+      WritePos(Output),
+      Alloc(Allocator::Default),
+      Algorithms(Algorithms),
+      Trace(ReadPos, WritePos, "InterpSexp") {
   Reader = Alloc->create<ByteReadStream>();
   Writer = Alloc->create<ByteWriteStream>();
   DefaultFormat = Alloc->create<Varuint64NoArgsNode>();
   CurSectionName.reserve(MaxExpectedSectionNameSize);
 }
 
-IntType State::eval(const Node *Nd) {
+IntType State::eval(const Node* Nd) {
   // TODO(kschimpf): Fix for ast streams.
   // TODO(kschimpf) Handle blocks.
   TraceClass::Method _("eval", Trace);
@@ -81,9 +83,9 @@ IntType State::eval(const Node *Nd) {
       fatal("Unable to evaluate filter s-expression");
       break;
     case OpSelect: {
-      const SelectNode *Sel = cast<SelectNode>(Nd);
+      const SelectNode* Sel = cast<SelectNode>(Nd);
       IntType Selector = eval(Sel->getKid(0));
-      if (const auto *Case = Sel->getCase(Selector))
+      if (const auto* Case = Sel->getCase(Selector))
         eval(Case);
       else
         eval(Sel->getKid(1));
@@ -117,7 +119,7 @@ IntType State::eval(const Node *Nd) {
       fatal("Error found during evaluation");
       break;
     case OpEval: {
-      if (auto *Sym = dyn_cast<SymbolNode>(Nd->getKid(0))) {
+      if (auto* Sym = dyn_cast<SymbolNode>(Nd->getKid(0))) {
         ReturnValue = eval(Sym->getDefineDefinition());
         break;
       }
@@ -125,7 +127,7 @@ IntType State::eval(const Node *Nd) {
       break;
     }
     case OpEvalDefault: {
-      if (auto *Sym = dyn_cast<SymbolNode>(Nd->getKid(0))) {
+      if (auto* Sym = dyn_cast<SymbolNode>(Nd->getKid(0))) {
         ReturnValue = eval(Sym->getDefaultDefinition());
         break;
       }
@@ -159,8 +161,8 @@ IntType State::eval(const Node *Nd) {
       break;
     }
     case OpLoopUnbounded: {
-      while (! ReadPos.atEob())
-        for (auto *Kid : *Nd)
+      while (!ReadPos.atEob())
+        for (auto* Kid : *Nd)
           eval(Kid);
       break;
     }
@@ -174,7 +176,7 @@ IntType State::eval(const Node *Nd) {
       ReturnValue = read(Nd->getKid(1));
       break;
     case OpSequence:
-      for (auto *Kid : *Nd)
+      for (auto* Kid : *Nd)
         eval(Kid);
       break;
     case OpUint8NoArgs:
@@ -200,7 +202,7 @@ IntType State::eval(const Node *Nd) {
   return ReturnValue;
 }
 
-IntType State::read(const Node *Nd) {
+IntType State::read(const Node* Nd) {
   switch (NodeType Type = Nd->getType()) {
     default:
       fprintf(stderr, "Read not implemented: %s\n", getNodeTypeName(Type));
@@ -249,7 +251,7 @@ IntType State::read(const Node *Nd) {
   }
 }
 
-IntType State::write(IntType Value, const wasm::filt::Node *Nd) {
+IntType State::write(IntType Value, const wasm::filt::Node* Nd) {
   switch (NodeType Type = Nd->getType()) {
     default:
       fprintf(stderr, "Read not implemented: %s\n", getNodeTypeName(Type));
@@ -333,9 +335,9 @@ void State::decompress() {
   WritePos.freezeEob();
 }
 
-void State::decompressBlock(const Node *Code) {
+void State::decompressBlock(const Node* Code) {
   TraceClass::Method _("decompressBlock", Trace);
-  auto *ByteWriter = dyn_cast<ByteWriteStream>(Writer);
+  auto* ByteWriter = dyn_cast<ByteWriteStream>(Writer);
   bool IsByteReader = isa<ByteReadStream>(Reader);
   if (IsByteReader) {
     const uint32_t BlockSize = Reader->readVaruint32(ReadPos);
@@ -348,8 +350,8 @@ void State::decompressBlock(const Node *Code) {
     size_t SizeAfterSizeWrite = WritePos.getCurAddress();
     evalOrCopy(Code);
     const size_t NewSize =
-        WritePos.getCurAddress() - (BlockPos.getCurAddress() +
-                                    ByteWriteStream::ChunksInWord);
+        WritePos.getCurAddress() -
+        (BlockPos.getCurAddress() + ByteWriteStream::ChunksInWord);
     if (!MinimizeBlockSize) {
       ByteWriter->writeFixedVaruint32(NewSize, BlockPos);
     } else {
@@ -360,7 +362,7 @@ void State::decompressBlock(const Node *Code) {
         size_t End = WritePos.getCurAddress() - Diff;
         ReadCursor CopyPos(WritePos.getQueue());
         CopyPos.jumpToAddress(SizeAfterSizeWrite);
-        for (size_t i = SizeAfterBackPatch; i < End; ++ i)
+        for (size_t i = SizeAfterBackPatch; i < End; ++i)
           BlockPos.writeByte(CopyPos.readByte());
         WritePos.jumpToAddress(BlockPos.getCurAddress());
       }
@@ -372,7 +374,7 @@ void State::decompressBlock(const Node *Code) {
     ReadPos.popEobAddress();
 }
 
-void State::evalOrCopy(const Node *Nd) {
+void State::evalOrCopy(const Node* Nd) {
   if (Nd) {
     eval(Nd);
     return;
@@ -386,7 +388,7 @@ void State::decompressSection() {
   assert(isa<ByteReadStream>(Reader));
   readSectionName();
   Trace.traceString("name", CurSectionName);
-  SymbolNode *Sym = Algorithms->getSymbol(CurSectionName);
+  SymbolNode* Sym = Algorithms->getSymbol(CurSectionName);
   decompressBlock(Sym ? Sym->getDefineDefinition() : nullptr);
 }
 
@@ -401,6 +403,6 @@ void State::readSectionName() {
   }
 }
 
-} // end of namespace interp.
+}  // end of namespace interp.
 
-} // end of namespace wasm.
+}  // end of namespace wasm.

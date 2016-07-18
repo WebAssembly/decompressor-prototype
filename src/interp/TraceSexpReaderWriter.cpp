@@ -22,24 +22,35 @@ namespace wasm {
 namespace interp {
 
 TraceClassSexpReaderWriter::TraceClassSexpReaderWriter(
-    decode::ReadCursor &ReadPos, decode::WriteCursor &WritePos) :
-    TraceClassSexp(), ReadPos(ReadPos), WritePos(WritePos) {}
+    decode::ReadCursor& ReadPos,
+    decode::WriteCursor& WritePos)
+    : TraceClassSexp(), ReadPos(ReadPos), WritePos(WritePos) {
+}
 
 TraceClassSexpReaderWriter::TraceClassSexpReaderWriter(
-    decode::ReadCursor &ReadPos, decode::WriteCursor &WritePos,
-    const char *Label) :
-    TraceClassSexp(Label), ReadPos(ReadPos), WritePos(WritePos) {}
+    decode::ReadCursor& ReadPos,
+    decode::WriteCursor& WritePos,
+    const char* Label)
+    : TraceClassSexp(Label), ReadPos(ReadPos), WritePos(WritePos) {
+}
 
 TraceClassSexpReaderWriter::TraceClassSexpReaderWriter(
-    decode::ReadCursor &ReadPos, decode::WriteCursor &WritePos, FILE *File) :
-    TraceClassSexp(File), ReadPos(ReadPos), WritePos(WritePos) {}
+    decode::ReadCursor& ReadPos,
+    decode::WriteCursor& WritePos,
+    FILE* File)
+    : TraceClassSexp(File), ReadPos(ReadPos), WritePos(WritePos) {
+}
 
 TraceClassSexpReaderWriter::TraceClassSexpReaderWriter(
-    decode::ReadCursor &ReadPos, decode::WriteCursor &WritePos,
-    const char *Label, FILE *File) :
-    TraceClassSexp(Label, File), ReadPos(ReadPos), WritePos(WritePos) {}
+    decode::ReadCursor& ReadPos,
+    decode::WriteCursor& WritePos,
+    const char* Label,
+    FILE* File)
+    : TraceClassSexp(Label, File), ReadPos(ReadPos), WritePos(WritePos) {
+}
 
-TraceClassSexpReaderWriter::~TraceClassSexpReaderWriter() {}
+TraceClassSexpReaderWriter::~TraceClassSexpReaderWriter() {
+}
 
 void TraceClassSexpReaderWriter::traceContext() const {
   fprintf(File, "@%" PRIuMAX "/@%" PRIuMAX " ",
@@ -47,6 +58,6 @@ void TraceClassSexpReaderWriter::traceContext() const {
           uintmax_t(WritePos.getCurAddress()));
 }
 
-} // end of namespace interp
+}  // end of namespace interp
 
-} // end of namespace wasm
+}  // end of namespace wasm

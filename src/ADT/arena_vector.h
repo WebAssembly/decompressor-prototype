@@ -26,10 +26,9 @@
 
 namespace wasm {
 
-template<typename T>
+template <typename T>
 using arena_vector = std::vector<T, alloc::TemplateAllocator<T>>;
 
-} // end of namespace wasm
+}  // end of namespace wasm
 
-
-#endif // DECOMPRESSOR_SRC_ADT_ARENA_VECTOR_H
+#endif  // DECOMPRESSOR_SRC_ADT_ARENA_VECTOR_H
