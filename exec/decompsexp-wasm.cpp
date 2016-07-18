@@ -109,10 +109,11 @@ int main(int Argc, char *Argv[]) {
     return exit_status(EXIT_FAILURE);
   }
   WriteBackedByteQueue Output(getOutput());
-  BinGen Generator(&Output, &Allocator);
-  Generator.setTraceProgress(TraceProgress);
-  Generator.setMinimizeBlockSize(MinimizeBlockSize);
-  Generator.writePreamble();
-  Generator.writeFile(wasm::dyn_cast<FileNode>(Parser.getParsedAst()));
+  SymbolTable Symtab(&Allocator);
+  BinaryWriter Writer(&Output, Symtab);
+  Writer.setTraceProgress(TraceProgress);
+  Writer.setMinimizeBlockSize(MinimizeBlockSize);
+  Writer.writePreamble();
+  Writer.writeFile(wasm::dyn_cast<FileNode>(Parser.getParsedAst()));
   return exit_status(EXIT_SUCCESS);
 }

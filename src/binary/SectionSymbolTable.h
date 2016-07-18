@@ -39,7 +39,7 @@ class SectionSymbolTable {
   using IndexType = uint32_t;
   using SymbolLookupType = std::unordered_map<SymbolNode*, IndexType>;
   using IndexLookupType = std::vector<SymbolNode*>;
-  SectionSymbolTable(alloc::Allocator* Alloc) : Symtab(Alloc) {}
+  SectionSymbolTable(SymbolTable& Symtab) : Symtab(Symtab) {}
   ~SectionSymbolTable() {}
   void installSection(const SectionNode* Section);
   const IndexLookupType& getVector() { return IndexLookup; }
@@ -55,7 +55,7 @@ class SectionSymbolTable {
 
  private:
   // Cache that holds the set of uniquified symbols.
-  SymbolTable Symtab;
+  SymbolTable& Symtab;
   SymbolLookupType SymbolLookup;
   IndexLookupType IndexLookup;
   void installSymbols(const Node* Nd);

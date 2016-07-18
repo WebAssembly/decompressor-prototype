@@ -44,7 +44,7 @@ class BinaryReader {
   BinaryReader& operator=(const BinaryReader&) = delete;
 
  public:
-  BinaryReader(decode::ByteQueue* Input, alloc::Allocator* Alloc);
+  BinaryReader(decode::ByteQueue* Input, SymbolTable& Symtab);
 
   ~BinaryReader() {}
 

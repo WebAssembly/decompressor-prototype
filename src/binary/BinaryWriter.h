@@ -35,15 +35,15 @@ namespace filt {
 
 class TextWriter;
 
-class BinGen {
-  BinGen() = delete;
-  BinGen(const BinGen&) = delete;
-  BinGen& operator=(const BinGen&) = delete;
+class BinaryWriter {
+  BinaryWriter() = delete;
+  BinaryWriter(const BinaryWriter&) = delete;
+  BinaryWriter& operator=(const BinaryWriter&) = delete;
 
  public:
-  BinGen(decode::ByteQueue* Output, alloc::Allocator* Alloc);
+  BinaryWriter(decode::ByteQueue* Output, SymbolTable& Symtab);
 
-  ~BinGen() { WritePos.freezeEob(); }
+  ~BinaryWriter() { WritePos.freezeEob(); }
 
   void writePreamble();
 
