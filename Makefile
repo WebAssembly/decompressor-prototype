@@ -434,6 +434,7 @@ test-decompress: $(BUILD_EXECDIR)/decompress
 		| diff - $(TEST_SRCS_DIR)/toy.wasm
 	$< -d defaults.df -m -i $(TEST_SRCS_DIR)/if-then-br.wasm -o - \
 		| diff - $(TEST_SRCS_DIR)/if-then-br.wasm
+	cd test/test-sources; make test
 	@echo "*** decompress tests passed ***"
 
 .PHONY: test-decompress
