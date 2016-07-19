@@ -53,7 +53,7 @@ TraceClassSexpReaderWriter::~TraceClassSexpReaderWriter() {
 }
 
 void TraceClassSexpReaderWriter::traceContext() const {
-  fprintf(File, "@%" PRIuMAX "/@%" PRIuMAX " ",
+  fprintf(File, "@%" PRIxMAX "/@%" PRIxMAX " ",
           uintmax_t(ReadPos.getCurAddress()),
           uintmax_t(WritePos.getCurAddress()));
 }
