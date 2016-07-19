@@ -107,10 +107,36 @@ class Cursor {
 class ReadCursor : public Cursor {
  public:
   explicit ReadCursor(ByteQueue* Queue) : Cursor(Queue) {}
-  explicit ReadCursor(const ReadCursor& C) : Cursor(C) {}
-  ReadCursor& operator=(const ReadCursor& C) {
+  explicit ReadCursor(ReadCursor& C)
+      : Cursor(C), LocalEobOverrides(C.LocalEobOverrides) {}
+
+  void assign(ReadCursor& C) {
+    Cursor::assign(C);
+    LocalEobOverrides.swap(C.LocalEobOverrides);
+  }
+
+  void swap(ReadCursor& C) {
+    std::swap(Queue, C.Queue);
+    std::swap(LockedAddress, C.LockedAddress);
+    std::swap(Buffer, C.Buffer);
+    std::swap(BufferEnd, C.BufferEnd);
+    std::swap(CurAddress, C.CurAddress);
+    std::swap(EobAddress, C.EobAddress);
+    std::swap(LocalEobOverrides, C.LocalEobOverrides);
+  }
+
+  ReadCursor& operator=(ReadCursor& C) {
     assign(C);
     return *this;
+  }
+
+  size_t getEobAddress() const {
+    return LocalEobOverrides.empty() ? EobAddress : LocalEobOverrides.back();
+  }
+
+  bool atEob() {
+    size_t Eob = getEobAddress();
+    return (CurAddress >= Eob) || !((Buffer < BufferEnd) || fillBuffer());
   }
 
   // Reads next byte. Returns zero if at end of buffer.
@@ -121,21 +147,8 @@ class ReadCursor : public Cursor {
     return *(Buffer++);
   }
 
-  size_t getEobAddress() const {
-    return LocalEobOverrides.empty() ? Cursor::getEobAddress()
-                                     : LocalEobOverrides.back();
-  }
-
-  bool atEob() {
-    if (BufferEnd > Buffer)
-      return false;
-    if (CurAddress >= EobAddress)
-      return true;
-    return !fillBuffer();
-  }
-
-  void pushEobAddress(size_t newLocalEob) {
-    LocalEobOverrides.push_back(newLocalEob);
+  void pushEobAddress(size_t NewLocalEob) {
+    LocalEobOverrides.push_back(NewLocalEob);
   }
 
   void popEobAddress() {
