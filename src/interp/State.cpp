@@ -62,7 +62,7 @@ State::State(ByteQueue* Input, ByteQueue* Output, SymbolTable* Algorithms)
 #if LOG_BLOCKS
 namespace {
 uint32_t LogBlockCount = 0;
-} // end of anonymous namespace
+}  // end of anonymous namespace
 #endif
 
 IntType State::eval(const Node* Nd) {
@@ -109,8 +109,7 @@ IntType State::eval(const Node* Nd) {
       // used to define functions.
       fprintf(stderr, "@%" PRIxMAX "/@%" PRIxMAX " Function %" PRIuMAX "\n",
               uintmax_t(ReadPos.getCurAddress()),
-              uintmax_t(WritePos.getCurAddress()),
-              uintmax_t(LogBlockCount));
+              uintmax_t(WritePos.getCurAddress()), uintmax_t(LogBlockCount));
       ++LogBlockCount;
 #endif
       decompressBlock(Nd->getKid(0));
