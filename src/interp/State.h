@@ -51,7 +51,7 @@ class State {
   // to the corresponding output.
   void decompress();
 
-  void setTraceProgress(bool NewValue, bool TraceIoDifference=false) {
+  void setTraceProgress(bool NewValue, bool TraceIoDifference = false) {
     Trace.setTraceProgress(NewValue);
     Trace.setTraceIoDifference(TraceIoDifference);
   }
