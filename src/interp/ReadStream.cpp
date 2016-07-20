@@ -26,11 +26,11 @@ using namespace wasm::decode;
 
 template <class Type>
 Type readFixed(ReadCursor& Pos) {
-  uint32_t Value = 0;
+  Type Value = 0;
   constexpr uint32_t WordSize = sizeof(Type);
   uint32_t Shift = 0;
   for (uint32_t i = 0; i < WordSize; ++i) {
-    Value |= uint32_t(Pos.readByte()) << Shift;
+    Value |= Type(Pos.readByte()) << Shift;
     Shift += CHAR_BIT;
   }
   return Value;

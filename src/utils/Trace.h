@@ -60,6 +60,7 @@ class TraceClass {
   TraceClass(const char* Label, FILE* File);
   virtual ~TraceClass();
   virtual void traceContext() const;
+  void indent();
   void traceMessage(const char* Message) {
     if (TraceProgress)
       traceMessageInternal(Message);
@@ -171,6 +172,8 @@ class TraceClass {
   bool getTraceProgress() const { return TraceProgress; }
   void setTraceProgress(bool NewValue) { TraceProgress = NewValue; }
 
+  FILE* getFile() const { return File; }
+
  protected:
   const char* Label = nullptr;
   FILE* File = stderr;
@@ -180,7 +183,6 @@ class TraceClass {
 
   void enter(const char* Name);
   void exit();
-  void indent();
   void traceMessageInternal(const std::string& Message);
   void traceBoolInternal(const char* Name, bool Value);
   void traceCharInternal(const char* Name, char Ch);
