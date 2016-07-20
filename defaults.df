@@ -34,8 +34,8 @@
   (default 'code.br_table'
     (uint8)                      # table arity.
     (loop (varuint32 6)          # number of targets.
-       (varuint32 6))            # target depth.
-    (varuint32 6)                # default target depth.
+       (uint32 6))               # target depth.
+    (uint32 6)                   # default target depth.
   )
 
   (default 'code.br_target'

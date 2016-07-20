@@ -22,8 +22,16 @@
 
 #include <iostream>
 
+// The following turn on logging sections, functions, and bytes at each eval
+// call in the decompression algorithm.
 #define LOG_SECTIONS 0
-#define LOG_BLOCKS 0
+#define LOG_FUNCTIONS 0
+#define LOG_EVAL 0
+
+// The following two defines allows turning on tracing for the nth (zero based)
+// function.
+#define LOG_NUMBERED_BLOCK 0
+#define LOG_FUNCTION_NUMBER 0
 
 namespace wasm {
 
@@ -59,7 +67,7 @@ State::State(ByteQueue* Input, ByteQueue* Output, SymbolTable* Algorithms)
   CurSectionName.reserve(MaxExpectedSectionNameSize);
 }
 
-#if LOG_BLOCKS
+#if LOG_FUNCTIONS || LOG_NUMBERED_BLOCK
 namespace {
 uint32_t LogBlockCount = 0;
 }  // end of anonymous namespace
@@ -104,15 +112,25 @@ IntType State::eval(const Node* Nd) {
       eval(Nd->getKid(1));
       break;
     case OpBlock:
-#if LOG_BLOCKS
+#if LOG_FUNCTIONS || LOG_NUMBERED_BLOCK
       // NOTE: This assumes that blocks (outside of sections) are only
       // used to define functions.
       fprintf(stderr, "@%" PRIxMAX "/@%" PRIxMAX " Function %" PRIuMAX "\n",
               uintmax_t(ReadPos.getCurAddress()),
               uintmax_t(WritePos.getCurAddress()), uintmax_t(LogBlockCount));
-      ++LogBlockCount;
+#if LOG_NUMBERED_BLOCK
+      if (LogBlockCount == LOG_FUNCTION_NUMBER)
+        Trace.setTraceProgress(true);
+#endif
 #endif
       decompressBlock(Nd->getKid(0));
+#if LOG_FUNCTIONS || LOG_NUMBERED_BLOCKS
+#if LOG_NUMBERED_BLOCK
+      if (LogBlockCount == LOG_FUNCTION_NUMBER)
+        Trace.setTraceProgress(0);
+#endif
+      ++LogBlockCount;
+#endif
       break;
     case OpAnd:
       if (eval(Nd->getKid(0)) != 0 && eval(Nd->getKid(1)) != 0)
@@ -136,6 +154,17 @@ IntType State::eval(const Node* Nd) {
       fatal("Error found during evaluation");
       break;
     case OpEval: {
+#ifdef LOG_EVAL
+      if (Trace.getTraceProgress()) {
+        Trace.indent();
+        decode::ReadCursor Lookahead(ReadPos);
+        for (size_t i = 0; i < 10; ++i) {
+          if (!Lookahead.atEob())
+            fprintf(Trace.getFile(), " %x", Lookahead.readByte());
+        }
+        fprintf(Trace.getFile(), "\n");
+      }
+#endif
       if (auto* Sym = dyn_cast<SymbolNode>(Nd->getKid(0))) {
         ReturnValue = eval(Sym->getDefineDefinition());
         break;

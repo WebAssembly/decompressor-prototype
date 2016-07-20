@@ -9,8 +9,8 @@
   )
   (default 'code.br_table'
     (uint8)
-    (loop (varuint32 6) (varuint32 6))
-    (varuint32 6)
+    (loop (varuint32 6) (uint32 6))
+    (uint32 6)
   )
   (default 'code.br_target'
     (uint8)
