@@ -22,6 +22,9 @@
 
 #include <iostream>
 
+#define LOG_SECTIONS 0
+#define LOG_BLOCKS 0
+
 namespace wasm {
 
 using namespace alloc;
@@ -55,6 +58,12 @@ State::State(ByteQueue* Input, ByteQueue* Output, SymbolTable* Algorithms)
   DefaultFormat = Alloc->create<Varuint64NoArgsNode>();
   CurSectionName.reserve(MaxExpectedSectionNameSize);
 }
+
+#if LOG_BLOCKS
+namespace {
+uint32_t LogBlockCount = 0;
+} // end of anonymous namespace
+#endif
 
 IntType State::eval(const Node* Nd) {
   // TODO(kschimpf): Fix for ast streams.
@@ -95,6 +104,15 @@ IntType State::eval(const Node* Nd) {
       eval(Nd->getKid(1));
       break;
     case OpBlock:
+#if LOG_BLOCKS
+      // NOTE: This assumes that blocks (outside of sections) are only
+      // used to define functions.
+      fprintf(stderr, "@%" PRIxMAX "/@%" PRIxMAX " Function %" PRIuMAX "\n",
+              uintmax_t(ReadPos.getCurAddress()),
+              uintmax_t(WritePos.getCurAddress()),
+              uintmax_t(LogBlockCount));
+      ++LogBlockCount;
+#endif
       decompressBlock(Nd->getKid(0));
       break;
     case OpAnd:
@@ -386,7 +404,14 @@ void State::evalOrCopy(const Node* Nd) {
 void State::decompressSection() {
   TraceClass::Method _("decompressSection", Trace);
   assert(isa<ByteReadStream>(Reader));
+#if LOG_SECTIONS
+  size_t SectionAddress = ReadPos.getCurAddress();
+#endif
   readSectionName();
+#if LOG_SECTIONS
+  fprintf(stderr, "@%" PRIxMAX " section '%s'\n", uintmax_t(SectionAddress),
+          sectionName);
+#endif
   Trace.traceString("name", CurSectionName);
   SymbolNode* Sym = Algorithms->getSymbol(CurSectionName);
   decompressBlock(Sym ? Sym->getDefineDefinition() : nullptr);

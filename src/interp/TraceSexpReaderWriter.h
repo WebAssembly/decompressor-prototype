@@ -48,9 +48,18 @@ class TraceClassSexpReaderWriter : public filt::TraceClassSexp {
 
   void traceContext() const override;
 
+  bool getTraceIoDifference() const {
+    return TraceIoDifference;
+  }
+
+  void setTraceIoDifference(bool NewValue) {
+    TraceIoDifference = NewValue;
+  }
+
  protected:
   decode::ReadCursor& ReadPos;
   decode::WriteCursor& WritePos;
+  bool TraceIoDifference = false;
 };
 
 }  // end of namespace interp

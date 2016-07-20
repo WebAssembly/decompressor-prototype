@@ -51,7 +51,10 @@ class State {
   // to the corresponding output.
   void decompress();
 
-  void setTraceProgress(bool NewValue) { Trace.setTraceProgress(NewValue); }
+  void setTraceProgress(bool NewValue, bool TraceIoDifference=false) {
+    Trace.setTraceProgress(NewValue);
+    Trace.setTraceIoDifference(TraceIoDifference);
+  }
 
   void setMinimizeBlockSize(bool NewValue) { MinimizeBlockSize = NewValue; }
 
