@@ -66,7 +66,9 @@ void usage(const char *AppName) {
   fprintf(stderr, "  Decompress WASM binary file.\n");
   fprintf(stderr, "\n");
   fprintf(stderr, "Options:\n");
-  fprintf(stderr, "  -d File\tFile containing default algorithms\n");
+  fprintf(stderr, "  -d File\tFile containing default algorithms.\n");
+  fprintf(stderr, "  --diff\tWhen tracing, "
+          "show byte difference between reader/writer.\n");
   fprintf(stderr, "  --expect-fail\tSucceed on failure/fail on success\n");
   fprintf(stderr, "  -h\t\tPrint this usage message.\n");
   fprintf(stderr, "  -i File\tFile to decompress ('-' implies stdin).\n");
@@ -82,6 +84,7 @@ int main(int Argc, char *Argv[]) {
   SymbolTable SymTab(&Allocator);
   Driver FileDriver(SymTab);
   bool TraceProgress = false;
+  bool TraceIoDifference = false;
   bool MinimizeBlockSize = false;
   for (int i = 1; i < Argc; ++i) {
     if (Argv[i] == std::string("-d")) {
@@ -94,6 +97,8 @@ int main(int Argc, char *Argv[]) {
         fprintf(stderr, "Unable to parse default algorithms: %s\n", Argv[i]);
         return exit_status(EXIT_FAILURE);
       }
+    } else if (Argv[i] == std::string("--diff")) {
+      TraceIoDifference = true;
     } else if (Argv[i] == std::string("--expect-fail")) {
       ExpectExitFail = true;
     } else if (Argv[i] == std::string("-h")
@@ -130,7 +135,7 @@ int main(int Argc, char *Argv[]) {
   ReadBackedByteQueue Input(getInput());
   WriteBackedByteQueue Output(getOutput());
   State Decompressor(&Input, &Output, &SymTab);
-  Decompressor.setTraceProgress(TraceProgress);
+  Decompressor.setTraceProgress(TraceProgress, TraceIoDifference);
   Decompressor.setMinimizeBlockSize(MinimizeBlockSize);
   Decompressor.decompress();
   return exit_status(EXIT_SUCCESS);

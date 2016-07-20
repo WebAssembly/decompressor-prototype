@@ -63,7 +63,7 @@ void writeNegativeLEB128(Type Value, WriteCursor& Pos) {
 
 template <class Type>
 void writeFixedLEB128(Type Value, WriteCursor& Pos) {
-  constexpr uint32_t BitsInWord = sizeof(uint32_t) * CHAR_BIT;
+  constexpr uint32_t BitsInWord = sizeof(Type) * CHAR_BIT;
   constexpr uint32_t ChunkSize = CHAR_BIT - 1;
   constexpr uint32_t ChunksInWord = (BitsInWord + ChunkSize - 1) / ChunkSize;
   uint32_t Count = 0;

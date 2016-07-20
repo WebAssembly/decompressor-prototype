@@ -62,7 +62,7 @@ Type readSignedLEB128(ReadCursor& Pos) {
   uint32_t Shift;
   uint8_t Chunk;
   Type Value = readLEB128Loop<Type>(Pos, Shift, Chunk);
-  if (Chunk & 0x40)
+  if ((Chunk & 0x40) && (Shift < sizeof(Type) * CHAR_BIT))
     Value |= ~Type(0) << Shift;
   return Value;
 }
