@@ -19,12 +19,30 @@
 
 #include "binary/BinaryReader.h"
 
+#include <cstdio>
+
 using namespace wasm::decode;
 using namespace wasm::utils;
 
 namespace wasm {
 
 namespace filt {
+
+bool BinaryReader::isBinary(const char *Filename) {
+  FILE *File = fopen(Filename, "r");
+  if (File == nullptr)
+    return false;
+  // Read first 4 bytes and generate magic number.
+  uint32_t Number = 0;
+  uint32_t Shift = 0;
+  for (size_t i = 0; i < sizeof(uint32_t); ++i) {
+    uint8_t Byte = fgetc(File);
+    Number |= (Byte << Shift);
+    Shift += CHAR_BIT;
+  }
+  fclose(File);
+  return Number == WasmBinaryMagic;
+}
 
 BinaryReader::BinaryReader(decode::ByteQueue* Input, SymbolTable& Symtab)
     : Alloc(Symtab.getAllocator()),
