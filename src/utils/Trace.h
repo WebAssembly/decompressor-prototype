@@ -120,6 +120,10 @@ class TraceClass {
     if (TraceProgress)
       traceUintInternal(Name, Value);
   }
+  void traceHexUint8_t(const char* Name, uint8_t Value) {
+    if (TraceProgress)
+      traceHexInternal(Name, Value);
+  }
   void traceInt16_t(const char* Name, int16_t Value) {
     if (TraceProgress)
       traceIntInternal(Name, Value);
@@ -156,6 +160,14 @@ class TraceClass {
     if (TraceProgress)
       traceUintInternal(Name, Value);
   }
+  void traceHexSize_t(const char* Name, size_t Value) {
+    if (TraceProgress)
+      traceHexInternal(Name, Value);
+  }
+  void tracePointer(const char* Name, void* Ptr) {
+    if (TraceProgress)
+      tracePointerInternal(Name, Ptr);
+  }
   bool getTraceProgress() const { return TraceProgress; }
   void setTraceProgress(bool NewValue) { TraceProgress = NewValue; }
 
@@ -176,6 +188,7 @@ class TraceClass {
   void traceIntInternal(const char* Name, intmax_t Value);
   void traceUintInternal(const char* Name, uintmax_t Value);
   void traceHexInternal(const char* Name, uintmax_t Value);
+  void tracePointerInternal(const char* Name, void* Value);
 };
 
 }  // end of namespace utils

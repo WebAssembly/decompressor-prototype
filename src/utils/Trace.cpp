@@ -111,6 +111,11 @@ void TraceClass::traceHexInternal(const char* Name, uintmax_t Value) {
   fprintf(File, "%s = %" PRIxMAX "\n", Name, uintmax_t(Value));
 }
 
+void TraceClass::tracePointerInternal(const char* Name, void* Value) {
+  indent();
+  fprintf(File, "%s = %p\n", Name, Value);
+}
+
 }  // end of namespace utils
 
 }  // end of namespace wasm
