@@ -58,7 +58,7 @@ class Cursor {
 
   void releaseLock() {
     if (Buffer) {
-      Queue->lock(LockedAddress);
+      Queue->unlock(LockedAddress);
       Buffer = nullptr;
       BufferEnd = nullptr;
     }
@@ -69,6 +69,9 @@ class Cursor {
   // WARNING: Assumes that you have a lock before NewAddress when this is
   // called.
   void jumpToAddress(size_t NewAddress) {
+    // TODO(karlschimpf): Optimize by not throwing away lock if at least one
+    // byte in buffer is still accessable.
+    Queue->lock(NewAddress);
     releaseLock();
     CurAddress = NewAddress;
   }

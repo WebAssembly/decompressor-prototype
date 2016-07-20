@@ -52,7 +52,7 @@ template <class Base>
 void Queue<Base>::dumpPreviousPages(size_t Address) {
   Page* AddrPage = getPage(Address);
   while (FirstPage != AddrPage) {
-    if (!FirstPage->isLocked())
+    if (FirstPage->isLocked())
       break;
     if (FirstPage->getMaxAddress() + MinPeekSize < Address)
       break;

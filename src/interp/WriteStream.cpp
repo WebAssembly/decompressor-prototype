@@ -117,9 +117,9 @@ void ByteWriteStream::writeVarint64Bits(int64_t Value,
                                         WriteCursor& Pos,
                                         uint32_t /*NumBits*/) {
   if (Value < 0)
-    writePositiveLEB128<int64_t>(Value, Pos);
-  else
     writeNegativeLEB128<int64_t>(Value, Pos);
+  else
+    writePositiveLEB128<int64_t>(Value, Pos);
 }
 
 void ByteWriteStream::writeVaruint32Bits(uint32_t Value,
