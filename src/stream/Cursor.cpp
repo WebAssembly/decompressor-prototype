@@ -48,7 +48,7 @@ bool CursorImpl::readFillBuffer() {
   return true;
 }
 
-void CursorImpl::writeFillBuffer () {
+void CursorImpl::writeFillBuffer() {
   if (CurAddress >= EobAddress)
     fatal("Write past Eob");
   size_t BufferSize;
@@ -62,6 +62,15 @@ void CursorImpl::writeFillBuffer () {
   LockedAddress = CurAddress;
 }
 
+size_t CursorImpl::getCurBitAddress() const {
+  return CurAddress * CHAR_BIT;
+}
+
+void CursorImpl::jumpToBitAddress(size_t NewAddress) {
+  assert((NewAddress & (size_t(1) << CHAR_BIT)) == 0);
+  jumpToByteAddress(NewAddress >> CHAR_BIT);
+}
+
 uint32_t CursorImpl::readBits(uint32_t NumBits) {
   fatal("CursorImpl::readBits not allowed for stream type!");
   return 0;
@@ -71,9 +80,9 @@ void CursorImpl::writeBits(uint8_t Value, uint32_t NumBits) {
   fatal("CursorImpl::writeBits not allowed for stream type!");
 }
 
-CursorImpl *CursorImpl::copy(StreamType WantedType) {
+CursorImpl* CursorImpl::copy(StreamType WantedType) {
   assert(Type == WantedType);
-  CursorImpl *Impl = new CursorImpl(WantedType, Queue);
+  CursorImpl* Impl = new CursorImpl(WantedType, Queue);
   Impl->CurAddress = CurAddress;
   Impl->LockedAddress = LockedAddress;
   Queue->lock(LockedAddress);

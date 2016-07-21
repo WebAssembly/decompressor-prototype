@@ -45,7 +45,7 @@ TraceClassSexpWriter::~TraceClassSexpWriter() {
 }
 
 void TraceClassSexpWriter::traceContext() const {
-  fprintf(File, "@%" PRIuMAX " ", uintmax_t(Writepos.getCurAddress()));
+  fprintf(File, "@%" PRIuMAX " ", uintmax_t(Writepos.getCurByteAddress()));
 }
 
 }  // end of namespace interp

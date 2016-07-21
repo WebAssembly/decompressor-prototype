@@ -28,8 +28,8 @@ namespace wasm {
 
 namespace filt {
 
-bool BinaryReader::isBinary(const char *Filename) {
-  FILE *File = fopen(Filename, "r");
+bool BinaryReader::isBinary(const char* Filename) {
+  FILE* File = fopen(Filename, "r");
   if (File == nullptr)
     return false;
   // Read first 4 bytes and generate magic number.
@@ -256,7 +256,7 @@ void BinaryReader::readBlock(std::function<void()> ApplyFn) {
   TraceClass::Method _("readBlock", Trace);
   const size_t BlockSize = Reader->readVaruint32(ReadPos);
   Trace.traceSize_t("Block size", BlockSize);
-  ReadPos.pushEobAddress(ReadPos.getCurAddress() + BlockSize);
+  ReadPos.pushEobAddress(ReadPos.getCurByteAddress() + BlockSize);
   ApplyFn();
   ReadPos.popEobAddress();
 }

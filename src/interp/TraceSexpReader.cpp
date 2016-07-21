@@ -45,7 +45,7 @@ TraceClassSexpReader::~TraceClassSexpReader() {
 }
 
 void TraceClassSexpReader::traceContext() const {
-  fprintf(File, "@%" PRIuMAX " ", uintmax_t(ReadPos.getCurAddress()));
+  fprintf(File, "@%" PRIuMAX " ", uintmax_t(ReadPos.getCurByteAddress()));
 }
 
 }  // end of namespace interp

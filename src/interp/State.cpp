@@ -116,8 +116,9 @@ IntType State::eval(const Node* Nd) {
       // NOTE: This assumes that blocks (outside of sections) are only
       // used to define functions.
       fprintf(stderr, "@%" PRIxMAX "/@%" PRIxMAX " Function %" PRIuMAX "\n",
-              uintmax_t(ReadPos.getCurAddress()),
-              uintmax_t(WritePos.getCurAddress()), uintmax_t(LogBlockCount));
+              uintmax_t(ReadPos.getCurByteAddress()),
+              uintmax_t(WritePos.getCurByteAddress()),
+              uintmax_t(LogBlockCount));
 #if LOG_NUMBERED_BLOCK
       if (LogBlockCount == LOG_FUNCTION_NUMBER)
         Trace.setTraceProgress(true);
@@ -388,29 +389,29 @@ void State::decompressBlock(const Node* Code) {
   if (IsByteReader) {
     const uint32_t BlockSize = Reader->readVaruint32(ReadPos);
     Trace.traceUint32_t("block size", BlockSize);
-    ReadPos.pushEobAddress(ReadPos.getCurAddress() + BlockSize);
+    ReadPos.pushEobAddress(ReadPos.getCurByteAddress() + BlockSize);
   }
   if (ByteWriter) {
     WriteCursor BlockPos(WritePos);
     ByteWriter->writeFixedVaruint32(0, WritePos);
-    size_t SizeAfterSizeWrite = WritePos.getCurAddress();
+    size_t SizeAfterSizeWrite = WritePos.getCurByteAddress();
     evalOrCopy(Code);
     const size_t NewSize =
-        WritePos.getCurAddress() -
-        (BlockPos.getCurAddress() + ByteWriteStream::ChunksInWord);
+        WritePos.getCurByteAddress() -
+        (BlockPos.getCurByteAddress() + ByteWriteStream::ChunksInWord);
     if (!MinimizeBlockSize) {
       ByteWriter->writeFixedVaruint32(NewSize, BlockPos);
     } else {
       ByteWriter->writeVaruint32(NewSize, BlockPos);
-      size_t SizeAfterBackPatch = BlockPos.getCurAddress();
+      size_t SizeAfterBackPatch = BlockPos.getCurByteAddress();
       size_t Diff = SizeAfterSizeWrite - SizeAfterBackPatch;
       if (Diff) {
-        size_t End = WritePos.getCurAddress() - Diff;
+        size_t End = WritePos.getCurByteAddress() - Diff;
         ReadCursor CopyPos(StreamType::Byte, WritePos.getQueue());
-        CopyPos.jumpToAddress(SizeAfterSizeWrite);
+        CopyPos.jumpToByteAddress(SizeAfterSizeWrite);
         for (size_t i = SizeAfterBackPatch; i < End; ++i)
           BlockPos.writeByte(CopyPos.readByte());
-        WritePos.jumpToAddress(BlockPos.getCurAddress());
+        WritePos.jumpToByteAddress(BlockPos.getCurByteAddress());
       }
     }
   } else {
@@ -433,7 +434,7 @@ void State::decompressSection() {
   TraceClass::Method _("decompressSection", Trace);
   assert(isa<ByteReadStream>(Reader));
 #if LOG_SECTIONS
-  size_t SectionAddress = ReadPos.getCurAddress();
+  size_t SectionAddress = ReadPos.getCurByteAddress();
 #endif
   readSectionName();
 #if LOG_SECTIONS

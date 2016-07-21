@@ -30,12 +30,12 @@ namespace decode {
 
 // Base class for the internal implementation of cursors.
 class CursorImpl {
-  CursorImpl(const CursorImpl &) = delete;
-  CursorImpl &operator=(const CursorImpl &) = delete;
+  CursorImpl(const CursorImpl&) = delete;
+  CursorImpl& operator=(const CursorImpl&) = delete;
   CursorImpl() = delete;
- public:
 
-  explicit CursorImpl(StreamType Type, ByteQueue *Queue)
+ public:
+  explicit CursorImpl(StreamType Type, ByteQueue* Queue)
       : Type(Type), Queue(Queue) {}
 
   virtual ~CursorImpl() { releaseLock(); }
@@ -64,19 +64,26 @@ class CursorImpl {
   // Creates new pages in buffer so that writes can occur.
   void writeFillBuffer();
 
+  // Returns the current bit position of the cursor.
+  virtual size_t getCurBitAddress() const;
+
   // Note: Only supported on bit cursor implementations.
   virtual uint32_t readBits(uint32_t NumBits);
   virtual void writeBits(uint8_t Value, uint32_t NumBits);
 
-  CursorImpl *copy(StreamType Type);
+  CursorImpl* copy(StreamType Type);
 
-  void jumpToAddress(size_t NewAddress) {
+  // Note: Non-byte aligned bit addresses only supported on bit cursor
+  // implementations.
+  void jumpToByteAddress(size_t NewAddress) {
     // TODO(karlschimpf): Optimize by not throwing away lock if at least one
     // byte in buffer is still accessable.
     Queue->lock(NewAddress);
     releaseLock();
     CurAddress = NewAddress;
   }
+
+  virtual void jumpToBitAddress(size_t NewAddress);
 
   void freezeEob() {
     Queue->freezeEob(CurAddress);
@@ -105,43 +112,37 @@ class CursorImpl {
 
 class Cursor {
  public:
+  void assign(const Cursor& C) { Impl->releaseLock(); }
 
-  void assign(const Cursor& C) {
-    Impl->releaseLock();
-  }
+  void swap(Cursor& C) { std::swap(Impl, C.Impl); }
 
-  void swap(Cursor& C) {
-    std::swap(Impl, C.Impl);
-  }
+  StreamType getType() const { return Impl->Type; }
 
-  StreamType getType() const {
-    return Impl->Type;
-  }
+  size_t getCurByteAddress() const { return Impl->CurAddress; }
 
-  size_t getCurAddress() const {
-    return Impl->CurAddress;
-  }
+  size_t getCurBitAddress() const { return Impl->getCurBitAddress(); }
 
-  void releaseLock() {
-    Impl->releaseLock();
-  }
+  void releaseLock() { Impl->releaseLock(); }
 
-  ByteQueue* getQueue() {
-    return Impl->Queue;
-  }
+  ByteQueue* getQueue() { return Impl->Queue; }
 
   // WARNING: Assumes that you have a lock before NewAddress when this is
   // called.
-  void jumpToAddress(size_t NewAddress) {
-    Impl->jumpToAddress(NewAddress);
+  void jumpToByteAddress(size_t NewAddress) {
+    Impl->jumpToByteAddress(NewAddress);
+  }
+
+  // WARNING: Jump to non-byte aligned bits only allowed on bit stream.
+  void jumpToBitAddress(size_t NewAddress) {
+    Impl->jumpToBitAddress(NewAddress);
   }
 
  protected:
-  CursorImpl *Impl;
+  CursorImpl* Impl;
 
-  Cursor(StreamType Type, ByteQueue *Queue)
+  Cursor(StreamType Type, ByteQueue* Queue)
       : Impl(new CursorImpl(Type, Queue)) {}
-  explicit Cursor(const Cursor &C) : Impl(C.Impl->copy(C.Impl->Type))  {}
+  explicit Cursor(const Cursor& C) : Impl(C.Impl->copy(C.Impl->Type)) {}
   ~Cursor() { delete Impl; }
 };
 
@@ -157,20 +158,18 @@ class ReadCursor final : public Cursor {
   }
 
   size_t getEobAddress() const {
-    return LocalEobOverrides.empty()
-        ? Impl->EobAddress : LocalEobOverrides.back();
+    return LocalEobOverrides.empty() ? Impl->EobAddress
+                                     : LocalEobOverrides.back();
   }
 
   bool atEob() {
     size_t Eob = getEobAddress();
-    return (Impl->CurAddress >= Eob)
-        || !((Impl->Buffer < Impl->BufferEnd) || Impl->readFillBuffer());
+    return (Impl->CurAddress >= Eob) ||
+           !((Impl->Buffer < Impl->BufferEnd) || Impl->readFillBuffer());
   }
 
   // Reads next byte. Returns zero if at end of buffer.
-  uint8_t readByte() {
-    return Impl->readByte();
-  }
+  uint8_t readByte() { return Impl->readByte(); }
 
   void pushEobAddress(size_t NewLocalEob) {
     LocalEobOverrides.push_back(NewLocalEob);
@@ -197,21 +196,13 @@ class WriteCursor final : public Cursor {
   }
 
   // Writes next byte. Fails if at end of buffer.
-  void writeByte(uint8_t Byte) {
-    Impl->writeByte(Byte);
-  }
+  void writeByte(uint8_t Byte) { Impl->writeByte(Byte); }
 
-  void freezeEob() {
-    Impl->freezeEob();
-  }
+  void freezeEob() { Impl->freezeEob(); }
 
-  size_t getEobAddress() const {
-    return Impl->EobAddress;
-  }
+  size_t getEobAddress() const { return Impl->EobAddress; }
 
-  bool atEob() {
-    return Impl->CurAddress >= Impl->EobAddress;
-  }
+  bool atEob() { return Impl->CurAddress >= Impl->EobAddress; }
 
   // For debugging.
   void writeCurPage(FILE* File);

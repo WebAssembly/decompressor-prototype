@@ -54,12 +54,12 @@ TraceClassSexpReaderWriter::~TraceClassSexpReaderWriter() {
 
 void TraceClassSexpReaderWriter::traceContext() const {
   fprintf(File, "@%" PRIxMAX "/@%" PRIxMAX " ",
-          uintmax_t(ReadPos.getCurAddress()),
-          uintmax_t(WritePos.getCurAddress()));
+          uintmax_t(ReadPos.getCurByteAddress()),
+          uintmax_t(WritePos.getCurByteAddress()));
   if (!TraceIoDifference)
     return;
-  fprintf(File, "[%" PRIuMAX "] ",
-          uintmax_t(WritePos.getCurAddress() - ReadPos.getCurAddress()));
+  fprintf(File, "[%" PRIuMAX "] ", uintmax_t(WritePos.getCurByteAddress() -
+                                             ReadPos.getCurByteAddress()));
 }
 
 }  // end of namespace interp
