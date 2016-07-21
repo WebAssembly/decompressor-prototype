@@ -71,6 +71,8 @@ class CursorImpl {
   virtual uint32_t readBits(uint32_t NumBits);
   virtual void writeBits(uint8_t Value, uint32_t NumBits);
 
+  CursorImpl* copy() { return copy(Type); }
+
   CursorImpl* copy(StreamType Type);
 
   // Note: Non-byte aligned bit addresses only supported on bit cursor
@@ -111,9 +113,10 @@ class CursorImpl {
 };
 
 class Cursor {
- public:
-  void assign(const Cursor& C) { Impl->releaseLock(); }
+  Cursor() = delete;
+  Cursor& operator=(const Cursor&) = delete;
 
+ public:
   void swap(Cursor& C) { std::swap(Impl, C.Impl); }
 
   StreamType getType() const { return Impl->Type; }
@@ -147,15 +150,13 @@ class Cursor {
 };
 
 class ReadCursor final : public Cursor {
+  ReadCursor() = delete;
+  ReadCursor& operator=(const ReadCursor&) = delete;
+
  public:
   ReadCursor(StreamType Type, ByteQueue* Queue) : Cursor(Type, Queue) {}
   explicit ReadCursor(ReadCursor& C)
       : Cursor(C), LocalEobOverrides(C.LocalEobOverrides) {}
-
-  void assign(ReadCursor& C) {
-    Cursor::assign(C);
-    LocalEobOverrides.swap(C.LocalEobOverrides);
-  }
 
   size_t getEobAddress() const {
     return LocalEobOverrides.empty() ? Impl->EobAddress
@@ -186,14 +187,13 @@ class ReadCursor final : public Cursor {
 };
 
 class WriteCursor final : public Cursor {
+  WriteCursor() = delete;
+  WriteCursor& operator=(const WriteCursor&) = delete;
+
  public:
   explicit WriteCursor(StreamType Type, ByteQueue* Queue)
       : Cursor(Type, Queue) {}
   explicit WriteCursor(const WriteCursor& C) : Cursor(C) {}
-  WriteCursor& operator=(const WriteCursor& C) {
-    assign(C);
-    return *this;
-  }
 
   // Writes next byte. Fails if at end of buffer.
   void writeByte(uint8_t Byte) { Impl->writeByte(Byte); }
