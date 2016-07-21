@@ -207,24 +207,24 @@ void BinaryWriter::writeNode(const Node* Nd) {
 void BinaryWriter::writeBlock(std::function<void()> ApplyFn) {
   WriteCursor BlockPos(WritePos);
   Writer->writeFixedVaruint32(0, WritePos);
-  size_t SizeAfterSizeWrite = WritePos.getCurAddress();
+  size_t SizeAfterSizeWrite = WritePos.getCurByteAddress();
   ApplyFn();
   const size_t NewSize =
-      WritePos.getCurAddress() -
-      (BlockPos.getCurAddress() + ByteWriteStream::ChunksInWord);
+      WritePos.getCurByteAddress() -
+      (BlockPos.getCurByteAddress() + ByteWriteStream::ChunksInWord);
   if (!MinimizeBlockSize) {
     Writer->writeFixedVaruint32(NewSize, BlockPos);
   } else {
     Writer->writeVaruint32(NewSize, BlockPos);
-    size_t SizeAfterBackPatch = BlockPos.getCurAddress();
+    size_t SizeAfterBackPatch = BlockPos.getCurByteAddress();
     size_t Diff = SizeAfterSizeWrite - SizeAfterBackPatch;
     if (Diff) {
-      size_t End = WritePos.getCurAddress() - Diff;
+      size_t End = WritePos.getCurByteAddress() - Diff;
       ReadCursor CopyPos(WritePos.getType(), WritePos.getQueue());
-      CopyPos.jumpToAddress(SizeAfterSizeWrite);
+      CopyPos.jumpToByteAddress(SizeAfterSizeWrite);
       for (size_t i = SizeAfterBackPatch; i < End; ++i)
         BlockPos.writeByte(CopyPos.readByte());
-      WritePos.jumpToAddress(BlockPos.getCurAddress());
+      WritePos.jumpToByteAddress(BlockPos.getCurByteAddress());
     }
   }
 }

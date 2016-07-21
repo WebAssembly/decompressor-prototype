@@ -45,7 +45,7 @@ class BinaryReader {
 
  public:
   // Returns true if it begins with a WASM file magic number.
-  static bool isBinary(const char *Filename);
+  static bool isBinary(const char* Filename);
 
   BinaryReader(decode::ByteQueue* Input, SymbolTable& Symtab);
 
