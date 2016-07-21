@@ -43,7 +43,9 @@ IntType getIntegerValue(Node* N) {
 }  // end of anonymous namespace
 
 BinaryWriter::BinaryWriter(decode::ByteQueue* Output, SymbolTable& Symtab)
-    : WritePos(Output), SectionSymtab(Symtab), Trace(WritePos, "BinaryWriter") {
+    : WritePos(decode::StreamType::Byte, Output),
+      SectionSymtab(Symtab),
+      Trace(WritePos, "BinaryWriter") {
   Writer = Symtab.getAllocator()->create<ByteWriteStream>();
 }
 
@@ -218,7 +220,7 @@ void BinaryWriter::writeBlock(std::function<void()> ApplyFn) {
     size_t Diff = SizeAfterSizeWrite - SizeAfterBackPatch;
     if (Diff) {
       size_t End = WritePos.getCurAddress() - Diff;
-      ReadCursor CopyPos(WritePos.getQueue());
+      ReadCursor CopyPos(WritePos.getType(), WritePos.getQueue());
       CopyPos.jumpToAddress(SizeAfterSizeWrite);
       for (size_t i = SizeAfterBackPatch; i < End; ++i)
         BlockPos.writeByte(CopyPos.readByte());

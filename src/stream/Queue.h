@@ -45,6 +45,8 @@ namespace wasm {
 
 namespace decode {
 
+static constexpr size_t kUndefinedAddress = std::numeric_limits<size_t>::max();
+
 template <class Base>
 class Queue {
   Queue(const Queue&) = delete;

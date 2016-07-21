@@ -56,8 +56,8 @@ IntType getIntegerValue(Node* N) {
 }  // end of anonymous namespace
 
 State::State(ByteQueue* Input, ByteQueue* Output, SymbolTable* Algorithms)
-    : ReadPos(Input),
-      WritePos(Output),
+    : ReadPos(StreamType::Byte, Input),
+      WritePos(StreamType::Byte, Output),
       Alloc(Allocator::Default),
       Algorithms(Algorithms),
       Trace(ReadPos, WritePos, "InterpSexp") {
@@ -406,7 +406,7 @@ void State::decompressBlock(const Node* Code) {
       size_t Diff = SizeAfterSizeWrite - SizeAfterBackPatch;
       if (Diff) {
         size_t End = WritePos.getCurAddress() - Diff;
-        ReadCursor CopyPos(WritePos.getQueue());
+        ReadCursor CopyPos(StreamType::Byte, WritePos.getQueue());
         CopyPos.jumpToAddress(SizeAfterSizeWrite);
         for (size_t i = SizeAfterBackPatch; i < End; ++i)
           BlockPos.writeByte(CopyPos.readByte());
