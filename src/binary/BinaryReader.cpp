@@ -46,7 +46,7 @@ bool BinaryReader::isBinary(const char *Filename) {
 
 BinaryReader::BinaryReader(decode::ByteQueue* Input, SymbolTable& Symtab)
     : Alloc(Symtab.getAllocator()),
-      ReadPos(Input),
+      ReadPos(StreamType::Byte, Input),
       SectionSymtab(Symtab),
       Trace(ReadPos, "BinaryReader") {
   Reader = Alloc->create<ByteReadStream>();

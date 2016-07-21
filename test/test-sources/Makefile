@@ -21,7 +21,7 @@ include Makefile.common
 test: $(LOCAL_TESTS)
 
 $(LOCAL_TESTS): $(LOCAL_SEXPS_DIR)/%.test: $(LOCAL_SEXPS_DIR)/%.wasm
-	# Read using no default algorithms
+	@# Read using no default algorithms
 	$(EXEC_DIR)/decompress -m -i $< | diff - $<
-	# Read using default algorithms
+	@# Read using default algorithms
 	$(EXEC_DIR)/decompress -d defaults.wasm -m -i $< | diff - $<

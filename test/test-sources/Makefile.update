@@ -12,12 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Copies test wast file (WASM s-expressions) to this directory, and then converts
-# them to binary form. This allows us to easily build test cases.
+# Copies test wast file (WASM s-expressions) to this directory, and then
+# converts them to binary form. This allows us to easily build test cases.
 #
 # To update tests run:
 #
 # make -f Makefile.update
+#
+# Note: The make file has been separated from the main make file (Makefile)
+# because it has requirements on other WebAssembly projects. In particular, the
+# following projects must be downloaded:
+#
+#   sexpr-wasm-prototype
+#   spec
+#
+# In addition, you need to build the following projects:
+#
+#   sexpr-wasm-prototype.
 
 include Makefile.common
 

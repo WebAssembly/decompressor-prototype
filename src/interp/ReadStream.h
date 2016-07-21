@@ -20,7 +20,6 @@
 #ifndef DECOMPRESSOR_SRC_INTERP_READSTREAM_H
 #define DECOMPRESSOR_SRC_INTERP_READSTREAM_H
 
-#include "interp/Streams.h"
 #include "sexp/Ast.h"
 #include "stream/Cursor.h"
 #include "utils/Casting.h"
@@ -75,15 +74,17 @@ class ReadStream {
   virtual uint64_t readVaruint64Bits(decode::ReadCursor& Pos,
                                      uint32_t NumBits) = 0;
 
-  StreamType getType() const { return Type; }
+  decode::StreamType getType() const { return Type; }
 
-  StreamType getRtClassId() const { return Type; }
+  decode::StreamType getRtClassId() const { return Type; }
 
-  static bool implementsClass(StreamType /*RtClassID*/) { return true; }
+  static bool implementsClass(decode::StreamType /*RtClassID*/) {
+    return false;
+  }
 
  protected:
-  ReadStream(StreamType Type) : Type(Type) {}
-  StreamType Type;
+  ReadStream(decode::StreamType Type) : Type(Type) {}
+  decode::StreamType Type;
 };
 
 class ByteReadStream final : public ReadStream {
@@ -91,7 +92,7 @@ class ByteReadStream final : public ReadStream {
   ByteReadStream& operator=(const ByteReadStream&) = delete;
 
  public:
-  ByteReadStream() : ReadStream(StreamType::Byte) {}
+  ByteReadStream() : ReadStream(decode::StreamType::Byte) {}
   uint8_t readUint8Bits(decode::ReadCursor& Pos, uint32_t NumBits) override;
   uint32_t readUint32Bits(decode::ReadCursor& Pos, uint32_t NumBits) override;
   uint64_t readUint64Bits(decode::ReadCursor& Pos, uint32_t NumBits) override;
@@ -101,8 +102,8 @@ class ByteReadStream final : public ReadStream {
                              uint32_t NumBits) override;
   uint64_t readVaruint64Bits(decode::ReadCursor& Pos,
                              uint32_t NumBits) override;
-  static bool implementsClass(StreamType RtClassID) {
-    return RtClassID == StreamType::Byte;
+  static bool implementsClass(decode::StreamType RtClassID) {
+    return RtClassID == decode::StreamType::Byte;
   }
 };
 

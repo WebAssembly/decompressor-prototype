@@ -21,7 +21,16 @@ namespace wasm {
 
 namespace decode {
 
-bool ReadCursor::fillBuffer() {
+bool CursorImpl::releaseLock() {
+  if (Buffer == nullptr)
+    return false;
+  Queue->unlock(LockedAddress);
+  Buffer = nullptr;
+  BufferEnd = nullptr;
+  return true;
+}
+
+bool CursorImpl::readFillBuffer() {
   if (CurAddress >= EobAddress)
     return false;
   size_t BufferSize;
@@ -39,7 +48,7 @@ bool ReadCursor::fillBuffer() {
   return true;
 }
 
-void WriteCursor::fillBuffer() {
+void CursorImpl::writeFillBuffer () {
   if (CurAddress >= EobAddress)
     fatal("Write past Eob");
   size_t BufferSize;
@@ -53,8 +62,29 @@ void WriteCursor::fillBuffer() {
   LockedAddress = CurAddress;
 }
 
+uint32_t CursorImpl::readBits(uint32_t NumBits) {
+  fatal("CursorImpl::readBits not allowed for stream type!");
+  return 0;
+}
+
+void CursorImpl::writeBits(uint8_t Value, uint32_t NumBits) {
+  fatal("CursorImpl::writeBits not allowed for stream type!");
+}
+
+CursorImpl *CursorImpl::copy(StreamType WantedType) {
+  assert(Type == WantedType);
+  CursorImpl *Impl = new CursorImpl(WantedType, Queue);
+  Impl->CurAddress = CurAddress;
+  Impl->LockedAddress = LockedAddress;
+  Queue->lock(LockedAddress);
+  Impl->Buffer = Buffer;
+  Impl->BufferEnd = BufferEnd;
+  Impl->EobAddress = EobAddress;
+  return Impl;
+}
+
 void WriteCursor::writeCurPage(FILE* File) {
-  Queue->writePageAt(File, CurAddress);
+  Impl->Queue->writePageAt(File, Impl->CurAddress);
 }
 
 }  // end of namespace decode

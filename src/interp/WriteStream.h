@@ -20,7 +20,6 @@
 #ifndef DECOMPRESSOR_SRC_INTERP_WRITESTREAM_H
 #define DECOMPRESSOR_SRC_INTERP_WRITESTREAM_H
 
-#include "interp/Streams.h"
 #include "sexp/Ast.h"
 #include "stream/Cursor.h"
 #include "utils/Casting.h"
@@ -85,15 +84,15 @@ class WriteStream {
                                   decode::WriteCursor& Pos,
                                   uint32_t NumBits) = 0;
 
-  StreamType getType() const { return Type; }
+  decode::StreamType getType() const { return Type; }
 
-  StreamType getRtClassId() const { return Type; }
+  decode::StreamType getRtClassId() const { return Type; }
 
-  static bool implementsClass(StreamType /*RtClassId*/) { return true; }
+  static bool implementsClass(decode::StreamType /*RtClassId*/) { return true; }
 
  protected:
-  WriteStream(StreamType Type) : Type(Type) {}
-  StreamType Type;
+  WriteStream(decode::StreamType Type) : Type(Type) {}
+  decode::StreamType Type;
 };
 
 class ByteWriteStream final : public WriteStream {
@@ -105,7 +104,7 @@ class ByteWriteStream final : public WriteStream {
   static constexpr uint32_t ChunkSize = CHAR_BIT - 1;
   static constexpr uint32_t ChunksInWord =
       (BitsInWord + ChunkSize - 1) / ChunkSize;
-  ByteWriteStream() : WriteStream(StreamType::Byte) {}
+  ByteWriteStream() : WriteStream(decode::StreamType::Byte) {}
   void writeUint8Bits(uint8_t Value,
                       decode::WriteCursor& Pos,
                       uint32_t NumBits) override;
@@ -130,8 +129,8 @@ class ByteWriteStream final : public WriteStream {
 
   void writeFixedVaruint32(uint32_t Value, decode::WriteCursor& Pos);
 
-  static bool implementsClass(StreamType RtClassId) {
-    return RtClassId == StreamType::Byte;
+  static bool implementsClass(decode::StreamType RtClassId) {
+    return RtClassId == decode::StreamType::Byte;
   }
 };
 
