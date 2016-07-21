@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#include "binary/BinaryReader.h"
 #include "interp/State.h"
 #include "sexp-parser/Driver.h"
 #include "stream/ByteQueue.h"
@@ -82,7 +83,6 @@ void usage(const char *AppName) {
 int main(int Argc, char *Argv[]) {
   wasm::alloc::Malloc Allocator;
   SymbolTable SymTab(&Allocator);
-  Driver FileDriver(SymTab);
   bool TraceProgress = false;
   bool TraceIoDifference = false;
   bool MinimizeBlockSize = false;
@@ -93,6 +93,16 @@ int main(int Argc, char *Argv[]) {
         usage(Argv[0]);
         return exit_status(EXIT_FAILURE);
       }
+      if (BinaryReader::isBinary(Argv[i])) {
+        std::unique_ptr<RawStream> Stream = FileReader::create(Argv[i]);
+        ReadBackedByteQueue Input(std::move(Stream));
+        BinaryReader Reader(&Input, SymTab);
+        if (FileNode *File = Reader.readFile()) {
+          SymTab.install(File);
+          continue;
+        }
+      }
+      Driver FileDriver(SymTab);
       if (!FileDriver.parse(Argv[i])) {
         fprintf(stderr, "Unable to parse default algorithms: %s\n", Argv[i]);
         return exit_status(EXIT_FAILURE);
