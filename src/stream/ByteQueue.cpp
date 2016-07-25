@@ -101,6 +101,8 @@ bool ReadBackedByteQueue::readFill(size_t Address) {
 }
 
 WriteBackedByteQueue::~WriteBackedByteQueue() {
+  // NOTE: we must override the base destructor so that calls to dumpFirstPage
+  // is the one local to this class!
   while (FirstPage)
     dumpFirstPage();
 }
