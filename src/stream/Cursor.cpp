@@ -21,79 +21,46 @@ namespace wasm {
 
 namespace decode {
 
-bool CursorImpl::releaseLock() {
-  if (Buffer == nullptr)
-    return false;
-  Queue->unlock(LockedAddress);
-  Buffer = nullptr;
-  BufferEnd = nullptr;
-  return true;
+void CursorImpl::jumpToByteAddress(size_t NewAddress) {
+  if (PgCursor.isValidPageAddress(NewAddress)) {
+    // We can reuse the same page, since NewAddress is within the page.
+    PgCursor.setCurAddress(NewAddress);
+    return;
+  }
+  // Move to the wanted page.
+  Queue->Queue::read(NewAddress, 0, PgCursor);
 }
 
 bool CursorImpl::readFillBuffer() {
+  size_t CurAddress = PgCursor.getCurAddress();
   if (CurAddress >= EobAddress)
     return false;
-  size_t BufferSize;
-  uint8_t* NewBuffer =
-      Queue->getReadLockedPointer(CurAddress, Page::Size, BufferSize);
-  releaseLock();
+  size_t BufferSize = Queue->Queue::read(CurAddress, Page::Size, PgCursor);
   if (BufferSize == 0) {
     EobAddress = Queue->currentSize();
-    BufferEnd = Buffer = nullptr;
     return false;
   }
-  Buffer = NewBuffer;
-  BufferEnd = Buffer + BufferSize;
-  LockedAddress = CurAddress;
   return true;
 }
 
 void CursorImpl::writeFillBuffer() {
+  size_t CurAddress = PgCursor.getCurAddress();
   if (CurAddress >= EobAddress)
     fatal("Write past Eob");
-  size_t BufferSize;
-  uint8_t* NewBuffer =
-      Queue->getWriteLockedPointer(CurAddress, Page::Size, BufferSize);
-  releaseLock();
+  size_t BufferSize = Queue->Queue::write(CurAddress, Page::Size, PgCursor);
   if (BufferSize == 0)
     fatal("Write failed!\n");
-  Buffer = NewBuffer;
-  BufferEnd = Buffer + BufferSize;
-  LockedAddress = CurAddress;
-}
-
-size_t CursorImpl::getCurBitAddress() const {
-  return CurAddress * CHAR_BIT;
-}
-
-void CursorImpl::jumpToBitAddress(size_t NewAddress) {
-  assert((NewAddress & (size_t(1) << CHAR_BIT)) == 0);
-  jumpToByteAddress(NewAddress >> CHAR_BIT);
-}
-
-uint32_t CursorImpl::readBits(uint32_t NumBits) {
-  fatal("CursorImpl::readBits not allowed for stream type!");
-  return 0;
-}
-
-void CursorImpl::writeBits(uint8_t Value, uint32_t NumBits) {
-  fatal("CursorImpl::writeBits not allowed for stream type!");
 }
 
 CursorImpl* CursorImpl::copy(StreamType WantedType) {
   assert(Type == WantedType);
-  CursorImpl* Impl = new CursorImpl(WantedType, Queue);
-  Impl->CurAddress = CurAddress;
-  Impl->LockedAddress = LockedAddress;
-  Queue->lock(LockedAddress);
-  Impl->Buffer = Buffer;
-  Impl->BufferEnd = BufferEnd;
+  CursorImpl* Impl = new CursorImpl(WantedType, Queue, PgCursor);
   Impl->EobAddress = EobAddress;
   return Impl;
 }
 
 void WriteCursor::writeCurPage(FILE* File) {
-  Impl->Queue->writePageAt(File, Impl->CurAddress);
+  Impl->Queue->writePageAt(File, Impl->PgCursor.getCurAddress());
 }
 
 }  // end of namespace decode

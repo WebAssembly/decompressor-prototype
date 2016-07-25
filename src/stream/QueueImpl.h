@@ -27,8 +27,8 @@ namespace decode {
 
 template <class Base>
 Queue<Base>::Queue() {
-  EobPage = FirstPage = new Page(0);
-  PageMap.push_back(EobPage);
+  LastPage = FirstPage = std::make_shared<Page>(0);
+  PageMap.push_back(LastPage);
   // Double check that we can evenly fit elements of Base in a page.
   assert(Page::Size % sizeof(Base) == 0);
 }
@@ -41,103 +41,84 @@ Queue<Base>::~Queue() {
 
 template <class Base>
 void Queue<Base>::dumpFirstPage() {
-  Page* TmpPage = FirstPage;
   FirstPage = FirstPage->Next;
-  delete TmpPage;
-  if (FirstPage)
-    FirstPage->Last = nullptr;
 }
 
 template <class Base>
-void Queue<Base>::dumpPreviousPages(size_t Address) {
-  Page* AddrPage = getPage(Address);
-  while (FirstPage != AddrPage) {
-    if (FirstPage->isLocked())
-      break;
-    if (FirstPage->getMaxAddress() + MinPeekSize < Address)
-      break;
+void Queue<Base>::dumpPreviousPages() {
+  while (FirstPage.unique())
     dumpFirstPage();
-  }
 }
 
 template <class Base>
 bool Queue<Base>::readFill(size_t Address) {
-  return Address < EobPage->getMaxAddress();
+  return Address < LastPage->getMaxAddress();
 }
 
 template <class Base>
-Base* Queue<Base>::getReadLockedPointer(size_t Address,
-                                        size_t WantedSize,
-                                        size_t& LockedSize) {
+size_t Queue<Base>::read(size_t Address,
+                         size_t WantedSize,
+                         PageCursor& Cursor) {
   // Start by read-filling if necessary.
-  if (Address >= EobPage->getMaxAddress()) {
-    if (!readFill(Address)) {
-      LockedSize = 0;
-      return nullptr;
-    }
+  if (Address >= LastPage->getMaxAddress()) {
+    if (!readFill(Address))
+      return 0;
   }
   // Find page associated with Address.
-  Page* ReadPage = getPage(Address);
-  if (ReadPage == nullptr ||
-      (!LockedPages.empty() && ReadPage->Index < LockedPages.top())) {
-    LockedSize = 0;
-    return nullptr;
-  }
-  lockPage(ReadPage);
-  dumpPreviousPages(Address);
+  Cursor.CurPage = getPage(Address);
+  Cursor.setCurAddress(Address);
+  if (!Cursor.CurPage)
+    return 0;
+  dumpPreviousPages();
   // Compute largest contiguous range of elements available.
   WantedSize *= sizeof(Base);
-  LockedSize = WantedSize;
-  if (Address + WantedSize > ReadPage->getMaxAddress()) {
-    LockedSize = (ReadPage->getMaxAddress() - Address) / sizeof(Base);
-  }
-  return (Base*)(ReadPage->Buffer + Page::address(Address));
+  if (Address + WantedSize > Cursor.getMaxAddress())
+    WantedSize = (Cursor.getMaxAddress() - Address) / sizeof(Base);
+  return WantedSize;
 }
 
 template <class Base>
-Base* Queue<Base>::getWriteLockedPointer(size_t Address,
-                                         size_t WantedSize,
-                                         size_t& LockedSize) {
-  // Page doesn't exist. Expand queue if necessary.
-  while (Address >= EobPage->getMaxAddress()) {
-    if (EobFrozen) {
-      LockedSize = 0;
-      return nullptr;
-    }
-    EobPage->setMaxAddress(EobPage->getMinAddress() + Page::Size);
-    if (Address < EobPage->getMaxAddress())
+size_t Queue<Base>::write(size_t Address,
+                          size_t WantedSize,
+                          PageCursor& Cursor) {
+  // Expand till page exists.
+  while (Address >= LastPage->getMaxAddress()) {
+    if (EobFrozen)
+      return 0;
+    LastPage->setMaxAddress(LastPage->getMinAddress() + Page::Size);
+    if (Address < LastPage->getMaxAddress())
       break;
-    Page* NewPage = new Page(EobPage->getMaxAddress());
+    std::shared_ptr<Page> NewPage(
+        std::make_shared<Page>(LastPage->getMaxAddress()));
     PageMap.push_back(NewPage);
-    EobPage->Next = NewPage;
-    NewPage->Last = EobPage;
-    EobPage = NewPage;
+    LastPage->Next = NewPage;
+    LastPage = NewPage;
   }
-  Page* P = getPage(Address);
-  if (P == nullptr) {
-    LockedSize = 0;
-    return nullptr;
-  }
-  lockPage(P);
-  dumpPreviousPages(Address);
+  Cursor.CurPage = getPage(Address);
+  Cursor.setCurAddress(Address);
+  if (!Cursor.CurPage)
+    return 0;
+  dumpPreviousPages();
   // Compute largest contiguous range of bytes available.
   WantedSize *= sizeof(Base);
-  LockedSize = WantedSize;
-  if (Address + WantedSize > P->getMaxAddress()) {
-    LockedSize = (P->getMaxAddress() - Address) / sizeof(Base);
+  if (Address + WantedSize > Cursor.getMaxAddress()) {
+    WantedSize = (Cursor.getMaxAddress() - Address) / sizeof(Base);
   }
-  return (Base*)(P->Buffer + Page::address(Address));
+  return WantedSize;
 }
 
 template <class Base>
 void Queue<Base>::freezeEob(size_t Address) {
   assert(!EobFrozen);
-  size_t LockedSize;
   // This call zero-fill pages if writing hasn't reached Address yet.
-  assert(getWriteLockedPointer(Address, 0, LockedSize) != nullptr);
-  Page* P = getPage(Address);
-  P->setMaxAddress(Address);
-  unlock(Address);
+  PageCursor Cursor;
+  write(Address, 0, Cursor);
+  Cursor.setMaxAddress(Address);
+  // TODO(karlschimpf): If adding threads, make this update thread safe.
+  // If any pages exist after Cursor, remove them.
+  LastPage = Cursor.CurPage;
+  if (Cursor.CurPage->Next)
+    Cursor.CurPage->Next.reset();
 }
 
 }  // end of decode namespace

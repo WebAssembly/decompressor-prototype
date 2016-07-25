@@ -27,7 +27,7 @@
 using namespace wasm::filt;
 using namespace wasm::decode;
 
-void usage(const char *AppName) {
+void usage(const char* AppName) {
   fprintf(stderr, "usage: %s [options] [Filename ...]\n", AppName);
   fprintf(stderr, "\n");
   fprintf(stderr, "  Parses filter files (stdin if none).\n");
@@ -42,13 +42,13 @@ void usage(const char *AppName) {
   fprintf(stderr, "  -w\t\tWrite out parsed s-expressions.\n");
 }
 
-int main(int Argc, char *Argv[]) {
+int main(int Argc, char* Argv[]) {
   // TODO(KarlSchimpf) Figure out why MallocArena doesn't work.
   wasm::alloc::Malloc Allocator;
   SymbolTable SymTab(&Allocator);
   Driver Driver(SymTab);
   bool PrintAst = false;
-  std::vector<const char *> Files;
+  std::vector<const char*> Files;
   for (int i = 1; i < Argc; ++i) {
     if (Argv[i] == std::string("-p"))
       Driver.setTraceParsing(true);
@@ -62,8 +62,7 @@ int main(int Argc, char *Argv[]) {
       TextWriter::UseNodeTypeNames = true;
     else if (Argv[i] == std::string("-w"))
       PrintAst = true;
-    else if (Argv[i] == std::string("-h")
-             || Argv[i] == std::string("--help")) {
+    else if (Argv[i] == std::string("-h") || Argv[i] == std::string("--help")) {
       usage(Argv[i]);
       return exit_status(EXIT_SUCCESS);
     } else
@@ -71,7 +70,7 @@ int main(int Argc, char *Argv[]) {
   }
   if (Files.empty())
     Files.push_back("-");
-  for (const auto *Filename : Files) {
+  for (const auto* Filename : Files) {
     if (Files.size() > 1) {
       fprintf(stdout, "Parsing: %s...\n", Filename);
     }
@@ -80,7 +79,7 @@ int main(int Argc, char *Argv[]) {
       return exit_status(EXIT_FAILURE);
     }
     if (PrintAst) {
-      if (Node *Root = Driver.getParsedAst()) {
+      if (Node* Root = Driver.getParsedAst()) {
         TextWriter Writer;
         Writer.write(stdout, Root);
       } else {

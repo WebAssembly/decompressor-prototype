@@ -30,8 +30,8 @@ using namespace wasm::decode;
 
 namespace {
 
-const char *InputFilename = "-";
-const char *OutputFilename = "-";
+const char* InputFilename = "-";
+const char* OutputFilename = "-";
 
 std::unique_ptr<RawStream> getInput() {
   if (InputFilename == std::string("-"))
@@ -46,24 +46,21 @@ std::unique_ptr<RawStream> getOutput() {
   return FileWriter::create(OutputFilename);
 }
 
-void usage(char *AppName) {
+void usage(char* AppName) {
   fprintf(stderr, "usage: %s [options]\n", AppName);
   fprintf(stderr, "\n");
   fprintf(stderr, "Options:\n");
-  fprintf(stderr,
-          "  -c N\t\tRead N bytes (i.e. chunksize) at a time\n");
+  fprintf(stderr, "  -c N\t\tRead N bytes (i.e. chunksize) at a time\n");
   fprintf(stderr, "  --expect-fail\tSucceed on failure/fail on success\n");
-  fprintf(stderr,
-          "  -h\t\tShow usage\n");
-  fprintf(stderr,
-          "  -i NAME\tRead from input file NAME ('-' implies stdin)\n");
+  fprintf(stderr, "  -h\t\tShow usage\n");
+  fprintf(stderr, "  -i NAME\tRead from input file NAME ('-' implies stdin)\n");
   fprintf(stderr,
           "  -o NAME\tWrite to output file NAME ('-' implies stdout)\n");
 }
 
-} // end of anonymous namespace
+}  // end of anonymous namespace
 
-int main(int Argc, char *Argv[]) {
+int main(int Argc, char* Argv[]) {
   int BufSize = 1;
   static constexpr int MaxBufSize = 4096;
   for (int i = 1; i < Argc; ++i) {
@@ -101,8 +98,8 @@ int main(int Argc, char *Argv[]) {
         return exit_status(EXIT_FAILURE);
       }
       BufSize = Size;
-    } else if (Argv[i] == std::string("-h")
-               || (Argv[i] == std::string("--help"))) {
+    } else if (Argv[i] == std::string("-h") ||
+               (Argv[i] == std::string("--help"))) {
       usage(Argv[0]);
       return exit_status(EXIT_SUCCESS);
     } else {
@@ -116,33 +113,18 @@ int main(int Argc, char *Argv[]) {
   WriteBackedByteQueue Output(getOutput());
   // uint8_t Buffer[MaxBufSize];
   size_t Address = 0;
+  PageCursor ReadCursor;
+  PageCursor WriteCursor;
   while (Address < Input.currentSize()) {
-    size_t ReadBytesAvailable;
-    uint8_t *In = Input.getReadLockedPointer(Address, BufSize, ReadBytesAvailable);
-    if (In == nullptr) {
-      if (Input.isEobFrozen()) {
-        Output.freezeEob(Address);
-        break;
-      }
-      fprintf(stderr, "Unable to read address %d, returned nullptr\n",
-              int(Address));
-      return exit_status(EXIT_FAILURE);
-    }
+    size_t ReadBytesAvailable = Input.Queue::read(Address, BufSize, ReadCursor);
     if (ReadBytesAvailable == 0) {
-      fprintf(stderr, "Unable to read address %d, returned zero bytes",
-              int(Address));
-      return exit_status(EXIT_FAILURE);
+      WriteCursor.setMaxAddress(Address);
+      break;
     }
     size_t NextAddress = Address + ReadBytesAvailable;
     while (ReadBytesAvailable) {
-      size_t WriteBytesAvailable;
-      uint8_t *Out = Output.getWriteLockedPointer(Address, ReadBytesAvailable,
-                                                  WriteBytesAvailable);
-      if (Out == nullptr) {
-        fprintf(stderr, "Unable to write address %d, returned nullptr\n",
-                int(Address));
-        return exit_status(EXIT_FAILURE);
-      }
+      size_t WriteBytesAvailable =
+          Output.Queue::write(Address, ReadBytesAvailable, WriteCursor);
       if (WriteBytesAvailable == 0) {
         fprintf(stderr, "Unable to write address %d, returned zero bytes",
                 int(Address));
@@ -153,13 +135,11 @@ int main(int Argc, char *Argv[]) {
                 int(Address), int(WriteBytesAvailable - ReadBytesAvailable));
         return exit_status(EXIT_FAILURE);
       }
-      memcpy(Out, In, WriteBytesAvailable);
-      Out += WriteBytesAvailable;
-      In += WriteBytesAvailable;
+      // TODO(karlschimpf): Fix API to allow range copies.
+      for (size_t i = 0; i < WriteBytesAvailable; ++i)
+        WriteCursor.writeByte(ReadCursor.readByte());
       ReadBytesAvailable -= WriteBytesAvailable;
     }
-    Input.unlock(Address);
-    Output.unlock(Address);
     Address = NextAddress;
   }
   return exit_status(EXIT_SUCCESS);

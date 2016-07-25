@@ -26,8 +26,8 @@ namespace decode {
 template class Queue<uint8_t>;
 
 void ByteQueue::writePageAt(FILE* File, size_t Address) {
-  Page* P = getPage(Address);
-  if (P == nullptr)
+  std::shared_ptr<Page> P = getPage(Address);
+  if (!P)
     return;
   size_t Size = Page::address(Address);
   size_t Count = 0;
@@ -45,31 +45,28 @@ void ByteQueue::writePageAt(FILE* File, size_t Address) {
 
 size_t ByteQueue::read(size_t& Address, uint8_t* ToBuf, size_t WantedSize) {
   size_t Count = 0;
+  PageCursor Cursor;
   while (WantedSize) {
-    size_t FoundSize;
-    uint8_t* FromBuf = getReadLockedPointer(Address, WantedSize, FoundSize);
-    if (FromBuf == nullptr)
-      // TODO: Block if Count == 0 and blocked by a lock.
+    size_t FoundSize = Queue::read(Address, WantedSize, Cursor);
+    if (FoundSize == 0)
       return Count;
+    uint8_t* FromBuf = Cursor.getBufferPtr();
     memcpy(ToBuf, FromBuf, FoundSize);
-    unlock(Address);
     Count += FoundSize;
     WantedSize -= FoundSize;
     Address += FoundSize;
-    if (EobFrozen && Address >= EobPage->getMaxAddress())
-      return EobPage->getMaxAddress();
   }
   return Count;
 }
 
 bool ByteQueue::write(size_t& Address, uint8_t* FromBuf, size_t WantedSize) {
+  PageCursor Cursor;
   while (WantedSize) {
-    size_t FoundSize;
-    uint8_t* ToBuf = getWriteLockedPointer(Address, WantedSize, FoundSize);
-    if (FromBuf == nullptr)
+    size_t FoundSize = Queue::write(Address, WantedSize, Cursor);
+    if (FoundSize == 0)
       return false;
+    uint8_t* ToBuf = Cursor.getBufferPtr();
     memcpy(ToBuf, FromBuf, FoundSize);
-    unlock(Address);
     Address += FoundSize;
     WantedSize -= FoundSize;
   }
@@ -77,27 +74,28 @@ bool ByteQueue::write(size_t& Address, uint8_t* FromBuf, size_t WantedSize) {
 }
 
 bool ReadBackedByteQueue::readFill(size_t Address) {
-  if (Address < EobPage->getMaxAddress())
+  if (Address < LastPage->getMaxAddress())
     return true;
   if (EobFrozen)
     return false;
   // Read fill if possible, until at least one byte is available.
-  while (Address >= EobPage->getMaxAddress()) {
-    if (size_t SpaceAvailable = EobPage->spaceRemaining()) {
-      size_t NumBytes = Reader->read(&(EobPage->Buffer[Page::address(Address)]),
-                                     SpaceAvailable);
-      EobPage->incrementMaxAddress(NumBytes);
+  while (Address >= LastPage->getMaxAddress()) {
+    if (size_t SpaceAvailable = LastPage->spaceRemaining()) {
+      size_t NumBytes = Reader->read(
+          &(LastPage->Buffer[Page::address(Address)]), SpaceAvailable);
+      LastPage->incrementMaxAddress(NumBytes);
       if (NumBytes == 0) {
         EobFrozen = true;
         return false;
       }
       continue;
     }
-    Page* NewPage = new Page(EobPage->getMaxAddress());
-    PageMap.push_back(NewPage);
-    EobPage->Next = NewPage;
-    NewPage->Last = EobPage;
-    EobPage = NewPage;
+    std::shared_ptr<Page> NewPage =
+        std::make_shared<Page>(LastPage->getMaxAddress());
+    std::weak_ptr<Page> PlaceHolder(NewPage);
+    PageMap.push_back(PlaceHolder);
+    LastPage->Next = NewPage;
+    LastPage = NewPage;
   }
   return true;
 }

@@ -32,8 +32,8 @@ using namespace wasm::filt;
 using namespace wasm::decode;
 
 bool UseFileStreams = true;
-const char *InputFilename = "-";
-const char *OutputFilename = "-";
+const char* InputFilename = "-";
+const char* OutputFilename = "-";
 
 std::unique_ptr<RawStream> getOutput() {
   if (OutputFilename == std::string("-")) {
@@ -47,7 +47,7 @@ std::unique_ptr<RawStream> getOutput() {
   return FstreamWriter::create(OutputFilename);
 }
 
-void usage(const char *AppName) {
+void usage(const char* AppName) {
   fprintf(stderr, "usage: %s [options]\n", AppName);
   fprintf(stderr, "\n");
   fprintf(stderr, "  Convert WASM filter s-expressions to WASM binary.\n");
@@ -57,20 +57,19 @@ void usage(const char *AppName) {
   fprintf(stderr, "  -h\t\tPrint this usage message.\n");
   fprintf(stderr, "  -i File\tFile of s-expressions ('-' implies stdin).\n");
   fprintf(stderr, "  -m\t\tMinimize block sizes in output stream.\n");
-  fprintf(stderr,
-          "  -o File\tGenerated WASM binary ('-' implies stdout).\n");
+  fprintf(stderr, "  -o File\tGenerated WASM binary ('-' implies stdout).\n");
   fprintf(stderr, "  -s\t\tUse C++ streams instead of C file descriptors.\n");
   fprintf(stderr, "  -t\t\tTrace progress decompressing.\n");
 }
 
-int main(int Argc, char *Argv[]) {
+int main(int Argc, char* Argv[]) {
   bool TraceProgress = false;
   bool MinimizeBlockSize = false;
   for (int i = 1; i < Argc; ++i) {
     if (Argv[i] == std::string("--expect-fail")) {
       ExpectExitFail = true;
-    } else if (Argv[i] == std::string("-h")
-             || Argv[i] == std::string("--help")) {
+    } else if (Argv[i] == std::string("-h") ||
+               Argv[i] == std::string("--help")) {
       usage(Argv[i]);
       return exit_status(EXIT_SUCCESS);
     } else if (Argv[i] == std::string("-i")) {
@@ -90,15 +89,14 @@ int main(int Argc, char *Argv[]) {
       }
       OutputFilename = Argv[i];
     } else if (Argv[i] == std::string("-s")) {
-        UseFileStreams = true;
+      UseFileStreams = true;
     } else if (Argv[i] == std::string("-t")) {
-        TraceProgress = true;
+      TraceProgress = true;
     } else {
       fprintf(stderr, "Unrecognized option: %s\n", Argv[i]);
       usage(Argv[0]);
       return exit_status(EXIT_FAILURE);
     }
-
   }
   // TODO(karlschimpf) Use arena allocator once working.
   wasm::alloc::Malloc Allocator;
