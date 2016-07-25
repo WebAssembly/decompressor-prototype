@@ -33,9 +33,8 @@ using namespace wasm::filt;
 using namespace wasm::decode;
 
 bool UseFileStreams = true;
-const char *InputFilename = "-";
-const char *OutputFilename = "-";
-
+const char* InputFilename = "-";
+const char* OutputFilename = "-";
 
 std::unique_ptr<RawStream> getInput() {
   if (InputFilename == std::string("-")) {
@@ -49,7 +48,7 @@ std::unique_ptr<RawStream> getInput() {
   return FstreamReader::create(OutputFilename);
 }
 
-void usage(const char *AppName) {
+void usage(const char* AppName) {
   fprintf(stderr, "usage: %s [options]\n", AppName);
   fprintf(stderr, "\n");
   fprintf(stderr, "  Extract out filter s-expressions from WASM binary.\n");
@@ -64,13 +63,13 @@ void usage(const char *AppName) {
   fprintf(stderr, "  -t\t\tTrace progress decompressing.\n");
 }
 
-int main(int Argc, char *Argv[]) {
+int main(int Argc, char* Argv[]) {
   bool TraceProgress = false;
   for (int i = 1; i < Argc; ++i) {
     if (Argv[i] == std::string("--expect-fail")) {
       ExpectExitFail = true;
-    } else if (Argv[i] == std::string("-h")
-             || Argv[i] == std::string("--help")) {
+    } else if (Argv[i] == std::string("-h") ||
+               Argv[i] == std::string("--help")) {
       usage(Argv[i]);
       return exit_status(EXIT_SUCCESS);
     } else if (Argv[i] == std::string("-i")) {
@@ -88,15 +87,14 @@ int main(int Argc, char *Argv[]) {
       }
       OutputFilename = Argv[i];
     } else if (Argv[i] == std::string("-s")) {
-        UseFileStreams = true;
+      UseFileStreams = true;
     } else if (Argv[i] == std::string("-t")) {
-        TraceProgress = true;
+      TraceProgress = true;
     } else {
       fprintf(stderr, "Unrecognized option: %s\n", Argv[i]);
       usage(Argv[0]);
       return exit_status(EXIT_FAILURE);
     }
-
   }
   // TODO(karlschimpf) Use arena allocator once working.
   Malloc Allocator;
@@ -104,7 +102,7 @@ int main(int Argc, char *Argv[]) {
   SymbolTable Symtab(&Allocator);
   BinaryReader Reader(&Input, Symtab);
   Reader.setTraceProgress(TraceProgress);
-  FileNode *File = Reader.readFile();
+  FileNode* File = Reader.readFile();
   if (File == nullptr) {
     fprintf(stderr, "Unable to parse WASM module!\n");
     return exit_status(EXIT_FAILURE);

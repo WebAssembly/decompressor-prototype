@@ -28,6 +28,10 @@ namespace decode {
 
 #define CURSOR_OLD 0
 
+// TODO(karlschimpf): Move the implementation back into class Cursor, so
+// that we don't need to allocate an implementation for each instruction
+// peek, made by the decompressor.
+//
 // Base class for the internal implementation of cursors.
 class CursorImpl {
   CursorImpl(const CursorImpl&) = delete;
@@ -35,27 +39,25 @@ class CursorImpl {
   CursorImpl() = delete;
 
  public:
-  explicit CursorImpl(StreamType Type, ByteQueue* Queue)
-      : Type(Type), Queue(Queue) {}
+  CursorImpl(StreamType Type, ByteQueue* Queue) : Type(Type), Queue(Queue) {}
 
-  virtual ~CursorImpl() { releaseLock(); }
+  CursorImpl(StreamType Type, ByteQueue* Queue, const PageCursor& PgCursor)
+      : Type(Type), Queue(Queue), PgCursor(PgCursor) {}
 
-  virtual bool releaseLock();
+  virtual ~CursorImpl() {}
 
   // Note: Assumes that cursor is byte aligned when called.
   uint8_t readByte() {
-    if (Buffer == BufferEnd && !readFillBuffer())
+    if (PgCursor.isIndexAtEndOfPage() && !readFillBuffer())
       return 0;
-    ++CurAddress;
-    return *(Buffer++);
+    return PgCursor.readByte();
   }
 
   // Note: Assumes that cursor is byte aligned when called.
   void writeByte(uint8_t Byte) {
-    if (Buffer == BufferEnd)
+    if (PgCursor.isIndexAtEndOfPage())
       writeFillBuffer();
-    ++CurAddress;
-    *(Buffer++) = Byte;
+    PgCursor.writeByte(Byte);
   }
 
   // Returns true if able to fill the buffer with at least one byte.
@@ -64,50 +66,38 @@ class CursorImpl {
   // Creates new pages in buffer so that writes can occur.
   void writeFillBuffer();
 
-  // Returns the current bit position of the cursor.
-  virtual size_t getCurBitAddress() const;
-
-  // Note: Only supported on bit cursor implementations.
-  virtual uint32_t readBits(uint32_t NumBits);
-  virtual void writeBits(uint8_t Value, uint32_t NumBits);
-
   CursorImpl* copy() { return copy(Type); }
 
   CursorImpl* copy(StreamType Type);
 
-  // Note: Non-byte aligned bit addresses only supported on bit cursor
-  // implementations.
-  void jumpToByteAddress(size_t NewAddress) {
-    // TODO(karlschimpf): Optimize by not throwing away lock if at least one
-    // byte in buffer is still accessable.
-    Queue->lock(NewAddress);
-    releaseLock();
-    CurAddress = NewAddress;
-  }
-
-  virtual void jumpToBitAddress(size_t NewAddress);
+  void jumpToByteAddress(size_t NewAddress);
 
   void freezeEob() {
-    Queue->freezeEob(CurAddress);
-    EobAddress = CurAddress;
+    EobAddress = PgCursor.getCurAddress();
+    Queue->freezeEob(EobAddress);
+  }
+
+  bool atEob(size_t EobAddress) {
+    return PgCursor.getCurAddress() >= EobAddress || !readFillBuffer();
   }
 
   StreamType getRtClassId() const { return Type; }
 
   static bool implementsClass(StreamType WantedType) { return true; }
 
+  // For debugging only.
+  void describe() {
+    fprintf(stderr, "Cursor ");
+    if (EobAddress != kUndefinedAddress)
+      fprintf(stderr, " eob=%" PRIuMAX " ", uintmax_t(EobAddress));
+    PgCursor.describe();
+  }
+
   StreamType Type;
   // The byte queue the cursor points to.
   ByteQueue* Queue;
   // The current address into the buffer.
-  size_t CurAddress = 0;
-  // The address locked by this cursor, if Buffer != nullptr.
-  // TODO(karlschimpf) Infer the locked address from the current address.
-  size_t LockedAddress = 0;
-  // The pointer to the locked buffer.
-  uint8_t* Buffer = nullptr;
-  // The pointer to the end of the locked buffer.
-  uint8_t* BufferEnd = nullptr;
+  PageCursor PgCursor;
   // End of block address.
   size_t EobAddress = kUndefinedAddress;
 };
@@ -121,24 +111,17 @@ class Cursor {
 
   StreamType getType() const { return Impl->Type; }
 
-  size_t getCurByteAddress() const { return Impl->CurAddress; }
+  size_t getCurByteAddress() const { return Impl->PgCursor.getCurAddress(); }
 
-  size_t getCurBitAddress() const { return Impl->getCurBitAddress(); }
-
-  void releaseLock() { Impl->releaseLock(); }
+  void reset() {}
 
   ByteQueue* getQueue() { return Impl->Queue; }
 
-  // WARNING: Assumes that you have a lock before NewAddress when this is
-  // called.
   void jumpToByteAddress(size_t NewAddress) {
     Impl->jumpToByteAddress(NewAddress);
   }
 
-  // WARNING: Jump to non-byte aligned bits only allowed on bit stream.
-  void jumpToBitAddress(size_t NewAddress) {
-    Impl->jumpToBitAddress(NewAddress);
-  }
+  void describe() { Impl->describe(); }
 
  protected:
   CursorImpl* Impl;
@@ -163,11 +146,7 @@ class ReadCursor final : public Cursor {
                                      : LocalEobOverrides.back();
   }
 
-  bool atEob() {
-    size_t Eob = getEobAddress();
-    return (Impl->CurAddress >= Eob) ||
-           !((Impl->Buffer < Impl->BufferEnd) || Impl->readFillBuffer());
-  }
+  bool atEob() { return Impl->atEob(getEobAddress()); }
 
   // Reads next byte. Returns zero if at end of buffer.
   uint8_t readByte() { return Impl->readByte(); }
@@ -202,7 +181,10 @@ class WriteCursor final : public Cursor {
 
   size_t getEobAddress() const { return Impl->EobAddress; }
 
-  bool atEob() { return Impl->CurAddress >= Impl->EobAddress; }
+  bool atEob() {
+    return Impl->PgCursor.getCurAddress() >= Impl->EobAddress;
+    ;
+  }
 
   // For debugging.
   void writeCurPage(FILE* File);

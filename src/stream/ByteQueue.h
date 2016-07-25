@@ -36,6 +36,9 @@ class ByteQueue : public Queue<uint8_t> {
 
   ~ByteQueue() override {}
 
+  // TODO(karlschimpf): Rename the following to not conflict read/write of
+  // inherited class Queue<uint8_t>.
+
   // Reads a contiguous range of bytes into a buffer.
   //
   // Note: A read request may not be fully met. This function only guarantees

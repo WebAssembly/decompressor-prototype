@@ -30,8 +30,8 @@ using namespace wasm::decode;
 namespace {
 
 bool UseFileStreams = true;
-const char *InputFilename = "-";
-const char *OutputFilename = "-";
+const char* InputFilename = "-";
+const char* OutputFilename = "-";
 
 std::unique_ptr<RawStream> getInput() {
   if (InputFilename == std::string("-")) {
@@ -57,26 +57,22 @@ std::unique_ptr<RawStream> getOutput() {
   return FstreamWriter::create(OutputFilename);
 }
 
-void usage(char *AppName) {
+void usage(char* AppName) {
   fprintf(stderr, "usage: %s [options]\n", AppName);
   fprintf(stderr, "\n");
   fprintf(stderr, "Options:\n");
-  fprintf(stderr,
-          "  -c N\t\tRead N bytes (i.e. chunksize) at a time\n");
+  fprintf(stderr, "  -c N\t\tRead N bytes (i.e. chunksize) at a time\n");
   fprintf(stderr, "  --expect-fail\tSucceed on failure/fail on success\n");
-  fprintf(stderr,
-          "  -h\t\tShow usage\n");
-  fprintf(stderr,
-          "  -i NAME\tRead from input file NAME ('-' implies stdin)\n");
+  fprintf(stderr, "  -h\t\tShow usage\n");
+  fprintf(stderr, "  -i NAME\tRead from input file NAME ('-' implies stdin)\n");
   fprintf(stderr,
           "  -o NAME\tWrite to output file NAME ('-' implies stdout)\n");
-  fprintf(stderr,
-          "  -s\t\tUse C++ streams instead of file descriptors\n");
+  fprintf(stderr, "  -s\t\tUse C++ streams instead of file descriptors\n");
 }
 
-} // end of anonymous namespace
+}  // end of anonymous namespace
 
-int main(int Argc, char *Argv[]) {
+int main(int Argc, char* Argv[]) {
   int BufSize = 1;
   static constexpr int MaxBufSize = 4096;
   for (int i = 1; i < Argc; ++i) {
@@ -115,9 +111,9 @@ int main(int Argc, char *Argv[]) {
       }
       BufSize = Size;
     } else if (Argv[i] == std::string("-s")) {
-        UseFileStreams = true;
-    } else if (Argv[i] == std::string("-h")
-               || (Argv[i] == std::string("--help"))) {
+      UseFileStreams = true;
+    } else if (Argv[i] == std::string("-h") ||
+               (Argv[i] == std::string("--help"))) {
       usage(Argv[0]);
       return exit_status(EXIT_SUCCESS);
     } else {

@@ -34,6 +34,10 @@ class TextWriter;
 
 namespace interp {
 
+// Defines the algorithm interpreter for filter sections, and the
+// corresponding state associated with the interpreter.
+//
+// TODO(karlschimpf) Rename this to a better name.
 class State {
   State() = delete;
   State(const State&) = delete;

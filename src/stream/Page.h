@@ -18,30 +18,32 @@
 // Defines a generic base class for pages (of values). It is used to model
 // streams in the WASM decompressor.
 //
-// Associated with pages are locks.  This locking structure allows one to lock
-// "backpatch" addresses, making sure that the pages are not thrown away until
-// all locks have been released.  Locks will also block reads, until the locks
-// are unlocked.
+// Only shared pointers are used with pages. This guarantees that the
+// implementation of a queue (in streams/Queue.h) can figure out what
+// pages are no longer used.
+//
+// Note: If you need to "backpatch" an address, be sure to store a
+// shared pointer to that backpatch address, so that the page doesn't
+// accidentally get garbage collected.
 //
 // Note: Virtual addresses are used, start at index 0, and correspond to a
 // buffer index as if the queue keeps all pages (i.e. doesn't shrink) until the
 // queue is destructed. Therefore, if a byte is written at address N, to read
 // the value you must always use address N.
 //
-// It is assumed that jumping on reads and writes are valid. However, back jumps
-// are only safe if you lock the address before returning to that address.
+// It is assumed that jumping on reads and writes are valid. However,
+// back jumps are only safe if you maintain a shared pointer to the
+// address before returning to that address.
 //
-// The memory for buffers are divided into pages. This is done so that the
-// underlying data structure does not move once created, making threading a lot
-// simplier to add. The size (i.e. number of bytes) in a page is a power of two,
-// to that simple masking can be used to compute the page index and the byte
-// address within the page.
+// The memory for buffers are divided into pages. This is done so that
+// the underlying data structure does not move once created. This
+// makes threading a lot simplier to add, since data does not
+// move. The size (i.e. number of bytes) in a page is a power of two,
+// to that simple masking can be used to compute the page index and
+// the byte address within the page.
 //
-// TODO(KarlSchimpf): Locking of reads/writes for threading has not yet been
-// addressed, and the current implementation is NOT thread safe.
-//
-// TODO(KarlSchimpf): bocking not implemented. Currently, reads fail if they try
-// to read from a locked page.
+// TODO(karlschimpf) The current implementation is NOT thread safe, but should
+// be easy to make thread safe.
 
 #ifndef DECOMPRESSOR_SRC_STREAM_PAGE_H
 #define DECOMPRESSOR_SRC_STREAM_PAGE_H
@@ -49,12 +51,13 @@
 #include "stream/RawStream.h"
 
 #include <cstring>
+#include <memory>
 
 namespace wasm {
 
 namespace decode {
 
-class Page {
+class Page : public std::enable_shared_from_this<Page> {
   Page(const Page&) = delete;
   Page& operator=(const Page&) = delete;
 
@@ -80,15 +83,6 @@ class Page {
     std::memset(&Buffer, Page::Size, 0);
   }
 
-  void lock() { ++LockCount; }
-
-  void unlock() {
-    assert(LockCount >= 1);
-    --LockCount;
-  }
-
-  bool isLocked() const { return LockCount > 0; }
-
   size_t spaceRemaining() const {
     return (MinAddress + Page::Size == MaxAddress)
                ? 0
@@ -107,14 +101,70 @@ class Page {
   uint8_t Buffer[Page::Size];
   // The page index of the page.
   size_t Index;
-  Page* Last = nullptr;
-  Page* Next = nullptr;
-
- protected:
   // Note: Buffer address range is [MinAddress, MaxAddress).
   size_t MinAddress;
   size_t MaxAddress;
-  size_t LockCount = 0;
+  std::shared_ptr<Page> Next;
+
+  // For debugging only.
+  void describe() {
+    fprintf(stderr, "Page[%" PRIuMAX "] [%" PRIuMAX ":%" PRIuMAX ") = %p\n",
+            uintmax_t(Index), uintmax_t(MinAddress), uintmax_t(MaxAddress),
+            (void*)this);
+  }
+};
+
+class PageCursor {
+  PageCursor& operator=(const PageCursor&) = delete;
+
+ public:
+  PageCursor() : CurAddress(0) {}
+  PageCursor(std::shared_ptr<Page> CurPage, size_t CurAddress)
+      : CurPage(CurPage), CurAddress(CurAddress) {}
+  PageCursor(const PageCursor& PC)
+      : CurPage(PC.CurPage), CurAddress(PC.CurAddress) {}
+  size_t getMinAddress() const {
+    return CurPage ? CurPage->getMinAddress() : 0;
+  }
+  size_t getMaxAddress() const {
+    return CurPage ? CurPage->getMaxAddress() : 0;
+  }
+  bool isValidPageAddress(size_t Address) {
+    return getMinAddress() <= Address && Address < getMaxAddress();
+  }
+  void setCurAddress(size_t NewAddress) { CurAddress = NewAddress; }
+  size_t getCurAddress() const { return CurAddress; }
+  void setMaxAddress(size_t Address) { CurPage->setMaxAddress(Address); }
+  bool isIndexAtEndOfPage() const { return getCurAddress() == getMaxAddress(); }
+  uint8_t* getBufferPtr() {
+    assert(CurPage);
+    return CurPage->Buffer + getCurIndex();
+  }
+  uint8_t readByte() {
+    uint8_t Byte = *getBufferPtr();
+    ++CurAddress;
+    return Byte;
+  }
+  void writeByte(uint8_t Byte) {
+    *getBufferPtr() = Byte;
+    ++CurAddress;
+  }
+
+  // TODO(karlschimpf): Make this private.
+  std::shared_ptr<Page> CurPage;
+
+  // For debugging only.
+  void describe() {
+    fprintf(stderr, "PC %" PRIuMAX ": ", uintmax_t(CurAddress));
+    if (CurPage)
+      CurPage->describe();
+    else
+      fprintf(stderr, " nullptr\n");
+  }
+
+ private:
+  size_t CurAddress;  // Relative to minimum index in page.
+  size_t getCurIndex() const { return CurAddress - CurPage->getMinAddress(); }
 };
 
 }  // end of namespace decode

@@ -149,7 +149,15 @@ class TraceClass {
     if (TraceProgress)
       traceIntInternal(Name, Value);
   }
+  void traceIntmax_t(const char* Name, intmax_t Value) {
+    if (TraceProgress)
+      traceIntInternal(Name, Value);
+  }
   void traceUint64_t(const char* Name, uint64_t Value) {
+    if (TraceProgress)
+      traceUintInternal(Name, Value);
+  }
+  void traceUintmax_t(const char* Name, uintmax_t Value) {
     if (TraceProgress)
       traceUintInternal(Name, Value);
   }

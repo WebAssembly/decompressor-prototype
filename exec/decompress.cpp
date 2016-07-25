@@ -34,8 +34,8 @@ using namespace wasm::decode;
 using namespace wasm::interp;
 
 bool UseFileStreams = true;
-const char *InputFilename = "-";
-const char *OutputFilename = "-";
+const char* InputFilename = "-";
+const char* OutputFilename = "-";
 
 std::unique_ptr<RawStream> getInput() {
   if (InputFilename == std::string("-")) {
@@ -61,14 +61,15 @@ std::unique_ptr<RawStream> getOutput() {
   return FstreamWriter::create(OutputFilename);
 }
 
-void usage(const char *AppName) {
+void usage(const char* AppName) {
   fprintf(stderr, "usage: %s [options]\n", AppName);
   fprintf(stderr, "\n");
   fprintf(stderr, "  Decompress WASM binary file.\n");
   fprintf(stderr, "\n");
   fprintf(stderr, "Options:\n");
   fprintf(stderr, "  -d File\tFile containing default algorithms.\n");
-  fprintf(stderr, "  --diff\tWhen tracing, "
+  fprintf(stderr,
+          "  --diff\tWhen tracing, "
           "show byte difference between reader/writer.\n");
   fprintf(stderr, "  --expect-fail\tSucceed on failure/fail on success\n");
   fprintf(stderr, "  -h\t\tPrint this usage message.\n");
@@ -80,7 +81,7 @@ void usage(const char *AppName) {
   fprintf(stderr, "  -t\t\tTrace progress decompressing.\n");
 }
 
-int main(int Argc, char *Argv[]) {
+int main(int Argc, char* Argv[]) {
   wasm::alloc::Malloc Allocator;
   SymbolTable SymTab(&Allocator);
   bool TraceProgress = false;
@@ -97,7 +98,7 @@ int main(int Argc, char *Argv[]) {
         std::unique_ptr<RawStream> Stream = FileReader::create(Argv[i]);
         ReadBackedByteQueue Input(std::move(Stream));
         BinaryReader Reader(&Input, SymTab);
-        if (FileNode *File = Reader.readFile()) {
+        if (FileNode* File = Reader.readFile()) {
           SymTab.install(File);
           continue;
         }
@@ -111,8 +112,8 @@ int main(int Argc, char *Argv[]) {
       TraceIoDifference = true;
     } else if (Argv[i] == std::string("--expect-fail")) {
       ExpectExitFail = true;
-    } else if (Argv[i] == std::string("-h")
-             || Argv[i] == std::string("--help")) {
+    } else if (Argv[i] == std::string("-h") ||
+               Argv[i] == std::string("--help")) {
       usage(Argv[i]);
       return exit_status(EXIT_SUCCESS);
     } else if (Argv[i] == std::string("-i")) {
@@ -132,15 +133,14 @@ int main(int Argc, char *Argv[]) {
       }
       OutputFilename = Argv[i];
     } else if (Argv[i] == std::string("-s")) {
-        UseFileStreams = true;
+      UseFileStreams = true;
     } else if (Argv[i] == std::string("-t")) {
-        TraceProgress = true;
+      TraceProgress = true;
     } else {
       fprintf(stderr, "Unrecognized option: %s\n", Argv[i]);
       usage(Argv[0]);
       return exit_status(EXIT_FAILURE);
     }
-
   }
   ReadBackedByteQueue Input(getInput());
   WriteBackedByteQueue Output(getOutput());

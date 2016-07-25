@@ -17,9 +17,9 @@
 
 // Defines a queue for hold buffers to streams.
 //
-// Associated with queues are locks.  This locking structure allows one to lock
-// "backpatch" addresses, making sure that the pages are not thrown away until
-// all locks have been released.
+// Shared pointers to pages are used to effectively lock pages in the buffer.
+// This allows one to "backpatch" addresses, making sure that the pages are not
+// thrown away until all shared pointers have been released.
 //
 // Note: Virtual addresses are used, start at index 0, and correspond to a
 // buffer index as if the queue keeps all pages (i.e. doesn't shrink) until the
@@ -27,7 +27,8 @@
 // the value you must always use address N.
 //
 // It is assumed that jumping on reads and writes are valid. However, back jumps
-// are only safe if you lock the address before reading past that address.
+// are only safe if you already have a shared pointer to the address to be
+// backpatched.
 //
 // TODO(KarlSchimpf): Locking of reads/writes for threading has not yet been
 // addressed, and the current implementation is NOT thread safe.
@@ -38,7 +39,6 @@
 #include "stream/Page.h"
 
 #include <memory>
-#include <queue>
 #include <vector>
 
 namespace wasm {
@@ -47,6 +47,9 @@ namespace decode {
 
 static constexpr size_t kUndefinedAddress = std::numeric_limits<size_t>::max();
 
+// TODO(karlschimpf): It appears that we don't need this class to be
+// templatized.
+// That is, Base=uint8_t should be sufficient.
 template <class Base>
 class Queue {
   Queue(const Queue&) = delete;
@@ -67,72 +70,25 @@ class Queue {
   // Value unknown (returning maximum possible size) until frozen. When
   // frozen, returns the size of the buffer.
   size_t currentSize() {
-    return EobFrozen ? EobPage->getMaxAddress()
+    return EobFrozen ? LastPage->getMaxAddress()
                      : std::numeric_limits<ssize_t>::max();
   }
 
   // Returns the actual size of the buffer (i.e. only those with pages still
   // in memory).
   size_t actualSize() const {
-    return EobPage->getMaxAddress() - FirstPage->getMinAddress();
+    return LastPage->getMaxAddress() - FirstPage->getMinAddress();
   }
 
-  // Returns true if Address is locked.
-  bool isAddressLocked(size_t Address) const {
-    Page* P = getPage(Address);
-    if (P == nullptr)
-      return false;
-    return P->isLocked();
-  }
+  // Update Cursor to point to the given Address, and make (up to) WantedSize
+  // elements available for reading. Returns the actual number of elements
+  // available for reading.
+  size_t read(size_t Address, size_t WantedSize, PageCursor& Cursor);
 
-  // Increments the lock count for Address by 1. Assumes lock is already locked
-  // (and hence defined).
-  void lock(size_t Address) { lockPage(getPage(Address)); }
-
-  // Decrements the lock count for Address by 1. Assumes lock was
-  // defined by previous (successful) calls to getReadLockedPointer()
-  // and getWriteLockedPointer().
-  void unlock(size_t Address) { unlockPage(getPage(Address)); }
-
-  // The following two methods allows one to lock the memory of the queue
-  // directly, and read/write directly into the buffer. Also locks the
-  // address, which must be released with a call to unlockAddress().
-  //
-  // WARNING: Never access beyond LockedSize elements after the call,
-  // and only while you haven't unlocked the address.  There is no
-  // guarantee that such pointer accesses are vaild, once it has been
-  // unlocked.
-
-  // Returns a pointer into the queue that can be read. Must unlock the address
-  // once reading has been completed.
-  //
-  // @param Address    The address within the queue to Access.
-  // @param WantedSize The number of elements requested to be read
-  //                   locked.  Note: Zero is allowed.
-  // @param LockedSize The actual number of elements locked down (may
-  //                   be smaller than wanted size, due to eob or
-  //                   internal paging).
-  // @result           Pointer to locked address, or nullptr if unable to read
-  //                   lock.
-  Base* getReadLockedPointer(size_t Address,
-                             size_t WantedSize,
-                             size_t& LockedSize);
-
-  // Returns a pointer into the queue that can be written to. Must unlock the
-  // address once writing has been completed.
-  //
-  // @param Address    The address within the queue to Access.
-  // @param WantedSize The number of elements requested to bewrite
-  //                   locked.  Note: Zero is allowed, and just locks
-  //                   address.
-  // @param LockedSize The actual number of elements locked down (may
-  //                   be smaller than wanted size, due to eob or
-  //                   internal paging).
-  // @result           Pointer to locked address, or nullptr if unable to write
-  //                   lock.
-  Base* getWriteLockedPointer(size_t Address,
-                              size_t WantedSize,
-                              size_t& LockedSize);
+  // Update Cursor to point to the given Address, and make (up to) WantedSize
+  // elements available for writing. Returns the actual number of elements
+  // available for writing.
+  size_t write(size_t Address, size_t WantedSize, PageCursor& Cursor);
 
   // Freezes eob of the queue. Not valid to read/write past the eob, once set.
   void freezeEob(size_t Address);
@@ -146,56 +102,43 @@ class Queue {
   // True if end of queue buffer has been frozen.
   bool EobFrozen = false;
   // First page still in queue.
-  Page* FirstPage;
+  std::shared_ptr<Page> FirstPage;
   // Page at the current end of buffer.
-  Page* EobPage;
+  std::shared_ptr<Page> LastPage;
   // Fast page lookup map (from page index)
-  using PageMapType = std::vector<Page*>;
+  using PageMapType = std::vector<std::weak_ptr<Page>>;
   PageMapType PageMap;
-  // Heap to keep track of pages locks, sorted by page index.
-  std::priority_queue<size_t, std::vector<size_t>, std::less<size_t>>
-      LockedPages;
 
   // Returns the page in the queue referred to Address, or nullptr if no
   // such page is in the byte queue.
-  Page* getPage(size_t Address) const {
-    return getPageAt(Page::index(Address));
+  std::shared_ptr<Page> getPage(size_t Address) const {
+    size_t Index = Page::index(Address);
+    if (Index >= PageMap.size())
+      return nullptr;
+    return PageMap[Index].lock();
+  }
+
+  bool isValidPageAddress(size_t Address) {
+    return Page::index(Address) < PageMap.size();
   }
 
   // Returns the page with the given PageIndex, or nullptr if no such
   // page is in the byte queue.
-  Page* getPageAt(size_t PageIndex) const {
-    return (PageIndex >= PageMap.size()) ? nullptr : PageMap[PageIndex];
-  }
-
-  // Increments the lock count on the given page.
-  void lockPage(Page* P) {
-    P->lock();
-    LockedPages.emplace(P->Index);
-  }
-
-  // Decrements the lock count on the given page.
-  void unlockPage(Page* P) {
-    P->unlock();
-    // Remove smallest page indices from queue that no longer have locks.
-    while (!LockedPages.empty()) {
-      size_t PageIndex = LockedPages.top();
-      Page* P = getPageAt(PageIndex);
-      if (P && P->isLocked())
-        return;
-      LockedPages.pop();
-    }
+  std::shared_ptr<Page> getPageAt(size_t PageIndex) const {
+    return (PageIndex >= PageMap.size()) ? nullptr : PageMap[PageIndex].lock();
   }
 
   // Dumps and deletes the first page.  Note: Dumping only occurs if a
   // Writer is provided (see class WriteBackedByteQueue below).
   virtual void dumpFirstPage();
 
-  // Dumps ununsed pages before the given address to recover memory.
-  void dumpPreviousPages(size_t Address);
+  // Dumps ununsed pages prior to Address. If applicable, writes out bytes to
+  // corresponding output stream before dumping.
+  void dumpPreviousPages();
 
   // Fills buffer until we can read 1 or more bytes at the given address.
-  // Returns true if successful.
+  // Returns true if successful. If applicable, reads from input to fill the
+  // buffer as appropriate.
   virtual bool readFill(size_t Address);
 };
 

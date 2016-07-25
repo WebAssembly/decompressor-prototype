@@ -376,9 +376,8 @@ void State::decompress() {
     fatal("Unable to decompress, WASM version number not known");
   Writer->writeUint32(Version, WritePos);
 
-  while (!ReadPos.atEob()) {
+  while (!ReadPos.atEob())
     decompressSection();
-  }
   WritePos.freezeEob();
 }
 
