@@ -44,7 +44,11 @@ TraceClassSexpReader::~TraceClassSexpReader() {
 }
 
 void TraceClassSexpReader::traceContext() const {
-  fprintf(File, "@%" PRIuMAX " ", uintmax_t(ReadPos.getCurByteAddress()));
+  fprintf(File, "@%" PRIuMAX, uintmax_t(ReadPos.getCurByteAddress()));
+  if (!ReadPos.isByteAligned()) {
+    fprintf(File, ":%u", ReadPos.getNumExtraBitsRead());
+  }
+  fputc(' ', File);
 }
 
 }  // end of namespace interp

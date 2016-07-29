@@ -21,30 +21,33 @@ namespace wasm {
 
 namespace interp {
 
-TraceClassSexpWriter::TraceClassSexpWriter(decode::Cursor& Writepos)
-    : TraceClassSexp(), Writepos(Writepos) {
+TraceClassSexpWriter::TraceClassSexpWriter(decode::Cursor& WritePos)
+    : TraceClassSexp(), WritePos(WritePos) {
 }
 
-TraceClassSexpWriter::TraceClassSexpWriter(decode::Cursor& Writepos,
+TraceClassSexpWriter::TraceClassSexpWriter(decode::Cursor& WritePos,
                                            const char* Label)
-    : TraceClassSexp(Label), Writepos(Writepos) {
+    : TraceClassSexp(Label), WritePos(WritePos) {
 }
 
-TraceClassSexpWriter::TraceClassSexpWriter(decode::Cursor& Writepos, FILE* File)
-    : TraceClassSexp(File), Writepos(Writepos) {
+TraceClassSexpWriter::TraceClassSexpWriter(decode::Cursor& WritePos, FILE* File)
+    : TraceClassSexp(File), WritePos(WritePos) {
 }
 
-TraceClassSexpWriter::TraceClassSexpWriter(decode::Cursor& Writepos,
+TraceClassSexpWriter::TraceClassSexpWriter(decode::Cursor& WritePos,
                                            const char* Label,
                                            FILE* File)
-    : TraceClassSexp(Label, File), Writepos(Writepos) {
+    : TraceClassSexp(Label, File), WritePos(WritePos) {
 }
 
 TraceClassSexpWriter::~TraceClassSexpWriter() {
 }
 
 void TraceClassSexpWriter::traceContext() const {
-  fprintf(File, "@%" PRIuMAX " ", uintmax_t(Writepos.getCurByteAddress()));
+  fprintf(File, "@%" PRIuMAX, uintmax_t(WritePos.getCurByteAddress()));
+  if (!WritePos.isByteAligned())
+    fprintf(File, ":%" PRIuMAX, uintmax_t(WritePos.getNumExtraBitsWritten()));
+  fputc(' ', File);
 }
 
 }  // end of namespace interp

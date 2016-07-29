@@ -31,16 +31,16 @@ class TraceClassSexpWriter : public filt::TraceClassSexp {
   TraceClassSexpWriter& operator=(const TraceClassSexpWriter&) = delete;
 
  public:
-  explicit TraceClassSexpWriter(decode::Cursor& Writepos);
-  TraceClassSexpWriter(decode::Cursor& Writepos, const char* Label);
-  TraceClassSexpWriter(decode::Cursor& Writepos, FILE* File);
-  TraceClassSexpWriter(decode::Cursor& Writepos, const char* Label, FILE* File);
+  explicit TraceClassSexpWriter(decode::Cursor& WritePos);
+  TraceClassSexpWriter(decode::Cursor& WritePos, const char* Label);
+  TraceClassSexpWriter(decode::Cursor& WritePos, FILE* File);
+  TraceClassSexpWriter(decode::Cursor& WritePos, const char* Label, FILE* File);
   ~TraceClassSexpWriter();
 
   void traceContext() const override;
 
  protected:
-  decode::Cursor& Writepos;
+  decode::Cursor& WritePos;
 };
 
 }  // end of namespace interp
