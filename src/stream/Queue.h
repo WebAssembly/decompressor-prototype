@@ -47,6 +47,24 @@ namespace decode {
 
 static constexpr size_t kUndefinedAddress = std::numeric_limits<size_t>::max();
 
+// Holds the end of a block within a queue. The outermost block is
+// always defined as enclosing the entire queue.
+class BlockEob : public std::enable_shared_from_this<BlockEob> {
+  BlockEob(const BlockEob&) = delete;
+  BlockEob &operator=(const BlockEob&) = delete;
+ public:
+  explicit BlockEob(size_t EobAddress = kUndefinedAddress)
+      : EobAddress(EobAddress) {}
+  BlockEob(size_t EobAddress, const std::shared_ptr<BlockEob> EnclosingEobPtr)
+      : EobAddress(EobAddress), EnclosingEobPtr(EnclosingEobPtr) {}
+  size_t getEobAddress() const { return EobAddress; }
+  void setEobAddress(size_t Value) { EobAddress = Value; }
+  bool undefinedEob() const { return EobAddress == kUndefinedAddress; }
+ private:
+  size_t EobAddress;
+  std::shared_ptr<BlockEob> EnclosingEobPtr;
+};
+
 // TODO(karlschimpf): It appears that we don't need this class to be
 // templatized.
 // That is, Base=uint8_t should be sufficient.
@@ -70,8 +88,7 @@ class Queue {
   // Value unknown (returning maximum possible size) until frozen. When
   // frozen, returns the size of the buffer.
   size_t currentSize() {
-    return EobFrozen ? LastPage->getMaxAddress()
-                     : std::numeric_limits<ssize_t>::max();
+    return EofPtr->getEobAddress();
   }
 
   // Returns the actual size of the buffer (i.e. only those with pages still
@@ -83,17 +100,21 @@ class Queue {
   // Update Cursor to point to the given Address, and make (up to) WantedSize
   // elements available for reading. Returns the actual number of elements
   // available for reading.
-  size_t read(size_t Address, size_t WantedSize, PageCursor& Cursor);
+  size_t readFromPage(size_t Address, size_t WantedSize, PageCursor& Cursor);
 
   // Update Cursor to point to the given Address, and make (up to) WantedSize
   // elements available for writing. Returns the actual number of elements
   // available for writing.
-  size_t write(size_t Address, size_t WantedSize, PageCursor& Cursor);
+  size_t writeToPage(size_t Address, size_t WantedSize, PageCursor& Cursor);
 
   // Freezes eob of the queue. Not valid to read/write past the eob, once set.
-  void freezeEob(size_t Address);
+  void freezeEof(size_t Address);
 
-  bool isEobFrozen() const { return EobFrozen; }
+  bool isEofFrozen() const { return EobFrozen; }
+
+  const std::shared_ptr<BlockEob> &getEofPtr() const {
+    return EofPtr;
+  }
 
  protected:
   // Minimum peek size to maintain. That is, the minimal number of
@@ -101,6 +122,7 @@ class Queue {
   size_t MinPeekSize = 32 * sizeof(Base);
   // True if end of queue buffer has been frozen.
   bool EobFrozen = false;
+  std::shared_ptr<BlockEob> EofPtr;
   // First page still in queue.
   std::shared_ptr<Page> FirstPage;
   // Page at the current end of buffer.

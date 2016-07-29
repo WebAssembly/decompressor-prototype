@@ -28,16 +28,16 @@ void CursorImpl::jumpToByteAddress(size_t NewAddress) {
     return;
   }
   // Move to the wanted page.
-  Queue->Queue::read(NewAddress, 0, PgCursor);
+  Queue->readFromPage(NewAddress, 0, PgCursor);
 }
 
 bool CursorImpl::readFillBuffer() {
   size_t CurAddress = PgCursor.getCurAddress();
-  if (CurAddress >= EobAddress)
+  if (CurAddress >= getEobAddress())
     return false;
-  size_t BufferSize = Queue->Queue::read(CurAddress, Page::Size, PgCursor);
+  size_t BufferSize = Queue->readFromPage(CurAddress, Page::Size, PgCursor);
   if (BufferSize == 0) {
-    EobAddress = Queue->currentSize();
+    setEobAddress(Queue->currentSize());
     return false;
   }
   return true;
@@ -45,9 +45,9 @@ bool CursorImpl::readFillBuffer() {
 
 void CursorImpl::writeFillBuffer() {
   size_t CurAddress = PgCursor.getCurAddress();
-  if (CurAddress >= EobAddress)
+  if (CurAddress >= getEobAddress())
     fatal("Write past Eob");
-  size_t BufferSize = Queue->Queue::write(CurAddress, Page::Size, PgCursor);
+  size_t BufferSize = Queue->writeToPage(CurAddress, Page::Size, PgCursor);
   if (BufferSize == 0)
     fatal("Write failed!\n");
 }
@@ -55,7 +55,7 @@ void CursorImpl::writeFillBuffer() {
 CursorImpl* CursorImpl::copy(StreamType WantedType) {
   assert(Type == WantedType);
   CursorImpl* Impl = new CursorImpl(WantedType, Queue, PgCursor);
-  Impl->EobAddress = EobAddress;
+  Impl->EobPtr = EobPtr;
   return Impl;
 }
 

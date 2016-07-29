@@ -39,10 +39,12 @@ class CursorImpl {
   CursorImpl() = delete;
 
  public:
-  CursorImpl(StreamType Type, ByteQueue* Queue) : Type(Type), Queue(Queue) {}
+  CursorImpl(StreamType Type, ByteQueue* Queue) :
+      Type(Type), Queue(Queue), EobPtr(Queue->getEofPtr()) {}
 
   CursorImpl(StreamType Type, ByteQueue* Queue, const PageCursor& PgCursor)
-      : Type(Type), Queue(Queue), PgCursor(PgCursor) {}
+      : Type(Type), Queue(Queue), PgCursor(PgCursor),
+        EobPtr(Queue->getEofPtr()) {}
 
   virtual ~CursorImpl() {}
 
@@ -72,13 +74,20 @@ class CursorImpl {
 
   void jumpToByteAddress(size_t NewAddress);
 
-  void freezeEob() {
-    EobAddress = PgCursor.getCurAddress();
-    Queue->freezeEob(EobAddress);
+  void freezeEof() {
+    Queue->freezeEof(PgCursor.getCurAddress());
   }
 
   bool atEob(size_t EobAddress) {
     return PgCursor.getCurAddress() >= EobAddress || !readFillBuffer();
+  }
+
+  size_t getEobAddress() const {
+    return EobPtr->getEobAddress();
+  }
+
+  void setEobAddress(size_t NewValue) {
+    EobPtr->setEobAddress(NewValue);
   }
 
   StreamType getRtClassId() const { return Type; }
@@ -87,6 +96,7 @@ class CursorImpl {
 
   // For debugging only.
   void describe() {
+    size_t EobAddress = getEobAddress();
     fprintf(stderr, "Cursor ");
     if (EobAddress != kUndefinedAddress)
       fprintf(stderr, " eob=%" PRIuMAX " ", uintmax_t(EobAddress));
@@ -99,7 +109,7 @@ class CursorImpl {
   // The current address into the buffer.
   PageCursor PgCursor;
   // End of block address.
-  size_t EobAddress = kUndefinedAddress;
+  std::shared_ptr<BlockEob> EobPtr;
 };
 
 class Cursor {
@@ -142,7 +152,7 @@ class ReadCursor final : public Cursor {
       : Cursor(C), LocalEobOverrides(C.LocalEobOverrides) {}
 
   size_t getEobAddress() const {
-    return LocalEobOverrides.empty() ? Impl->EobAddress
+    return LocalEobOverrides.empty() ? Impl->getEobAddress()
                                      : LocalEobOverrides.back();
   }
 
@@ -177,12 +187,12 @@ class WriteCursor final : public Cursor {
   // Writes next byte. Fails if at end of buffer.
   void writeByte(uint8_t Byte) { Impl->writeByte(Byte); }
 
-  void freezeEob() { Impl->freezeEob(); }
+  void freezeEof() { Impl->freezeEof(); }
 
-  size_t getEobAddress() const { return Impl->EobAddress; }
+  size_t getEobAddress() const { return Impl->getEobAddress(); }
 
   bool atEob() {
-    return Impl->PgCursor.getCurAddress() >= Impl->EobAddress;
+    return Impl->PgCursor.getCurAddress() >= Impl->getEobAddress();
     ;
   }
 
