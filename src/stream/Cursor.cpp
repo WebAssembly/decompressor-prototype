@@ -17,6 +17,10 @@
 
 #include "stream/Cursor.h"
 
+namespace {
+static constexpr uint32_t MaxBitsAllowed = sizeof(uint32_t) * CHAR_BIT;
+}
+
 namespace wasm {
 
 namespace decode {
@@ -50,6 +54,52 @@ void Cursor::writeFillBuffer() {
   size_t BufferSize = Queue->writeToPage(CurAddress, Page::Size, *this);
   if (BufferSize == 0)
     fatal("Write failed!\n");
+}
+
+uint32_t Cursor::readBits(uint32_t NumBits) {
+  assert(NumBits <= MaxBitsAllowed);
+  uint32_t Value = 0;
+  while (NumBits != 0) {
+    if (NumBits <= CurByte.BitsInByteValue) {
+      Value = (Value << NumBits) |
+          (CurByte.ByteValue & (~uint32_t(0) >> (CurByte.BitsInByteValue - NumBits)));
+      CurByte.ByteValue &= (uint32_t(1) << NumBits) - 1;
+      CurByte.BitsInByteValue -= NumBits;
+      return Value;
+    }
+    // Fill if empty.
+    if (CurByte.BitsInByteValue == 0) {
+      CurByte.setByte(readByte());
+      continue;
+    }
+    // Use remaining byte value and continue.
+    Value = (Value << CurByte.BitsInByteValue) | CurByte.ByteValue;
+    NumBits -= CurByte.BitsInByteValue;
+    CurByte.setByte(readByte());
+  }
+  return Value;
+}
+
+void Cursor::writeBits(uint32_t Value, uint32_t NumBits) {
+  assert(NumBits <= MaxBitsAllowed);
+  assert(Value == (~uint32_t(0) >> ((sizeof(uint32_t) * CHAR_BIT) - NumBits)));
+  while (NumBits > 0) {
+    const uint32_t Room = CHAR_BIT - CurByte.BitsInByteValue;
+    if (Room >= NumBits) {
+      CurByte.ByteValue = (CurByte.ByteValue << NumBits) | Value;
+      CurByte.BitsInByteValue += NumBits;
+      if (Room == NumBits) {
+        writeByte(CurByte.ByteValue);
+        CurByte.resetByte();
+      }
+      return;
+    }
+    CurByte.ByteValue = (CurByte.ByteValue << Room) | (Value >> Room);
+    Value = Value | ((uint32_t(1) << Room) - 1);
+    NumBits -= Room;
+    writeByte(CurByte.ByteValue);
+    CurByte.resetByte();
+  }
 }
 
 }  // end of namespace decode

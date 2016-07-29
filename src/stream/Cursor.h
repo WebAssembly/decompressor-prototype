@@ -31,18 +31,27 @@ class Cursor;
 class WorkingByte {
   friend class Cursor;
 public:
-  bool isEmpty() const { return BytesInByteValue == 0; }
+  bool isEmpty() const { return BitsInByteValue == 0; }
 
   // For debugging.
   void describe(FILE *File) {
-    fprintf(File, "[%u:%u] ", ByteValue, BytesInByteValue);
+    fprintf(File, "[%u:%u] ", ByteValue, BitsInByteValue);
   }
 
 private:
   // The Value read/to write for the current byte being processed.
   uint32_t ByteValue = 0;
   // Number of bytes in ByteValue.
-  uint32_t BytesInByteValue = 0;
+  uint32_t BitsInByteValue = 0;
+
+  void setByte(uint8_t Byte) {
+    ByteValue = Byte;
+    BitsInByteValue = CHAR_BIT;
+  }
+  void resetByte() {
+    ByteValue = 0;
+    BitsInByteValue = 0;
+  }
 };
 
 class Cursor : public PageCursor {
@@ -73,12 +82,16 @@ class Cursor : public PageCursor {
     return CurByte.isEmpty();
   }
 
+  const WorkingByte &getWorkingByte() const {
+    return CurByte;
+  }
+
   uint32_t getNumExtraBitsRead() const {
-    return (CHAR_BIT - CurByte.BytesInByteValue) % 0x7;
+    return (CHAR_BIT - CurByte.BitsInByteValue) % 0x7;
   }
 
   uint32_t getNumExtraBitsWritten() const {
-    return CurByte.BytesInByteValue;
+    return CurByte.BitsInByteValue;
   }
 
   ByteQueue* getQueue() { return Queue; }
@@ -101,7 +114,10 @@ class Cursor : public PageCursor {
     assert(EobPtr);
   }
 
+
+  // ------------------------------------------------------------------------
   // The following methods assume that the cursor is accessing a byte stream.
+  // ------------------------------------------------------------------------
 
   size_t getCurByteAddress() const {
     assert(isByteAligned());
@@ -126,7 +142,19 @@ class Cursor : public PageCursor {
     PageCursor::writeByte(Byte);
   }
 
+  // ------------------------------------------------------------------------
+  // The following methods assume that the cursor is accessing a bit stream.
+  // ------------------------------------------------------------------------
+
+  // Reads up to 32 bits from the input.
+  uint32_t readBits(uint32_t NumBits);
+
+  // Writes up to 32 bits to the output.
+  void writeBits(uint32_t Value, uint32_t NumBits);
+
+  // ------------------------------------------------------------------------
   // The following methods are for debugging.
+  // ------------------------------------------------------------------------
 
   void writeCurPage(FILE* File) { Queue->writePageAt(File, getCurAddress()); }
 
