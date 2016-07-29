@@ -28,7 +28,7 @@ namespace decode {
 
 #define CURSOR_OLD 0
 
-class Cursor {
+class Cursor : public PageCursor {
   Cursor() = delete;
   Cursor& operator=(const Cursor&) = delete;
 
@@ -36,31 +36,28 @@ class Cursor {
   Cursor(StreamType Type, ByteQueue* Queue)
       : Type(Type), Queue(Queue), EobPtr(Queue->getEofPtr()) {}
   explicit Cursor(const Cursor& C)
-      : Type(C.Type), Queue(C.Queue), PgCursor(C.PgCursor), EobPtr(C.EobPtr) {}
+      : PageCursor(C), Type(C.Type), Queue(C.Queue), EobPtr(C.EobPtr) {}
   ~Cursor() {}
 
   void swap(Cursor& C) {
     std::swap(Type, C.Type);
     std::swap(Queue, C.Queue);
-    std::swap(PgCursor, C.PgCursor);
+    std::swap(static_cast<PageCursor&>(*this), static_cast<PageCursor&>(C));
     std::swap(EobPtr, C.EobPtr);
   }
 
   StreamType getType() const { return Type; }
 
-  size_t getCurByteAddress() const { return PgCursor.getCurAddress(); }
-
   void reset() {}
 
   ByteQueue* getQueue() { return Queue; }
-
-  void jumpToByteAddress(size_t NewAddress);
-
   bool atEob() {
-    return PgCursor.getCurAddress() >= getEobAddress() || !readFillBuffer();
+    return getCurAddress() >= getEobAddress() || !readFillBuffer();
   }
 
   size_t getEobAddress() const { return EobPtr->getEobAddress(); }
+
+  void freezeEof() { Queue->freezeEof(getCurAddress()); }
 
   void setEobAddress(size_t NewValue) { EobPtr->setEobAddress(NewValue); }
 
@@ -73,40 +70,42 @@ class Cursor {
     assert(EobPtr);
   }
 
+  // The following methods assume that the cursor is accessing a byte stream.
+
+  size_t getCurByteAddress() const { return getCurAddress(); }
+
+  void jumpToByteAddress(size_t NewAddress);
+
   // Reads next byte. Returns zero if at end of buffer.
   uint8_t readByte() {
-    if (PgCursor.isIndexAtEndOfPage() && !readFillBuffer())
+    if (isIndexAtEndOfPage() && !readFillBuffer())
       return 0;
-    return PgCursor.readByte();
+    return PageCursor::readByte();
   }
 
   // Writes next byte. Fails if at end of buffer.
   void writeByte(uint8_t Byte) {
-    if (PgCursor.isIndexAtEndOfPage())
+    if (isIndexAtEndOfPage())
       writeFillBuffer();
-    PgCursor.writeByte(Byte);
+    PageCursor::writeByte(Byte);
   }
 
-  void freezeEof() { Queue->freezeEof(PgCursor.getCurAddress()); }
+  // The following methods are for debugging.
 
-  // For debugging.
-  void writeCurPage(FILE* File);
+  void writeCurPage(FILE* File) { Queue->writePageAt(File, getCurAddress()); }
 
-  // For debugging.
   void describe() {
     size_t EobAddress = getEobAddress();
     fprintf(stderr, "Cursor ");
     if (EobAddress != kUndefinedAddress)
       fprintf(stderr, " eob=%" PRIuMAX " ", uintmax_t(EobAddress));
-    PgCursor.describe();
+    PageCursor::describe();
   }
 
  protected:
   StreamType Type;
   // The byte queue the cursor points to.
   ByteQueue* Queue;
-  // The current address into the buffer.
-  PageCursor PgCursor;
   // End of block address.
   std::shared_ptr<BlockEob> EobPtr;
 
