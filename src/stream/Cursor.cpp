@@ -21,7 +21,7 @@ namespace wasm {
 
 namespace decode {
 
-void CursorImpl::jumpToByteAddress(size_t NewAddress) {
+void Cursor::jumpToByteAddress(size_t NewAddress) {
   if (PgCursor.isValidPageAddress(NewAddress)) {
     // We can reuse the same page, since NewAddress is within the page.
     PgCursor.setCurAddress(NewAddress);
@@ -31,7 +31,7 @@ void CursorImpl::jumpToByteAddress(size_t NewAddress) {
   Queue->readFromPage(NewAddress, 0, PgCursor);
 }
 
-bool CursorImpl::readFillBuffer() {
+bool Cursor::readFillBuffer() {
   size_t CurAddress = PgCursor.getCurAddress();
   if (CurAddress >= getEobAddress())
     return false;
@@ -43,7 +43,7 @@ bool CursorImpl::readFillBuffer() {
   return true;
 }
 
-void CursorImpl::writeFillBuffer() {
+void Cursor::writeFillBuffer() {
   size_t CurAddress = PgCursor.getCurAddress();
   if (CurAddress >= getEobAddress())
     fatal("Write past Eob");
@@ -52,15 +52,8 @@ void CursorImpl::writeFillBuffer() {
     fatal("Write failed!\n");
 }
 
-CursorImpl* CursorImpl::copy(StreamType WantedType) {
-  assert(Type == WantedType);
-  CursorImpl* Impl = new CursorImpl(WantedType, Queue, PgCursor);
-  Impl->EobPtr = EobPtr;
-  return Impl;
-}
-
 void WriteCursor::writeCurPage(FILE* File) {
-  Impl->Queue->writePageAt(File, Impl->PgCursor.getCurAddress());
+  Queue->writePageAt(File, PgCursor.getCurAddress());
 }
 
 }  // end of namespace decode
