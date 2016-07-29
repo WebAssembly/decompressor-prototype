@@ -108,7 +108,7 @@ class Page : public std::enable_shared_from_this<Page> {
   std::shared_ptr<Page> Next;
 
   // For debugging only.
-  void describe(FILE *File) {
+  void describe(FILE* File) {
     fprintf(File, "Page[%" PRIuMAX "] [%" PRIuMAX ":%" PRIuMAX ") = %p\n",
             uintmax_t(Index), uintmax_t(MinAddress), uintmax_t(MaxAddress),
             (void*)this);
@@ -158,7 +158,7 @@ class PageCursor {
   std::shared_ptr<Page> CurPage;
 
   // For debugging only.
-  void describe(FILE *File) {
+  void describe(FILE* File) {
     fprintf(File, "PC %" PRIuMAX ": ", uintmax_t(CurAddress));
     if (CurPage)
       CurPage->describe(File);

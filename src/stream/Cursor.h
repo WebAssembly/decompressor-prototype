@@ -30,15 +30,16 @@ class Cursor;
 // Holds bits in incomplete byte read/write.
 class WorkingByte {
   friend class Cursor;
-public:
+
+ public:
   bool isEmpty() const { return BitsInByteValue == 0; }
 
   // For debugging.
-  void describe(FILE *File) {
+  void describe(FILE* File) {
     fprintf(File, "[%u:%u] ", ByteValue, BitsInByteValue);
   }
 
-private:
+ private:
   // The Value read/to write for the current byte being processed.
   uint32_t ByteValue = 0;
   // Number of bytes in ByteValue.
@@ -62,7 +63,10 @@ class Cursor : public PageCursor {
   Cursor(StreamType Type, ByteQueue* Queue)
       : Type(Type), Queue(Queue), EobPtr(Queue->getEofPtr()) {}
   explicit Cursor(const Cursor& C)
-      : PageCursor(C), Type(C.Type), Queue(C.Queue), EobPtr(C.EobPtr),
+      : PageCursor(C),
+        Type(C.Type),
+        Queue(C.Queue),
+        EobPtr(C.EobPtr),
         CurByte(C.CurByte) {}
   ~Cursor() {}
 
@@ -78,21 +82,15 @@ class Cursor : public PageCursor {
 
   void reset() {}
 
-  bool isByteAligned() const {
-    return CurByte.isEmpty();
-  }
+  bool isByteAligned() const { return CurByte.isEmpty(); }
 
-  const WorkingByte &getWorkingByte() const {
-    return CurByte;
-  }
+  const WorkingByte& getWorkingByte() const { return CurByte; }
 
   uint32_t getNumExtraBitsRead() const {
     return (CHAR_BIT - CurByte.BitsInByteValue) % 0x7;
   }
 
-  uint32_t getNumExtraBitsWritten() const {
-    return CurByte.BitsInByteValue;
-  }
+  uint32_t getNumExtraBitsWritten() const { return CurByte.BitsInByteValue; }
 
   ByteQueue* getQueue() { return Queue; }
   bool atEob() {
@@ -113,7 +111,6 @@ class Cursor : public PageCursor {
     EobPtr = EobPtr->getEnclosingEobPtr();
     assert(EobPtr);
   }
-
 
   // ------------------------------------------------------------------------
   // The following methods assume that the cursor is accessing a byte stream.
@@ -158,7 +155,7 @@ class Cursor : public PageCursor {
 
   void writeCurPage(FILE* File) { Queue->writePageAt(File, getCurAddress()); }
 
-  void describe(FILE *File) {
+  void describe(FILE* File) {
     size_t EobAddress = getEobAddress();
     fprintf(File, "Cursor ");
     if (!CurByte.isEmpty())

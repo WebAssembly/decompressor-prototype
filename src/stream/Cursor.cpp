@@ -62,7 +62,8 @@ uint32_t Cursor::readBits(uint32_t NumBits) {
   while (NumBits != 0) {
     if (NumBits <= CurByte.BitsInByteValue) {
       Value = (Value << NumBits) |
-          (CurByte.ByteValue & (~uint32_t(0) >> (CurByte.BitsInByteValue - NumBits)));
+              (CurByte.ByteValue &
+               (~uint32_t(0) >> (CurByte.BitsInByteValue - NumBits)));
       CurByte.ByteValue &= (uint32_t(1) << NumBits) - 1;
       CurByte.BitsInByteValue -= NumBits;
       return Value;
