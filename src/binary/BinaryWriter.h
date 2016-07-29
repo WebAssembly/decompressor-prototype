@@ -55,7 +55,7 @@ class BinaryWriter {
   void setMinimizeBlockSize(bool NewValue) { MinimizeBlockSize = NewValue; }
 
  private:
-  decode::WriteCursor WritePos;
+  decode::Cursor WritePos;
   interp::ByteWriteStream* Writer;
   SectionSymbolTable SectionSymtab;
   bool MinimizeBlockSize = false;

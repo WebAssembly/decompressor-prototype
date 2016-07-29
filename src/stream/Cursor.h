@@ -33,6 +33,12 @@ class Cursor {
   Cursor& operator=(const Cursor&) = delete;
 
  public:
+  Cursor(StreamType Type, ByteQueue* Queue)
+      : Type(Type), Queue(Queue), EobPtr(Queue->getEofPtr()) {}
+  explicit Cursor(const Cursor& C)
+      : Type(C.Type), Queue(C.Queue), PgCursor(C.PgCursor), EobPtr(C.EobPtr) {}
+  ~Cursor() {}
+
   void swap(Cursor& C) {
     std::swap(Type, C.Type);
     std::swap(Queue, C.Queue);
@@ -67,60 +73,12 @@ class Cursor {
     assert(EobPtr);
   }
 
-  void describe() {
-    size_t EobAddress = getEobAddress();
-    fprintf(stderr, "Cursor ");
-    if (EobAddress != kUndefinedAddress)
-      fprintf(stderr, " eob=%" PRIuMAX " ", uintmax_t(EobAddress));
-    PgCursor.describe();
-  }
-
-  // Returns true if able to fill the buffer with at least one byte.
-  bool readFillBuffer();
-
-  // Creates new pages in buffer so that writes can occur.
-  void writeFillBuffer();
-
- protected:
-  StreamType Type;
-  // The byte queue the cursor points to.
-  ByteQueue* Queue;
-  // The current address into the buffer.
-  PageCursor PgCursor;
-  // End of block address.
-  std::shared_ptr<BlockEob> EobPtr;
-
-  Cursor(StreamType Type, ByteQueue* Queue)
-      : Type(Type), Queue(Queue), EobPtr(Queue->getEofPtr()) {}
-  explicit Cursor(const Cursor& C)
-      : Type(C.Type), Queue(C.Queue), PgCursor(C.PgCursor), EobPtr(C.EobPtr) {}
-  ~Cursor() {}
-};
-
-class ReadCursor final : public Cursor {
-  ReadCursor() = delete;
-  ReadCursor& operator=(const ReadCursor&) = delete;
-
- public:
-  ReadCursor(StreamType Type, ByteQueue* Queue) : Cursor(Type, Queue) {}
-  explicit ReadCursor(ReadCursor& C) : Cursor(C) {}
-
   // Reads next byte. Returns zero if at end of buffer.
   uint8_t readByte() {
     if (PgCursor.isIndexAtEndOfPage() && !readFillBuffer())
       return 0;
     return PgCursor.readByte();
   }
-};
-
-class WriteCursor final : public Cursor {
-  WriteCursor() = delete;
-  WriteCursor& operator=(const WriteCursor&) = delete;
-
- public:
-  explicit WriteCursor(StreamType Type, ByteQueue* Queue)
-      : Cursor(Type, Queue) {}
-  explicit WriteCursor(const WriteCursor& C) : Cursor(C) {}
 
   // Writes next byte. Fails if at end of buffer.
   void writeByte(uint8_t Byte) {
@@ -133,6 +91,30 @@ class WriteCursor final : public Cursor {
 
   // For debugging.
   void writeCurPage(FILE* File);
+
+  // For debugging.
+  void describe() {
+    size_t EobAddress = getEobAddress();
+    fprintf(stderr, "Cursor ");
+    if (EobAddress != kUndefinedAddress)
+      fprintf(stderr, " eob=%" PRIuMAX " ", uintmax_t(EobAddress));
+    PgCursor.describe();
+  }
+
+ protected:
+  StreamType Type;
+  // The byte queue the cursor points to.
+  ByteQueue* Queue;
+  // The current address into the buffer.
+  PageCursor PgCursor;
+  // End of block address.
+  std::shared_ptr<BlockEob> EobPtr;
+
+  // Returns true if able to fill the buffer with at least one byte.
+  bool readFillBuffer();
+
+  // Creates new pages in buffer so that writes can occur.
+  void writeFillBuffer();
 };
 
 }  // end of namespace decode

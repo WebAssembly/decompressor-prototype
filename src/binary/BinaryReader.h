@@ -60,7 +60,7 @@ class BinaryReader {
  private:
   alloc::Allocator* Alloc;
   interp::ByteReadStream* Reader;
-  decode::ReadCursor ReadPos;
+  decode::Cursor ReadPos;
   SectionSymbolTable SectionSymtab;
   // The magic number of the input.
   uint32_t MagicNumber;

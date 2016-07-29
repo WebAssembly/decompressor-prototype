@@ -63,7 +63,7 @@ class Page : public std::enable_shared_from_this<Page> {
 
  public:
   // Allow up to a megabyte per page.
-  static constexpr size_t SizeLog2 = 20;
+  static constexpr size_t SizeLog2 = 16;
   static constexpr size_t Size = 1 << SizeLog2;
   static constexpr size_t Mask = Size - 1;
 

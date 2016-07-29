@@ -63,9 +63,9 @@ class State {
   void setMinimizeBlockSize(bool NewValue) { MinimizeBlockSize = NewValue; }
 
  private:
-  decode::ReadCursor ReadPos;
+  decode::Cursor ReadPos;
   ReadStream* Reader;
-  decode::WriteCursor WritePos;
+  decode::Cursor WritePos;
   WriteStream* Writer;
   alloc::Allocator* Alloc;
   filt::Node* DefaultFormat;

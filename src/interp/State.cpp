@@ -158,7 +158,7 @@ IntType State::eval(const Node* Nd) {
 #ifdef LOG_EVAL
       if (Trace.getTraceProgress()) {
         Trace.indent();
-        decode::ReadCursor Lookahead(ReadPos);
+        decode::Cursor Lookahead(ReadPos);
         for (size_t i = 0; i < 10; ++i) {
           if (!Lookahead.atEob())
             fprintf(Trace.getFile(), " %x", Lookahead.readByte());
@@ -260,7 +260,7 @@ IntType State::read(const Node* Nd) {
     case OpU32Const:
     case OpU64Const:
     case OpPeek: {
-      ReadCursor InitialPos(ReadPos);
+      Cursor InitialPos(ReadPos);
       IntType Value = read(Nd->getKid(0));
       ReadPos.swap(InitialPos);
       return Value;
@@ -395,7 +395,7 @@ void State::decompressBlock(const Node* Code) {
     ReadPos.pushEobAddress(ReadPos.getCurByteAddress() + BlockSize);
   }
   if (ByteWriter) {
-    WriteCursor BlockPos(WritePos);
+    Cursor BlockPos(WritePos);
     ByteWriter->writeFixedVaruint32(0, WritePos);
     size_t SizeAfterSizeWrite = WritePos.getCurByteAddress();
     evalOrCopy(Code);
@@ -410,7 +410,7 @@ void State::decompressBlock(const Node* Code) {
       size_t Diff = SizeAfterSizeWrite - SizeAfterBackPatch;
       if (Diff) {
         size_t End = WritePos.getCurByteAddress() - Diff;
-        ReadCursor CopyPos(StreamType::Byte, WritePos.getQueue());
+        Cursor CopyPos(StreamType::Byte, WritePos.getQueue());
         CopyPos.jumpToByteAddress(SizeAfterSizeWrite);
         for (size_t i = SizeAfterBackPatch; i < End; ++i)
           BlockPos.writeByte(CopyPos.readByte());
