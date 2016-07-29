@@ -26,7 +26,34 @@ namespace wasm {
 
 namespace decode {
 
-#define CURSOR_OLD 0
+class Cursor;
+// Holds bits in incomplete byte read/write.
+class WorkingByte {
+  friend class Cursor;
+
+ public:
+  bool isEmpty() const { return BitsInByteValue == 0; }
+
+  // For debugging.
+  void describe(FILE* File) {
+    fprintf(File, "[%u:%u] ", ByteValue, BitsInByteValue);
+  }
+
+ private:
+  // The Value read/to write for the current byte being processed.
+  uint32_t ByteValue = 0;
+  // Number of bytes in ByteValue.
+  uint32_t BitsInByteValue = 0;
+
+  void setByte(uint8_t Byte) {
+    ByteValue = Byte;
+    BitsInByteValue = CHAR_BIT;
+  }
+  void resetByte() {
+    ByteValue = 0;
+    BitsInByteValue = 0;
+  }
+};
 
 class Cursor : public PageCursor {
   Cursor() = delete;
@@ -36,7 +63,11 @@ class Cursor : public PageCursor {
   Cursor(StreamType Type, ByteQueue* Queue)
       : Type(Type), Queue(Queue), EobPtr(Queue->getEofPtr()) {}
   explicit Cursor(const Cursor& C)
-      : PageCursor(C), Type(C.Type), Queue(C.Queue), EobPtr(C.EobPtr) {}
+      : PageCursor(C),
+        Type(C.Type),
+        Queue(C.Queue),
+        EobPtr(C.EobPtr),
+        CurByte(C.CurByte) {}
   ~Cursor() {}
 
   void swap(Cursor& C) {
@@ -44,11 +75,22 @@ class Cursor : public PageCursor {
     std::swap(Queue, C.Queue);
     std::swap(static_cast<PageCursor&>(*this), static_cast<PageCursor&>(C));
     std::swap(EobPtr, C.EobPtr);
+    std::swap(CurByte, C.CurByte);
   }
 
   StreamType getType() const { return Type; }
 
   void reset() {}
+
+  bool isByteAligned() const { return CurByte.isEmpty(); }
+
+  const WorkingByte& getWorkingByte() const { return CurByte; }
+
+  uint32_t getNumExtraBitsRead() const {
+    return (CHAR_BIT - CurByte.BitsInByteValue) % 0x7;
+  }
+
+  uint32_t getNumExtraBitsWritten() const { return CurByte.BitsInByteValue; }
 
   ByteQueue* getQueue() { return Queue; }
   bool atEob() {
@@ -70,14 +112,20 @@ class Cursor : public PageCursor {
     assert(EobPtr);
   }
 
+  // ------------------------------------------------------------------------
   // The following methods assume that the cursor is accessing a byte stream.
+  // ------------------------------------------------------------------------
 
-  size_t getCurByteAddress() const { return getCurAddress(); }
+  size_t getCurByteAddress() const {
+    assert(isByteAligned());
+    return getCurAddress();
+  }
 
   void jumpToByteAddress(size_t NewAddress);
 
   // Reads next byte. Returns zero if at end of buffer.
   uint8_t readByte() {
+    assert(isByteAligned());
     if (isIndexAtEndOfPage() && !readFillBuffer())
       return 0;
     return PageCursor::readByte();
@@ -85,21 +133,36 @@ class Cursor : public PageCursor {
 
   // Writes next byte. Fails if at end of buffer.
   void writeByte(uint8_t Byte) {
+    assert(isByteAligned());
     if (isIndexAtEndOfPage())
       writeFillBuffer();
     PageCursor::writeByte(Byte);
   }
 
+  // ------------------------------------------------------------------------
+  // The following methods assume that the cursor is accessing a bit stream.
+  // ------------------------------------------------------------------------
+
+  // Reads up to 32 bits from the input.
+  uint32_t readBits(uint32_t NumBits);
+
+  // Writes up to 32 bits to the output.
+  void writeBits(uint32_t Value, uint32_t NumBits);
+
+  // ------------------------------------------------------------------------
   // The following methods are for debugging.
+  // ------------------------------------------------------------------------
 
   void writeCurPage(FILE* File) { Queue->writePageAt(File, getCurAddress()); }
 
-  void describe() {
+  void describe(FILE* File) {
     size_t EobAddress = getEobAddress();
-    fprintf(stderr, "Cursor ");
+    fprintf(File, "Cursor ");
+    if (!CurByte.isEmpty())
+      CurByte.describe(File);
     if (EobAddress != kUndefinedAddress)
-      fprintf(stderr, " eob=%" PRIuMAX " ", uintmax_t(EobAddress));
-    PageCursor::describe();
+      fprintf(File, " eob=%" PRIuMAX " ", uintmax_t(EobAddress));
+    PageCursor::describe(File);
   }
 
  protected:
@@ -108,6 +171,7 @@ class Cursor : public PageCursor {
   ByteQueue* Queue;
   // End of block address.
   std::shared_ptr<BlockEob> EobPtr;
+  WorkingByte CurByte;
 
   // Returns true if able to fill the buffer with at least one byte.
   bool readFillBuffer();
