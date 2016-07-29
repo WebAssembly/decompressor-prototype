@@ -12,12 +12,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Build debug: make
+#            : make DEBUG=1
+# Build release: make RELEASE=1
+
 # Note: If using -jN, be sure to run "make gen" first.
+
+ifdef DEBUG
+  ifdef RELEASE
+    $(error Cant specify both DEBUG and RELEASE)
+  else ifeq ($(DEBUG), 0)
+    RELEASE = 1
+  else
+    RELEASE = 0
+  endif
+else ifndef RELEASE
+  RELEASE = 0
+endif
 
 CPP_COMPILER ?= clang++
 
 SRCDIR = src
-BUILDDIR = build
+
+BUILDBASEDIR = build
+ifeq ($(RELEASE), 0)
+  BUILDDIR = $(BUILDBASEDIR)/debug
+else
+  BUILDDIR = $(BUILDBASEDIR)/release
+endif
 OBJDIR = $(BUILDDIR)/obj
 
 LIBDIR = $(BUILDDIR)/lib
@@ -150,6 +172,7 @@ LIBS = $(PARSER_LIB) $(BINARY_LIB) $(INTERP_LIB) $(SEXP_LIB) \
 
 $(info -----------------------------------------------)
 $(info Using CPP_COMPILER = $(CPP_COMPILER))
+$(info Using RELEASE = $(RELEASE))
 $(info -----------------------------------------------)
 
 CCACHE := `command -v ccache`
@@ -158,6 +181,10 @@ CXX :=  CCACHE_CPP2=yes $(CCACHE) $(CPP_COMPILER)
 # Note: On WIN32 replace -fPIC with -D_GNU_SOURCE
 CXXFLAGS := -std=gnu++11 -Wall -Wextra -O2 -g -pedantic -MP -MD -Werror \
 	-Wno-unused-parameter -fno-omit-frame-pointer -fPIC -Isrc
+
+ifneq ($(RELEASE), 0)
+  CXXFLAGS += -DNDEBUG
+endif
 
 ###### Default Rule ######
 
@@ -174,7 +201,7 @@ clean: clean-utils-objs clean-parser clean-sexp-objs clean-strm-objs \
 .PHONY: clean
 
 clean-all: clean
-	rm -rf $(BUILDDIR)
+	rm -rf $(BUILDBASEDIR)
 
 .PHONY: clean-all
 
@@ -441,7 +468,7 @@ test-decompress: $(BUILD_EXECDIR)/decompress
 	$< -d $(TEST_SRCS_DIR)/defaults.wasm -m \
 		-i $(TEST_SRCS_DIR)/if-then-br.wasm -o - \
 		| diff - $(TEST_SRCS_DIR)/if-then-br.wasm
-	cd test/test-sources; make test
+	cd test/test-sources; make test RELEASE=$(RELEASE)
 	@echo "*** decompress tests passed ***"
 
 .PHONY: test-decompress

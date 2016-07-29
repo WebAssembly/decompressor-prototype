@@ -22,7 +22,26 @@
 #
 #    make -f Makefile.update
 
-EXEC_DIR = ../../build/bin
+ifdef DEBUG
+  ifdef RELEASE
+    $(error Cant specify both DEBUG and RELEASE)
+  else ifeq ($(DEBUG), 0)
+    RELEASE = 1
+  else
+    RELEASE = 0
+  endif
+else ifndef RELEASE
+  RELEASE = 0
+endif
+
+BUILDDIR = ../../build
+
+ifeq ($(RELEASE), 0)
+  EXEC_DIR = $(BUILDDIR)/debug/bin
+else
+  EXEC_DIR = $(BUILDDIR)/release/bin
+endif
+
 LOCAL_SEXPS_DIR = spec
 
 # Note: the following spec test are not included because they do not generate a
