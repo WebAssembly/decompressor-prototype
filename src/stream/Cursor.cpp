@@ -18,7 +18,9 @@
 #include "stream/Cursor.h"
 
 namespace {
+#ifndef NDEBUG
 static constexpr uint32_t MaxBitsAllowed = sizeof(uint32_t) * CHAR_BIT;
+#endif
 }
 
 namespace wasm {
