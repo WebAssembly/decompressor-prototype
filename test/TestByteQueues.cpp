@@ -116,7 +116,8 @@ int main(int Argc, char* Argv[]) {
   PageCursor ReadCursor;
   PageCursor WriteCursor;
   while (Address < Input.currentSize()) {
-    size_t ReadBytesAvailable = Input.readFromPage(Address, BufSize, ReadCursor);
+    size_t ReadBytesAvailable =
+        Input.readFromPage(Address, BufSize, ReadCursor);
     if (ReadBytesAvailable == 0) {
       WriteCursor.setMaxAddress(Address);
       break;

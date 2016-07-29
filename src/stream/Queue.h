@@ -51,7 +51,8 @@ static constexpr size_t kUndefinedAddress = std::numeric_limits<size_t>::max();
 // always defined as enclosing the entire queue.
 class BlockEob : public std::enable_shared_from_this<BlockEob> {
   BlockEob(const BlockEob&) = delete;
-  BlockEob &operator=(const BlockEob&) = delete;
+  BlockEob& operator=(const BlockEob&) = delete;
+
  public:
   explicit BlockEob(size_t EobAddress = kUndefinedAddress)
       : EobAddress(EobAddress) {}
@@ -63,6 +64,7 @@ class BlockEob : public std::enable_shared_from_this<BlockEob> {
   std::shared_ptr<BlockEob> getEnclosingEobPtr() const {
     return EnclosingEobPtr;
   }
+
  private:
   size_t EobAddress;
   std::shared_ptr<BlockEob> EnclosingEobPtr;
@@ -90,9 +92,7 @@ class Queue {
 
   // Value unknown (returning maximum possible size) until frozen. When
   // frozen, returns the size of the buffer.
-  size_t currentSize() {
-    return EofPtr->getEobAddress();
-  }
+  size_t currentSize() { return EofPtr->getEobAddress(); }
 
   // Returns the actual size of the buffer (i.e. only those with pages still
   // in memory).
@@ -115,9 +115,7 @@ class Queue {
 
   bool isEofFrozen() const { return EobFrozen; }
 
-  const std::shared_ptr<BlockEob> &getEofPtr() const {
-    return EofPtr;
-  }
+  const std::shared_ptr<BlockEob>& getEofPtr() const { return EofPtr; }
 
  protected:
   // Minimum peek size to maintain. That is, the minimal number of

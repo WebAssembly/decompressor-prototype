@@ -116,8 +116,6 @@ class Page : public std::enable_shared_from_this<Page> {
 };
 
 class PageCursor {
-  PageCursor& operator=(const PageCursor&) = delete;
-
  public:
   PageCursor() : CurAddress(0) {}
   PageCursor(std::shared_ptr<Page> CurPage, size_t CurAddress)
@@ -126,6 +124,11 @@ class PageCursor {
       : CurPage(PC.CurPage), CurAddress(PC.CurAddress) {}
   size_t getMinAddress() const {
     return CurPage ? CurPage->getMinAddress() : 0;
+  }
+  PageCursor& operator=(const PageCursor& C) {
+    CurPage = C.CurPage;
+    CurAddress = C.CurAddress;
+    return *this;
   }
   size_t getMaxAddress() const {
     return CurPage ? CurPage->getMaxAddress() : 0;

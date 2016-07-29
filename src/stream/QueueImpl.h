@@ -26,7 +26,8 @@ namespace wasm {
 namespace decode {
 
 template <class Base>
-Queue<Base>::Queue() : EofPtr(std::make_shared<BlockEob>()) {
+Queue<Base>::Queue()
+    : EofPtr(std::make_shared<BlockEob>()) {
   LastPage = FirstPage = std::make_shared<Page>(0);
   PageMap.push_back(LastPage);
   // Double check that we can evenly fit elements of Base in a page.
@@ -109,7 +110,7 @@ size_t Queue<Base>::writeToPage(size_t Address,
 
 template <class Base>
 void Queue<Base>::freezeEof(size_t Address) {
-  assert (Address != kUndefinedAddress && "WASM stream too big to process");
+  assert(Address != kUndefinedAddress && "WASM stream too big to process");
   assert(!EobFrozen);
   // This call zero-fill pages if writing hasn't reached Address yet.
   PageCursor Cursor;

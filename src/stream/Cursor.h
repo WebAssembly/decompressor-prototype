@@ -28,67 +28,35 @@ namespace decode {
 
 #define CURSOR_OLD 0
 
-// TODO(karlschimpf): Move the implementation back into class Cursor, so
-// that we don't need to allocate an implementation for each instruction
-// peek, made by the decompressor.
-//
-// Base class for the internal implementation of cursors.
-class CursorImpl {
-  CursorImpl(const CursorImpl&) = delete;
-  CursorImpl& operator=(const CursorImpl&) = delete;
-  CursorImpl() = delete;
+class Cursor {
+  Cursor() = delete;
+  Cursor& operator=(const Cursor&) = delete;
 
  public:
-  CursorImpl(StreamType Type, ByteQueue* Queue) :
-      Type(Type), Queue(Queue), EobPtr(Queue->getEofPtr()) {}
-
-  CursorImpl(StreamType Type, ByteQueue* Queue, const PageCursor& PgCursor)
-      : Type(Type), Queue(Queue), PgCursor(PgCursor),
-        EobPtr(Queue->getEofPtr()) {}
-
-  virtual ~CursorImpl() {}
-
-  // Note: Assumes that cursor is byte aligned when called.
-  uint8_t readByte() {
-    if (PgCursor.isIndexAtEndOfPage() && !readFillBuffer())
-      return 0;
-    return PgCursor.readByte();
+  void swap(Cursor& C) {
+    std::swap(Type, C.Type);
+    std::swap(Queue, C.Queue);
+    std::swap(PgCursor, C.PgCursor);
+    std::swap(EobPtr, C.EobPtr);
   }
 
-  // Note: Assumes that cursor is byte aligned when called.
-  void writeByte(uint8_t Byte) {
-    if (PgCursor.isIndexAtEndOfPage())
-      writeFillBuffer();
-    PgCursor.writeByte(Byte);
-  }
+  StreamType getType() const { return Type; }
 
-  // Returns true if able to fill the buffer with at least one byte.
-  bool readFillBuffer();
+  size_t getCurByteAddress() const { return PgCursor.getCurAddress(); }
 
-  // Creates new pages in buffer so that writes can occur.
-  void writeFillBuffer();
+  void reset() {}
 
-  CursorImpl* copy() { return copy(Type); }
-
-  CursorImpl* copy(StreamType Type);
+  ByteQueue* getQueue() { return Queue; }
 
   void jumpToByteAddress(size_t NewAddress);
-
-  void freezeEof() {
-    Queue->freezeEof(PgCursor.getCurAddress());
-  }
 
   bool atEob() {
     return PgCursor.getCurAddress() >= getEobAddress() || !readFillBuffer();
   }
 
-  size_t getEobAddress() const {
-    return EobPtr->getEobAddress();
-  }
+  size_t getEobAddress() const { return EobPtr->getEobAddress(); }
 
-  void setEobAddress(size_t NewValue) {
-    EobPtr->setEobAddress(NewValue);
-  }
+  void setEobAddress(size_t NewValue) { EobPtr->setEobAddress(NewValue); }
 
   void pushEobAddress(size_t NewLocalEob) {
     EobPtr = std::make_shared<BlockEob>(NewLocalEob, EobPtr);
@@ -99,11 +67,6 @@ class CursorImpl {
     assert(EobPtr);
   }
 
-  StreamType getRtClassId() const { return Type; }
-
-  static bool implementsClass(StreamType WantedType) { return true; }
-
-  // For debugging only.
   void describe() {
     size_t EobAddress = getEobAddress();
     fprintf(stderr, "Cursor ");
@@ -112,6 +75,13 @@ class CursorImpl {
     PgCursor.describe();
   }
 
+  // Returns true if able to fill the buffer with at least one byte.
+  bool readFillBuffer();
+
+  // Creates new pages in buffer so that writes can occur.
+  void writeFillBuffer();
+
+ protected:
   StreamType Type;
   // The byte queue the cursor points to.
   ByteQueue* Queue;
@@ -119,48 +89,12 @@ class CursorImpl {
   PageCursor PgCursor;
   // End of block address.
   std::shared_ptr<BlockEob> EobPtr;
-};
-
-class Cursor {
-  Cursor() = delete;
-  Cursor& operator=(const Cursor&) = delete;
-
- public:
-  void swap(Cursor& C) { std::swap(Impl, C.Impl); }
-
-  StreamType getType() const { return Impl->Type; }
-
-  size_t getCurByteAddress() const { return Impl->PgCursor.getCurAddress(); }
-
-  void reset() {}
-
-  ByteQueue* getQueue() { return Impl->Queue; }
-
-  void jumpToByteAddress(size_t NewAddress) {
-    Impl->jumpToByteAddress(NewAddress);
-  }
-
-  bool atEob() { return Impl->atEob(); }
-
-  size_t getEobAddress() const { return Impl->getEobAddress(); }
-
-  void pushEobAddress(size_t NewLocalEob) {
-    Impl->pushEobAddress(NewLocalEob);
-  }
-
-  void popEobAddress() {
-    Impl->popEobAddress();
-  }
-
-  void describe() { Impl->describe(); }
-
- protected:
-  CursorImpl* Impl;
 
   Cursor(StreamType Type, ByteQueue* Queue)
-      : Impl(new CursorImpl(Type, Queue)) {}
-  explicit Cursor(const Cursor& C) : Impl(C.Impl->copy(C.Impl->Type)) {}
-  ~Cursor() { delete Impl; }
+      : Type(Type), Queue(Queue), EobPtr(Queue->getEofPtr()) {}
+  explicit Cursor(const Cursor& C)
+      : Type(C.Type), Queue(C.Queue), PgCursor(C.PgCursor), EobPtr(C.EobPtr) {}
+  ~Cursor() {}
 };
 
 class ReadCursor final : public Cursor {
@@ -172,7 +106,11 @@ class ReadCursor final : public Cursor {
   explicit ReadCursor(ReadCursor& C) : Cursor(C) {}
 
   // Reads next byte. Returns zero if at end of buffer.
-  uint8_t readByte() { return Impl->readByte(); }
+  uint8_t readByte() {
+    if (PgCursor.isIndexAtEndOfPage() && !readFillBuffer())
+      return 0;
+    return PgCursor.readByte();
+  }
 };
 
 class WriteCursor final : public Cursor {
@@ -185,9 +123,13 @@ class WriteCursor final : public Cursor {
   explicit WriteCursor(const WriteCursor& C) : Cursor(C) {}
 
   // Writes next byte. Fails if at end of buffer.
-  void writeByte(uint8_t Byte) { Impl->writeByte(Byte); }
+  void writeByte(uint8_t Byte) {
+    if (PgCursor.isIndexAtEndOfPage())
+      writeFillBuffer();
+    PgCursor.writeByte(Byte);
+  }
 
-  void freezeEof() { Impl->freezeEof(); }
+  void freezeEof() { Queue->freezeEof(PgCursor.getCurAddress()); }
 
   // For debugging.
   void writeCurPage(FILE* File);
