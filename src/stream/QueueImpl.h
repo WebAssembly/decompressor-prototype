@@ -26,7 +26,7 @@ namespace wasm {
 namespace decode {
 
 template <class Base>
-Queue<Base>::Queue() {
+Queue<Base>::Queue() : EofPtr(std::make_shared<BlockEob>()) {
   LastPage = FirstPage = std::make_shared<Page>(0);
   PageMap.push_back(LastPage);
   // Double check that we can evenly fit elements of Base in a page.
@@ -56,9 +56,9 @@ bool Queue<Base>::readFill(size_t Address) {
 }
 
 template <class Base>
-size_t Queue<Base>::read(size_t Address,
-                         size_t WantedSize,
-                         PageCursor& Cursor) {
+size_t Queue<Base>::readFromPage(size_t Address,
+                                 size_t WantedSize,
+                                 PageCursor& Cursor) {
   // Start by read-filling if necessary.
   if (Address >= LastPage->getMaxAddress()) {
     if (!readFill(Address))
@@ -78,9 +78,9 @@ size_t Queue<Base>::read(size_t Address,
 }
 
 template <class Base>
-size_t Queue<Base>::write(size_t Address,
-                          size_t WantedSize,
-                          PageCursor& Cursor) {
+size_t Queue<Base>::writeToPage(size_t Address,
+                                size_t WantedSize,
+                                PageCursor& Cursor) {
   // Expand till page exists.
   while (Address >= LastPage->getMaxAddress()) {
     if (EobFrozen)
@@ -108,11 +108,13 @@ size_t Queue<Base>::write(size_t Address,
 }
 
 template <class Base>
-void Queue<Base>::freezeEob(size_t Address) {
+void Queue<Base>::freezeEof(size_t Address) {
+  assert (Address != kUndefinedAddress && "WASM stream too big to process");
   assert(!EobFrozen);
   // This call zero-fill pages if writing hasn't reached Address yet.
   PageCursor Cursor;
-  write(Address, 0, Cursor);
+  writeToPage(Address, 0, Cursor);
+  EofPtr->setEobAddress(Address);
   Cursor.setMaxAddress(Address);
   // TODO(karlschimpf): If adding threads, make this update thread safe.
   // If any pages exist after Cursor, remove them.

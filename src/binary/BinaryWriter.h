@@ -43,7 +43,7 @@ class BinaryWriter {
  public:
   BinaryWriter(decode::ByteQueue* Output, SymbolTable& Symtab);
 
-  ~BinaryWriter() { WritePos.freezeEob(); }
+  ~BinaryWriter() { WritePos.freezeEof(); }
 
   void writePreamble();
 

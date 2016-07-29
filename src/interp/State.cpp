@@ -378,7 +378,7 @@ void State::decompress() {
 
   while (!ReadPos.atEob())
     decompressSection();
-  WritePos.freezeEob();
+  WritePos.freezeEof();
 }
 
 void State::decompressBlock(const Node* Code) {

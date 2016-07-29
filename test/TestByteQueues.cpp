@@ -116,7 +116,7 @@ int main(int Argc, char* Argv[]) {
   PageCursor ReadCursor;
   PageCursor WriteCursor;
   while (Address < Input.currentSize()) {
-    size_t ReadBytesAvailable = Input.Queue::read(Address, BufSize, ReadCursor);
+    size_t ReadBytesAvailable = Input.readFromPage(Address, BufSize, ReadCursor);
     if (ReadBytesAvailable == 0) {
       WriteCursor.setMaxAddress(Address);
       break;
@@ -124,7 +124,7 @@ int main(int Argc, char* Argv[]) {
     size_t NextAddress = Address + ReadBytesAvailable;
     while (ReadBytesAvailable) {
       size_t WriteBytesAvailable =
-          Output.Queue::write(Address, ReadBytesAvailable, WriteCursor);
+          Output.writeToPage(Address, ReadBytesAvailable, WriteCursor);
       if (WriteBytesAvailable == 0) {
         fprintf(stderr, "Unable to write address %d, returned zero bytes",
                 int(Address));

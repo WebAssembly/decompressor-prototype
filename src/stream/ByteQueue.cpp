@@ -47,7 +47,7 @@ size_t ByteQueue::read(size_t& Address, uint8_t* ToBuf, size_t WantedSize) {
   size_t Count = 0;
   PageCursor Cursor;
   while (WantedSize) {
-    size_t FoundSize = Queue::read(Address, WantedSize, Cursor);
+    size_t FoundSize = readFromPage(Address, WantedSize, Cursor);
     if (FoundSize == 0)
       return Count;
     uint8_t* FromBuf = Cursor.getBufferPtr();
@@ -62,7 +62,7 @@ size_t ByteQueue::read(size_t& Address, uint8_t* ToBuf, size_t WantedSize) {
 bool ByteQueue::write(size_t& Address, uint8_t* FromBuf, size_t WantedSize) {
   PageCursor Cursor;
   while (WantedSize) {
-    size_t FoundSize = Queue::write(Address, WantedSize, Cursor);
+    size_t FoundSize = writeToPage(Address, WantedSize, Cursor);
     if (FoundSize == 0)
       return false;
     uint8_t* ToBuf = Cursor.getBufferPtr();
@@ -101,6 +101,8 @@ bool ReadBackedByteQueue::readFill(size_t Address) {
 }
 
 WriteBackedByteQueue::~WriteBackedByteQueue() {
+  // NOTE: we must override the base destructor so that calls to dumpFirstPage
+  // is the one local to this class!
   while (FirstPage)
     dumpFirstPage();
 }
