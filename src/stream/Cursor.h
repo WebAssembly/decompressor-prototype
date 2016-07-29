@@ -78,8 +78,8 @@ class CursorImpl {
     Queue->freezeEof(PgCursor.getCurAddress());
   }
 
-  bool atEob(size_t EobAddress) {
-    return PgCursor.getCurAddress() >= EobAddress || !readFillBuffer();
+  bool atEob() {
+    return PgCursor.getCurAddress() >= getEobAddress() || !readFillBuffer();
   }
 
   size_t getEobAddress() const {
@@ -88,6 +88,15 @@ class CursorImpl {
 
   void setEobAddress(size_t NewValue) {
     EobPtr->setEobAddress(NewValue);
+  }
+
+  void pushEobAddress(size_t NewLocalEob) {
+    EobPtr = std::make_shared<BlockEob>(NewLocalEob, EobPtr);
+  }
+
+  void popEobAddress() {
+    EobPtr = EobPtr->getEnclosingEobPtr();
+    assert(EobPtr);
   }
 
   StreamType getRtClassId() const { return Type; }
@@ -131,6 +140,18 @@ class Cursor {
     Impl->jumpToByteAddress(NewAddress);
   }
 
+  bool atEob() { return Impl->atEob(); }
+
+  size_t getEobAddress() const { return Impl->getEobAddress(); }
+
+  void pushEobAddress(size_t NewLocalEob) {
+    Impl->pushEobAddress(NewLocalEob);
+  }
+
+  void popEobAddress() {
+    Impl->popEobAddress();
+  }
+
   void describe() { Impl->describe(); }
 
  protected:
@@ -148,31 +169,10 @@ class ReadCursor final : public Cursor {
 
  public:
   ReadCursor(StreamType Type, ByteQueue* Queue) : Cursor(Type, Queue) {}
-  explicit ReadCursor(ReadCursor& C)
-      : Cursor(C), LocalEobOverrides(C.LocalEobOverrides) {}
-
-  size_t getEobAddress() const {
-    return LocalEobOverrides.empty() ? Impl->getEobAddress()
-                                     : LocalEobOverrides.back();
-  }
-
-  bool atEob() { return Impl->atEob(getEobAddress()); }
+  explicit ReadCursor(ReadCursor& C) : Cursor(C) {}
 
   // Reads next byte. Returns zero if at end of buffer.
   uint8_t readByte() { return Impl->readByte(); }
-
-  void pushEobAddress(size_t NewLocalEob) {
-    LocalEobOverrides.push_back(NewLocalEob);
-  }
-
-  void popEobAddress() {
-    assert(!LocalEobOverrides.empty());
-    LocalEobOverrides.pop_back();
-  }
-
- protected:
-  // Stack of local Eob addresses.
-  std::vector<size_t> LocalEobOverrides;
 };
 
 class WriteCursor final : public Cursor {
@@ -188,13 +188,6 @@ class WriteCursor final : public Cursor {
   void writeByte(uint8_t Byte) { Impl->writeByte(Byte); }
 
   void freezeEof() { Impl->freezeEof(); }
-
-  size_t getEobAddress() const { return Impl->getEobAddress(); }
-
-  bool atEob() {
-    return Impl->PgCursor.getCurAddress() >= Impl->getEobAddress();
-    ;
-  }
 
   // For debugging.
   void writeCurPage(FILE* File);

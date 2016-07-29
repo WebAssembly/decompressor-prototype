@@ -60,6 +60,9 @@ class BlockEob : public std::enable_shared_from_this<BlockEob> {
   size_t getEobAddress() const { return EobAddress; }
   void setEobAddress(size_t Value) { EobAddress = Value; }
   bool undefinedEob() const { return EobAddress == kUndefinedAddress; }
+  std::shared_ptr<BlockEob> getEnclosingEobPtr() const {
+    return EnclosingEobPtr;
+  }
  private:
   size_t EobAddress;
   std::shared_ptr<BlockEob> EnclosingEobPtr;
