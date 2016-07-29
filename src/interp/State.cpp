@@ -363,10 +363,6 @@ IntType State::write(IntType Value, const wasm::filt::Node* Nd) {
 
 void State::decompress() {
   TraceClass::Method _("decompress", Trace);
-  fprintf(stderr, "Read ");
-  ReadPos.describe();
-  fprintf(stderr, "Write ");
-  WritePos.describe();
   MagicNumber = Reader->readUint32(ReadPos);
   // TODO(kschimpf): Fix reading of uintX. Current implementation not same as
   // WASM binary reader.
