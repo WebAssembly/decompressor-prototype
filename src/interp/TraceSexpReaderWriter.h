@@ -32,16 +32,16 @@ class TraceClassSexpReaderWriter : public filt::TraceClassSexp {
       delete;
 
  public:
-  explicit TraceClassSexpReaderWriter(decode::ReadCursor& ReadPos,
-                                      decode::WriteCursor& WritePos);
-  TraceClassSexpReaderWriter(decode::ReadCursor& ReadPos,
-                             decode::WriteCursor& WritePos,
+  explicit TraceClassSexpReaderWriter(decode::Cursor& ReadPos,
+                                      decode::Cursor& WritePos);
+  TraceClassSexpReaderWriter(decode::Cursor& ReadPos,
+                             decode::Cursor& WritePos,
                              const char* Label);
-  TraceClassSexpReaderWriter(decode::ReadCursor& ReadPos,
-                             decode::WriteCursor& WritePos,
+  TraceClassSexpReaderWriter(decode::Cursor& ReadPos,
+                             decode::Cursor& WritePos,
                              FILE* File);
-  TraceClassSexpReaderWriter(decode::ReadCursor& ReadPos,
-                             decode::WriteCursor& WritePos,
+  TraceClassSexpReaderWriter(decode::Cursor& ReadPos,
+                             decode::Cursor& WritePos,
                              const char* Label,
                              FILE* File);
   ~TraceClassSexpReaderWriter();
@@ -53,8 +53,8 @@ class TraceClassSexpReaderWriter : public filt::TraceClassSexp {
   void setTraceIoDifference(bool NewValue) { TraceIoDifference = NewValue; }
 
  protected:
-  decode::ReadCursor& ReadPos;
-  decode::WriteCursor& WritePos;
+  decode::Cursor& ReadPos;
+  decode::Cursor& WritePos;
   bool TraceIoDifference = false;
 };
 

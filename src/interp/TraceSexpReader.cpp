@@ -21,21 +21,20 @@ namespace wasm {
 
 namespace interp {
 
-TraceClassSexpReader::TraceClassSexpReader(decode::ReadCursor& ReadPos)
+TraceClassSexpReader::TraceClassSexpReader(decode::Cursor& ReadPos)
     : TraceClassSexp(), ReadPos(ReadPos) {
 }
 
-TraceClassSexpReader::TraceClassSexpReader(decode::ReadCursor& ReadPos,
+TraceClassSexpReader::TraceClassSexpReader(decode::Cursor& ReadPos,
                                            const char* Label)
     : TraceClassSexp(Label), ReadPos(ReadPos) {
 }
 
-TraceClassSexpReader::TraceClassSexpReader(decode::ReadCursor& ReadPos,
-                                           FILE* File)
+TraceClassSexpReader::TraceClassSexpReader(decode::Cursor& ReadPos, FILE* File)
     : TraceClassSexp(File), ReadPos(ReadPos) {
 }
 
-TraceClassSexpReader::TraceClassSexpReader(decode::ReadCursor& ReadPos,
+TraceClassSexpReader::TraceClassSexpReader(decode::Cursor& ReadPos,
                                            const char* Label,
                                            FILE* File)
     : TraceClassSexp(Label, File), ReadPos(ReadPos) {

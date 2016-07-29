@@ -21,31 +21,27 @@ namespace wasm {
 
 namespace interp {
 
-TraceClassSexpReaderWriter::TraceClassSexpReaderWriter(
-    decode::ReadCursor& ReadPos,
-    decode::WriteCursor& WritePos)
+TraceClassSexpReaderWriter::TraceClassSexpReaderWriter(decode::Cursor& ReadPos,
+                                                       decode::Cursor& WritePos)
     : TraceClassSexp(), ReadPos(ReadPos), WritePos(WritePos) {
 }
 
-TraceClassSexpReaderWriter::TraceClassSexpReaderWriter(
-    decode::ReadCursor& ReadPos,
-    decode::WriteCursor& WritePos,
-    const char* Label)
+TraceClassSexpReaderWriter::TraceClassSexpReaderWriter(decode::Cursor& ReadPos,
+                                                       decode::Cursor& WritePos,
+                                                       const char* Label)
     : TraceClassSexp(Label), ReadPos(ReadPos), WritePos(WritePos) {
 }
 
-TraceClassSexpReaderWriter::TraceClassSexpReaderWriter(
-    decode::ReadCursor& ReadPos,
-    decode::WriteCursor& WritePos,
-    FILE* File)
+TraceClassSexpReaderWriter::TraceClassSexpReaderWriter(decode::Cursor& ReadPos,
+                                                       decode::Cursor& WritePos,
+                                                       FILE* File)
     : TraceClassSexp(File), ReadPos(ReadPos), WritePos(WritePos) {
 }
 
-TraceClassSexpReaderWriter::TraceClassSexpReaderWriter(
-    decode::ReadCursor& ReadPos,
-    decode::WriteCursor& WritePos,
-    const char* Label,
-    FILE* File)
+TraceClassSexpReaderWriter::TraceClassSexpReaderWriter(decode::Cursor& ReadPos,
+                                                       decode::Cursor& WritePos,
+                                                       const char* Label,
+                                                       FILE* File)
     : TraceClassSexp(Label, File), ReadPos(ReadPos), WritePos(WritePos) {
 }
 

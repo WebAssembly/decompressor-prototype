@@ -47,22 +47,22 @@ namespace {
   } while (true)
 
 template <class Type>
-void writeLEB128(Type Value, WriteCursor& Pos) {
+void writeLEB128(Type Value, Cursor& Pos) {
   LEB128_LOOP_UNTIL(Value == 0);
 }
 
 template <class Type>
-void writePositiveLEB128(Type Value, WriteCursor& Pos) {
+void writePositiveLEB128(Type Value, Cursor& Pos) {
   LEB128_LOOP_UNTIL(Value == 0 && !(Byte & 0x40));
 }
 
 template <class Type>
-void writeNegativeLEB128(Type Value, WriteCursor& Pos) {
+void writeNegativeLEB128(Type Value, Cursor& Pos) {
   LEB128_LOOP_UNTIL(Value == -1 && (Byte & 0x40));
 }
 
 template <class Type>
-void writeFixedLEB128(Type Value, WriteCursor& Pos) {
+void writeFixedLEB128(Type Value, Cursor& Pos) {
   constexpr uint32_t BitsInWord = sizeof(Type) * CHAR_BIT;
   constexpr uint32_t ChunkSize = CHAR_BIT - 1;
   constexpr uint32_t ChunksInWord = (BitsInWord + ChunkSize - 1) / ChunkSize;
@@ -75,7 +75,7 @@ void writeFixedLEB128(Type Value, WriteCursor& Pos) {
 #endif
 
 template <class Type>
-void writeFixed(Type Value, WriteCursor& Pos) {
+void writeFixed(Type Value, Cursor& Pos) {
   constexpr uint32_t WordSize = sizeof(Type);
   constexpr Type Mask = (Type(1) << CHAR_BIT) - 1;
   for (uint32_t i = 0; i < WordSize; ++i) {
@@ -87,25 +87,25 @@ void writeFixed(Type Value, WriteCursor& Pos) {
 }  // end of anonymous namespace
 
 void ByteWriteStream::writeUint8Bits(uint8_t Value,
-                                     WriteCursor& Pos,
+                                     Cursor& Pos,
                                      uint32_t /*NumBits*/) {
   Pos.writeByte(uint8_t(Value));
 }
 
 void ByteWriteStream::writeUint32Bits(uint32_t Value,
-                                      WriteCursor& Pos,
+                                      Cursor& Pos,
                                       uint32_t /*NumBits*/) {
   writeFixed<uint32_t>(Value, Pos);
 }
 
 void ByteWriteStream::writeUint64Bits(uint64_t Value,
-                                      WriteCursor& Pos,
+                                      Cursor& Pos,
                                       uint32_t /*NumBits*/) {
   writeFixed<uint64_t>(Value, Pos);
 }
 
 void ByteWriteStream::writeVarint32Bits(int32_t Value,
-                                        WriteCursor& Pos,
+                                        Cursor& Pos,
                                         uint32_t /*NumBits*/) {
   if (Value < 0)
     writeNegativeLEB128<int32_t>(Value, Pos);
@@ -114,7 +114,7 @@ void ByteWriteStream::writeVarint32Bits(int32_t Value,
 }
 
 void ByteWriteStream::writeVarint64Bits(int64_t Value,
-                                        WriteCursor& Pos,
+                                        Cursor& Pos,
                                         uint32_t /*NumBits*/) {
   if (Value < 0)
     writeNegativeLEB128<int64_t>(Value, Pos);
@@ -123,18 +123,18 @@ void ByteWriteStream::writeVarint64Bits(int64_t Value,
 }
 
 void ByteWriteStream::writeVaruint32Bits(uint32_t Value,
-                                         WriteCursor& Pos,
+                                         Cursor& Pos,
                                          uint32_t /*NumBits*/) {
   writeLEB128<uint32_t>(Value, Pos);
 }
 
 void ByteWriteStream::writeVaruint64Bits(uint64_t Value,
-                                         WriteCursor& Pos,
+                                         Cursor& Pos,
                                          uint32_t /*NumBits*/) {
   writeLEB128<uint64_t>(Value, Pos);
 }
 
-void ByteWriteStream::writeFixedVaruint32(uint32_t Value, WriteCursor& Pos) {
+void ByteWriteStream::writeFixedVaruint32(uint32_t Value, Cursor& Pos) {
   writeFixedLEB128<uint32_t>(Value, Pos);
 }
 

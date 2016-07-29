@@ -35,44 +35,30 @@ class ReadStream {
   ReadStream& operator=(const ReadStream&) = delete;
 
  public:
-  uint8_t readUint8(decode::ReadCursor& Pos) { return readUint8Bits(Pos, 8); }
-  virtual uint8_t readUint8Bits(decode::ReadCursor& Pos, uint32_t NumBits) = 0;
+  uint8_t readUint8(decode::Cursor& Pos) { return readUint8Bits(Pos, 8); }
+  virtual uint8_t readUint8Bits(decode::Cursor& Pos, uint32_t NumBits) = 0;
 
-  uint32_t readUint32(decode::ReadCursor& Pos) {
-    return readUint32Bits(Pos, 8);
-  }
-  virtual uint32_t readUint32Bits(decode::ReadCursor& Pos,
-                                  uint32_t NumBits) = 0;
+  uint32_t readUint32(decode::Cursor& Pos) { return readUint32Bits(Pos, 8); }
+  virtual uint32_t readUint32Bits(decode::Cursor& Pos, uint32_t NumBits) = 0;
 
-  uint64_t readUint64(decode::ReadCursor& Pos) {
-    return readUint64Bits(Pos, 8);
-  }
-  virtual uint64_t readUint64Bits(decode::ReadCursor& Pos,
-                                  uint32_t NumBits) = 0;
+  uint64_t readUint64(decode::Cursor& Pos) { return readUint64Bits(Pos, 8); }
+  virtual uint64_t readUint64Bits(decode::Cursor& Pos, uint32_t NumBits) = 0;
 
-  int32_t readVarint32(decode::ReadCursor& Pos) {
-    return readVarint32Bits(Pos, 8);
-  }
-  virtual int32_t readVarint32Bits(decode::ReadCursor& Pos,
-                                   uint32_t NumBits) = 0;
+  int32_t readVarint32(decode::Cursor& Pos) { return readVarint32Bits(Pos, 8); }
+  virtual int32_t readVarint32Bits(decode::Cursor& Pos, uint32_t NumBits) = 0;
 
-  int64_t readVarint64(decode::ReadCursor& Pos) {
-    return readVarint64Bits(Pos, 8);
-  }
-  virtual int64_t readVarint64Bits(decode::ReadCursor& Pos,
-                                   uint32_t NumBits) = 0;
+  int64_t readVarint64(decode::Cursor& Pos) { return readVarint64Bits(Pos, 8); }
+  virtual int64_t readVarint64Bits(decode::Cursor& Pos, uint32_t NumBits) = 0;
 
-  uint32_t readVaruint32(decode::ReadCursor& Pos) {
+  uint32_t readVaruint32(decode::Cursor& Pos) {
     return readVaruint32Bits(Pos, 8);
   }
-  virtual uint32_t readVaruint32Bits(decode::ReadCursor& Pos,
-                                     uint32_t NumBits) = 0;
+  virtual uint32_t readVaruint32Bits(decode::Cursor& Pos, uint32_t NumBits) = 0;
 
-  uint64_t readVaruint64(decode::ReadCursor& Pos) {
+  uint64_t readVaruint64(decode::Cursor& Pos) {
     return readVaruint64Bits(Pos, 8);
   }
-  virtual uint64_t readVaruint64Bits(decode::ReadCursor& Pos,
-                                     uint32_t NumBits) = 0;
+  virtual uint64_t readVaruint64Bits(decode::Cursor& Pos, uint32_t NumBits) = 0;
 
   decode::StreamType getType() const { return Type; }
 
@@ -93,15 +79,13 @@ class ByteReadStream final : public ReadStream {
 
  public:
   ByteReadStream() : ReadStream(decode::StreamType::Byte) {}
-  uint8_t readUint8Bits(decode::ReadCursor& Pos, uint32_t NumBits) override;
-  uint32_t readUint32Bits(decode::ReadCursor& Pos, uint32_t NumBits) override;
-  uint64_t readUint64Bits(decode::ReadCursor& Pos, uint32_t NumBits) override;
-  int32_t readVarint32Bits(decode::ReadCursor& Pos, uint32_t NumBits) override;
-  int64_t readVarint64Bits(decode::ReadCursor& Pos, uint32_t NumBits) override;
-  uint32_t readVaruint32Bits(decode::ReadCursor& Pos,
-                             uint32_t NumBits) override;
-  uint64_t readVaruint64Bits(decode::ReadCursor& Pos,
-                             uint32_t NumBits) override;
+  uint8_t readUint8Bits(decode::Cursor& Pos, uint32_t NumBits) override;
+  uint32_t readUint32Bits(decode::Cursor& Pos, uint32_t NumBits) override;
+  uint64_t readUint64Bits(decode::Cursor& Pos, uint32_t NumBits) override;
+  int32_t readVarint32Bits(decode::Cursor& Pos, uint32_t NumBits) override;
+  int64_t readVarint64Bits(decode::Cursor& Pos, uint32_t NumBits) override;
+  uint32_t readVaruint32Bits(decode::Cursor& Pos, uint32_t NumBits) override;
+  uint64_t readVaruint64Bits(decode::Cursor& Pos, uint32_t NumBits) override;
   static bool implementsClass(decode::StreamType RtClassID) {
     return RtClassID == decode::StreamType::Byte;
   }

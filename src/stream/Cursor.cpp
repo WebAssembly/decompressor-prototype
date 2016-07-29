@@ -52,7 +52,7 @@ void Cursor::writeFillBuffer() {
     fatal("Write failed!\n");
 }
 
-void WriteCursor::writeCurPage(FILE* File) {
+void Cursor::writeCurPage(FILE* File) {
   Queue->writePageAt(File, PgCursor.getCurAddress());
 }
 

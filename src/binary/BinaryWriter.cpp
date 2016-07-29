@@ -205,7 +205,7 @@ void BinaryWriter::writeNode(const Node* Nd) {
 }
 
 void BinaryWriter::writeBlock(std::function<void()> ApplyFn) {
-  WriteCursor BlockPos(WritePos);
+  Cursor BlockPos(WritePos);
   Writer->writeFixedVaruint32(0, WritePos);
   size_t SizeAfterSizeWrite = WritePos.getCurByteAddress();
   ApplyFn();
@@ -220,7 +220,7 @@ void BinaryWriter::writeBlock(std::function<void()> ApplyFn) {
     size_t Diff = SizeAfterSizeWrite - SizeAfterBackPatch;
     if (Diff) {
       size_t End = WritePos.getCurByteAddress() - Diff;
-      ReadCursor CopyPos(WritePos.getType(), WritePos.getQueue());
+      Cursor CopyPos(WritePos.getType(), WritePos.getQueue());
       CopyPos.jumpToByteAddress(SizeAfterSizeWrite);
       for (size_t i = SizeAfterBackPatch; i < End; ++i)
         BlockPos.writeByte(CopyPos.readByte());
