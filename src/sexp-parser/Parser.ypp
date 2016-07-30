@@ -126,6 +126,7 @@ struct IntegerValue {
 %type <wasm::filt::Node *> case
 %type <wasm::filt::SelectNode *> case_list
 %type <wasm::filt::Node *> case_stmt_list
+%type <wasm::filt::Node *> constant_expression
 %type <wasm::filt::Node *> declaration
 %type <wasm::filt::SectionNode *> declaration_list
 %type <wasm::filt::Node *> declaration_stmt_list
@@ -189,6 +190,21 @@ case_stmt_list
           }
         ;
 
+constant_expression
+        : "(" "i32.const" integer ")" {
+            $$ = Driver.create<I32ConstNode>($3);
+          }
+        | "(" "i64.const" integer ")" {
+            $$ = Driver.create<I64ConstNode>($3);
+          }
+        | "(" "u32.const" integer ")" {
+            $$ = Driver.create<U32ConstNode>($3);
+          }
+        | "(" "u64.const" integer ")" {
+            $$ = Driver.create<U64ConstNode>($3);
+          }
+        ;
+
 declaration
         : "(" declaration_stmt_list ")" {
             $$ = $2;
@@ -249,6 +265,7 @@ block_stmt_list
 
 expression
         : format_directive { $$ = $1; }
+        | constant_expression { $$ = $1; }
         | "(" "and" expression expression ")" {
             $$ = Driver.create<AndNode>($3, $4);
           }
@@ -270,12 +287,6 @@ expression
         | "(" "is.byte.out" ")" {
             $$ = Driver.create<IsByteOutNode>();
           }
-        | "(" "i32.const" integer ")" {
-            $$ = Driver.create<I32ConstNode>($3);
-          }
-        | "(" "i64.const" integer ")" {
-            $$ = Driver.create<I64ConstNode>($3);
-          }
         | "(" "map" expression expression ")" {
             $$ = Driver.create<MapNode>($3, $4);
           }
@@ -288,17 +299,11 @@ expression
         | "(" "peek" expression ")" {
             $$ = Driver.create<PeekNode>($3);
           }
+        | "(" "read" ")" {
+            $$ = Driver.create<LastReadNode>();
+          }
         | "(" "read" expression ")" {
             $$ = Driver.create<ReadNode>($3);
-          }
-        | "(" "u32.const" integer ")" {
-            $$ = Driver.create<U32ConstNode>($3);
-          }
-        | "(" "u64.const" integer ")" {
-            $$ = Driver.create<U64ConstNode>($3);
-          }
-        | "(" "void" ")" {
-            $$ = Driver.create<VoidNode>();
           }
         ;
 
@@ -346,7 +351,10 @@ format_directive
         ;
 
 fixed_format_directive
-        : "(" "uint8" ")" {
+        : "(" "void" ")" {
+            $$ = Driver.create<VoidNode>();
+          }
+        | "(" "uint8" ")" {
             $$ = Driver.create<Uint8NoArgsNode>();
           }
         | "(" "uint8" integer ")" {
@@ -371,8 +379,9 @@ fixed_format_directive
             $$ = Driver.create<Uint64OneArgNode>($3);
           }
         ;
+
 opcode_expression
-        : fixed_format_directive {
+        : expression {
             $$ = Driver.create<OpcodeNode>();
             $$->append($1);
           }
@@ -383,22 +392,9 @@ opcode_expression
         ;
 
 opcode_case
-        : "(" "case" integer fixed_format_directive ")" {
+        : "(" "case" integer expression  ")" {
             $$ = Driver.create<OpcodeCaseNode>($3, $4);
-
           }
-        | "(" "case" integer "(" "read" ")"  ")" {
-            $$ = Driver.create<OpcodeCaseNode>($3, Driver.create<VoidNode>());
-          }
-        | "(" "case" integer "(" "write" ")"  ")" {
-            $$ = Driver.create<OpcodeCaseNode>($3, Driver.create<VoidNode>());
-          }
-        | "(" "case" integer "(" "opcode" opcode_expression ")" ")" {
-            $$ = Driver.create<OpcodeCaseNode>($3, $6);
-          }
-        | "(" "void" ")" {
-            $$ = Driver.create<VoidNode>();
-         }
         ;
 
 version : "(" "version" integer ")" {

@@ -71,6 +71,7 @@ void BinaryWriter::writeNode(const Node* Nd) {
   Trace.traceSexp(Nd);
   switch (NodeType Type = Nd->getType()) {
     case OpUnknownSection:
+    case OpLastRead:
     case OpOpcode:
     case OpOpcodeCase:
     case OpInteger: {

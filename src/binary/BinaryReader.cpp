@@ -409,6 +409,7 @@ void BinaryReader::readNode() {
       break;
     case OpInteger:
     case OpFile:
+    case OpLastRead:
     case OpOpcode:
     case OpOpcodeCase:
     case OpSection:

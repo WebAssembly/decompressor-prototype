@@ -82,6 +82,7 @@ IntType State::eval(const Node* Nd) {
   switch (NodeType Type = Nd->getType()) {
     case OpByteToByte:
     case OpFilter:
+    case OpLastRead:
     case OpBlockEndNoArgs:
     case OpOpcode:
     case OpOpcodeCase:

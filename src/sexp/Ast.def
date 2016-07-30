@@ -89,6 +89,7 @@
 /*  X(Postorder,         0x44, "postorder",        nullptr,           1, 0) */ \
 /*  X(Preorder,          0x45, "preorder",         nullptr,           1, 0) */ \
   X(Read,              0x46, "read",             nullptr,           1, 0)      \
+  X(LastRead,          0x47, "read",             "lastRead",        0, 0)      \
                                                                                \
   /* Streams */                                                                \
 /*  X(AstToAst,          0x50, "ast.to.ast",       nullptr,           0, 0) */ \
@@ -126,6 +127,7 @@
   X(Error)                                                                     \
   X(IsByteIn)                                                                  \
   X(IsByteOut)                                                                 \
+  X(LastRead)                                                                \
   X(Uint8NoArgs)                                                               \
   X(Uint32NoArgs)                                                              \
   X(Uint64NoArgs)                                                              \
