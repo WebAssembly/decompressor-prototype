@@ -49,8 +49,8 @@ namespace wasm {
 
 namespace filt {
 
-using ExternalName = std::string;
-using InternalName = arena_vector<uint8_t>;
+typedef std::string ExternalName;
+typedef ARENA_VECTOR(uint8_t) InternalName;
 
 enum NodeType {
 #define X(tag, opcode, sexp_name, type_name, text_num_args, text_max_args) \
@@ -437,7 +437,7 @@ class NaryNode : public Node {
   static bool implementsClass(NodeType Type);
 
  protected:
-  arena_vector<Node*> Kids;
+  ARENA_VECTOR(Node*) Kids;
   explicit NaryNode(NodeType Type) : Node(alloc::Allocator::Default, Type) {}
   NaryNode(alloc::Allocator* Alloc, NodeType Type)
       : Node(Alloc, Type), Kids(alloc::TemplateAllocator<Node*>(Alloc)) {}
