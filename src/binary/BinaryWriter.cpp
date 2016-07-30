@@ -71,6 +71,8 @@ void BinaryWriter::writeNode(const Node* Nd) {
   Trace.traceSexp(Nd);
   switch (NodeType Type = Nd->getType()) {
     case OpUnknownSection:
+    case OpOpcode:
+    case OpOpcodeCase:
     case OpInteger: {
       // TODO(kschimpf) Fix this list.
       fprintf(stderr, "Misplaced s-expression: %s\n", getNodeTypeName(Type));

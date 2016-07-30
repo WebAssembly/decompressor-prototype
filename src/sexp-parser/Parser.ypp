@@ -94,9 +94,10 @@ struct IntegerValue {
 %token I64_CONST     "i64.const"
 %token LOOP          "loop"
 %token LOOP_UNBOUNDED "loop.unbounded"
-%token OPENPAREN     "("
 %token NOT           "not"
 %token MAP           "map"
+%token OPCODE        "opcode"
+%token OPENPAREN     "("
 %token OR            "or"
 %token PEEK          "peek"
 %token READ          "read"
@@ -130,11 +131,15 @@ struct IntegerValue {
 %type <wasm::filt::Node *> declaration_stmt_list
 %type <wasm::filt::Node *> expression
 %type <wasm::filt::Node *> file
+%type <wasm::filt::Node *> fixed_format_directive
+%type <wasm::filt::Node *> format_directive
 %type <wasm::filt::IntegerNode *> integer
+%type <wasm::filt::Node *> loop_body
+%type <wasm::filt::Node *> opcode_case
+%type <wasm::filt::Node *> opcode_expression
 %type <wasm::filt::Node *> stream_conv
 %type <wasm::filt::Node *> stream_conv_list
 %type <wasm::filt::Node *> stream_conv_stmt_list
-%type <wasm::filt::Node *> loop_body
 %type <wasm::filt::Node *> section
 %type <wasm::filt::Node *> section_list
 %type <wasm::filt::Node *> seq_stmt_list
@@ -243,7 +248,8 @@ block_stmt_list
         ;
 
 expression
-        : "(" "and" expression expression ")" {
+        : format_directive { $$ = $1; }
+        | "(" "and" expression expression ")" {
             $$ = Driver.create<AndNode>($3, $4);
           }
         | "(" "block.end" ")" {
@@ -285,36 +291,19 @@ expression
         | "(" "read" expression ")" {
             $$ = Driver.create<ReadNode>($3);
           }
-        | "(" "uint8" ")" {
-            $$ = Driver.create<Uint8NoArgsNode>();
-          }
-        | "(" "uint8" integer ")" {
-            if ($3->getValue() > 8)
-              Driver.error("uint8 bitsize > 8");
-            $$ = Driver.create<Uint8OneArgNode>($3);
-          }
-        | "(" "uint32" ")" {
-            $$ = Driver.create<Uint32NoArgsNode>();
-          }
-        | "(" "uint32" integer ")"  {
-            if ($3->getValue() > 32)
-              Driver.error("uint32 bitsize > 32");
-            $$ = Driver.create<Uint32OneArgNode>($3);
-          }
-        | "(" "uint64" ")" {
-            $$ = Driver.create<Uint64NoArgsNode>();
-          }
-        | "(" "uint64" integer ")"  {
-            if ($3->getValue() > 64)
-              Driver.error("uint64 bitsize > 64");
-            $$ = Driver.create<Uint64OneArgNode>($3);
-          }
         | "(" "u32.const" integer ")" {
             $$ = Driver.create<U32ConstNode>($3);
           }
         | "(" "u64.const" integer ")" {
             $$ = Driver.create<U64ConstNode>($3);
           }
+        | "(" "void" ")" {
+            $$ = Driver.create<VoidNode>();
+          }
+        ;
+
+format_directive
+        : fixed_format_directive { $$ = $1; }
         | "(" "varint32" ")" {
             $$ = Driver.create<Varint32NoArgsNode>();
           }
@@ -351,9 +340,65 @@ expression
               Driver.error("varuint64 expects 2 <= bitsize <= 64");
             $$ = Driver.create<Varuint64OneArgNode>($3);
           }
+        | "(" "opcode" opcode_expression ")" {
+            $$ = $3;
+          }
+        ;
+
+fixed_format_directive
+        : "(" "uint8" ")" {
+            $$ = Driver.create<Uint8NoArgsNode>();
+          }
+        | "(" "uint8" integer ")" {
+            if ($3->getValue() > 8)
+              Driver.error("uint8 bitsize > 8");
+            $$ = Driver.create<Uint8OneArgNode>($3);
+          }
+        | "(" "uint32" ")" {
+            $$ = Driver.create<Uint32NoArgsNode>();
+          }
+        | "(" "uint32" integer ")"  {
+            if ($3->getValue() > 32)
+              Driver.error("uint32 bitsize > 32");
+            $$ = Driver.create<Uint32OneArgNode>($3);
+          }
+        | "(" "uint64" ")" {
+            $$ = Driver.create<Uint64NoArgsNode>();
+          }
+        | "(" "uint64" integer ")"  {
+            if ($3->getValue() > 64)
+              Driver.error("uint64 bitsize > 64");
+            $$ = Driver.create<Uint64OneArgNode>($3);
+          }
+        ;
+opcode_expression
+        : fixed_format_directive {
+            $$ = Driver.create<OpcodeNode>();
+            $$->append($1);
+          }
+        | opcode_expression opcode_case {
+            $$ = $1;
+            $$->append($2);
+          }
+        ;
+
+opcode_case
+        : "(" "case" integer fixed_format_directive ")" {
+            $$ = Driver.create<OpcodeCaseNode>($3, $4);
+
+          }
+        | "(" "case" integer "(" "read" ")"  ")" {
+            $$ = Driver.create<OpcodeCaseNode>($3, Driver.create<VoidNode>());
+          }
+        | "(" "case" integer "(" "write" ")"  ")" {
+            $$ = Driver.create<OpcodeCaseNode>($3, Driver.create<VoidNode>());
+          }
+        | "(" "case" integer "(" "opcode" opcode_expression ")" ")" {
+            $$ = Driver.create<OpcodeCaseNode>($3, $6);
+          }
         | "(" "void" ")" {
             $$ = Driver.create<VoidNode>();
-          }
+         }
         ;
 
 version : "(" "version" integer ")" {

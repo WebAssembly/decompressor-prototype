@@ -103,7 +103,7 @@ int main(int Argc, char* Argv[]) {
       ExpectExitFail = true;
     } else if (Argv[i] == std::string("-h") ||
                Argv[i] == std::string("--help")) {
-      usage(Argv[i]);
+      usage(Argv[0]);
       return exit_status(EXIT_SUCCESS);
     } else if (Argv[i] == std::string("-i")) {
       if (++i >= Argc) {

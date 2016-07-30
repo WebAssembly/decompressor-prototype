@@ -83,6 +83,8 @@ IntType State::eval(const Node* Nd) {
     case OpByteToByte:
     case OpFilter:
     case OpBlockEndNoArgs:
+    case OpOpcode:
+    case OpOpcodeCase:
     case OpSymbol:
       // TODO(kschimpf): Fix above cases.
       fprintf(stderr, "Not implemented: %s\n", getNodeTypeName(Type));

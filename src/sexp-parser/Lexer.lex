@@ -233,6 +233,7 @@ id ({letter}|{digit}|[_.])*
 "loop"            return Parser::make_LOOP(Driver.getLoc());
 "map"             return Parser::make_MAP(Driver.getLoc());
 "not"             return Parser::make_NOT(Driver.getLoc());
+"opcode"          return Parser::make_OPCODE(Driver.getLoc());
 "or"              return Parser::make_OR(Driver.getLoc());
 "peek"            return Parser::make_PEEK(Driver.getLoc());
 "read"            return Parser::make_READ(Driver.getLoc());
