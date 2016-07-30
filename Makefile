@@ -141,7 +141,7 @@ INTERP_LIB = $(LIBDIR)/$(LIBPREFIX)interp.a
 
 ###### Executables ######
 
-EXEC_DIR = exec
+EXEC_DIR = $(SRCDIR)/exec
 BUILD_EXECDIR = $(BUILDDIR)/bin
 
 EXEC_SRCS = \
@@ -153,7 +153,7 @@ EXECS = $(patsubst %.cpp, $(BUILD_EXECDIR)/%, $(EXEC_SRCS))
 
 ###### Test executables and locations ######
 
-TEST_DIR = test
+TEST_DIR = $(SRCDIR)/test
 TEST_EXECDIR = $(BUILDDIR)/test
 
 TEST_SRCS = \
@@ -163,7 +163,7 @@ TEST_SRCS = \
 
 TEST_EXECS=$(patsubst %.cpp, $(TEST_EXECDIR)/%, $(TEST_SRCS))
 
-TEST_SRCS_DIR = $(TEST_DIR)/test-sources
+TEST_SRCS_DIR = test/test-sources
 
 ###### General compilation definitions ######
 
