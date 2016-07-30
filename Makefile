@@ -20,7 +20,15 @@
 
 ifdef DEBUG
   ifdef RELEASE
-    $(error Cant specify both DEBUG and RELEASE)
+    ifeq ($(DEBUG), 0)
+      ifneq ($(RELEASE), 0)
+	RELEASE = 1
+      else
+        $(error Cant specify both DEBUG and RELEASE)
+      endif
+    else ifneq ($(RELEASE), 0)
+      $(error Cant specify both DEBUG and RELEASE)
+    endif
   else ifeq ($(DEBUG), 0)
     RELEASE = 1
   else
@@ -192,6 +200,12 @@ all: libs execs test-execs
 
 .PHONY: all
 
+build-all:
+	$(MAKE) DEBUG=0 RELEASE=1 all
+	$(MAKE) DEBUG=1 RELEASE=0 all
+
+.PHONY: build-all
+
 ###### Cleaning Rules #######
 
 clean: clean-utils-objs clean-parser clean-sexp-objs clean-strm-objs \
@@ -200,7 +214,9 @@ clean: clean-utils-objs clean-parser clean-sexp-objs clean-strm-objs \
 
 .PHONY: clean
 
-clean-all: clean
+clean-all:
+	$(MAKE) DEBUG=0 RELEASE=1 clean
+	$(MAKE) DEBUG=1 RELEASE=0 clean
 	rm -rf $(BUILDBASEDIR)
 
 .PHONY: clean-all
@@ -449,6 +465,11 @@ test: all test-parser test-raw-streams test-byte-queues test-decompress \
 	@echo "*** all tests passed ***"
 
 .PHONY: test
+
+test-all:
+	$(MAKE) DEBUG=0 RELEASE=1 test
+	$(MAKE)  DEBUG=1 RELEASE=0 test
+
 
 test-decompress: $(BUILD_EXECDIR)/decompress
 	$< -d defaults.df -i $(TEST_SRCS_DIR)/toy.wasm -o - \

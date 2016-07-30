@@ -10,6 +10,5 @@ export PATH=${DEPS_DIR}/bison/bin:${PATH}
 
 cd ${ROOT_DIR}
 
-make clean
-make
-make test
+make clean-all
+make test-all

@@ -24,7 +24,15 @@
 
 ifdef DEBUG
   ifdef RELEASE
-    $(error Cant specify both DEBUG and RELEASE)
+    ifeq ($(DEBUG), 0)
+      ifneq ($(RELEASE), 0)
+	RELEASE = 1
+      else
+        $(error Cant specify both DEBUG and RELEASE)
+      endif
+    else ifneq ($(RELEASE), 0)
+      $(error Cant specify both DEBUG and RELEASE)
+    endif
   else ifeq ($(DEBUG), 0)
     RELEASE = 1
   else
