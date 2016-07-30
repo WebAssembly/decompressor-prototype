@@ -79,7 +79,7 @@ void usage(const char* AppName) {
           "  -o File\t\tGenerated Decompressed File ('-' implies stdout).\n");
   fprintf(stderr, "  -s\t\t\tUse C++ streams instead of C file descriptors.\n");
   fprintf(stderr, "  -v | --verbose\t"
-          "Show progress (can be repeated for more detail.\n");
+          "Show progress (can be repeated for more detail).\n");
 }
 
 int main(int Argc, char* Argv[]) {
@@ -134,6 +134,8 @@ int main(int Argc, char* Argv[]) {
   }
   for (int i : DefaultIndices) {
     if (BinaryReader::isBinary(Argv[i])) {
+      if (Verbose)
+        fprintf(stderr, "Loading default file: %s", Argv[i]);
       std::unique_ptr<RawStream> Stream = FileReader::create(Argv[i]);
       ReadBackedByteQueue Input(std::move(Stream));
       BinaryReader Reader(&Input, SymTab);
@@ -143,9 +145,10 @@ int main(int Argc, char* Argv[]) {
         continue;
       }
     }
-    Driver FileDriver(SymTab);
-    FileDriver.setTraceParsing(Verbose >= 2);
-    if (!FileDriver.parse(Argv[i])) {
+    Driver Parser(SymTab);
+    Parser.setTraceParsing(Verbose >= 2);
+    Parser.setTraceLexing(Verbose >= 3);
+    if (!Parser.parse(Argv[i])) {
       fprintf(stderr, "Unable to parse default algorithms: %s\n", Argv[i]);
       return exit_status(EXIT_FAILURE);
     }
