@@ -91,7 +91,7 @@ void writeInt(FILE* File, IntType Value, ValueFormat Format) {
       fputc('0', File);
       fputc('x', File);
       while (Shift > 0) {
-        Shift >>= BitsInHex;
+        Shift -= BitsInHex;
         decode::IntType Digit = (Value >> Shift);
         if (StartPrinting || Digit != 0) {
           StartPrinting = true;
