@@ -67,26 +67,28 @@ void usage(const char* AppName) {
   fprintf(stderr, "  Decompress WASM binary file.\n");
   fprintf(stderr, "\n");
   fprintf(stderr, "Options:\n");
-  fprintf(stderr, "  -d File\tFile containing default algorithms.\n");
+  fprintf(stderr, "  -d File\t\tFile containing default algorithms.\n");
   fprintf(stderr,
-          "  --diff\tWhen tracing, "
+          "  --diff\t\tWhen tracing, "
           "show byte difference between reader/writer.\n");
-  fprintf(stderr, "  --expect-fail\tSucceed on failure/fail on success\n");
-  fprintf(stderr, "  -h\t\tPrint this usage message.\n");
-  fprintf(stderr, "  -i File\tFile to decompress ('-' implies stdin).\n");
-  fprintf(stderr, "  -m\t\tMinimize block sizes in output stream.\n");
+  fprintf(stderr, "  --expect-fail\t\tSucceed on failure/fail on success\n");
+  fprintf(stderr, "  -h\t\t\tPrint this usage message.\n");
+  fprintf(stderr, "  -i File\t\tFile to decompress ('-' implies stdin).\n");
+  fprintf(stderr, "  -m\t\t\tMinimize block sizes in output stream.\n");
   fprintf(stderr,
-          "  -o File\tGenerated Decompressed File ('-' implies stdout).\n");
-  fprintf(stderr, "  -s\t\tUse C++ streams instead of C file descriptors.\n");
-  fprintf(stderr, "  -t\t\tTrace progress decompressing.\n");
+          "  -o File\t\tGenerated Decompressed File ('-' implies stdout).\n");
+  fprintf(stderr, "  -s\t\t\tUse C++ streams instead of C file descriptors.\n");
+  fprintf(stderr, "  -v | --verbose\t"
+          "Show progress (can be repeated for more detail).\n");
 }
 
 int main(int Argc, char* Argv[]) {
   wasm::alloc::Malloc Allocator;
   SymbolTable SymTab(&Allocator);
-  bool TraceProgress = false;
+  int Verbose = 0;
   bool TraceIoDifference = false;
   bool MinimizeBlockSize = false;
+  std::vector<int> DefaultIndices;
   for (int i = 1; i < Argc; ++i) {
     if (Argv[i] == std::string("-d")) {
       if (++i >= Argc) {
@@ -94,20 +96,7 @@ int main(int Argc, char* Argv[]) {
         usage(Argv[0]);
         return exit_status(EXIT_FAILURE);
       }
-      if (BinaryReader::isBinary(Argv[i])) {
-        std::unique_ptr<RawStream> Stream = FileReader::create(Argv[i]);
-        ReadBackedByteQueue Input(std::move(Stream));
-        BinaryReader Reader(&Input, SymTab);
-        if (FileNode* File = Reader.readFile()) {
-          SymTab.install(File);
-          continue;
-        }
-      }
-      Driver FileDriver(SymTab);
-      if (!FileDriver.parse(Argv[i])) {
-        fprintf(stderr, "Unable to parse default algorithms: %s\n", Argv[i]);
-        return exit_status(EXIT_FAILURE);
-      }
+      DefaultIndices.push_back(i);
     } else if (Argv[i] == std::string("--diff")) {
       TraceIoDifference = true;
     } else if (Argv[i] == std::string("--expect-fail")) {
@@ -134,18 +123,40 @@ int main(int Argc, char* Argv[]) {
       OutputFilename = Argv[i];
     } else if (Argv[i] == std::string("-s")) {
       UseFileStreams = true;
-    } else if (Argv[i] == std::string("-t")) {
-      TraceProgress = true;
+    } else if (Argv[i] == std::string("-v")
+               || Argv[i] == std::string("--verbose")) {
+      ++Verbose;
     } else {
       fprintf(stderr, "Unrecognized option: %s\n", Argv[i]);
       usage(Argv[0]);
       return exit_status(EXIT_FAILURE);
     }
   }
+  for (int i : DefaultIndices) {
+    if (BinaryReader::isBinary(Argv[i])) {
+      if (Verbose)
+        fprintf(stderr, "Loading default file: %s", Argv[i]);
+      std::unique_ptr<RawStream> Stream = FileReader::create(Argv[i]);
+      ReadBackedByteQueue Input(std::move(Stream));
+      BinaryReader Reader(&Input, SymTab);
+      Reader.setTraceProgress(Verbose >= 2);
+      if (FileNode* File = Reader.readFile()) {
+        SymTab.install(File);
+        continue;
+      }
+    }
+    Driver Parser(SymTab);
+    Parser.setTraceParsing(Verbose >= 2);
+    Parser.setTraceLexing(Verbose >= 3);
+    if (!Parser.parse(Argv[i])) {
+      fprintf(stderr, "Unable to parse default algorithms: %s\n", Argv[i]);
+      return exit_status(EXIT_FAILURE);
+    }
+  }
   ReadBackedByteQueue Input(getInput());
   WriteBackedByteQueue Output(getOutput());
   State Decompressor(&Input, &Output, &SymTab);
-  Decompressor.setTraceProgress(TraceProgress, TraceIoDifference);
+  Decompressor.setTraceProgress(Verbose >= 1, TraceIoDifference);
   Decompressor.setMinimizeBlockSize(MinimizeBlockSize);
   Decompressor.decompress();
   return exit_status(EXIT_SUCCESS);

@@ -54,23 +54,23 @@ void usage(const char* AppName) {
   fprintf(stderr, "  Extract out filter s-expressions from WASM binary.\n");
   fprintf(stderr, "\n");
   fprintf(stderr, "Options:\n");
-  fprintf(stderr, "  --expect-fail\tSucceed on failure/fail on success\n");
-  fprintf(stderr, "  -h\t\tPrint this usage message.\n");
-  fprintf(stderr, "  -i File\tWasm file to read ('-' implies stdin).\n");
+  fprintf(stderr, "  --expect-fail\t\tSucceed on failure/fail on success\n");
+  fprintf(stderr, "  -h\t\t\tPrint this usage message.\n");
+  fprintf(stderr, "  -i File\t\tWasm file to read ('-' implies stdin).\n");
   fprintf(stderr,
-          "  -o File\tFile with found s-expressions ('-' implies stdout).\n");
-  fprintf(stderr, "  -s\t\tUse C++ streams instead of C file descriptors.\n");
-  fprintf(stderr, "  -t\t\tTrace progress decompressing.\n");
+          "  -o File\t\tFile with found s-expressions ('-' implies stdout).\n");
+  fprintf(stderr, "  -s\t\t\tUse C++ streams instead of C file descriptors.\n");
+  fprintf(stderr, "  -v | --verbose\tShow progress.\n");
 }
 
 int main(int Argc, char* Argv[]) {
-  bool TraceProgress = false;
+  int Verbose = 0;
   for (int i = 1; i < Argc; ++i) {
     if (Argv[i] == std::string("--expect-fail")) {
       ExpectExitFail = true;
     } else if (Argv[i] == std::string("-h") ||
                Argv[i] == std::string("--help")) {
-      usage(Argv[i]);
+      usage(Argv[0]);
       return exit_status(EXIT_SUCCESS);
     } else if (Argv[i] == std::string("-i")) {
       if (++i >= Argc) {
@@ -88,8 +88,9 @@ int main(int Argc, char* Argv[]) {
       OutputFilename = Argv[i];
     } else if (Argv[i] == std::string("-s")) {
       UseFileStreams = true;
-    } else if (Argv[i] == std::string("-t")) {
-      TraceProgress = true;
+    } else if (Argv[i] == std::string("-v")
+               || Argv[i] == std::string("--verbose")) {
+      ++Verbose;
     } else {
       fprintf(stderr, "Unrecognized option: %s\n", Argv[i]);
       usage(Argv[0]);
@@ -101,7 +102,7 @@ int main(int Argc, char* Argv[]) {
   ReadBackedByteQueue Input(getInput());
   SymbolTable Symtab(&Allocator);
   BinaryReader Reader(&Input, Symtab);
-  Reader.setTraceProgress(TraceProgress);
+  Reader.setTraceProgress(Verbose >= 1);
   FileNode* File = Reader.readFile();
   if (File == nullptr) {
     fprintf(stderr, "Unable to parse WASM module!\n");
