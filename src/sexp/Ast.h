@@ -98,25 +98,25 @@ class Node {
   using IndexType = size_t;
   class Iterator {
    public:
-    explicit Iterator(const Node* Node, int Index) : Node(Node), Index(Index) {}
-    Iterator(const Iterator& Iter) : Node(Iter.Node), Index(Iter.Index) {}
+    explicit Iterator(const Node* Nd, int Index) : Nd(Nd), Index(Index) {}
+    Iterator(const Iterator& Iter) : Nd(Iter.Nd), Index(Iter.Index) {}
     Iterator& operator=(const Iterator& Iter) {
-      Node = Iter.Node;
+      Nd = Iter.Nd;
       Index = Iter.Index;
       return *this;
     }
     void operator++() { ++Index; }
     void operator--() { --Index; }
     bool operator==(const Iterator& Iter) {
-      return Node == Iter.Node && Index == Iter.Index;
+      return Nd == Iter.Nd && Index == Iter.Index;
     }
     bool operator!=(const Iterator& Iter) {
-      return Node != Iter.Node || Index != Iter.Index;
+      return Nd != Iter.Nd || Index != Iter.Index;
     }
-    Node* operator*() const { return Node->getKid(Index); }
+    Node* operator*() const { return Nd->getKid(Index); }
 
    private:
-    const Node* Node;
+    const Node* Nd;
     int Index;
   };
 
@@ -319,7 +319,7 @@ class UnaryNode : public Node {
     ~tag##Node() override {}                                               \
     static bool implementsClass(NodeType Type) { return Op##tag == Type; } \
   };
-AST_UNARYNODE_TABLE;
+AST_UNARYNODE_TABLE
 #undef X
 
 class BinaryNode : public Node {
