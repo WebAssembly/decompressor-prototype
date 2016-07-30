@@ -49,8 +49,8 @@ namespace wasm {
 
 namespace filt {
 
-using ExternalName = std::string;
-using InternalName = arena_vector<uint8_t>;
+typedef std::string ExternalName;
+typedef ARENA_VECTOR(uint8_t) InternalName;
 
 enum NodeType {
 #define X(tag, opcode, sexp_name, type_name, text_num_args, text_max_args) \
@@ -98,25 +98,25 @@ class Node {
   using IndexType = size_t;
   class Iterator {
    public:
-    explicit Iterator(const Node* Node, int Index) : Node(Node), Index(Index) {}
-    Iterator(const Iterator& Iter) : Node(Iter.Node), Index(Iter.Index) {}
+    explicit Iterator(const Node* Nd, int Index) : Nd(Nd), Index(Index) {}
+    Iterator(const Iterator& Iter) : Nd(Iter.Nd), Index(Iter.Index) {}
     Iterator& operator=(const Iterator& Iter) {
-      Node = Iter.Node;
+      Nd = Iter.Nd;
       Index = Iter.Index;
       return *this;
     }
     void operator++() { ++Index; }
     void operator--() { --Index; }
     bool operator==(const Iterator& Iter) {
-      return Node == Iter.Node && Index == Iter.Index;
+      return Nd == Iter.Nd && Index == Iter.Index;
     }
     bool operator!=(const Iterator& Iter) {
-      return Node != Iter.Node || Index != Iter.Index;
+      return Nd != Iter.Nd || Index != Iter.Index;
     }
-    Node* operator*() const { return Node->getKid(Index); }
+    Node* operator*() const { return Nd->getKid(Index); }
 
    private:
-    const Node* Node;
+    const Node* Nd;
     int Index;
   };
 
@@ -319,7 +319,7 @@ class UnaryNode : public Node {
     ~tag##Node() override {}                                               \
     static bool implementsClass(NodeType Type) { return Op##tag == Type; } \
   };
-AST_UNARYNODE_TABLE;
+AST_UNARYNODE_TABLE
 #undef X
 
 class BinaryNode : public Node {
@@ -437,7 +437,7 @@ class NaryNode : public Node {
   static bool implementsClass(NodeType Type);
 
  protected:
-  arena_vector<Node*> Kids;
+  ARENA_VECTOR(Node*) Kids;
   explicit NaryNode(NodeType Type) : Node(alloc::Allocator::Default, Type) {}
   NaryNode(alloc::Allocator* Alloc, NodeType Type)
       : Node(Alloc, Type), Kids(alloc::TemplateAllocator<Node*>(Alloc)) {}

@@ -30,7 +30,7 @@ namespace wasm {
 
 namespace filt {
 class TextWriter;
-};
+}
 
 namespace interp {
 
