@@ -203,6 +203,7 @@ all: libs execs test-execs
 build-all:
 	$(MAKE) DEBUG=0 RELEASE=1 all
 	$(MAKE) DEBUG=1 RELEASE=0 all
+	@echo "*** Built both debug and release versions ***"
 
 .PHONY: build-all
 
@@ -469,6 +470,7 @@ test: all test-parser test-raw-streams test-byte-queues test-decompress \
 test-all:
 	$(MAKE) DEBUG=0 RELEASE=1 test
 	$(MAKE)  DEBUG=1 RELEASE=0 test
+	@echo "*** all tests passed on both debug and release builds ***"
 
 
 test-decompress: $(BUILD_EXECDIR)/decompress
