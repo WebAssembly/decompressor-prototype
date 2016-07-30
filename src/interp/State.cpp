@@ -82,7 +82,6 @@ IntType State::eval(const Node* Nd) {
   switch (NodeType Type = Nd->getType()) {
     case OpByteToByte:
     case OpFilter:
-    case OpLastRead:
     case OpBlockEndNoArgs:
     case OpOpcode:
     case OpOpcodeCase:
@@ -101,6 +100,9 @@ IntType State::eval(const Node* Nd) {
     case OpUnknownSection:
       fprintf(stderr, "Evaluating not allowed: %s\n", getNodeTypeName(Type));
       fatal("Unable to evaluate filter s-expression");
+      break;
+    case OpLastRead:
+      ReturnValue = read(Nd);
       break;
     case OpSelect: {
       const SelectNode* Sel = cast<SelectNode>(Nd);
@@ -264,40 +266,42 @@ IntType State::read(const Node* Nd) {
     case OpU64Const:
     case OpPeek: {
       Cursor InitialPos(ReadPos);
-      IntType Value = read(Nd->getKid(0));
+      LastReadValue = read(Nd->getKid(0));
       ReadPos.swap(InitialPos);
-      return Value;
+      return LastReadValue;
     }
+    case OpLastRead:
+      return LastReadValue;
     case OpUint8NoArgs:
-      return Reader->readUint8(ReadPos);
+      return LastReadValue = Reader->readUint8(ReadPos);
     case OpUint8OneArg:
-      return Reader->readUint8Bits(ReadPos, getIntegerValue(Nd->getKid(0)));
+      return LastReadValue = Reader->readUint8Bits(ReadPos, getIntegerValue(Nd->getKid(0)));
     case OpUint32NoArgs:
-      return Reader->readUint32(ReadPos);
+      return LastReadValue = Reader->readUint32(ReadPos);
     case OpUint32OneArg:
-      return Reader->readUint32Bits(ReadPos, getIntegerValue(Nd->getKid(0)));
+      return LastReadValue = Reader->readUint32Bits(ReadPos, getIntegerValue(Nd->getKid(0)));
     case OpUint64NoArgs:
-      return Reader->readUint64(ReadPos);
+      return LastReadValue = Reader->readUint64(ReadPos);
     case OpUint64OneArg:
-      return Reader->readUint64Bits(ReadPos, getIntegerValue(Nd->getKid(0)));
+      return LastReadValue = Reader->readUint64Bits(ReadPos, getIntegerValue(Nd->getKid(0)));
     case OpVarint32NoArgs:
-      return Reader->readVarint32(ReadPos);
+      return LastReadValue = Reader->readVarint32(ReadPos);
     case OpVarint32OneArg:
-      return Reader->readVarint32Bits(ReadPos, getIntegerValue(Nd->getKid(0)));
+      return LastReadValue = Reader->readVarint32Bits(ReadPos, getIntegerValue(Nd->getKid(0)));
     case OpVarint64NoArgs:
-      return Reader->readVarint64(ReadPos);
+      return LastReadValue = Reader->readVarint64(ReadPos);
     case OpVarint64OneArg:
-      return Reader->readVarint64Bits(ReadPos, getIntegerValue(Nd->getKid(0)));
+      return LastReadValue = Reader->readVarint64Bits(ReadPos, getIntegerValue(Nd->getKid(0)));
     case OpVaruint32NoArgs:
-      return Reader->readVaruint32(ReadPos);
+      return LastReadValue = Reader->readVaruint32(ReadPos);
     case OpVaruint32OneArg:
-      return Reader->readVaruint32Bits(ReadPos, getIntegerValue(Nd->getKid(0)));
+      return LastReadValue = Reader->readVaruint32Bits(ReadPos, getIntegerValue(Nd->getKid(0)));
     case OpVaruint64NoArgs:
-      return Reader->readVaruint64(ReadPos);
+      return LastReadValue = Reader->readVaruint64(ReadPos);
     case OpVaruint64OneArg:
-      return Reader->readVaruint64Bits(ReadPos, getIntegerValue(Nd->getKid(0)));
+      return LastReadValue = Reader->readVaruint64Bits(ReadPos, getIntegerValue(Nd->getKid(0)));
     case OpVoid:
-      return 0;
+      return LastReadValue = 0;
   }
 }
 
@@ -366,6 +370,7 @@ IntType State::write(IntType Value, const wasm::filt::Node* Nd) {
 
 void State::decompress() {
   TraceClass::Method _("decompress", Trace);
+  LastReadValue = 0;
   MagicNumber = Reader->readUint32(ReadPos);
   // TODO(kschimpf): Fix reading of uintX. Current implementation not same as
   // WASM binary reader.
@@ -434,6 +439,7 @@ void State::evalOrCopy(const Node* Nd) {
 
 void State::decompressSection() {
   TraceClass::Method _("decompressSection", Trace);
+  LastReadValue = 0;
   assert(isa<ByteReadStream>(Reader));
 #if LOG_SECTIONS
   size_t SectionAddress = ReadPos.getCurByteAddress();
