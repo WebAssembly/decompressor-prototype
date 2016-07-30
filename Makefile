@@ -187,7 +187,8 @@ CCACHE := `command -v ccache`
 CXX :=  CCACHE_CPP2=yes $(CCACHE) $(CPP_COMPILER)
 
 # Note: On WIN32 replace -fPIC with -D_GNU_SOURCE
-CXXFLAGS := -std=gnu++11 -Wall -Wextra -O2 -g -pedantic -MP -MD -Werror \
+# Note: g++ on Travis doesn't support -std=gnu++11
+CXXFLAGS := -std=c++0x -Wall -Wextra -O2 -g -pedantic -MP -MD -Werror \
 	-Wno-unused-parameter -fno-omit-frame-pointer -fPIC -Isrc
 
 ifneq ($(RELEASE), 0)
