@@ -177,7 +177,7 @@ TEST_SRCS_DIR = test/test-sources
 
 LIBS = $(PARSER_LIB) $(BINARY_LIB) $(INTERP_LIB) $(SEXP_LIB) \
        $(STRM_LIB) $(UTILS_LIB)
-
+ 
 $(info -----------------------------------------------)
 $(info Using CPP_COMPILER = $(CPP_COMPILER))
 $(info Using RELEASE = $(RELEASE))
@@ -467,10 +467,18 @@ test: all test-parser test-raw-streams test-byte-queues test-decompress \
 
 .PHONY: test
 
-test-all:
+test-compiler:
 	$(MAKE) DEBUG=0 RELEASE=1 test
 	$(MAKE)  DEBUG=1 RELEASE=0 test
+
+test-all:
+	$(MAKE) clean-all
+	$(MAKE)  DEBUG=1 RELEASE=0 test-compiler CPP_COMPILER=g++
+	$(MAKE) clean-all
+	$(MAKE) DEBUG=0 RELEASE=1 test-compiler CPP_COMPLIER=clang++
 	@echo "*** all tests passed on both debug and release builds ***"
+
+.PHONY: test-all
 
 
 test-decompress: $(BUILD_EXECDIR)/decompress
