@@ -439,12 +439,6 @@ struct TemplateAllocator {
   }
   void destroy(T* p) { p->~T(); }
   size_t max_size() const { return size_t(1) << 30; }
-#if 0
-  template <typename Other>
-  struct rebind {
-    using other = TemplateAllocator<Other>;
-  };
-#endif
 
  private:
   Allocator* Alloc;

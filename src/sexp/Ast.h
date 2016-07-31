@@ -57,6 +57,7 @@ enum NodeType {
   Op##tag = opcode,
   AST_OPCODE_TABLE
 #undef X
+  NO_SUCH_NODETYPE
 };
 
 static constexpr size_t NumNodeTypes = 0
@@ -95,7 +96,7 @@ class Node {
   void forceCompilation();
 
  public:
-  using IndexType = size_t;
+  typedef size_t IndexType;
   class Iterator {
    public:
     explicit Iterator(const Node* Nd, int Index) : Nd(Nd), Index(Index) {}
