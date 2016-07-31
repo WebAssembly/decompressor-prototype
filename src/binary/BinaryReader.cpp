@@ -407,6 +407,7 @@ void BinaryReader::readNode() {
     case OpVoid:
       readNullary<VoidNode>();
       break;
+    case NO_SUCH_NODETYPE:
     case OpInteger:
     case OpFile:
     case OpLastRead:

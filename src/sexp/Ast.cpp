@@ -310,7 +310,7 @@ void SelectNode::installFastLookup() {
 
 #define X(tag) \
   void tag##Node::forceCompilation() {}
-AST_NARYNODE_TABLE;
+AST_NARYNODE_TABLE
 #undef X
 
 }  // end of namespace filt

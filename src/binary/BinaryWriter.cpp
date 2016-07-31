@@ -44,7 +44,9 @@ IntType getIntegerValue(Node* N) {
 
 BinaryWriter::BinaryWriter(decode::ByteQueue* Output, SymbolTable& Symtab)
     : WritePos(decode::StreamType::Byte, Output),
+      Writer(nullptr),
       SectionSymtab(Symtab),
+      MinimizeBlockSize(false),
       Trace(WritePos, "BinaryWriter") {
   Writer = Symtab.getAllocator()->create<ByteWriteStream>();
 }
@@ -70,6 +72,7 @@ void BinaryWriter::writeNode(const Node* Nd) {
   TraceClass::Method _("writeNode", Trace);
   Trace.traceSexp(Nd);
   switch (NodeType Type = Nd->getType()) {
+    case NO_SUCH_NODETYPE:
     case OpUnknownSection:
     case OpLastRead:
     case OpOpcode:

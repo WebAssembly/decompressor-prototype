@@ -36,9 +36,9 @@ class SectionSymbolTable {
   SectionSymbolTable& operator=(const SectionSymbolTable&) = delete;
 
  public:
-  using IndexType = uint32_t;
-  using SymbolLookupType = std::unordered_map<SymbolNode*, IndexType>;
-  using IndexLookupType = std::vector<SymbolNode*>;
+  typedef uint32_t IndexType;
+  typedef std::unordered_map<SymbolNode*, IndexType>  SymbolLookupType;
+  typedef std::vector<SymbolNode*> IndexLookupType;
   SectionSymbolTable(SymbolTable& Symtab) : Symtab(Symtab) {}
   ~SectionSymbolTable() {}
   void installSection(const SectionNode* Section);
