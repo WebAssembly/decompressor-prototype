@@ -51,9 +51,9 @@ class StreamReader : public RawStream {
   std::istream& Input;
   static constexpr size_t kBufSize = 4096;
   char Bytes[kBufSize];
-  size_t CurSize = 0;
-  size_t BytesRemaining = 0;
-  bool AtEof = false;
+  size_t CurSize;
+  size_t BytesRemaining;
+  bool AtEof;
 
   StreamReader(std::istream& Input);
   virtual void close() {}
