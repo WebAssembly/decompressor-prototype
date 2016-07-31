@@ -166,7 +166,7 @@ void TextWriter::writeNode(const Node* Nd,
       if (EmbedInParent) {
         writeNodeKids(Nd, true);
       } else {
-        Parenthesize _(this, Nd->getType(), AddNewline);
+        Parenthesize _(this, Type, AddNewline);
         writeNodeKids(Nd, false);
       }
       return;
@@ -289,7 +289,7 @@ void TextWriter::writeNodeAbbrev(const Node* Nd,
       if (EmbedInParent) {
         fprintf(File, " ...");
       } else {
-        Parenthesize _(this, Nd->getType(), AddNewline);
+        Parenthesize _(this, Type, AddNewline);
         writeNodeKidsAbbrev(Nd, false);
       }
       return;
