@@ -231,7 +231,7 @@ class SymbolNode FINAL : public NullaryNode {
  public:
   explicit SymbolNode(ExternalName& _Name)
       : NullaryNode(alloc::Allocator::Default, OpSymbol),
-        Name(alloc::Allocator::Default) {
+      Name(alloc::Allocator::Default) {
     init(_Name);
   }
   SymbolNode(alloc::Allocator* Alloc, ExternalName& _Name)
@@ -250,13 +250,16 @@ class SymbolNode FINAL : public NullaryNode {
 
  private:
   InternalName Name;
-  Node* DefineDefinition = nullptr;
-  Node* DefaultDefinition = nullptr;
-  bool IsDefineUsingDefault = true;
+  Node* DefineDefinition;
+  Node* DefaultDefinition;
+  bool IsDefineUsingDefault;
   void init(ExternalName& _Name) {
     Name.reserve(Name.size());
     for (const auto& V : _Name)
       Name.emplace_back(V);
+    DefineDefinition = nullptr;
+    DefaultDefinition = nullptr;
+    IsDefineUsingDefault = true;
   }
 };
 
