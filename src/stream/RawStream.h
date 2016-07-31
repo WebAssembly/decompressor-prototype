@@ -32,7 +32,7 @@ class RawStream {
 
  public:
   RawStream() {}
-  virtual ~RawStream() = default;
+  virtual ~RawStream() {};
 
   // Reads a contiguous range of elements into a buffer.
   //

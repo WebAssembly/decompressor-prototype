@@ -60,6 +60,8 @@ State::State(ByteQueue* Input, ByteQueue* Output, SymbolTable* Algorithms)
       WritePos(StreamType::Byte, Output),
       Alloc(Allocator::Default),
       Algorithms(Algorithms),
+      LastReadValue(0),
+      MinimizeBlockSize(false),
       Trace(ReadPos, WritePos, "InterpSexp") {
   Reader = Alloc->create<ByteReadStream>();
   Writer = Alloc->create<ByteWriteStream>();
@@ -80,6 +82,7 @@ IntType State::eval(const Node* Nd) {
   Trace.traceSexp(Nd);
   IntType ReturnValue = 0;
   switch (NodeType Type = Nd->getType()) {
+    case NO_SUCH_NODETYPE:
     case OpByteToByte:
     case OpFilter:
     case OpBlockEndNoArgs:

@@ -32,6 +32,8 @@ class WorkingByte {
   friend class Cursor;
 
  public:
+  WorkingByte() : ByteValue(0), BitsInByteValue(0) {}
+
   bool isEmpty() const { return BitsInByteValue == 0; }
 
   // For debugging.
@@ -41,9 +43,9 @@ class WorkingByte {
 
  private:
   // The Value read/to write for the current byte being processed.
-  uint32_t ByteValue = 0;
+  uint32_t ByteValue;
   // Number of bytes in ByteValue.
-  uint32_t BitsInByteValue = 0;
+  uint32_t BitsInByteValue;
 
   void setByte(uint8_t Byte) {
     ByteValue = Byte;

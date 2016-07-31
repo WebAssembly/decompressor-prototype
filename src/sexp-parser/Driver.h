@@ -36,7 +36,14 @@ class Driver {
   Driver& operator=(const Driver&) = delete;
 
  public:
-  Driver(SymbolTable& Table) : Table(Table), Alloc(Table.getAllocator()) {}
+  Driver(SymbolTable& Table) :
+      Table(Table),
+      Alloc(Table.getAllocator()),
+      TraceLexing(false),
+      TraceParsing(false),
+      MaintainIntegerFormatting(false),
+      ParsedAst(nullptr),
+      ErrorsReported(false) {}
 
   ~Driver() {}
 
@@ -95,13 +102,13 @@ class Driver {
   SymbolTable& Table;
   alloc::Allocator* Alloc;
   std::string Filename;
-  bool TraceLexing = false;
-  bool TraceParsing = false;
-  bool MaintainIntegerFormatting = false;
+  bool TraceLexing;
+  bool TraceParsing;
+  bool MaintainIntegerFormatting;
   // The location of the last token.
   location Loc;
-  Node* ParsedAst = nullptr;
-  bool ErrorsReported = false;
+  Node* ParsedAst;
+  bool ErrorsReported;
 
   // Called before parsing for setup.
   void Begin();

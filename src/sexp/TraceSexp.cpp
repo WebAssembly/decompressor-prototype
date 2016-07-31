@@ -23,17 +23,19 @@ namespace wasm {
 
 namespace filt {
 
-TraceClassSexp::TraceClassSexp() : TraceClass() {
+TraceClassSexp::TraceClassSexp() : TraceClass(), Writer(nullptr) {
 }
 
-TraceClassSexp::TraceClassSexp(const char* Label) : TraceClass(Label) {
+TraceClassSexp::TraceClassSexp(const char* Label) :
+    TraceClass(Label), Writer(nullptr) {
 }
 
-TraceClassSexp::TraceClassSexp(FILE* File) : TraceClass(File) {
+TraceClassSexp::TraceClassSexp(FILE* File) :
+    TraceClass(File), Writer(nullptr) {
 }
 
 TraceClassSexp::TraceClassSexp(const char* Label, FILE* File)
-    : TraceClass(Label, File) {
+    : TraceClass(Label, File), Writer(nullptr) {
 }
 
 TraceClassSexp::~TraceClassSexp() {
