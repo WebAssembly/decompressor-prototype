@@ -70,9 +70,9 @@ class TextWriter {
   void writeAbbrev(FILE* File, const Node* Root);
 
  private:
-  FILE* File = 0;
-  size_t IndentCount = 0;
-  bool LineEmpty = true;
+  FILE* File;
+  size_t IndentCount;
+  bool LineEmpty;
   std::vector<int> KidCountSameLine;
   std::vector<int> MaxKidCountSameLine;
   std::unordered_set<int> HasHiddenSeqSet;

@@ -55,8 +55,8 @@ static constexpr uint32_t WasmBinaryVersion = 0x0b;
 
 namespace decode {
 
-using IntType = uint64_t;
-using SignedIntType = int64_t;
+typedef uint64_t IntType;
+typedef int64_t SignedIntType;
 
 #define PRI_IntType PRIu64
 
