@@ -46,7 +46,7 @@ class TraceClassSexpReaderWriter : public filt::TraceClassSexp {
                              FILE* File);
   ~TraceClassSexpReaderWriter();
 
-  void traceContext() const override;
+  void traceContext() const OVERRIDE;
 
   bool getTraceIoDifference() const { return TraceIoDifference; }
 

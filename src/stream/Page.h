@@ -81,7 +81,7 @@ class Page : public std::enable_shared_from_this<Page> {
       : Index(Page::index(MinAddress)),
         MinAddress(MinAddress),
         MaxAddress(MinAddress) {
-    std::memset(&Buffer, Page::Size, 0);
+    std::memset(&Buffer, 0, Page::Size);
   }
 
   size_t spaceRemaining() const {
