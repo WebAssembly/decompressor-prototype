@@ -343,6 +343,7 @@ void BinaryReader::readNode() {
     case OpRead:
       readUnary<ReadNode>();
       break;
+    case OpOpcode:
     case OpSelect:
       readNary<SelectNode>();
       cast<SelectNode>(NodeStack.back())->installFastLookup();
@@ -407,12 +408,12 @@ void BinaryReader::readNode() {
     case OpVoid:
       readNullary<VoidNode>();
       break;
+    case OpLastRead:
+      readNullary<LastReadNode>();
+      break;
     case NO_SUCH_NODETYPE:
     case OpInteger:
     case OpFile:
-    case OpLastRead:
-    case OpOpcode:
-    case OpOpcodeCase:
     case OpSection:
     case OpSymbol:
     case OpUnknownSection:

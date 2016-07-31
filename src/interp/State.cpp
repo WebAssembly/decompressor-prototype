@@ -86,8 +86,6 @@ IntType State::eval(const Node* Nd) {
     case OpByteToByte:
     case OpFilter:
     case OpBlockEndNoArgs:
-    case OpOpcode:
-    case OpOpcodeCase:
     case OpSymbol:
       // TODO(kschimpf): Fix above cases.
       fprintf(stderr, "Not implemented: %s\n", getNodeTypeName(Type));
@@ -103,6 +101,9 @@ IntType State::eval(const Node* Nd) {
     case OpUnknownSection:
       fprintf(stderr, "Evaluating not allowed: %s\n", getNodeTypeName(Type));
       fatal("Unable to evaluate filter s-expression");
+      break;
+    case OpOpcode:
+      ReturnValue = write(read(Nd), Nd);
       break;
     case OpLastRead:
       ReturnValue = read(Nd);
@@ -162,7 +163,7 @@ IntType State::eval(const Node* Nd) {
     case OpError:
       fatal("Error found during evaluation");
       break;
-    case OpEval: {
+    case OpEval:
 #ifdef LOG_EVAL
       if (Trace.getTraceProgress()) {
         Trace.indent();
@@ -180,7 +181,6 @@ IntType State::eval(const Node* Nd) {
       }
       fatal("Can't evaluate symbol");
       break;
-    }
     case OpEvalDefault: {
       if (auto* Sym = dyn_cast<SymbolNode>(Nd->getKid(0))) {
         ReturnValue = eval(Sym->getDefaultDefinition());
@@ -257,12 +257,77 @@ IntType State::eval(const Node* Nd) {
   return ReturnValue;
 }
 
+uint32_t State::readOpcodeSelector(const Node* Nd, IntType &Value) {
+  switch (Nd->getType()) {
+    case OpUint8NoArgs:
+      Value = read(Nd);
+      return 8;
+    case OpUint8OneArg:
+      Value = read(Nd);
+      return isa<ByteReadStream>(Reader) ? getIntegerValue(Nd->getKid(0)) : 8;
+    case OpUint32NoArgs:
+      Value = read(Nd);
+      return 32;
+    case OpUint32OneArg:
+      Value = read(Nd);
+      return isa<ByteReadStream>(Reader) ? getIntegerValue(Nd->getKid(0)) : 32;
+    case OpUint64NoArgs:
+      Value = read(Nd);
+      return 64;
+    case OpUint64OneArg:
+      Value = read(Nd);
+      return isa<ByteReadStream>(Reader) ? getIntegerValue(Nd->getKid(0)) : 64;
+    case OpEval:
+      if (auto* Sym = dyn_cast<SymbolNode>(Nd->getKid(0)))
+        return readOpcodeSelector(Sym->getDefineDefinition(), Value);
+      fatal("Can't evaluate symbol");
+      return 0;
+    default:
+      Value = read(Nd);
+      return 0;
+  }
+}
+
+IntType State::readOpcode(const Node* Nd, IntType PrefixValue,
+                          uint32_t NumOpcodes) {
+  TraceClass::Method _("readOpcode", Trace);
+  switch (NodeType Type = Nd->getType()) {
+    default:
+      fprintf(stderr, "Illegal opcode selector: %s\n", getNodeTypeName(Type));
+      fatal("Unable to read opcode");
+      break;
+    case OpOpcode: {
+      const auto* Sel = cast<OpcodeNode>(Nd);
+      const Node* SelectorNd = Sel->getKid(0);
+      uint32_t SelectorSize = readOpcodeSelector(SelectorNd, LastReadValue);
+      Trace.traceUint32_t("selector value", LastReadValue);
+      if (NumOpcodes > 0) {
+        Trace.traceIntType("prefix value", PrefixValue);
+        Trace.traceUint32_t("selector bitsize", SelectorSize);
+        if (SelectorSize < 1 || SelectorSize >= 64)
+          fatal("Opcode selector has illegal bitsize");
+        LastReadValue |= PrefixValue << SelectorSize;
+      }
+      if (const auto* Case = Sel->getCase(LastReadValue)) {
+        LastReadValue = eval(Case);
+      }
+      break;
+    }
+  }
+  Trace.traceIntType("return value", LastReadValue);
+  return LastReadValue;
+}
+
 IntType State::read(const Node* Nd) {
   switch (NodeType Type = Nd->getType()) {
     default:
       fprintf(stderr, "Read not implemented: %s\n", getNodeTypeName(Type));
       fatal("Read not implemented");
+
       return 0;
+    case OpOpcode: {
+      return LastReadValue = readOpcode(Nd, 0, 0);
+    }
     case OpI32Const:
     case OpI64Const:
     case OpU32Const:
@@ -311,8 +376,8 @@ IntType State::read(const Node* Nd) {
 IntType State::write(IntType Value, const wasm::filt::Node* Nd) {
   switch (NodeType Type = Nd->getType()) {
     default:
-      fprintf(stderr, "Read not implemented: %s\n", getNodeTypeName(Type));
-      fatal("Read not implemented");
+      fprintf(stderr, "Write not implemented: %s\n", getNodeTypeName(Type));
+      fatal("Write not implemented");
       break;
     case OpI32Const:
     case OpI64Const:

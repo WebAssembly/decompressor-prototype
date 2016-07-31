@@ -288,16 +288,21 @@ bool NaryNode::implementsClass(NodeType Type) {
 void NaryNode::forceCompilation() {
 }
 
-void SelectNode::forceCompilation() {
+#define X(tag) \
+  void tag##Node::forceCompilation() {}
+AST_NARYNODE_TABLE
+#undef X
+
+void SelectBaseNode::forceCompilation() {
 }
 
-const Node* SelectNode::getCase(IntType Key) const {
+const Node* SelectBaseNode::getCase(IntType Key) const {
   if (LookupMap.count(Key))
     return LookupMap.at(Key);
   return nullptr;
 }
 
-void SelectNode::installFastLookup() {
+void SelectBaseNode::installFastLookup() {
   TextWriter Writer;
   for (auto* Kid : *this) {
     if (const auto* Case = dyn_cast<CaseNode>(Kid)) {
@@ -310,7 +315,7 @@ void SelectNode::installFastLookup() {
 
 #define X(tag) \
   void tag##Node::forceCompilation() {}
-AST_NARYNODE_TABLE
+AST_SELECTNODE_TABLE
 #undef X
 
 }  // end of namespace filt
