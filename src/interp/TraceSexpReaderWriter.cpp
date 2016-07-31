@@ -23,27 +23,27 @@ namespace interp {
 
 TraceClassSexpReaderWriter::TraceClassSexpReaderWriter(decode::Cursor& ReadPos,
                                                        decode::Cursor& WritePos)
-    : TraceClassSexp(), ReadPos(ReadPos), WritePos(WritePos) {
-}
+    : TraceClassSexp(), ReadPos(ReadPos), WritePos(WritePos),
+      TraceIoDifference(false) {}
 
 TraceClassSexpReaderWriter::TraceClassSexpReaderWriter(decode::Cursor& ReadPos,
                                                        decode::Cursor& WritePos,
                                                        const char* Label)
-    : TraceClassSexp(Label), ReadPos(ReadPos), WritePos(WritePos) {
-}
+    : TraceClassSexp(Label), ReadPos(ReadPos), WritePos(WritePos),
+      TraceIoDifference(false) {}
 
 TraceClassSexpReaderWriter::TraceClassSexpReaderWriter(decode::Cursor& ReadPos,
                                                        decode::Cursor& WritePos,
                                                        FILE* File)
-    : TraceClassSexp(File), ReadPos(ReadPos), WritePos(WritePos) {
-}
+    : TraceClassSexp(File), ReadPos(ReadPos), WritePos(WritePos),
+      TraceIoDifference(false) {}
 
 TraceClassSexpReaderWriter::TraceClassSexpReaderWriter(decode::Cursor& ReadPos,
                                                        decode::Cursor& WritePos,
                                                        const char* Label,
                                                        FILE* File)
-    : TraceClassSexp(Label, File), ReadPos(ReadPos), WritePos(WritePos) {
-}
+    : TraceClassSexp(Label, File), ReadPos(ReadPos), WritePos(WritePos),
+      TraceIoDifference(false) {}
 
 TraceClassSexpReaderWriter::~TraceClassSexpReaderWriter() {
 }

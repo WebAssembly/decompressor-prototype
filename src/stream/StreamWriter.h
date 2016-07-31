@@ -37,11 +37,11 @@ class StreamWriter : public RawStream {
  public:
   StreamWriter(std::ostream& Output) : Output(Output) {}
 
-  ~StreamWriter() override;
-  size_t read(uint8_t* Buf, size_t Size = 1) override;
-  bool write(uint8_t* Buf, size_t Size = 1) override;
-  bool freeze() override;
-  bool atEof() override;
+  ~StreamWriter() OVERRIDE;
+  size_t read(uint8_t* Buf, size_t Size = 1) OVERRIDE;
+  bool write(uint8_t* Buf, size_t Size = 1) OVERRIDE;
+  bool freeze() OVERRIDE;
+  bool atEof() OVERRIDE;
 
   static std::unique_ptr<RawStream> create(std::ostream& Output) {
     // TODO(kschimpf): Can we make the shared pointr part of the writer?
@@ -60,13 +60,13 @@ class StreamWriter : public RawStream {
   virtual void close() {}
 };
 
-class FstreamWriter final : public StreamWriter {
+class FstreamWriter FINAL : public StreamWriter {
   FstreamWriter(const FstreamWriter&) = delete;
   FstreamWriter& operator=(const FstreamWriter&) = delete;
 
  public:
   FstreamWriter(const char* Filename);
-  ~FstreamWriter() override;
+  ~FstreamWriter() OVERRIDE;
 
   static std::unique_ptr<RawStream> create(const char* Filename) {
     // TODO(kschimpf): Can we make the shared pointr part of the writer?
@@ -76,7 +76,7 @@ class FstreamWriter final : public StreamWriter {
 
  private:
   std::ofstream FileOutput;
-  void close() override;
+  void close() OVERRIDE;
 };
 
 }  // end of namespace decode
