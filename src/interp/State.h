@@ -77,8 +77,8 @@ class State {
   // The current section name (if applicable).
   std::string CurSectionName;
   // The last read value.,
-  decode::IntType LastReadValue = 0;
-  bool MinimizeBlockSize = false;
+  decode::IntType LastReadValue;
+  bool MinimizeBlockSize;
   TraceClassSexpReaderWriter Trace;
 
   void decompressSection();

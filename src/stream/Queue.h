@@ -120,9 +120,9 @@ class Queue {
  protected:
   // Minimum peek size to maintain. That is, the minimal number of
   // bytes that the read can back up without freezing an address.
-  size_t MinPeekSize = 32 * sizeof(Base);
+  size_t MinPeekSize;
   // True if end of queue buffer has been frozen.
-  bool EobFrozen = false;
+  bool EobFrozen;
   std::shared_ptr<BlockEob> EofPtr;
   // First page still in queue.
   std::shared_ptr<Page> FirstPage;

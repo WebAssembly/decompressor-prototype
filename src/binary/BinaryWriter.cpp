@@ -44,7 +44,9 @@ IntType getIntegerValue(Node* N) {
 
 BinaryWriter::BinaryWriter(decode::ByteQueue* Output, SymbolTable& Symtab)
     : WritePos(decode::StreamType::Byte, Output),
+      Writer(nullptr),
       SectionSymtab(Symtab),
+      MinimizeBlockSize(false),
       Trace(WritePos, "BinaryWriter") {
   Writer = Symtab.getAllocator()->create<ByteWriteStream>();
 }

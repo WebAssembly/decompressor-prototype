@@ -60,6 +60,8 @@ State::State(ByteQueue* Input, ByteQueue* Output, SymbolTable* Algorithms)
       WritePos(StreamType::Byte, Output),
       Alloc(Allocator::Default),
       Algorithms(Algorithms),
+      LastReadValue(0),
+      MinimizeBlockSize(false),
       Trace(ReadPos, WritePos, "InterpSexp") {
   Reader = Alloc->create<ByteReadStream>();
   Writer = Alloc->create<ByteWriteStream>();
