@@ -447,22 +447,38 @@ class NaryNode : public Node {
       : Node(Alloc, Type), Kids(alloc::TemplateAllocator<Node*>(Alloc)) {}
 };
 
-class SelectNode FINAL : public NaryNode {
-  SelectNode(const SelectNode&) = delete;
-  SelectNode& operator=(const SelectNode&) = delete;
-  virtual void forceCompilation() FINAL;
+class SelectBaseNode : public NaryNode {
+  SelectBaseNode(const SelectBaseNode&) = delete;
+  SelectBaseNode& operator=(const SelectBaseNode&) = delete;
+  virtual void forceCompilation();
 
  public:
-  SelectNode() : NaryNode(OpSelect) {}
-  explicit SelectNode(alloc::Allocator* Alloc) : NaryNode(Alloc, OpSelect) {}
-  static bool implementsClass(NodeType Type) { return OpSelect == Type; }
   void installFastLookup();
   const Node* getCase(decode::IntType Key) const;
-
- private:
+ protected:
   // TODO(karlschimpf) Hook this up to allocator.
   std::unordered_map<decode::IntType, Node*> LookupMap;
+
+  SelectBaseNode(NodeType Type) : NaryNode(Type) {}
+  SelectBaseNode(alloc::Allocator* Alloc, NodeType Type) :
+      NaryNode(Alloc, Type) {}
 };
+
+
+#define X(tag)                                                                \
+class tag##Node FINAL : public SelectBaseNode {                               \
+  tag##Node(const tag##Node&) = delete;                                       \
+  tag##Node& operator=(const tag##Node&) = delete;                            \
+  virtual void forceCompilation() FINAL;                                      \
+                                                                              \
+ public:                                                                      \
+ tag##Node() : SelectBaseNode(Op##tag) {}                                     \
+  explicit tag##Node(alloc::Allocator* Alloc)                                 \
+       : SelectBaseNode(Alloc, Op##tag) {}                                    \
+  static bool implementsClass(NodeType Type) { return Op##tag == Type; }      \
+};
+AST_SELECTNODE_TABLE
+#undef X
 
 #define X(tag)                                                                \
   class tag##Node FINAL : public NaryNode {                                   \

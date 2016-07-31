@@ -137,7 +137,7 @@ struct IntegerValue {
 %type <wasm::filt::IntegerNode *> integer
 %type <wasm::filt::Node *> loop_body
 %type <wasm::filt::Node *> opcode_case
-%type <wasm::filt::Node *> opcode_expression
+%type <wasm::filt::OpcodeNode *> opcode_expression
 %type <wasm::filt::Node *> stream_conv
 %type <wasm::filt::Node *> stream_conv_list
 %type <wasm::filt::Node *> stream_conv_stmt_list
@@ -347,6 +347,7 @@ format_directive
           }
         | "(" "opcode" opcode_expression ")" {
             $$ = $3;
+            $3->installFastLookup();
           }
         ;
 
@@ -393,7 +394,7 @@ opcode_expression
 
 opcode_case
         : "(" "case" integer expression  ")" {
-            $$ = Driver.create<OpcodeCaseNode>($3, $4);
+            $$ = Driver.create<CaseNode>($3, $4);
           }
         ;
 

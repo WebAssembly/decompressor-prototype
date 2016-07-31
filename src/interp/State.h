@@ -94,6 +94,12 @@ class State {
   // Writes to output the given value, using format defined by Nd.
   // For convenience, returns written value.
   decode::IntType write(decode::IntType Value, const filt::Node* Nd);
+  decode::IntType readOpcode(const filt::Node* Sel,
+                             decode::IntType PrefixValue,
+                             uint32_t NumOpcodes);
+  // Reads opcode selector into Value. Returns the Bitsize to the (fixed) number
+  // of bits used to read the opcode selector. Otherwise returns zero.
+  uint32_t readOpcodeSelector(const filt::Node* Nd, decode::IntType &Value);
 };
 
 }  // end of namespace interp.

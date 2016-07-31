@@ -72,7 +72,6 @@
   X(Varuint64NoArgs,   0x2c, "varuint64",        "varuint64NoArgs", 0, 0)      \
   X(Varuint64OneArg,   0x2d, "varuint64",        "varuint64OneArg", 1, 0)      \
   X(Opcode,            0x2e, "opcode",           nullptr,           1, 0)      \
-  X(OpcodeCase,        0x2f, "case",             "opcodeCase",      1, 1)      \
                                                                                \
   /* Boolean tests */                                                          \
   X(And,               0x30, "and",              nullptr,           2, 0)      \
@@ -189,14 +188,17 @@
   X(IfThen)                                                                    \
   X(Loop)                                                                      \
   X(Map)                                                                       \
-  X(OpcodeCase)                                                                \
   X(Or)                                                                        \
+
+//#define X(tag)
+#define AST_SELECTNODE_TABLE                                                   \
+  X(Select)                                                                    \
+  X(Opcode)                                                                    \
 
 //#define X(tag)
 #define AST_NARYNODE_TABLE                                                     \
   X(File)                                                                      \
   X(Filter)                                                                    \
-  X(Opcode)                                                                    \
   X(Section)                                                                   \
   X(Sequence)                                                                  \
 
@@ -256,7 +258,6 @@
   X(Loop)                                                                      \
   X(LoopUnbounded)                                                             \
   X(Opcode)                                                                    \
-  X(OpcodeCase)                                                                \
   X(Select)                                                                    \
   X(Sequence)                                                                  \
   X(Section)                                                                   \
