@@ -34,7 +34,7 @@ class FdWriter : public RawStream {
 
  public:
   FdWriter(int Fd, bool CloseOnExit = true)
-      : Fd(Fd), CloseOnExit(CloseOnExit) {}
+      : Fd(Fd), CurSize(0), IsFrozen(false), CloseOnExit(CloseOnExit) {}
 
   ~FdWriter() OVERRIDE;
   size_t read(uint8_t* Buf, size_t Size = 1) OVERRIDE;
@@ -52,8 +52,8 @@ class FdWriter : public RawStream {
   int Fd;
   static constexpr size_t kBufSize = 4096;
   uint8_t Bytes[kBufSize];
-  size_t CurSize = 0;
-  bool IsFrozen = false;
+  size_t CurSize;
+  bool IsFrozen;
   bool CloseOnExit;
 
   bool saveBuffer();

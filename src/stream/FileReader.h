@@ -49,12 +49,14 @@ class FdReader : public RawStream {
   int Fd;
   static constexpr size_t kBufSize = 4096;
   uint8_t Bytes[kBufSize];
-  size_t CurSize = 0;
-  size_t BytesRemaining = 0;
-  bool AtEof = false;
+  size_t CurSize;
+  size_t BytesRemaining;
+  bool AtEof;
   bool CloseOnExit;
 
-  FdReader(int Fd, bool CloseOnExit) : Fd(Fd), CloseOnExit(CloseOnExit) {}
+  FdReader(int Fd, bool CloseOnExit) :
+      Fd(Fd), CurSize(0), BytesRemaining(0), AtEof(false),
+      CloseOnExit(CloseOnExit) {}
   void closeFd();
   void fillBuffer();
 };
