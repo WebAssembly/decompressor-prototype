@@ -70,6 +70,7 @@ void BinaryWriter::writeNode(const Node* Nd) {
   TraceClass::Method _("writeNode", Trace);
   Trace.traceSexp(Nd);
   switch (NodeType Type = Nd->getType()) {
+    case NO_SUCH_NODETYPE:
     case OpUnknownSection:
     case OpLastRead:
     case OpOpcode:

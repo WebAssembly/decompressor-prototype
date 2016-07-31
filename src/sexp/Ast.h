@@ -19,7 +19,7 @@
 //
 // NOTE: Many classes define  virtual:
 //
-//    virtual void forceCompilation() final;
+//    virtual void forceCompilation() FINAL;
 //
 // This is done to force the compilation of virtuals associated with the
 // class in file Ast.cpp.
@@ -49,14 +49,15 @@ namespace wasm {
 
 namespace filt {
 
-using ExternalName = std::string;
-using InternalName = arena_vector<uint8_t>;
+typedef std::string ExternalName;
+typedef ARENA_VECTOR(uint8_t) InternalName;
 
 enum NodeType {
 #define X(tag, opcode, sexp_name, type_name, text_num_args, text_max_args) \
   Op##tag = opcode,
   AST_OPCODE_TABLE
 #undef X
+  NO_SUCH_NODETYPE
 };
 
 static constexpr size_t NumNodeTypes = 0
@@ -95,28 +96,28 @@ class Node {
   void forceCompilation();
 
  public:
-  using IndexType = size_t;
+  typedef size_t IndexType;
   class Iterator {
    public:
-    explicit Iterator(const Node* Node, int Index) : Node(Node), Index(Index) {}
-    Iterator(const Iterator& Iter) : Node(Iter.Node), Index(Iter.Index) {}
+    explicit Iterator(const Node* Nd, int Index) : Nd(Nd), Index(Index) {}
+    Iterator(const Iterator& Iter) : Nd(Iter.Nd), Index(Iter.Index) {}
     Iterator& operator=(const Iterator& Iter) {
-      Node = Iter.Node;
+      Nd = Iter.Nd;
       Index = Iter.Index;
       return *this;
     }
     void operator++() { ++Index; }
     void operator--() { --Index; }
     bool operator==(const Iterator& Iter) {
-      return Node == Iter.Node && Index == Iter.Index;
+      return Nd == Iter.Nd && Index == Iter.Index;
     }
     bool operator!=(const Iterator& Iter) {
-      return Node != Iter.Node || Index != Iter.Index;
+      return Nd != Iter.Nd || Index != Iter.Index;
     }
-    Node* operator*() const { return Node->getKid(Index); }
+    Node* operator*() const { return Nd->getKid(Index); }
 
    private:
-    const Node* Node;
+    const Node* Nd;
     int Index;
   };
 
@@ -162,41 +163,41 @@ class NullaryNode : public Node {
   NullaryNode& operator=(const NullaryNode&) = delete;
 
  public:
-  ~NullaryNode() override {}
+  ~NullaryNode() OVERRIDE {}
 
   static bool implementsClass(NodeType Type);
 
-  int getNumKids() const final { return 0; }
+  int getNumKids() const FINAL { return 0; }
 
-  Node* getKid(int Index) const final;
+  Node* getKid(int Index) const FINAL;
 
-  void setKid(int Index, Node* N) final;
+  void setKid(int Index, Node* N) FINAL;
 
  protected:
   NullaryNode(alloc::Allocator* Alloc, NodeType Type) : Node(Alloc, Type) {}
 };
 
 #define X(tag)                                                             \
-  class tag##Node final : public NullaryNode {                             \
+  class tag##Node FINAL : public NullaryNode {                             \
     tag##Node(const tag##Node&) = delete;                                  \
     tag##Node& operator=(const tag##Node&) = delete;                       \
-    virtual void forceCompilation() final;                                 \
+    virtual void forceCompilation() FINAL;                                 \
                                                                            \
    public:                                                                 \
     tag##Node() : NullaryNode(alloc::Allocator::Default, Op##tag) {}       \
     explicit tag##Node(alloc::Allocator* Alloc)                            \
         : NullaryNode(Alloc, Op##tag) {}                                   \
-    ~tag##Node() override {}                                               \
+    ~tag##Node() OVERRIDE {}                                               \
     static bool implementsClass(NodeType Type) { return Type == Op##tag; } \
   };
 AST_NULLARYNODE_TABLE
 #undef X
 
-class IntegerNode final : public NullaryNode {
+class IntegerNode FINAL : public NullaryNode {
   IntegerNode(const IntegerNode&) = delete;
   IntegerNode& operator=(const IntegerNode&) = delete;
   IntegerNode() = delete;
-  virtual void forceCompilation() final;
+  virtual void forceCompilation() FINAL;
 
  public:
   // Note: ValueFormat provided so that we can echo back out same
@@ -210,7 +211,7 @@ class IntegerNode final : public NullaryNode {
               decode::IntType Value,
               decode::ValueFormat Format = decode::ValueFormat::Decimal)
       : NullaryNode(Alloc, OpInteger), Value(Value), Format(Format) {}
-  ~IntegerNode() override {}
+  ~IntegerNode() OVERRIDE {}
   decode::ValueFormat getFormat() const { return Format; }
   decode::IntType getValue() const { return Value; }
 
@@ -221,23 +222,23 @@ class IntegerNode final : public NullaryNode {
   decode::ValueFormat Format;
 };
 
-class SymbolNode final : public NullaryNode {
+class SymbolNode FINAL : public NullaryNode {
   SymbolNode(const SymbolNode&) = delete;
   SymbolNode& operator=(const SymbolNode&) = delete;
   SymbolNode() = delete;
-  virtual void forceCompilation() final;
+  virtual void forceCompilation() FINAL;
 
  public:
   explicit SymbolNode(ExternalName& _Name)
       : NullaryNode(alloc::Allocator::Default, OpSymbol),
-        Name(alloc::Allocator::Default) {
+      Name(alloc::Allocator::Default) {
     init(_Name);
   }
   SymbolNode(alloc::Allocator* Alloc, ExternalName& _Name)
       : NullaryNode(Alloc, OpSymbol), Name(Alloc) {
     init(_Name);
   }
-  ~SymbolNode() override {}
+  ~SymbolNode() OVERRIDE {}
   const InternalName& getName() const { return Name; }
   std::string getStringName() const;
   const Node* getDefineDefinition() const { return DefineDefinition; }
@@ -249,13 +250,16 @@ class SymbolNode final : public NullaryNode {
 
  private:
   InternalName Name;
-  Node* DefineDefinition = nullptr;
-  Node* DefaultDefinition = nullptr;
-  bool IsDefineUsingDefault = true;
+  Node* DefineDefinition;
+  Node* DefaultDefinition;
+  bool IsDefineUsingDefault;
   void init(ExternalName& _Name) {
     Name.reserve(Name.size());
     for (const auto& V : _Name)
       Name.emplace_back(V);
+    DefineDefinition = nullptr;
+    DefaultDefinition = nullptr;
+    IsDefineUsingDefault = true;
   }
 };
 
@@ -287,13 +291,13 @@ class UnaryNode : public Node {
   UnaryNode& operator=(const UnaryNode&) = delete;
 
  public:
-  ~UnaryNode() override {}
+  ~UnaryNode() OVERRIDE {}
 
-  int getNumKids() const final { return 1; }
+  int getNumKids() const FINAL { return 1; }
 
-  Node* getKid(int Index) const final;
+  Node* getKid(int Index) const FINAL;
 
-  void setKid(int Index, Node* N) final;
+  void setKid(int Index, Node* N) FINAL;
 
   static bool implementsClass(NodeType Type);
 
@@ -306,20 +310,20 @@ class UnaryNode : public Node {
 };
 
 #define X(tag)                                                             \
-  class tag##Node final : public UnaryNode {                               \
+  class tag##Node FINAL : public UnaryNode {                               \
     tag##Node(const tag##Node&) = delete;                                  \
     tag##Node& operator=(const tag##Node&) = delete;                       \
-    virtual void forceCompilation() final;                                 \
+    virtual void forceCompilation() FINAL;                                 \
                                                                            \
    public:                                                                 \
     explicit tag##Node(Node* Kid)                                          \
         : UnaryNode(alloc::Allocator::Default, Op##tag, Kid) {}            \
     tag##Node(alloc::Allocator* Alloc, Node* Kid)                          \
         : UnaryNode(Alloc, Op##tag, Kid) {}                                \
-    ~tag##Node() override {}                                               \
+    ~tag##Node() OVERRIDE {}                                               \
     static bool implementsClass(NodeType Type) { return Op##tag == Type; } \
   };
-AST_UNARYNODE_TABLE;
+AST_UNARYNODE_TABLE
 #undef X
 
 class BinaryNode : public Node {
@@ -327,13 +331,13 @@ class BinaryNode : public Node {
   BinaryNode& operator=(const BinaryNode&) = delete;
 
  public:
-  ~BinaryNode() override {}
+  ~BinaryNode() OVERRIDE {}
 
-  int getNumKids() const final { return 2; }
+  int getNumKids() const FINAL { return 2; }
 
-  Node* getKid(int Index) const final;
+  Node* getKid(int Index) const FINAL;
 
-  void setKid(int Index, Node* N) final;
+  void setKid(int Index, Node* N) FINAL;
 
   static bool implementsClass(NodeType Type);
 
@@ -352,16 +356,16 @@ class BinaryNode : public Node {
 };
 
 #define X(tag)                                                             \
-  class tag##Node final : public BinaryNode {                              \
+  class tag##Node FINAL : public BinaryNode {                              \
     tag##Node(const tag##Node&) = delete;                                  \
     tag##Node& operator=(const tag##Node&) = delete;                       \
-    virtual void forceCompilation() final;                                 \
+    virtual void forceCompilation() FINAL;                                 \
                                                                            \
    public:                                                                 \
     tag##Node(Node* Kid1, Node* Kid2) : BinaryNode(Op##tag, Kid1, Kid2) {} \
     tag##Node(alloc::Allocator* Alloc, Node* Kid1, Node* Kid2)             \
         : BinaryNode(Alloc, Op##tag, Kid1, Kid2) {}                        \
-    ~tag##Node() override {}                                               \
+    ~tag##Node() OVERRIDE {}                                               \
     static bool implementsClass(NodeType Type) { return Op##tag == Type; } \
   };
 AST_BINARYNODE_TABLE
@@ -372,13 +376,13 @@ class TernaryNode : public Node {
   TernaryNode& operator=(const TernaryNode&) = delete;
 
  public:
-  ~TernaryNode() override {}
+  ~TernaryNode() OVERRIDE {}
 
-  int getNumKids() const final { return 3; }
+  int getNumKids() const FINAL { return 3; }
 
-  Node* getKid(int Index) const final;
+  Node* getKid(int Index) const FINAL;
 
-  void setKid(int Index, Node* N) final;
+  void setKid(int Index, Node* N) FINAL;
 
   static bool implementsClass(NodeType Type);
 
@@ -403,17 +407,17 @@ class TernaryNode : public Node {
 };
 
 #define X(tag)                                                             \
-  class tag##Node final : public TernaryNode {                             \
+  class tag##Node FINAL : public TernaryNode {                             \
     tag##Node(const tag##Node&) = delete;                                  \
     tag##Node& operator=(const tag##Node&) = delete;                       \
-    virtual void forceCompilation() final;                                 \
+    virtual void forceCompilation() FINAL;                                 \
                                                                            \
    public:                                                                 \
     tag##Node(Node* Kid1, Node* Kid2, Node* Kid3)                          \
         : TernaryNode(Op##tag, Kid1, Kid2, Kid3) {}                        \
     tag##Node(alloc::Allocator* Alloc, Node* Kid1, Node* Kid2, Node* Kid3) \
         : TernaryNode(Alloc, Op##tag, Kid1, Kid2, Kid3) {}                 \
-    ~tag##Node() override {}                                               \
+    ~tag##Node() OVERRIDE {}                                               \
     static bool implementsClass(NodeType Type) { return Op##tag == Type; } \
   };
 AST_TERNARYNODE_TABLE
@@ -425,28 +429,28 @@ class NaryNode : public Node {
   virtual void forceCompilation();
 
  public:
-  int getNumKids() const override final { return Kids.size(); }
+  int getNumKids() const OVERRIDE FINAL { return Kids.size(); }
 
-  Node* getKid(int Index) const override final { return Kids[Index]; }
+  Node* getKid(int Index) const OVERRIDE FINAL { return Kids[Index]; }
 
-  void setKid(int Index, Node* N) override final { Kids[Index] = N; }
+  void setKid(int Index, Node* N) OVERRIDE FINAL { Kids[Index] = N; }
 
-  void append(Node* Kid) final { Kids.emplace_back(Kid); }
-  ~NaryNode() override {}
+  void append(Node* Kid) FINAL { Kids.emplace_back(Kid); }
+  ~NaryNode() OVERRIDE {}
 
   static bool implementsClass(NodeType Type);
 
  protected:
-  arena_vector<Node*> Kids;
+  ARENA_VECTOR(Node*) Kids;
   explicit NaryNode(NodeType Type) : Node(alloc::Allocator::Default, Type) {}
   NaryNode(alloc::Allocator* Alloc, NodeType Type)
       : Node(Alloc, Type), Kids(alloc::TemplateAllocator<Node*>(Alloc)) {}
 };
 
-class SelectNode final : public NaryNode {
+class SelectNode FINAL : public NaryNode {
   SelectNode(const SelectNode&) = delete;
   SelectNode& operator=(const SelectNode&) = delete;
-  virtual void forceCompilation() final;
+  virtual void forceCompilation() FINAL;
 
  public:
   SelectNode() : NaryNode(OpSelect) {}
@@ -461,15 +465,15 @@ class SelectNode final : public NaryNode {
 };
 
 #define X(tag)                                                                \
-  class tag##Node final : public NaryNode {                                   \
+  class tag##Node FINAL : public NaryNode {                                   \
     tag##Node(const tag##Node&) = delete;                                     \
     tag##Node& operator=(const tag##Node&) = delete;                          \
-    virtual void forceCompilation() final;                                    \
+    virtual void forceCompilation() FINAL;                                    \
                                                                               \
    public:                                                                    \
     tag##Node() : NaryNode(Op##tag) {}                                        \
     explicit tag##Node(alloc::Allocator* Alloc) : NaryNode(Alloc, Op##tag) {} \
-    ~tag##Node() override {}                                                  \
+    ~tag##Node() OVERRIDE {}                                                  \
     static bool implementsClass(NodeType Type) { return Op##tag == Type; }    \
   };
 AST_NARYNODE_TABLE
