@@ -439,9 +439,9 @@ struct TemplateAllocator {
   }
   void destroy(T* p) { p->~T(); }
   size_t max_size() const { return size_t(1) << 30; }
-  template <typename Othr>
+  template <typename Other>
   struct rebind {
-    typedef TemplateAllocator<Othr> Other;
+    typedef TemplateAllocator<Other> other;
   };
 
  private:
