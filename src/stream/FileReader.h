@@ -33,11 +33,11 @@ class FdReader : public RawStream {
   FdReader& operator=(const FdReader*) = delete;
 
  public:
-  ~FdReader() override;
-  size_t read(uint8_t* Buf, size_t Size = 1) override;
-  bool write(uint8_t* Buf, size_t Size = 1) override;
-  bool freeze() override;
-  bool atEof() override;
+  ~FdReader() OVERRIDE;
+  size_t read(uint8_t* Buf, size_t Size = 1) OVERRIDE;
+  bool write(uint8_t* Buf, size_t Size = 1) OVERRIDE;
+  bool freeze() OVERRIDE;
+  bool atEof() OVERRIDE;
 
   static std::unique_ptr<RawStream> create(int Fd, bool CloseOnExit = true) {
     // TODO(kschimpf): Can we make the shared pointer part of the reader?
@@ -66,7 +66,7 @@ class FileReader final : public FdReader {
 
  public:
   FileReader(const char* Filename);
-  ~FileReader() override;
+  ~FileReader() OVERRIDE;
   static std::unique_ptr<RawStream> create(const char* Filename) {
     // TODO(kschimpf): Can we make the shared pointer part of the reader?
     std::unique_ptr<RawStream> Reader(new FileReader(Filename));

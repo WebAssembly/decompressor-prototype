@@ -34,7 +34,7 @@ class ByteQueue : public Queue<uint8_t> {
  public:
   ByteQueue() {}
 
-  ~ByteQueue() override {}
+  ~ByteQueue() OVERRIDE {}
 
   // TODO(karlschimpf): Rename the following to not conflict read/write of
   // inherited class Queue<uint8_t>.
@@ -84,13 +84,13 @@ class ReadBackedByteQueue final : public ByteQueue {
     assert(_Reader);
     Reader = std::move(_Reader);
   }
-  ~ReadBackedByteQueue() override {}
+  ~ReadBackedByteQueue() OVERRIDE {}
 
  private:
   // Reader to write fill buffer as needed.
   std::unique_ptr<RawStream> Reader;
 
-  bool readFill(size_t Address) override;
+  bool readFill(size_t Address) OVERRIDE;
 };
 
 // Write-only queue that is dumped to a stream using the given Writer.
@@ -111,7 +111,7 @@ class WriteBackedByteQueue final : public ByteQueue {
   // needed by reader.
   std::unique_ptr<RawStream> Writer;
 
-  void dumpFirstPage() override;
+  void dumpFirstPage() OVERRIDE;
 };
 
 }  // end of namespace decode

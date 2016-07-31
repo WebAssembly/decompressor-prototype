@@ -107,25 +107,25 @@ class ByteWriteStream final : public WriteStream {
   ByteWriteStream() : WriteStream(decode::StreamType::Byte) {}
   void writeUint8Bits(uint8_t Value,
                       decode::Cursor& Pos,
-                      uint32_t NumBits) override;
+                      uint32_t NumBits) OVERRIDE;
   void writeUint32Bits(uint32_t Value,
                        decode::Cursor& Pos,
-                       uint32_t NumBits) override;
+                       uint32_t NumBits) OVERRIDE;
   void writeUint64Bits(uint64_t Value,
                        decode::Cursor& Pos,
-                       uint32_t NumBits) override;
+                       uint32_t NumBits) OVERRIDE;
   void writeVarint32Bits(int32_t Value,
                          decode::Cursor& Pos,
-                         uint32_t NumBits) override;
+                         uint32_t NumBits) OVERRIDE;
   void writeVarint64Bits(int64_t Value,
                          decode::Cursor& Pos,
-                         uint32_t NumBits) override;
+                         uint32_t NumBits) OVERRIDE;
   void writeVaruint32Bits(uint32_t Value,
                           decode::Cursor& Pos,
-                          uint32_t NumBits) override;
+                          uint32_t NumBits) OVERRIDE;
   void writeVaruint64Bits(uint64_t Value,
                           decode::Cursor& Pos,
-                          uint32_t NumBits) override;
+                          uint32_t NumBits) OVERRIDE;
 
   void writeFixedVaruint32(uint32_t Value, decode::Cursor& Pos);
 
