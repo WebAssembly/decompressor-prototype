@@ -55,7 +55,7 @@ class TraceClassSexpReaderWriter : public filt::TraceClassSexp {
  protected:
   decode::Cursor& ReadPos;
   decode::Cursor& WritePos;
-  bool TraceIoDifference = false;
+  bool TraceIoDifference;
 };
 
 }  // end of namespace interp
