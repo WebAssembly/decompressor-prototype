@@ -80,6 +80,7 @@ IntType State::eval(const Node* Nd) {
   Trace.traceSexp(Nd);
   IntType ReturnValue = 0;
   switch (NodeType Type = Nd->getType()) {
+    case NO_SUCH_NODETYPE:
     case OpByteToByte:
     case OpFilter:
     case OpBlockEndNoArgs:
