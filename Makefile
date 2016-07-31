@@ -472,23 +472,19 @@ test: all test-parser test-raw-streams test-byte-queues test-decompress \
 
 .PHONY: test
 
-test-compiler:
+test-all:
 	$(MAKE) DEBUG=0 RELEASE=1 test
 	$(MAKE)  DEBUG=1 RELEASE=0 test
-
-test-all:
-	$(MAKE)  DEBUG=1 RELEASE=0 test-compiler CXX=g++
-	$(MAKE) DEBUG=0 RELEASE=1 test-compiler CXX=clang++
 	@echo "*** all tests passed on both debug and release builds ***"
 
 .PHONY: test-all
 
 presubmit:
 	$(MAKE) clean-all
-	$(MAKE)  DEBUG=1 RELEASE=0 test-compiler CXX=g++
+	$(MAKE) test-all CXX=g++
 	$(MAKE) clean-all
-	$(MAKE) DEBUG=0 RELEASE=1 test-compiler CXX=clang++
-	@echo "*** all tests passed on both debug and release builds ***"
+	$(MAKE) test-all CXX=clang++
+	@echo "*** Presubmit tests passed ***"
 
 .PHONY: presubmit
 
