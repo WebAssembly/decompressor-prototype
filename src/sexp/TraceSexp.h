@@ -44,7 +44,7 @@ class TraceClassSexp : public utils::TraceClass {
   }
 
  protected:
-  TextWriter* Writer = nullptr;
+  TextWriter* Writer;
   void traceSexpInternal(const Node* Node);
   TextWriter* getTextWriter() {
     if (Writer == nullptr)

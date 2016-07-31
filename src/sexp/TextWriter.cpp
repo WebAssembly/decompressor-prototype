@@ -36,7 +36,10 @@ constexpr const char* IndentString = "  ";
 
 bool TextWriter::UseNodeTypeNames = false;
 
-TextWriter::TextWriter() {
+TextWriter::TextWriter() :
+    File(nullptr),
+    IndentCount(0),
+    LineEmpty(true) {
   // Build fast lookup for number of arguments to write on same line.
   for (size_t i = 0; i < MaxNodeType; ++i) {
     KidCountSameLine.push_back(0);
@@ -166,7 +169,7 @@ void TextWriter::writeNode(const Node* Nd,
       if (EmbedInParent) {
         writeNodeKids(Nd, true);
       } else {
-        Parenthesize _(this, Nd->getType(), AddNewline);
+        Parenthesize _(this, Type, AddNewline);
         writeNodeKids(Nd, false);
       }
       return;
@@ -289,7 +292,7 @@ void TextWriter::writeNodeAbbrev(const Node* Nd,
       if (EmbedInParent) {
         fprintf(File, " ...");
       } else {
-        Parenthesize _(this, Nd->getType(), AddNewline);
+        Parenthesize _(this, Type, AddNewline);
         writeNodeKidsAbbrev(Nd, false);
       }
       return;

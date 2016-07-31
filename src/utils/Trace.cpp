@@ -24,16 +24,23 @@ namespace wasm {
 namespace utils {
 
 TraceClass::TraceClass() {
+  init();
 }
 
-TraceClass::TraceClass(const char* Label) : Label(Label) {
+TraceClass::TraceClass(const char* Lbl) {
+  init();
+  Label = Lbl;
 }
 
-TraceClass::TraceClass(FILE* File) : File(File) {
+TraceClass::TraceClass(FILE* Fl) {
+  init();
+  File = Fl;
 }
 
-TraceClass::TraceClass(const char* Label, FILE* File)
-    : Label(Label), File(File) {
+TraceClass::TraceClass(const char* Lbl, FILE* Fl) {
+  init();
+  Label = Lbl;
+  File = Fl;
 }
 
 TraceClass::~TraceClass() {
