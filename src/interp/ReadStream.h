@@ -73,19 +73,19 @@ class ReadStream {
   decode::StreamType Type;
 };
 
-class ByteReadStream final : public ReadStream {
+class ByteReadStream FINAL : public ReadStream {
   ByteReadStream(const ReadStream&) = delete;
   ByteReadStream& operator=(const ByteReadStream&) = delete;
 
  public:
   ByteReadStream() : ReadStream(decode::StreamType::Byte) {}
-  uint8_t readUint8Bits(decode::Cursor& Pos, uint32_t NumBits) override;
-  uint32_t readUint32Bits(decode::Cursor& Pos, uint32_t NumBits) override;
-  uint64_t readUint64Bits(decode::Cursor& Pos, uint32_t NumBits) override;
-  int32_t readVarint32Bits(decode::Cursor& Pos, uint32_t NumBits) override;
-  int64_t readVarint64Bits(decode::Cursor& Pos, uint32_t NumBits) override;
-  uint32_t readVaruint32Bits(decode::Cursor& Pos, uint32_t NumBits) override;
-  uint64_t readVaruint64Bits(decode::Cursor& Pos, uint32_t NumBits) override;
+  uint8_t readUint8Bits(decode::Cursor& Pos, uint32_t NumBits) OVERRIDE;
+  uint32_t readUint32Bits(decode::Cursor& Pos, uint32_t NumBits) OVERRIDE;
+  uint64_t readUint64Bits(decode::Cursor& Pos, uint32_t NumBits) OVERRIDE;
+  int32_t readVarint32Bits(decode::Cursor& Pos, uint32_t NumBits) OVERRIDE;
+  int64_t readVarint64Bits(decode::Cursor& Pos, uint32_t NumBits) OVERRIDE;
+  uint32_t readVaruint32Bits(decode::Cursor& Pos, uint32_t NumBits) OVERRIDE;
+  uint64_t readVaruint64Bits(decode::Cursor& Pos, uint32_t NumBits) OVERRIDE;
   static bool implementsClass(decode::StreamType RtClassID) {
     return RtClassID == decode::StreamType::Byte;
   }
