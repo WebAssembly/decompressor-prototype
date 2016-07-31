@@ -10,4 +10,4 @@ export PATH=${DEPS_DIR}/bison/bin:${PATH}
 
 cd ${ROOT_DIR}
 
-make presubmit
+make presubmit -j8
