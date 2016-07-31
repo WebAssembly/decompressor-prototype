@@ -37,7 +37,7 @@ class TraceClassSexpWriter : public filt::TraceClassSexp {
   TraceClassSexpWriter(decode::Cursor& WritePos, const char* Label, FILE* File);
   ~TraceClassSexpWriter();
 
-  void traceContext() const override;
+  void traceContext() const OVERRIDE;
 
  protected:
   decode::Cursor& WritePos;

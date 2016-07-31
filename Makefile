@@ -38,7 +38,7 @@ else ifndef RELEASE
   RELEASE = 0
 endif
 
-CPP_COMPILER ?= clang++
+CXX := clang++
 
 SRCDIR = src
 
@@ -177,21 +177,29 @@ TEST_SRCS_DIR = test/test-sources
 
 LIBS = $(PARSER_LIB) $(BINARY_LIB) $(INTERP_LIB) $(SEXP_LIB) \
        $(STRM_LIB) $(UTILS_LIB)
-
+ 
 $(info -----------------------------------------------)
-$(info Using CPP_COMPILER = $(CPP_COMPILER))
+$(info Using CXX = $(CXX))
 $(info Using RELEASE = $(RELEASE))
 $(info -----------------------------------------------)
 
 CCACHE := `command -v ccache`
-CXX :=  CCACHE_CPP2=yes $(CCACHE) $(CPP_COMPILER)
+CPP_COMPILER :=  CCACHE_CPP2=yes $(CCACHE) $(CXX)
 
 # Note: On WIN32 replace -fPIC with -D_GNU_SOURCE
-CXXFLAGS := -std=gnu++11 -Wall -Wextra -O2 -g -pedantic -MP -MD -Werror \
+# Note: g++ on Travis doesn't support -std=gnu++11
+CXXFLAGS := -std=c++0x -Wall -Wextra -O2 -g -pedantic -MP -MD -Werror \
 	-Wno-unused-parameter -fno-omit-frame-pointer -fPIC -Isrc
 
 ifneq ($(RELEASE), 0)
   CXXFLAGS += -DNDEBUG
+endif
+
+# Add flags to handle that Travis g++ uses -std=c++0x with missing c++11 options.
+ifeq ($(CXX),g++)
+  CXXFLAGS += -DOVERRIDE= 
+else
+  CXXFLAGS += -DOVERRIDE=override
 endif
 
 ###### Default Rule ######
@@ -300,7 +308,7 @@ $(BINARY_OBJDIR):
 -include $(foreach dep,$(BINARY_SRCS:.cpp=.d),$(BINARY_OBJDIR)/$(dep))
 
 $(BINARY_OBJS): $(BINARY_OBJDIR)/%.o: $(BINARY_DIR)/%.cpp
-	$(CXX) -c $(CXXFLAGS) $< -o $@
+	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
 $(BINARY_LIB): $(BINARY_OBJS)
 	ar -rs $@ $(BINARY_OBJS)
@@ -319,7 +327,7 @@ $(UTILS_OBJDIR):
 -include $(foreach dep,$(UTILS_SRCS:.cpp=.d),$(OBJDIR)/$(dep))
 
 $(UTILS_OBJS): $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
-	$(CXX) -c $(CXXFLAGS) $< -o $@
+	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
 $(UTILS_LIB): $(UTILS_OBJS)
 	ar -rs $@ $(UTILS_OBJS)
@@ -338,7 +346,7 @@ $(INTERP_OBJDIR):
 -include $(foreach dep,$(INTERP_SRCS:.cpp=.d),$(INTERP_OBJDIR)/$(dep))
 
 $(INTERP_OBJS): $(INTERP_OBJDIR)/%.o: $(INTERP_SRCDIR)/%.cpp
-	$(CXX) -c $(CXXFLAGS) $< -o $@
+	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
 $(INTERP_LIB): $(INTERP_OBJS)
 	ar -rs $@ $(INTERP_OBJS)
@@ -357,7 +365,7 @@ $(SEXP_OBJDIR):
 -include $(foreach dep,$(SEXP_SRCS:.cpp=.d),$(SEXP_OBJDIR)/$(dep))
 
 $(SEXP_OBJS): $(SEXP_OBJDIR)/%.o: $(SEXP_SRCDIR)/%.cpp
-	$(CXX) -c $(CXXFLAGS) $< -o $@
+	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
 $(SEXP_LIB): $(SEXP_OBJS)
 	ar -rs $@ $(SEXP_OBJS)
@@ -376,7 +384,7 @@ $(STRM_OBJDIR):
 -include $(foreach dep,$(STRM_SRCS:.cpp=.d),$(STRM_OBJDIR)/$(dep))
 
 $(STRM_OBJS): $(STRM_OBJDIR)/%.o: $(STRM_SRCDIR)/%.cpp
-	$(CXX) -c $(CXXFLAGS) $< -o $@
+	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
 $(STRM_LIB): $(STRM_OBJS)
 	ar -rs $@ $(STRM_OBJS)
@@ -402,7 +410,7 @@ $(PARSER_OBJDIR):
 
 $(PARSER_OBJS): $(PARSER_OBJDIR)/%.o: $(PARSER_DIR)/%.cpp \
 	        $(PARSER_DIR)/Lexer.cpp $(PARSER_DIR)/Parser.tab.cpp
-	$(CXX) -c $(CXXFLAGS) $< -o $@
+	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
 $(PARSER_LIB): $(PARSER_OBJS)
 	ar -rs $@ $(PARSER_OBJS)
@@ -432,10 +440,7 @@ $(EXECS): | $(BUILD_EXECDIR)
 -include $(foreach dep,$(EXEC_SRCS:.cpp=.d),$(BUILD_EXECDIR)/$(dep))
 
 $(EXECS): $(BUILD_EXECDIR)/%: $(EXEC_DIR)/%.cpp $(LIBS)
-	$(CXX) $(CXXFLAGS) $< $(LIBS) -o $@
-
-#$(BUILD_EXECDIR)/decompress: $(EXEC_DIR)/decompress.cpp $(LIBS)
-#	$(CXX) $(CXXFLAGS) $< $(LIBS) -o $@
+	$(CPP_COMPILER) $(CXXFLAGS) $< $(LIBS) -o $@
 
 ###### Compiling Test Executables #######
 
@@ -451,13 +456,13 @@ $(TEST_EXECS): | $(TEST_EXECDIR)
 -include $(foreach dep,$(TEST_SRCS:.cpp=.d),$(TEST_EXECDIR)/$(dep))
 
 $(TEST_EXECDIR)/TestParser: $(TEST_DIR)/TestParser.cpp $(LIBS)
-	$(CXX) $(CXXFLAGS) $< $(LIBS) -o $@
+	$(CPP_COMPILER) $(CXXFLAGS) $< $(LIBS) -o $@
 
 $(TEST_EXECDIR)/TestRawStreams: $(TEST_DIR)/TestRawStreams.cpp $(LIBS)
-	$(CXX) $(CXXFLAGS) $< $(LIBS) -o $@
+	$(CPP_COMPILER) $(CXXFLAGS) $< $(LIBS) -o $@
 
 $(TEST_EXECDIR)/TestByteQueues: $(TEST_DIR)/TestByteQueues.cpp $(LIBS)
-	$(CXX) $(CXXFLAGS) $< $(LIBS) -o $@
+	$(CPP_COMPILER) $(CXXFLAGS) $< $(LIBS) -o $@
 
 ###### Testing ######
 
@@ -467,10 +472,18 @@ test: all test-parser test-raw-streams test-byte-queues test-decompress \
 
 .PHONY: test
 
-test-all:
+test-compiler:
 	$(MAKE) DEBUG=0 RELEASE=1 test
 	$(MAKE)  DEBUG=1 RELEASE=0 test
+
+test-all:
+	$(MAKE) clean-all
+	$(MAKE)  DEBUG=1 RELEASE=0 test-compiler CXX=g++
+	$(MAKE) clean-all
+	$(MAKE) DEBUG=0 RELEASE=1 test-compiler CXX=clang++
 	@echo "*** all tests passed on both debug and release builds ***"
+
+.PHONY: test-all
 
 
 test-decompress: $(BUILD_EXECDIR)/decompress

@@ -129,7 +129,7 @@ class Queue {
   // Page at the current end of buffer.
   std::shared_ptr<Page> LastPage;
   // Fast page lookup map (from page index)
-  using PageMapType = std::vector<std::weak_ptr<Page>>;
+  typedef std::vector<std::weak_ptr<Page>>  PageMapType;
   PageMapType PageMap;
 
   // Returns the page in the queue referred to Address, or nullptr if no
