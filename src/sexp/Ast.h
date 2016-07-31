@@ -19,7 +19,7 @@
 //
 // NOTE: Many classes define  virtual:
 //
-//    virtual void forceCompilation() final;
+//    virtual void forceCompilation() FINAL;
 //
 // This is done to force the compilation of virtuals associated with the
 // class in file Ast.cpp.
@@ -167,21 +167,21 @@ class NullaryNode : public Node {
 
   static bool implementsClass(NodeType Type);
 
-  int getNumKids() const final { return 0; }
+  int getNumKids() const FINAL { return 0; }
 
-  Node* getKid(int Index) const final;
+  Node* getKid(int Index) const FINAL;
 
-  void setKid(int Index, Node* N) final;
+  void setKid(int Index, Node* N) FINAL;
 
  protected:
   NullaryNode(alloc::Allocator* Alloc, NodeType Type) : Node(Alloc, Type) {}
 };
 
 #define X(tag)                                                             \
-  class tag##Node final : public NullaryNode {                             \
+  class tag##Node FINAL : public NullaryNode {                             \
     tag##Node(const tag##Node&) = delete;                                  \
     tag##Node& operator=(const tag##Node&) = delete;                       \
-    virtual void forceCompilation() final;                                 \
+    virtual void forceCompilation() FINAL;                                 \
                                                                            \
    public:                                                                 \
     tag##Node() : NullaryNode(alloc::Allocator::Default, Op##tag) {}       \
@@ -193,11 +193,11 @@ class NullaryNode : public Node {
 AST_NULLARYNODE_TABLE
 #undef X
 
-class IntegerNode final : public NullaryNode {
+class IntegerNode FINAL : public NullaryNode {
   IntegerNode(const IntegerNode&) = delete;
   IntegerNode& operator=(const IntegerNode&) = delete;
   IntegerNode() = delete;
-  virtual void forceCompilation() final;
+  virtual void forceCompilation() FINAL;
 
  public:
   // Note: ValueFormat provided so that we can echo back out same
@@ -222,11 +222,11 @@ class IntegerNode final : public NullaryNode {
   decode::ValueFormat Format;
 };
 
-class SymbolNode final : public NullaryNode {
+class SymbolNode FINAL : public NullaryNode {
   SymbolNode(const SymbolNode&) = delete;
   SymbolNode& operator=(const SymbolNode&) = delete;
   SymbolNode() = delete;
-  virtual void forceCompilation() final;
+  virtual void forceCompilation() FINAL;
 
  public:
   explicit SymbolNode(ExternalName& _Name)
@@ -290,11 +290,11 @@ class UnaryNode : public Node {
  public:
   ~UnaryNode() OVERRIDE {}
 
-  int getNumKids() const final { return 1; }
+  int getNumKids() const FINAL { return 1; }
 
-  Node* getKid(int Index) const final;
+  Node* getKid(int Index) const FINAL;
 
-  void setKid(int Index, Node* N) final;
+  void setKid(int Index, Node* N) FINAL;
 
   static bool implementsClass(NodeType Type);
 
@@ -307,10 +307,10 @@ class UnaryNode : public Node {
 };
 
 #define X(tag)                                                             \
-  class tag##Node final : public UnaryNode {                               \
+  class tag##Node FINAL : public UnaryNode {                               \
     tag##Node(const tag##Node&) = delete;                                  \
     tag##Node& operator=(const tag##Node&) = delete;                       \
-    virtual void forceCompilation() final;                                 \
+    virtual void forceCompilation() FINAL;                                 \
                                                                            \
    public:                                                                 \
     explicit tag##Node(Node* Kid)                                          \
@@ -330,11 +330,11 @@ class BinaryNode : public Node {
  public:
   ~BinaryNode() OVERRIDE {}
 
-  int getNumKids() const final { return 2; }
+  int getNumKids() const FINAL { return 2; }
 
-  Node* getKid(int Index) const final;
+  Node* getKid(int Index) const FINAL;
 
-  void setKid(int Index, Node* N) final;
+  void setKid(int Index, Node* N) FINAL;
 
   static bool implementsClass(NodeType Type);
 
@@ -353,10 +353,10 @@ class BinaryNode : public Node {
 };
 
 #define X(tag)                                                             \
-  class tag##Node final : public BinaryNode {                              \
+  class tag##Node FINAL : public BinaryNode {                              \
     tag##Node(const tag##Node&) = delete;                                  \
     tag##Node& operator=(const tag##Node&) = delete;                       \
-    virtual void forceCompilation() final;                                 \
+    virtual void forceCompilation() FINAL;                                 \
                                                                            \
    public:                                                                 \
     tag##Node(Node* Kid1, Node* Kid2) : BinaryNode(Op##tag, Kid1, Kid2) {} \
@@ -375,11 +375,11 @@ class TernaryNode : public Node {
  public:
   ~TernaryNode() OVERRIDE {}
 
-  int getNumKids() const final { return 3; }
+  int getNumKids() const FINAL { return 3; }
 
-  Node* getKid(int Index) const final;
+  Node* getKid(int Index) const FINAL;
 
-  void setKid(int Index, Node* N) final;
+  void setKid(int Index, Node* N) FINAL;
 
   static bool implementsClass(NodeType Type);
 
@@ -404,10 +404,10 @@ class TernaryNode : public Node {
 };
 
 #define X(tag)                                                             \
-  class tag##Node final : public TernaryNode {                             \
+  class tag##Node FINAL : public TernaryNode {                             \
     tag##Node(const tag##Node&) = delete;                                  \
     tag##Node& operator=(const tag##Node&) = delete;                       \
-    virtual void forceCompilation() final;                                 \
+    virtual void forceCompilation() FINAL;                                 \
                                                                            \
    public:                                                                 \
     tag##Node(Node* Kid1, Node* Kid2, Node* Kid3)                          \
@@ -426,13 +426,13 @@ class NaryNode : public Node {
   virtual void forceCompilation();
 
  public:
-  int getNumKids() const OVERRIDE final { return Kids.size(); }
+  int getNumKids() const OVERRIDE FINAL { return Kids.size(); }
 
-  Node* getKid(int Index) const OVERRIDE final { return Kids[Index]; }
+  Node* getKid(int Index) const OVERRIDE FINAL { return Kids[Index]; }
 
-  void setKid(int Index, Node* N) OVERRIDE final { Kids[Index] = N; }
+  void setKid(int Index, Node* N) OVERRIDE FINAL { Kids[Index] = N; }
 
-  void append(Node* Kid) final { Kids.emplace_back(Kid); }
+  void append(Node* Kid) FINAL { Kids.emplace_back(Kid); }
   ~NaryNode() OVERRIDE {}
 
   static bool implementsClass(NodeType Type);
@@ -444,10 +444,10 @@ class NaryNode : public Node {
       : Node(Alloc, Type), Kids(alloc::TemplateAllocator<Node*>(Alloc)) {}
 };
 
-class SelectNode final : public NaryNode {
+class SelectNode FINAL : public NaryNode {
   SelectNode(const SelectNode&) = delete;
   SelectNode& operator=(const SelectNode&) = delete;
-  virtual void forceCompilation() final;
+  virtual void forceCompilation() FINAL;
 
  public:
   SelectNode() : NaryNode(OpSelect) {}
@@ -462,10 +462,10 @@ class SelectNode final : public NaryNode {
 };
 
 #define X(tag)                                                                \
-  class tag##Node final : public NaryNode {                                   \
+  class tag##Node FINAL : public NaryNode {                                   \
     tag##Node(const tag##Node&) = delete;                                     \
     tag##Node& operator=(const tag##Node&) = delete;                          \
-    virtual void forceCompilation() final;                                    \
+    virtual void forceCompilation() FINAL;                                    \
                                                                               \
    public:                                                                    \
     tag##Node() : NaryNode(Op##tag) {}                                        \

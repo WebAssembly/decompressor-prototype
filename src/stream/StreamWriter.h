@@ -60,7 +60,7 @@ class StreamWriter : public RawStream {
   virtual void close() {}
 };
 
-class FstreamWriter final : public StreamWriter {
+class FstreamWriter FINAL : public StreamWriter {
   FstreamWriter(const FstreamWriter&) = delete;
   FstreamWriter& operator=(const FstreamWriter&) = delete;
 

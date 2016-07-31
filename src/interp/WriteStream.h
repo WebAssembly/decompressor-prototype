@@ -95,7 +95,7 @@ class WriteStream {
   decode::StreamType Type;
 };
 
-class ByteWriteStream final : public WriteStream {
+class ByteWriteStream FINAL : public WriteStream {
   ByteWriteStream(const WriteStream&) = delete;
   ByteWriteStream& operator=(const ByteWriteStream&) = delete;
 

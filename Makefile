@@ -197,9 +197,9 @@ endif
 
 # Add flags to handle that Travis g++ uses -std=c++0x with missing c++11 options.
 ifeq ($(CXX),g++)
-  CXXFLAGS += -DOVERRIDE= 
+  CXXFLAGS += -DOVERRIDE= -DFINAL=
 else
-  CXXFLAGS += -DOVERRIDE=override
+  CXXFLAGS += -DOVERRIDE=override -DFINAL=final
 endif
 
 ###### Default Rule ######
@@ -477,14 +477,20 @@ test-compiler:
 	$(MAKE)  DEBUG=1 RELEASE=0 test
 
 test-all:
+	$(MAKE)  DEBUG=1 RELEASE=0 test-compiler CXX=g++
+	$(MAKE) DEBUG=0 RELEASE=1 test-compiler CXX=clang++
+	@echo "*** all tests passed on both debug and release builds ***"
+
+.PHONY: test-all
+
+presubmit:
 	$(MAKE) clean-all
 	$(MAKE)  DEBUG=1 RELEASE=0 test-compiler CXX=g++
 	$(MAKE) clean-all
 	$(MAKE) DEBUG=0 RELEASE=1 test-compiler CXX=clang++
 	@echo "*** all tests passed on both debug and release builds ***"
 
-.PHONY: test-all
-
+.PHONY: presubmit
 
 test-decompress: $(BUILD_EXECDIR)/decompress
 	$< -d defaults.df -i $(TEST_SRCS_DIR)/toy.wasm -o - \

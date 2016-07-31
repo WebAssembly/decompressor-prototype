@@ -59,7 +59,7 @@ class FdWriter : public RawStream {
   bool saveBuffer();
 };
 
-class FileWriter final : public FdWriter {
+class FileWriter FINAL : public FdWriter {
   FileWriter(const FileWriter&) = delete;
   FileWriter& operator=(const FileWriter&) = delete;
 

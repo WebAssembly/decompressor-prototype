@@ -73,7 +73,7 @@ class ReadStream {
   decode::StreamType Type;
 };
 
-class ByteReadStream final : public ReadStream {
+class ByteReadStream FINAL : public ReadStream {
   ByteReadStream(const ReadStream&) = delete;
   ByteReadStream& operator=(const ByteReadStream&) = delete;
 

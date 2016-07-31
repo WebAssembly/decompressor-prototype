@@ -10,4 +10,4 @@ export PATH=${DEPS_DIR}/bison/bin:${PATH}
 
 cd ${ROOT_DIR}
 
-make test-all
+make presubmit

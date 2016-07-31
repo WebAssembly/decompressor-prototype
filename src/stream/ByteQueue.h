@@ -74,7 +74,7 @@ class ByteQueue : public Queue<uint8_t> {
 
 // Read-only queue that is write-filled from a steam using the given
 // Reader.
-class ReadBackedByteQueue final : public ByteQueue {
+class ReadBackedByteQueue FINAL : public ByteQueue {
   ReadBackedByteQueue(const ReadBackedByteQueue&) = delete;
   ReadBackedByteQueue& operator=(const ReadBackedByteQueue&) = delete;
   ReadBackedByteQueue() = delete;
@@ -94,7 +94,7 @@ class ReadBackedByteQueue final : public ByteQueue {
 };
 
 // Write-only queue that is dumped to a stream using the given Writer.
-class WriteBackedByteQueue final : public ByteQueue {
+class WriteBackedByteQueue FINAL : public ByteQueue {
   WriteBackedByteQueue(const WriteBackedByteQueue&) = delete;
   WriteBackedByteQueue& operator=(const WriteBackedByteQueue&) = delete;
   WriteBackedByteQueue() = delete;

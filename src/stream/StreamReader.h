@@ -61,7 +61,7 @@ class StreamReader : public RawStream {
 };
 
 // Defines a file reader.
-class FstreamReader final : public StreamReader {
+class FstreamReader FINAL : public StreamReader {
   FstreamReader(const FstreamReader&) = delete;
   FstreamReader& operator=(const FstreamReader&) = delete;
 
