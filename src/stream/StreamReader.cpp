@@ -25,7 +25,8 @@ namespace wasm {
 
 namespace decode {
 
-StreamReader::StreamReader(std::istream& Input) : Input(Input) {
+StreamReader::StreamReader(std::istream& Input) :
+    Input(Input), CurSize(0), BytesRemaining(0), AtEof(false) {
 }
 
 StreamReader::~StreamReader() {

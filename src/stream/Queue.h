@@ -120,16 +120,16 @@ class Queue {
  protected:
   // Minimum peek size to maintain. That is, the minimal number of
   // bytes that the read can back up without freezing an address.
-  size_t MinPeekSize = 32 * sizeof(Base);
+  size_t MinPeekSize;
   // True if end of queue buffer has been frozen.
-  bool EobFrozen = false;
+  bool EobFrozen;
   std::shared_ptr<BlockEob> EofPtr;
   // First page still in queue.
   std::shared_ptr<Page> FirstPage;
   // Page at the current end of buffer.
   std::shared_ptr<Page> LastPage;
   // Fast page lookup map (from page index)
-  using PageMapType = std::vector<std::weak_ptr<Page>>;
+  typedef std::vector<std::weak_ptr<Page>>  PageMapType;
   PageMapType PageMap;
 
   // Returns the page in the queue referred to Address, or nullptr if no

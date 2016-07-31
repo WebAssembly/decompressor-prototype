@@ -183,11 +183,18 @@ class TraceClass {
   FILE* getFile() const { return File; }
 
  protected:
-  const char* Label = nullptr;
-  FILE* File = stderr;
-  int IndentLevel = 0;
-  bool TraceProgress = false;
+  const char* Label;
+  FILE* File;
+  int IndentLevel;
+  bool TraceProgress;
   std::vector<const char*> CallStack;
+
+  void init() {
+    Label = nullptr;
+    File = stderr;
+    IndentLevel = 0;
+    TraceProgress = false;
+  }
 
   void enter(const char* Name);
   void exit();

@@ -145,7 +145,7 @@ class AllocatorBase : public Allocator {
 
  public:
   AllocatorBase() {}
-  ~AllocatorBase() override {}
+  ~AllocatorBase() OVERRIDE {}
 
   // Generic allocation
   void* allocateDispatch(size_t Size,
@@ -249,14 +249,14 @@ class Malloc : public AllocatorBase<Malloc> {
 
  public:
   Malloc() {}
-  ~Malloc() override;
+  ~Malloc() OVERRIDE;
 
   // Generic virtual allocation
   void* allocateVirtual(size_t Size,
-                        size_t AlignLog2 = DefaultAllocAlignLog2) override;
+                        size_t AlignLog2 = DefaultAllocAlignLog2) OVERRIDE;
 
   // Generic virtual deallocation
-  virtual void deallocateVirtual(void* Pointer) override;
+  virtual void deallocateVirtual(void* Pointer) OVERRIDE;
 
   void* allocateDispatch(size_t Size,
                          size_t AlignLog2 = DefaultAllocAlignLog2) {
@@ -297,7 +297,7 @@ class ArenaAllocator : public AllocatorBase<ArenaAllocator<BaseAllocator>> {
         MaxPageSize(_MaxPageSize),
         GrowAfterCount(_GrowAfterCount) {}
 
-  ~ArenaAllocator() override {
+  ~ArenaAllocator() OVERRIDE {
     for (void* Page : AllocatedPages)
       BaseAlloc.deallocateDispatch(Page);
     for (void* Page : BigAllocations)
@@ -306,12 +306,12 @@ class ArenaAllocator : public AllocatorBase<ArenaAllocator<BaseAllocator>> {
 
   // Generic virtual allocation
   void* allocateVirtual(size_t Size,
-                        size_t AlignLog2 = DefaultAllocAlignLog2) override {
+                        size_t AlignLog2 = DefaultAllocAlignLog2) OVERRIDE {
     return allocateDispatch(Size, AlignLog2);
   }
 
   // Generic virtual deallocation
-  virtual void deallocateVirtual(void* /*Pointer*/) override {}
+  virtual void deallocateVirtual(void* /*Pointer*/) OVERRIDE {}
 
   void* allocateDispatch(size_t Size,
                          size_t AlignLog2 = DefaultAllocAlignLog2) {
@@ -393,14 +393,14 @@ class MallocArena : public AllocatorBase<MallocArena> {
                        size_t Threshold = DefaultArenaThreshold,
                        size_t GrowAfterCount = DefaultArenaGrowAfterCount);
 
-  ~MallocArena() override {}
+  ~MallocArena() OVERRIDE {}
 
   // Generic virtual allocation
   void* allocateVirtual(size_t Size,
-                        size_t AlignLog2 = DefaultAllocAlignLog2) override;
+                        size_t AlignLog2 = DefaultAllocAlignLog2) OVERRIDE;
 
   // Generic virtual deallocation
-  virtual void deallocateVirtual(void* Pointer) override;
+  virtual void deallocateVirtual(void* Pointer) OVERRIDE;
 
   void* allocateDispatch(size_t Size, size_t AligLog2 = DefaultAllocAlignLog2);
 
@@ -441,7 +441,7 @@ struct TemplateAllocator {
   size_t max_size() const { return size_t(1) << 30; }
   template <typename Other>
   struct rebind {
-    using other = TemplateAllocator<Other>;
+    typedef TemplateAllocator<Other> other;
   };
 
  private:

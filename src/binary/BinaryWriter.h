@@ -58,7 +58,7 @@ class BinaryWriter {
   decode::Cursor WritePos;
   interp::ByteWriteStream* Writer;
   SectionSymbolTable SectionSymtab;
-  bool MinimizeBlockSize = false;
+  bool MinimizeBlockSize;
   interp::TraceClassSexpWriter Trace;
 
   void writeNode(const Node* Nd);
