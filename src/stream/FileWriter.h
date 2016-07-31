@@ -36,11 +36,11 @@ class FdWriter : public RawStream {
   FdWriter(int Fd, bool CloseOnExit = true)
       : Fd(Fd), CloseOnExit(CloseOnExit) {}
 
-  ~FdWriter() override;
-  size_t read(uint8_t* Buf, size_t Size = 1) override;
-  bool write(uint8_t* Buf, size_t Size = 1) override;
-  bool freeze() override;
-  bool atEof() override;
+  ~FdWriter() OVERRIDE;
+  size_t read(uint8_t* Buf, size_t Size = 1) OVERRIDE;
+  bool write(uint8_t* Buf, size_t Size = 1) OVERRIDE;
+  bool freeze() OVERRIDE;
+  bool atEof() OVERRIDE;
 
   static std::unique_ptr<RawStream> create(int Fd, bool CloseOnExit = true) {
     // TODO(kschimpf): Can we make the shared pointr part of the writer?
@@ -59,13 +59,13 @@ class FdWriter : public RawStream {
   bool saveBuffer();
 };
 
-class FileWriter final : public FdWriter {
+class FileWriter FINAL : public FdWriter {
   FileWriter(const FileWriter&) = delete;
   FileWriter& operator=(const FileWriter&) = delete;
 
  public:
   FileWriter(const char* Filename);
-  ~FileWriter() override;
+  ~FileWriter() OVERRIDE;
 
   static std::unique_ptr<RawStream> create(const char* Filename) {
     // TODO(kschimpf): Can we make the shared pointr part of the writer?
