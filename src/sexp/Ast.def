@@ -193,7 +193,6 @@
 //#define X(tag)
 #define AST_SELECTNODE_TABLE                                                   \
   X(Select)                                                                    \
-  X(Opcode)                                                                    \
 
 //#define X(tag)
 #define AST_NARYNODE_TABLE                                                     \

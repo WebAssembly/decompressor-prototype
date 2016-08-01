@@ -78,7 +78,8 @@ void usage(const char* AppName) {
   fprintf(stderr,
           "  -o File\t\tGenerated Decompressed File ('-' implies stdout).\n");
   fprintf(stderr, "  -s\t\t\tUse C++ streams instead of C file descriptors.\n");
-  fprintf(stderr, "  -v | --verbose\t"
+  fprintf(stderr,
+          "  -v | --verbose\t"
           "Show progress (can be repeated for more detail).\n");
 }
 
@@ -123,8 +124,8 @@ int main(int Argc, char* Argv[]) {
       OutputFilename = Argv[i];
     } else if (Argv[i] == std::string("-s")) {
       UseFileStreams = true;
-    } else if (Argv[i] == std::string("-v")
-               || Argv[i] == std::string("--verbose")) {
+    } else if (Argv[i] == std::string("-v") ||
+               Argv[i] == std::string("--verbose")) {
       ++Verbose;
     } else {
       fprintf(stderr, "Unrecognized option: %s\n", Argv[i]);

@@ -447,13 +447,28 @@ class NaryNode : public Node {
       : Node(Alloc, Type), Kids(alloc::TemplateAllocator<Node*>(Alloc)) {}
 };
 
+#define X(tag)                                                                \
+  class tag##Node FINAL : public NaryNode {                                   \
+    tag##Node(const tag##Node&) = delete;                                     \
+    tag##Node& operator=(const tag##Node&) = delete;                          \
+    virtual void forceCompilation() FINAL;                                    \
+                                                                              \
+   public:                                                                    \
+    tag##Node() : NaryNode(Op##tag) {}                                        \
+    explicit tag##Node(alloc::Allocator* Alloc) : NaryNode(Alloc, Op##tag) {} \
+    ~tag##Node() OVERRIDE {}                                                  \
+    static bool implementsClass(NodeType Type) { return Op##tag == Type; }    \
+  };
+AST_NARYNODE_TABLE
+#undef X
+
 class SelectBaseNode : public NaryNode {
   SelectBaseNode(const SelectBaseNode&) = delete;
   SelectBaseNode& operator=(const SelectBaseNode&) = delete;
   virtual void forceCompilation();
 
  public:
-  void installFastLookup();
+  void installReadLookup();
   const Node* getCase(decode::IntType Key) const;
 
  protected:
@@ -480,20 +495,17 @@ class SelectBaseNode : public NaryNode {
 AST_SELECTNODE_TABLE
 #undef X
 
-#define X(tag)                                                                \
-  class tag##Node FINAL : public NaryNode {                                   \
-    tag##Node(const tag##Node&) = delete;                                     \
-    tag##Node& operator=(const tag##Node&) = delete;                          \
-    virtual void forceCompilation() FINAL;                                    \
-                                                                              \
-   public:                                                                    \
-    tag##Node() : NaryNode(Op##tag) {}                                        \
-    explicit tag##Node(alloc::Allocator* Alloc) : NaryNode(Alloc, Op##tag) {} \
-    ~tag##Node() OVERRIDE {}                                                  \
-    static bool implementsClass(NodeType Type) { return Op##tag == Type; }    \
-  };
-AST_NARYNODE_TABLE
-#undef X
+class OpcodeNode FINAL : public SelectBaseNode {
+  OpcodeNode(const OpcodeNode&) = delete;
+  OpcodeNode& operator=(const OpcodeNode&) = delete;
+  virtual void forceCompilation() FINAL;
+
+ public:
+  OpcodeNode() : SelectBaseNode(OpOpcode) {}
+  explicit OpcodeNode(alloc::Allocator* Alloc)
+      : SelectBaseNode(Alloc, OpOpcode) {}
+  static bool implementsClass(NodeType Type) { return OpOpcode == Type; }
+};
 
 }  // end of namespace filt
 

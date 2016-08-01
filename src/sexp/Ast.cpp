@@ -302,7 +302,7 @@ const Node* SelectBaseNode::getCase(IntType Key) const {
   return nullptr;
 }
 
-void SelectBaseNode::installFastLookup() {
+void SelectBaseNode::installReadLookup() {
   TextWriter Writer;
   for (auto* Kid : *this) {
     if (const auto* Case = dyn_cast<CaseNode>(Kid)) {
@@ -317,6 +317,9 @@ void SelectBaseNode::installFastLookup() {
   void tag##Node::forceCompilation() {}
 AST_SELECTNODE_TABLE
 #undef X
+
+void OpcodeNode::forceCompilation() {
+}
 
 }  // end of namespace filt
 
