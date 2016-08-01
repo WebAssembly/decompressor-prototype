@@ -18,7 +18,6 @@
 // Implements defaults for stream readers.
 
 #include "interp/ReadStream.h"
-#include "interp/State.h"
 
 namespace {
 

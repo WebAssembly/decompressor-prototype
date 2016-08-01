@@ -17,7 +17,7 @@
 
 // Implements the interpreter for filter s-expressions.
 
-#include "interp/State.h"
+#include "interp/Interpreter.h"
 #include "sexp/TextWriter.h"
 
 #include <iostream>
@@ -55,7 +55,9 @@ IntType getIntegerValue(Node* N) {
 
 }  // end of anonymous namespace
 
-State::State(ByteQueue* Input, ByteQueue* Output, SymbolTable* Algorithms)
+Interpreter::Interpreter(ByteQueue* Input,
+                         ByteQueue* Output,
+                         SymbolTable* Algorithms)
     : ReadPos(StreamType::Byte, Input),
       WritePos(StreamType::Byte, Output),
       Alloc(Allocator::Default),
@@ -75,7 +77,7 @@ uint32_t LogBlockCount = 0;
 }  // end of anonymous namespace
 #endif
 
-IntType State::eval(const Node* Nd) {
+IntType Interpreter::eval(const Node* Nd) {
   // TODO(kschimpf): Fix for ast streams.
   // TODO(kschimpf) Handle blocks.
   TraceClass::Method _("eval", Trace);
@@ -257,7 +259,7 @@ IntType State::eval(const Node* Nd) {
   return ReturnValue;
 }
 
-uint32_t State::readOpcodeSelector(const Node* Nd, IntType& Value) {
+uint32_t Interpreter::readOpcodeSelector(const Node* Nd, IntType& Value) {
   switch (Nd->getType()) {
     case OpUint8NoArgs:
       Value = read(Nd);
@@ -288,9 +290,9 @@ uint32_t State::readOpcodeSelector(const Node* Nd, IntType& Value) {
   }
 }
 
-IntType State::readOpcode(const Node* Nd,
-                          IntType PrefixValue,
-                          uint32_t NumOpcodes) {
+IntType Interpreter::readOpcode(const Node* Nd,
+                                IntType PrefixValue,
+                                uint32_t NumOpcodes) {
   TraceClass::Method _("readOpcode", Trace);
   switch (NodeType Type = Nd->getType()) {
     default:
@@ -319,7 +321,7 @@ IntType State::readOpcode(const Node* Nd,
   return LastReadValue;
 }
 
-IntType State::read(const Node* Nd) {
+IntType Interpreter::read(const Node* Nd) {
   switch (NodeType Type = Nd->getType()) {
     default:
       fprintf(stderr, "Read not implemented: %s\n", getNodeTypeName(Type));
@@ -381,7 +383,7 @@ IntType State::read(const Node* Nd) {
   }
 }
 
-IntType State::write(IntType Value, const wasm::filt::Node* Nd) {
+IntType Interpreter::write(IntType Value, const wasm::filt::Node* Nd) {
   switch (NodeType Type = Nd->getType()) {
     default:
       fprintf(stderr, "Write not implemented: %s\n", getNodeTypeName(Type));
@@ -444,7 +446,7 @@ IntType State::write(IntType Value, const wasm::filt::Node* Nd) {
   return Value;
 }
 
-void State::decompress() {
+void Interpreter::decompress() {
   TraceClass::Method _("decompress", Trace);
   LastReadValue = 0;
   MagicNumber = Reader->readUint32(ReadPos);
@@ -465,7 +467,7 @@ void State::decompress() {
   WritePos.freezeEof();
 }
 
-void State::decompressBlock(const Node* Code) {
+void Interpreter::decompressBlock(const Node* Code) {
   TraceClass::Method _("decompressBlock", Trace);
   auto* ByteWriter = dyn_cast<ByteWriteStream>(Writer);
   bool IsByteReader = isa<ByteReadStream>(Reader);
@@ -504,7 +506,7 @@ void State::decompressBlock(const Node* Code) {
     ReadPos.popEobAddress();
 }
 
-void State::evalOrCopy(const Node* Nd) {
+void Interpreter::evalOrCopy(const Node* Nd) {
   if (Nd) {
     eval(Nd);
     return;
@@ -513,7 +515,7 @@ void State::evalOrCopy(const Node* Nd) {
     Writer->writeUint8(Reader->readUint8(ReadPos), WritePos);
 }
 
-void State::decompressSection() {
+void Interpreter::decompressSection() {
   TraceClass::Method _("decompressSection", Trace);
   LastReadValue = 0;
   assert(isa<ByteReadStream>(Reader));
@@ -530,7 +532,7 @@ void State::decompressSection() {
   decompressBlock(Sym ? Sym->getDefineDefinition() : nullptr);
 }
 
-void State::readSectionName() {
+void Interpreter::readSectionName() {
   CurSectionName.clear();
   uint32_t NameSize = Reader->readVaruint32(ReadPos);
   Writer->writeVaruint32(NameSize, WritePos);

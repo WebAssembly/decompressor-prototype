@@ -16,7 +16,7 @@
  */
 
 #include "binary/BinaryReader.h"
-#include "interp/State.h"
+#include "interp/Interpreter.h"
 #include "sexp-parser/Driver.h"
 #include "stream/ByteQueue.h"
 #include "stream/FileReader.h"
@@ -156,7 +156,7 @@ int main(int Argc, char* Argv[]) {
   }
   ReadBackedByteQueue Input(getInput());
   WriteBackedByteQueue Output(getOutput());
-  State Decompressor(&Input, &Output, &SymTab);
+  Interpreter Decompressor(&Input, &Output, &SymTab);
   Decompressor.setTraceProgress(Verbose >= 1, TraceIoDifference);
   Decompressor.setMinimizeBlockSize(MinimizeBlockSize);
   Decompressor.decompress();
