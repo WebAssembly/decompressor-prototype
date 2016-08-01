@@ -136,8 +136,8 @@ STRM_LIB = $(LIBDIR)/$(LIBPREFIX)strm.a
 INTERP_SRCDIR = $(SRCDIR)/interp
 INTERP_OBJDIR = $(OBJDIR)/interp
 INTERP_SRCS = \
+	Interpreter.cpp \
 	ReadStream.cpp \
-	State.cpp \
 	TraceSexpReader.cpp \
 	TraceSexpReaderWriter.cpp \
 	TraceSexpWriter.cpp \

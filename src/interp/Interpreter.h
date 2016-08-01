@@ -38,18 +38,18 @@ namespace interp {
 // corresponding state associated with the interpreter.
 //
 // TODO(karlschimpf) Rename this to a better name.
-class State {
-  State() = delete;
-  State(const State&) = delete;
-  State& operator=(const State&) = delete;
+class Interpreter {
+  Interpreter() = delete;
+  Interpreter(const Interpreter&) = delete;
+  Interpreter& operator=(const Interpreter&) = delete;
 
  public:
   // TODO(kschimpf): Add Output.
-  State(decode::ByteQueue* Input,
-        decode::ByteQueue* Output,
-        filt::SymbolTable* Algorithms);
+  Interpreter(decode::ByteQueue* Input,
+              decode::ByteQueue* Output,
+              filt::SymbolTable* Algorithms);
 
-  ~State() {}
+  ~Interpreter() {}
 
   // Processes each section in input, and decompresses it (if applicable)
   // to the corresponding output.

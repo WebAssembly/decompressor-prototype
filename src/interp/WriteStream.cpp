@@ -18,7 +18,6 @@
 // Implements defaults for stream writers.
 
 #include "interp/WriteStream.h"
-#include "interp/State.h"
 
 #include <iostream>
 
