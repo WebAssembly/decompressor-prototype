@@ -17,8 +17,8 @@
 
 // Models the interpretater for filter s-expressions.
 
-#ifndef DECOMPRESSOR_SRC_INTERP_INTERPSTATE_H
-#define DECOMPRESSOR_SRC_INTERP_INTERPSTATE_H
+#ifndef DECOMPRESSOR_SRC_INTERP_INTERPRETER_H
+#define DECOMPRESSOR_SRC_INTERP_INTERPRETER_H
 
 #include "stream/ByteQueue.h"
 #include "stream/Cursor.h"
@@ -106,4 +106,4 @@ class Interpreter {
 
 }  // end of namespace wasm.
 
-#endif  // DECOMPRESSOR_SRC_INTERP_INTERPSTATE_H
+#endif  // DECOMPRESSOR_SRC_INTERP_INTERPRETER_H
