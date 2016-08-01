@@ -257,7 +257,7 @@ IntType State::eval(const Node* Nd) {
   return ReturnValue;
 }
 
-uint32_t State::readOpcodeSelector(const Node* Nd, IntType &Value) {
+uint32_t State::readOpcodeSelector(const Node* Nd, IntType& Value) {
   switch (Nd->getType()) {
     case OpUint8NoArgs:
       Value = read(Nd);
@@ -288,7 +288,8 @@ uint32_t State::readOpcodeSelector(const Node* Nd, IntType &Value) {
   }
 }
 
-IntType State::readOpcode(const Node* Nd, IntType PrefixValue,
+IntType State::readOpcode(const Node* Nd,
+                          IntType PrefixValue,
                           uint32_t NumOpcodes) {
   TraceClass::Method _("readOpcode", Trace);
   switch (NodeType Type = Nd->getType()) {
@@ -343,31 +344,38 @@ IntType State::read(const Node* Nd) {
     case OpUint8NoArgs:
       return LastReadValue = Reader->readUint8(ReadPos);
     case OpUint8OneArg:
-      return LastReadValue = Reader->readUint8Bits(ReadPos, getIntegerValue(Nd->getKid(0)));
+      return LastReadValue =
+                 Reader->readUint8Bits(ReadPos, getIntegerValue(Nd->getKid(0)));
     case OpUint32NoArgs:
       return LastReadValue = Reader->readUint32(ReadPos);
     case OpUint32OneArg:
-      return LastReadValue = Reader->readUint32Bits(ReadPos, getIntegerValue(Nd->getKid(0)));
+      return LastReadValue = Reader->readUint32Bits(
+                 ReadPos, getIntegerValue(Nd->getKid(0)));
     case OpUint64NoArgs:
       return LastReadValue = Reader->readUint64(ReadPos);
     case OpUint64OneArg:
-      return LastReadValue = Reader->readUint64Bits(ReadPos, getIntegerValue(Nd->getKid(0)));
+      return LastReadValue = Reader->readUint64Bits(
+                 ReadPos, getIntegerValue(Nd->getKid(0)));
     case OpVarint32NoArgs:
       return LastReadValue = Reader->readVarint32(ReadPos);
     case OpVarint32OneArg:
-      return LastReadValue = Reader->readVarint32Bits(ReadPos, getIntegerValue(Nd->getKid(0)));
+      return LastReadValue = Reader->readVarint32Bits(
+                 ReadPos, getIntegerValue(Nd->getKid(0)));
     case OpVarint64NoArgs:
       return LastReadValue = Reader->readVarint64(ReadPos);
     case OpVarint64OneArg:
-      return LastReadValue = Reader->readVarint64Bits(ReadPos, getIntegerValue(Nd->getKid(0)));
+      return LastReadValue = Reader->readVarint64Bits(
+                 ReadPos, getIntegerValue(Nd->getKid(0)));
     case OpVaruint32NoArgs:
       return LastReadValue = Reader->readVaruint32(ReadPos);
     case OpVaruint32OneArg:
-      return LastReadValue = Reader->readVaruint32Bits(ReadPos, getIntegerValue(Nd->getKid(0)));
+      return LastReadValue = Reader->readVaruint32Bits(
+                 ReadPos, getIntegerValue(Nd->getKid(0)));
     case OpVaruint64NoArgs:
       return LastReadValue = Reader->readVaruint64(ReadPos);
     case OpVaruint64OneArg:
-      return LastReadValue = Reader->readVaruint64Bits(ReadPos, getIntegerValue(Nd->getKid(0)));
+      return LastReadValue = Reader->readVaruint64Bits(
+                 ReadPos, getIntegerValue(Nd->getKid(0)));
     case OpVoid:
       return LastReadValue = 0;
   }

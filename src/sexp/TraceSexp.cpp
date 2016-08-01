@@ -26,12 +26,11 @@ namespace filt {
 TraceClassSexp::TraceClassSexp() : TraceClass(), Writer(nullptr) {
 }
 
-TraceClassSexp::TraceClassSexp(const char* Label) :
-    TraceClass(Label), Writer(nullptr) {
+TraceClassSexp::TraceClassSexp(const char* Label)
+    : TraceClass(Label), Writer(nullptr) {
 }
 
-TraceClassSexp::TraceClassSexp(FILE* File) :
-    TraceClass(File), Writer(nullptr) {
+TraceClassSexp::TraceClassSexp(FILE* File) : TraceClass(File), Writer(nullptr) {
 }
 
 TraceClassSexp::TraceClassSexp(const char* Label, FILE* File)

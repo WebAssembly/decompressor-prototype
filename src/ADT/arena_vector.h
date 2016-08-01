@@ -26,7 +26,7 @@
 
 namespace wasm {
 
-#define ARENA_VECTOR(T) std::vector<T, alloc::TemplateAllocator<T>>
+#define ARENA_VECTOR(T) std::vector<T, alloc::TemplateAllocator<T> >
 
 }  // end of namespace wasm
 

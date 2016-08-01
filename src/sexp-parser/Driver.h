@@ -36,14 +36,14 @@ class Driver {
   Driver& operator=(const Driver&) = delete;
 
  public:
-  Driver(SymbolTable& Table) :
-      Table(Table),
-      Alloc(Table.getAllocator()),
-      TraceLexing(false),
-      TraceParsing(false),
-      MaintainIntegerFormatting(false),
-      ParsedAst(nullptr),
-      ErrorsReported(false) {}
+  Driver(SymbolTable& Table)
+      : Table(Table),
+        Alloc(Table.getAllocator()),
+        TraceLexing(false),
+        TraceParsing(false),
+        MaintainIntegerFormatting(false),
+        ParsedAst(nullptr),
+        ErrorsReported(false) {}
 
   ~Driver() {}
 

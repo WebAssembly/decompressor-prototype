@@ -54,9 +54,12 @@ class FdReader : public RawStream {
   bool AtEof;
   bool CloseOnExit;
 
-  FdReader(int Fd, bool CloseOnExit) :
-      Fd(Fd), CurSize(0), BytesRemaining(0), AtEof(false),
-      CloseOnExit(CloseOnExit) {}
+  FdReader(int Fd, bool CloseOnExit)
+      : Fd(Fd),
+        CurSize(0),
+        BytesRemaining(0),
+        AtEof(false),
+        CloseOnExit(CloseOnExit) {}
   void closeFd();
   void fillBuffer();
 };

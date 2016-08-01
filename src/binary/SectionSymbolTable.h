@@ -37,7 +37,7 @@ class SectionSymbolTable {
 
  public:
   typedef uint32_t IndexType;
-  typedef std::unordered_map<SymbolNode*, IndexType>  SymbolLookupType;
+  typedef std::unordered_map<SymbolNode*, IndexType> SymbolLookupType;
   typedef std::vector<SymbolNode*> IndexLookupType;
   SectionSymbolTable(SymbolTable& Symtab) : Symtab(Symtab) {}
   ~SectionSymbolTable() {}

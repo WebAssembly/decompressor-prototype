@@ -26,11 +26,10 @@ namespace wasm {
 namespace decode {
 
 template <class Base>
-Queue<Base>::Queue() :
-    MinPeekSize(32 * sizeof(Base)),
-    EobFrozen(false),
-    EofPtr(std::make_shared<BlockEob>())
-{
+Queue<Base>::Queue()
+    : MinPeekSize(32 * sizeof(Base)),
+      EobFrozen(false),
+      EofPtr(std::make_shared<BlockEob>()) {
   LastPage = FirstPage = std::make_shared<Page>(0);
   PageMap.push_back(LastPage);
   // Double check that we can evenly fit elements of Base in a page.

@@ -99,7 +99,7 @@ class State {
                              uint32_t NumOpcodes);
   // Reads opcode selector into Value. Returns the Bitsize to the (fixed) number
   // of bits used to read the opcode selector. Otherwise returns zero.
-  uint32_t readOpcodeSelector(const filt::Node* Nd, decode::IntType &Value);
+  uint32_t readOpcodeSelector(const filt::Node* Nd, decode::IntType& Value);
 };
 
 }  // end of namespace interp.
