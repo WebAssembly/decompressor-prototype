@@ -57,7 +57,7 @@ enum NodeType {
   Op##tag = opcode,
   AST_OPCODE_TABLE
 #undef X
-  NO_SUCH_NODETYPE
+      NO_SUCH_NODETYPE
 };
 
 static constexpr size_t NumNodeTypes = 0
@@ -231,7 +231,7 @@ class SymbolNode FINAL : public NullaryNode {
  public:
   explicit SymbolNode(ExternalName& _Name)
       : NullaryNode(alloc::Allocator::Default, OpSymbol),
-      Name(alloc::Allocator::Default) {
+        Name(alloc::Allocator::Default) {
     init(_Name);
   }
   SymbolNode(alloc::Allocator* Alloc, ExternalName& _Name)
@@ -455,28 +455,28 @@ class SelectBaseNode : public NaryNode {
  public:
   void installFastLookup();
   const Node* getCase(decode::IntType Key) const;
+
  protected:
   // TODO(karlschimpf) Hook this up to allocator.
   std::unordered_map<decode::IntType, Node*> LookupMap;
 
   SelectBaseNode(NodeType Type) : NaryNode(Type) {}
-  SelectBaseNode(alloc::Allocator* Alloc, NodeType Type) :
-      NaryNode(Alloc, Type) {}
+  SelectBaseNode(alloc::Allocator* Alloc, NodeType Type)
+      : NaryNode(Alloc, Type) {}
 };
 
-
-#define X(tag)                                                                \
-class tag##Node FINAL : public SelectBaseNode {                               \
-  tag##Node(const tag##Node&) = delete;                                       \
-  tag##Node& operator=(const tag##Node&) = delete;                            \
-  virtual void forceCompilation() FINAL;                                      \
-                                                                              \
- public:                                                                      \
- tag##Node() : SelectBaseNode(Op##tag) {}                                     \
-  explicit tag##Node(alloc::Allocator* Alloc)                                 \
-       : SelectBaseNode(Alloc, Op##tag) {}                                    \
-  static bool implementsClass(NodeType Type) { return Op##tag == Type; }      \
-};
+#define X(tag)                                                             \
+  class tag##Node FINAL : public SelectBaseNode {                          \
+    tag##Node(const tag##Node&) = delete;                                  \
+    tag##Node& operator=(const tag##Node&) = delete;                       \
+    virtual void forceCompilation() FINAL;                                 \
+                                                                           \
+   public:                                                                 \
+    tag##Node() : SelectBaseNode(Op##tag) {}                               \
+    explicit tag##Node(alloc::Allocator* Alloc)                            \
+        : SelectBaseNode(Alloc, Op##tag) {}                                \
+    static bool implementsClass(NodeType Type) { return Op##tag == Type; } \
+  };
 AST_SELECTNODE_TABLE
 #undef X
 

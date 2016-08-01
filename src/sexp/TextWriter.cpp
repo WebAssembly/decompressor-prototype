@@ -36,10 +36,7 @@ constexpr const char* IndentString = "  ";
 
 bool TextWriter::UseNodeTypeNames = false;
 
-TextWriter::TextWriter() :
-    File(nullptr),
-    IndentCount(0),
-    LineEmpty(true) {
+TextWriter::TextWriter() : File(nullptr), IndentCount(0), LineEmpty(true) {
   // Build fast lookup for number of arguments to write on same line.
   for (size_t i = 0; i < MaxNodeType; ++i) {
     KidCountSameLine.push_back(0);

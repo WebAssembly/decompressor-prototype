@@ -35,8 +35,8 @@ class StreamWriter : public RawStream {
   StreamWriter& operator=(const StreamWriter&) = delete;
 
  public:
-  StreamWriter(std::ostream& Output) :
-      Output(Output), CurSize(0), IsFrozen(false) {}
+  StreamWriter(std::ostream& Output)
+      : Output(Output), CurSize(0), IsFrozen(false) {}
 
   ~StreamWriter() OVERRIDE;
   size_t read(uint8_t* Buf, size_t Size = 1) OVERRIDE;
