@@ -59,7 +59,8 @@ void usage(const char* AppName) {
   fprintf(stderr, "  -m\t\t\tMinimize block sizes in output stream.\n");
   fprintf(stderr, "  -o File\t\tGenerated WASM binary ('-' implies stdout).\n");
   fprintf(stderr, "  -s\t\t\tUse C++ streams instead of C file descriptors.\n");
-  fprintf(stderr, "  -v | --verbose\t"
+  fprintf(stderr,
+          "  -v | --verbose\t"
           "Show progress (can be repeated for more detail).\n");
 }
 
@@ -105,8 +106,8 @@ int main(int Argc, char* Argv[]) {
       OutputSpecified = true;
     } else if (Argv[i] == std::string("-s")) {
       UseFileStreams = true;
-    } else if (Argv[i] == std::string("-v")
-               || (Argv[i] == std::string("--verbose"))) {
+    } else if (Argv[i] == std::string("-v") ||
+               (Argv[i] == std::string("--verbose"))) {
       ++Verbose;
     } else {
       fprintf(stderr, "Unrecognized option: %s\n", Argv[i]);

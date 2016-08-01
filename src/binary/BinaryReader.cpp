@@ -263,8 +263,7 @@ void BinaryReader::readBlock(std::function<void()> ApplyFn) {
 
 void BinaryReader::readNode() {
   TraceClass::Method _("readNode", Trace);
-  NodeType Opcode = (NodeType)Reader->readUint8(ReadPos);
-  switch (Opcode) {
+  switch (NodeType Opcode = (NodeType)Reader->readUint8(ReadPos)) {
     case OpAnd:
       readBinary<AndNode>();
       break;
@@ -346,7 +345,7 @@ void BinaryReader::readNode() {
     case OpOpcode:
     case OpSelect:
       readNary<SelectNode>();
-      cast<SelectNode>(NodeStack.back())->installFastLookup();
+      cast<SelectNode>(NodeStack.back())->installReadLookup();
       break;
     case OpSequence:
       readNary<SequenceNode>();

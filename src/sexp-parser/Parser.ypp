@@ -346,8 +346,8 @@ format_directive
             $$ = Driver.create<Varuint64OneArgNode>($3);
           }
         | "(" "opcode" opcode_expression ")" {
+            $3->installReadLookup();
             $$ = $3;
-            $3->installFastLookup();
           }
         ;
 
@@ -467,7 +467,7 @@ statement
         | "(" loop_body ")" { $$ = $2; }
         | "(" "select" case_list ")" {
             $$ = $3;
-            $3->installFastLookup();
+            $3->installReadLookup();
           }
         | "(" "seq" seq_stmt_list ")" { $$ = $3; }
         ;
