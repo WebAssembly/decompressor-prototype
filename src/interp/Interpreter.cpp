@@ -311,7 +311,7 @@ IntType Interpreter::readOpcode(const Node* Nd,
           fatal("Opcode selector has illegal bitsize");
         LastReadValue |= PrefixValue << SelectorSize;
       }
-      if (const auto* Case = Sel->getCase(LastReadValue)) {
+      if (const CaseNode* Case = Sel->getCase(LastReadValue)) {
         LastReadValue = eval(Case);
       }
       break;
@@ -442,6 +442,16 @@ IntType Interpreter::write(IntType Value, const wasm::filt::Node* Nd) {
       break;
     case OpVoid:
       break;
+    case OpOpcode: {
+      const auto* Sel = cast<OpcodeNode>(Nd);
+      uint32_t SelShift;
+      IntType CaseMask;
+      const CaseNode* Case = Sel->getWriteCase(Value, SelShift, CaseMask);
+      write(Value >> SelShift, Sel->getKid(0));
+      if (Case)
+        write(Value & CaseMask, Case->getKid(1));
+      break;
+    }
   }
   return Value;
 }
@@ -516,6 +526,9 @@ void Interpreter::evalOrCopy(const Node* Nd) {
 }
 
 void Interpreter::decompressSection() {
+  // TODO(kschimpf) Handle 'filter' sections specially (i.e. install).  This
+  // includes calling "clearCaches" on all filter s-expressions to remove an
+  // (optimizing) caches installed.
   TraceClass::Method _("decompressSection", Trace);
   LastReadValue = 0;
   assert(isa<ByteReadStream>(Reader));

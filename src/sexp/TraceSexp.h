@@ -21,12 +21,13 @@
 #define DECOMPRESSOR_SRC_SEXP_TRACESEXP_H
 
 #include "utils/Trace.h"
-#include "sexp/Ast.h"
-#include "sexp/TextWriter.h"
 
 namespace wasm {
 
 namespace filt {
+
+class Node;
+class TextWriter;
 
 class TraceClassSexp : public utils::TraceClass {
   TraceClassSexp(const TraceClassSexp&) = delete;
@@ -38,19 +39,33 @@ class TraceClassSexp : public utils::TraceClass {
   TraceClassSexp(FILE* File);
   TraceClassSexp(const char* Label, FILE* File);
   ~TraceClassSexp();
-  void traceSexp(const Node* Node) {
+  void traceSexp(const Node* Nd) {
     if (TraceProgress)
-      traceSexpInternal(Node);
+      traceSexpInternal("", Nd);
+  }
+
+  void traceSexp(const char *Prefix, const Node* Nd) {
+    if (TraceProgress)
+      traceSexpInternal(Prefix, Nd);
+  }
+
+  void errorSexp(const char *Prefix, const Node* Nd);
+
+  void errorSexp(const Node* Nd) {
+    errorSexp("", Nd);
   }
 
  protected:
   TextWriter* Writer;
-  void traceSexpInternal(const Node* Node);
+  void traceSexpInternal(const char *Prefix, const Node* Nd);
+
   TextWriter* getTextWriter() {
     if (Writer == nullptr)
-      Writer = new TextWriter();
+      Writer = getNewTextWriter();
     return Writer;
   }
+
+  TextWriter* getNewTextWriter();
 };
 
 }  // end of namespace filt

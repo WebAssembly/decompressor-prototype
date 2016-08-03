@@ -18,6 +18,7 @@
 // Implements trace class to handle filter s-expressions.
 
 #include "sexp/TraceSexp.h"
+#include "sexp/TextWriter.h"
 
 namespace wasm {
 
@@ -41,9 +42,19 @@ TraceClassSexp::~TraceClassSexp() {
   delete Writer;
 }
 
-void TraceClassSexp::traceSexpInternal(const Node* Node) {
+TextWriter* TraceClassSexp::getNewTextWriter() {
+  return new TextWriter();
+}
+
+void TraceClassSexp::traceSexpInternal(const char *Prefix, const Node* Node) {
   indent();
+  fprintf(File, "%s", Prefix);
   getTextWriter()->writeAbbrev(File, Node);
+}
+
+void TraceClassSexp::errorSexp(const char *Prefix, const Node* Node) {
+  fprintf(File, "%s", Prefix);
+  getTextWriter()->write(File, Node);
 }
 
 }  // end of namespace filt

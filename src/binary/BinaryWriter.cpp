@@ -73,8 +73,6 @@ void BinaryWriter::writeNode(const Node* Nd) {
   switch (NodeType Type = Nd->getType()) {
     case NO_SUCH_NODETYPE:
     case OpUnknownSection:
-    case OpLastRead:
-    case OpOpcode:
     case OpInteger: {
       // TODO(kschimpf) Fix this list.
       fprintf(stderr, "Misplaced s-expression: %s\n", getNodeTypeName(Type));
@@ -105,6 +103,7 @@ void BinaryWriter::writeNode(const Node* Nd) {
     case OpVarint64NoArgs:
     case OpVaruint32NoArgs:
     case OpVaruint64NoArgs:
+    case OpLastRead:
     case OpVoid: {
       // Operations that are written out in postorder, with a fixed number of
       // arguments.
@@ -116,7 +115,7 @@ void BinaryWriter::writeNode(const Node* Nd) {
     case OpCase: {
       writeNode(Nd->getKid(1));
       Writer->writeUint8(Type, WritePos);
-      Writer->writeVaruint32(getIntegerValue(Nd->getKid(0)), WritePos);
+      Writer->writeVarint64(getIntegerValue(Nd->getKid(0)), WritePos);
       break;
     }
     case OpFile: {
@@ -141,6 +140,7 @@ void BinaryWriter::writeNode(const Node* Nd) {
       break;
     }
     case OpFilter:
+    case OpOpcode:
     case OpSelect:
     case OpSequence: {
       // Operations that are written out in postorder, and have a variable
