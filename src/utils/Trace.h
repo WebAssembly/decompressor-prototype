@@ -24,6 +24,12 @@
 
 #include <vector>
 
+#ifdef NDEBUG
+#define TRACE_METHOD(Name, Trace)
+#else
+#define TRACE_METHOD(Name, Trace) TraceClass::Method tracEmethoD(Name, Trace)
+#endif
+
 namespace wasm {
 
 namespace utils {
@@ -40,12 +46,12 @@ class TraceClass {
 
    public:
     Method(const char* Name, TraceClass& Cls) : Cls(Cls) {
-      if (Cls.TraceProgress) {
+      if (Cls.getTraceProgress()) {
         Cls.enter(Name);
       }
     }
     ~Method() {
-      if (Cls.TraceProgress) {
+      if (Cls.getTraceProgress()) {
         Cls.exit();
       }
     }
@@ -62,122 +68,122 @@ class TraceClass {
   virtual void traceContext() const;
   void indent();
   void traceMessage(const char* Message) {
-    if (TraceProgress)
+    if (getTraceProgress())
       traceMessageInternal(Message);
   }
   void traceMessage(const std::string& Message) {
-    if (TraceProgress)
+    if (getTraceProgress())
       traceMessageInternal(Message);
   }
   void traceBool(const char* Name, bool Value) {
-    if (TraceProgress)
+    if (getTraceProgress())
       traceBoolInternal(Name, Value);
   }
   void traceChar(const char* Name, char Ch) {
-    if (TraceProgress)
+    if (getTraceProgress())
       traceCharInternal(Name, Ch);
   }
   void traceSignedChar(const char* Name, signed char Ch) {
-    if (TraceProgress)
+    if (getTraceProgress())
       traceCharInternal(Name, char(Ch));
   }
   void traceUnsignedChar(const char* Name, unsigned char Ch) {
-    if (TraceProgress)
+    if (getTraceProgress())
       traceCharInternal(Name, char(Ch));
   }
   void traceString(const char* Name, std::string& Value) {
-    if (TraceProgress)
+    if (getTraceProgress())
       traceStringInternal(Name, Value);
   }
   void traceShort(const char* Name, short Value) {
-    if (TraceProgress)
+    if (getTraceProgress())
       traceIntInternal(Name, Value);
   }
   void traceUnsignedShort(const char* Name, unsigned short Value) {
-    if (TraceProgress)
+    if (getTraceProgress())
       traceUintInternal(Name, Value);
   }
   void traceInt(const char* Name, int Value) {
-    if (TraceProgress)
+    if (getTraceProgress())
       traceIntInternal(Name, Value);
   }
   void traceUnsignedInt(const char* Name, unsigned int Value) {
-    if (TraceProgress)
+    if (getTraceProgress())
       traceUintInternal(Name, Value);
   }
   void traceLong(const char* Name, long Value) {
-    if (TraceProgress)
+    if (getTraceProgress())
       traceIntInternal(Name, Value);
   }
   void traceUnsignedLong(const char* Name, unsigned long Value) {
-    if (TraceProgress)
+    if (getTraceProgress())
       traceUintInternal(Name, Value);
   }
   void traceInt8_t(const char* Name, int8_t Value) {
-    if (TraceProgress)
+    if (getTraceProgress())
       traceIntInternal(Name, Value);
   }
   void traceUint8_t(const char* Name, uint8_t Value) {
-    if (TraceProgress)
+    if (getTraceProgress())
       traceUintInternal(Name, Value);
   }
   void traceHexUint8_t(const char* Name, uint8_t Value) {
-    if (TraceProgress)
+    if (getTraceProgress())
       traceHexInternal(Name, Value);
   }
   void traceInt16_t(const char* Name, int16_t Value) {
-    if (TraceProgress)
+    if (getTraceProgress())
       traceIntInternal(Name, Value);
   }
   void traceUint16_t(const char* Name, uint16_t Value) {
-    if (TraceProgress)
+    if (getTraceProgress())
       traceUintInternal(Name, Value);
   }
   void traceInt32_t(const char* Name, int32_t Value) {
-    if (TraceProgress)
+    if (getTraceProgress())
       traceIntInternal(Name, Value);
   }
   void traceUint32_t(const char* Name, uint32_t Value) {
-    if (TraceProgress)
+    if (getTraceProgress())
       traceUintInternal(Name, Value);
   }
   void traceHexUint32_t(const char* Name, uint32_t Value) {
-    if (TraceProgress)
+    if (getTraceProgress())
       traceHexInternal(Name, Value);
   }
   void traceInt64_t(const char* Name, int64_t Value) {
-    if (TraceProgress)
+    if (getTraceProgress())
       traceIntInternal(Name, Value);
   }
   void traceIntmax_t(const char* Name, intmax_t Value) {
-    if (TraceProgress)
+    if (getTraceProgress())
       traceIntInternal(Name, Value);
   }
   void traceUint64_t(const char* Name, uint64_t Value) {
-    if (TraceProgress)
+    if (getTraceProgress())
       traceUintInternal(Name, Value);
   }
   void traceUintmax_t(const char* Name, uintmax_t Value) {
-    if (TraceProgress)
+    if (getTraceProgress())
       traceUintInternal(Name, Value);
   }
   void traceIntType(const char* Name, decode::IntType Value) {
-    if (TraceProgress)
+    if (getTraceProgress())
       traceUintInternal(Name, Value);
   }
   void traceSize_t(const char* Name, size_t Value) {
-    if (TraceProgress)
+    if (getTraceProgress())
       traceUintInternal(Name, Value);
   }
   void traceHexSize_t(const char* Name, size_t Value) {
-    if (TraceProgress)
+    if (getTraceProgress())
       traceHexInternal(Name, Value);
   }
   void tracePointer(const char* Name, void* Ptr) {
-    if (TraceProgress)
+    if (getTraceProgress())
       tracePointerInternal(Name, Ptr);
   }
-  bool getTraceProgress() const { return TraceProgress; }
+  bool getTraceProgress() const { return wasm::isDebug() && TraceProgress; }
   void setTraceProgress(bool NewValue) { TraceProgress = NewValue; }
 
   FILE* getFile() const { return File; }

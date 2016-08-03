@@ -80,7 +80,7 @@ uint32_t LogBlockCount = 0;
 IntType Interpreter::eval(const Node* Nd) {
   // TODO(kschimpf): Fix for ast streams.
   // TODO(kschimpf) Handle blocks.
-  TraceClass::Method _("eval", Trace);
+  TRACE_METHOD("eval", Trace);
   Trace.traceSexp(Nd);
   IntType ReturnValue = 0;
   switch (NodeType Type = Nd->getType()) {
@@ -293,7 +293,7 @@ uint32_t Interpreter::readOpcodeSelector(const Node* Nd, IntType& Value) {
 IntType Interpreter::readOpcode(const Node* Nd,
                                 IntType PrefixValue,
                                 uint32_t NumOpcodes) {
-  TraceClass::Method _("readOpcode", Trace);
+  TRACE_METHOD("readOpcode", Trace);
   switch (NodeType Type = Nd->getType()) {
     default:
       fprintf(stderr, "Illegal opcode selector: %s\n", getNodeTypeName(Type));
@@ -457,7 +457,7 @@ IntType Interpreter::write(IntType Value, const wasm::filt::Node* Nd) {
 }
 
 void Interpreter::decompress() {
-  TraceClass::Method _("decompress", Trace);
+  TRACE_METHOD("decompress", Trace);
   LastReadValue = 0;
   MagicNumber = Reader->readUint32(ReadPos);
   // TODO(kschimpf): Fix reading of uintX. Current implementation not same as
@@ -478,7 +478,7 @@ void Interpreter::decompress() {
 }
 
 void Interpreter::decompressBlock(const Node* Code) {
-  TraceClass::Method _("decompressBlock", Trace);
+  TRACE_METHOD("decompressBlock", Trace);
   auto* ByteWriter = dyn_cast<ByteWriteStream>(Writer);
   bool IsByteReader = isa<ByteReadStream>(Reader);
   if (IsByteReader) {
@@ -529,7 +529,7 @@ void Interpreter::decompressSection() {
   // TODO(kschimpf) Handle 'filter' sections specially (i.e. install).  This
   // includes calling "clearCaches" on all filter s-expressions to remove an
   // (optimizing) caches installed.
-  TraceClass::Method _("decompressSection", Trace);
+  TRACE_METHOD("decompressSection", Trace);
   LastReadValue = 0;
   assert(isa<ByteReadStream>(Reader));
 #if LOG_SECTIONS

@@ -40,12 +40,12 @@ class TraceClassSexp : public utils::TraceClass {
   TraceClassSexp(const char* Label, FILE* File);
   ~TraceClassSexp();
   void traceSexp(const Node* Nd) {
-    if (TraceProgress)
+    if (getTraceProgress())
       traceSexpInternal("", Nd);
   }
 
   void traceSexp(const char *Prefix, const Node* Nd) {
-    if (TraceProgress)
+    if (getTraceProgress())
       traceSexpInternal(Prefix, Nd);
   }
 

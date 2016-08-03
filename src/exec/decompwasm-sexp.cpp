@@ -28,6 +28,7 @@
 #include <unistd.h>
 #include <iostream>
 
+using namespace wasm;
 using namespace wasm::alloc;
 using namespace wasm::filt;
 using namespace wasm::decode;
@@ -60,7 +61,9 @@ void usage(const char* AppName) {
   fprintf(stderr,
           "  -o File\t\tFile with found s-expressions ('-' implies stdout).\n");
   fprintf(stderr, "  -s\t\t\tUse C++ streams instead of C file descriptors.\n");
-  fprintf(stderr, "  -v | --verbose\tShow progress.\n");
+  if (isDebug()) {
+    fprintf(stderr, "  -v | --verbose\tShow progress of reading wasm file.\n");
+  }
 }
 
 int main(int Argc, char* Argv[]) {
@@ -88,8 +91,9 @@ int main(int Argc, char* Argv[]) {
       OutputFilename = Argv[i];
     } else if (Argv[i] == std::string("-s")) {
       UseFileStreams = true;
-    } else if (Argv[i] == std::string("-v") ||
-               Argv[i] == std::string("--verbose")) {
+    } else if (isDebug() &&
+               (Argv[i] == std::string("-v") ||
+                Argv[i] == std::string("--verbose"))) {
       ++Verbose;
     } else {
       fprintf(stderr, "Unrecognized option: %s\n", Argv[i]);

@@ -56,19 +56,19 @@ void BinaryWriter::writePreamble() {
 }
 
 void BinaryWriter::writeFile(const FileNode* File) {
-  TraceClass::Method _("writeFile", Trace);
+  TRACE_METHOD("writeFile", Trace);
   Trace.traceSexp(File);
   writeNode(File);
 }
 
 void BinaryWriter::writeSection(const SectionNode* Section) {
-  TraceClass::Method _("writeSection", Trace);
+  TRACE_METHOD("writeSection", Trace);
   Trace.traceSexp(Section);
   writeNode(Section);
 }
 
 void BinaryWriter::writeNode(const Node* Nd) {
-  TraceClass::Method _("writeNode", Trace);
+  TRACE_METHOD("writeNode", Trace);
   Trace.traceSexp(Nd);
   switch (NodeType Type = Nd->getType()) {
     case NO_SUCH_NODETYPE:
@@ -234,7 +234,7 @@ void BinaryWriter::writeBlock(std::function<void()> ApplyFn) {
 }
 
 void BinaryWriter::writeSymbol(const Node* Symbol) {
-  TraceClass::Method _("writeSymbol", Trace);
+  TRACE_METHOD("writeSymbol", Trace);
   Trace.traceSexp(Symbol);
   assert(isa<SymbolNode>(Symbol) &&
          "BinaryWriter::writeSymbol called on non-symbol");
