@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Note: If using -jN, be sure to run "make gen" first.
-
 # Build debug: make
 #            : make DEBUG=1
 # Build release: make RELEASE=1
@@ -559,6 +557,3 @@ test-byte-queues: $(TEST_EXECDIR)/TestByteQueues
 
 .PHONY: test-byte-queues
 
-$(TEST_EXECDIR)/TestRawStreams: $(TEST_DIR)/TestRawStreams.cpp $(STRM_OBJS) \
-				$(OBJS)
-	$(CXX) $(CXXFLAGS) $< $(STRM_OBJS) $(OBJS) -o $@
