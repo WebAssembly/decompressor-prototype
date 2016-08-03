@@ -236,11 +236,6 @@ void TextWriter::writeNode(const Node* Nd,
   }
 }
 
-<<<<<<< HEAD
-} // end of namespace filt
-
-} // end of namespace wasm
-=======
 void TextWriter::writeNodeKidsAbbrev(const Node* Nd, bool EmbeddedInParent) {
   // Write out with number of kids specified to be on same line,
   // with remaining kids on separate (indented) lines.
