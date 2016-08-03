@@ -110,6 +110,8 @@ SEXP_SRCS = \
 	TextWriter.cpp \
 	TraceSexp.cpp
 
+SEXP_DEFAULTS = $(SEXP_SRCDIR)/defaults.df
+
 SEXP_OBJS=$(patsubst %.cpp, $(SEXP_OBJDIR)/%.o, $(SEXP_SRCS))
 
 SEXP_LIB = $(LIBDIR)/$(LIBPREFIX)sexp.a
@@ -489,7 +491,7 @@ presubmit:
 .PHONY: presubmit
 
 test-decompress: $(BUILD_EXECDIR)/decompress
-	$< -d defaults.df -i $(TEST_SRCS_DIR)/toy.wasm -o - \
+	$< -d $(SEXP_DEFAULTS) -i $(TEST_SRCS_DIR)/toy.wasm -o - \
 		| diff - $(TEST_SRCS_DIR)/toy.wasm-w
 	$< -d $(TEST_SRCS_DIR)/defaults.wasm \
 		-i $(TEST_SRCS_DIR)/toy.wasm -o - \
@@ -512,8 +514,8 @@ test-decompress: $(BUILD_EXECDIR)/decompress
 .PHONY: test-decompress
 
 test-decompsexp-wasm: $(BUILD_EXECDIR)/decompsexp-wasm
-	$< -m < defaults.df | diff - $(TEST_SRCS_DIR)/defaults.wasm
-	$< < defaults.df | diff - $(TEST_SRCS_DIR)/defaults.wasm-w
+	$< -m < $(SEXP_DEFAULTS) | diff - $(TEST_SRCS_DIR)/defaults.wasm
+	$< < $(SEXP_DEFAULTS) | diff - $(TEST_SRCS_DIR)/defaults.wasm-w
 	@echo "*** sexp2wasm tests passed ***"
 
 test-decompwasm-sexp: $(BUILD_EXECDIR)/decompwasm-sexp
@@ -524,8 +526,8 @@ test-decompwasm-sexp: $(BUILD_EXECDIR)/decompwasm-sexp
 	@echo "*** wasm2sexp tests passed ***"
 
 test-parser: $(TEST_EXECDIR)/TestParser
-	$< -w -f defaults.df | diff - $(TEST_SRCS_DIR)/defaults.dff
-	$< -w defaults.df | diff - $(TEST_SRCS_DIR)/defaults.df
+	$< -w -f $(SEXP_DEFAULTS) | diff - $(TEST_SRCS_DIR)/defaults.dff
+	$< -w $(SEXP_DEFAULTS) | diff - $(TEST_SRCS_DIR)/defaults.df
 	$< --expect-fail $(TEST_SRCS_DIR)/MismatchedParens.df 2>&1 | \
 		diff - $(TEST_SRCS_DIR)/MismatchedParens.df-out
 	@echo "*** parser tests passed ***"
@@ -533,24 +535,24 @@ test-parser: $(TEST_EXECDIR)/TestParser
 .PHONY: test-parser
 
 test-raw-streams: $(TEST_EXECDIR)/TestRawStreams
-	$< -i defaults.df | diff - defaults.df
-	$< -i defaults.df -s | diff - defaults.df
+	$< -i $(SEXP_DEFAULTS) | diff - $(SEXP_DEFAULTS)
+	$< -i $(SEXP_DEFAULTS) -s | diff - $(SEXP_DEFAULTS)
 	@echo "*** test raw streams passed ***"
 
 .PHONY: test-raw-streams
 
 test-byte-queues: $(TEST_EXECDIR)/TestByteQueues
-	$< -i defaults.df | diff - defaults.df
-	$< -c 2 -i defaults.df | diff - defaults.df
-	$< -c 3 -i defaults.df | diff - defaults.df
-	$< -c 4 -i defaults.df | diff - defaults.df
-	$< -c 5 -i defaults.df | diff - defaults.df
-	$< -c 6 -i defaults.df | diff - defaults.df
-	$< -c 7 -i defaults.df | diff - defaults.df
-	$< -c 13 -i defaults.df | diff - defaults.df
-	$< -c 119 -i defaults.df | diff - defaults.df
-	$< -c 2323 -i defaults.df | diff - defaults.df
-	$< -c 3231 -i defaults.df | diff - defaults.df
+	$< -i $(SEXP_DEFAULTS) | diff - $(SEXP_DEFAULTS)
+	$< -c 2 -i $(SEXP_DEFAULTS) | diff - $(SEXP_DEFAULTS)
+	$< -c 3 -i $(SEXP_DEFAULTS) | diff - $(SEXP_DEFAULTS)
+	$< -c 4 -i $(SEXP_DEFAULTS) | diff - $(SEXP_DEFAULTS)
+	$< -c 5 -i $(SEXP_DEFAULTS) | diff - $(SEXP_DEFAULTS)
+	$< -c 6 -i $(SEXP_DEFAULTS) | diff - $(SEXP_DEFAULTS)
+	$< -c 7 -i $(SEXP_DEFAULTS) | diff - $(SEXP_DEFAULTS)
+	$< -c 13 -i $(SEXP_DEFAULTS) | diff - $(SEXP_DEFAULTS)
+	$< -c 119 -i $(SEXP_DEFAULTS) | diff - $(SEXP_DEFAULTS)
+	$< -c 2323 -i $(SEXP_DEFAULTS) | diff - $(SEXP_DEFAULTS)
+	$< -c 3231 -i $(SEXP_DEFAULTS) | diff - $(SEXP_DEFAULTS)
 	@echo "*** test byte queues passed ***"
 
 .PHONY: test-byte-queues

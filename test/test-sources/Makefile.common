@@ -44,11 +44,17 @@ endif
 
 BUILDDIR = ../../build
 
+SEXP_SRCDIR = ../../src/sexp
+SEXP_DEFAULTS = $(SEXP_SRCDIR)/defaults.df
+
 ifeq ($(RELEASE), 0)
-  EXEC_DIR = $(BUILDDIR)/debug/bin
+  BUILD_RELEASE_DIR = $(BUILDDIR)/debug
 else
-  EXEC_DIR = $(BUILDDIR)/release/bin
+  BUILD_RELEASE_DIR = $(BUILDDIR)/release
 endif
+
+EXEC_DIR = $(BUILD_RELEASE_DIR)/bin
+TEST_DIR = $(BUILD_RELEASE_DIR)/test
 
 LOCAL_SEXPS_DIR = spec
 
