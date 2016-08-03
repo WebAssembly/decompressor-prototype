@@ -100,6 +100,8 @@ struct IntegerValue {
 %token OPENPAREN     "("
 %token OR            "or"
 %token PEEK          "peek"
+%token POSTORDER     "postorder"
+%token PREORDER      "preorder"
 %token READ          "read"
 %token SECTION       "section"
 %token SELECT        "select"

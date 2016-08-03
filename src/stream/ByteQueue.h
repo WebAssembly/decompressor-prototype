@@ -46,6 +46,7 @@ class ByteQueue : public Queue<uint8_t> {
   // done to minimize blocking. When possible, it will try to meet the full
   // request.
   //
+
   // @param Address The address within the queue to read from. Automatically
   //                incremented during read.
   // @param Buffer  A pointer to a buffer to be filled (and contains at least
