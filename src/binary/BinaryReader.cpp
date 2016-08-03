@@ -277,7 +277,7 @@ void BinaryReader::readNode() {
       readUnary<ByteToByteNode>();
       break;
     case OpCase: {
-      auto* Key = Alloc->create<IntegerNode>(Reader->readVarint32(ReadPos));
+      auto* Key = Alloc->create<IntegerNode>(Reader->readVarint64(ReadPos));
       Node* Code = NodeStack.back();
       NodeStack.pop_back();
       auto* Case = Alloc->create<CaseNode>(Key, Code);
@@ -343,9 +343,12 @@ void BinaryReader::readNode() {
       readUnary<ReadNode>();
       break;
     case OpOpcode:
+      readNary<OpcodeNode>();
+      cast<OpcodeNode>(NodeStack.back())->installFastLookup();
+      break;
     case OpSelect:
       readNary<SelectNode>();
-      cast<SelectNode>(NodeStack.back())->installReadLookup();
+      cast<SelectNode>(NodeStack.back())->installFastLookup();
       break;
     case OpSequence:
       readNary<SequenceNode>();

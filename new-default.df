@@ -115,9 +115,17 @@
   )
 
   (default 'code.opcode'
-    # Example of multi-byte opcode selector.
+    # All opcodes single byte except EOB marker 0xFFFFFFFF.
     (opcode (uint8)
-      (case 0xffffffff (read))      # EOF marker (non-byte stream only)
+      (case 0xFF
+        (opcode (uint8)
+          (case 0xFF
+            (opcode (uint8)
+              (case 0xFF (uint8)) 
+            )
+          )
+        )
+      )
     )
   )
 

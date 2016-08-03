@@ -32,6 +32,7 @@
 
 #include "ADT/arena_vector.h"
 #include "sexp/Ast.def"
+#include "sexp/TraceSexp.h"
 #include "stream/WriteUtils.h"
 #include "utils/Allocator.h"
 #include "utils/Casting.h"
@@ -43,14 +44,20 @@
 #include <map>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace wasm {
 
 namespace filt {
 
+class Node;
+class SymbolTable;
+
 typedef std::string ExternalName;
 typedef ARENA_VECTOR(uint8_t) InternalName;
+typedef std::unordered_set<Node*> VisitedNodesType;
+typedef std::vector<Node*> NodeVectorType;
 
 enum NodeType {
 #define X(tag, opcode, sexp_name, type_name, text_num_args, text_max_args) \
@@ -94,7 +101,7 @@ class Node {
   Node& operator=(const Node&) = delete;
   Node() = delete;
   void forceCompilation();
-
+  friend class SymbolTable;
  public:
   typedef size_t IndexType;
   class Iterator {
@@ -120,6 +127,9 @@ class Node {
     const Node* Nd;
     int Index;
   };
+
+  // Turns on ability to get warning/error messages.
+  static TraceClassSexp Trace;
 
   virtual ~Node() {}
 
@@ -156,6 +166,8 @@ class Node {
  protected:
   NodeType Type;
   Node(alloc::Allocator*, NodeType Type) : Type(Type) {}
+  virtual void clearCaches(NodeVectorType &AdditionalNodes);
+  virtual void installCaches(NodeVectorType &AdditionalNodes);
 };
 
 class NullaryNode : public Node {
@@ -261,6 +273,8 @@ class SymbolNode FINAL : public NullaryNode {
     DefaultDefinition = nullptr;
     IsDefineUsingDefault = true;
   }
+  void clearCaches(NodeVectorType &AdditionalNodes) OVERRIDE;
+  void installCaches(NodeVectorType &AdditionalNodes) OVERRIDE;
 };
 
 class SymbolTable {
@@ -269,6 +283,7 @@ class SymbolTable {
 
  public:
   explicit SymbolTable(alloc::Allocator* Alloc);
+  ~SymbolTable() { clear(); }
   // Gets existing symbol if known. Otherwise returns nullptr.
   SymbolNode* getSymbol(ExternalName& Name) { return SymbolMap[Name]; }
   // Gets existing symbol if known. Otherwise returns newly created symbol.
@@ -284,6 +299,11 @@ class SymbolTable {
   Node* Error;
   // TODO(KarlSchimpf): Use arena allocator on map.
   std::map<ExternalName, SymbolNode*> SymbolMap;
+  void installDefinitions(Node* Root);
+  void clearSubtreeCaches(Node *Nd, VisitedNodesType &VisitedNodes,
+                          NodeVectorType &AdditionalNodes);
+  void installSubtreeCaches(Node *Nd, VisitedNodesType &VisitedNoes,
+                            NodeVectorType &AdditionalNodes);
 };
 
 class UnaryNode : public Node {
@@ -468,12 +488,12 @@ class SelectBaseNode : public NaryNode {
   virtual void forceCompilation();
 
  public:
-  void installReadLookup();
-  const Node* getCase(decode::IntType Key) const;
+  void installFastLookup();
+  const CaseNode* getCase(decode::IntType Key) const;
 
  protected:
   // TODO(karlschimpf) Hook this up to allocator.
-  std::unordered_map<decode::IntType, Node*> LookupMap;
+  std::unordered_map<decode::IntType, const CaseNode*> LookupMap;
 
   SelectBaseNode(NodeType Type) : NaryNode(Type) {}
   SelectBaseNode(alloc::Allocator* Alloc, NodeType Type)
@@ -505,6 +525,50 @@ class OpcodeNode FINAL : public SelectBaseNode {
   explicit OpcodeNode(alloc::Allocator* Alloc)
       : SelectBaseNode(Alloc, OpOpcode) {}
   static bool implementsClass(NodeType Type) { return OpOpcode == Type; }
+  const CaseNode *getWriteCase(decode::IntType Value,
+                               uint32_t &SelShift,
+                               decode::IntType &CaseMask) const;
+private:
+  // Associates Opcode Case's with range [Min, Max].
+  //
+  // Note: Code assumes that shift value and case key is implicitly
+  // encoded into range [Min, Max]. Therefore, they are not used in
+  // comparison.
+  class WriteRange {
+    WriteRange() = delete;
+   public:
+    WriteRange(const CaseNode *Case, decode::IntType Min,
+               decode::IntType Max, uint32_t ShiftValue)
+        : Case(Case), Min(Min), Max(Max), ShiftValue(ShiftValue) {}
+    ~WriteRange() {}
+    const CaseNode* getCase() const { return Case; }
+    decode::IntType getMin() const { return Min; }
+    decode::IntType getMax() const { return Max; }
+    uint32_t getShiftValue() const { return ShiftValue; }
+    int compare(const WriteRange &R) const;
+    bool operator<(const WriteRange &R) const {
+      return compare(R) < 0;
+    }
+    void trace() const {
+      if (Trace.getTraceProgress())
+        traceInternal("");
+    }
+    void trace(const char* Prefix) const {
+      if (Trace.getTraceProgress())
+        traceInternal(Prefix);
+    }
+   private:
+    const CaseNode *Case;
+    decode::IntType Min;
+    decode::IntType Max;
+    uint32_t ShiftValue;
+    void traceInternal(const char* Prefix) const;
+  };
+  void clearCaches(NodeVectorType &AdditionalNodes) OVERRIDE;
+  void installCaches(NodeVectorType &AdditionalNodes) OVERRIDE;
+  typedef std::vector<WriteRange> CaseRangeVectorType;
+  CaseRangeVectorType CaseRangeVector;
+  void installCaseRanges();
 };
 
 }  // end of namespace filt

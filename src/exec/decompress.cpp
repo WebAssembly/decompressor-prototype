@@ -81,6 +81,14 @@ void usage(const char* AppName) {
   fprintf(stderr,
           "  -v | --verbose\t"
           "Show progress (can be repeated for more detail).\n");
+  fprintf(stderr, "\t\t\t-v          : "
+          "Trace progress of decompression.\n");
+  fprintf(stderr, "\t\t\t-v -v       : "
+          "Add progress of parsing default files.\n");
+  fprintf(stderr, "\t\t\t-v -v -v    : "
+          "Add progress of lexing default files.\n");
+  fprintf(stderr, "\t\t\t-v -v -v -v : "
+          "Add progress of installing filter sections.\n");
 }
 
 int main(int Argc, char* Argv[]) {
@@ -133,6 +141,7 @@ int main(int Argc, char* Argv[]) {
       return exit_status(EXIT_FAILURE);
     }
   }
+  Node::Trace.setTraceProgress(Verbose >= 4);
   for (int i : DefaultIndices) {
     if (BinaryReader::isBinary(Argv[i])) {
       if (Verbose)
