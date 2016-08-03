@@ -15,9 +15,15 @@
 # Copies test wast file (WASM s-expressions) to this directory, and then
 # converts them to binary form. This allows us to easily build test cases.
 #
-# To update tests run:
+# To update spec tests run:
 #
-# make -f Makefile.update
+#     make -f Makefile.update
+#
+# To update other test files, use form:
+#
+#    make -f Makefile.update FILE
+#
+# where FILE is the name of the file, with periods replaced with dashes.
 #
 # Note: The make file has been separated from the main make file (Makefile)
 # because it has requirements on other WebAssembly projects. In particular, the
@@ -32,7 +38,6 @@
 
 include Makefile.common
 
-EXEC_DIR = ../../build/bin
 SEXP_WASM_DIR = ../../../sexpr-wasm-prototype
 
 SPEC_SEXPS_DIR = ../../../spec/ml-proto/test
@@ -46,9 +51,29 @@ $(info ***NOTE*** Expect error messages while generating wasm files.)
 $(info -----------------------------------------------)
 
 # NOTE: update will have LOTS of error messages, but they can be ignored.
-update: clean_binaries $(LOCAL_SEXPS_SRCS) $(LOCAL_SEXPS_BINS)
+spec: clean_binaries $(LOCAL_SEXPS_SRCS) $(LOCAL_SEXPS_BINS)
 
 .PHONY: update
+
+defaults-wasm:
+	$(EXEC_DIR)/decompsexp-wasm -m -i $(SEXP_DEFAULTS) -o defaults.wasm
+
+.PHONY: defaults-wasm
+
+defaults-wasm-w:
+	$(EXEC_DIR)/decompsexp-wasm -i $(SEXP_DEFAULTS) -o defaults.wasm-w
+
+.PHONY: defaults-wasm-w
+
+defaults-dff:
+	$(TEST_DIR)/TestParser -w -f $(SEXP_DEFAULTS) > defaults.dff
+
+.PHONY: defaults-dff
+
+defaults-df:
+	$(TEST_DIR)/TestParser -w $(SEXP_DEFAULTS) > defaults.df
+
+.PHONY: update-defaults-df
 
 clean: clean_binaries
 	rm -rf $(LOCAL_SEXPS_DIR)
