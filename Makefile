@@ -193,7 +193,7 @@ CPP_COMPILER :=  CCACHE_CPP2=yes $(CCACHE) $(CXX)
 CXXFLAGS := -std=c++0x -Wall -Wextra -O2 -g -pedantic -MP -MD -Werror \
 	-Wno-unused-parameter -fno-omit-frame-pointer -fPIC -Isrc
 
-ifeq ($(RELEASE), 0)
+ifneq ($(RELEASE), 0)
   CXXFLAGS += -DNDEBUG
 endif
 
@@ -556,4 +556,3 @@ test-byte-queues: $(TEST_EXECDIR)/TestByteQueues
 	@echo "*** test byte queues passed ***"
 
 .PHONY: test-byte-queues
-

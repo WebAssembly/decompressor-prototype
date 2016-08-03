@@ -172,7 +172,7 @@ void BinaryReader::readNary() {
 }
 
 FileNode* BinaryReader::readFile() {
-  TraceClass::Method _("readFile", Trace);
+  TRACE_METHOD("readFile", Trace);
   MagicNumber = Reader->readUint32(ReadPos);
   // TODO(kschimpf): Fix reading of uintX. Current implementation not same as
   // WASM binary reader.
@@ -189,7 +189,7 @@ FileNode* BinaryReader::readFile() {
 }
 
 SectionNode* BinaryReader::readSection() {
-  TraceClass::Method _("readSection", Trace);
+  TRACE_METHOD("readSection", Trace);
   ExternalName Name = readExternalName();
   auto* SectionName = Alloc->create<SymbolNode>(Name);
   auto* Section = Alloc->create<SectionNode>();
@@ -219,7 +219,7 @@ SectionNode* BinaryReader::readSection() {
 }
 
 void BinaryReader::readSymbolTable() {
-  TraceClass::Method _("readSymbolTable", Trace);
+  TRACE_METHOD("readSymbolTable", Trace);
   SectionSymtab.clear();
   uint32_t NumSymbols = Reader->readVaruint32(ReadPos);
   for (uint32_t i = 0; i < NumSymbols; ++i) {
@@ -253,7 +253,7 @@ InternalName& BinaryReader::readInternalName() {
 }
 
 void BinaryReader::readBlock(std::function<void()> ApplyFn) {
-  TraceClass::Method _("readBlock", Trace);
+  TRACE_METHOD("readBlock", Trace);
   const size_t BlockSize = Reader->readVaruint32(ReadPos);
   Trace.traceSize_t("Block size", BlockSize);
   ReadPos.pushEobAddress(ReadPos.getCurByteAddress() + BlockSize);
@@ -262,7 +262,7 @@ void BinaryReader::readBlock(std::function<void()> ApplyFn) {
 }
 
 void BinaryReader::readNode() {
-  TraceClass::Method _("readNode", Trace);
+  TRACE_METHOD("readNode", Trace);
   switch (NodeType Opcode = (NodeType)Reader->readUint8(ReadPos)) {
     case OpAnd:
       readBinary<AndNode>();

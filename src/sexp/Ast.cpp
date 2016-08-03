@@ -158,7 +158,7 @@ SymbolNode* SymbolTable::getSymbolDefinition(ExternalName& Name) {
 }
 
 void SymbolTable::install(Node *Root) {
-  TraceClass::Method _("install", Node::Trace);
+  TRACE_METHOD("install", Node::Trace);
   // Before starting, clear all known caches.
   VisitedNodesType VisitedNodes;
   NodeVectorType AdditionalNodes;
@@ -193,7 +193,7 @@ void SymbolTable::clearSubtreeCaches(Node *Nd,
                                      NodeVectorType &AdditionalNodes) {
   if (VisitedNodes.count(Nd))
     return;
-  TraceClass::Method _("clearSubtreeCaches", Node::Trace);
+  TRACE_METHOD("clearSubtreeCaches", Node::Trace);
   Node::Trace.traceSexp(Nd);
   VisitedNodes.insert(Nd);
   Nd->clearCaches(AdditionalNodes);
@@ -207,7 +207,7 @@ void SymbolTable::installSubtreeCaches(Node *Nd,
                                        NodeVectorType &AdditionalNodes) {
   if (VisitedNodes.count(Nd))
     return;
-  TraceClass::Method _("installSubtreeCaches", Node::Trace);
+  TRACE_METHOD("installSubtreeCaches", Node::Trace);
   Node::Trace.traceSexp(Nd);
   VisitedNodes.insert(Nd);
   Nd->installCaches(AdditionalNodes);
@@ -216,7 +216,7 @@ void SymbolTable::installSubtreeCaches(Node *Nd,
 }
 
 void SymbolTable::installDefinitions(Node* Root) {
-  TraceClass::Method _("installDefinitions", Node::Trace);
+  TRACE_METHOD("installDefinitions", Node::Trace);
   Node::Trace.traceSexp(Root);
   if (Root == nullptr)
     return;
@@ -605,7 +605,7 @@ void OpcodeNode::installCaseRanges() {
 }
 
 void OpcodeNode::installCaches(NodeVectorType &AdditionalNodes) {
-  TraceClass::Method _("OpcodeNode::installCaches", Node::Trace);
+  TRACE_METHOD("OpcodeNode::installCaches", Node::Trace);
   Node::Trace.traceSexp(this);
   installCaseRanges();
 }

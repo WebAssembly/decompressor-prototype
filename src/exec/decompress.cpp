@@ -29,6 +29,7 @@
 #include <unistd.h>
 #include <iostream>
 
+using namespace wasm;
 using namespace wasm::filt;
 using namespace wasm::decode;
 using namespace wasm::interp;
@@ -78,17 +79,19 @@ void usage(const char* AppName) {
   fprintf(stderr,
           "  -o File\t\tGenerated Decompressed File ('-' implies stdout).\n");
   fprintf(stderr, "  -s\t\t\tUse C++ streams instead of C file descriptors.\n");
-  fprintf(stderr,
-          "  -v | --verbose\t"
-          "Show progress (can be repeated for more detail).\n");
-  fprintf(stderr, "\t\t\t-v          : "
-          "Trace progress of decompression.\n");
-  fprintf(stderr, "\t\t\t-v -v       : "
-          "Add progress of parsing default files.\n");
-  fprintf(stderr, "\t\t\t-v -v -v    : "
-          "Add progress of lexing default files.\n");
-  fprintf(stderr, "\t\t\t-v -v -v -v : "
-          "Add progress of installing filter sections.\n");
+  if (isDebug()) {
+    fprintf(stderr,
+            "  -v | --verbose\t"
+            "Show progress (can be repeated for more detail).\n");
+    fprintf(stderr, "\t\t\t-v          : "
+            "Trace progress of decompression.\n");
+    fprintf(stderr, "\t\t\t-v -v       : "
+            "Add progress of parsing default files.\n");
+    fprintf(stderr, "\t\t\t-v -v -v    : "
+            "Add progress of lexing default files.\n");
+    fprintf(stderr, "\t\t\t-v -v -v -v : "
+            "Add progress of installing filter sections.\n");
+  }
 }
 
 int main(int Argc, char* Argv[]) {
@@ -132,8 +135,9 @@ int main(int Argc, char* Argv[]) {
       OutputFilename = Argv[i];
     } else if (Argv[i] == std::string("-s")) {
       UseFileStreams = true;
-    } else if (Argv[i] == std::string("-v") ||
-               Argv[i] == std::string("--verbose")) {
+    } else if (isDebug() &&
+               (Argv[i] == std::string("-v") ||
+                Argv[i] == std::string("--verbose"))) {
       ++Verbose;
     } else {
       fprintf(stderr, "Unrecognized option: %s\n", Argv[i]);
@@ -143,9 +147,9 @@ int main(int Argc, char* Argv[]) {
   }
   Node::Trace.setTraceProgress(Verbose >= 4);
   for (int i : DefaultIndices) {
+    if (Verbose)
+      fprintf(stderr, "Loading default: %s\n", Argv[i]);
     if (BinaryReader::isBinary(Argv[i])) {
-      if (Verbose)
-        fprintf(stderr, "Loading default file: %s", Argv[i]);
       std::unique_ptr<RawStream> Stream = FileReader::create(Argv[i]);
       ReadBackedByteQueue Input(std::move(Stream));
       BinaryReader Reader(&Input, SymTab);
