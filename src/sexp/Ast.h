@@ -100,8 +100,9 @@ class Node {
   Node(const Node&) = delete;
   Node& operator=(const Node&) = delete;
   Node() = delete;
-  void forceCompilation();
   friend class SymbolTable;
+ protected:
+  virtual void forceCompilation();
  public:
   typedef size_t IndexType;
   class Iterator {
@@ -193,7 +194,8 @@ class NullaryNode : public Node {
   class tag##Node FINAL : public NullaryNode {                             \
     tag##Node(const tag##Node&) = delete;                                  \
     tag##Node& operator=(const tag##Node&) = delete;                       \
-    virtual void forceCompilation() FINAL;                                 \
+   protected:                                                              \
+    void forceCompilation() OVERRIDE;                                      \
                                                                            \
    public:                                                                 \
     tag##Node() : NullaryNode(alloc::Allocator::Default, Op##tag) {}       \
@@ -209,7 +211,8 @@ class IntegerNode FINAL : public NullaryNode {
   IntegerNode(const IntegerNode&) = delete;
   IntegerNode& operator=(const IntegerNode&) = delete;
   IntegerNode() = delete;
-  virtual void forceCompilation() FINAL;
+ protected:
+  virtual void forceCompilation() OVERRIDE;
 
  public:
   // Note: ValueFormat provided so that we can echo back out same
@@ -238,7 +241,8 @@ class SymbolNode FINAL : public NullaryNode {
   SymbolNode(const SymbolNode&) = delete;
   SymbolNode& operator=(const SymbolNode&) = delete;
   SymbolNode() = delete;
-  virtual void forceCompilation() FINAL;
+ protected:
+  void forceCompilation() OVERRIDE;
 
  public:
   explicit SymbolNode(ExternalName& _Name)
@@ -333,7 +337,8 @@ class UnaryNode : public Node {
   class tag##Node FINAL : public UnaryNode {                               \
     tag##Node(const tag##Node&) = delete;                                  \
     tag##Node& operator=(const tag##Node&) = delete;                       \
-    virtual void forceCompilation() FINAL;                                 \
+   protected:                                                              \
+    void forceCompilation() OVERRIDE;                                      \
                                                                            \
    public:                                                                 \
     explicit tag##Node(Node* Kid)                                          \
@@ -379,7 +384,8 @@ class BinaryNode : public Node {
   class tag##Node FINAL : public BinaryNode {                              \
     tag##Node(const tag##Node&) = delete;                                  \
     tag##Node& operator=(const tag##Node&) = delete;                       \
-    virtual void forceCompilation() FINAL;                                 \
+   protected:                                                              \
+    void forceCompilation() OVERRIDE;                                      \
                                                                            \
    public:                                                                 \
     tag##Node(Node* Kid1, Node* Kid2) : BinaryNode(Op##tag, Kid1, Kid2) {} \
@@ -430,7 +436,8 @@ class TernaryNode : public Node {
   class tag##Node FINAL : public TernaryNode {                             \
     tag##Node(const tag##Node&) = delete;                                  \
     tag##Node& operator=(const tag##Node&) = delete;                       \
-    virtual void forceCompilation() FINAL;                                 \
+   protected:                                                              \
+    void forceCompilation() OVERRIDE;                                      \
                                                                            \
    public:                                                                 \
     tag##Node(Node* Kid1, Node* Kid2, Node* Kid3)                          \
@@ -446,7 +453,6 @@ AST_TERNARYNODE_TABLE
 class NaryNode : public Node {
   NaryNode(const NaryNode&) = delete;
   NaryNode& operator=(const NaryNode&) = delete;
-  virtual void forceCompilation();
 
  public:
   int getNumKids() const OVERRIDE FINAL { return Kids.size(); }
@@ -471,7 +477,8 @@ class NaryNode : public Node {
   class tag##Node FINAL : public NaryNode {                                   \
     tag##Node(const tag##Node&) = delete;                                     \
     tag##Node& operator=(const tag##Node&) = delete;                          \
-    virtual void forceCompilation() FINAL;                                    \
+   protected:                                                                 \
+    void forceCompilation() OVERRIDE;                                         \
                                                                               \
    public:                                                                    \
     tag##Node() : NaryNode(Op##tag) {}                                        \
@@ -485,10 +492,9 @@ AST_NARYNODE_TABLE
 class SelectBaseNode : public NaryNode {
   SelectBaseNode(const SelectBaseNode&) = delete;
   SelectBaseNode& operator=(const SelectBaseNode&) = delete;
-  virtual void forceCompilation();
 
  public:
-  void installFastLookup();
+  void installCaches(NodeVectorType &AdditionalNodes) OVERRIDE;
   const CaseNode* getCase(decode::IntType Key) const;
 
  protected:
@@ -504,7 +510,8 @@ class SelectBaseNode : public NaryNode {
   class tag##Node FINAL : public SelectBaseNode {                          \
     tag##Node(const tag##Node&) = delete;                                  \
     tag##Node& operator=(const tag##Node&) = delete;                       \
-    virtual void forceCompilation() FINAL;                                 \
+   protected:                                                              \
+    void forceCompilation() OVERRIDE;                                      \
                                                                            \
    public:                                                                 \
     tag##Node() : SelectBaseNode(Op##tag) {}                               \
@@ -518,7 +525,8 @@ AST_SELECTNODE_TABLE
 class OpcodeNode FINAL : public SelectBaseNode {
   OpcodeNode(const OpcodeNode&) = delete;
   OpcodeNode& operator=(const OpcodeNode&) = delete;
-  virtual void forceCompilation() FINAL;
+ protected:
+  void forceCompilation() OVERRIDE;
 
  public:
   OpcodeNode() : SelectBaseNode(OpOpcode) {}

@@ -154,8 +154,7 @@ int main(int Argc, char* Argv[]) {
       ReadBackedByteQueue Input(std::move(Stream));
       BinaryReader Reader(&Input, SymTab);
       Reader.setTraceProgress(Verbose >= 2);
-      if (FileNode* File = Reader.readFile()) {
-        SymTab.install(File);
+      if (Reader.readFile()) {
         continue;
       }
     }

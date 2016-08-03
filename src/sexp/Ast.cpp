@@ -369,16 +369,10 @@ bool NaryNode::implementsClass(NodeType Type) {
   }
 }
 
-void NaryNode::forceCompilation() {
-}
-
 #define X(tag) \
   void tag##Node::forceCompilation() {}
 AST_NARYNODE_TABLE
 #undef X
-
-void SelectBaseNode::forceCompilation() {
-}
 
 const CaseNode* SelectBaseNode::getCase(IntType Key) const {
   if (LookupMap.count(Key))
@@ -386,8 +380,8 @@ const CaseNode* SelectBaseNode::getCase(IntType Key) const {
   return nullptr;
 }
 
-void SelectBaseNode::installFastLookup() {
-  TextWriter Writer;
+void SelectBaseNode::installCaches(NodeVectorType &AdditionalNodes) {
+  // TextWriter Writer;
   for (auto* Kid : *this) {
     if (const auto* Case = dyn_cast<CaseNode>(Kid)) {
       if (const auto* Key = dyn_cast<IntegerNode>(Case->getKid(0))) {
@@ -607,6 +601,7 @@ void OpcodeNode::installCaseRanges() {
 void OpcodeNode::installCaches(NodeVectorType &AdditionalNodes) {
   TRACE_METHOD("OpcodeNode::installCaches", Node::Trace);
   Node::Trace.traceSexp(this);
+  SelectBaseNode::installCaches(AdditionalNodes);
   installCaseRanges();
 }
 
