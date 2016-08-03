@@ -81,37 +81,29 @@ const char* getNodeTypeName(NodeType Type) {
 
 TraceClassSexp Node::Trace("filter sexp");
 
-void Node::forceCompilation() {
-}
-
 void Node::append(Node*) {
   decode::fatal("Node::append not supported for ast node!");
 }
 
-void Node::clearCaches(NodeVectorType &AdditionalNodes) {}
+void Node::clearCaches(NodeVectorType& AdditionalNodes) {
+}
 
-void Node::installCaches(NodeVectorType &AdditionalNodes) {}
+void Node::installCaches(NodeVectorType& AdditionalNodes) {
+}
 
 // Note: we create duumy virtual forceCompilation() to force legal
 // class definitions to be compiled in here. Classes not explicitly
 // instantiated here will not link. This used to force an error if
 // a node type is not defined with the correct template class.
 
-void IntegerNode::forceCompilation() {
-}
-
-void SymbolNode::forceCompilation() {
-}
-
-
-void SymbolNode::clearCaches(NodeVectorType &AdditionalNodes) {
+void SymbolNode::clearCaches(NodeVectorType& AdditionalNodes) {
   if (DefineDefinition)
     AdditionalNodes.push_back(DefineDefinition);
   if (DefaultDefinition)
     AdditionalNodes.push_back(DefaultDefinition);
 }
 
-void SymbolNode::installCaches(NodeVectorType &AdditionalNodes) {
+void SymbolNode::installCaches(NodeVectorType& AdditionalNodes) {
   if (DefineDefinition)
     AdditionalNodes.push_back(DefineDefinition);
   if (DefaultDefinition)
@@ -157,61 +149,60 @@ SymbolNode* SymbolTable::getSymbolDefinition(ExternalName& Name) {
   return Node;
 }
 
-void SymbolTable::install(Node *Root) {
+void SymbolTable::install(Node* Root) {
   TRACE_METHOD("install", Node::Trace);
   // Before starting, clear all known caches.
   VisitedNodesType VisitedNodes;
   NodeVectorType AdditionalNodes;
-  for (const auto &Pair : SymbolMap)
+  for (const auto& Pair : SymbolMap)
     clearSubtreeCaches(Pair.second, VisitedNodes, AdditionalNodes);
   clearSubtreeCaches(Root, VisitedNodes, AdditionalNodes);
   NodeVectorType MoreNodes;
   while (!AdditionalNodes.empty()) {
     MoreNodes.swap(AdditionalNodes);
     while (!MoreNodes.empty()) {
-      Node *Nd = MoreNodes.back();
+      Node* Nd = MoreNodes.back();
       MoreNodes.pop_back();
       clearSubtreeCaches(Nd, VisitedNodes, AdditionalNodes);
     }
   }
   VisitedNodes.clear();
   installDefinitions(Root);
-  for (const auto &Pair : SymbolMap)
+  for (const auto& Pair : SymbolMap)
     installSubtreeCaches(Pair.second, VisitedNodes, AdditionalNodes);
   while (!AdditionalNodes.empty()) {
     MoreNodes.swap(AdditionalNodes);
     while (!MoreNodes.empty()) {
-      Node *Nd = MoreNodes.back();
+      Node* Nd = MoreNodes.back();
       MoreNodes.pop_back();
       installSubtreeCaches(Nd, VisitedNodes, AdditionalNodes);
     }
   }
 }
 
-void SymbolTable::clearSubtreeCaches(Node *Nd,
-                                     VisitedNodesType &VisitedNodes,
-                                     NodeVectorType &AdditionalNodes) {
+void SymbolTable::clearSubtreeCaches(Node* Nd,
+                                     VisitedNodesType& VisitedNodes,
+                                     NodeVectorType& AdditionalNodes) {
   if (VisitedNodes.count(Nd))
     return;
   TRACE_METHOD("clearSubtreeCaches", Node::Trace);
   Node::Trace.traceSexp(Nd);
   VisitedNodes.insert(Nd);
   Nd->clearCaches(AdditionalNodes);
-  for (auto *Kid : *Nd)
+  for (auto* Kid : *Nd)
     AdditionalNodes.push_back(Kid);
 }
 
-
-void SymbolTable::installSubtreeCaches(Node *Nd,
-                                       VisitedNodesType &VisitedNodes,
-                                       NodeVectorType &AdditionalNodes) {
+void SymbolTable::installSubtreeCaches(Node* Nd,
+                                       VisitedNodesType& VisitedNodes,
+                                       NodeVectorType& AdditionalNodes) {
   if (VisitedNodes.count(Nd))
     return;
   TRACE_METHOD("installSubtreeCaches", Node::Trace);
   Node::Trace.traceSexp(Nd);
   VisitedNodes.insert(Nd);
   Nd->installCaches(AdditionalNodes);
-  for (auto *Kid : *Nd)
+  for (auto* Kid : *Nd)
     AdditionalNodes.push_back(Kid);
 }
 
@@ -369,16 +360,10 @@ bool NaryNode::implementsClass(NodeType Type) {
   }
 }
 
-void NaryNode::forceCompilation() {
-}
-
 #define X(tag) \
   void tag##Node::forceCompilation() {}
 AST_NARYNODE_TABLE
 #undef X
-
-void SelectBaseNode::forceCompilation() {
-}
 
 const CaseNode* SelectBaseNode::getCase(IntType Key) const {
   if (LookupMap.count(Key))
@@ -386,8 +371,11 @@ const CaseNode* SelectBaseNode::getCase(IntType Key) const {
   return nullptr;
 }
 
-void SelectBaseNode::installFastLookup() {
-  TextWriter Writer;
+void SelectBaseNode::clearCaches(NodeVectorType& AdditionalNodes) {
+  LookupMap.clear();
+}
+
+void SelectBaseNode::installCaches(NodeVectorType& AdditionalNodes) {
   for (auto* Kid : *this) {
     if (const auto* Case = dyn_cast<CaseNode>(Kid)) {
       if (const auto* Key = dyn_cast<IntegerNode>(Case->getKid(0))) {
@@ -397,7 +385,7 @@ void SelectBaseNode::installFastLookup() {
   }
 }
 
-int OpcodeNode::WriteRange::compare(const WriteRange &R) const {
+int OpcodeNode::WriteRange::compare(const WriteRange& R) const {
   if (Min < R.Min)
     return -1;
   if (Min > R.Min)
@@ -416,8 +404,8 @@ int OpcodeNode::WriteRange::compare(const WriteRange &R) const {
 void OpcodeNode::WriteRange::traceInternal(const char* Prefix) const {
   FILE* Out = Node::Trace.getFile();
   Node::Trace.indent();
-  fprintf(Out, "[%" PRIxMAX "..%" PRIxMAX "](%" PRIuMAX"):\n",
-          uintmax_t(Min), uintmax_t(Max), uintmax_t(ShiftValue));
+  fprintf(Out, "[%" PRIxMAX "..%" PRIxMAX "](%" PRIuMAX "):\n", uintmax_t(Min),
+          uintmax_t(Max), uintmax_t(ShiftValue));
   Node::Trace.traceSexp(Case);
 }
 
@@ -436,7 +424,7 @@ IntType getIntegerValue(Node* N) {
   return 0;
 }
 
-bool getCaseSelectorWidth(const Node *Nd, uint32_t &Width) {
+bool getCaseSelectorWidth(const Node* Nd, uint32_t& Width) {
   switch (Nd->getType()) {
     default:
       // Not allowed in opcode cases.
@@ -466,8 +454,7 @@ bool getCaseSelectorWidth(const Node *Nd, uint32_t &Width) {
   return true;
 }
 
-bool addFormatWidth(const Node *Nd,
-                         std::unordered_set<uint32_t> &CaseWidths) {
+bool addFormatWidth(const Node* Nd, std::unordered_set<uint32_t>& CaseWidths) {
   uint32_t Width;
   if (!getCaseSelectorWidth(Nd, Width))
     return false;
@@ -475,8 +462,9 @@ bool addFormatWidth(const Node *Nd,
   return true;
 }
 
-bool collectCaseWidths(IntType Key, const Node *Nd,
-                       std::unordered_set<uint32_t> &CaseWidths) {
+bool collectCaseWidths(IntType Key,
+                       const Node* Nd,
+                       std::unordered_set<uint32_t>& CaseWidths) {
   switch (Nd->getType()) {
     default:
       // Not allowed in opcode cases.
@@ -485,11 +473,11 @@ bool collectCaseWidths(IntType Key, const Node *Nd,
     case OpOpcode:
       if (isa<LastReadNode>(Nd->getKid(0))) {
         for (int i = 1, NumKids = Nd->getNumKids(); i < NumKids; ++i) {
-          Node *Kid = Nd->getKid(i);
+          Node* Kid = Nd->getKid(i);
           assert(isa<CaseNode>(Kid));
-          const CaseNode *Case = cast<CaseNode>(Kid);
+          const CaseNode* Case = cast<CaseNode>(Kid);
           IntType CaseKey = getIntegerValue(Case->getKid(0));
-          const Node *CaseBody = Case->getKid(1);
+          const Node* CaseBody = Case->getKid(1);
           if (CaseKey == Key)
             // Already handled by outer case.
             continue;
@@ -510,17 +498,17 @@ bool collectCaseWidths(IntType Key, const Node *Nd,
         }
         CaseWidths.insert(Width);
         for (int i = 1, NumKids = Nd->getNumKids(); i < NumKids; ++i) {
-          Node *Kid = Nd->getKid(i);
+          Node* Kid = Nd->getKid(i);
           assert(isa<CaseNode>(Kid));
-          const CaseNode *Case = cast<CaseNode>(Kid);
+          const CaseNode* Case = cast<CaseNode>(Kid);
           IntType CaseKey = getIntegerValue(Case->getKid(0));
-          const Node *CaseBody = Case->getKid(1);
+          const Node* CaseBody = Case->getKid(1);
           std::unordered_set<uint32_t> LocalCaseWidths;
           if (!collectCaseWidths(CaseKey, CaseBody, LocalCaseWidths)) {
             Node::Trace.errorSexp("Inside: ", Nd);
             return false;
           }
-          for (uint32_t CaseWidth: LocalCaseWidths) {
+          for (uint32_t CaseWidth : LocalCaseWidths) {
             uint32_t CombinedWidth = Width + CaseWidth;
             if (CombinedWidth >= MaxOpcodeWidth) {
               Node::Trace.errorSexp("Bit width(s) too big: ", Nd);
@@ -539,25 +527,22 @@ bool collectCaseWidths(IntType Key, const Node *Nd,
     case OpUint64OneArg:
       return addFormatWidth(Nd, CaseWidths);
     case OpEval:
-      if (auto *Sym = dyn_cast<SymbolNode>(Nd->getKid(0)))
-        return collectCaseWidths(Key, Sym->getDefineDefinition(),
-                                 CaseWidths);
+      if (auto* Sym = dyn_cast<SymbolNode>(Nd->getKid(0)))
+        return collectCaseWidths(Key, Sym->getDefineDefinition(), CaseWidths);
       Node::Trace.errorSexp("Inside: ", Nd);
       return false;
   }
 }
 
-} // end of anonymous namespace
+}  // end of anonymous namespace
 
 #define X(tag) \
   void tag##Node::forceCompilation() {}
 AST_SELECTNODE_TABLE
 #undef X
 
-void OpcodeNode::forceCompilation() {
-}
-
-void OpcodeNode::clearCaches(NodeVectorType &AdditionalNodes) {
+void OpcodeNode::clearCaches(NodeVectorType& AdditionalNodes) {
+  SelectBaseNode::clearCaches(AdditionalNodes);
   CaseRangeVector.clear();
 }
 
@@ -567,13 +552,12 @@ void OpcodeNode::installCaseRanges() {
     Node::Trace.errorSexp("Inside: ", this);
     fatal("Unable to install caches for opcode s-expression");
   }
-  for (int i = 1, NumKids = getNumKids(); i < NumKids; ++ i) {
+  for (int i = 1, NumKids = getNumKids(); i < NumKids; ++i) {
     assert(isa<CaseNode>(Kids[i]));
-    const CaseNode *Case = cast<CaseNode>(Kids[i]);
+    const CaseNode* Case = cast<CaseNode>(Kids[i]);
     std::unordered_set<uint32_t> CaseWidths;
     IntType Key = getIntegerValue(Case->getKid(0));
-    if (!collectCaseWidths(Key, Case->getKid(1),
-                           CaseWidths)) {
+    if (!collectCaseWidths(Key, Case->getKid(1), CaseWidths)) {
       Node::Trace.errorSexp("Inside: ", Case);
       Node::Trace.errorSexp("Inside: ", this);
       fatal("Unable to install caches for opcode s-expression");
@@ -592,9 +576,9 @@ void OpcodeNode::installCaseRanges() {
   }
   // Validate that ranges are not overlapping.
   std::sort(CaseRangeVector.begin(), CaseRangeVector.end());
-  for (size_t i = 0, Last=CaseRangeVector.size() - 1; i < Last; ++i) {
-    const WriteRange &R1 = CaseRangeVector[i];
-    const WriteRange &R2 = CaseRangeVector[i+1];
+  for (size_t i = 0, Last = CaseRangeVector.size() - 1; i < Last; ++i) {
+    const WriteRange& R1 = CaseRangeVector[i];
+    const WriteRange& R2 = CaseRangeVector[i + 1];
     if (R1.getMax() >= R2.getMin()) {
       Node::Trace.errorSexp("Range 1: ", R1.getCase());
       Node::Trace.errorSexp("Range 2: ", R2.getCase());
@@ -604,22 +588,22 @@ void OpcodeNode::installCaseRanges() {
   }
 }
 
-void OpcodeNode::installCaches(NodeVectorType &AdditionalNodes) {
+void OpcodeNode::installCaches(NodeVectorType& AdditionalNodes) {
   TRACE_METHOD("OpcodeNode::installCaches", Node::Trace);
   Node::Trace.traceSexp(this);
+  SelectBaseNode::installCaches(AdditionalNodes);
   installCaseRanges();
 }
 
-const CaseNode *OpcodeNode::getWriteCase(decode::IntType Value,
-                                         uint32_t &SelShift,
-                                         IntType &CaseMask) const {
+const CaseNode* OpcodeNode::getWriteCase(decode::IntType Value,
+                                         uint32_t& SelShift,
+                                         IntType& CaseMask) const {
   // TODO(kschimf): Find a faster lookup (use at least binary search).
-  for (const auto &Range : CaseRangeVector) {
+  for (const auto& Range : CaseRangeVector) {
     if (Value < Range.getMin()) {
       SelShift = 0;
       return nullptr;
-    }
-    else if (Value <= Range.getMax()) {
+    } else if (Value <= Range.getMax()) {
       SelShift = Range.getShiftValue();
       CaseMask = getWidthMask(SelShift);
       return Range.getCase();

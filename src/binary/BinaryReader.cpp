@@ -185,6 +185,7 @@ FileNode* BinaryReader::readFile() {
   while (!ReadPos.atEob())
     File->append(readSection());
   Trace.traceSexp(File);
+  SectionSymtab.install(File);
   return File;
 }
 
@@ -344,11 +345,9 @@ void BinaryReader::readNode() {
       break;
     case OpOpcode:
       readNary<OpcodeNode>();
-      cast<OpcodeNode>(NodeStack.back())->installFastLookup();
       break;
     case OpSelect:
       readNary<SelectNode>();
-      cast<SelectNode>(NodeStack.back())->installFastLookup();
       break;
     case OpSequence:
       readNary<SequenceNode>();

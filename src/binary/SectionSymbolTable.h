@@ -52,6 +52,7 @@ class SectionSymbolTable {
   }
   SymbolNode* getIndexSymbol(IndexType Index);
   bool empty() const { return IndexLookup.empty(); }
+  void install(Node* Root) { Symtab.install(Root); }
 
  private:
   // Cache that holds the set of uniquified symbols.

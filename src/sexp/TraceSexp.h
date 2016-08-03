@@ -44,20 +44,18 @@ class TraceClassSexp : public utils::TraceClass {
       traceSexpInternal("", Nd);
   }
 
-  void traceSexp(const char *Prefix, const Node* Nd) {
+  void traceSexp(const char* Prefix, const Node* Nd) {
     if (getTraceProgress())
       traceSexpInternal(Prefix, Nd);
   }
 
-  void errorSexp(const char *Prefix, const Node* Nd);
+  void errorSexp(const char* Prefix, const Node* Nd);
 
-  void errorSexp(const Node* Nd) {
-    errorSexp("", Nd);
-  }
+  void errorSexp(const Node* Nd) { errorSexp("", Nd); }
 
  protected:
   TextWriter* Writer;
-  void traceSexpInternal(const char *Prefix, const Node* Nd);
+  void traceSexpInternal(const char* Prefix, const Node* Nd);
 
   TextWriter* getTextWriter() {
     if (Writer == nullptr)

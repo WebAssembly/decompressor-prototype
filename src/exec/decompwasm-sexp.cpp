@@ -91,9 +91,8 @@ int main(int Argc, char* Argv[]) {
       OutputFilename = Argv[i];
     } else if (Argv[i] == std::string("-s")) {
       UseFileStreams = true;
-    } else if (isDebug() &&
-               (Argv[i] == std::string("-v") ||
-                Argv[i] == std::string("--verbose"))) {
+    } else if (isDebug() && (Argv[i] == std::string("-v") ||
+                             Argv[i] == std::string("--verbose"))) {
       ++Verbose;
     } else {
       fprintf(stderr, "Unrecognized option: %s\n", Argv[i]);

@@ -66,10 +66,8 @@ void usage(const char* AppName) {
             "Show progress (can be repeated for more detail).\n");
     fprintf(stderr,
             "\t\t\t-v       : Show progress of writing out wasm file.\n");
-    fprintf(stderr,
-            "\t\t\t-v -v    : Add tracing of parsing s-expressions.\n");
-    fprintf(stderr,
-            "\t\t\t-v -v -v : Add tracing of lexing s-expressions.\n");
+    fprintf(stderr, "\t\t\t-v -v    : Add tracing of parsing s-expressions.\n");
+    fprintf(stderr, "\t\t\t-v -v -v : Add tracing of lexing s-expressions.\n");
   }
 }
 
@@ -115,9 +113,8 @@ int main(int Argc, char* Argv[]) {
       OutputSpecified = true;
     } else if (Argv[i] == std::string("-s")) {
       UseFileStreams = true;
-    } else if (isDebug() &&
-               (Argv[i] == std::string("-v") ||
-                (Argv[i] == std::string("--verbose")))) {
+    } else if (isDebug() && (Argv[i] == std::string("-v") ||
+                             (Argv[i] == std::string("--verbose")))) {
       ++Verbose;
     } else {
       fprintf(stderr, "Unrecognized option: %s\n", Argv[i]);

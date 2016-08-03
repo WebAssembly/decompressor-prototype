@@ -31,11 +31,19 @@
 namespace wasm {
 
 #ifdef NDEBUG
-inline bool isRelease() { return true; }
-inline bool isDebug() { return false; }
+inline bool isRelease() {
+  return true;
+}
+inline bool isDebug() {
+  return false;
+}
 #else
-inline bool isRelease() { return false; }
-inline bool isDebug() { return true; }
+inline bool isRelease() {
+  return false;
+}
+inline bool isDebug() {
+  return true;
+}
 #endif
 
 template <class T, size_t N>

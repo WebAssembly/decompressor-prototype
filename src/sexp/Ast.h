@@ -17,12 +17,12 @@
 
 // Defines an internal model of filter AST's.
 //
-// NOTE: Many classes define  virtual:
+// NOTE: template classes define  virtual:
 //
-//    virtual void forceCompilation() FINAL;
+//    virtual void forceCompilation();
 //
 // This is done to force the compilation of virtuals associated with the
-// class in file Ast.cpp.
+// class to be put in file Ast.cpp.
 //
 // Note: Classes allow an optional allocator as the first argument. This
 // allows the creator to decide what allocator will be used internally.
@@ -100,8 +100,8 @@ class Node {
   Node(const Node&) = delete;
   Node& operator=(const Node&) = delete;
   Node() = delete;
-  void forceCompilation();
   friend class SymbolTable;
+
  public:
   typedef size_t IndexType;
   class Iterator {
@@ -166,8 +166,8 @@ class Node {
  protected:
   NodeType Type;
   Node(alloc::Allocator*, NodeType Type) : Type(Type) {}
-  virtual void clearCaches(NodeVectorType &AdditionalNodes);
-  virtual void installCaches(NodeVectorType &AdditionalNodes);
+  virtual void clearCaches(NodeVectorType& AdditionalNodes);
+  virtual void installCaches(NodeVectorType& AdditionalNodes);
 };
 
 class NullaryNode : public Node {
@@ -193,7 +193,7 @@ class NullaryNode : public Node {
   class tag##Node FINAL : public NullaryNode {                             \
     tag##Node(const tag##Node&) = delete;                                  \
     tag##Node& operator=(const tag##Node&) = delete;                       \
-    virtual void forceCompilation() FINAL;                                 \
+    virtual void forceCompilation();                                       \
                                                                            \
    public:                                                                 \
     tag##Node() : NullaryNode(alloc::Allocator::Default, Op##tag) {}       \
@@ -209,7 +209,6 @@ class IntegerNode FINAL : public NullaryNode {
   IntegerNode(const IntegerNode&) = delete;
   IntegerNode& operator=(const IntegerNode&) = delete;
   IntegerNode() = delete;
-  virtual void forceCompilation() FINAL;
 
  public:
   // Note: ValueFormat provided so that we can echo back out same
@@ -238,7 +237,6 @@ class SymbolNode FINAL : public NullaryNode {
   SymbolNode(const SymbolNode&) = delete;
   SymbolNode& operator=(const SymbolNode&) = delete;
   SymbolNode() = delete;
-  virtual void forceCompilation() FINAL;
 
  public:
   explicit SymbolNode(ExternalName& _Name)
@@ -273,8 +271,8 @@ class SymbolNode FINAL : public NullaryNode {
     DefaultDefinition = nullptr;
     IsDefineUsingDefault = true;
   }
-  void clearCaches(NodeVectorType &AdditionalNodes) OVERRIDE;
-  void installCaches(NodeVectorType &AdditionalNodes) OVERRIDE;
+  void clearCaches(NodeVectorType& AdditionalNodes) OVERRIDE;
+  void installCaches(NodeVectorType& AdditionalNodes) OVERRIDE;
 };
 
 class SymbolTable {
@@ -300,10 +298,12 @@ class SymbolTable {
   // TODO(KarlSchimpf): Use arena allocator on map.
   std::map<ExternalName, SymbolNode*> SymbolMap;
   void installDefinitions(Node* Root);
-  void clearSubtreeCaches(Node *Nd, VisitedNodesType &VisitedNodes,
-                          NodeVectorType &AdditionalNodes);
-  void installSubtreeCaches(Node *Nd, VisitedNodesType &VisitedNoes,
-                            NodeVectorType &AdditionalNodes);
+  void clearSubtreeCaches(Node* Nd,
+                          VisitedNodesType& VisitedNodes,
+                          NodeVectorType& AdditionalNodes);
+  void installSubtreeCaches(Node* Nd,
+                            VisitedNodesType& VisitedNoes,
+                            NodeVectorType& AdditionalNodes);
 };
 
 class UnaryNode : public Node {
@@ -333,7 +333,7 @@ class UnaryNode : public Node {
   class tag##Node FINAL : public UnaryNode {                               \
     tag##Node(const tag##Node&) = delete;                                  \
     tag##Node& operator=(const tag##Node&) = delete;                       \
-    virtual void forceCompilation() FINAL;                                 \
+    virtual void forceCompilation();                                       \
                                                                            \
    public:                                                                 \
     explicit tag##Node(Node* Kid)                                          \
@@ -379,7 +379,7 @@ class BinaryNode : public Node {
   class tag##Node FINAL : public BinaryNode {                              \
     tag##Node(const tag##Node&) = delete;                                  \
     tag##Node& operator=(const tag##Node&) = delete;                       \
-    virtual void forceCompilation() FINAL;                                 \
+    virtual void forceCompilation();                                       \
                                                                            \
    public:                                                                 \
     tag##Node(Node* Kid1, Node* Kid2) : BinaryNode(Op##tag, Kid1, Kid2) {} \
@@ -430,7 +430,7 @@ class TernaryNode : public Node {
   class tag##Node FINAL : public TernaryNode {                             \
     tag##Node(const tag##Node&) = delete;                                  \
     tag##Node& operator=(const tag##Node&) = delete;                       \
-    virtual void forceCompilation() FINAL;                                 \
+    virtual void forceCompilation();                                       \
                                                                            \
    public:                                                                 \
     tag##Node(Node* Kid1, Node* Kid2, Node* Kid3)                          \
@@ -446,7 +446,6 @@ AST_TERNARYNODE_TABLE
 class NaryNode : public Node {
   NaryNode(const NaryNode&) = delete;
   NaryNode& operator=(const NaryNode&) = delete;
-  virtual void forceCompilation();
 
  public:
   int getNumKids() const OVERRIDE FINAL { return Kids.size(); }
@@ -471,7 +470,7 @@ class NaryNode : public Node {
   class tag##Node FINAL : public NaryNode {                                   \
     tag##Node(const tag##Node&) = delete;                                     \
     tag##Node& operator=(const tag##Node&) = delete;                          \
-    virtual void forceCompilation() FINAL;                                    \
+    virtual void forceCompilation();                                          \
                                                                               \
    public:                                                                    \
     tag##Node() : NaryNode(Op##tag) {}                                        \
@@ -485,10 +484,10 @@ AST_NARYNODE_TABLE
 class SelectBaseNode : public NaryNode {
   SelectBaseNode(const SelectBaseNode&) = delete;
   SelectBaseNode& operator=(const SelectBaseNode&) = delete;
-  virtual void forceCompilation();
 
  public:
-  void installFastLookup();
+  void clearCaches(NodeVectorType& AdditionalNodes) OVERRIDE;
+  void installCaches(NodeVectorType& AdditionalNodes) OVERRIDE;
   const CaseNode* getCase(decode::IntType Key) const;
 
  protected:
@@ -504,7 +503,7 @@ class SelectBaseNode : public NaryNode {
   class tag##Node FINAL : public SelectBaseNode {                          \
     tag##Node(const tag##Node&) = delete;                                  \
     tag##Node& operator=(const tag##Node&) = delete;                       \
-    virtual void forceCompilation() FINAL;                                 \
+    virtual void forceCompilation();                                       \
                                                                            \
    public:                                                                 \
     tag##Node() : SelectBaseNode(Op##tag) {}                               \
@@ -518,17 +517,17 @@ AST_SELECTNODE_TABLE
 class OpcodeNode FINAL : public SelectBaseNode {
   OpcodeNode(const OpcodeNode&) = delete;
   OpcodeNode& operator=(const OpcodeNode&) = delete;
-  virtual void forceCompilation() FINAL;
 
  public:
   OpcodeNode() : SelectBaseNode(OpOpcode) {}
   explicit OpcodeNode(alloc::Allocator* Alloc)
       : SelectBaseNode(Alloc, OpOpcode) {}
   static bool implementsClass(NodeType Type) { return OpOpcode == Type; }
-  const CaseNode *getWriteCase(decode::IntType Value,
-                               uint32_t &SelShift,
-                               decode::IntType &CaseMask) const;
-private:
+  const CaseNode* getWriteCase(decode::IntType Value,
+                               uint32_t& SelShift,
+                               decode::IntType& CaseMask) const;
+
+ private:
   // Associates Opcode Case's with range [Min, Max].
   //
   // Note: Code assumes that shift value and case key is implicitly
@@ -536,19 +535,20 @@ private:
   // comparison.
   class WriteRange {
     WriteRange() = delete;
+
    public:
-    WriteRange(const CaseNode *Case, decode::IntType Min,
-               decode::IntType Max, uint32_t ShiftValue)
+    WriteRange(const CaseNode* Case,
+               decode::IntType Min,
+               decode::IntType Max,
+               uint32_t ShiftValue)
         : Case(Case), Min(Min), Max(Max), ShiftValue(ShiftValue) {}
     ~WriteRange() {}
     const CaseNode* getCase() const { return Case; }
     decode::IntType getMin() const { return Min; }
     decode::IntType getMax() const { return Max; }
     uint32_t getShiftValue() const { return ShiftValue; }
-    int compare(const WriteRange &R) const;
-    bool operator<(const WriteRange &R) const {
-      return compare(R) < 0;
-    }
+    int compare(const WriteRange& R) const;
+    bool operator<(const WriteRange& R) const { return compare(R) < 0; }
     void trace() const {
       if (Trace.getTraceProgress())
         traceInternal("");
@@ -557,15 +557,16 @@ private:
       if (Trace.getTraceProgress())
         traceInternal(Prefix);
     }
+
    private:
-    const CaseNode *Case;
+    const CaseNode* Case;
     decode::IntType Min;
     decode::IntType Max;
     uint32_t ShiftValue;
     void traceInternal(const char* Prefix) const;
   };
-  void clearCaches(NodeVectorType &AdditionalNodes) OVERRIDE;
-  void installCaches(NodeVectorType &AdditionalNodes) OVERRIDE;
+  void clearCaches(NodeVectorType& AdditionalNodes) OVERRIDE;
+  void installCaches(NodeVectorType& AdditionalNodes) OVERRIDE;
   typedef std::vector<WriteRange> CaseRangeVectorType;
   CaseRangeVectorType CaseRangeVector;
   void installCaseRanges();

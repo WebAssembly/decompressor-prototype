@@ -83,13 +83,17 @@ void usage(const char* AppName) {
     fprintf(stderr,
             "  -v | --verbose\t"
             "Show progress (can be repeated for more detail).\n");
-    fprintf(stderr, "\t\t\t-v          : "
+    fprintf(stderr,
+            "\t\t\t-v          : "
             "Trace progress of decompression.\n");
-    fprintf(stderr, "\t\t\t-v -v       : "
+    fprintf(stderr,
+            "\t\t\t-v -v       : "
             "Add progress of parsing default files.\n");
-    fprintf(stderr, "\t\t\t-v -v -v    : "
+    fprintf(stderr,
+            "\t\t\t-v -v -v    : "
             "Add progress of lexing default files.\n");
-    fprintf(stderr, "\t\t\t-v -v -v -v : "
+    fprintf(stderr,
+            "\t\t\t-v -v -v -v : "
             "Add progress of installing filter sections.\n");
   }
 }
@@ -135,9 +139,8 @@ int main(int Argc, char* Argv[]) {
       OutputFilename = Argv[i];
     } else if (Argv[i] == std::string("-s")) {
       UseFileStreams = true;
-    } else if (isDebug() &&
-               (Argv[i] == std::string("-v") ||
-                Argv[i] == std::string("--verbose"))) {
+    } else if (isDebug() && (Argv[i] == std::string("-v") ||
+                             Argv[i] == std::string("--verbose"))) {
       ++Verbose;
     } else {
       fprintf(stderr, "Unrecognized option: %s\n", Argv[i]);
@@ -154,8 +157,7 @@ int main(int Argc, char* Argv[]) {
       ReadBackedByteQueue Input(std::move(Stream));
       BinaryReader Reader(&Input, SymTab);
       Reader.setTraceProgress(Verbose >= 2);
-      if (FileNode* File = Reader.readFile()) {
-        SymTab.install(File);
+      if (Reader.readFile()) {
         continue;
       }
     }

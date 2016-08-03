@@ -46,13 +46,13 @@ TextWriter* TraceClassSexp::getNewTextWriter() {
   return new TextWriter();
 }
 
-void TraceClassSexp::traceSexpInternal(const char *Prefix, const Node* Node) {
+void TraceClassSexp::traceSexpInternal(const char* Prefix, const Node* Node) {
   indent();
   fprintf(File, "%s", Prefix);
   getTextWriter()->writeAbbrev(File, Node);
 }
 
-void TraceClassSexp::errorSexp(const char *Prefix, const Node* Node) {
+void TraceClassSexp::errorSexp(const char* Prefix, const Node* Node) {
   fprintf(File, "%s", Prefix);
   getTextWriter()->write(File, Node);
 }
