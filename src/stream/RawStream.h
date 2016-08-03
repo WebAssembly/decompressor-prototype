@@ -20,7 +20,7 @@
 #ifndef DECOMPRESSOR_SRC_STREAM_RAWSTREAM_H
 #define DECOMPRESSOR_SRC_STREAM_RAWSTREAM_H
 
-#include "Defs.h"
+#include "utils/Defs.h"
 
 namespace wasm {
 
@@ -28,10 +28,11 @@ namespace decode {
 
 class RawStream {
   RawStream(const RawStream&) = delete;
-  RawStream &operator=(const RawStream&) = delete;
-public:
+  RawStream& operator=(const RawStream&) = delete;
+
+ public:
   RawStream() {}
-  virtual ~RawStream() = default;
+  virtual ~RawStream(){};
 
   // Reads a contiguous range of elements into a buffer.
   //
@@ -39,15 +40,14 @@ public:
   // @param BufSize - The size of the buffer to read into.
   // @result        - The number of bytes read, or 0 if unable
   //                  to read anymore bytes.
-  virtual size_t read(uint8_t *Buf, size_t Size = 1) = 0;
-
+  virtual size_t read(uint8_t* Buf, size_t Size = 1) = 0;
 
   // Writes a contigues range of elements from a buffer.
   //
   // @param Buf     - A pointer to a buffer to write from.
   // @param BufSize - The size of the buffer to write from.
   // @result        - True if successful.
-  virtual bool write(uint8_t *Buf, size_t Size = 1) = 0;
+  virtual bool write(uint8_t* Buf, size_t Size = 1) = 0;
 
   // Communicates that the stream can no longer be modified. Returns
   // false if unable to freeze.
@@ -57,8 +57,8 @@ public:
   virtual bool atEof() = 0;
 };
 
-} // end of namespace decode
+}  // end of namespace decode
 
-} // end of namespace decode
+}  // end of namespace decode
 
-#endif // DECOMPRESSOR_SRC_STREAM_RAWSTREAM_H
+#endif  // DECOMPRESSOR_SRC_STREAM_RAWSTREAM_H

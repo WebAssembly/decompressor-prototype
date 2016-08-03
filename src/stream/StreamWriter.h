@@ -32,52 +32,56 @@ namespace decode {
 
 class StreamWriter : public RawStream {
   StreamWriter(const StreamWriter&) = delete;
-  StreamWriter &operator=(const StreamWriter&) = delete;
-public:
-  StreamWriter(std::ostream &Output) : Output(Output) {}
+  StreamWriter& operator=(const StreamWriter&) = delete;
 
-  ~StreamWriter() override;
-  size_t read(uint8_t *Buf, size_t Size=1) override;
-  bool write(uint8_t *Buf, size_t Size=1) override;
-  bool freeze() override;
-  bool atEof() override;
+ public:
+  StreamWriter(std::ostream& Output)
+      : Output(Output), CurSize(0), IsFrozen(false) {}
 
-  static std::unique_ptr<RawStream> create(std::ostream &Output) {
+  ~StreamWriter() OVERRIDE;
+  size_t read(uint8_t* Buf, size_t Size = 1) OVERRIDE;
+  bool write(uint8_t* Buf, size_t Size = 1) OVERRIDE;
+  bool freeze() OVERRIDE;
+  bool atEof() OVERRIDE;
+
+  static std::unique_ptr<RawStream> create(std::ostream& Output) {
     // TODO(kschimpf): Can we make the shared pointr part of the writer?
     std::unique_ptr<RawStream> Writer(new StreamWriter(Output));
     return Writer;
   }
 
-protected:
-  std::ostream &Output;
-  static constexpr size_t kBufSize = 2; // 4096;
+ protected:
+  std::ostream& Output;
+  static constexpr size_t kBufSize = 2;  // 4096;
   char Bytes[kBufSize];
-  size_t CurSize = 0;
-  bool IsFrozen = false;
+  size_t CurSize;
+  bool IsFrozen;
 
   bool saveBuffer();
   virtual void close() {}
 };
 
-class FstreamWriter final : public StreamWriter {
+class FstreamWriter FINAL : public StreamWriter {
   FstreamWriter(const FstreamWriter&) = delete;
-  FstreamWriter &operator=(const FstreamWriter&) = delete;
-public:
-  FstreamWriter(const char *Filename);
-  ~FstreamWriter() override;
+  FstreamWriter& operator=(const FstreamWriter&) = delete;
 
-  static std::unique_ptr<RawStream> create(const char *Filename) {
+ public:
+  FstreamWriter(const char* Filename);
+  ~FstreamWriter() OVERRIDE;
+
+  static std::unique_ptr<RawStream> create(const char* Filename) {
     // TODO(kschimpf): Can we make the shared pointr part of the writer?
     std::unique_ptr<RawStream> Writer(new FstreamWriter(Filename));
     return Writer;
   }
-private:
+
+ private:
   std::ofstream FileOutput;
-  void close() override;
+  void close() OVERRIDE;
 };
 
-} // end of namespace decode
+}  // end of namespace decode
 
-} // end of namespace wasm
+}  // end of namespace wasm
 
-#endif // DECOMPRESSOR_SRC_STREAM_STREAMWRITER_H
+#endif  // DECOMPRESSOR_SRC_STREAM_STREAMWRITER_H

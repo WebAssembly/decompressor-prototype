@@ -25,7 +25,8 @@ namespace wasm {
 
 namespace decode {
 
-StreamReader::StreamReader(std::istream &Input) : Input(Input) {
+StreamReader::StreamReader(std::istream& Input)
+    : Input(Input), CurSize(0), BytesRemaining(0), AtEof(false) {
 }
 
 StreamReader::~StreamReader() {
@@ -46,7 +47,7 @@ void StreamReader::fillBuffer() {
   BytesRemaining = CurSize;
 }
 
-size_t StreamReader::read(uint8_t *Buf, size_t Size) {
+size_t StreamReader::read(uint8_t* Buf, size_t Size) {
   size_t Count = 0;
   while (Size) {
     if (BytesRemaining >= Size) {
@@ -73,9 +74,9 @@ size_t StreamReader::read(uint8_t *Buf, size_t Size) {
   return Count;
 }
 
-bool StreamReader::write(uint8_t *Buf, size_t Size) {
-  (void) Buf;
-  (void) Size;
+bool StreamReader::write(uint8_t* Buf, size_t Size) {
+  (void)Buf;
+  (void)Size;
   return false;
 }
 
@@ -96,16 +97,18 @@ bool StreamReader::atEof() {
   return AtEof;
 }
 
-FstreamReader::FstreamReader(const char *Filename)
-    : StreamReader(FileInput), FileInput(Filename) {}
+FstreamReader::FstreamReader(const char* Filename)
+    : StreamReader(FileInput), FileInput(Filename) {
+}
 
-FstreamReader::~FstreamReader() {}
+FstreamReader::~FstreamReader() {
+}
 
 void FstreamReader::close() {
   if (FileInput.is_open())
     FileInput.close();
 }
 
-} // end of namespace decode
+}  // end of namespace decode
 
-} // end of namespace wasm
+}  // end of namespace wasm

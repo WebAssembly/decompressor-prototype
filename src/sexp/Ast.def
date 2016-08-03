@@ -19,100 +19,248 @@
 #ifndef DECOMPRESSOR_SRC_AST_DEF
 #define DECOMPRESSOR_SRC_AST_DEF
 
-//#define X(tag, opcode, sexp_name, type_name, TextNumArgs)
+//#define X(tag, opcode, sexp_name, type_name, text_num_args, text_max_args)
 // where:
 //   tag: enumeration name.
 //   opcode: opcode value (also enum value).
 //   sexp_name: print name in s-expressions.
 //   type_name: type name (use sexp_name if nullptr).
-//   TextNumArgs: Number of arguments to print on same line in TextWriter.
+//   text_num_args: Minimum number of arguments to print on same line in
+//                  TextWriter.
+//   text_max_args: Number of additional arguments (above text_num_args)
+//                  that can appear on same line.
 #define AST_OPCODE_TABLE                                                       \
   /* enum name, opcode */                                                      \
                                                                                \
   /* Control flow operators */                                                 \
-  X(BlockBegin,        0x00, "block.begin",      nullptr,           0)         \
-  X(BlockEnd,          0x01, "block.end",        nullptr,           0)         \
-  X(BlockOneArg,       0x02, "block",            "blockOneArg",     1)         \
-  X(BlockThreeArgs,    0x03, "block",            "blockThreeArgs",  3)         \
-  X(BlockTwoArgs,      0x04, "block",            "blockTwoArgs",    2)         \
-  X(Case,              0x05, "case",             nullptr,           2)         \
-  X(Copy,              0x06, "copy",             nullptr,           0)         \
-  X(Error,             0x07, "error",            nullptr,           0)         \
-  X(Eval,              0x08, "eval",             nullptr,           1)         \
-  X(Filter,            0x09, "filter",           nullptr,           0)         \
-  X(IfThenElse,        0x0a, "if",               nullptr,           1)         \
-  X(Loop,              0x0b, "loop",             nullptr,           1)         \
-  X(LoopUnbounded,     0x0c, "loop.unbounded",   nullptr,           0)         \
-  X(Select,            0x0d, "select",           nullptr,           1)         \
-  X(Sequence,          0x0e, "seq",              nullptr,           0)         \
+  X(BlockEndNoArgs,    0x00, "block.end",        "BlockEndNoArgs",  0, 0)      \
+  X(Block,             0x01, "block",            nullptr,           1, 0)      \
+  X(Case,              0x02, "case",             nullptr,           2, 0)      \
+  X(Error,             0x03, "error",            nullptr,           0, 0)      \
+  X(Eval,              0x04, "eval",             nullptr,           1, 0)      \
+  X(EvalDefault,       0x05, "eval.default",     nullptr,           1, 0)      \
+  X(Filter,            0x06, "filter",           nullptr,           0, 0)      \
+  X(Loop,              0x07, "loop",             nullptr,           1, 1)      \
+  X(LoopUnbounded,     0x08, "loop.unbounded",   nullptr,           0, 1)      \
+  X(Select,            0x09, "select",           nullptr,           1, 0)      \
+  X(Sequence,          0x0a, "seq",              nullptr,           0, 0)      \
+  X(IfThen,            0x0b, "if",               "IfThen",          1, 0)      \
+  X(IfThenElse,        0x0c, "if",               "IfThenElse",      1, 0)      \
                                                                                \
   /* Constants */                                                              \
-  X(Void,              0x10, "void",             nullptr,           0)         \
-  X(I32Const,          0x11, "i32.const",        nullptr,           1)         \
-  X(I64Const,          0x12, "i64.const",        nullptr,           1)         \
-  X(U32Const,          0x13, "u32.const",        nullptr,           1)         \
-  X(U64Const,          0x14, "u64.const",        nullptr,           1)         \
-  X(SymConst,          0x15, "sym.const",        nullptr,           1)         \
+  X(Void,              0x10, "void",             nullptr,           0, 0)      \
+  X(Integer,           0x11, "integer",          nullptr,           0, 0)      \
+  X(Symbol,            0x12, "symbol",           nullptr,           0, 0)      \
+  X(I32Const,          0x13, "i32.const",        nullptr,           1, 0)      \
+  X(I64Const,          0x14, "i64.const",        nullptr,           1, 0)      \
+  X(U32Const,          0x15, "u32.const",        nullptr,           1, 0)      \
+  X(U64Const,          0x16, "u64.const",        nullptr,           1, 0)      \
                                                                                \
   /* Formatting */                                                             \
-  X(Uint32NoArgs,      0x20, "uint32",           "uint32NoArgs",    0)         \
-  X(Uint32OneArg,      0x21, "uint32",           "uint32OneArg",    1)         \
-  X(Uint8NoArgs,       0x22, "uint8",            "uint8NoArgs",     0)         \
-  X(Uint8OneArg,       0x23, "uint8",            "uint8OneArg",     1)         \
-  X(Uint64NoArgs,      0x24, "uint64",           "uint64NoArgs",    0)         \
-  X(Uint64OneArg,      0x25, "uint64",           "uint64OneArg",    1)         \
-  X(Varint32NoArgs,    0x26, "varint32",         "varint32NoArgs",  0)         \
-  X(Varint32OneArg,    0x27, "varint32",         "varint32OneArg",  1)         \
-  X(Varint64NoArgs,    0x28, "varint64",         "varint64NoArgs",  0)         \
-  X(Varint64OneArg,    0x29, "varint64",         "varint64OneArg",  1)         \
-  X(Varuint1NoArgs,    0x2a, "varuint1",         "varuint1NoArgs",  0)         \
-  X(Varuint1OneArg,    0x2b, "varuint1",         "varuint1OneArg",  1)         \
-  X(Varuint32NoArgs,   0x2c, "varuint32",        "varuint32NoArgs", 0)         \
-  X(Varuint32OneArg,   0x2d, "varuint32",        "varuint32OneArg", 1)         \
-  X(Varuint64NoArgs,   0x2e, "varuint64",        "varuint64NoArgs", 0)         \
-  X(Varuint64OneArg,   0x2f, "varuint64",        "varuint64OneArg", 1)         \
-  X(Varuint7NoArgs,    0x30, "varuint7",         "varuint7NoArgs",  0)         \
-  X(Varuint7OneArg,    0x31, "varuint7",         "varuint7OneArg",  1)         \
+  X(Uint32NoArgs,      0x20, "uint32",           "uint32NoArgs",    0, 0)      \
+  X(Uint32OneArg,      0x21, "uint32",           "uint32OneArg",    1, 0)      \
+  X(Uint64NoArgs,      0x22, "uint64",           "uint64NoArgs",    0, 0)      \
+  X(Uint64OneArg,      0x23, "uint64",           "uint64OneArg",    1, 0)      \
+  X(Uint8NoArgs,       0x24, "uint8",            "uint8NoArgs",     0, 0)      \
+  X(Uint8OneArg,       0x25, "uint8",            "uint8OneArg",     1, 0)      \
+  X(Varint32NoArgs,    0x26, "varint32",         "varint32NoArgs",  0, 0)      \
+  X(Varint32OneArg,    0x27, "varint32",         "varint32OneArg",  1, 0)      \
+  X(Varint64NoArgs,    0x28, "varint64",         "varint64NoArgs",  0, 0)      \
+  X(Varint64OneArg,    0x29, "varint64",         "varint64OneArg",  1, 0)      \
+  X(Varuint32NoArgs,   0x2a, "varuint32",        "varuint32NoArgs", 0, 0)      \
+  X(Varuint32OneArg,   0x2b, "varuint32",        "varuint32OneArg", 1, 0)      \
+  X(Varuint64NoArgs,   0x2c, "varuint64",        "varuint64NoArgs", 0, 0)      \
+  X(Varuint64OneArg,   0x2d, "varuint64",        "varuint64OneArg", 1, 0)      \
+  X(Opcode,            0x2e, "opcode",           nullptr,           1, 0)      \
+                                                                               \
+  /* Boolean tests */                                                          \
+  X(And,               0x30, "and",              nullptr,           2, 0)      \
+  X(Or,                0x31, "or",               nullptr,           2, 0)      \
+  X(Not,               0x32, "not",              nullptr,           1, 0)      \
+  X(IsByteIn,          0x33, "is.byte.in",       nullptr,           0, 0)      \
+  X(IsByteOut,         0x34, "is.byte.out",      nullptr,           0, 0)      \
                                                                                \
   /* I/O (and tree) operations  */                                             \
-  X(AppendNoArgs,      0x40, "append",           "appendNoArgs",    0)         \
-  X(AppendOneArg,      0x41, "append",           "appendOneArg",    0)         \
-  X(Lit,               0x42, "lit",              nullptr,           1)         \
-  X(Map,               0x43, "map",              nullptr,           2)         \
-  X(Peek,              0x44, "peek",             nullptr,           1)         \
-  X(Postorder,         0x45, "postorder",        nullptr,           1)         \
-  X(Preorder,          0x46, "preorder",         nullptr,           1)         \
-  X(Read,              0x47, "read",             nullptr,           1)         \
-  X(Write,             0x48, "write",            nullptr,           1)         \
+  X(Map,               0x42, "map",              nullptr,           2, 0)      \
+  X(Peek,              0x43, "peek",             nullptr,           1, 0)      \
+/*  X(AppendNoArgs,      0x40, "append",           "appendNoArgs",    0, 0) */ \
+/*  X(AppendOneArg,      0x41, "append",           "appendOneArg",    1, 0) */ \
+/*  X(Postorder,         0x44, "postorder",        nullptr,           1, 0) */ \
+/*  X(Preorder,          0x45, "preorder",         nullptr,           1, 0) */ \
+  X(Read,              0x46, "read",             nullptr,           1, 0)      \
+  X(LastRead,          0x47, "read",             "lastRead",        0, 0)      \
                                                                                \
   /* Streams */                                                                \
-  X(AstToAst,          0x50, "ast.to.ast",       nullptr,           0)         \
-  X(AstToBit,          0x51, "ast.to.bit",       nullptr,           0)         \
-  X(AstToByte,         0x52, "ast.to.byte",      nullptr,           0)         \
-  X(AstToInt,          0x53, "ast.to.int",       nullptr,           0)         \
-  X(BitToAst,          0x54, "bit.to.ast",       nullptr,           0)         \
-  X(BitToBit,          0x55, "bit.to.bit",       nullptr,           0)         \
-  X(BitToByte,         0x56, "bit.to.byte",      nullptr,           0)         \
-  X(BitToInt,          0x57, "bit.to.int",       nullptr,           0)         \
-  X(ByteToAst,         0x58, "byte.to.ast",      nullptr,           0)         \
-  X(ByteToBit,         0x59, "byte.to.bit",      nullptr,           0)         \
-  X(ByteToByte,        0x5a, "byte.to.byte",     nullptr,           0)         \
-  X(ByteToInt,         0x5b, "byte.to.int",      nullptr,           0)         \
-  X(IntToAst,          0x5c, "int.to.ast",       nullptr,           0)         \
-  X(IntToBit,          0x5d, "int.to.bit",       nullptr,           0)         \
-  X(IntToByte,         0x5e, "int.to.byte",      nullptr,           0)         \
-  X(IntToInt,          0x5f, "int.to.int",       nullptr,           0)         \
+/*  X(AstToAst,          0x50, "ast.to.ast",       nullptr,           0, 0) */ \
+/*  X(AstToBit,          0x51, "ast.to.bit",       nullptr,           0, 0) */ \
+/*  X(AstToByte,         0x52, "ast.to.byte",      nullptr,           0, 0) */ \
+/*  X(AstToInt,          0x53, "ast.to.int",       nullptr,           0, 0) */ \
+/*  X(BitToAst,          0x54, "bit.to.ast",       nullptr,           0, 0) */ \
+/*  X(BitToBit,          0x55, "bit.to.bit",       nullptr,           0, 0) */ \
+/*  X(BitToByte,         0x56, "bit.to.byte",      nullptr,           0, 0) */ \
+/*  X(BitToInt,          0x57, "bit.to.int",       nullptr,           0, 0) */ \
+/*  X(ByteToAst,         0x58, "byte.to.ast",      nullptr,           0, 0) */ \
+/*  X(ByteToBit,         0x59, "byte.to.bit",      nullptr,           0, 0) */ \
+  X(ByteToByte,        0x5a, "byte.to.byte",     nullptr,           0, 0)      \
+/*  X(ByteToInt,         0x5b, "byte.to.int",      nullptr,           0, 0) */ \
+/*  X(IntToAst,          0x5c, "int.to.ast",       nullptr,           0, 0) */ \
+/*  X(IntToBit,          0x5d, "int.to.bit",       nullptr,           0, 0) */ \
+/*  X(IntToByte,         0x5e, "int.to.byte",      nullptr,           0, 0) */ \
+/*  X(IntToInt,          0x5f, "int.to.int",       nullptr,           0, 0) */ \
                                                                                \
   /* Declarations */                                                           \
-  X(Define,            0x60, "define",           nullptr,           1)         \
-  X(Default,           0x61, "default",          nullptr,           1)         \
-  X(File,              0x62, "file",             nullptr,           0)         \
-  X(Section,           0x63, "section",          nullptr,           1)         \
-  X(Undefine,          0x64, "undefine",         nullptr,           1)         \
-  X(Version,           0x65, "version",          nullptr,           0)         \
+  X(Define,            0x60, "define",           nullptr,           2, 0)      \
+  X(Default,           0x61, "default",          nullptr,           2, 0)      \
+  X(File,              0x62, "file",             nullptr,           0, 0)      \
+  X(Section,           0x63, "section",          nullptr,           1, 0)      \
+  X(Undefine,          0x64, "undefine",         nullptr,           1, 0)      \
+  X(Version,           0x65, "version",          nullptr,           1, 0)      \
                                                                                \
   /* Internal (not opcodes in compressed file) */                              \
-  X(Integer,           0x100, "?integer?",       nullptr,           0)         \
-  X(Symbol,            0x101, "?symbol?",        nullptr,           0)
+  X(UnknownSection,    0xFF, "unknown.section", nullptr,           1, 0)       \
+
+//#define X(tag)
+#define AST_NULLARYNODE_TABLE                                                  \
+/*  X(AppendNoArgs)                                                         */ \
+  X(BlockEndNoArgs)                                                            \
+  X(Error)                                                                     \
+  X(IsByteIn)                                                                  \
+  X(IsByteOut)                                                                 \
+  X(LastRead)                                                                \
+  X(Uint8NoArgs)                                                               \
+  X(Uint32NoArgs)                                                              \
+  X(Uint64NoArgs)                                                              \
+  X(Varint32NoArgs)                                                            \
+  X(Varint64NoArgs)                                                            \
+  X(Varuint32NoArgs)                                                           \
+  X(Varuint64NoArgs)                                                           \
+  X(Void)                                                                      \
+
+//#define X(tag)
+#define AST_UNARYNODE_TABLE                                                    \
+/*  X(AppendOneArg)                                                         */ \
+/*  X(AstToAst)                                                             */ \
+/*  X(AstToBit)                                                             */ \
+/*  X(AstToByte)                                                            */ \
+/*  X(AstToInt)                                                             */ \
+/*  X(BitToAst)                                                             */ \
+/*  X(BitToBit)                                                             */ \
+/*  X(BitToByte)                                                            */ \
+/*  X(BitToInt)                                                             */ \
+  X(Block)                                                                     \
+/*  X(ByteToAst)                                                            */ \
+/*  X(ByteToBit)                                                            */ \
+  X(ByteToByte)                                                                \
+/*  X(ByteToInt)                                                            */ \
+  X(Eval)                                                                      \
+  X(EvalDefault)                                                               \
+/*  X(IntToAst)                                                             */ \
+/*  X(IntToBit)                                                             */ \
+/*  X(IntToByte)                                                            */ \
+/*  X(IntToInt)                                                             */ \
+  X(I32Const)                                                                  \
+  X(I64Const)                                                                  \
+  X(LoopUnbounded)                                                             \
+  X(Not)                                                                       \
+  X(Peek)                                                                      \
+/*  X(Postorder)                                                            */ \
+/*  X(Preorder)                                                             */ \
+  X(Read)                                                                      \
+  X(Uint32OneArg)                                                              \
+  X(Uint64OneArg)                                                              \
+  X(Undefine)                                                                  \
+  X(UnknownSection)                                                            \
+  X(U32Const)                                                                  \
+  X(U64Const)                                                                  \
+  X(Uint8OneArg)                                                               \
+  X(Varint32OneArg)                                                            \
+  X(Varint64OneArg)                                                            \
+  X(Varuint32OneArg)                                                           \
+  X(Varuint64OneArg)                                                           \
+  X(Version)                                                                   \
+
+//#define X(tag)
+#define AST_BINARYNODE_TABLE                                                   \
+  X(And)                                                                       \
+  X(Case)                                                                      \
+  X(Default)                                                                   \
+  X(Define)                                                                    \
+  X(IfThen)                                                                    \
+  X(Loop)                                                                      \
+  X(Map)                                                                       \
+  X(Or)                                                                        \
+
+//#define X(tag)
+#define AST_SELECTNODE_TABLE                                                   \
+  X(Select)                                                                    \
+
+//#define X(tag)
+#define AST_NARYNODE_TABLE                                                     \
+  X(File)                                                                      \
+  X(Filter)                                                                    \
+  X(Section)                                                                   \
+  X(Sequence)                                                                  \
+
+//#define X(tag)
+#define AST_TERNARYNODE_TABLE                                                  \
+  X(IfThenElse)                                                                \
+
+//#define X(tag)
+#define AST_NODE_HAS_HIDDEN_SEQ                                                \
+  X(Block)                                                                     \
+/*  X(AstToAst)                                                             */ \
+/*  X(AstToBit)                                                             */ \
+/*  X(AstToByte)                                                            */ \
+/*  X(AstToInt)                                                             */ \
+/*  X(BitToAst)                                                             */ \
+/*  X(BitToBit)                                                             */ \
+/*  X(BitToByte)                                                            */ \
+/*  X(BitToInt)                                                             */ \
+/*  X(ByteToAst)                                                            */ \
+/*  X(ByteToBit)                                                            */ \
+  X(ByteToByte)                                                                \
+/*  X(ByteToInt)                                                            */ \
+  X(Case)                                                                      \
+  X(Define)                                                                    \
+  X(Default)                                                                   \
+  X(Loop)                                                                      \
+  X(LoopUnbounded)                                                             \
+/*  X(IntToAst)                                                             */ \
+/*  X(IntToBit)                                                             */ \
+/*  X(IntToByte)                                                            */ \
+/*  X(IntToInt)                                                             */ \
+
+//#define X(tag)
+#define AST_NODE_NEVER_SAME_LINE                                               \
+  X(Block)                                                                     \
+/*  X(AstToAst)                                                             */ \
+/*  X(AstToBit)                                                             */ \
+/*  X(AstToByte)                                                            */ \
+/*  X(AstToInt)                                                             */ \
+/*  X(BitToAst)                                                             */ \
+/*  X(BitToBit)                                                             */ \
+/*  X(BitToByte)                                                            */ \
+/*  X(BitToInt)                                                             */ \
+/*  X(ByteToAst)                                                            */ \
+/*  X(ByteToBit)                                                            */ \
+  X(ByteToByte)                                                                \
+/*  X(ByteToInt)                                                            */ \
+  X(Case)                                                                      \
+  X(Default)                                                                   \
+  X(Define)                                                                    \
+  X(IfThen)                                                                    \
+  X(IfThenElse)                                                                \
+/*  X(IntToAst)                                                             */ \
+/*  X(IntToBit)                                                             */ \
+/*  X(IntToByte)                                                            */ \
+/*  X(IntToInt)                                                             */ \
+  X(Loop)                                                                      \
+  X(LoopUnbounded)                                                             \
+  X(Opcode)                                                                    \
+  X(Select)                                                                    \
+  X(Sequence)                                                                  \
+  X(Section)                                                                   \
+  X(Undefine)                                                                  \
+  X(UnknownSection)                                                            \
 
 #endif // DECOMPRESSOR_SRC_AST_DEF

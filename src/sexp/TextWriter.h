@@ -20,10 +20,11 @@
 #ifndef DECOMPRESSOR_SRC_EXP_TEXTWRITER_H
 #define DECOMPRESSOR_SRC_EXP_TEXTWRITER_H
 
-#include "Defs.h"
 #include "sexp/Ast.h"
+#include "utils/Defs.h"
 
 #include <cstdio>
+#include <unordered_set>
 
 namespace wasm {
 
@@ -31,48 +32,61 @@ namespace filt {
 
 class TextWriter {
   TextWriter(const TextWriter&) = delete;
-  TextWriter &operator=(const TextWriter&) = delete;
+  TextWriter& operator=(const TextWriter&) = delete;
 
   class Indent {
-  public:
+   public:
     // Indent if new line. Add newline, if requested, when going out of scope.
-    Indent(TextWriter *Writer, bool AddNewline);
+    Indent(TextWriter* Writer, bool AddNewline);
     ~Indent();
-  private:
-    TextWriter *Writer;
+
+   private:
+    TextWriter* Writer;
     bool AddNewline;
   };
 
   class Parenthesize {
-  public:
+   public:
     // Indent if new line. Indent elements between constructor and destructor by
     // one. Add newline, if requested, when going out of scopre.
-    Parenthesize(TextWriter *Writer, NodeType Type, bool AddNewline);
+    Parenthesize(TextWriter* Writer, NodeType Type, bool AddNewline);
     ~Parenthesize();
-  private:
-    TextWriter *Writer;
+
+   private:
+    TextWriter* Writer;
     bool AddNewline;
   };
 
-public:
+ public:
   // When true use getNodeTypeName() instead of getNodeSexpName() for node
   // names.
   static bool UseNodeTypeNames;
   TextWriter();
-  void write(FILE *file, Node *Root);
 
-private:
-  FILE *File = 0;
-  size_t IndentCount = 0;
-  bool LineEmpty = true;
-  std::vector<Node::IndexType> KidCountSameLine;
-  // Special constant denoting maximum IntType value that is a power of 10.
-  // Used to print out decimal values.
-  decode::IntType IntTypeMaxPower10;
+  // Pretty prints s-expression (defined by Root) to File.
+  void write(FILE* File, const Node* Root);
 
-  void initialize(FILE *File);
+  // Prints one-line summary of s-expression (defined by Root) to File.
+  void writeAbbrev(FILE* File, const Node* Root);
 
-  void writeNode(Node *Node, bool AddNewline);
+ private:
+  FILE* File;
+  size_t IndentCount;
+  bool LineEmpty;
+  std::vector<int> KidCountSameLine;
+  std::vector<int> MaxKidCountSameLine;
+  std::unordered_set<int> HasHiddenSeqSet;
+  std::unordered_set<int> NeverSameLine;
+
+  void initialize(FILE* File);
+
+  void writeNode(const Node* Node, bool AddNewline, bool EmbedInParent = false);
+  void writeNodeKids(const Node* Node, bool EmbeddedInParent);
+
+  void writeNodeAbbrev(const Node* Node,
+                       bool AddNewline,
+                       bool EmbedInParent = false);
+  void writeNodeKidsAbbrev(const Node* Node, bool EmbeddedInParent);
 
   void writeIndent();
 
@@ -92,8 +106,8 @@ private:
   }
 };
 
-} // end of namespace filt
+}  // end of namespace filt
 
-} // end of namespace wasm
+}  // end of namespace wasm
 
-#endif // DECOMPRESSOR_SRC_EXP_TEXTWRITER_H
+#endif  // DECOMPRESSOR_SRC_EXP_TEXTWRITER_H

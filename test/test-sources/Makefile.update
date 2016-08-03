@@ -1,0 +1,102 @@
+# Copyright 2016 WebAssembly Community Group participants
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Copies test wast file (WASM s-expressions) to this directory, and then
+# converts them to binary form. This allows us to easily build test cases.
+#
+# To update spec tests run:
+#
+#     make -f Makefile.update
+#
+# To update other test files, use form:
+#
+#    make -f Makefile.update FILE
+#
+# where FILE is the name of the file, with periods replaced with dashes.
+#
+# Note: The make file has been separated from the main make file (Makefile)
+# because it has requirements on other WebAssembly projects. In particular, the
+# following projects must be downloaded:
+#
+#   sexpr-wasm-prototype
+#   spec
+#
+# In addition, you need to build the following projects:
+#
+#   sexpr-wasm-prototype.
+
+include Makefile.common
+
+SEXP_WASM_DIR = ../../../sexpr-wasm-prototype
+
+SPEC_SEXPS_DIR = ../../../spec/ml-proto/test
+
+SPEC_SEXPS_SRCS=$(patsubst %.wast, $(SPEC_SEXPS_DIR)/%.wast, $(SEXPS))
+LOCAL_SEXPS_SRCS=$(patsubst %.wast, $(LOCAL_SEXPS_DIR)/%.wast, $(SEXPS))
+LOCAL_SEXPS_BINS=$(patsubst %.wast, $(LOCAL_SEXPS_DIR)/%.wasm, $(SEXPS))
+
+$(info -----------------------------------------------)
+$(info ***NOTE*** Expect error messages while generating wasm files.)
+$(info -----------------------------------------------)
+
+# NOTE: update will have LOTS of error messages, but they can be ignored.
+spec: clean_binaries $(LOCAL_SEXPS_SRCS) $(LOCAL_SEXPS_BINS)
+
+.PHONY: update
+
+defaults-wasm:
+	$(EXEC_DIR)/decompsexp-wasm -m -i $(SEXP_DEFAULTS) -o defaults.wasm
+
+.PHONY: defaults-wasm
+
+defaults-wasm-w:
+	$(EXEC_DIR)/decompsexp-wasm -i $(SEXP_DEFAULTS) -o defaults.wasm-w
+
+.PHONY: defaults-wasm-w
+
+defaults-dff:
+	$(TEST_DIR)/TestParser -w -f $(SEXP_DEFAULTS) > defaults.dff
+
+.PHONY: defaults-dff
+
+defaults-df:
+	$(TEST_DIR)/TestParser -w $(SEXP_DEFAULTS) > defaults.df
+
+.PHONY: update-defaults-df
+
+clean: clean_binaries
+	rm -rf $(LOCAL_SEXPS_DIR)
+
+.PHONY: clean
+
+clean_binaries:
+	rm -rf $(LOCAL_SEXPS_BINS)
+
+$(LOCAL_SEXPS_SRCS): | $(LOCAL_SEXPS_DIR)
+
+$(LOCAL_SEXPS_BINS): | $(LOCAL_SEXPS_DIR)
+
+$(LOCAL_TESTS): | $(LOCAL_SEXPS_DIR)
+
+$(LOCAL_SEXPS_DIR):
+	mkdir -p $@
+
+$(LOCAL_SEXPS_SRCS): $(LOCAL_SEXPS_DIR)/%.wast: $(SPEC_SEXPS_DIR)/%.wast
+	cp $< $@
+
+# NOTE: sexpr-wasm will have lots of error messages, but they do not block
+# building the corresponding wasm files.
+$(LOCAL_SEXPS_BINS): $(LOCAL_SEXPS_DIR)/%.wasm: $(LOCAL_SEXPS_DIR)/%.wast
+	$(SEXP_WASM_DIR)/out/sexpr-wasm $< -o $@
+

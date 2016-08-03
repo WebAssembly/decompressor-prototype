@@ -20,8 +20,8 @@
 #ifndef DECOMPRESSOR_PROTOTYPE_SRC_SEXP_PARSER_DRIVER_H
 #define DECOMPRESSOR_PROTOTYPE_SRC_SEXP_PARSER_DRIVER_H
 
-#include "Allocator.h"
 #include "sexp-parser/Parser.tab.hpp"
+#include "utils/Allocator.h"
 
 #include <map>
 #include <memory>
@@ -31,99 +31,99 @@ namespace wasm {
 namespace filt {
 
 // Driver connecting Parser, Lexer, Positions, and Locations.
-class Driver
-{
+class Driver {
   Driver(const Driver&) = delete;
-  Driver &operator=(const Driver&) = delete;
-public:
-  Driver (alloc::Allocator *_Alloc = nullptr)
-      : Alloc(_Alloc) {
-    if (Alloc == nullptr)
-      Alloc = new alloc::MallocArena();
-  }
+  Driver& operator=(const Driver&) = delete;
 
-  ~Driver () {}
+ public:
+  Driver(SymbolTable& Table)
+      : Table(Table),
+        Alloc(Table.getAllocator()),
+        TraceLexing(false),
+        TraceParsing(false),
+        MaintainIntegerFormatting(false),
+        ParsedAst(nullptr),
+        ErrorsReported(false) {}
 
-  template<typename T, typename... Args>
-  T *create(Args&&... args) {
+  ~Driver() {}
+
+  template <typename T, typename... Args>
+  T* create(Args&&... args) {
     return Alloc->create<T>(std::forward<Args>(args)...);
   }
 
-  alloc::Allocator *getAllocator() {
-    return Alloc;
+  SymbolNode* getSymbolDefinition(ExternalName& Name) {
+    return Table.getSymbolDefinition(Name);
   }
+
+  alloc::Allocator* getAllocator() { return Alloc; }
 
   // The name of the file being parsed.
-  std::string& getFilename() {
-    return Filename;
+  std::string& getFilename() { return Filename; }
+
+  bool getMaintainIntegerFormatting() const {
+    return MaintainIntegerFormatting;
   }
 
-  void setTraceLexing(bool NewValue) {
-    TraceLexing = NewValue;
+  void setMaintainIntegerFormatting(bool NewValue) {
+    MaintainIntegerFormatting = NewValue;
   }
 
-  void setTraceParsing(bool NewValue) {
-    TraceParsing = NewValue;
-  }
+  void setTraceLexing(bool NewValue) { TraceLexing = NewValue; }
 
-  const location &getLoc() const {
-    return Loc;
-  }
+  void setTraceParsing(bool NewValue) { TraceParsing = NewValue; }
 
-  void stepLocation() {
-    Loc.step();
-  }
+  const location& getLoc() const { return Loc; }
 
-  void extendLocationColumns(size_t NumColumns) {
-    Loc.columns(NumColumns);
-  }
+  void stepLocation() { Loc.step(); }
 
-  void extendLocationLines(size_t NumLines) {
-    Loc.lines(NumLines);
-  }
+  void extendLocationColumns(size_t NumColumns) { Loc.columns(NumColumns); }
+
+  void extendLocationLines(size_t NumLines) { Loc.lines(NumLines); }
 
   // Run the parser on file F. Returns true on success.
-  bool parse (const std::string& Filename);
-
+  bool parse(const std::string& Filename);
 
   // Returns the last parsed ast.
-  Node *getParsedAst() const {
-    return ParsedAst;
-  }
+  Node* getParsedAst() const { return ParsedAst; }
 
-  void setParsedAst(Node *Ast) {
+  void setParsedAst(Node* Ast) {
     ParsedAst = Ast;
+    Table.install(ParsedAst);
   }
 
   // Error handling.
-  void error (const wasm::filt::location& Loc,
-              const std::string& Message) const;
-  void error (const std::string& Message) const;
-  void tokenError(const std::string& Token) const;
+  void error(const wasm::filt::location& Loc, const std::string& Message);
+  void error(const std::string& Message);
+  void tokenError(const std::string& Token);
+  void fatal(const std::string& Message);
 
-private:
-  alloc::Allocator *Alloc;
+ private:
+  SymbolTable& Table;
+  alloc::Allocator* Alloc;
   std::string Filename;
-  bool TraceLexing = false;
-  bool TraceParsing = false;
+  bool TraceLexing;
+  bool TraceParsing;
+  bool MaintainIntegerFormatting;
   // The location of the last token.
   location Loc;
-  Node *ParsedAst = nullptr;
+  Node* ParsedAst;
+  bool ErrorsReported;
 
   // Called before parsing for setup.
-  void Begin ();
+  void Begin();
   // Called after parsing for cleanup.
-  void End ();
+  void End();
 };
 
-} // end of namespace filt
+}  // end of namespace filt
 
-} // end of namespace filt
+}  // end of namespace filt
 
 // Tell Flex the lexer's prototype ...
-# define YY_DECL \
-  wasm::filt::Parser::symbol_type yylex (wasm::filt::Driver& Driver)
+#define YY_DECL \
+  wasm::filt::Parser::symbol_type yylex(wasm::filt::Driver& Driver)
 // ... and declare it for the parser's sake.
 YY_DECL;
 
-#endif // DECOMPRESSOR_PROTOTYPE_SRC_SEXP_PARSER_DRIVER_H
+#endif  // DECOMPRESSOR_PROTOTYPE_SRC_SEXP_PARSER_DRIVER_H

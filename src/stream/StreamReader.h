@@ -32,52 +32,55 @@ namespace decode {
 
 class StreamReader : public RawStream {
   StreamReader(const StreamReader&) = delete;
-  StreamReader &operator=(const StreamReader*) = delete;
-public:
-  ~StreamReader() override;
-  size_t read(uint8_t *Buf, size_t Size=1) override;
-  bool write(uint8_t *Buf, size_t Size=1) override;
-  bool freeze() override;
-  bool atEof() override;
+  StreamReader& operator=(const StreamReader*) = delete;
 
-  static std::unique_ptr<RawStream> create(std::istream &Input) {
+ public:
+  ~StreamReader() OVERRIDE;
+  size_t read(uint8_t* Buf, size_t Size = 1) OVERRIDE;
+  bool write(uint8_t* Buf, size_t Size = 1) OVERRIDE;
+  bool freeze() OVERRIDE;
+  bool atEof() OVERRIDE;
+
+  static std::unique_ptr<RawStream> create(std::istream& Input) {
     // TODO(kschimpf): Can we make the shared pointer part of the reader?
     std::unique_ptr<RawStream> Reader(new StreamReader(Input));
     return Reader;
   }
 
-protected:
-  std::istream &Input;
+ protected:
+  std::istream& Input;
   static constexpr size_t kBufSize = 4096;
   char Bytes[kBufSize];
-  size_t CurSize = 0;
-  size_t BytesRemaining = 0;
-  bool AtEof = false;
+  size_t CurSize;
+  size_t BytesRemaining;
+  bool AtEof;
 
-  StreamReader(std::istream &Input);
+  StreamReader(std::istream& Input);
   virtual void close() {}
   void fillBuffer();
 };
 
 // Defines a file reader.
-class FstreamReader final : public StreamReader {
+class FstreamReader FINAL : public StreamReader {
   FstreamReader(const FstreamReader&) = delete;
-  FstreamReader &operator=(const FstreamReader&) = delete;
-public:
-  ~FstreamReader() override;
-  static std::unique_ptr<RawStream> create(const char *Filename) {
+  FstreamReader& operator=(const FstreamReader&) = delete;
+
+ public:
+  ~FstreamReader() OVERRIDE;
+  static std::unique_ptr<RawStream> create(const char* Filename) {
     // TODO(kschimpf): Can we make the shared pointer part of the reader?
     std::unique_ptr<RawStream> Reader(new FstreamReader(Filename));
     return Reader;
   }
-private:
-  FstreamReader(const char *Filename);
+
+ private:
+  FstreamReader(const char* Filename);
   std::ifstream FileInput;
-  void close() override;
+  void close() OVERRIDE;
 };
 
-} // end of namespace decode
+}  // end of namespace decode
 
-} // end of namespace wasm
+}  // end of namespace wasm
 
-#endif // DECOMPRESSOR_SRC_STREAM_STREAMREADER_H
+#endif  // DECOMPRESSOR_SRC_STREAM_STREAMREADER_H

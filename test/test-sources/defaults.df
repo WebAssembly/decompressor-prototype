@@ -1,0 +1,151 @@
+(section 'filter'
+  (version 0)
+  (default 'code'
+    (loop (varuint32 6) (eval 'code.function'))
+  )
+  (default 'code.address'
+    (varuint32 6)
+    (varuint32 6)
+  )
+  (default 'code.br_table'
+    (uint8)
+    (loop (varuint32 6) (uint32 6))
+    (uint32 6)
+  )
+  (default 'code.br_target'
+    (uint8)
+    (varuint32 6)
+  )
+  (default 'code.call_args'
+    (varuint32 6)
+    (varuint32 6)
+  )
+  (default 'code.function'
+    (block
+      (loop (varuint32 6) (eval 'code.local'))
+      (loop.unbounded
+        (eval 'code.opcode')
+        (eval 'code.inst')
+      )
+      (if (and (is.byte.in) (not (is.byte.out)))
+        (map (u32.const 4294967295) (uint32))
+      )
+    )
+  )
+  (default 'code.local'
+    (varuint32 6)
+    (uint8 3)
+  )
+  (default 'code.inst'
+    (select (read)
+      (void)
+      (case 6 (eval 'code.br_target'))
+      (case 7 (eval 'code.br_target'))
+      (case 8 (eval 'code.br_table'))
+      (case 9 (uint8))
+      (case 16 (varint32 6))
+      (case 17 (varint64 6))
+      (case 18 (uint64))
+      (case 19 (uint32))
+      (case 20 (varuint32 6))
+      (case 21 (varuint32 6))
+      (case 22 (eval 'code.call_args'))
+      (case 23 (eval 'code.call_args'))
+      (case 24 (eval 'code.call_args'))
+      (case 32 (eval 'code.address'))
+      (case 33 (eval 'code.address'))
+      (case 34 (eval 'code.address'))
+      (case 35 (eval 'code.address'))
+      (case 36 (eval 'code.address'))
+      (case 37 (eval 'code.address'))
+      (case 38 (eval 'code.address'))
+      (case 39 (eval 'code.address'))
+      (case 40 (eval 'code.address'))
+      (case 41 (eval 'code.address'))
+      (case 42 (eval 'code.address'))
+      (case 43 (eval 'code.address'))
+      (case 44 (eval 'code.address'))
+      (case 45 (eval 'code.address'))
+      (case 46 (eval 'code.address'))
+      (case 47 (eval 'code.address'))
+      (case 48 (eval 'code.address'))
+      (case 49 (eval 'code.address'))
+      (case 50 (eval 'code.address'))
+      (case 51 (eval 'code.address'))
+      (case 52 (eval 'code.address'))
+      (case 53 (eval 'code.address'))
+      (case 54 (eval 'code.address'))
+      (case 4294967295 (block.end))
+    )
+  )
+  (default 'code.opcode'
+    (opcode (uint8)
+      (case 255
+        (opcode (uint8)
+          (case 255
+            (opcode (uint8)
+              (case 255 (uint8))
+            )
+          )
+        )
+      )
+    )
+  )
+  (default 'data'
+    (loop (varuint32 6) (eval 'data.segment'))
+  )
+  (default 'data.segment'
+    (varuint32 6)
+    (loop (varuint32 6) (uint8))
+  )
+  (default 'export'
+    (loop (varuint32 6) (eval 'export.entry'))
+  )
+  (default 'export.entry'
+    (varuint32 6)
+    (eval 'export.symbol')
+  )
+  (default 'export.symbol'
+    (loop (varuint32 6) (uint8))
+  )
+  (default 'function'
+    (loop (varuint32 6) (varuint32 6))
+  )
+  (default 'import'
+    (loop (varuint32 6) (eval 'import.entry'))
+  )
+  (default 'import.entry'
+    (varuint32 6)
+    (eval 'import.symbol')
+    (eval 'import.symbol')
+  )
+  (default 'import.symbol'
+    (loop (varuint32 6) (uint8))
+  )
+  (default 'memory'
+    (varuint32 6)
+    (varuint32 6)
+    (uint8)
+  )
+  (default 'name'
+    (loop (varuint32 6) (eval 'name.function'))
+  )
+  (default 'name.function'
+    (eval 'name.symbol')
+    (loop (varuint32 6) (eval 'name.symbol'))
+  )
+  (default 'name.symbol'
+    (loop (varuint32 6) (uint8))
+  )
+  (default 'start' (varuint32 6))
+  (default 'table'
+    (loop (varuint32 6) (varuint32 6))
+  )
+  (default 'type'
+    (loop (varuint32 6)
+      (uint8)
+      (loop (varuint32 6) (uint8))
+      (loop (varuint32 6) (uint8))
+    )
+  )
+)

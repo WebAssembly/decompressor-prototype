@@ -20,16 +20,14 @@
 #ifndef DECOMPRESSOR_SRC_ADT_ARENA_VECTOR_H
 #define DECOMPRESSOR_SRC_ADT_ARENA_VECTOR_H
 
-#include "Allocator.h"
+#include "utils/Allocator.h"
 
 #include <vector>
 
 namespace wasm {
 
-template<typename T>
-using arena_vector = std::vector<T, alloc::TemplateAllocator<T>>;
+#define ARENA_VECTOR(T) std::vector<T, alloc::TemplateAllocator<T> >
 
-} // end of namespace wasm
+}  // end of namespace wasm
 
-
-#endif // DECOMPRESSOR_SRC_ADT_ARENA_VECTOR_H
+#endif  // DECOMPRESSOR_SRC_ADT_ARENA_VECTOR_H

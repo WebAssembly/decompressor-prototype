@@ -22,8 +22,6 @@
 #include "Parser.tab.hpp"
 #include "Driver.h"
 
-#include <iostream>
-
 using namespace wasm::decode;
 using namespace wasm::filt;
 
@@ -34,36 +32,39 @@ using namespace wasm::filt;
 # undef yywrap
 # define yywrap() 1
 
-static SymbolNode::NameType Buffer;
+// Override failure.
+#define YY_FATAL_ERROR(msg) LexDriver->fatal(msg)
+
+static Driver *LexDriver = nullptr;
+static ExternalName Buffer;
 
 static void buffer_Text(const std::string Text) {
-  for (char Ch : Text)
-    Buffer.emplace_back(Ch);
+  Buffer.append(Text);
 }
 
 static void buffer_Escape(const std::string Text) {
   assert(Text.size() == 1);
   switch (Text[0]) {
     case '\\':
-      Buffer.emplace_back('\\');
+      Buffer.push_back('\\');
       return;
     case 'f':
-      Buffer.emplace_back('\f');
+      Buffer.push_back('\f');
       return;
     case 'n':
-      Buffer.emplace_back('\n');
+      Buffer.push_back('\n');
       return;
     case 'r':
-      Buffer.emplace_back('\r');
+      Buffer.push_back('\r');
       return;
     case 't':
-      Buffer.emplace_back('\t');
+      Buffer.push_back('\t');
       return;
     case 'v':
-      Buffer.emplace_back('\v');
+      Buffer.push_back('\v');
       return;
     default:
-      Buffer.emplace_back(Text[0]);
+      Buffer.push_back(Text[0]);
       return;
   }
 }
@@ -72,19 +73,19 @@ static void buffer_Control(const std::string Text) {
   assert(Text.size() == 1);
   switch (Text[0]) {
     case 'f':
-      Buffer.emplace_back('\f');
+      Buffer.push_back('\f');
       return;
     case 'n':
-      Buffer.emplace_back('\n');
+      Buffer.push_back('\n');
       return;
     case 'r':
-      Buffer.emplace_back('\r');
+      Buffer.push_back('\r');
       return;
     case 't':
-      Buffer.emplace_back('\t');
+      Buffer.push_back('\t');
       return;
     case 'v':
-      Buffer.emplace_back('\v');
+      Buffer.push_back('\v');
       return;
     default:
       assert(false);
@@ -97,7 +98,7 @@ static void buffer_Octal(const std::string Text) {
   uint8_t Value = 0;
   for (uint8_t Ch : Text)
     Value = (Value << 3) + (Ch - '0');
-  Buffer.emplace_back(Value);
+  Buffer.push_back(Value);
 }
 
 static IntType read_Integer(const std::string &Name, size_t StartIndex = 0) {
@@ -113,7 +114,7 @@ static Parser::symbol_type make_Integer(Driver &Driver,
                                         const std::string &Name) {
   IntegerValue Value;
   Value.Value = read_Integer(Name);
-  Value.Format = IntegerNode::Decimal;
+  Value.Format = ValueFormat::Decimal;
   return Parser::make_INTEGER(Value, Driver.getLoc());
 }
 
@@ -122,7 +123,10 @@ static Parser::symbol_type make_SignedInteger(Driver &Driver,
   IntType UnsignedValue = read_Integer(Name, 1);
   IntegerValue Value;
   Value.Value = IntType(- SignedIntType(UnsignedValue));
-  Value.Format = IntegerNode::SignedDecimal;
+  Value.Format =
+      Driver.getMaintainIntegerFormatting()
+      ? ValueFormat::SignedDecimal
+      : ValueFormat::Decimal;
   return Parser::make_INTEGER(Value, Driver.getLoc());
 }
 
@@ -169,7 +173,10 @@ static Parser::symbol_type make_HexInteger(Driver &Driver,
   }
   IntegerValue Value;
   Value.Value = HexValue;
-  Value.Format = IntegerNode::Hexidecimal;
+  Value.Format =
+      Driver.getMaintainIntegerFormatting()
+      ? ValueFormat::Hexidecimal
+      : ValueFormat::Decimal;
   return Parser::make_INTEGER(Value, Driver.getLoc());
 }
 
@@ -207,46 +214,32 @@ id ({letter}|{digit}|[_.])*
 [\n]+             Driver.extendLocationLines(yyleng); Driver.stepLocation();
 ")"               return Parser::make_CLOSEPAREN(Driver.getLoc());
 "("               return Parser::make_OPENPAREN(Driver.getLoc());
-"append"          return Parser::make_APPEND(Driver.getLoc());
-"ast.to.bit"      return Parser::make_AST_TO_BIT(Driver.getLoc());
-"ast.to.byte"     return Parser::make_AST_TO_BYTE(Driver.getLoc());
-"ast.to.int"      return Parser::make_AST_TO_INT(Driver.getLoc());
-"bit.to.bit"      return Parser::make_BIT_TO_BIT(Driver.getLoc());
-"bit.to.byte"     return Parser::make_BIT_TO_BYTE(Driver.getLoc());
-"bit.to.int"      return Parser::make_BIT_TO_INT(Driver.getLoc());
-"bit.to.ast"      return Parser::make_BIT_TO_AST(Driver.getLoc());
+"and"             return Parser::make_AND(Driver.getLoc());
 "block"           return Parser::make_BLOCK(Driver.getLoc());
-"block.begin"     return Parser::make_BLOCKBEGIN(Driver.getLoc());
 "block.end"       return Parser::make_BLOCKEND(Driver.getLoc());
-"byte.to.bit"     return Parser::make_BYTE_TO_BIT(Driver.getLoc());
 "byte.to.byte"    return Parser::make_BYTE_TO_BYTE(Driver.getLoc());
-"byte.to.int"     return Parser::make_BYTE_TO_BIT(Driver.getLoc());
-"byte.to.ast"     return Parser::make_BYTE_TO_AST(Driver.getLoc());
 "case"            return Parser::make_CASE(Driver.getLoc());
-"copy"            return Parser::make_COPY(Driver.getLoc());
 "default"         return Parser::make_DEFAULT(Driver.getLoc());
 "define"          return Parser::make_DEFINE(Driver.getLoc());
 "eval"            return Parser::make_EVAL(Driver.getLoc());
+"eval.default"    return Parser::make_EVAL_DEFAULT(Driver.getLoc());
 "filter"          return Parser::make_FILTER(Driver.getLoc());
 "if"              return Parser::make_IF(Driver.getLoc());
-"int.to.bit"      return Parser::make_INT_TO_BIT(Driver.getLoc());
-"int.to.byte"     return Parser::make_INT_TO_BYTE(Driver.getLoc());
-"int.to.int"      return Parser::make_INT_TO_INT(Driver.getLoc());
-"int.to.ast"      return Parser::make_INT_TO_AST(Driver.getLoc());
+"is.byte.in"      return Parser::make_IS_BYTE_IN(Driver.getLoc());
+"is.byte.out"     return Parser::make_IS_BYTE_OUT(Driver.getLoc());
 "i32.const"       return Parser::make_I32_CONST(Driver.getLoc());
 "i64.const"       return Parser::make_I64_CONST(Driver.getLoc());
-"lit"             return Parser::make_LIT(Driver.getLoc());
 "loop.unbounded"  return Parser::make_LOOP_UNBOUNDED(Driver.getLoc());
 "loop"            return Parser::make_LOOP(Driver.getLoc());
 "map"             return Parser::make_MAP(Driver.getLoc());
+"not"             return Parser::make_NOT(Driver.getLoc());
+"opcode"          return Parser::make_OPCODE(Driver.getLoc());
+"or"              return Parser::make_OR(Driver.getLoc());
 "peek"            return Parser::make_PEEK(Driver.getLoc());
-"postorder"       return Parser::make_POSTORDER(Driver.getLoc());
-"preorder"        return Parser::make_PREORDER(Driver.getLoc());
 "read"            return Parser::make_READ(Driver.getLoc());
 "section"         return Parser::make_SECTION(Driver.getLoc());
 "select"          return Parser::make_SELECT(Driver.getLoc());
 "seq"             return Parser::make_SEQ(Driver.getLoc());
-"sym.const"       return Parser::make_SYM_CONST(Driver.getLoc());
 "uint8"           return Parser::make_UINT8(Driver.getLoc());
 "uint32"          return Parser::make_UINT32(Driver.getLoc());
 "uint64"          return Parser::make_UINT64(Driver.getLoc());
@@ -255,13 +248,10 @@ id ({letter}|{digit}|[_.])*
 "u64.const"       return Parser::make_U64_CONST(Driver.getLoc());
 "varint32"        return Parser::make_VARINT32(Driver.getLoc());
 "varint64"        return Parser::make_VARINT64(Driver.getLoc());
-"varuint1"        return Parser::make_VARUINT1(Driver.getLoc());
-"varuint7"        return Parser::make_VARUINT7(Driver.getLoc());
 "varuint32"       return Parser::make_VARUINT32(Driver.getLoc());
 "varuint64"       return Parser::make_VARUINT64(Driver.getLoc());
 "version"         return Parser::make_VERSION(Driver.getLoc());
 "void"            return Parser::make_VOID(Driver.getLoc());
-"write"           return Parser::make_WRITE(Driver.getLoc());
 "0x"{hexdigit}+   return make_HexInteger(Driver, yytext);
 {digit}+          return make_Integer(Driver, yytext);
 -?{digit}+        return make_SignedInteger(Driver, yytext);
@@ -300,6 +290,7 @@ namespace wasm {
 namespace filt {
 
 void Driver::Begin() {
+  LexDriver = this;
   yy_flex_debug = TraceLexing;
   if (Filename.empty() || Filename == "-")
     yyin = stdin;
@@ -312,6 +303,15 @@ void Driver::Begin() {
 void Driver::End() {
   if (!Filename.empty() && Filename != "-")
     fclose(yyin);
+}
+
+void Driver::fatal(const std::string &message) {
+  // Force reference to overwritten yy_fatal_error, to get rid
+  // of warning message.
+  if (0)
+    yy_fatal_error(message.c_str());
+  error(message);
+  exit(exit_status(EXIT_FAILURE));
 }
 
 } // end of namespace filt
