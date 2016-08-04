@@ -40,6 +40,19 @@ endif
 
 CXX := clang++
 
+PLATFORM := Default
+
+ifeq ($(PLATFORM), Travis)
+  # Add flags to handle that Travis g++ uses -std=c++0x with missing c++11 options.
+  ifeq ($(CXX),g++)
+    PLATFORM_CXXFLAGS += -std=c++0x -DOVERRIDE= -DFINAL=
+  else
+    PLATFORM_CXXFLAGS += -std=c++11 -DOVERRIDE=override -DFINAL=final
+  endif
+else
+  PLATFORM_CXXFLAGS += --std=c++11 -DOVERRIDE= -DFINAL=
+endif
+
 SRCDIR = src
 
 BUILDBASEDIR = build
@@ -181,6 +194,7 @@ LIBS = $(PARSER_LIB) $(BINARY_LIB) $(INTERP_LIB) $(SEXP_LIB) \
        $(STRM_LIB) $(UTILS_LIB)
  
 $(info -----------------------------------------------)
+$(info Using PLATFORM = $(PLATFORM))
 $(info Using CXX = $(CXX))
 $(info Using RELEASE = $(RELEASE))
 $(info -----------------------------------------------)
@@ -190,18 +204,12 @@ CPP_COMPILER :=  CCACHE_CPP2=yes $(CCACHE) $(CXX)
 
 # Note: On WIN32 replace -fPIC with -D_GNU_SOURCE
 # Note: g++ on Travis doesn't support -std=gnu++11
-CXXFLAGS := -std=c++0x -Wall -Wextra -O2 -g -pedantic -MP -MD -Werror \
-	-Wno-unused-parameter -fno-omit-frame-pointer -fPIC -Isrc
+CXXFLAGS := $(PLATFORM_CXXFLAGS) -Wall -Wextra -O2 -g -pedantic -MP -MD \
+	    -Werror -Wno-unused-parameter -fno-omit-frame-pointer -fPIC \
+	    -Isrc
 
 ifneq ($(RELEASE), 0)
   CXXFLAGS += -DNDEBUG
-endif
-
-# Add flags to handle that Travis g++ uses -std=c++0x with missing c++11 options.
-ifeq ($(CXX),g++)
-  CXXFLAGS += -DOVERRIDE= -DFINAL=
-else
-  CXXFLAGS += -DOVERRIDE=override -DFINAL=final
 endif
 
 ###### Default Rule ######
