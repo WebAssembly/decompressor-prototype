@@ -134,7 +134,6 @@ struct IntegerValue {
 %type <wasm::filt::Node *> file
 %type <wasm::filt::Node *> fixed_format_directive
 %type <wasm::filt::Node *> format_directive
-%type <wasm::filt::IntegerNode *> integer
 %type <wasm::filt::Node *> loop_body
 %type <wasm::filt::Node *> opcode_case
 %type <wasm::filt::OpcodeNode *> opcode_expression
@@ -174,7 +173,7 @@ case_list
         ;
 
 case_stmt_list
-        : integer statement { // case index / first statement of case.
+        : constant_expression statement { // case index / first statement of case.
             $$ = Driver.create<CaseNode>($1, $2);
           }
         | case_stmt_list statement { // remaining statements of case.
@@ -191,17 +190,17 @@ case_stmt_list
         ;
 
 constant_expression
-        : "(" "i32.const" integer ")" {
-            $$ = Driver.create<I32ConstNode>($3);
+        : "(" "i32.const" INTEGER ")" {
+            $$ = Driver.create<I32ConstNode>($3.Value, $3.Format);
           }
-        | "(" "i64.const" integer ")" {
-            $$ = Driver.create<I64ConstNode>($3);
+        | "(" "i64.const" INTEGER ")" {
+            $$ = Driver.create<I64ConstNode>($3.Value, $3.Format);
           }
-        | "(" "u32.const" integer ")" {
-            $$ = Driver.create<U32ConstNode>($3);
+        | "(" "u32.const" INTEGER ")" {
+            $$ = Driver.create<U32ConstNode>($3.Value, $3.Format);
           }
-        | "(" "u64.const" integer ")" {
-            $$ = Driver.create<U64ConstNode>($3);
+        | "(" "u64.const" INTEGER ")" {
+            $$ = Driver.create<U64ConstNode>($3.Value, $3.Format);
           }
         ;
 
@@ -312,38 +311,34 @@ format_directive
         | "(" "varint32" ")" {
             $$ = Driver.create<Varint32NoArgsNode>();
           }
-        | "(" "varint32" integer ")" {
-            decode::IntType Bitsize = $3->getValue();
-            if (Bitsize < 2 || Bitsize > 32)
+        | "(" "varint32" INTEGER ")" {
+            if ($3.Value < 2 || $3.Value > 32)
               Driver.error("varint32 expects 2 <= bitsize <= 32");
-            $$ = Driver.create<Varint32OneArgNode>($3);
+            $$ = Driver.create<Varint32OneArgNode>($3.Value, $3.Format);
           }
         | "(" "varint64" ")" {
             $$ = Driver.create<Varint64NoArgsNode>();
           }
-        | "(" "varint64" integer ")" {
-            decode::IntType Bitsize = $3->getValue();
-            if (Bitsize < 2 || Bitsize > 64)
+        | "(" "varint64" INTEGER ")" {
+            if ($3.Value < 2 || $3.Value > 64)
               Driver.error("varint64 expects 2 <= bitsize <= 64");
-            $$ = Driver.create<Varint64OneArgNode>($3);
+            $$ = Driver.create<Varint64OneArgNode>($3.Value, $3.Format);
           }
         | "(" "varuint32" ")" {
             $$ = Driver.create<Varuint32NoArgsNode>();
           }
-        | "(" "varuint32" integer ")" {
-            decode::IntType Bitsize = $3->getValue();
-            if (Bitsize < 2 || Bitsize > 32)
+        | "(" "varuint32" INTEGER ")" {
+            if ($3.Value < 2 || $3.Value > 32)
               Driver.error("varuint32 expects 2 <= bitsize <= 32");
-            $$ = Driver.create<Varuint32OneArgNode>($3);
+            $$ = Driver.create<Varuint32OneArgNode>($3.Value, $3.Format);
           }
         | "(" "varuint64" ")" {
             $$ = Driver.create<Varuint64NoArgsNode>();
           }
-        | "(" "varuint64" integer ")" {
-            decode::IntType Bitsize = $3->getValue();
-            if (Bitsize < 2 || Bitsize > 64)
+        | "(" "varuint64" INTEGER ")" {
+            if ($3.Value < 2 || $3.Value > 64)
               Driver.error("varuint64 expects 2 <= bitsize <= 64");
-            $$ = Driver.create<Varuint64OneArgNode>($3);
+            $$ = Driver.create<Varuint64OneArgNode>($3.Value, $3.Format);
           }
         | "(" "opcode" opcode_expression ")" {
             $$ = $3;
@@ -357,26 +352,26 @@ fixed_format_directive
         | "(" "uint8" ")" {
             $$ = Driver.create<Uint8NoArgsNode>();
           }
-        | "(" "uint8" integer ")" {
-            if ($3->getValue() > 8)
+        | "(" "uint8" INTEGER ")" {
+            if ($3.Value > 8)
               Driver.error("uint8 bitsize > 8");
-            $$ = Driver.create<Uint8OneArgNode>($3);
+            $$ = Driver.create<Uint8OneArgNode>($3.Value, $3.Format);
           }
         | "(" "uint32" ")" {
             $$ = Driver.create<Uint32NoArgsNode>();
           }
-        | "(" "uint32" integer ")"  {
-            if ($3->getValue() > 32)
+        | "(" "uint32" INTEGER ")"  {
+            if ($3.Value > 32)
               Driver.error("uint32 bitsize > 32");
-            $$ = Driver.create<Uint32OneArgNode>($3);
+            $$ = Driver.create<Uint32OneArgNode>($3.Value, $3.Format);
           }
         | "(" "uint64" ")" {
             $$ = Driver.create<Uint64NoArgsNode>();
           }
-        | "(" "uint64" integer ")"  {
-            if ($3->getValue() > 64)
+        | "(" "uint64" INTEGER ")"  {
+            if ($3.Value > 64)
               Driver.error("uint64 bitsize > 64");
-            $$ = Driver.create<Uint64OneArgNode>($3);
+            $$ = Driver.create<Uint64OneArgNode>($3.Value, $3.Format);
           }
         ;
 
@@ -392,21 +387,17 @@ opcode_expression
         ;
 
 opcode_case
-        : "(" "case" integer expression  ")" {
+        : "(" "case" constant_expression expression  ")" {
             $$ = Driver.create<CaseNode>($3, $4);
           }
         ;
 
-version : "(" "version" integer ")" {
-            if ($3->getValue() != 0)
+version : "(" "version" INTEGER ")" {
+            if ($3.Value != 0)
               Driver.error("Currently, only (version 0) is supported");
-            $$ = Driver.create<VersionNode>($3);
+            $$ = Driver.create<VersionNode>($3.Value, $3.Format);
           }
         ;
-
-integer : INTEGER {
-           $$ = Driver.create<IntegerNode>($1.Value, $1.Format);
-          }
 
 loop_body
         : "loop" expression statement {

@@ -46,13 +46,6 @@ namespace {
 
 static constexpr uint32_t MaxExpectedSectionNameSize = 32;
 
-IntType getIntegerValue(Node* N) {
-  if (auto* IntVal = dyn_cast<IntegerNode>(N))
-    return IntVal->getValue();
-  fatal("Integer value expected but not found");
-  return 0;
-}
-
 }  // end of anonymous namespace
 
 Interpreter::Interpreter(ByteQueue* Input,
@@ -99,7 +92,6 @@ IntType Interpreter::eval(const Node* Nd) {
     case OpSection:
     case OpUndefine:
     case OpVersion:
-    case OpInteger:
     case OpUnknownSection:
       fprintf(stderr, "Evaluating not allowed: %s\n", getNodeTypeName(Type));
       fatal("Unable to evaluate filter s-expression");
@@ -266,19 +258,19 @@ uint32_t Interpreter::readOpcodeSelector(const Node* Nd, IntType& Value) {
       return 8;
     case OpUint8OneArg:
       Value = read(Nd);
-      return isa<ByteReadStream>(Reader) ? getIntegerValue(Nd->getKid(0)) : 8;
+      return cast<Uint8OneArgNode>(Nd)->getValue();
     case OpUint32NoArgs:
       Value = read(Nd);
       return 32;
     case OpUint32OneArg:
       Value = read(Nd);
-      return isa<ByteReadStream>(Reader) ? getIntegerValue(Nd->getKid(0)) : 32;
+      return cast<Uint32OneArgNode>(Nd)->getValue();
     case OpUint64NoArgs:
       Value = read(Nd);
       return 64;
     case OpUint64OneArg:
       Value = read(Nd);
-      return isa<ByteReadStream>(Reader) ? getIntegerValue(Nd->getKid(0)) : 64;
+      return cast<Uint64OneArgNode>(Nd)->getValue();
     case OpEval:
       if (auto* Sym = dyn_cast<SymbolNode>(Nd->getKid(0)))
         return readOpcodeSelector(Sym->getDefineDefinition(), Value);
@@ -346,38 +338,38 @@ IntType Interpreter::read(const Node* Nd) {
     case OpUint8NoArgs:
       return LastReadValue = Reader->readUint8(ReadPos);
     case OpUint8OneArg:
-      return LastReadValue =
-                 Reader->readUint8Bits(ReadPos, getIntegerValue(Nd->getKid(0)));
+      return LastReadValue = Reader->readUint8Bits(
+                 ReadPos, cast<Uint8OneArgNode>(Nd)->getValue());
     case OpUint32NoArgs:
       return LastReadValue = Reader->readUint32(ReadPos);
     case OpUint32OneArg:
       return LastReadValue = Reader->readUint32Bits(
-                 ReadPos, getIntegerValue(Nd->getKid(0)));
+                 ReadPos, cast<Uint32OneArgNode>(Nd)->getValue());
     case OpUint64NoArgs:
       return LastReadValue = Reader->readUint64(ReadPos);
     case OpUint64OneArg:
       return LastReadValue = Reader->readUint64Bits(
-                 ReadPos, getIntegerValue(Nd->getKid(0)));
+                 ReadPos, cast<Uint64OneArgNode>(Nd)->getValue());
     case OpVarint32NoArgs:
       return LastReadValue = Reader->readVarint32(ReadPos);
     case OpVarint32OneArg:
       return LastReadValue = Reader->readVarint32Bits(
-                 ReadPos, getIntegerValue(Nd->getKid(0)));
+                 ReadPos, cast<Varint32OneArgNode>(Nd)->getValue());
     case OpVarint64NoArgs:
       return LastReadValue = Reader->readVarint64(ReadPos);
     case OpVarint64OneArg:
       return LastReadValue = Reader->readVarint64Bits(
-                 ReadPos, getIntegerValue(Nd->getKid(0)));
+                 ReadPos, cast<Varint64OneArgNode>(Nd)->getValue());
     case OpVaruint32NoArgs:
       return LastReadValue = Reader->readVaruint32(ReadPos);
     case OpVaruint32OneArg:
       return LastReadValue = Reader->readVaruint32Bits(
-                 ReadPos, getIntegerValue(Nd->getKid(0)));
+                 ReadPos, cast<Varuint32OneArgNode>(Nd)->getValue());
     case OpVaruint64NoArgs:
       return LastReadValue = Reader->readVaruint64(ReadPos);
     case OpVaruint64OneArg:
       return LastReadValue = Reader->readVaruint64Bits(
-                 ReadPos, getIntegerValue(Nd->getKid(0)));
+                 ReadPos, cast<Varuint64OneArgNode>(Nd)->getValue());
     case OpVoid:
       return LastReadValue = 0;
   }
@@ -398,47 +390,50 @@ IntType Interpreter::write(IntType Value, const wasm::filt::Node* Nd) {
       Writer->writeUint8(Value, WritePos);
       break;
     case OpUint8OneArg:
-      Writer->writeUint8Bits(Value, WritePos, getIntegerValue(Nd->getKid(0)));
+      Writer->writeUint8Bits(Value, WritePos,
+                             cast<Uint8OneArgNode>(Nd)->getValue());
       break;
     case OpUint32NoArgs:
       Writer->writeUint32(Value, WritePos);
       break;
     case OpUint32OneArg:
-      Writer->writeUint32Bits(Value, WritePos, getIntegerValue(Nd->getKid(0)));
+      Writer->writeUint32Bits(Value, WritePos,
+                              cast<Uint32OneArgNode>(Nd)->getValue());
       break;
     case OpUint64NoArgs:
       Writer->writeUint64(Value, WritePos);
       break;
     case OpUint64OneArg:
-      Writer->writeUint64Bits(Value, WritePos, getIntegerValue(Nd->getKid(0)));
+      Writer->writeUint64Bits(Value, WritePos,
+                              cast<Uint64OneArgNode>(Nd)->getValue());
       break;
     case OpVarint32NoArgs:
       Writer->writeVarint32(Value, WritePos);
       break;
     case OpVarint32OneArg:
       Writer->writeVarint32Bits(Value, WritePos,
-                                getIntegerValue(Nd->getKid(0)));
+                                cast<Varint32OneArgNode>(Nd)->getValue());
       break;
     case OpVarint64NoArgs:
       Writer->writeVarint64(Value, WritePos);
       break;
     case OpVarint64OneArg:
       Writer->writeVarint64Bits(Value, WritePos,
-                                getIntegerValue(Nd->getKid(0)));
+                                cast<Varint64OneArgNode>(Nd)->getValue());
       break;
     case OpVaruint32NoArgs:
       Writer->writeVaruint32(Value, WritePos);
       break;
     case OpVaruint32OneArg:
       Writer->writeVaruint32Bits(Value, WritePos,
-                                 getIntegerValue(Nd->getKid(0)));
+                                 cast<Varuint32OneArgNode>(Nd)->getValue());
       break;
     case OpVaruint64NoArgs:
       Writer->writeVaruint64(Value, WritePos);
       break;
     case OpVaruint64OneArg:
       Writer->writeVaruint64Bits(Value, WritePos,
-                                 getIntegerValue(Nd->getKid(0)));
+                                 cast<Varuint64OneArgNode>(Nd)->getValue());
       break;
     case OpVoid:
       break;

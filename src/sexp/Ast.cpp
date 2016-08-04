@@ -292,6 +292,23 @@ bool UnaryNode::implementsClass(NodeType Type) {
 AST_UNARYNODE_TABLE
 #undef X
 
+bool IntegerNode::implementsClass(NodeType Type) {
+  switch (Type) {
+    default:
+      return false;
+#define X(tag)  \
+  case Op##tag: \
+    return true;
+      AST_INTEGERNODE_TABLE
+#undef X
+  }
+}
+
+#define X(tag) \
+  void tag##Node::forceCompilation() {}
+AST_INTEGERNODE_TABLE
+#undef X
+
 Node* BinaryNode::getKid(int Index) const {
   if (Index < 2)
     return Kids[Index];

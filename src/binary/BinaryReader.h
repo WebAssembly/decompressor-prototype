@@ -86,15 +86,15 @@ class BinaryReader {
   template <class T>
   void readUnarySymbol();
   template <class T>
-  void readUnaryUint8();
+  void readUint8();
   template <class T>
-  void readUnaryVarint32();
+  void readVarint32();
   template <class T>
-  void readUnaryVarint64();
+  void readVarint64();
   template <class T>
-  void readUnaryVaruint32();
+  void readVaruint32();
   template <class T>
-  void readUnaryVaruint64();
+  void readVaruint64();
   template <class T>
   void readBinary();
   template <class T>

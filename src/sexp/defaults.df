@@ -72,56 +72,56 @@
       # TODO(kschimpf) build asts based on arity of opcodes?
       (void)                                 # simple one byte opcode.
       # control flow operators.
-      (case 0x06 (eval 'code.br_target'))    # br
-      (case 0x07 (eval 'code.br_target'))    # br_if
-      (case 0x08 (eval 'code.br_table'))     # br_table
-      (case 0x09 (uint8))                    # return arity
+      (case (u32.const 0x06) (eval 'code.br_target'))    # br
+      (case (u32.const 0x07) (eval 'code.br_target'))    # br_if
+      (case (u32.const 0x08) (eval 'code.br_table'))     # br_table
+      (case (u32.const 0x09) (uint8))                    # return arity
       # basic operators
-      (case 0x10 (varint32 6))               # i32.const value
-      (case 0x11 (varint64 6))               # i64.const value
-      (case 0x12 (uint64))                   # f64.const value
-      (case 0x13 (uint32))                   # f32.const value
-      (case 0x14 (varuint32 6))              # get_local index
-      (case 0x15 (varuint32 6))              # set_local index
-      (case 0x16 (eval 'code.call_args'))    # call
-      (case 0x17 (eval 'code.call_args'))    # call_indirect
-      (case 0x18 (eval 'code.call_args'))    # call_import
+      (case (u32.const 0x10) (varint32 6))               # i32.const value
+      (case (u32.const 0x11) (varint64 6))               # i64.const value
+      (case (u32.const 0x12) (uint64))                   # f64.const value
+      (case (u32.const 0x13) (uint32))                   # f32.const value
+      (case (u32.const 0x14) (varuint32 6))              # get_local index
+      (case (u32.const 0x15) (varuint32 6))              # set_local index
+      (case (u32.const 0x16) (eval 'code.call_args'))    # call
+      (case (u32.const 0x17) (eval 'code.call_args'))    # call_indirect
+      (case (u32.const 0x18) (eval 'code.call_args'))    # call_import
       # Memory-related operators
-      (case 0x20 (eval 'code.address'))      # i32.load8_s address
-      (case 0x21 (eval 'code.address'))      # i32.load8_u address
-      (case 0x22 (eval 'code.address'))      # i32.load16_s address
-      (case 0x23 (eval 'code.address'))      # i32.load16_u address
-      (case 0x24 (eval 'code.address'))      # i64.load8_s address
-      (case 0x25 (eval 'code.address'))      # i64.load8_u address
-      (case 0x26 (eval 'code.address'))      # i64.load16_s address
-      (case 0x27 (eval 'code.address'))      # i64.load16_u address
-      (case 0x28 (eval 'code.address'))      # i64.load32_s address
-      (case 0x29 (eval 'code.address'))      # i64.load32_u address
-      (case 0x2a (eval 'code.address'))      # i32.load address
-      (case 0x2b (eval 'code.address'))      # i64.load address
-      (case 0x2c (eval 'code.address'))      # f32.load address
-      (case 0x2d (eval 'code.address'))      # f64.load address
-      (case 0x2e (eval 'code.address'))      # i32.store8 address
-      (case 0x2f (eval 'code.address'))      # i32.store16 address
-      (case 0x30 (eval 'code.address'))      # i64.store8 address
-      (case 0x31 (eval 'code.address'))      # i64.store16 address
-      (case 0x32 (eval 'code.address'))      # i64.store32 address
-      (case 0x33 (eval 'code.address'))      # i32.store address
-      (case 0x34 (eval 'code.address'))      # i64.store address
-      (case 0x35 (eval 'code.address'))      # f32.store address
-      (case 0x36 (eval 'code.address'))      # f64.store address
-      (case 0xFFFFFFFF (block.end))          # end function block
+      (case (u32.const 0x20) (eval 'code.address'))      # i32.load8_s address
+      (case (u32.const 0x21) (eval 'code.address'))      # i32.load8_u address
+      (case (u32.const 0x22) (eval 'code.address'))      # i32.load16_s address
+      (case (u32.const 0x23) (eval 'code.address'))      # i32.load16_u address
+      (case (u32.const 0x24) (eval 'code.address'))      # i64.load8_s address
+      (case (u32.const 0x25) (eval 'code.address'))      # i64.load8_u address
+      (case (u32.const 0x26) (eval 'code.address'))      # i64.load16_s address
+      (case (u32.const 0x27) (eval 'code.address'))      # i64.load16_u address
+      (case (u32.const 0x28) (eval 'code.address'))      # i64.load32_s address
+      (case (u32.const 0x29) (eval 'code.address'))      # i64.load32_u address
+      (case (u32.const 0x2a) (eval 'code.address'))      # i32.load address
+      (case (u32.const 0x2b) (eval 'code.address'))      # i64.load address
+      (case (u32.const 0x2c) (eval 'code.address'))      # f32.load address
+      (case (u32.const 0x2d) (eval 'code.address'))      # f64.load address
+      (case (u32.const 0x2e) (eval 'code.address'))      # i32.store8 address
+      (case (u32.const 0x2f) (eval 'code.address'))      # i32.store16 address
+      (case (u32.const 0x30) (eval 'code.address'))      # i64.store8 address
+      (case (u32.const 0x31) (eval 'code.address'))      # i64.store16 address
+      (case (u32.const 0x32) (eval 'code.address'))      # i64.store32 address
+      (case (u32.const 0x33) (eval 'code.address'))      # i32.store address
+      (case (u32.const 0x34) (eval 'code.address'))      # i64.store address
+      (case (u32.const 0x35) (eval 'code.address'))      # f32.store address
+      (case (u32.const 0x36) (eval 'code.address'))      # f64.store address
+      (case (u32.const 0xFFFFFFFF) (block.end))          # end function block
     )
   )
 
   (default 'code.opcode'
     # All opcodes single byte except EOB marker 0xFFFFFFFF.
     (opcode (uint8)
-      (case 0xFF
+      (case (u32.const 0xFF)
         (opcode (uint8)
-          (case 0xFF
+          (case (u32.const 0xFF)
             (opcode (uint8)
-              (case 0xFF (uint8)) 
+              (case (u32.const 0xFF) (uint8)) 
             )
           )
         )

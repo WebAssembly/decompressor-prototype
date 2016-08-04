@@ -79,41 +79,36 @@ void BinaryReader::readUnarySymbol() {
 }
 
 template <class T>
-void BinaryReader::readUnaryUint8() {
-  auto* Number = Alloc->create<IntegerNode>(Reader->readUint8(ReadPos));
-  auto* Node = Alloc->create<T>(Number);
+void BinaryReader::readUint8() {
+  auto* Node = Alloc->create<T>(Reader->readUint8(ReadPos));
   Trace.traceSexp(Node);
   NodeStack.push_back(Node);
 }
 
 template <class T>
-void BinaryReader::readUnaryVarint32() {
-  auto* Number = Alloc->create<IntegerNode>(Reader->readVarint32(ReadPos));
-  auto* Node = Alloc->create<T>(Number);
+void BinaryReader::readVarint32() {
+  auto* Node = Alloc->create<T>(Reader->readVarint32(ReadPos));
   Trace.traceSexp(Node);
   NodeStack.push_back(Node);
 }
 
 template <class T>
-void BinaryReader::readUnaryVarint64() {
-  auto* Number = Alloc->create<IntegerNode>(Reader->readVarint64(ReadPos));
-  auto* Node = Alloc->create<T>(Number);
+void BinaryReader::readVarint64() {
+  auto* Node = Alloc->create<T>(Reader->readVarint64(ReadPos));
   Trace.traceSexp(Node);
   NodeStack.push_back(Node);
 }
 
 template <class T>
-void BinaryReader::readUnaryVaruint32() {
-  auto* Number = Alloc->create<IntegerNode>(Reader->readVaruint32(ReadPos));
-  auto* Node = Alloc->create<T>(Number);
+void BinaryReader::readVaruint32() {
+  auto* Node = Alloc->create<T>(Reader->readVaruint32(ReadPos));
   Trace.traceSexp(Node);
   NodeStack.push_back(Node);
 }
 
 template <class T>
-void BinaryReader::readUnaryVaruint64() {
-  auto* Number = Alloc->create<IntegerNode>(Reader->readVarint64(ReadPos));
-  auto* Node = Alloc->create<T>(Number);
+void BinaryReader::readVaruint64() {
+  auto* Node = Alloc->create<T>(Reader->readVarint64(ReadPos));
   Trace.traceSexp(Node);
   NodeStack.push_back(Node);
 }
@@ -278,12 +273,7 @@ void BinaryReader::readNode() {
       readUnary<ByteToByteNode>();
       break;
     case OpCase: {
-      auto* Key = Alloc->create<IntegerNode>(Reader->readVarint64(ReadPos));
-      Node* Code = NodeStack.back();
-      NodeStack.pop_back();
-      auto* Case = Alloc->create<CaseNode>(Key, Code);
-      Trace.traceSexp(Case);
-      NodeStack.push_back(Case);
+      readBinary<CaseNode>();
       break;
     }
     case OpDefault:
@@ -317,10 +307,10 @@ void BinaryReader::readNode() {
       readNullary<IsByteOutNode>();
       break;
     case OpI32Const:
-      readUnaryVarint32<I32ConstNode>();
+      readVarint32<I32ConstNode>();
       break;
     case OpI64Const:
-      readUnaryVarint64<I64ConstNode>();
+      readVarint64<I64ConstNode>();
       break;
     case OpLoop:
       readBinary<LoopNode>();
@@ -356,55 +346,55 @@ void BinaryReader::readNode() {
       readNullary<Uint32NoArgsNode>();
       break;
     case OpUint32OneArg:
-      readUnaryUint8<Uint32OneArgNode>();
+      readUint8<Uint32OneArgNode>();
       break;
     case OpUint64NoArgs:
       readNullary<Uint64NoArgsNode>();
       break;
     case OpUint64OneArg:
-      readUnaryUint8<Uint64OneArgNode>();
+      readUint8<Uint64OneArgNode>();
       break;
     case OpUint8NoArgs:
       readNullary<Uint8NoArgsNode>();
       break;
     case OpUint8OneArg:
-      readUnaryUint8<Uint8OneArgNode>();
+      readUint8<Uint8OneArgNode>();
       break;
     case OpUndefine:
       readUnary<UndefineNode>();
       break;
     case OpU32Const:
-      readUnaryVaruint32<U32ConstNode>();
+      readVaruint32<U32ConstNode>();
       break;
     case OpU64Const:
-      readUnaryVaruint64<U64ConstNode>();
+      readVaruint64<U64ConstNode>();
       break;
     case OpVarint32NoArgs:
       readNullary<Varint32NoArgsNode>();
       break;
     case OpVarint32OneArg:
-      readUnaryUint8<Varint32OneArgNode>();
+      readUint8<Varint32OneArgNode>();
       break;
     case OpVarint64NoArgs:
       readNullary<Varint64NoArgsNode>();
       break;
     case OpVarint64OneArg:
-      readUnaryUint8<Varint64OneArgNode>();
+      readUint8<Varint64OneArgNode>();
       break;
     case OpVaruint32NoArgs:
       readNullary<Varuint32NoArgsNode>();
       break;
     case OpVaruint32OneArg:
-      readUnaryUint8<Varuint32OneArgNode>();
+      readUint8<Varuint32OneArgNode>();
       break;
     case OpVaruint64NoArgs:
       readNullary<Varuint64NoArgsNode>();
       break;
     case OpVaruint64OneArg:
-      readUnary<Varuint64OneArgNode>();
+      readUint8<Varuint64OneArgNode>();
       break;
     case OpVersion:
-      readUnaryVaruint32<VersionNode>();
+      readVaruint32<VersionNode>();
       break;
     case OpVoid:
       readNullary<VoidNode>();
@@ -413,12 +403,11 @@ void BinaryReader::readNode() {
       readNullary<LastReadNode>();
       break;
     case NO_SUCH_NODETYPE:
-    case OpInteger:
     case OpFile:
     case OpSection:
     case OpSymbol:
     case OpUnknownSection:
-      Trace.traceHexUint32_t("Opcode", Opcode);
+      Trace.traceHexUint32_t("Opcode: ", Opcode);
       fatal("Uses construct not implemented yet!");
       break;
   }

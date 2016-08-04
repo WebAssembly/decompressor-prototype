@@ -57,6 +57,11 @@ void TraceClassSexp::errorSexp(const char* Prefix, const Node* Node) {
   getTextWriter()->write(File, Node);
 }
 
+void TraceClassSexp::traceNodeTypeInternal(const char* Prefix, NodeType Type) {
+  indent();
+  fprintf(File, "%s%s\n", Prefix, getNodeTypeName(Type));
+}
+
 }  // end of namespace filt
 
 }  // end of namespace wasm

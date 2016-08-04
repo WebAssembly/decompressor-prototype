@@ -32,6 +32,7 @@
 
 #include "ADT/arena_vector.h"
 #include "sexp/Ast.def"
+#include "sexp/NodeType.h"
 #include "sexp/TraceSexp.h"
 #include "stream/WriteUtils.h"
 #include "utils/Allocator.h"
@@ -59,14 +60,6 @@ typedef ARENA_VECTOR(uint8_t) InternalName;
 typedef std::unordered_set<Node*> VisitedNodesType;
 typedef std::vector<Node*> NodeVectorType;
 
-enum NodeType {
-#define X(tag, opcode, sexp_name, type_name, text_num_args, text_max_args) \
-  Op##tag = opcode,
-  AST_OPCODE_TABLE
-#undef X
-      NO_SUCH_NODETYPE
-};
-
 static constexpr size_t NumNodeTypes = 0
 #define X(tag, opcode, sexp_name, type_name, text_num_args, text_max_args) +1
     AST_OPCODE_TABLE
@@ -89,12 +82,6 @@ struct AstTraitsType {
 };
 
 extern AstTraitsType AstTraits[NumNodeTypes];
-
-// Returns the s-expression name
-const char* getNodeSexpName(NodeType Type);
-
-// Returns a unique (printable) type name
-const char* getNodeTypeName(NodeType Type);
 
 class Node {
   Node(const Node&) = delete;
@@ -205,33 +192,51 @@ class NullaryNode : public Node {
 AST_NULLARYNODE_TABLE
 #undef X
 
-class IntegerNode FINAL : public NullaryNode {
+class IntegerNode : public NullaryNode {
   IntegerNode(const IntegerNode&) = delete;
   IntegerNode& operator=(const IntegerNode&) = delete;
   IntegerNode() = delete;
 
  public:
-  // Note: ValueFormat provided so that we can echo back out same
-  // representation as when lexing s-expressions.
-  IntegerNode(decode::IntType Value,
-              decode::ValueFormat Format = decode::ValueFormat::Decimal)
-      : NullaryNode(alloc::Allocator::Default, OpInteger),
-        Value(Value),
-        Format(Format) {}
-  IntegerNode(alloc::Allocator* Alloc,
-              decode::IntType Value,
-              decode::ValueFormat Format = decode::ValueFormat::Decimal)
-      : NullaryNode(Alloc, OpInteger), Value(Value), Format(Format) {}
   ~IntegerNode() OVERRIDE {}
   decode::ValueFormat getFormat() const { return Format; }
   decode::IntType getValue() const { return Value; }
 
-  static bool implementsClass(NodeType Type) { return Type == OpInteger; }
+  static bool implementsClass(NodeType Type);
 
- private:
+ protected:
   decode::IntType Value;
   decode::ValueFormat Format;
+  // Note: ValueFormat provided so that we can echo back out same
+  // representation as when lexing s-expressions.
+  IntegerNode(alloc::Allocator* Alloc,
+              NodeType Type,
+              decode::IntType Value,
+              decode::ValueFormat Format = decode::ValueFormat::Decimal)
+      : NullaryNode(Alloc, Type), Value(Value), Format(Format) {}
 };
+
+#define X(tag)                                                              \
+  class tag##Node FINAL : public IntegerNode {                              \
+    tag##Node(const tag##Node&) = delete;                                   \
+    tag##Node& operator=(const tag##Node&) = delete;                        \
+    tag##Node() = delete;                                                   \
+    virtual void forceCompilation();                                        \
+                                                                            \
+   public:                                                                  \
+    tag##Node(decode::IntType Value,                                        \
+              decode::ValueFormat Format = decode::ValueFormat::Decimal)    \
+        : IntegerNode(alloc::Allocator::Default, Op##tag, Value, Format) {} \
+    tag##Node(alloc::Allocator* Alloc,                                      \
+              decode::IntType Value,                                        \
+              decode::ValueFormat Format = decode::ValueFormat::Decimal)    \
+        : IntegerNode(Alloc, Op##tag, Value, Format) {}                     \
+    ~tag##Node() OVERRIDE {}                                                \
+                                                                            \
+    static bool implementsClass(NodeType Type) { return Type == Op##tag; }  \
+  };
+AST_INTEGERNODE_TABLE
+#undef X
 
 class SymbolNode FINAL : public NullaryNode {
   SymbolNode(const SymbolNode&) = delete;

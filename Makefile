@@ -397,7 +397,7 @@ parser-objs: $(PARSER_OBJS)
 
 .PHONY: parser-objs
 
-$(PARSER_DIR)/Lexer.cpp: $(PARSER_DIR)/Lexer.lex
+$(PARSER_DIR)/Lexer.cpp: $(PARSER_DIR)/Lexer.lex $(PARSER_DIR)/Parser.tab.cpp
 	cd $(PARSER_DIR); lex -o Lexer.cpp Lexer.lex
 
 $(PARSER_DIR)/Parser.tab.cpp: $(PARSER_DIR)/Parser.ypp
