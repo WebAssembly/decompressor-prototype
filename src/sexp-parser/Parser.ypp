@@ -95,7 +95,6 @@ struct IntegerValue {
 %token LOOP          "loop"
 %token LOOP_UNBOUNDED "loop.unbounded"
 %token NOT           "not"
-%token MAP           "map"
 %token OPCODE        "opcode"
 %token OPENPAREN     "("
 %token OR            "or"
@@ -117,6 +116,7 @@ struct IntegerValue {
 %token VARUINT64     "varuint64"
 %token VERSION       "version"
 %token VOID          "void"
+%token WRITE         "write"
 
 // Terminal classes
 %token <wasm::filt::ExternalName> IDENTIFIER
@@ -290,8 +290,8 @@ expression
         | "(" "is.byte.out" ")" {
             $$ = Driver.create<IsByteOutNode>();
           }
-        | "(" "map" expression expression ")" {
-            $$ = Driver.create<MapNode>($3, $4);
+        | "(" "write" expression expression ")" {
+            $$ = Driver.create<WriteNode>($3, $4);
           }
         | "(" "not" expression ")" {
             $$ = Driver.create<NotNode>($3);

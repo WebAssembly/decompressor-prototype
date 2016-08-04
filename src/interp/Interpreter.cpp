@@ -216,7 +216,7 @@ IntType Interpreter::eval(const Node* Nd) {
           eval(Kid);
       break;
     }
-    case OpMap:
+    case OpWrite:
       ReturnValue = write(read(Nd->getKid(0)), Nd->getKid(1));
       break;
     case OpPeek:

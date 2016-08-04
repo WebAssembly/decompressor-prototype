@@ -327,11 +327,11 @@ void BinaryReader::readNode() {
     case OpNot:
       readUnary<NotNode>();
       break;
-    case OpMap:
-      readBinary<MapNode>();
-      break;
     case OpRead:
       readUnary<ReadNode>();
+      break;
+    case OpWrite:
+      readBinary<WriteNode>();
       break;
     case OpOpcode:
       readNary<OpcodeNode>();

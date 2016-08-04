@@ -18,6 +18,7 @@
 
 # Note: If using -jN, be sure to run "make gen" first.
 
+# Define if release or debug build
 ifdef DEBUG
   ifdef RELEASE
     ifeq ($(DEBUG), 0)
@@ -42,6 +43,7 @@ CXX := clang++
 
 PLATFORM := Default
 
+# Define platform specific stuff.
 ifeq ($(PLATFORM), Travis)
   # Add flags to handle that Travis g++ uses -std=c++0x with missing c++11 options.
   ifeq ($(CXX),g++)
@@ -49,8 +51,10 @@ ifeq ($(PLATFORM), Travis)
   else
     PLATFORM_CXXFLAGS += -std=c++11 -DOVERRIDE=override -DFINAL=final
   endif
-else
+else ifeq ($(PLATFORM), Default)
   PLATFORM_CXXFLAGS += --std=c++11 -DOVERRIDE= -DFINAL=
+else
+  $(error Unrecognized platform: $(PLATFORM))
 endif
 
 SRCDIR = src
