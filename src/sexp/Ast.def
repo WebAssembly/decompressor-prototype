@@ -81,14 +81,10 @@
   X(IsByteOut,         0x34, "is.byte.out",      nullptr,           0, 0)      \
                                                                                \
   /* I/O (and tree) operations  */                                             \
-  X(Map,               0x42, "map",              nullptr,           2, 0)      \
-  X(Peek,              0x43, "peek",             nullptr,           1, 0)      \
-/*  X(AppendNoArgs,      0x40, "append",           "appendNoArgs",    0, 0) */ \
-/*  X(AppendOneArg,      0x41, "append",           "appendOneArg",    1, 0) */ \
-/*  X(Postorder,         0x44, "postorder",        nullptr,           1, 0) */ \
-/*  X(Preorder,          0x45, "preorder",         nullptr,           1, 0) */ \
-  X(Read,              0x46, "read",             nullptr,           1, 0)      \
-  X(LastRead,          0x47, "read",             "lastRead",        0, 0)      \
+  X(Peek,              0x40, "peek",             nullptr,           1, 0)      \
+  X(Read,              0x41, "read",             nullptr,           1, 0)      \
+  X(LastRead,          0x42, "read",             "lastRead",        0, 0)      \
+  X(Write,             0x43, "write",            nullptr,           2, 0)      \
                                                                                \
   /* Streams */                                                                \
 /*  X(AstToAst,          0x50, "ast.to.ast",       nullptr,           0, 0) */ \
@@ -191,8 +187,8 @@
   X(Define)                                                                    \
   X(IfThen)                                                                    \
   X(Loop)                                                                      \
-  X(Map)                                                                       \
   X(Or)                                                                        \
+  X(Write)                                                                       \
 
 //#define X(tag)
 #define AST_SELECTNODE_TABLE                                                   \

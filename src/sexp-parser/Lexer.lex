@@ -231,7 +231,6 @@ id ({letter}|{digit}|[_.])*
 "i64.const"       return Parser::make_I64_CONST(Driver.getLoc());
 "loop.unbounded"  return Parser::make_LOOP_UNBOUNDED(Driver.getLoc());
 "loop"            return Parser::make_LOOP(Driver.getLoc());
-"map"             return Parser::make_MAP(Driver.getLoc());
 "not"             return Parser::make_NOT(Driver.getLoc());
 "opcode"          return Parser::make_OPCODE(Driver.getLoc());
 "or"              return Parser::make_OR(Driver.getLoc());
@@ -253,6 +252,7 @@ id ({letter}|{digit}|[_.])*
 "varuint64"       return Parser::make_VARUINT64(Driver.getLoc());
 "version"         return Parser::make_VERSION(Driver.getLoc());
 "void"            return Parser::make_VOID(Driver.getLoc());
+"write"           return Parser::make_WRITE(Driver.getLoc());
 "0x"{hexdigit}+   return make_HexInteger(Driver, yytext);
 {digit}+          return make_Integer(Driver, yytext);
 -?{digit}+        return make_SignedInteger(Driver, yytext);

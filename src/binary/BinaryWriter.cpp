@@ -84,7 +84,6 @@ void BinaryWriter::writeNode(const Node* Nd) {
     case OpIsByteOut:
     case OpLoop:
     case OpLoopUnbounded:
-    case OpMap:
     case OpPeek:
     case OpRead:
     case OpUint32NoArgs:
@@ -96,7 +95,8 @@ void BinaryWriter::writeNode(const Node* Nd) {
     case OpVaruint32NoArgs:
     case OpVaruint64NoArgs:
     case OpLastRead:
-    case OpVoid: {
+    case OpVoid:
+    case OpWrite: {
       // Operations that are written out in postorder, with a fixed number of
       // arguments.
       for (const auto* Kid : *Nd)

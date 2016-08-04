@@ -28,7 +28,7 @@
         (eval 'code.inst')
       )
       (if (and (is.byte.in) (not (is.byte.out)))
-        (map (u32.const 4294967295) (uint32))
+        (write (u32.const 4294967295) (uint32))
       )
     )
   )
