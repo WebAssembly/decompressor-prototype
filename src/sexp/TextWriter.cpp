@@ -161,7 +161,15 @@ void TextWriter::writeNodeKids(const Node* Nd, bool EmbeddedInParent) {
 void TextWriter::writeNode(const Node* Nd,
                            bool AddNewline,
                            bool EmbedInParent) {
-  switch (NodeType Type = Nd->getType()) {
+  NodeType Type = Nd->getType();
+  if (const auto* Int = dyn_cast<IntegerNode>(Nd)) {
+    Parenthesize _(this, Type, AddNewline);
+    fputc(' ', File);
+    writeInt(File, Int->getValue(), Int->getFormat());
+    LineEmpty = false;
+    return;
+  }
+  switch (Type) {
     default: {
       if (EmbedInParent) {
         writeNodeKids(Nd, true);
@@ -175,13 +183,6 @@ void TextWriter::writeNode(const Node* Nd,
       // Treat like hidden node. That is, visually just a list of s-expressions.
       for (auto* Kid : *Nd)
         writeNode(Kid, true);
-      return;
-    }
-    case OpInteger: {
-      Indent _(this, AddNewline);
-      const auto* Int = cast<IntegerNode>(Nd);
-      writeInt(File, Int->getValue(), Int->getFormat());
-      LineEmpty = false;
       return;
     }
     case OpSymbol: {
@@ -284,6 +285,10 @@ void TextWriter::writeNodeKidsAbbrev(const Node* Nd, bool EmbeddedInParent) {
 void TextWriter::writeNodeAbbrev(const Node* Nd,
                                  bool AddNewline,
                                  bool EmbedInParent) {
+  if (isa<IntegerNode>(Nd)) {
+    writeNode(Nd, AddNewline, EmbedInParent);
+    return;
+  }
   switch (NodeType Type = Nd->getType()) {
     default: {
       if (EmbedInParent) {
@@ -299,7 +304,6 @@ void TextWriter::writeNodeAbbrev(const Node* Nd,
       fprintf(File, "(file ...)\n");
       return;
     }
-    case OpInteger:
     case OpSymbol:
       writeNode(Nd, AddNewline, EmbedInParent);
       return;

@@ -20,6 +20,7 @@
 #ifndef DECOMPRESSOR_SRC_SEXP_TRACESEXP_H
 #define DECOMPRESSOR_SRC_SEXP_TRACESEXP_H
 
+#include "sexp/NodeType.h"
 #include "utils/Trace.h"
 
 namespace wasm {
@@ -39,6 +40,7 @@ class TraceClassSexp : public utils::TraceClass {
   TraceClassSexp(FILE* File);
   TraceClassSexp(const char* Label, FILE* File);
   ~TraceClassSexp();
+
   void traceSexp(const Node* Nd) {
     if (getTraceProgress())
       traceSexpInternal("", Nd);
@@ -49,6 +51,16 @@ class TraceClassSexp : public utils::TraceClass {
       traceSexpInternal(Prefix, Nd);
   }
 
+  void traceNodeType(NodeType Type) {
+    if (getTraceProgress())
+      traceNodeTypeInternal("", Type);
+  }
+
+  void traceNodeType(const char* Prefix, NodeType Type) {
+    if (getTraceProgress())
+      traceNodeTypeInternal(Prefix, Type);
+  }
+
   void errorSexp(const char* Prefix, const Node* Nd);
 
   void errorSexp(const Node* Nd) { errorSexp("", Nd); }
@@ -56,6 +68,7 @@ class TraceClassSexp : public utils::TraceClass {
  protected:
   TextWriter* Writer;
   void traceSexpInternal(const char* Prefix, const Node* Nd);
+  void traceNodeTypeInternal(const char* Prefix, NodeType Type);
 
   TextWriter* getTextWriter() {
     if (Writer == nullptr)

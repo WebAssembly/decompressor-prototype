@@ -30,16 +30,7 @@ using namespace utils;
 
 namespace filt {
 
-namespace {
-
-IntType getIntegerValue(Node* N) {
-  if (auto* IntVal = dyn_cast<IntegerNode>(N))
-    return IntVal->getValue();
-  fatal("Integer value expected but not found");
-  return 0;
-}
-
-}  // end of anonymous namespace
+namespace {}  // end of anonymous namespace
 
 BinaryWriter::BinaryWriter(decode::ByteQueue* Output, SymbolTable& Symtab)
     : WritePos(decode::StreamType::Byte, Output),
@@ -70,12 +61,12 @@ void BinaryWriter::writeSection(const SectionNode* Section) {
 void BinaryWriter::writeNode(const Node* Nd) {
   TRACE_METHOD("writeNode", Trace);
   Trace.traceSexp(Nd);
-  switch (NodeType Type = Nd->getType()) {
+
+  switch (NodeType Opcode = Nd->getType()) {
     case NO_SUCH_NODETYPE:
-    case OpUnknownSection:
-    case OpInteger: {
+    case OpUnknownSection: {
       // TODO(kschimpf) Fix this list.
-      fprintf(stderr, "Misplaced s-expression: %s\n", getNodeTypeName(Type));
+      fprintf(stderr, "Misplaced s-expression: %s\n", getNodeTypeName(Opcode));
       fatal("Unable to write filter s-expression");
       break;
     }
@@ -83,6 +74,7 @@ void BinaryWriter::writeNode(const Node* Nd) {
     case OpBlock:
     case OpBlockEndNoArgs:
     case OpByteToByte:
+    case OpCase:
     case OpOr:
     case OpNot:
     case OpError:
@@ -109,13 +101,7 @@ void BinaryWriter::writeNode(const Node* Nd) {
       // arguments.
       for (const auto* Kid : *Nd)
         writeNode(Kid);
-      Writer->writeUint8(Type, WritePos);
-      break;
-    }
-    case OpCase: {
-      writeNode(Nd->getKid(1));
-      Writer->writeUint8(Type, WritePos);
-      Writer->writeVarint64(getIntegerValue(Nd->getKid(0)), WritePos);
+      Writer->writeUint8(Opcode, WritePos);
       break;
     }
     case OpFile: {
@@ -147,7 +133,7 @@ void BinaryWriter::writeNode(const Node* Nd) {
       // number of arguments.
       for (const auto* Kid : *Nd)
         writeNode(Kid);
-      Writer->writeUint8(Type, WritePos);
+      Writer->writeUint8(Opcode, WritePos);
       Writer->writeVaruint32(Nd->getNumKids(), WritePos);
       break;
     }
@@ -164,45 +150,45 @@ void BinaryWriter::writeNode(const Node* Nd) {
     case OpVaruint32OneArg:
     case OpVaruint64OneArg: {
       // Operations that get a value in [1, 64]
-      Writer->writeUint8(Type, WritePos);
-      Writer->writeUint8(getIntegerValue(Nd->getKid(0)), WritePos);
+      Writer->writeUint8(Opcode, WritePos);
+      Writer->writeUint8(dyn_cast<IntegerNode>(Nd)->getValue(), WritePos);
       break;
     }
     case OpU32Const: {
-      Writer->writeUint8(Type, WritePos);
-      Writer->writeVaruint32(getIntegerValue(Nd->getKid(0)), WritePos);
+      Writer->writeUint8(Opcode, WritePos);
+      Writer->writeVaruint32(cast<U32ConstNode>(Nd)->getValue(), WritePos);
       break;
     }
     case OpU64Const: {
-      Writer->writeUint8(Type, WritePos);
-      Writer->writeVaruint64(getIntegerValue(Nd->getKid(0)), WritePos);
+      Writer->writeUint8(Opcode, WritePos);
+      Writer->writeVaruint64(cast<U64ConstNode>(Nd)->getValue(), WritePos);
       break;
     }
     case OpVersion: {
-      Writer->writeUint8(Type, WritePos);
-      Writer->writeVaruint32(getIntegerValue(Nd->getKid(0)), WritePos);
+      Writer->writeUint8(Opcode, WritePos);
+      Writer->writeVaruint32(cast<VersionNode>(Nd)->getValue(), WritePos);
       break;
     }
     case OpI32Const: {
-      Writer->writeUint8(Type, WritePos);
-      Writer->writeVarint32(getIntegerValue(Nd->getKid(0)), WritePos);
+      Writer->writeUint8(Opcode, WritePos);
+      Writer->writeVarint32(cast<I32ConstNode>(Nd)->getValue(), WritePos);
       break;
     }
     case OpI64Const: {
-      Writer->writeUint8(Type, WritePos);
-      Writer->writeVarint64(getIntegerValue(Nd->getKid(0)), WritePos);
+      Writer->writeUint8(Opcode, WritePos);
+      Writer->writeVarint64(cast<I64ConstNode>(Nd)->getValue(), WritePos);
       break;
     }
     case OpEval:
     case OpEvalDefault: {
-      Writer->writeUint8(Type, WritePos);
+      Writer->writeUint8(Opcode, WritePos);
       writeNode(Nd->getKid(0));
       break;
     }
     case OpDefault:
     case OpDefine: {
       writeNode(Nd->getKid(1));
-      Writer->writeUint8(Type, WritePos);
+      Writer->writeUint8(Opcode, WritePos);
       writeNode(Nd->getKid(0));
     }
   }
