@@ -363,6 +363,9 @@ void BinaryReader::readNode() {
     case OpUndefine:
       readUnary<UndefineNode>();
       break;
+    case OpU8Const:
+      readUint8<U8ConstNode>();
+      break;
     case OpU32Const:
       readVaruint32<U32ConstNode>();
       break;

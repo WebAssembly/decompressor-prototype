@@ -195,6 +195,7 @@ IntType Interpreter::eval(const Node* Nd) {
       break;
     case OpI32Const:
     case OpI64Const:
+    case OpU8Const:
     case OpU32Const:
     case OpU64Const:
       ReturnValue = read(Nd);
@@ -325,8 +326,11 @@ IntType Interpreter::read(const Node* Nd) {
     }
     case OpI32Const:
     case OpI64Const:
+    case OpU8Const:
     case OpU32Const:
-    case OpU64Const:
+    case OpU64Const: {
+      return LastReadValue = dyn_cast<IntegerNode>(Nd)->getValue();
+    }
     case OpPeek: {
       Cursor InitialPos(ReadPos);
       LastReadValue = read(Nd->getKid(0));
@@ -381,11 +385,6 @@ IntType Interpreter::write(IntType Value, const wasm::filt::Node* Nd) {
       fprintf(stderr, "Write not implemented: %s\n", getNodeTypeName(Type));
       fatal("Write not implemented");
       break;
-    case OpI32Const:
-    case OpI64Const:
-    case OpU32Const:
-    case OpU64Const:
-    case OpPeek:
     case OpUint8NoArgs:
       Writer->writeUint8(Value, WritePos);
       break;
@@ -435,6 +434,12 @@ IntType Interpreter::write(IntType Value, const wasm::filt::Node* Nd) {
       Writer->writeVaruint64Bits(Value, WritePos,
                                  cast<Varuint64OneArgNode>(Nd)->getValue());
       break;
+    case OpI32Const:
+    case OpI64Const:
+    case OpU8Const:
+    case OpU32Const:
+    case OpU64Const:
+    case OpPeek:
     case OpVoid:
       break;
     case OpOpcode: {
@@ -533,7 +538,7 @@ void Interpreter::decompressSection() {
   readSectionName();
 #if LOG_SECTIONS
   fprintf(stderr, "@%" PRIxMAX " section '%s'\n", uintmax_t(SectionAddress),
-          sectionName);
+          CurSectionName.c_str());
 #endif
   Trace.traceString("name", CurSectionName);
   SymbolNode* Sym = Algorithms->getSymbol(CurSectionName);

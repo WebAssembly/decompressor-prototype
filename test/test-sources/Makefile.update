@@ -23,7 +23,7 @@
 #
 #    make -f Makefile.update FILE
 #
-# where FILE is the name of the file, with periods replaced with dashes.
+# where FILE is the name of the file.
 #
 # Note: The make file has been separated from the main make file (Makefile)
 # because it has requirements on other WebAssembly projects. In particular, the
@@ -55,25 +55,25 @@ spec: clean_binaries $(LOCAL_SEXPS_SRCS) $(LOCAL_SEXPS_BINS)
 
 .PHONY: update
 
-defaults-wasm:
-	$(EXEC_DIR)/decompsexp-wasm -m -i $(SEXP_DEFAULTS) -o defaults.wasm
+defaults.wasm:
+	$(EXEC_DIR)/decompsexp-wasm -m -i $(SEXP_DEFAULTS) -o $@
 
-.PHONY: defaults-wasm
+.PHONY: defaults.wasm
 
-defaults-wasm-w:
-	$(EXEC_DIR)/decompsexp-wasm -i $(SEXP_DEFAULTS) -o defaults.wasm-w
+defaults.wasm-w:
+	$(EXEC_DIR)/decompsexp-wasm -i $(SEXP_DEFAULTS) -o $@
 
-.PHONY: defaults-wasm-w
+.PHONY: defaults.wasm-w
 
-defaults-dff:
-	$(TEST_DIR)/TestParser -w -f $(SEXP_DEFAULTS) > defaults.dff
+defaults.dff:
+	$(TEST_DIR)/TestParser -w -f $(SEXP_DEFAULTS) > $@
 
-.PHONY: defaults-dff
+.PHONY: defaults.dff
 
-defaults-df:
-	$(TEST_DIR)/TestParser -w $(SEXP_DEFAULTS) > defaults.df
+defaults.df:
+	$(TEST_DIR)/TestParser -w $(SEXP_DEFAULTS) > $@
 
-.PHONY: update-defaults-df
+.PHONY: defaults.df
 
 clean: clean_binaries
 	rm -rf $(LOCAL_SEXPS_DIR)
