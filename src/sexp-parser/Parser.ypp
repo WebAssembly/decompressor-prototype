@@ -108,6 +108,7 @@ struct IntegerValue {
 %token UINT32        "uint32"
 %token UINT64        "uint64"
 %token UNDEFINE      "undefine"
+%token U8_CONST      "u8.const"
 %token U32_CONST     "u32.const"
 %token U64_CONST     "u64.const"
 %token VARINT32      "varint32"
@@ -195,6 +196,9 @@ constant_expression
           }
         | "(" "i64.const" INTEGER ")" {
             $$ = Driver.create<I64ConstNode>($3.Value, $3.Format);
+          }
+        | "(" "u8.const" INTEGER ")" {
+            $$ = Driver.create<U8ConstNode>($3.Value, $3.Format);
           }
         | "(" "u32.const" INTEGER ")" {
             $$ = Driver.create<U32ConstNode>($3.Value, $3.Format);

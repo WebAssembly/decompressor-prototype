@@ -154,6 +154,11 @@ void BinaryWriter::writeNode(const Node* Nd) {
       Writer->writeUint8(dyn_cast<IntegerNode>(Nd)->getValue(), WritePos);
       break;
     }
+    case OpU8Const: {
+      Writer->writeUint8(Opcode, WritePos);
+      Writer->writeUint8(cast<U8ConstNode>(Nd)->getValue(), WritePos);
+      break;
+    }
     case OpU32Const: {
       Writer->writeUint8(Opcode, WritePos);
       Writer->writeVaruint32(cast<U32ConstNode>(Nd)->getValue(), WritePos);

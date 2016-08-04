@@ -52,8 +52,9 @@
   X(Symbol,            0x11, "symbol",           nullptr,           0, 0)      \
   X(I32Const,          0x12, "i32.const",        nullptr,           0, 0)      \
   X(I64Const,          0x13, "i64.const",        nullptr,           0, 0)      \
-  X(U32Const,          0x14, "u32.const",        nullptr,           0, 0)      \
-  X(U64Const,          0x15, "u64.const",        nullptr,           0, 0)      \
+  X(U8Const,           0x14, "u8.const",         nullptr,           0, 0)      \
+  X(U32Const,          0x15, "u32.const",        nullptr,           0, 0)      \
+  X(U64Const,          0x16, "u64.const",        nullptr,           0, 0)      \
                                                                                \
   /* Formatting */                                                             \
   X(Uint32NoArgs,      0x20, "uint32",           "uint32NoArgs",    0, 0)      \
@@ -139,6 +140,7 @@
 #define AST_INTEGERNODE_TABLE                                                  \
   X(I32Const)                                                                  \
   X(I64Const)                                                                  \
+  X(U8Const)                                                                   \
   X(U32Const)                                                                  \
   X(U64Const)                                                                  \
   X(Uint32OneArg)                                                              \
