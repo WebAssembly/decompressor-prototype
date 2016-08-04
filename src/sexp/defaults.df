@@ -57,7 +57,7 @@
         (eval 'code.opcode')     # reads instruction opcode
         (eval 'code.inst'))      # selects/parses corresponding instruction.
       # Insert 0xFFFFFFFF eob opcode if not byte stream.
-      (if (and (is.byte.in) (not (is.byte.out)))
+      (if (and (stream in byte) (not (stream out byte)))
         (write (u32.const 0xffffffff) (uint32)))
     )
   )

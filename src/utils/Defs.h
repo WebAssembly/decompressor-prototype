@@ -78,7 +78,11 @@ typedef int64_t SignedIntType;
 
 static constexpr size_t kBitsInIntType = 64;
 
-enum class StreamType { Bit, Byte, Int, Ast };
+enum class StreamType : uint8_t { Bit, Byte, Int, Ast };
+const char* getName(StreamType Type);
+
+enum class StreamKind : uint8_t { Input, Output };
+const char* getName(StreamKind Type);
 
 // When true, converts EXIT_FAIL to EXIT_SUCCESS, and EXIT_SUCCESS to EXIT_FAIL.
 extern bool ExpectExitFail;

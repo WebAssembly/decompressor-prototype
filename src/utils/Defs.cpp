@@ -21,11 +21,28 @@
 #include <stdio.h>
 #include <cstdlib>
 
+namespace {
+
+// TODO(kschimpf): Define associations in a Defs.def file.
+const char* StreamTypeName[] = {"bit", "byte", "int", "ast"};
+
+const char* StreamKindName[] = {"in", "out"};
+
+}  // end of anonymous namespace
+
 namespace wasm {
 
 namespace decode {
 
 bool ExpectExitFail = false;
+
+const char* getName(StreamType Type) {
+  return StreamTypeName[int(Type)];
+}
+
+const char* getName(StreamKind Kind) {
+  return StreamKindName[int(Kind)];
+}
 
 int exit_status(int Status) {
   if (!ExpectExitFail)

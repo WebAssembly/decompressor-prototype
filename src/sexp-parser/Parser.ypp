@@ -76,9 +76,11 @@ struct IntegerValue {
 
 // Keywords
 %token AND           "and"
+%token AST           "ast"
+%token BIT           "bit"
 %token BLOCK         "block"
 %token BLOCKEND      "block.end"
-%token BYTE_TO_BYTE  "byte.to.byte"
+%token BYTE          "byte"
 %token CASE          "case"
 %token CLOSEPAREN    ")"
 %token DEFAULT       "default"
@@ -88,8 +90,8 @@ struct IntegerValue {
 %token EVAL_DEFAULT  "eval.default"
 %token FILTER        "filter"
 %token IF            "if"
-%token IS_BYTE_IN    "is.byte.in"
-%token IS_BYTE_OUT   "is.byte.out"
+%token IN            "in"
+%token INT           "int"
 %token I32_CONST     "i32.const"
 %token I64_CONST     "i64.const"
 %token LOOP          "loop"
@@ -98,11 +100,13 @@ struct IntegerValue {
 %token OPCODE        "opcode"
 %token OPENPAREN     "("
 %token OR            "or"
+%token OUT           "out"
 %token PEEK          "peek"
 %token READ          "read"
 %token SECTION       "section"
 %token SELECT        "select"
 %token SEQ           "seq"
+%token STREAM        "stream"
 %token UINT8         "uint8"
 %token UINT32        "uint32"
 %token UINT64        "uint64"
@@ -138,9 +142,12 @@ struct IntegerValue {
 %type <wasm::filt::Node *> loop_body
 %type <wasm::filt::Node *> opcode_case
 %type <wasm::filt::OpcodeNode *> opcode_expression
+%type <wasm::filt::Node *> stream
 %type <wasm::filt::Node *> stream_conv
 %type <wasm::filt::Node *> stream_conv_list
 %type <wasm::filt::Node *> stream_conv_stmt_list
+%type <wasm::decode::StreamKind> stream_kind
+%type <wasm::decode::StreamType> stream_type
 %type <wasm::filt::Node *> section
 %type <wasm::filt::Node *> section_list
 %type <wasm::filt::Node *> seq_stmt_list
@@ -284,12 +291,7 @@ expression
         | "(" "eval.default" symbol ")" {
             $$ = Driver.create<EvalDefaultNode>($3);
           }
-        | "(" "is.byte.in" ")" {
-            $$ = Driver.create<IsByteInNode>();
-          }
-        | "(" "is.byte.out" ")" {
-            $$ = Driver.create<IsByteOutNode>();
-          }
+        | stream { $$ = $1; }
         | "(" "write" expression expression ")" {
             $$ = Driver.create<WriteNode>($3, $4);
           }
@@ -465,7 +467,26 @@ statement
         | "(" "seq" seq_stmt_list ")" { $$ = $3; }
         ;
 
-stream_conv  : "(" stream_conv_stmt_list ")" {
+stream
+        : "(" "stream" stream_kind stream_type ")" {
+            $$ = Driver.create<StreamNode>($3, $4);
+          }
+        ;
+
+stream_kind
+        : "in" { $$ = decode::StreamKind::Input; }
+        | "out" { $$ = decode::StreamKind::Output; }
+        ;
+
+stream_type
+        : "bit" { $$ = decode::StreamType::Bit; }
+        | "byte" { $$ = decode::StreamType::Byte; }
+        | "int" { $$ = decode::StreamType::Int; }
+        | "ast" { $$ = decode::StreamType::Ast; }
+        ;
+
+stream_conv
+        : "(" stream_conv_stmt_list ")" {
             $$ = $2;
           }
         ;
@@ -482,8 +503,8 @@ stream_conv_list
         ;
 
 stream_conv_stmt_list
-       : "byte.to.byte" statement {
-            $$ = Driver.create<ByteToByteNode>($2);
+       : "convert" stream stream statement {
+            $$ = Driver.create<ConvertNode>($2, $3, $4);
           }
         | stream_conv_stmt_list statement {
             $$ = $1;

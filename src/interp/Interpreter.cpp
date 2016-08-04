@@ -78,7 +78,7 @@ IntType Interpreter::eval(const Node* Nd) {
   IntType ReturnValue = 0;
   switch (NodeType Type = Nd->getType()) {
     case NO_SUCH_NODETYPE:
-    case OpByteToByte:
+    case OpConvert:
     case OpFilter:
     case OpBlockEndNoArgs:
     case OpSymbol:
@@ -148,12 +148,36 @@ IntType Interpreter::eval(const Node* Nd) {
       if (eval(Nd->getKid(0)) != 0 || eval(Nd->getKid(1)) != 0)
         ReturnValue = 1;
       break;
-    case OpIsByteIn:
-      ReturnValue = int(isa<ByteReadStream>(Reader));
+    case OpStream: {
+      const auto* Stream = cast<StreamNode>(Nd);
+      switch (Stream->getStreamKind()) {
+        case StreamKind::Input:
+          switch (Stream->getStreamType()) {
+            case StreamType::Byte:
+              ReturnValue = int(isa<ByteReadStream>(Reader));
+              break;
+            case StreamType::Bit:
+            case StreamType::Int:
+            case StreamType::Ast:
+              Trace.errorSexp("Stream check: ", Nd);
+              fatal("Stream check not implemented");
+              break;
+          }
+        case StreamKind::Output:
+          switch (Stream->getStreamType()) {
+            case StreamType::Byte:
+              ReturnValue = int(isa<ByteReadStream>(Writer));
+              break;
+            case StreamType::Bit:
+            case StreamType::Int:
+            case StreamType::Ast:
+              Trace.errorSexp("Stream check: ", Nd);
+              fatal("Stream check not implemented");
+              break;
+          }
+      }
       break;
-    case OpIsByteOut:
-      ReturnValue = int(isa<ByteWriteStream>(Writer));
-      break;
+    }
     case OpError:
       fatal("Error found during evaluation");
       break;

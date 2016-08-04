@@ -269,13 +269,13 @@ void BinaryReader::readNode() {
     case OpBlockEndNoArgs:
       readNullary<BlockEndNoArgsNode>();
       break;
-    case OpByteToByte:
-      readUnary<ByteToByteNode>();
-      break;
     case OpCase: {
       readBinary<CaseNode>();
       break;
     }
+    case OpConvert:
+      readTernary<ConvertNode>();
+      break;
     case OpDefault:
       readBinarySymbol<DefaultNode>();
       break;
@@ -299,12 +299,6 @@ void BinaryReader::readNode() {
       break;
     case OpIfThenElse:
       readTernary<IfThenElseNode>();
-      break;
-    case OpIsByteIn:
-      readNullary<IsByteInNode>();
-      break;
-    case OpIsByteOut:
-      readNullary<IsByteOutNode>();
       break;
     case OpI32Const:
       readVarint32<I32ConstNode>();
@@ -342,6 +336,16 @@ void BinaryReader::readNode() {
     case OpSequence:
       readNary<SequenceNode>();
       break;
+    case OpStream: {
+      uint8_t Encoding = Reader->readUint8(ReadPos);
+      StreamKind StrmKind;
+      StreamType StrmType;
+      StreamNode::decode(Encoding, StrmKind, StrmType);
+      auto* Node = Alloc->create<StreamNode>(StrmKind, StrmType);
+      Trace.traceSexp(Node);
+      NodeStack.push_back(Node);
+      break;
+    }
     case OpUint32NoArgs:
       readNullary<Uint32NoArgsNode>();
       break;

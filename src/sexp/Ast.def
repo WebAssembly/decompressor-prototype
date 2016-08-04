@@ -77,8 +77,7 @@
   X(And,               0x30, "and",              nullptr,           2, 0)      \
   X(Or,                0x31, "or",               nullptr,           2, 0)      \
   X(Not,               0x32, "not",              nullptr,           1, 0)      \
-  X(IsByteIn,          0x33, "is.byte.in",       nullptr,           0, 0)      \
-  X(IsByteOut,         0x34, "is.byte.out",      nullptr,           0, 0)      \
+  X(Stream,            0x33, "stream",           nullptr,           0, 0)      \
                                                                                \
   /* I/O (and tree) operations  */                                             \
   X(Peek,              0x40, "peek",             nullptr,           1, 0)      \
@@ -87,22 +86,7 @@
   X(Write,             0x43, "write",            nullptr,           2, 0)      \
                                                                                \
   /* Streams */                                                                \
-/*  X(AstToAst,          0x50, "ast.to.ast",       nullptr,           0, 0) */ \
-/*  X(AstToBit,          0x51, "ast.to.bit",       nullptr,           0, 0) */ \
-/*  X(AstToByte,         0x52, "ast.to.byte",      nullptr,           0, 0) */ \
-/*  X(AstToInt,          0x53, "ast.to.int",       nullptr,           0, 0) */ \
-/*  X(BitToAst,          0x54, "bit.to.ast",       nullptr,           0, 0) */ \
-/*  X(BitToBit,          0x55, "bit.to.bit",       nullptr,           0, 0) */ \
-/*  X(BitToByte,         0x56, "bit.to.byte",      nullptr,           0, 0) */ \
-/*  X(BitToInt,          0x57, "bit.to.int",       nullptr,           0, 0) */ \
-/*  X(ByteToAst,         0x58, "byte.to.ast",      nullptr,           0, 0) */ \
-/*  X(ByteToBit,         0x59, "byte.to.bit",      nullptr,           0, 0) */ \
-  X(ByteToByte,        0x5a, "byte.to.byte",     nullptr,           0, 0)      \
-/*  X(ByteToInt,         0x5b, "byte.to.int",      nullptr,           0, 0) */ \
-/*  X(IntToAst,          0x5c, "int.to.ast",       nullptr,           0, 0) */ \
-/*  X(IntToBit,          0x5d, "int.to.bit",       nullptr,           0, 0) */ \
-/*  X(IntToByte,         0x5e, "int.to.byte",      nullptr,           0, 0) */ \
-/*  X(IntToInt,          0x5f, "int.to.int",       nullptr,           0, 0) */ \
+  X(Convert,           0x50, "convert",          nullptr,           2, 1)      \
                                                                                \
   /* Declarations */                                                           \
   X(Define,            0x60, "define",           nullptr,           2, 0)      \
@@ -117,11 +101,8 @@
 
 //#define X(tag)
 #define AST_NULLARYNODE_TABLE                                                  \
-/*  X(AppendNoArgs)                                                         */ \
   X(BlockEndNoArgs)                                                            \
   X(Error)                                                                     \
-  X(IsByteIn)                                                                  \
-  X(IsByteOut)                                                                 \
   X(LastRead)                                                                \
   X(Uint8NoArgs)                                                               \
   X(Uint32NoArgs)                                                              \
@@ -150,31 +131,12 @@
 
 //#define X(tag)
 #define AST_UNARYNODE_TABLE                                                    \
-/*  X(AppendOneArg)                                                         */ \
-/*  X(AstToAst)                                                             */ \
-/*  X(AstToBit)                                                             */ \
-/*  X(AstToByte)                                                            */ \
-/*  X(AstToInt)                                                             */ \
-/*  X(BitToAst)                                                             */ \
-/*  X(BitToBit)                                                             */ \
-/*  X(BitToByte)                                                            */ \
-/*  X(BitToInt)                                                             */ \
   X(Block)                                                                     \
-/*  X(ByteToAst)                                                            */ \
-/*  X(ByteToBit)                                                            */ \
-  X(ByteToByte)                                                                \
-/*  X(ByteToInt)                                                            */ \
   X(Eval)                                                                      \
   X(EvalDefault)                                                               \
-/*  X(IntToAst)                                                             */ \
-/*  X(IntToBit)                                                             */ \
-/*  X(IntToByte)                                                            */ \
-/*  X(IntToInt)                                                             */ \
   X(LoopUnbounded)                                                             \
   X(Not)                                                                       \
   X(Peek)                                                                      \
-/*  X(Postorder)                                                            */ \
-/*  X(Preorder)                                                             */ \
   X(Read)                                                                      \
   X(Undefine)                                                                  \
   X(UnknownSection)                                                            \
@@ -203,57 +165,27 @@
 
 //#define X(tag)
 #define AST_TERNARYNODE_TABLE                                                  \
+  X(Convert)                                                                   \
   X(IfThenElse)                                                                \
 
 //#define X(tag)
 #define AST_NODE_HAS_HIDDEN_SEQ                                                \
   X(Block)                                                                     \
-/*  X(AstToAst)                                                             */ \
-/*  X(AstToBit)                                                             */ \
-/*  X(AstToByte)                                                            */ \
-/*  X(AstToInt)                                                             */ \
-/*  X(BitToAst)                                                             */ \
-/*  X(BitToBit)                                                             */ \
-/*  X(BitToByte)                                                            */ \
-/*  X(BitToInt)                                                             */ \
-/*  X(ByteToAst)                                                            */ \
-/*  X(ByteToBit)                                                            */ \
-  X(ByteToByte)                                                                \
-/*  X(ByteToInt)                                                            */ \
   X(Case)                                                                      \
+  X(Convert)                                                                   \
   X(Define)                                                                    \
   X(Default)                                                                   \
   X(Loop)                                                                      \
   X(LoopUnbounded)                                                             \
-/*  X(IntToAst)                                                             */ \
-/*  X(IntToBit)                                                             */ \
-/*  X(IntToByte)                                                            */ \
-/*  X(IntToInt)                                                             */ \
 
 //#define X(tag)
 #define AST_NODE_NEVER_SAME_LINE                                               \
   X(Block)                                                                     \
-/*  X(AstToAst)                                                             */ \
-/*  X(AstToBit)                                                             */ \
-/*  X(AstToByte)                                                            */ \
-/*  X(AstToInt)                                                             */ \
-/*  X(BitToAst)                                                             */ \
-/*  X(BitToBit)                                                             */ \
-/*  X(BitToByte)                                                            */ \
-/*  X(BitToInt)                                                             */ \
-/*  X(ByteToAst)                                                            */ \
-/*  X(ByteToBit)                                                            */ \
-  X(ByteToByte)                                                                \
-/*  X(ByteToInt)                                                            */ \
   X(Case)                                                                      \
   X(Default)                                                                   \
   X(Define)                                                                    \
   X(IfThen)                                                                    \
   X(IfThenElse)                                                                \
-/*  X(IntToAst)                                                             */ \
-/*  X(IntToBit)                                                             */ \
-/*  X(IntToByte)                                                            */ \
-/*  X(IntToInt)                                                             */ \
   X(Loop)                                                                      \
   X(LoopUnbounded)                                                             \
   X(Opcode)                                                                    \

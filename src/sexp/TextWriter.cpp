@@ -185,6 +185,14 @@ void TextWriter::writeNode(const Node* Nd,
         writeNode(Kid, true);
       return;
     }
+    case OpStream: {
+      Parenthesize _(this, Type, AddNewline);
+      const auto* Stream = cast<StreamNode>(Nd);
+      fprintf(File, " %s %s", getName(Stream->getStreamKind()),
+              getName(Stream->getStreamType()));
+      LineEmpty = false;
+      return;
+    }
     case OpSymbol: {
       Indent _(this, AddNewline);
       const auto* Sym = cast<SymbolNode>(Nd);
@@ -304,6 +312,7 @@ void TextWriter::writeNodeAbbrev(const Node* Nd,
       fprintf(File, "(file ...)\n");
       return;
     }
+    case OpStream:
     case OpSymbol:
       writeNode(Nd, AddNewline, EmbedInParent);
       return;
