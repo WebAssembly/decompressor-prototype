@@ -215,9 +215,11 @@ id ({letter}|{digit}|[_.])*
 ")"               return Parser::make_CLOSEPAREN(Driver.getLoc());
 "("               return Parser::make_OPENPAREN(Driver.getLoc());
 "and"             return Parser::make_AND(Driver.getLoc());
+"ast"             return Parser::make_AST(Driver.getLoc());
 "block"           return Parser::make_BLOCK(Driver.getLoc());
 "block.end"       return Parser::make_BLOCKEND(Driver.getLoc());
-"byte.to.byte"    return Parser::make_BYTE_TO_BYTE(Driver.getLoc());
+"bit"             return Parser::make_BIT(Driver.getLoc());
+"byte"            return Parser::make_BYTE(Driver.getLoc());
 "case"            return Parser::make_CASE(Driver.getLoc());
 "default"         return Parser::make_DEFAULT(Driver.getLoc());
 "define"          return Parser::make_DEFINE(Driver.getLoc());
@@ -225,8 +227,8 @@ id ({letter}|{digit}|[_.])*
 "eval.default"    return Parser::make_EVAL_DEFAULT(Driver.getLoc());
 "filter"          return Parser::make_FILTER(Driver.getLoc());
 "if"              return Parser::make_IF(Driver.getLoc());
-"is.byte.in"      return Parser::make_IS_BYTE_IN(Driver.getLoc());
-"is.byte.out"     return Parser::make_IS_BYTE_OUT(Driver.getLoc());
+"int"             return Parser::make_INT(Driver.getLoc());
+"in"              return Parser::make_IN(Driver.getLoc());
 "i32.const"       return Parser::make_I32_CONST(Driver.getLoc());
 "i64.const"       return Parser::make_I64_CONST(Driver.getLoc());
 "loop.unbounded"  return Parser::make_LOOP_UNBOUNDED(Driver.getLoc());
@@ -234,11 +236,13 @@ id ({letter}|{digit}|[_.])*
 "not"             return Parser::make_NOT(Driver.getLoc());
 "opcode"          return Parser::make_OPCODE(Driver.getLoc());
 "or"              return Parser::make_OR(Driver.getLoc());
+"out"             return Parser::make_OUT(Driver.getLoc());
 "peek"            return Parser::make_PEEK(Driver.getLoc());
 "read"            return Parser::make_READ(Driver.getLoc());
 "section"         return Parser::make_SECTION(Driver.getLoc());
 "select"          return Parser::make_SELECT(Driver.getLoc());
 "seq"             return Parser::make_SEQ(Driver.getLoc());
+"stream"          return Parser::make_STREAM(Driver.getLoc());
 "uint8"           return Parser::make_UINT8(Driver.getLoc());
 "uint32"          return Parser::make_UINT32(Driver.getLoc());
 "uint64"          return Parser::make_UINT64(Driver.getLoc());

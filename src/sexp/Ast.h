@@ -192,6 +192,52 @@ class NullaryNode : public Node {
 AST_NULLARYNODE_TABLE
 #undef X
 
+class StreamNode : public NullaryNode {
+  StreamNode() = delete;
+  StreamNode(const StreamNode&) = delete;
+  StreamNode& operator=(const StreamNode&) = delete;
+
+  static constexpr uint8_t EncodingShift = 4;
+  static constexpr uint8_t EncodingLimit = uint8_t(1) << EncodingShift;
+  static constexpr uint8_t EncodingMask = EncodingLimit - 1;
+
+ public:
+  StreamNode(decode::StreamKind StrmKind, decode::StreamType StrmType)
+      : NullaryNode(alloc::Allocator::Default, OpStream),
+        StrmKind(StrmKind),
+        StrmType(StrmType) {}
+  StreamNode(alloc::Allocator* Alloc,
+             decode::StreamKind StrmKind,
+             decode::StreamType StrmType)
+      : NullaryNode(Alloc, OpStream), StrmKind(StrmKind), StrmType(StrmType) {}
+  ~StreamNode() OVERRIDE {}
+
+  decode::StreamKind getStreamKind() const { return StrmKind; }
+  decode::StreamType getStreamType() const { return StrmType; }
+
+  uint8_t getEncoding() const { return encode(StrmKind, StrmType); }
+
+  static uint8_t encode(decode::StreamKind Kind, decode::StreamType Type) {
+    assert(int(Kind) < EncodingLimit);
+    assert(int(Type) < EncodingLimit);
+    uint8_t Encoding = (uint8_t(Kind) << EncodingShift) | uint8_t(Type);
+    return Encoding;
+  }
+
+  static void decode(uint8_t Encoding,
+                     decode::StreamKind& Kind,
+                     decode::StreamType& Type) {
+    Kind = decode::StreamKind(Encoding >> EncodingShift);
+    Type = decode::StreamType(Encoding & EncodingMask);
+  }
+
+  static bool implementsClass(NodeType Type) { return OpStream; }
+
+ protected:
+  decode::StreamKind StrmKind;
+  decode::StreamType StrmType;
+};
+
 class IntegerNode : public NullaryNode {
   IntegerNode(const IntegerNode&) = delete;
   IntegerNode& operator=(const IntegerNode&) = delete;

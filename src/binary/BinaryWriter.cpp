@@ -73,15 +73,13 @@ void BinaryWriter::writeNode(const Node* Nd) {
     case OpAnd:
     case OpBlock:
     case OpBlockEndNoArgs:
-    case OpByteToByte:
     case OpCase:
+    case OpConvert:
     case OpOr:
     case OpNot:
     case OpError:
     case OpIfThen:
     case OpIfThenElse:
-    case OpIsByteIn:
-    case OpIsByteOut:
     case OpLoop:
     case OpLoopUnbounded:
     case OpPeek:
@@ -107,6 +105,12 @@ void BinaryWriter::writeNode(const Node* Nd) {
     case OpFile: {
       for (const auto* Kid : *Nd)
         writeNode(Kid);
+      break;
+    }
+    case OpStream: {
+      const auto* Stream = cast<StreamNode>(Nd);
+      Writer->writeUint8(Opcode, WritePos);
+      Writer->writeUint8(Stream->getEncoding(), WritePos);
       break;
     }
     case OpSection: {
