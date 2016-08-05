@@ -128,6 +128,7 @@ struct IntegerValue {
 
 // Nonterminal classes.
 %type <wasm::filt::Node *> block_stmt_list
+%type <wasm::filt::Node *> bool_expression
 %type <wasm::filt::Node *> case
 %type <wasm::filt::SelectNode *> case_list
 %type <wasm::filt::Node *> case_stmt_list
@@ -141,6 +142,7 @@ struct IntegerValue {
 %type <wasm::filt::Node *> format_directive
 %type <wasm::filt::Node *> loop_body
 %type <wasm::filt::Node *> opcode_case
+%type <wasm::filt::Node *> opcode_selector
 %type <wasm::filt::OpcodeNode *> opcode_expression
 %type <wasm::filt::Node *> stream
 %type <wasm::filt::Node *> stream_conv
@@ -273,12 +275,23 @@ block_stmt_list
           }
         ;
 
+bool_expression
+        : "(" "and" expression expression ")" {
+            $$ = Driver.create<AndNode>($3, $4);
+          }
+        | stream { $$ = $1; }
+        | "(" "not" expression ")" {
+            $$ = Driver.create<NotNode>($3);
+          }
+        | "(" "or" expression expression ")" {
+            $$ = Driver.create<OrNode>($3, $4);
+          }
+        ;
+
 expression
         : format_directive { $$ = $1; }
         | constant_expression { $$ = $1; }
-        | "(" "and" expression expression ")" {
-            $$ = Driver.create<AndNode>($3, $4);
-          }
+        | bool_expression { $$ = $1; }
         | "(" "block.end" ")" {
             $$ = Driver.create<BlockEndNoArgsNode>();
           }
@@ -291,15 +304,8 @@ expression
         | "(" "eval.default" symbol ")" {
             $$ = Driver.create<EvalDefaultNode>($3);
           }
-        | stream { $$ = $1; }
         | "(" "write" expression expression ")" {
             $$ = Driver.create<WriteNode>($3, $4);
-          }
-        | "(" "not" expression ")" {
-            $$ = Driver.create<NotNode>($3);
-          }
-        | "(" "or" expression expression ")" {
-            $$ = Driver.create<OrNode>($3, $4);
           }
         | "(" "peek" expression ")" {
             $$ = Driver.create<PeekNode>($3);
@@ -382,13 +388,21 @@ fixed_format_directive
         ;
 
 opcode_expression
-        : expression {
+        : opcode_selector {
             $$ = Driver.create<OpcodeNode>();
             $$->append($1);
           }
         | opcode_expression opcode_case {
             $$ = $1;
             $$->append($2);
+          }
+        ;
+
+opcode_selector
+        : fixed_format_directive { $$ = $1; }
+        | "(" "eval" symbol ")" {
+            /* TODO(karlschimpf): Should we allow this? */
+            $$ = Driver.create<EvalNode>($3);
           }
         ;
 
