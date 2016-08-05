@@ -69,17 +69,19 @@ constexpr T const_maximum(T V, Args... args) {
 static constexpr uint32_t WasmBinaryMagic = 0x6d736100;
 static constexpr uint32_t WasmBinaryVersion = 0x0b;
 
+enum class Ordering : int { LessThan = -1, Equal = 0, GreaterThan = 1, NotComparable = 2 };
+
 namespace decode {
 
 typedef uint64_t IntType;
 typedef int64_t SignedIntType;
 
 #define PRI_IntType PRIu64
-
 static constexpr size_t kBitsInIntType = 64;
 
 enum class StreamType : uint8_t { Bit, Byte, Int, Ast };
 const char* getName(StreamType Type);
+Ordering compare(StreamType S1, StreamType S2);
 
 enum class StreamKind : uint8_t { Input, Output };
 const char* getName(StreamKind Type);

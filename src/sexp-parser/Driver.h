@@ -49,7 +49,7 @@ class Driver {
 
   template <typename T, typename... Args>
   T* create(Args&&... args) {
-    return Alloc->create<T>(std::forward<Args>(args)...);
+    return Table.create<T>(std::forward<Args>(args)...);
   }
 
   SymbolNode* getSymbolDefinition(ExternalName& Name) {

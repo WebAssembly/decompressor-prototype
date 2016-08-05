@@ -135,14 +135,16 @@ void SymbolNode::setDefaultDefinition(Node* Defn) {
   }
 }
 
-SymbolTable::SymbolTable(alloc::Allocator* Alloc) : Alloc(Alloc) {
-  Error = Alloc->create<ErrorNode>();
+SymbolTable::SymbolTable(alloc::Allocator* Alloc) :
+    Alloc(Alloc), NextCreationIndex(0)
+{
+  Error = Alloc->create<ErrorNode>(*this);
 }
 
 SymbolNode* SymbolTable::getSymbolDefinition(ExternalName& Name) {
   SymbolNode* Node = SymbolMap[Name];
   if (Node == nullptr) {
-    Node = Alloc->create<SymbolNode>(Alloc, Name);
+    Node = create<SymbolNode>(Name);
     Node->setDefaultDefinition(Error);
     SymbolMap[Name] = Node;
   }
