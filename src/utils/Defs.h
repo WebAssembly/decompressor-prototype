@@ -81,6 +81,7 @@ static constexpr size_t kBitsInIntType = 64;
 
 enum class StreamType : uint8_t { Bit, Byte, Int, Ast };
 const char* getName(StreamType Type);
+Ordering compare(StreamType S1, StreamType S2);
 
 enum class StreamKind : uint8_t { Input, Output };
 const char* getName(StreamKind Type);

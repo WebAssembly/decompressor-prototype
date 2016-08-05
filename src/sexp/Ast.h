@@ -100,7 +100,7 @@ class SymbolTable {
   void install(Node* Root);
   alloc::Allocator* getAllocator() const { return Alloc; }
   void clear() { SymbolMap.clear(); }
-  size_t getNextCreationIndex() {
+  int getNextCreationIndex() {
     return ++NextCreationIndex;
   }
 
@@ -112,7 +112,7 @@ class SymbolTable {
  private:
   alloc::Allocator* Alloc;
   Node* Error;
-  size_t NextCreationIndex;
+  int NextCreationIndex;
   // TODO(KarlSchimpf): Use arena allocator on map.
   std::map<ExternalName, SymbolNode*> SymbolMap;
   void installDefinitions(Node* Root);
@@ -183,7 +183,7 @@ class Node {
   // WARNING: Only supported if underlying type allows.
   virtual void append(Node* Kid);
 
-  virtual Ordering compare(const Node &N) const;
+  int getCreationIndex() const { return CreationIndex; }
 
   // General iterators for walking kids.
   Iterator begin() const { return Iterator(this, 0); }
@@ -195,19 +195,12 @@ class Node {
 
  protected:
   NodeType Type;
-  size_t CreationIndex;
+  int CreationIndex;
   Node(SymbolTable &Symtab, NodeType Type)
       : Type(Type), CreationIndex(Symtab.getNextCreationIndex()) {}
   virtual void clearCaches(NodeVectorType& AdditionalNodes);
   virtual void installCaches(NodeVectorType& AdditionalNodes);
 };
-
-bool operator<(const Node &N1, const Node &N2);
-bool operator<=(const Node &N1, const Node &N2);
-bool operator==(const Node &N1, const Node& N2);
-bool operator>=(const Node &N1, const Node& N2);
-bool operator>(const Node &N1, const Node& N2);
-bool operator!=(const Node& N1, const Node& N2);
 
 class NullaryNode : public Node {
   NullaryNode(const NullaryNode&) = delete;
