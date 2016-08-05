@@ -27,7 +27,7 @@
         (eval 'code.opcode')
         (eval 'code.inst')
       )
-      (if (and (stream in byte) (not (stream out byte)))
+      (if (and in.byte (not out.byte))
         (write (u32.const 0xffffffff) (uint32))
       )
     )

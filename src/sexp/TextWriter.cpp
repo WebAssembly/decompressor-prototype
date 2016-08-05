@@ -186,9 +186,9 @@ void TextWriter::writeNode(const Node* Nd,
       return;
     }
     case OpStream: {
-      Parenthesize _(this, Type, AddNewline);
+      Indent _(this, AddNewline);
       const auto* Stream = cast<StreamNode>(Nd);
-      fprintf(File, " %s %s", getName(Stream->getStreamKind()),
+      fprintf(File, "%s.%s", getName(Stream->getStreamKind()),
               getName(Stream->getStreamType()));
       LineEmpty = false;
       return;

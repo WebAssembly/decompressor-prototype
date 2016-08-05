@@ -543,11 +543,6 @@ bool collectCaseWidths(IntType Key,
     case OpUint64NoArgs:
     case OpUint64OneArg:
       return addFormatWidth(Nd, CaseWidths);
-    case OpEval:
-      if (auto* Sym = dyn_cast<SymbolNode>(Nd->getKid(0)))
-        return collectCaseWidths(Key, Sym->getDefineDefinition(), CaseWidths);
-      Node::Trace.errorSexp("Inside: ", Nd);
-      return false;
   }
 }
 
