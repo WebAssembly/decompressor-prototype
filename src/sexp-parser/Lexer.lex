@@ -222,10 +222,8 @@ id ({letter}|{digit}|[_.])*
 "bit"             return Parser::make_BIT(Driver.getLoc());
 "byte"            return Parser::make_BYTE(Driver.getLoc());
 "case"            return Parser::make_CASE(Driver.getLoc());
-"default"         return Parser::make_DEFAULT(Driver.getLoc());
 "define"          return Parser::make_DEFINE(Driver.getLoc());
 "eval"            return Parser::make_EVAL(Driver.getLoc());
-"eval.default"    return Parser::make_EVAL_DEFAULT(Driver.getLoc());
 "filter"          return Parser::make_FILTER(Driver.getLoc());
 "if"              return Parser::make_IF(Driver.getLoc());
 "int"             return Parser::make_INT(Driver.getLoc());

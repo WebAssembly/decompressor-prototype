@@ -277,9 +277,6 @@ void BinaryReader::readNode() {
     case OpConvert:
       readTernary<ConvertNode>();
       break;
-    case OpDefault:
-      readBinarySymbol<DefaultNode>();
-      break;
     case OpDefine:
       readBinarySymbol<DefineNode>();
       break;
@@ -291,9 +288,6 @@ void BinaryReader::readNode() {
       break;
     case OpEval:
       readUnarySymbol<EvalNode>();
-      break;
-    case OpEvalDefault:
-      readUnarySymbol<EvalDefaultNode>();
       break;
     case OpFilter:
       readNary<FilterNode>();

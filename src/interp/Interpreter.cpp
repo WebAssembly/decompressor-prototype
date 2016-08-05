@@ -81,13 +81,11 @@ IntType Interpreter::eval(const Node* Nd) {
     case OpConvert:
     case OpFilter:
     case OpBlockEndNoArgs:
-    case OpEvalDefault:
     case OpSymbol:
       // TODO(kschimpf): Fix above cases.
       fprintf(stderr, "Not implemented: %s\n", getNodeTypeName(Type));
       fatal("Unable to evaluate filter s-expression");
       break;
-    case OpDefault:
     case OpDefine:
     case OpFile:
     case OpSection:
