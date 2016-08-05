@@ -21,34 +21,34 @@
 (section 'filter'
   (version 0)
 
-  (default 'code'
+  (define 'code'
     (loop (varuint32 6)          # Number of function bodies.
       (eval 'code.function'))
   )
 
-  (default 'code.address'
+  (define 'code.address'
     (varuint32 6)                # alignment
     (varuint32 6)                # offset
   )
 
-  (default 'code.br_table'
+  (define 'code.br_table'
     (uint8)                      # table arity.
     (loop (varuint32 6)          # number of targets.
        (uint32 6))               # target depth.
     (uint32 6)                   # default target depth.
   )
 
-  (default 'code.br_target'
+  (define 'code.br_target'
      (uint8)                     # br arity.
      (varuint32 6)               # relative depth
   )
 
-  (default 'code.call_args'
+  (define 'code.call_args'
     (varuint32 6)                # function arity.
     (varuint32 6)                # function index
   )
 
-  (default 'code.function'
+  (define 'code.function'
     (block
       # block implicitly reads   # bytes using (varuint32) on byte stream.
       (loop (varuint32 6)        # number of locals in function.
@@ -62,12 +62,12 @@
     )
   )
 
-  (default 'code.local'
+  (define 'code.local'
     (varuint32 6)                # number of locals with type
     (uint8 3)                    # type of locals.
   )
 
-  (default 'code.inst'
+  (define 'code.inst'
     (switch (read)
       # TODO(kschimpf) build asts based on arity of opcodes?
       (void)                                 # simple one byte opcode.
@@ -114,7 +114,7 @@
     )
   )
 
-  (default 'code.opcode'
+  (define 'code.opcode'
     # All opcodes single byte except EOB marker 0xFFFFFFFF.
     (opcode (uint8)
       (case (u8.const 0xFF)
@@ -129,82 +129,82 @@
     )
   )
 
-  (default 'data'
+  (define 'data'
     (loop (varuint32 6)        # number of data segments.
       (eval 'data.segment'))
   )
 
-  (default 'data.segment'
+  (define 'data.segment'
     # The offset in linear memory at which to store the data.
      (varuint32 6)
     # The data
     (loop (varuint32 6) (uint8))
   )
 
-  (default 'export'
+  (define 'export'
     (loop (varuint32 6)        # number of exports
       (eval 'export.entry'))
   )
 
-  (default 'export.entry'
+  (define 'export.entry'
     (varuint32 6)              # function index
     (eval 'export.symbol')     # funtion name
   )
 
-  (default 'export.symbol'     # reads in a function name
+  (define 'export.symbol'     # reads in a function name
     (loop (varuint32 6) (uint8))
   )
 
-  (default 'function'
+  (define 'function'
     (loop (varuint32 6)        # Number of type signatures.
        (varuint32 6))          # type signature index
   )
 
-  (default 'import'
+  (define 'import'
     (loop (varuint32 6) (eval 'import.entry'))
   )
 
-  (default 'import.entry'
+  (define 'import.entry'
     (varuint32 6)              # signature index of the import
     (eval 'import.symbol')     # module name
     (eval 'import.symbol')     # function name
   )
 
-  (default 'import.symbol'
+  (define 'import.symbol'
     (loop (varuint32 6) (uint8))
   )
 
-  (default 'memory'
+  (define 'memory'
     (varuint32 6)              # Initial memory suze
     (varuint32 6)              # maximum memory size
     (uint8)                    # 1 if the memory is visible outside the module
   )
 
-  (default 'name'
+  (define 'name'
     (loop (varuint32 6)        # function name count.
       (eval 'name.function'))
   )
 
-  (default 'name.function'
+  (define 'name.function'
     (eval 'name.symbol')       # function name
     (loop (varuint32 6)        # number of local names.
       (eval 'name.symbol'))    # local name
   )
 
-  (default 'name.symbol' # reads in a symbol name
+  (define 'name.symbol' # reads in a symbol name
     (loop (varuint32 6) (uint8))
   )
 
-  (default 'start'
+  (define 'start'
     (varuint32 6)              # start function index.
   )
 
-  (default 'table'
+  (define 'table'
     (loop (varuint32 6)        # Number of table entries.
        (varuint32 6))          # function index.
   )
 
-  (default 'type'
+  (define 'type'
     (loop (varuint32 6)        # number of signatures.
       (uint8)                  # type form (0x040)
       (loop (varuint32 6)      # number of parameters parameters

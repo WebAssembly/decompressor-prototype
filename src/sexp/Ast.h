@@ -335,24 +335,20 @@ class SymbolNode FINAL : public NullaryNode {
   const InternalName& getName() const { return Name; }
   std::string getStringName() const;
   const Node* getDefineDefinition() const { return DefineDefinition; }
-  void setDefineDefinition(Node* Defn);
-  const Node* getDefaultDefinition() const { return DefaultDefinition; }
-  void setDefaultDefinition(Node* Defn);
+  void setDefineDefinition(Node* Defn) {
+    DefineDefinition = Defn;
+  }
 
   static bool implementsClass(NodeType Type) { return Type == OpSymbol; }
 
  private:
   InternalName Name;
   Node* DefineDefinition;
-  Node* DefaultDefinition;
-  bool IsDefineUsingDefault;
   void init(ExternalName& _Name) {
     Name.reserve(Name.size());
     for (const auto& V : _Name)
       Name.emplace_back(V);
     DefineDefinition = nullptr;
-    DefaultDefinition = nullptr;
-    IsDefineUsingDefault = true;
   }
   void clearCaches(NodeVectorType& AdditionalNodes) OVERRIDE;
   void installCaches(NodeVectorType& AdditionalNodes) OVERRIDE;

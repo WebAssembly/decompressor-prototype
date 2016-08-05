@@ -38,7 +38,6 @@
   X(Case,              0x02, "case",             nullptr,           2, 0)      \
   X(Error,             0x03, "error",            nullptr,           0, 0)      \
   X(Eval,              0x04, "eval",             nullptr,           1, 0)      \
-  X(EvalDefault,       0x05, "eval.default",     nullptr,           1, 0)      \
   X(Filter,            0x06, "filter",           nullptr,           0, 0)      \
   X(Loop,              0x07, "loop",             nullptr,           1, 1)      \
   X(LoopUnbounded,     0x08, "loop.unbounded",   nullptr,           0, 1)      \
@@ -92,11 +91,11 @@
                                                                                \
   /* Declarations */                                                           \
   X(Define,            0x60, "define",           nullptr,           2, 0)      \
-  X(Default,           0x61, "default",          nullptr,           2, 0)      \
   X(File,              0x62, "file",             nullptr,           0, 0)      \
   X(Section,           0x63, "section",          nullptr,           1, 0)      \
   X(Undefine,          0x64, "undefine",         nullptr,           1, 0)      \
   X(Version,           0x65, "version",          nullptr,           0, 0)      \
+  X(Rename,            0x66, "rename",           nullptr,           2, 0)      \
                                                                                \
   /* Internal (not opcodes in compressed file) */                              \
   X(UnknownSection,    0xFF, "unknown.section", nullptr,           1, 0)       \
@@ -135,7 +134,6 @@
 #define AST_UNARYNODE_TABLE                                                    \
   X(Block)                                                                     \
   X(Eval)                                                                      \
-  X(EvalDefault)                                                               \
   X(LoopUnbounded)                                                             \
   X(Not)                                                                       \
   X(Peek)                                                                      \
@@ -147,11 +145,11 @@
 #define AST_BINARYNODE_TABLE                                                   \
   X(And)                                                                       \
   X(Case)                                                                      \
-  X(Default)                                                                   \
   X(Define)                                                                    \
   X(IfThen)                                                                    \
   X(Loop)                                                                      \
   X(Or)                                                                        \
+  X(Rename)                                                                    \
   X(Write)                                                                     \
 
 //#define X(tag)
@@ -177,7 +175,6 @@
   X(Case)                                                                      \
   X(Convert)                                                                   \
   X(Define)                                                                    \
-  X(Default)                                                                   \
   X(Loop)                                                                      \
   X(LoopUnbounded)                                                             \
 
@@ -185,7 +182,6 @@
 #define AST_NODE_NEVER_SAME_LINE                                               \
   X(Block)                                                                     \
   X(Case)                                                                      \
-  X(Default)                                                                   \
   X(Define)                                                                    \
   X(IfThen)                                                                    \
   X(IfThenElse)                                                                \

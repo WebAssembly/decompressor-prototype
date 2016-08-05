@@ -93,6 +93,7 @@ void BinaryWriter::writeNode(const Node* Nd) {
     case OpVaruint32NoArgs:
     case OpVaruint64NoArgs:
     case OpLastRead:
+    case OpRename:
     case OpVoid:
     case OpWrite: {
       // Operations that are written out in postorder, with a fixed number of
@@ -189,13 +190,11 @@ void BinaryWriter::writeNode(const Node* Nd) {
       Writer->writeVarint64(cast<I64ConstNode>(Nd)->getValue(), WritePos);
       break;
     }
-    case OpEval:
-    case OpEvalDefault: {
+    case OpEval: {
       Writer->writeUint8(Opcode, WritePos);
       writeNode(Nd->getKid(0));
       break;
     }
-    case OpDefault:
     case OpDefine: {
       writeNode(Nd->getKid(1));
       Writer->writeUint8(Opcode, WritePos);

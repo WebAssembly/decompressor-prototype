@@ -83,12 +83,10 @@ struct IntegerValue {
 %token BYTE          "byte"
 %token CASE          "case"
 %token CLOSEPAREN    ")"
-%token DEFAULT       "default"
 %token DEFINE        "define"
 %token DOT           "."
 %token ERROR         "error"
 %token EVAL          "eval"
-%token EVAL_DEFAULT  "eval.default"
 %token FILTER        "filter"
 %token IF            "if"
 %token IN            "in"
@@ -105,6 +103,7 @@ struct IntegerValue {
 %token OUT           "out"
 %token PEEK          "peek"
 %token READ          "read"
+%token RENAME        "rename"
 %token SECTION       "section"
 %token SEQ           "seq"
 %token SWITCH        "switch"
@@ -227,16 +226,16 @@ declaration
         : "(" declaration_stmt_list ")" {
             $$ = $2;
           }
+        | "(" "rename" symbol symbol ")" {
+            $$ = Driver.create<RenameNode>($3, $4);
+          }
         | "(" "undefine" symbol ")" {
             $$ = Driver.create<UndefineNode>($3);
           }
         ;
 
 declaration_stmt_list
-        : "default" symbol statement {
-            $$ = Driver.create<DefaultNode>($2, $3);
-          }
-        | "define" symbol statement {
+        : "define" symbol statement {
             $$ = Driver.create<DefineNode>($2, $3);
           }
         | declaration_stmt_list statement {
@@ -307,9 +306,6 @@ expression
           }
         | "(" "eval" symbol ")" {
             $$ = Driver.create<EvalNode>($3);
-          }
-        | "(" "eval.default" symbol ")" {
-            $$ = Driver.create<EvalDefaultNode>($3);
           }
         | "(" "write" expression expression ")" {
             $$ = Driver.create<WriteNode>($3, $4);

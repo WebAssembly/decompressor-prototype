@@ -222,10 +222,8 @@ id ({letter}|{digit}|[_.])*
 "bit"             return Parser::make_BIT(Driver.getLoc());
 "byte"            return Parser::make_BYTE(Driver.getLoc());
 "case"            return Parser::make_CASE(Driver.getLoc());
-"default"         return Parser::make_DEFAULT(Driver.getLoc());
 "define"          return Parser::make_DEFINE(Driver.getLoc());
 "eval"            return Parser::make_EVAL(Driver.getLoc());
-"eval.default"    return Parser::make_EVAL_DEFAULT(Driver.getLoc());
 "filter"          return Parser::make_FILTER(Driver.getLoc());
 "if"              return Parser::make_IF(Driver.getLoc());
 "int"             return Parser::make_INT(Driver.getLoc());
@@ -241,6 +239,7 @@ id ({letter}|{digit}|[_.])*
 "out"             return Parser::make_OUT(Driver.getLoc());
 "peek"            return Parser::make_PEEK(Driver.getLoc());
 "read"            return Parser::make_READ(Driver.getLoc());
+"rename"          return Parser::make_RENAME(Driver.getLoc());
 "section"         return Parser::make_SECTION(Driver.getLoc());
 "seq"             return Parser::make_SEQ(Driver.getLoc());
 "switch"          return Parser::make_SWITCH(Driver.getLoc());
@@ -261,6 +260,7 @@ id ({letter}|{digit}|[_.])*
 "0x"{hexdigit}+   return make_HexInteger(Driver, yytext);
 {digit}+          return make_Integer(Driver, yytext);
 -?{digit}+        return make_SignedInteger(Driver, yytext);
+{letter}({letter}|{digit})+ ; Driver.tokenError(yytext);
 "'"               {
                     Buffer.clear();
                     BEGIN(Name);
