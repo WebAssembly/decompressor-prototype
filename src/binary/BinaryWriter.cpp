@@ -131,7 +131,8 @@ void BinaryWriter::writeNode(const Node* Nd) {
     }
     case OpFilter:
     case OpOpcode:
-    case OpSelect:
+    case OpMap:
+    case OpSwitch:
     case OpSequence: {
       // Operations that are written out in postorder, and have a variable
       // number of arguments.

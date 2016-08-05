@@ -37,7 +37,7 @@
     (uint8 3)
   )
   (default 'code.inst'
-    (select (read)
+    (switch (read)
       (void)
       (case (u8.const 0x6) (eval 'code.br_target'))
       (case (u8.const 0x7) (eval 'code.br_target'))

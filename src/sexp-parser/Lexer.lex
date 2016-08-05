@@ -234,6 +234,7 @@ id ({letter}|{digit}|[_.])*
 "i64.const"       return Parser::make_I64_CONST(Driver.getLoc());
 "loop.unbounded"  return Parser::make_LOOP_UNBOUNDED(Driver.getLoc());
 "loop"            return Parser::make_LOOP(Driver.getLoc());
+"map"             return Parser::make_MAP(Driver.getLoc());
 "not"             return Parser::make_NOT(Driver.getLoc());
 "opcode"          return Parser::make_OPCODE(Driver.getLoc());
 "or"              return Parser::make_OR(Driver.getLoc());
@@ -241,8 +242,8 @@ id ({letter}|{digit}|[_.])*
 "peek"            return Parser::make_PEEK(Driver.getLoc());
 "read"            return Parser::make_READ(Driver.getLoc());
 "section"         return Parser::make_SECTION(Driver.getLoc());
-"select"          return Parser::make_SELECT(Driver.getLoc());
 "seq"             return Parser::make_SEQ(Driver.getLoc());
+"switch"          return Parser::make_SWITCH(Driver.getLoc());
 "uint8"           return Parser::make_UINT8(Driver.getLoc());
 "uint32"          return Parser::make_UINT32(Driver.getLoc());
 "uint64"          return Parser::make_UINT64(Driver.getLoc());
