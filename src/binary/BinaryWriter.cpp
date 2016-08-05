@@ -93,6 +93,7 @@ void BinaryWriter::writeNode(const Node* Nd) {
     case OpVaruint32NoArgs:
     case OpVaruint64NoArgs:
     case OpLastRead:
+    case OpRename:
     case OpVoid:
     case OpWrite: {
       // Operations that are written out in postorder, with a fixed number of

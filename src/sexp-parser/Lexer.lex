@@ -241,6 +241,7 @@ id ({letter}|{digit}|[_.])*
 "out"             return Parser::make_OUT(Driver.getLoc());
 "peek"            return Parser::make_PEEK(Driver.getLoc());
 "read"            return Parser::make_READ(Driver.getLoc());
+"rename"          return Parser::make_RENAME(Driver.getLoc());
 "section"         return Parser::make_SECTION(Driver.getLoc());
 "seq"             return Parser::make_SEQ(Driver.getLoc());
 "switch"          return Parser::make_SWITCH(Driver.getLoc());
@@ -261,6 +262,7 @@ id ({letter}|{digit}|[_.])*
 "0x"{hexdigit}+   return make_HexInteger(Driver, yytext);
 {digit}+          return make_Integer(Driver, yytext);
 -?{digit}+        return make_SignedInteger(Driver, yytext);
+{letter}({letter}|{digit})+ ; Driver.tokenError(yytext);
 "'"               {
                     Buffer.clear();
                     BEGIN(Name);

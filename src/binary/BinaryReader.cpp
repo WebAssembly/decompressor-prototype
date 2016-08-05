@@ -283,6 +283,9 @@ void BinaryReader::readNode() {
     case OpDefine:
       readBinarySymbol<DefineNode>();
       break;
+    case OpRename:
+      readBinary<RenameNode>();
+      break;
     case OpError:
       readNullary<ErrorNode>();
       break;

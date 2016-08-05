@@ -81,6 +81,7 @@ IntType Interpreter::eval(const Node* Nd) {
     case OpConvert:
     case OpFilter:
     case OpBlockEndNoArgs:
+    case OpEvalDefault:
     case OpSymbol:
       // TODO(kschimpf): Fix above cases.
       fprintf(stderr, "Not implemented: %s\n", getNodeTypeName(Type));
@@ -91,6 +92,7 @@ IntType Interpreter::eval(const Node* Nd) {
     case OpFile:
     case OpSection:
     case OpUndefine:
+    case OpRename:
     case OpVersion:
     case OpUnknownSection:
       fprintf(stderr, "Evaluating not allowed: %s\n", getNodeTypeName(Type));
@@ -200,14 +202,6 @@ IntType Interpreter::eval(const Node* Nd) {
       }
       fatal("Can't evaluate symbol");
       break;
-    case OpEvalDefault: {
-      if (auto* Sym = dyn_cast<SymbolNode>(Nd->getKid(0))) {
-        ReturnValue = eval(Sym->getDefaultDefinition());
-        break;
-      }
-      fatal("Can't evaluate symbol");
-      break;
-    }
     case OpIfThen:
       if (eval(Nd->getKid(0)) != 0)
         eval(Nd->getKid(1));

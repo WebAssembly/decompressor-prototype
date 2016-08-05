@@ -99,15 +99,11 @@ void Node::installCaches(NodeVectorType& AdditionalNodes) {
 void SymbolNode::clearCaches(NodeVectorType& AdditionalNodes) {
   if (DefineDefinition)
     AdditionalNodes.push_back(DefineDefinition);
-  if (DefaultDefinition)
-    AdditionalNodes.push_back(DefaultDefinition);
 }
 
 void SymbolNode::installCaches(NodeVectorType& AdditionalNodes) {
   if (DefineDefinition)
     AdditionalNodes.push_back(DefineDefinition);
-  if (DefaultDefinition)
-    AdditionalNodes.push_back(DefaultDefinition);
 }
 
 std::string SymbolNode::getStringName() const {
@@ -115,24 +111,6 @@ std::string SymbolNode::getStringName() const {
   for (size_t i = 0; i < Name.size(); ++i)
     Str[i] = char(Name[i]);
   return Str;
-}
-
-void SymbolNode::setDefineDefinition(Node* Defn) {
-  if (Defn) {
-    IsDefineUsingDefault = false;
-    DefineDefinition = Defn;
-  } else {
-    IsDefineUsingDefault = true;
-    DefineDefinition = DefaultDefinition;
-  }
-}
-
-void SymbolNode::setDefaultDefinition(Node* Defn) {
-  assert(Defn != nullptr);
-  DefaultDefinition = Defn;
-  if (IsDefineUsingDefault) {
-    DefineDefinition = Defn;
-  }
 }
 
 SymbolTable::SymbolTable(alloc::Allocator* Alloc) :
@@ -145,7 +123,6 @@ SymbolNode* SymbolTable::getSymbolDefinition(ExternalName& Name) {
   SymbolNode* Node = SymbolMap[Name];
   if (Node == nullptr) {
     Node = create<SymbolNode>(Name);
-    Node->setDefaultDefinition(Error);
     SymbolMap[Name] = Node;
   }
   return Node;
@@ -222,21 +199,33 @@ void SymbolTable::installDefinitions(Node* Root) {
         installDefinitions(Kid);
       return;
     case OpDefine: {
-      auto* DefineSymbol = dyn_cast<SymbolNode>(Root->getKid(0));
-      assert(DefineSymbol);
-      DefineSymbol->setDefineDefinition(Root->getKid(1));
+      if (auto* DefineSymbol = dyn_cast<SymbolNode>(Root->getKid(0))) {
+        DefineSymbol->setDefineDefinition(Root->getKid(1));
+        return;
+      }
+      Node::Trace.errorSexp("Malformed: ", Root);
+      fatal("Malformed define s-expression found!");
       return;
     }
-    case OpDefault: {
-      auto* DefaultSymbol = dyn_cast<SymbolNode>(Root->getKid(0));
-      assert(DefaultSymbol);
-      DefaultSymbol->setDefaultDefinition(Root->getKid(1));
+    case OpRename: {
+      if (auto* OldSymbol = dyn_cast<SymbolNode>(Root->getKid(0))) {
+        if (auto* NewSymbol = dyn_cast<SymbolNode>(Root->getKid(1))) {
+          Node *Defn = const_cast<Node*>(OldSymbol->getDefineDefinition());
+          NewSymbol->setDefineDefinition(Defn);
+          return;
+        }
+      }
+      Node::Trace.errorSexp("Malformed: ", Root);
+      fatal("Malformed rename s-expression found!");
       return;
     }
     case OpUndefine: {
-      auto* UndefineSymbol = dyn_cast<SymbolNode>(Root->getKid(0));
-      assert(UndefineSymbol);
-      UndefineSymbol->setDefineDefinition(nullptr);
+      if (auto* UndefineSymbol = dyn_cast<SymbolNode>(Root->getKid(0))) {
+        UndefineSymbol->setDefineDefinition(nullptr);
+        return;
+      }
+      Node::Trace.errorSexp("Can't undefine: ", Root);
+      fatal("Malformed undefine s-expression found!");
     }
   }
 }

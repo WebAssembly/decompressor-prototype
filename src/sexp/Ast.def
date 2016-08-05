@@ -97,6 +97,7 @@
   X(Section,           0x63, "section",          nullptr,           1, 0)      \
   X(Undefine,          0x64, "undefine",         nullptr,           1, 0)      \
   X(Version,           0x65, "version",          nullptr,           0, 0)      \
+  X(Rename,            0x66, "rename",           nullptr,           2, 0)      \
                                                                                \
   /* Internal (not opcodes in compressed file) */                              \
   X(UnknownSection,    0xFF, "unknown.section", nullptr,           1, 0)       \
@@ -152,6 +153,7 @@
   X(IfThen)                                                                    \
   X(Loop)                                                                      \
   X(Or)                                                                        \
+  X(Rename)                                                                    \
   X(Write)                                                                     \
 
 //#define X(tag)

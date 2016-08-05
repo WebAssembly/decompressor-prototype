@@ -105,6 +105,7 @@ struct IntegerValue {
 %token OUT           "out"
 %token PEEK          "peek"
 %token READ          "read"
+%token RENAME        "rename"
 %token SECTION       "section"
 %token SEQ           "seq"
 %token SWITCH        "switch"
@@ -226,6 +227,9 @@ constant_expression
 declaration
         : "(" declaration_stmt_list ")" {
             $$ = $2;
+          }
+        | "(" "rename" symbol symbol ")" {
+            $$ = Driver.create<RenameNode>($3, $4);
           }
         | "(" "undefine" symbol ")" {
             $$ = Driver.create<UndefineNode>($3);

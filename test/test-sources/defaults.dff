@@ -1,26 +1,26 @@
 (section 'filter'
   (version 0)
-  (default 'code'
+  (define 'code'
     (loop (varuint32 6) (eval 'code.function'))
   )
-  (default 'code.address'
+  (define 'code.address'
     (varuint32 6)
     (varuint32 6)
   )
-  (default 'code.br_table'
+  (define 'code.br_table'
     (uint8)
     (loop (varuint32 6) (uint32 6))
     (uint32 6)
   )
-  (default 'code.br_target'
+  (define 'code.br_target'
     (uint8)
     (varuint32 6)
   )
-  (default 'code.call_args'
+  (define 'code.call_args'
     (varuint32 6)
     (varuint32 6)
   )
-  (default 'code.function'
+  (define 'code.function'
     (block
       (loop (varuint32 6) (eval 'code.local'))
       (loop.unbounded
@@ -32,11 +32,11 @@
       )
     )
   )
-  (default 'code.local'
+  (define 'code.local'
     (varuint32 6)
     (uint8 3)
   )
-  (default 'code.inst'
+  (define 'code.inst'
     (switch (read)
       (void)
       (case (u8.const 0x6) (eval 'code.br_target'))
@@ -78,7 +78,7 @@
       (case (u32.const 0xffffffff) (block.end))
     )
   )
-  (default 'code.opcode'
+  (define 'code.opcode'
     (opcode (uint8)
       (case (u8.const 0xff)
         (opcode (uint8)
@@ -91,57 +91,57 @@
       )
     )
   )
-  (default 'data'
+  (define 'data'
     (loop (varuint32 6) (eval 'data.segment'))
   )
-  (default 'data.segment'
+  (define 'data.segment'
     (varuint32 6)
     (loop (varuint32 6) (uint8))
   )
-  (default 'export'
+  (define 'export'
     (loop (varuint32 6) (eval 'export.entry'))
   )
-  (default 'export.entry'
+  (define 'export.entry'
     (varuint32 6)
     (eval 'export.symbol')
   )
-  (default 'export.symbol'
+  (define 'export.symbol'
     (loop (varuint32 6) (uint8))
   )
-  (default 'function'
+  (define 'function'
     (loop (varuint32 6) (varuint32 6))
   )
-  (default 'import'
+  (define 'import'
     (loop (varuint32 6) (eval 'import.entry'))
   )
-  (default 'import.entry'
+  (define 'import.entry'
     (varuint32 6)
     (eval 'import.symbol')
     (eval 'import.symbol')
   )
-  (default 'import.symbol'
+  (define 'import.symbol'
     (loop (varuint32 6) (uint8))
   )
-  (default 'memory'
+  (define 'memory'
     (varuint32 6)
     (varuint32 6)
     (uint8)
   )
-  (default 'name'
+  (define 'name'
     (loop (varuint32 6) (eval 'name.function'))
   )
-  (default 'name.function'
+  (define 'name.function'
     (eval 'name.symbol')
     (loop (varuint32 6) (eval 'name.symbol'))
   )
-  (default 'name.symbol'
+  (define 'name.symbol'
     (loop (varuint32 6) (uint8))
   )
-  (default 'start' (varuint32 6))
-  (default 'table'
+  (define 'start' (varuint32 6))
+  (define 'table'
     (loop (varuint32 6) (varuint32 6))
   )
-  (default 'type'
+  (define 'type'
     (loop (varuint32 6)
       (uint8)
       (loop (varuint32 6) (uint8))
