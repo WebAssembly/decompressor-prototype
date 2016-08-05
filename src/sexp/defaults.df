@@ -68,7 +68,7 @@
   )
 
   (default 'code.inst'
-    (select (read)
+    (switch (read)
       # TODO(kschimpf) build asts based on arity of opcodes?
       (void)                                 # simple one byte opcode.
       # control flow operators.

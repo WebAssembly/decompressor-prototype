@@ -96,14 +96,15 @@ IntType Interpreter::eval(const Node* Nd) {
       fprintf(stderr, "Evaluating not allowed: %s\n", getNodeTypeName(Type));
       fatal("Unable to evaluate filter s-expression");
       break;
+    case OpMap:
     case OpOpcode:
       ReturnValue = write(read(Nd), Nd);
       break;
     case OpLastRead:
       ReturnValue = read(Nd);
       break;
-    case OpSelect: {
-      const SelectNode* Sel = cast<SelectNode>(Nd);
+    case OpSwitch: {
+      const auto* Sel = cast<SwitchNode>(Nd);
       IntType Selector = eval(Sel->getKid(0));
       if (const auto* Case = Sel->getCase(Selector))
         eval(Case);
@@ -344,7 +345,12 @@ IntType Interpreter::read(const Node* Nd) {
       fprintf(stderr, "Read not implemented: %s\n", getNodeTypeName(Type));
       fatal("Read not implemented");
 
-      return 0;
+      return LastReadValue = 0;
+    case OpMap: {
+      const auto *Map = cast<MapNode>(Nd);
+      const CaseNode *Case = Map->getCase(read(Map->getKid(0)));
+      return read(Case->getKid(1));
+    }
     case OpOpcode: {
       return LastReadValue = readOpcode(Nd, 0, 0);
     }
@@ -463,6 +469,7 @@ IntType Interpreter::write(IntType Value, const wasm::filt::Node* Nd) {
     case OpU8Const:
     case OpU32Const:
     case OpU64Const:
+    case OpMap:
     case OpPeek:
     case OpVoid:
       break;

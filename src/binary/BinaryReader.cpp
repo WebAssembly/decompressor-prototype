@@ -331,8 +331,11 @@ void BinaryReader::readNode() {
     case OpOpcode:
       readNary<OpcodeNode>();
       break;
-    case OpSelect:
-      readNary<SelectNode>();
+    case OpMap:
+      readNary<MapNode>();
+      break;
+    case OpSwitch:
+      readNary<SwitchNode>();
       break;
     case OpSequence:
       readNary<SequenceNode>();

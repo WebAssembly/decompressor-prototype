@@ -42,7 +42,7 @@
   X(Filter,            0x06, "filter",           nullptr,           0, 0)      \
   X(Loop,              0x07, "loop",             nullptr,           1, 1)      \
   X(LoopUnbounded,     0x08, "loop.unbounded",   nullptr,           0, 1)      \
-  X(Select,            0x09, "select",           nullptr,           1, 0)      \
+  X(Switch,            0x09, "switch",           nullptr,           1, 0)      \
   X(Sequence,          0x0a, "seq",              nullptr,           0, 0)      \
   X(IfThen,            0x0b, "if",               "IfThen",          1, 0)      \
   X(IfThenElse,        0x0c, "if",               "IfThenElse",      1, 0)      \
@@ -78,6 +78,8 @@
   X(Or,                0x31, "or",               nullptr,           2, 0)      \
   X(Not,               0x32, "not",              nullptr,           1, 0)      \
   X(Stream,            0x33, "stream",           nullptr,           0, 0)      \
+                                                                               \
+  X(Map,               0x39, "map",              nullptr,           1, 0)      \
                                                                                \
   /* I/O (and tree) operations  */                                             \
   X(Peek,              0x40, "peek",             nullptr,           1, 0)      \
@@ -150,11 +152,12 @@
   X(IfThen)                                                                    \
   X(Loop)                                                                      \
   X(Or)                                                                        \
-  X(Write)                                                                       \
+  X(Write)                                                                     \
 
 //#define X(tag)
 #define AST_SELECTNODE_TABLE                                                   \
-  X(Select)                                                                    \
+  X(Switch)                                                                    \
+  X(Map)                                                                       \
 
 //#define X(tag)
 #define AST_NARYNODE_TABLE                                                     \
@@ -189,7 +192,8 @@
   X(Loop)                                                                      \
   X(LoopUnbounded)                                                             \
   X(Opcode)                                                                    \
-  X(Select)                                                                    \
+  X(Switch)                                                                    \
+  X(Map)                                                                       \
   X(Sequence)                                                                  \
   X(Section)                                                                   \
   X(Undefine)                                                                  \

@@ -97,6 +97,7 @@ struct IntegerValue {
 %token I64_CONST     "i64.const"
 %token LOOP          "loop"
 %token LOOP_UNBOUNDED "loop.unbounded"
+%token MAP           "map"
 %token NOT           "not"
 %token OPCODE        "opcode"
 %token OPENPAREN     "("
@@ -105,8 +106,8 @@ struct IntegerValue {
 %token PEEK          "peek"
 %token READ          "read"
 %token SECTION       "section"
-%token SELECT        "select"
 %token SEQ           "seq"
+%token SWITCH        "switch"
 %token UINT8         "uint8"
 %token UINT32        "uint32"
 %token UINT64        "uint64"
@@ -130,7 +131,7 @@ struct IntegerValue {
 %type <wasm::filt::Node *> block_stmt_list
 %type <wasm::filt::Node *> bool_expression
 %type <wasm::filt::Node *> case
-%type <wasm::filt::SelectNode *> case_list
+%type <wasm::filt::SwitchNode *> case_list
 %type <wasm::filt::Node *> case_stmt_list
 %type <wasm::filt::Node *> constant_expression
 %type <wasm::filt::Node *> declaration
@@ -141,6 +142,10 @@ struct IntegerValue {
 %type <wasm::filt::Node *> fixed_format_directive
 %type <wasm::filt::Node *> format_directive
 %type <wasm::filt::Node *> loop_body
+%type <wasm::filt::Node *> map_expression
+%type <wasm::filt::Node *> map_case;
+%type <wasm::filt::MapNode *> map_case_list
+%type <wasm::filt::Node *> map_case_expr
 %type <wasm::filt::Node *> opcode_case
 %type <wasm::filt::Node *> opcode_case_expr
 %type <wasm::filt::Node *> opcode_expression
@@ -173,7 +178,7 @@ case    : "(" "case" case_stmt_list ")" { $$ = $3; }
 
 case_list
         : expression statement { // selector / default statement.
-            $$ = Driver.create<SelectNode>();
+            $$ = Driver.create<SwitchNode>();
             $$->append($1);
             $$->append($2);
           }
@@ -184,7 +189,7 @@ case_list
         ;
 
 case_stmt_list
-        : constant_expression statement { // case index / first statement of case.
+        : constant_expression statement { // case index/first statement of case.
             $$ = Driver.create<CaseNode>($1, $2);
           }
         | case_stmt_list statement { // remaining statements of case.
@@ -293,6 +298,7 @@ expression
         : format_directive { $$ = $1; }
         | constant_expression { $$ = $1; }
         | bool_expression { $$ = $1; }
+        | map_expression { $$ = $1; }
         | "(" "block.end" ")" {
             $$ = Driver.create<BlockEndNoArgsNode>();
           }
@@ -389,6 +395,31 @@ fixed_format_directive
           }
         ;
 
+map_expression
+        : "(" "map" map_case_list ")" { $$ = $3; }
+        ;
+
+map_case_list
+        : expression map_case {
+            $$ = Driver.create<MapNode>();
+          }
+        | map_case_list map_case {
+            $$ = $1;
+            $1->append($2);
+          }
+        ;
+
+map_case
+        : "(" "case" constant_expression map_case_expr ")" {
+            $$ = Driver.create<CaseNode>($3, $4);
+           }
+        ;
+
+map_case_expr
+        : constant_expression { $$ = $1; }
+        | map_expression { $$ = $1; }
+        ;
+
 opcode_expression
         : "(" "opcode" opcode_expr_list ")" {
             $$ = $3;
@@ -479,7 +510,7 @@ statement
             $$ = Driver.create<IfThenElseNode>($3, $4, $5);
           }
         | "(" loop_body ")" { $$ = $2; }
-        | "(" "select" case_list ")" {
+        | "(" "switch" case_list ")" {
             $$ = $3;
           }
         | "(" "seq" seq_stmt_list ")" { $$ = $3; }
