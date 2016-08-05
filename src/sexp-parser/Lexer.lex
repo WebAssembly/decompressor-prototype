@@ -214,6 +214,7 @@ id ({letter}|{digit}|[_.])*
 [\n]+             Driver.extendLocationLines(yyleng); Driver.stepLocation();
 ")"               return Parser::make_CLOSEPAREN(Driver.getLoc());
 "("               return Parser::make_OPENPAREN(Driver.getLoc());
+"."               return Parser::make_DOT(Driver.getLoc());
 "and"             return Parser::make_AND(Driver.getLoc());
 "ast"             return Parser::make_AST(Driver.getLoc());
 "block"           return Parser::make_BLOCK(Driver.getLoc());
@@ -242,7 +243,6 @@ id ({letter}|{digit}|[_.])*
 "section"         return Parser::make_SECTION(Driver.getLoc());
 "select"          return Parser::make_SELECT(Driver.getLoc());
 "seq"             return Parser::make_SEQ(Driver.getLoc());
-"stream"          return Parser::make_STREAM(Driver.getLoc());
 "uint8"           return Parser::make_UINT8(Driver.getLoc());
 "uint32"          return Parser::make_UINT32(Driver.getLoc());
 "uint64"          return Parser::make_UINT64(Driver.getLoc());

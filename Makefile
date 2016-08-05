@@ -542,6 +542,10 @@ test-parser: $(TEST_EXECDIR)/TestParser
 	$< -w $(SEXP_DEFAULTS) | diff - $(TEST_SRCS_DIR)/defaults.df
 	$< --expect-fail $(TEST_SRCS_DIR)/MismatchedParens.df 2>&1 | \
 		diff - $(TEST_SRCS_DIR)/MismatchedParens.df-out
+	$< -w -f $(TEST_SRCS_DIR)/defaults.dff | \
+		diff - $(TEST_SRCS_DIR)/defaults.dff
+	$< -w $(TEST_SRCS_DIR)/defaults.df | \
+		diff - $(TEST_SRCS_DIR)/defaults.df
 	@echo "*** parser tests passed ***"
 
 .PHONY: test-parser

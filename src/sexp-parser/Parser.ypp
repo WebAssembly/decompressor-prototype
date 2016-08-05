@@ -85,6 +85,7 @@ struct IntegerValue {
 %token CLOSEPAREN    ")"
 %token DEFAULT       "default"
 %token DEFINE        "define"
+%token DOT           "."
 %token ERROR         "error"
 %token EVAL          "eval"
 %token EVAL_DEFAULT  "eval.default"
@@ -106,7 +107,6 @@ struct IntegerValue {
 %token SECTION       "section"
 %token SELECT        "select"
 %token SEQ           "seq"
-%token STREAM        "stream"
 %token UINT8         "uint8"
 %token UINT32        "uint32"
 %token UINT64        "uint64"
@@ -142,8 +142,9 @@ struct IntegerValue {
 %type <wasm::filt::Node *> format_directive
 %type <wasm::filt::Node *> loop_body
 %type <wasm::filt::Node *> opcode_case
-%type <wasm::filt::Node *> opcode_selector
-%type <wasm::filt::OpcodeNode *> opcode_expression
+%type <wasm::filt::Node *> opcode_case_expr
+%type <wasm::filt::Node *> opcode_expression
+%type <wasm::filt::OpcodeNode *> opcode_expr_list
 %type <wasm::filt::Node *> stream
 %type <wasm::filt::Node *> stream_conv
 %type <wasm::filt::Node *> stream_conv_list
@@ -320,6 +321,7 @@ expression
 
 format_directive
         : fixed_format_directive { $$ = $1; }
+        | opcode_expression { $$ = $1; }
         | "(" "varint32" ")" {
             $$ = Driver.create<Varint32NoArgsNode>();
           }
@@ -388,28 +390,30 @@ fixed_format_directive
         ;
 
 opcode_expression
-        : opcode_selector {
+        : "(" "opcode" opcode_expr_list ")" {
+            $$ = $3;
+          }
+        ;
+
+opcode_expr_list
+        : fixed_format_directive {
             $$ = Driver.create<OpcodeNode>();
             $$->append($1);
           }
-        | opcode_expression opcode_case {
+        | opcode_expr_list opcode_case {
             $$ = $1;
             $$->append($2);
           }
         ;
 
-opcode_selector
-        : fixed_format_directive { $$ = $1; }
-        | "(" "eval" symbol ")" {
-            /* TODO(karlschimpf): Should we allow this? */
-            $$ = Driver.create<EvalNode>($3);
-          }
-        ;
-
 opcode_case
-        : "(" "case" constant_expression expression  ")" {
+        : "(" "case" constant_expression opcode_case_expr  ")" {
             $$ = Driver.create<CaseNode>($3, $4);
           }
+
+opcode_case_expr
+        : fixed_format_directive { $$ = $1; }
+        | opcode_expression { $$ = $1; }
         ;
 
 version : "(" "version" INTEGER ")" {
@@ -482,8 +486,8 @@ statement
         ;
 
 stream
-        : "(" "stream" stream_kind stream_type ")" {
-            $$ = Driver.create<StreamNode>($3, $4);
+        : stream_kind "." stream_type {
+            $$ = Driver.create<StreamNode>($1, $3);
           }
         ;
 
