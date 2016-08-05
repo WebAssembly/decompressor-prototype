@@ -53,6 +53,7 @@ namespace wasm {
 namespace filt {
 
 class Node;
+class SymbolNode;
 class SymbolTable;
 
 typedef std::string ExternalName;
@@ -82,6 +83,46 @@ struct AstTraitsType {
 };
 
 extern AstTraitsType AstTraits[NumNodeTypes];
+
+class SymbolTable {
+  SymbolTable(const SymbolTable&) = delete;
+  SymbolTable& operator=(const SymbolTable&) = delete;
+
+ public:
+  explicit SymbolTable(alloc::Allocator* Alloc);
+  ~SymbolTable() { clear(); }
+  // Gets existing symbol if known. Otherwise returns nullptr.
+  SymbolNode* getSymbol(ExternalName& Name) { return SymbolMap[Name]; }
+  // Gets existing symbol if known. Otherwise returns newly created symbol.
+  // Used to keep symbols unique within filter s-expressions.
+  SymbolNode* getSymbolDefinition(ExternalName& Name);
+  // Install definitions in tree defined by root.
+  void install(Node* Root);
+  alloc::Allocator* getAllocator() const { return Alloc; }
+  void clear() { SymbolMap.clear(); }
+  size_t getNextCreationIndex() {
+    return ++NextCreationIndex;
+  }
+
+  template <typename T, typename... Args>
+  T* create(Args&&... args) {
+    return Alloc->create<T>(*this, std::forward<Args>(args)...);
+  }
+
+ private:
+  alloc::Allocator* Alloc;
+  Node* Error;
+  size_t NextCreationIndex;
+  // TODO(KarlSchimpf): Use arena allocator on map.
+  std::map<ExternalName, SymbolNode*> SymbolMap;
+  void installDefinitions(Node* Root);
+  void clearSubtreeCaches(Node* Nd,
+                          VisitedNodesType& VisitedNodes,
+                          NodeVectorType& AdditionalNodes);
+  void installSubtreeCaches(Node* Nd,
+                            VisitedNodesType& VisitedNoes,
+                            NodeVectorType& AdditionalNodes);
+};
 
 class Node {
   Node(const Node&) = delete;
@@ -142,6 +183,8 @@ class Node {
   // WARNING: Only supported if underlying type allows.
   virtual void append(Node* Kid);
 
+  virtual Ordering compare(const Node &N) const;
+
   // General iterators for walking kids.
   Iterator begin() const { return Iterator(this, 0); }
   Iterator end() const { return Iterator(this, getNumKids()); }
@@ -152,10 +195,19 @@ class Node {
 
  protected:
   NodeType Type;
-  Node(alloc::Allocator*, NodeType Type) : Type(Type) {}
+  size_t CreationIndex;
+  Node(SymbolTable &Symtab, NodeType Type)
+      : Type(Type), CreationIndex(Symtab.getNextCreationIndex()) {}
   virtual void clearCaches(NodeVectorType& AdditionalNodes);
   virtual void installCaches(NodeVectorType& AdditionalNodes);
 };
+
+bool operator<(const Node &N1, const Node &N2);
+bool operator<=(const Node &N1, const Node &N2);
+bool operator==(const Node &N1, const Node& N2);
+bool operator>=(const Node &N1, const Node& N2);
+bool operator>(const Node &N1, const Node& N2);
+bool operator!=(const Node& N1, const Node& N2);
 
 class NullaryNode : public Node {
   NullaryNode(const NullaryNode&) = delete;
@@ -173,7 +225,7 @@ class NullaryNode : public Node {
   void setKid(int Index, Node* N) FINAL;
 
  protected:
-  NullaryNode(alloc::Allocator* Alloc, NodeType Type) : Node(Alloc, Type) {}
+  NullaryNode(SymbolTable &Symtab, NodeType Type) : Node(Symtab, Type) {}
 };
 
 #define X(tag)                                                             \
@@ -183,9 +235,8 @@ class NullaryNode : public Node {
     virtual void forceCompilation();                                       \
                                                                            \
    public:                                                                 \
-    tag##Node() : NullaryNode(alloc::Allocator::Default, Op##tag) {}       \
-    explicit tag##Node(alloc::Allocator* Alloc)                            \
-        : NullaryNode(Alloc, Op##tag) {}                                   \
+    explicit tag##Node(SymbolTable &Symtab)                                \
+        : NullaryNode(Symtab, Op##tag) {}                                  \
     ~tag##Node() OVERRIDE {}                                               \
     static bool implementsClass(NodeType Type) { return Type == Op##tag; } \
   };
@@ -202,14 +253,10 @@ class StreamNode : public NullaryNode {
   static constexpr uint8_t EncodingMask = EncodingLimit - 1;
 
  public:
-  StreamNode(decode::StreamKind StrmKind, decode::StreamType StrmType)
-      : NullaryNode(alloc::Allocator::Default, OpStream),
-        StrmKind(StrmKind),
-        StrmType(StrmType) {}
-  StreamNode(alloc::Allocator* Alloc,
+  StreamNode(SymbolTable &Symtab,
              decode::StreamKind StrmKind,
              decode::StreamType StrmType)
-      : NullaryNode(Alloc, OpStream), StrmKind(StrmKind), StrmType(StrmType) {}
+      : NullaryNode(Symtab, OpStream), StrmKind(StrmKind), StrmType(StrmType) {}
   ~StreamNode() OVERRIDE {}
 
   decode::StreamKind getStreamKind() const { return StrmKind; }
@@ -255,11 +302,11 @@ class IntegerNode : public NullaryNode {
   decode::ValueFormat Format;
   // Note: ValueFormat provided so that we can echo back out same
   // representation as when lexing s-expressions.
-  IntegerNode(alloc::Allocator* Alloc,
+  IntegerNode(SymbolTable &Symtab,
               NodeType Type,
               decode::IntType Value,
               decode::ValueFormat Format = decode::ValueFormat::Decimal)
-      : NullaryNode(Alloc, Type), Value(Value), Format(Format) {}
+      : NullaryNode(Symtab, Type), Value(Value), Format(Format) {}
 };
 
 #define X(tag)                                                              \
@@ -270,13 +317,10 @@ class IntegerNode : public NullaryNode {
     virtual void forceCompilation();                                        \
                                                                             \
    public:                                                                  \
-    tag##Node(decode::IntType Value,                                        \
-              decode::ValueFormat Format = decode::ValueFormat::Decimal)    \
-        : IntegerNode(alloc::Allocator::Default, Op##tag, Value, Format) {} \
-    tag##Node(alloc::Allocator* Alloc,                                      \
+    tag##Node(SymbolTable &Symtab,                                          \
               decode::IntType Value,                                        \
               decode::ValueFormat Format = decode::ValueFormat::Decimal)    \
-        : IntegerNode(Alloc, Op##tag, Value, Format) {}                     \
+        : IntegerNode(Symtab, Op##tag, Value, Format) {}                    \
     ~tag##Node() OVERRIDE {}                                                \
                                                                             \
     static bool implementsClass(NodeType Type) { return Type == Op##tag; }  \
@@ -290,13 +334,8 @@ class SymbolNode FINAL : public NullaryNode {
   SymbolNode() = delete;
 
  public:
-  explicit SymbolNode(ExternalName& _Name)
-      : NullaryNode(alloc::Allocator::Default, OpSymbol),
-        Name(alloc::Allocator::Default) {
-    init(_Name);
-  }
-  SymbolNode(alloc::Allocator* Alloc, ExternalName& _Name)
-      : NullaryNode(Alloc, OpSymbol), Name(Alloc) {
+  SymbolNode(SymbolTable &Symtab, ExternalName& _Name)
+      : NullaryNode(Symtab, OpSymbol), Name(Symtab.getAllocator()) {
     init(_Name);
   }
   ~SymbolNode() OVERRIDE {}
@@ -326,37 +365,6 @@ class SymbolNode FINAL : public NullaryNode {
   void installCaches(NodeVectorType& AdditionalNodes) OVERRIDE;
 };
 
-class SymbolTable {
-  SymbolTable(const SymbolTable&) = delete;
-  SymbolTable& operator=(const SymbolTable&) = delete;
-
- public:
-  explicit SymbolTable(alloc::Allocator* Alloc);
-  ~SymbolTable() { clear(); }
-  // Gets existing symbol if known. Otherwise returns nullptr.
-  SymbolNode* getSymbol(ExternalName& Name) { return SymbolMap[Name]; }
-  // Gets existing symbol if known. Otherwise returns newly created symbol.
-  // Used to keep symbols unique within filter s-expressions.
-  SymbolNode* getSymbolDefinition(ExternalName& Name);
-  // Install definitions in tree defined by root.
-  void install(Node* Root);
-  alloc::Allocator* getAllocator() const { return Alloc; }
-  void clear() { SymbolMap.clear(); }
-
- private:
-  alloc::Allocator* Alloc;
-  Node* Error;
-  // TODO(KarlSchimpf): Use arena allocator on map.
-  std::map<ExternalName, SymbolNode*> SymbolMap;
-  void installDefinitions(Node* Root);
-  void clearSubtreeCaches(Node* Nd,
-                          VisitedNodesType& VisitedNodes,
-                          NodeVectorType& AdditionalNodes);
-  void installSubtreeCaches(Node* Nd,
-                            VisitedNodesType& VisitedNoes,
-                            NodeVectorType& AdditionalNodes);
-};
-
 class UnaryNode : public Node {
   UnaryNode(const UnaryNode&) = delete;
   UnaryNode& operator=(const UnaryNode&) = delete;
@@ -374,8 +382,8 @@ class UnaryNode : public Node {
 
  protected:
   Node* Kids[1];
-  UnaryNode(alloc::Allocator* Alloc, NodeType Type, Node* Kid)
-      : Node(Alloc, Type) {
+  UnaryNode(SymbolTable &Symtab, NodeType Type, Node* Kid)
+      : Node(Symtab, Type) {
     Kids[0] = Kid;
   }
 };
@@ -387,10 +395,8 @@ class UnaryNode : public Node {
     virtual void forceCompilation();                                       \
                                                                            \
    public:                                                                 \
-    explicit tag##Node(Node* Kid)                                          \
-        : UnaryNode(alloc::Allocator::Default, Op##tag, Kid) {}            \
-    tag##Node(alloc::Allocator* Alloc, Node* Kid)                          \
-        : UnaryNode(Alloc, Op##tag, Kid) {}                                \
+    tag##Node(SymbolTable &Symtab, Node* Kid)                              \
+        : UnaryNode(Symtab, Op##tag, Kid) {}                               \
     ~tag##Node() OVERRIDE {}                                               \
     static bool implementsClass(NodeType Type) { return Op##tag == Type; } \
   };
@@ -414,13 +420,8 @@ class BinaryNode : public Node {
 
  protected:
   Node* Kids[2];
-  BinaryNode(NodeType Type, Node* Kid1, Node* Kid2)
-      : Node(alloc::Allocator::Default, Type) {
-    Kids[0] = Kid1;
-    Kids[1] = Kid2;
-  }
-  BinaryNode(alloc::Allocator* Alloc, NodeType Type, Node* Kid1, Node* Kid2)
-      : Node(Alloc, Type) {
+  BinaryNode(SymbolTable &Symtab, NodeType Type, Node* Kid1, Node* Kid2)
+      : Node(Symtab, Type) {
     Kids[0] = Kid1;
     Kids[1] = Kid2;
   }
@@ -433,9 +434,8 @@ class BinaryNode : public Node {
     virtual void forceCompilation();                                       \
                                                                            \
    public:                                                                 \
-    tag##Node(Node* Kid1, Node* Kid2) : BinaryNode(Op##tag, Kid1, Kid2) {} \
-    tag##Node(alloc::Allocator* Alloc, Node* Kid1, Node* Kid2)             \
-        : BinaryNode(Alloc, Op##tag, Kid1, Kid2) {}                        \
+    tag##Node(SymbolTable &Symtab, Node* Kid1, Node* Kid2)                 \
+        : BinaryNode(Symtab, Op##tag, Kid1, Kid2) {}                       \
     ~tag##Node() OVERRIDE {}                                               \
     static bool implementsClass(NodeType Type) { return Op##tag == Type; } \
   };
@@ -459,18 +459,12 @@ class TernaryNode : public Node {
 
  protected:
   Node* Kids[3];
-  TernaryNode(NodeType Type, Node* Kid1, Node* Kid2, Node* Kid3)
-      : Node(alloc::Allocator::Default, Type) {
-    Kids[0] = Kid1;
-    Kids[1] = Kid2;
-    Kids[2] = Kid3;
-  }
-  TernaryNode(alloc::Allocator* Alloc,
+  TernaryNode(SymbolTable &Symtab,
               NodeType Type,
               Node* Kid1,
               Node* Kid2,
               Node* Kid3)
-      : Node(Alloc, Type) {
+      : Node(Symtab, Type) {
     Kids[0] = Kid1;
     Kids[1] = Kid2;
     Kids[1] = Kid3;
@@ -484,10 +478,8 @@ class TernaryNode : public Node {
     virtual void forceCompilation();                                       \
                                                                            \
    public:                                                                 \
-    tag##Node(Node* Kid1, Node* Kid2, Node* Kid3)                          \
-        : TernaryNode(Op##tag, Kid1, Kid2, Kid3) {}                        \
-    tag##Node(alloc::Allocator* Alloc, Node* Kid1, Node* Kid2, Node* Kid3) \
-        : TernaryNode(Alloc, Op##tag, Kid1, Kid2, Kid3) {}                 \
+    tag##Node(SymbolTable &Symtab, Node* Kid1, Node* Kid2, Node* Kid3)     \
+        : TernaryNode(Symtab, Op##tag, Kid1, Kid2, Kid3) {}                \
     ~tag##Node() OVERRIDE {}                                               \
     static bool implementsClass(NodeType Type) { return Op##tag == Type; } \
   };
@@ -512,9 +504,9 @@ class NaryNode : public Node {
 
  protected:
   ARENA_VECTOR(Node*) Kids;
-  explicit NaryNode(NodeType Type) : Node(alloc::Allocator::Default, Type) {}
-  NaryNode(alloc::Allocator* Alloc, NodeType Type)
-      : Node(Alloc, Type), Kids(alloc::TemplateAllocator<Node*>(Alloc)) {}
+  NaryNode(SymbolTable &Symtab, NodeType Type)
+      : Node(Symtab, Type),
+        Kids(alloc::TemplateAllocator<Node*>(Symtab.getAllocator())) {}
 };
 
 #define X(tag)                                                                \
@@ -524,8 +516,7 @@ class NaryNode : public Node {
     virtual void forceCompilation();                                          \
                                                                               \
    public:                                                                    \
-    tag##Node() : NaryNode(Op##tag) {}                                        \
-    explicit tag##Node(alloc::Allocator* Alloc) : NaryNode(Alloc, Op##tag) {} \
+    explicit tag##Node(SymbolTable &Symtab) : NaryNode(Symtab, Op##tag) {}    \
     ~tag##Node() OVERRIDE {}                                                  \
     static bool implementsClass(NodeType Type) { return Op##tag == Type; }    \
   };
@@ -545,9 +536,8 @@ class SelectBaseNode : public NaryNode {
   // TODO(karlschimpf) Hook this up to allocator.
   std::unordered_map<decode::IntType, const CaseNode*> LookupMap;
 
-  SelectBaseNode(NodeType Type) : NaryNode(Type) {}
-  SelectBaseNode(alloc::Allocator* Alloc, NodeType Type)
-      : NaryNode(Alloc, Type) {}
+  SelectBaseNode(SymbolTable &Symtab, NodeType Type)
+      : NaryNode(Symtab, Type) {}
 };
 
 #define X(tag)                                                             \
@@ -557,9 +547,8 @@ class SelectBaseNode : public NaryNode {
     virtual void forceCompilation();                                       \
                                                                            \
    public:                                                                 \
-    tag##Node() : SelectBaseNode(Op##tag) {}                               \
-    explicit tag##Node(alloc::Allocator* Alloc)                            \
-        : SelectBaseNode(Alloc, Op##tag) {}                                \
+    explicit tag##Node(SymbolTable &Symtab)                                \
+        : SelectBaseNode(Symtab, Op##tag) {}                               \
     static bool implementsClass(NodeType Type) { return Op##tag == Type; } \
   };
 AST_SELECTNODE_TABLE
@@ -570,9 +559,8 @@ class OpcodeNode FINAL : public SelectBaseNode {
   OpcodeNode& operator=(const OpcodeNode&) = delete;
 
  public:
-  OpcodeNode() : SelectBaseNode(OpOpcode) {}
-  explicit OpcodeNode(alloc::Allocator* Alloc)
-      : SelectBaseNode(Alloc, OpOpcode) {}
+  explicit OpcodeNode(SymbolTable &Symtab)
+      : SelectBaseNode(Symtab, OpOpcode) {}
   static bool implementsClass(NodeType Type) { return OpOpcode == Type; }
   const CaseNode* getWriteCase(decode::IntType Value,
                                uint32_t& SelShift,

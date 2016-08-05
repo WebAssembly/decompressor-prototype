@@ -171,7 +171,7 @@ int main(int Argc, char* Argv[]) {
   }
   ReadBackedByteQueue Input(getInput());
   WriteBackedByteQueue Output(getOutput());
-  Interpreter Decompressor(&Input, &Output, &SymTab);
+  Interpreter Decompressor(Input, Output, SymTab);
   Decompressor.setTraceProgress(Verbose >= 1, TraceIoDifference);
   Decompressor.setMinimizeBlockSize(MinimizeBlockSize);
   Decompressor.decompress();

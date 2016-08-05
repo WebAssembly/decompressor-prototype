@@ -48,19 +48,19 @@ static constexpr uint32_t MaxExpectedSectionNameSize = 32;
 
 }  // end of anonymous namespace
 
-Interpreter::Interpreter(ByteQueue* Input,
-                         ByteQueue* Output,
-                         SymbolTable* Algorithms)
-    : ReadPos(StreamType::Byte, Input),
-      WritePos(StreamType::Byte, Output),
+Interpreter::Interpreter(ByteQueue& Input,
+                         ByteQueue& Output,
+                         SymbolTable& Symtab)
+    : ReadPos(StreamType::Byte, &Input),
+      WritePos(StreamType::Byte, &Output),
       Alloc(Allocator::Default),
-      Algorithms(Algorithms),
+      Symtab(Symtab),
       LastReadValue(0),
       MinimizeBlockSize(false),
       Trace(ReadPos, WritePos, "InterpSexp") {
   Reader = Alloc->create<ByteReadStream>();
   Writer = Alloc->create<ByteWriteStream>();
-  DefaultFormat = Alloc->create<Varuint64NoArgsNode>();
+  DefaultFormat = Symtab.create<Varuint64NoArgsNode>();
   CurSectionName.reserve(MaxExpectedSectionNameSize);
 }
 
@@ -565,7 +565,7 @@ void Interpreter::decompressSection() {
           CurSectionName.c_str());
 #endif
   Trace.traceString("name", CurSectionName);
-  SymbolNode* Sym = Algorithms->getSymbol(CurSectionName);
+  SymbolNode* Sym = Symtab.getSymbol(CurSectionName);
   decompressBlock(Sym ? Sym->getDefineDefinition() : nullptr);
 }
 

@@ -47,6 +47,7 @@ bool BinaryReader::isBinary(const char* Filename) {
 BinaryReader::BinaryReader(decode::ByteQueue* Input, SymbolTable& Symtab)
     : Alloc(Symtab.getAllocator()),
       ReadPos(StreamType::Byte, Input),
+      Symtab(Symtab),
       SectionSymtab(Symtab),
       Trace(ReadPos, "BinaryReader") {
   Reader = Alloc->create<ByteReadStream>();
@@ -54,7 +55,7 @@ BinaryReader::BinaryReader(decode::ByteQueue* Input, SymbolTable& Symtab)
 
 template <class T>
 void BinaryReader::readNullary() {
-  auto* Node = Alloc->create<T>();
+  auto* Node = Symtab.create<T>();
   Trace.traceSexp(Node);
   NodeStack.push_back(Node);
 }
@@ -65,7 +66,7 @@ void BinaryReader::readUnary() {
     fatal("Can't find arguments for s-expression");
   Node* Arg = NodeStack.back();
   NodeStack.pop_back();
-  auto* Node = Alloc->create<T>(Arg);
+  auto* Node = Symtab.create<T>(Arg);
   Trace.traceSexp(Node);
   NodeStack.push_back(Node);
 }
@@ -73,42 +74,42 @@ void BinaryReader::readUnary() {
 template <class T>
 void BinaryReader::readUnarySymbol() {
   auto* Symbol = SectionSymtab.getIndexSymbol(Reader->readVaruint32(ReadPos));
-  auto* Node = Alloc->create<T>(Symbol);
+  auto* Node = Symtab.create<T>(Symbol);
   Trace.traceSexp(Node);
   NodeStack.push_back(Node);
 }
 
 template <class T>
 void BinaryReader::readUint8() {
-  auto* Node = Alloc->create<T>(Reader->readUint8(ReadPos));
+  auto* Node = Symtab.create<T>(Reader->readUint8(ReadPos));
   Trace.traceSexp(Node);
   NodeStack.push_back(Node);
 }
 
 template <class T>
 void BinaryReader::readVarint32() {
-  auto* Node = Alloc->create<T>(Reader->readVarint32(ReadPos));
+  auto* Node = Symtab.create<T>(Reader->readVarint32(ReadPos));
   Trace.traceSexp(Node);
   NodeStack.push_back(Node);
 }
 
 template <class T>
 void BinaryReader::readVarint64() {
-  auto* Node = Alloc->create<T>(Reader->readVarint64(ReadPos));
+  auto* Node = Symtab.create<T>(Reader->readVarint64(ReadPos));
   Trace.traceSexp(Node);
   NodeStack.push_back(Node);
 }
 
 template <class T>
 void BinaryReader::readVaruint32() {
-  auto* Node = Alloc->create<T>(Reader->readVaruint32(ReadPos));
+  auto* Node = Symtab.create<T>(Reader->readVaruint32(ReadPos));
   Trace.traceSexp(Node);
   NodeStack.push_back(Node);
 }
 
 template <class T>
 void BinaryReader::readVaruint64() {
-  auto* Node = Alloc->create<T>(Reader->readVarint64(ReadPos));
+  auto* Node = Symtab.create<T>(Reader->readVarint64(ReadPos));
   Trace.traceSexp(Node);
   NodeStack.push_back(Node);
 }
@@ -121,7 +122,7 @@ void BinaryReader::readBinary() {
   NodeStack.pop_back();
   Node* Arg1 = NodeStack.back();
   NodeStack.pop_back();
-  auto* Node = Alloc->create<T>(Arg1, Arg2);
+  auto* Node = Symtab.create<T>(Arg1, Arg2);
   Trace.traceSexp(Node);
   NodeStack.push_back(Node);
 }
@@ -131,7 +132,7 @@ void BinaryReader::readBinarySymbol() {
   auto* Symbol = SectionSymtab.getIndexSymbol(Reader->readVaruint32(ReadPos));
   auto* Body = NodeStack.back();
   NodeStack.pop_back();
-  auto* Node = Alloc->create<T>(Symbol, Body);
+  auto* Node = Symtab.create<T>(Symbol, Body);
   Trace.traceSexp(Node);
   NodeStack.push_back(Node);
 }
@@ -146,7 +147,7 @@ void BinaryReader::readTernary() {
   NodeStack.pop_back();
   Node* Arg1 = NodeStack.back();
   NodeStack.pop_back();
-  auto* Node = Alloc->create<T>(Arg1, Arg2, Arg3);
+  auto* Node = Symtab.create<T>(Arg1, Arg2, Arg3);
   Trace.traceSexp(Node);
   NodeStack.push_back(Node);
 }
@@ -157,7 +158,7 @@ void BinaryReader::readNary() {
   size_t StackSize = NodeStack.size();
   if (StackSize < NumKids)
     fatal("Can't find arguments for s-expression");
-  auto* Node = Alloc->create<T>();
+  auto* Node = Symtab.create<T>();
   for (size_t i = StackSize - NumKids; i < StackSize; ++i)
     Node->append(NodeStack[i]);
   for (uint32_t i = 0; i < NumKids; ++i)
@@ -176,7 +177,7 @@ FileNode* BinaryReader::readFile() {
     fatal("Unable to read, did not find WASM binary magic number");
   Version = Reader->readUint32(ReadPos);
   Trace.traceHexUint32_t("Version", Version);
-  auto* File = Alloc->create<FileNode>();
+  auto* File = Symtab.create<FileNode>();
   while (!ReadPos.atEob())
     File->append(readSection());
   Trace.traceSexp(File);
@@ -187,8 +188,8 @@ FileNode* BinaryReader::readFile() {
 SectionNode* BinaryReader::readSection() {
   TRACE_METHOD("readSection", Trace);
   ExternalName Name = readExternalName();
-  auto* SectionName = Alloc->create<SymbolNode>(Name);
-  auto* Section = Alloc->create<SectionNode>();
+  auto* SectionName = Symtab.create<SymbolNode>(Name);
+  auto* Section = Symtab.create<SectionNode>();
   Section->append(SectionName);
   Trace.traceString("Name", Name);
   size_t StartStackSize = NodeStack.size();
@@ -341,7 +342,7 @@ void BinaryReader::readNode() {
       StreamKind StrmKind;
       StreamType StrmType;
       StreamNode::decode(Encoding, StrmKind, StrmType);
-      auto* Node = Alloc->create<StreamNode>(StrmKind, StrmType);
+      auto* Node = Symtab.create<StreamNode>(StrmKind, StrmType);
       Trace.traceSexp(Node);
       NodeStack.push_back(Node);
       break;

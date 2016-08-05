@@ -79,6 +79,60 @@ const char* getNodeTypeName(NodeType Type) {
   return Name;
 }
 
+namespace {
+
+inline Ordering convertToOrdering(int i) {
+  if (i < 0)
+    return Ordering::LessThan;
+  if (i > 0)
+    return Ordering::GreaterThan;
+  return Ordering::Equal;
+}
+
+} // end of anonymous namespace
+
+Ordering Node::compare(const Node &N) const {
+  return convertToOrdering(int(Type) - int(N.Type));
+}
+
+/*
+bool operator<(const Node &N1, const Node &N2) {
+  switch (N1.compare(N2)) {
+    case Ordering::LessThan:
+      return true;
+    case Ordering::Equal:
+    case Ordering::GreaterThan:
+      return false;
+    case Ordering::NotComparable:
+      return N1 < N2;
+  }
+}
+
+bool operator<=(const Node &N1, const Node &N2) {
+  switch (N1.compare(N2)) {
+    case Ordering::LessThan:
+    case Ordering::Equal:
+      return true;
+    case Ordering::GreaterThan:
+      return false;
+    case Ordering::NotComparable:
+      return N1.CreationIndex < N2.CreationIndex;
+  }
+}
+
+bool operator<=(const Node &N1, const Node &N2) {
+  switch (N1.compare(N2)) {
+    case Ordering::LessThan:
+    case Ordering::Equal:
+      return true;
+    case Ordering::GreaterThan:
+      return false;
+    case Ordering::NotComparable:
+      return &N1 < &N2;
+  }
+}
+*/
+
 TraceClassSexp Node::Trace("filter sexp");
 
 void Node::append(Node*) {
@@ -135,14 +189,16 @@ void SymbolNode::setDefaultDefinition(Node* Defn) {
   }
 }
 
-SymbolTable::SymbolTable(alloc::Allocator* Alloc) : Alloc(Alloc) {
-  Error = Alloc->create<ErrorNode>();
+SymbolTable::SymbolTable(alloc::Allocator* Alloc) :
+    Alloc(Alloc), NextCreationIndex(0)
+{
+  Error = Alloc->create<ErrorNode>(*this);
 }
 
 SymbolNode* SymbolTable::getSymbolDefinition(ExternalName& Name) {
   SymbolNode* Node = SymbolMap[Name];
   if (Node == nullptr) {
-    Node = Alloc->create<SymbolNode>(Alloc, Name);
+    Node = create<SymbolNode>(Name);
     Node->setDefaultDefinition(Error);
     SymbolMap[Name] = Node;
   }

@@ -45,9 +45,9 @@ class Interpreter {
 
  public:
   // TODO(kschimpf): Add Output.
-  Interpreter(decode::ByteQueue* Input,
-              decode::ByteQueue* Output,
-              filt::SymbolTable* Algorithms);
+  Interpreter(decode::ByteQueue& Input,
+              decode::ByteQueue& Output,
+              filt::SymbolTable& Symtab);
 
   ~Interpreter() {}
 
@@ -69,7 +69,7 @@ class Interpreter {
   WriteStream* Writer;
   alloc::Allocator* Alloc;
   filt::Node* DefaultFormat;
-  filt::SymbolTable* Algorithms;
+  filt::SymbolTable& Symtab;
   // The magic number of the input.
   uint32_t MagicNumber;
   // The version of the input.
