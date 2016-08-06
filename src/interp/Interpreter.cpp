@@ -501,20 +501,19 @@ void Interpreter::decompress() {
 
 void Interpreter::decompressBlock(const Node* Code) {
   TRACE_METHOD("decompressBlock", Trace);
-  auto* ByteWriter = dyn_cast<ByteWriteStream>(Writer.get());
   const uint32_t OldSize = Reader->readBlockSize(ReadPos);
   Trace.traceUint32_t("block size", OldSize);
   Reader->pushEobAddress(ReadPos, OldSize);
   Cursor BlockStart(WritePos);
-  ByteWriter->writeFixedBlockSize(WritePos, 0);
+  Writer->writeFixedBlockSize(WritePos, 0);
   size_t SizeAfterSizeWrite = Writer->getStreamAddress(WritePos);
   evalOrCopy(Code);
   const size_t NewSize = Writer->getBlockSize(BlockStart, WritePos);
   if (!MinimizeBlockSize) {
-    ByteWriter->writeFixedBlockSize(BlockStart, NewSize);
+    Writer->writeFixedBlockSize(BlockStart, NewSize);
   } else {
-    ByteWriter->writeVaruint32(NewSize, BlockStart);
-    size_t SizeAfterBackPatch = ByteWriter->getStreamAddress(BlockStart);
+    Writer->writeVarintBlockSize(BlockStart, NewSize);
+    size_t SizeAfterBackPatch = Writer->getStreamAddress(BlockStart);
     size_t Diff = SizeAfterSizeWrite - SizeAfterBackPatch;
     assert(Diff >= 0); // Otherwise wrtieFixedBlockSize bad.
     if (Diff) {

@@ -144,6 +144,7 @@ void ByteWriteStream::writeFixedVaruint32(uint32_t Value, Cursor& Pos) {
   writeFixedLEB128<uint32_t>(Value, Pos);
 }
 
+
 size_t ByteWriteStream::getStreamAddress(Cursor& Pos) {
   return Pos.getCurByteAddress();
 }
@@ -151,6 +152,11 @@ size_t ByteWriteStream::getStreamAddress(Cursor& Pos) {
 void ByteWriteStream::writeFixedBlockSize(Cursor& Pos,
                                           size_t BlockSize) {
   writeFixedVaruint32(BlockSize, Pos);
+}
+
+void ByteWriteStream::writeVarintBlockSize(decode::Cursor& Pos,
+                                           size_t BlockSize) {
+  writeVaruint32(BlockSize, Pos);
 }
 
 size_t ByteWriteStream::getBlockSize(decode::Cursor& StartPos,

@@ -95,6 +95,7 @@ class WriteStream : public std::enable_shared_from_this<WriteStream> {
   // Saves the block size using a fixed format that is independent of
   // the block size.
   virtual void writeFixedBlockSize(decode::Cursor& Pos, size_t BlockSize) = 0;
+  virtual void writeVarintBlockSize(decode::Cursor& Pos, size_t BlockSIze) = 0;
 
   // Returns the size of the block, defined by the range of the
   // passed positions (specific to the stream).
@@ -151,6 +152,7 @@ class ByteWriteStream FINAL : public WriteStream {
   void writeFixedVaruint32(uint32_t Value, decode::Cursor& Pos) OVERRIDE;
   size_t getStreamAddress(decode::Cursor& Pos) OVERRIDE;
   void writeFixedBlockSize(decode::Cursor& Pos, size_t BlockSize) OVERRIDE;
+  void writeVarintBlockSize(decode::Cursor& Pos, size_t BlockSIze) OVERRIDE;
   size_t getBlockSize(decode::Cursor& StartPos,
                       decode::Cursor& EndPos) OVERRIDE;
   void moveBlock(decode::Cursor& Pos, size_t StartAddress,
