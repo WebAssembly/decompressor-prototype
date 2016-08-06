@@ -44,7 +44,7 @@ bool BinaryReader::isBinary(const char* Filename) {
   return Number == WasmBinaryMagic;
 }
 
-BinaryReader::BinaryReader(decode::ByteQueue* Input, SymbolTable& Symtab)
+BinaryReader::BinaryReader(decode::Queue* Input, SymbolTable& Symtab)
     : Alloc(Symtab.getAllocator()),
       ReadPos(StreamType::Byte, Input),
       Symtab(Symtab),

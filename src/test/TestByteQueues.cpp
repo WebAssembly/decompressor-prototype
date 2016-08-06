@@ -17,9 +17,10 @@
 
 // Tests reading/writing using byte queues.
 
-#include "stream/ByteQueue.h"
 #include "stream/FileReader.h"
 #include "stream/FileWriter.h"
+#include "stream/ReadBackedQueue.h"
+#include "stream/WriteBackedQueue.h"
 
 #include <cstring>
 #include <unistd.h>
@@ -109,8 +110,8 @@ int main(int Argc, char* Argv[]) {
     }
   }
   std::unique_ptr<RawStream> RawInput = getInput();
-  ReadBackedByteQueue Input(std::move(RawInput));
-  WriteBackedByteQueue Output(getOutput());
+  ReadBackedQueue Input(std::move(RawInput));
+  WriteBackedQueue Output(getOutput());
   // uint8_t Buffer[MaxBufSize];
   size_t Address = 0;
   PageCursor ReadCursor;

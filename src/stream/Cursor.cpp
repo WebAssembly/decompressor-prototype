@@ -34,16 +34,16 @@ void Cursor::jumpToByteAddress(size_t NewAddress) {
     return;
   }
   // Move to the wanted page.
-  Queue->readFromPage(NewAddress, 0, *this);
+  Que->readFromPage(NewAddress, 0, *this);
 }
 
 bool Cursor::readFillBuffer() {
   size_t CurAddress = getCurAddress();
   if (CurAddress >= getEobAddress())
     return false;
-  size_t BufferSize = Queue->readFromPage(CurAddress, Page::Size, *this);
+  size_t BufferSize = Que->readFromPage(CurAddress, Page::Size, *this);
   if (BufferSize == 0) {
-    setEobAddress(Queue->currentSize());
+    setEobAddress(Que->currentSize());
     return false;
   }
   return true;
@@ -53,7 +53,7 @@ void Cursor::writeFillBuffer() {
   size_t CurAddress = getCurAddress();
   if (CurAddress >= getEobAddress())
     fatal("Write past Eob");
-  size_t BufferSize = Queue->writeToPage(CurAddress, Page::Size, *this);
+  size_t BufferSize = Que->writeToPage(CurAddress, Page::Size, *this);
   if (BufferSize == 0)
     fatal("Write failed!\n");
 }

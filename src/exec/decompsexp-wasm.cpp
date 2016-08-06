@@ -17,11 +17,11 @@
 
 #include "binary/BinaryWriter.h"
 #include "sexp-parser/Driver.h"
-#include "stream/ByteQueue.h"
 #include "stream/FileReader.h"
 #include "stream/FileWriter.h"
 #include "stream/StreamReader.h"
 #include "stream/StreamWriter.h"
+#include "stream/WriteBackedQueue.h"
 #include "utils/Defs.h"
 
 #include <cstring>
@@ -132,7 +132,7 @@ int main(int Argc, char* Argv[]) {
     fprintf(stderr, "Unable to parse s-expressions: %s\n", InputFilename);
     return exit_status(EXIT_FAILURE);
   }
-  WriteBackedByteQueue Output(getOutput());
+  WriteBackedQueue Output(getOutput());
   SymbolTable Symtab(&Allocator);
   BinaryWriter Writer(&Output, Symtab);
   Writer.setTraceProgress(Verbose >= 1);

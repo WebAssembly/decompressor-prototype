@@ -140,11 +140,12 @@ STRM_OBJDIR = $(OBJDIR)/stream
 STRM_SRCS = \
 	FileReader.cpp \
 	FileWriter.cpp \
-	ByteQueue.cpp \
 	Cursor.cpp \
 	Queue.cpp \
+	ReadBackedQueue.cpp \
 	StreamReader.cpp \
 	StreamWriter.cpp \
+	WriteBackedQueue.cpp \
 	WriteUtils.cpp
 
 STRM_OBJS=$(patsubst %.cpp, $(STRM_OBJDIR)/%.o, $(STRM_SRCS))
