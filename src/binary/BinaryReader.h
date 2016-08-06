@@ -59,7 +59,7 @@ class BinaryReader {
 
  private:
   alloc::Allocator* Alloc;
-  interp::ByteReadStream* Reader;
+  std::shared_ptr<interp::ByteReadStream> Reader;
   decode::Cursor ReadPos;
   SymbolTable &Symtab;
   SectionSymbolTable SectionSymtab;
