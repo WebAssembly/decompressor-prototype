@@ -34,17 +34,17 @@ namespace {
 const char* InputFilename = "-";
 const char* OutputFilename = "-";
 
-std::unique_ptr<RawStream> getInput() {
+std::shared_ptr<RawStream> getInput() {
   if (InputFilename == std::string("-"))
-    return FdReader::create(STDIN_FILENO, false);
-  return FileReader::create(InputFilename);
+    return std::make_shared<FdReader>(STDIN_FILENO, false);
+  return std::make_shared<FileReader>(InputFilename);
 }
 
-std::unique_ptr<RawStream> getOutput() {
+std::shared_ptr<RawStream> getOutput() {
   if (OutputFilename == std::string("-")) {
-    return FdWriter::create(STDOUT_FILENO, false);
+    return std::make_shared<FdWriter>(STDOUT_FILENO, false);
   }
-  return FileWriter::create(OutputFilename);
+  return std::make_shared<FileWriter>(OutputFilename);
 }
 
 void usage(char* AppName) {
@@ -109,8 +109,7 @@ int main(int Argc, char* Argv[]) {
       return exit_status(EXIT_FAILURE);
     }
   }
-  std::unique_ptr<RawStream> RawInput = getInput();
-  ReadBackedQueue Input(std::move(RawInput));
+  ReadBackedQueue Input(getInput());
   WriteBackedQueue Output(getOutput());
   // uint8_t Buffer[MaxBufSize];
   size_t Address = 0;

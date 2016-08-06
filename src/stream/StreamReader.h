@@ -35,17 +35,12 @@ class StreamReader : public RawStream {
   StreamReader& operator=(const StreamReader*) = delete;
 
  public:
+  StreamReader(std::istream& Input);
   ~StreamReader() OVERRIDE;
   size_t read(uint8_t* Buf, size_t Size = 1) OVERRIDE;
   bool write(uint8_t* Buf, size_t Size = 1) OVERRIDE;
   bool freeze() OVERRIDE;
   bool atEof() OVERRIDE;
-
-  static std::unique_ptr<RawStream> create(std::istream& Input) {
-    // TODO(kschimpf): Can we make the shared pointer part of the reader?
-    std::unique_ptr<RawStream> Reader(new StreamReader(Input));
-    return Reader;
-  }
 
  protected:
   std::istream& Input;
@@ -55,7 +50,6 @@ class StreamReader : public RawStream {
   size_t BytesRemaining;
   bool AtEof;
 
-  StreamReader(std::istream& Input);
   virtual void close() {}
   void fillBuffer();
 };
@@ -66,15 +60,10 @@ class FstreamReader FINAL : public StreamReader {
   FstreamReader& operator=(const FstreamReader&) = delete;
 
  public:
+  FstreamReader(const char* Filename);
   ~FstreamReader() OVERRIDE;
-  static std::unique_ptr<RawStream> create(const char* Filename) {
-    // TODO(kschimpf): Can we make the shared pointer part of the reader?
-    std::unique_ptr<RawStream> Reader(new FstreamReader(Filename));
-    return Reader;
-  }
 
  private:
-  FstreamReader(const char* Filename);
   std::ifstream FileInput;
   void close() OVERRIDE;
 };

@@ -33,7 +33,7 @@ class ReadBackedQueue FINAL : public Queue {
   ReadBackedQueue() = delete;
 
  public:
-  ReadBackedQueue(std::unique_ptr<RawStream> _Reader) {
+  ReadBackedQueue(std::shared_ptr<RawStream> _Reader) {
     assert(_Reader);
     Reader = std::move(_Reader);
   }
@@ -41,7 +41,7 @@ class ReadBackedQueue FINAL : public Queue {
 
  private:
   // Reader to write fill buffer as needed.
-  std::unique_ptr<RawStream> Reader;
+  std::shared_ptr<RawStream> Reader;
 
   bool readFill(size_t Address) OVERRIDE;
 };
