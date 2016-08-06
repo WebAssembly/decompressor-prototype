@@ -50,7 +50,7 @@ static constexpr uint32_t MaxExpectedSectionNameSize = 32;
 
 Interpreter::Interpreter(std::shared_ptr<Queue> Input,
                          std::shared_ptr<Queue> Output,
-                         SymbolTable& Symtab)
+                         std::shared_ptr<SymbolTable> Symtab)
     : ReadPos(StreamType::Byte, Input),
       Reader(std::make_shared<ByteReadStream>()),
       WritePos(StreamType::Byte, Output),
@@ -59,7 +59,7 @@ Interpreter::Interpreter(std::shared_ptr<Queue> Input,
       LastReadValue(0),
       MinimizeBlockSize(false),
       Trace(ReadPos, WritePos, "InterpSexp") {
-  DefaultFormat = Symtab.create<Varuint64NoArgsNode>();
+  DefaultFormat = Symtab->create<Varuint64NoArgsNode>();
   CurSectionName.reserve(MaxExpectedSectionNameSize);
 }
 
@@ -563,7 +563,7 @@ void Interpreter::decompressSection() {
           CurSectionName.c_str());
 #endif
   Trace.traceString("name", CurSectionName);
-  SymbolNode* Sym = Symtab.getSymbol(CurSectionName);
+  SymbolNode* Sym = Symtab->getSymbol(CurSectionName);
   decompressBlock(Sym ? Sym->getDefineDefinition() : nullptr);
 }
 

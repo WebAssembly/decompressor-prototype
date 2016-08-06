@@ -43,8 +43,7 @@ void usage(const char* AppName) {
 }
 
 int main(int Argc, char* Argv[]) {
-  SymbolTable SymTab;
-  Driver Driver(SymTab);
+  Driver Driver(std::make_shared<SymbolTable>());
   bool PrintAst = false;
   std::vector<const char*> Files;
   for (int i = 1; i < Argc; ++i) {

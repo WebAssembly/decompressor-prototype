@@ -47,7 +47,8 @@ class BinaryReader {
   // Returns true if it begins with a WASM file magic number.
   static bool isBinary(const char* Filename);
 
-  BinaryReader(std::shared_ptr<decode::Queue> Input, SymbolTable& Symtab);
+  BinaryReader(std::shared_ptr<decode::Queue> Input,
+               std::shared_ptr<SymbolTable> Symtab);
 
   ~BinaryReader() {}
 
@@ -60,7 +61,7 @@ class BinaryReader {
  private:
   std::shared_ptr<interp::ByteReadStream> Reader;
   decode::Cursor ReadPos;
-  SymbolTable &Symtab;
+  std::shared_ptr<SymbolTable> Symtab;
   SectionSymbolTable SectionSymtab;
   // The magic number of the input.
   uint32_t MagicNumber;

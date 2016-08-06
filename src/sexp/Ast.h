@@ -84,7 +84,7 @@ struct AstTraitsType {
 
 extern AstTraitsType AstTraits[NumNodeTypes];
 
-class SymbolTable {
+class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
   SymbolTable(const SymbolTable&) = delete;
   SymbolTable& operator=(const SymbolTable&) = delete;
 

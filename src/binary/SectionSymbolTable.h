@@ -39,24 +39,24 @@ class SectionSymbolTable {
   typedef uint32_t IndexType;
   typedef std::unordered_map<SymbolNode*, IndexType> SymbolLookupType;
   typedef std::vector<SymbolNode*> IndexLookupType;
-  SectionSymbolTable(SymbolTable& Symtab) : Symtab(Symtab) {}
+  SectionSymbolTable(std::shared_ptr<SymbolTable> Symtab) : Symtab(Symtab) {}
   ~SectionSymbolTable() {}
   void installSection(const SectionNode* Section);
   const IndexLookupType& getVector() { return IndexLookup; }
   void addSymbol(std::string& Name);
   uint32_t getSymbolIndex(SymbolNode* Symbol);
   void clear() {
-    Symtab.clear();
+    Symtab->clear();
     SymbolLookup.clear();
     IndexLookup.clear();
   }
   SymbolNode* getIndexSymbol(IndexType Index);
   bool empty() const { return IndexLookup.empty(); }
-  void install(Node* Root) { Symtab.install(Root); }
+  void install(Node* Root) { Symtab->install(Root); }
 
  private:
   // Cache that holds the set of uniquified symbols.
-  SymbolTable& Symtab;
+  std::shared_ptr<SymbolTable> Symtab;
   SymbolLookupType SymbolLookup;
   IndexLookupType IndexLookup;
   void installSymbols(const Node* Nd);

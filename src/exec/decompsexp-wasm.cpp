@@ -121,7 +121,7 @@ int main(int Argc, char* Argv[]) {
       return exit_status(EXIT_FAILURE);
     }
   }
-  SymbolTable Symtab;
+  auto Symtab = std::make_shared<SymbolTable>();
   Driver Parser(Symtab);
   Parser.setTraceParsing(Verbose >= 2);
   Parser.setTraceLexing(Verbose >= 3);
