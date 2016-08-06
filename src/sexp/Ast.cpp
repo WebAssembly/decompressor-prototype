@@ -113,8 +113,9 @@ std::string SymbolNode::getStringName() const {
   return Str;
 }
 
-SymbolTable::SymbolTable(std::shared_ptr<alloc::Allocator> Alloc) :
-    Alloc(Alloc), NextCreationIndex(0)
+SymbolTable::SymbolTable() :
+    // TODO(karlschimpf) Switch Alloc to an ArenaAllocator once working.
+    Alloc(std::make_shared<Malloc>()), NextCreationIndex(0)
 {
   Error = Alloc->create<ErrorNode>(*this);
 }

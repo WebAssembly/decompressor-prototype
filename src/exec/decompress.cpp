@@ -31,7 +31,6 @@
 #include <iostream>
 
 using namespace wasm;
-using namespace wasm::alloc;
 using namespace wasm::filt;
 using namespace wasm::decode;
 using namespace wasm::interp;
@@ -99,8 +98,7 @@ void usage(const char* AppName) {
 }
 
 int main(int Argc, char* Argv[]) {
-  // TODO(karlschimpf) Use arena allocator when arena allocator is working.
-  SymbolTable SymTab(std::make_shared<Malloc>());
+  SymbolTable SymTab;
   int Verbose = 0;
   bool TraceIoDifference = false;
   bool MinimizeBlockSize = false;

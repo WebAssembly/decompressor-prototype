@@ -29,7 +29,6 @@
 #include <iostream>
 
 using namespace wasm;
-using namespace wasm::alloc;
 using namespace wasm::filt;
 using namespace wasm::decode;
 
@@ -122,8 +121,7 @@ int main(int Argc, char* Argv[]) {
       return exit_status(EXIT_FAILURE);
     }
   }
-  // TODO(karlschimpf) Use arena allocator once working.
-  SymbolTable Symtab(std::make_shared<Malloc>());
+  SymbolTable Symtab;
   Driver Parser(Symtab);
   Parser.setTraceParsing(Verbose >= 2);
   Parser.setTraceLexing(Verbose >= 3);
