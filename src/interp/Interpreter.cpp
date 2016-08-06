@@ -515,7 +515,6 @@ void Interpreter::decompressBlock(const Node* Code) {
     Writer->writeVarintBlockSize(BlockStart, NewSize);
     size_t SizeAfterBackPatch = Writer->getStreamAddress(BlockStart);
     size_t Diff = SizeAfterSizeWrite - SizeAfterBackPatch;
-    assert(Diff >= 0); // Otherwise wrtieFixedBlockSize bad.
     if (Diff) {
       size_t CurAddress = Writer->getStreamAddress(WritePos);
       Writer->moveBlock(BlockStart, SizeAfterSizeWrite,
