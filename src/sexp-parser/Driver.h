@@ -56,8 +56,6 @@ class Driver {
     return Table.getSymbolDefinition(Name);
   }
 
-  std::shared_ptr<alloc::Allocator> getAllocator() { return Alloc; }
-
   // The name of the file being parsed.
   std::string& getFilename() { return Filename; }
 
