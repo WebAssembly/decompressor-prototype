@@ -89,7 +89,7 @@ class SymbolTable {
   SymbolTable& operator=(const SymbolTable&) = delete;
 
  public:
-  explicit SymbolTable(alloc::Allocator* Alloc);
+  explicit SymbolTable(std::shared_ptr<alloc::Allocator> Alloc);
   ~SymbolTable() { clear(); }
   // Gets existing symbol if known. Otherwise returns nullptr.
   SymbolNode* getSymbol(ExternalName& Name) { return SymbolMap[Name]; }
@@ -98,7 +98,7 @@ class SymbolTable {
   SymbolNode* getSymbolDefinition(ExternalName& Name);
   // Install definitions in tree defined by root.
   void install(Node* Root);
-  alloc::Allocator* getAllocator() const { return Alloc; }
+  std::shared_ptr<alloc::Allocator> getAllocator() const { return Alloc; }
   void clear() { SymbolMap.clear(); }
   int getNextCreationIndex() {
     return ++NextCreationIndex;
@@ -110,7 +110,7 @@ class SymbolTable {
   }
 
  private:
-  alloc::Allocator* Alloc;
+  std::shared_ptr<alloc::Allocator> Alloc;
   Node* Error;
   int NextCreationIndex;
   // TODO(KarlSchimpf): Use arena allocator on map.
@@ -328,7 +328,7 @@ class SymbolNode FINAL : public NullaryNode {
 
  public:
   SymbolNode(SymbolTable &Symtab, ExternalName& _Name)
-      : NullaryNode(Symtab, OpSymbol), Name(Symtab.getAllocator()) {
+      : NullaryNode(Symtab, OpSymbol), Name(Symtab.getAllocator().get()) {
     init(_Name);
   }
   ~SymbolNode() OVERRIDE {}
@@ -495,7 +495,7 @@ class NaryNode : public Node {
   ARENA_VECTOR(Node*) Kids;
   NaryNode(SymbolTable &Symtab, NodeType Type)
       : Node(Symtab, Type),
-        Kids(alloc::TemplateAllocator<Node*>(Symtab.getAllocator())) {}
+        Kids(alloc::TemplateAllocator<Node*>(Symtab.getAllocator().get())) {}
 };
 
 #define X(tag)                                                                \

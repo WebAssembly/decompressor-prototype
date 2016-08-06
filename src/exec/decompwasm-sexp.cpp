@@ -100,8 +100,7 @@ int main(int Argc, char* Argv[]) {
     }
   }
   // TODO(karlschimpf) Use arena allocator once working.
-  Malloc Allocator;
-  SymbolTable Symtab(&Allocator);
+  SymbolTable Symtab(std::make_shared<Malloc>());
   BinaryReader Reader(std::make_shared<ReadBackedQueue>(getInput()),
                       Symtab);
   Reader.setTraceProgress(Verbose >= 1);

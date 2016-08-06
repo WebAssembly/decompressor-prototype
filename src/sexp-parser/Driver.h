@@ -56,7 +56,7 @@ class Driver {
     return Table.getSymbolDefinition(Name);
   }
 
-  alloc::Allocator* getAllocator() { return Alloc; }
+  std::shared_ptr<alloc::Allocator> getAllocator() { return Alloc; }
 
   // The name of the file being parsed.
   std::string& getFilename() { return Filename; }
@@ -100,7 +100,7 @@ class Driver {
 
  private:
   SymbolTable& Table;
-  alloc::Allocator* Alloc;
+  std::shared_ptr<alloc::Allocator> Alloc;
   std::string Filename;
   bool TraceLexing;
   bool TraceParsing;

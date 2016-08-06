@@ -113,7 +113,7 @@ std::string SymbolNode::getStringName() const {
   return Str;
 }
 
-SymbolTable::SymbolTable(alloc::Allocator* Alloc) :
+SymbolTable::SymbolTable(std::shared_ptr<alloc::Allocator> Alloc) :
     Alloc(Alloc), NextCreationIndex(0)
 {
   Error = Alloc->create<ErrorNode>(*this);

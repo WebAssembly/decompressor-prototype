@@ -24,6 +24,7 @@
 
 #include <iostream>
 
+using namespace wasm::alloc;
 using namespace wasm::filt;
 using namespace wasm::decode;
 
@@ -44,8 +45,7 @@ void usage(const char* AppName) {
 
 int main(int Argc, char* Argv[]) {
   // TODO(KarlSchimpf) Figure out why MallocArena doesn't work.
-  wasm::alloc::Malloc Allocator;
-  SymbolTable SymTab(&Allocator);
+  SymbolTable SymTab(std::make_shared<Malloc>());
   Driver Driver(SymTab);
   bool PrintAst = false;
   std::vector<const char*> Files;

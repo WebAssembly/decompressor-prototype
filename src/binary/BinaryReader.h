@@ -58,7 +58,6 @@ class BinaryReader {
   void setTraceProgress(bool NewValue) { Trace.setTraceProgress(NewValue); }
 
  private:
-  alloc::Allocator* Alloc;
   std::shared_ptr<interp::ByteReadStream> Reader;
   decode::Cursor ReadPos;
   SymbolTable &Symtab;
