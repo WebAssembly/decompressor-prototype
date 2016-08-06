@@ -142,6 +142,7 @@ STRM_SRCS = \
 	FileWriter.cpp \
 	ByteQueue.cpp \
 	Cursor.cpp \
+	Queue.cpp \
 	StreamReader.cpp \
 	StreamWriter.cpp \
 	WriteUtils.cpp
