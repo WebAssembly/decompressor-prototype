@@ -47,7 +47,7 @@ class Interpreter {
   // TODO(kschimpf): Add Output.
   Interpreter(std::shared_ptr<decode::Queue> Input,
               std::shared_ptr<decode::Queue> Output,
-              filt::SymbolTable& Symtab);
+              std::shared_ptr<filt::SymbolTable> Symtab);
 
   ~Interpreter() {}
 
@@ -68,7 +68,7 @@ class Interpreter {
   decode::Cursor WritePos;
   std::shared_ptr<WriteStream> Writer;
   filt::Node* DefaultFormat;
-  filt::SymbolTable& Symtab;
+  std::shared_ptr<filt::SymbolTable> Symtab;
   // The magic number of the input.
   uint32_t MagicNumber;
   // The version of the input.

@@ -27,7 +27,7 @@ namespace wasm {
 namespace filt {
 
 void SectionSymbolTable::addSymbol(std::string& Name) {
-  SymbolNode* Sym = Symtab.getSymbolDefinition(Name);
+  SymbolNode* Sym = Symtab->getSymbolDefinition(Name);
   if (SymbolLookup.count(Sym) == 0) {
     IndexType Index = IndexLookup.size();
     SymbolLookup[Sym] = Index;
@@ -53,7 +53,7 @@ void SectionSymbolTable::installSection(const SectionNode* Section) {
 
 uint32_t SectionSymbolTable::getSymbolIndex(SymbolNode* Symbol) {
   std::string SymName = Symbol->getStringName();
-  SymbolNode* Sym = Symtab.getSymbolDefinition(SymName);
+  SymbolNode* Sym = Symtab->getSymbolDefinition(SymName);
   const auto Iter = SymbolLookup.find(Sym);
   if (Iter == SymbolLookup.end())
     fatal("Can't find index for symbol: " + Sym->getStringName());

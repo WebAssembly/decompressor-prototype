@@ -36,9 +36,8 @@ class Driver {
   Driver& operator=(const Driver&) = delete;
 
  public:
-  Driver(SymbolTable& Table)
+  Driver(std::shared_ptr<SymbolTable> Table)
       : Table(Table),
-        Alloc(Table.getAllocator()),
         TraceLexing(false),
         TraceParsing(false),
         MaintainIntegerFormatting(false),
@@ -49,11 +48,11 @@ class Driver {
 
   template <typename T, typename... Args>
   T* create(Args&&... args) {
-    return Table.create<T>(std::forward<Args>(args)...);
+    return Table->create<T>(std::forward<Args>(args)...);
   }
 
   SymbolNode* getSymbolDefinition(ExternalName& Name) {
-    return Table.getSymbolDefinition(Name);
+    return Table->getSymbolDefinition(Name);
   }
 
   // The name of the file being parsed.
@@ -87,7 +86,7 @@ class Driver {
 
   void setParsedAst(Node* Ast) {
     ParsedAst = Ast;
-    Table.install(ParsedAst);
+    Table->install(ParsedAst);
   }
 
   // Error handling.
@@ -97,8 +96,7 @@ class Driver {
   void fatal(const std::string& Message);
 
  private:
-  SymbolTable& Table;
-  std::shared_ptr<alloc::Allocator> Alloc;
+  std::shared_ptr<SymbolTable> Table;
   std::string Filename;
   bool TraceLexing;
   bool TraceParsing;

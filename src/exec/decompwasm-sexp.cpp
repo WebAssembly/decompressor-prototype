@@ -98,9 +98,8 @@ int main(int Argc, char* Argv[]) {
       return exit_status(EXIT_FAILURE);
     }
   }
-  SymbolTable Symtab;
   BinaryReader Reader(std::make_shared<ReadBackedQueue>(getInput()),
-                      Symtab);
+                      std::make_shared<SymbolTable>());
   Reader.setTraceProgress(Verbose >= 1);
   FileNode* File = Reader.readFile();
   if (File == nullptr) {
