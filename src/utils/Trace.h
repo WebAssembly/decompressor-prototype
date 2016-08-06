@@ -22,6 +22,7 @@
 
 #include "utils/Defs.h"
 
+#include <memory>
 #include <vector>
 
 #ifdef NDEBUG
@@ -34,7 +35,7 @@ namespace wasm {
 
 namespace utils {
 
-class TraceClass {
+class TraceClass : std::enable_shared_from_this<TraceClass> {
   TraceClass(const TraceClass&) = delete;
   TraceClass& operator=(const TraceClass&) = delete;
 

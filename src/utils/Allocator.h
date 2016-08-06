@@ -23,8 +23,9 @@
 #include "Defs.h"
 
 #include <cstdlib>
-#include <vector>
+#include <memory>
 #include <utility>
+#include <vector>
 
 namespace wasm {
 
@@ -35,7 +36,7 @@ extern size_t DefaultAllocAlignLog2;
 
 // Defines a virtual base for all allocators. Allows use of generic allocators
 // by using virtual dispatch.
-class Allocator {
+class Allocator : public std::enable_shared_from_this<Allocator> {
   Allocator(const Allocator&) = delete;
   Allocator& operator=(const Allocator&) = delete;
 

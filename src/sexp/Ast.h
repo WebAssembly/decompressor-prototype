@@ -1,19 +1,19 @@
-/* -*- C++ -*- */
-/*
- * Copyright 2016 WebAssembly Community Group participants
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+// -*- C++ -*- */
+//
+// Copyright 2016 WebAssembly Community Group participants
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 
 // Defines an internal model of filter AST's.
 //
@@ -89,7 +89,9 @@ class SymbolTable {
   SymbolTable& operator=(const SymbolTable&) = delete;
 
  public:
-  explicit SymbolTable(alloc::Allocator* Alloc);
+  TraceClassSexp Trace;
+
+  explicit SymbolTable();
   ~SymbolTable() { clear(); }
   // Gets existing symbol if known. Otherwise returns nullptr.
   SymbolNode* getSymbol(ExternalName& Name) { return SymbolMap[Name]; }
@@ -98,7 +100,7 @@ class SymbolTable {
   SymbolNode* getSymbolDefinition(ExternalName& Name);
   // Install definitions in tree defined by root.
   void install(Node* Root);
-  alloc::Allocator* getAllocator() const { return Alloc; }
+  std::shared_ptr<alloc::Allocator> getAllocator() const { return Alloc; }
   void clear() { SymbolMap.clear(); }
   int getNextCreationIndex() {
     return ++NextCreationIndex;
@@ -110,11 +112,12 @@ class SymbolTable {
   }
 
  private:
-  alloc::Allocator* Alloc;
+  std::shared_ptr<alloc::Allocator> Alloc;
   Node* Error;
   int NextCreationIndex;
   // TODO(KarlSchimpf): Use arena allocator on map.
   std::map<ExternalName, SymbolNode*> SymbolMap;
+
   void installDefinitions(Node* Root);
   void clearSubtreeCaches(Node* Nd,
                           VisitedNodesType& VisitedNodes,
@@ -156,14 +159,13 @@ class Node {
     int Index;
   };
 
-  // Turns on ability to get warning/error messages.
-  static TraceClassSexp Trace;
-
   virtual ~Node() {}
 
   NodeType getRtClassId() const { return Type; }
 
   NodeType getType() const { return Type; }
+
+  TraceClassSexp &getTrace() const { return Symtab.Trace; }
 
   // General API to children.
   virtual int getNumKids() const = 0;
@@ -195,9 +197,10 @@ class Node {
 
  protected:
   NodeType Type;
+  SymbolTable &Symtab;
   int CreationIndex;
   Node(SymbolTable &Symtab, NodeType Type)
-      : Type(Type), CreationIndex(Symtab.getNextCreationIndex()) {}
+      : Type(Type), Symtab(Symtab), CreationIndex(Symtab.getNextCreationIndex()) {}
   virtual void clearCaches(NodeVectorType& AdditionalNodes);
   virtual void installCaches(NodeVectorType& AdditionalNodes);
 };
@@ -328,7 +331,7 @@ class SymbolNode FINAL : public NullaryNode {
 
  public:
   SymbolNode(SymbolTable &Symtab, ExternalName& _Name)
-      : NullaryNode(Symtab, OpSymbol), Name(Symtab.getAllocator()) {
+      : NullaryNode(Symtab, OpSymbol), Name(Symtab.getAllocator().get()) {
     init(_Name);
   }
   ~SymbolNode() OVERRIDE {}
@@ -495,7 +498,7 @@ class NaryNode : public Node {
   ARENA_VECTOR(Node*) Kids;
   NaryNode(SymbolTable &Symtab, NodeType Type)
       : Node(Symtab, Type),
-        Kids(alloc::TemplateAllocator<Node*>(Symtab.getAllocator())) {}
+        Kids(alloc::TemplateAllocator<Node*>(Symtab.getAllocator().get())) {}
 };
 
 #define X(tag)                                                                \
@@ -578,12 +581,12 @@ class OpcodeNode FINAL : public SelectBaseNode {
     int compare(const WriteRange& R) const;
     bool operator<(const WriteRange& R) const { return compare(R) < 0; }
     void trace() const {
-      if (Trace.getTraceProgress())
-        traceInternal("");
+      if (Case->getTrace().getTraceProgress())
+        traceInternal("", Case->getTrace());
     }
     void trace(const char* Prefix) const {
-      if (Trace.getTraceProgress())
-        traceInternal(Prefix);
+      if (Case->getTrace().getTraceProgress())
+        traceInternal(Prefix, Case->getTrace());
     }
 
    private:
@@ -591,7 +594,7 @@ class OpcodeNode FINAL : public SelectBaseNode {
     decode::IntType Min;
     decode::IntType Max;
     uint32_t ShiftValue;
-    void traceInternal(const char* Prefix) const;
+    void traceInternal(const char* Prefix, TraceClassSexp &Trace) const;
   };
   void clearCaches(NodeVectorType& AdditionalNodes) OVERRIDE;
   void installCaches(NodeVectorType& AdditionalNodes) OVERRIDE;

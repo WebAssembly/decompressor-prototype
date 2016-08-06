@@ -45,13 +45,11 @@ bool BinaryReader::isBinary(const char* Filename) {
 }
 
 BinaryReader::BinaryReader(std::shared_ptr<decode::Queue> Input, SymbolTable& Symtab)
-    : Alloc(Symtab.getAllocator()),
+    : Reader(std::make_shared<ByteReadStream>()),
       ReadPos(StreamType::Byte, Input),
       Symtab(Symtab),
       SectionSymtab(Symtab),
-      Trace(ReadPos, "BinaryReader") {
-  Reader = Alloc->create<ByteReadStream>();
-}
+      Trace(ReadPos, "BinaryReader") {}
 
 template <class T>
 void BinaryReader::readNullary() {

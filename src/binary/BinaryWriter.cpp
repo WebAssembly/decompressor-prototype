@@ -34,12 +34,10 @@ namespace {}  // end of anonymous namespace
 
 BinaryWriter::BinaryWriter(std::shared_ptr<decode::Queue> Output, SymbolTable& Symtab)
     : WritePos(decode::StreamType::Byte, Output),
-      Writer(nullptr),
+      Writer(std::make_shared<ByteWriteStream>()),
       SectionSymtab(Symtab),
       MinimizeBlockSize(false),
-      Trace(WritePos, "BinaryWriter") {
-  Writer = Symtab.getAllocator()->create<ByteWriteStream>();
-}
+      Trace(WritePos, "BinaryWriter") {}
 
 void BinaryWriter::writePreamble() {
   Writer->writeUint32(WasmBinaryMagic, WritePos);

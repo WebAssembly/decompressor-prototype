@@ -98,8 +98,7 @@ void usage(const char* AppName) {
 }
 
 int main(int Argc, char* Argv[]) {
-  wasm::alloc::Malloc Allocator;
-  SymbolTable SymTab(&Allocator);
+  SymbolTable Symtab;
   int Verbose = 0;
   bool TraceIoDifference = false;
   bool MinimizeBlockSize = false;
@@ -147,20 +146,20 @@ int main(int Argc, char* Argv[]) {
       return exit_status(EXIT_FAILURE);
     }
   }
-  Node::Trace.setTraceProgress(Verbose >= 4);
+  Symtab.Trace.setTraceProgress(Verbose >= 4);
   for (int i : DefaultIndices) {
     if (Verbose)
       fprintf(stderr, "Loading default: %s\n", Argv[i]);
     if (BinaryReader::isBinary(Argv[i])) {
       std::shared_ptr<RawStream> Stream = std::make_shared<FileReader>(Argv[i]);
       BinaryReader Reader(std::make_shared<ReadBackedQueue>(std::move(Stream)),
-                          SymTab);
+                          Symtab);
       Reader.setTraceProgress(Verbose >= 2);
       if (Reader.readFile()) {
         continue;
       }
     }
-    Driver Parser(SymTab);
+    Driver Parser(Symtab);
     Parser.setTraceParsing(Verbose >= 2);
     Parser.setTraceLexing(Verbose >= 3);
     if (!Parser.parse(Argv[i])) {
@@ -170,7 +169,7 @@ int main(int Argc, char* Argv[]) {
   }
   Interpreter Decompressor(std::make_shared<ReadBackedQueue>(getInput()),
                            std::make_shared<WriteBackedQueue>(getOutput()),
-                           SymTab);
+                           Symtab);
   Decompressor.setTraceProgress(Verbose >= 1, TraceIoDifference);
   Decompressor.setMinimizeBlockSize(MinimizeBlockSize);
   Decompressor.decompress();

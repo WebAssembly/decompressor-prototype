@@ -29,7 +29,6 @@
 #include <iostream>
 
 using namespace wasm;
-using namespace wasm::alloc;
 using namespace wasm::filt;
 using namespace wasm::decode;
 
@@ -99,9 +98,7 @@ int main(int Argc, char* Argv[]) {
       return exit_status(EXIT_FAILURE);
     }
   }
-  // TODO(karlschimpf) Use arena allocator once working.
-  Malloc Allocator;
-  SymbolTable Symtab(&Allocator);
+  SymbolTable Symtab;
   BinaryReader Reader(std::make_shared<ReadBackedQueue>(getInput()),
                       Symtab);
   Reader.setTraceProgress(Verbose >= 1);

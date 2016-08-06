@@ -24,13 +24,15 @@
 #include "stream/Cursor.h"
 #include "utils/Casting.h"
 
+#include <memory>
+
 namespace wasm {
 
 namespace interp {
 
 class State;
 
-class ReadStream {
+class ReadStream : public std::enable_shared_from_this<ReadStream> {
   ReadStream(const ReadStream&) = delete;
   ReadStream& operator=(const ReadStream&) = delete;
 

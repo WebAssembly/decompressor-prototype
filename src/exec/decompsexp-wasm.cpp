@@ -121,17 +121,14 @@ int main(int Argc, char* Argv[]) {
       return exit_status(EXIT_FAILURE);
     }
   }
-  // TODO(karlschimpf) Use arena allocator once working.
-  wasm::alloc::Malloc Allocator;
-  SymbolTable SymTab(&Allocator);
-  Driver Parser(SymTab);
+  SymbolTable Symtab;
+  Driver Parser(Symtab);
   Parser.setTraceParsing(Verbose >= 2);
   Parser.setTraceLexing(Verbose >= 3);
   if (!Parser.parse(InputFilename)) {
     fprintf(stderr, "Unable to parse s-expressions: %s\n", InputFilename);
     return exit_status(EXIT_FAILURE);
   }
-  SymbolTable Symtab(&Allocator);
   BinaryWriter Writer(std::make_shared<WriteBackedQueue>(getOutput()),
                       Symtab);
   Writer.setTraceProgress(Verbose >= 1);
