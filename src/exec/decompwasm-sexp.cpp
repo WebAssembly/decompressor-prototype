@@ -102,9 +102,9 @@ int main(int Argc, char* Argv[]) {
   }
   // TODO(karlschimpf) Use arena allocator once working.
   Malloc Allocator;
-  ReadBackedQueue Input(getInput());
   SymbolTable Symtab(&Allocator);
-  BinaryReader Reader(&Input, Symtab);
+  BinaryReader Reader(std::make_shared<ReadBackedQueue>(getInput()),
+                      Symtab);
   Reader.setTraceProgress(Verbose >= 1);
   FileNode* File = Reader.readFile();
   if (File == nullptr) {

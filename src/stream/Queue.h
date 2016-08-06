@@ -69,7 +69,7 @@ class BlockEob : public std::enable_shared_from_this<BlockEob> {
   std::shared_ptr<BlockEob> EnclosingEobPtr;
 };
 
-class Queue {
+class Queue : public std::enable_shared_from_this<Queue> {
   Queue(const Queue&) = delete;
   Queue& operator=(const Queue&) = delete;
 

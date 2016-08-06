@@ -45,8 +45,8 @@ class Interpreter {
 
  public:
   // TODO(kschimpf): Add Output.
-  Interpreter(decode::Queue& Input,
-              decode::Queue& Output,
+  Interpreter(std::shared_ptr<decode::Queue> Input,
+              std::shared_ptr<decode::Queue> Output,
               filt::SymbolTable& Symtab);
 
   ~Interpreter() {}

@@ -132,9 +132,9 @@ int main(int Argc, char* Argv[]) {
     fprintf(stderr, "Unable to parse s-expressions: %s\n", InputFilename);
     return exit_status(EXIT_FAILURE);
   }
-  WriteBackedQueue Output(getOutput());
   SymbolTable Symtab(&Allocator);
-  BinaryWriter Writer(&Output, Symtab);
+  BinaryWriter Writer(std::make_shared<WriteBackedQueue>(getOutput()),
+                      Symtab);
   Writer.setTraceProgress(Verbose >= 1);
   Writer.setMinimizeBlockSize(MinimizeBlockSize);
   Writer.writePreamble();
