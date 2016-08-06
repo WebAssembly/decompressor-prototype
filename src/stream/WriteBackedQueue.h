@@ -32,7 +32,7 @@ class WriteBackedQueue FINAL : public Queue {
   WriteBackedQueue() = delete;
 
  public:
-  WriteBackedQueue(std::unique_ptr<RawStream> _Writer) {
+  WriteBackedQueue(std::shared_ptr<RawStream> _Writer) {
     assert(_Writer);
     Writer = std::move(_Writer);
   }
@@ -41,7 +41,7 @@ class WriteBackedQueue FINAL : public Queue {
  private:
   // Writer to dump contents of queue, when the contents is no longer
   // needed by reader.
-  std::unique_ptr<RawStream> Writer;
+  std::shared_ptr<RawStream> Writer;
 
   void dumpFirstPage() OVERRIDE;
 };

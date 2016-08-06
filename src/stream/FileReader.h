@@ -33,17 +33,20 @@ class FdReader : public RawStream {
   FdReader& operator=(const FdReader*) = delete;
 
  public:
+
+  FdReader(int Fd, bool CloseOnExit)
+      : Fd(Fd),
+        CurSize(0),
+        BytesRemaining(0),
+        AtEof(false),
+        CloseOnExit(CloseOnExit) {}
+
   ~FdReader() OVERRIDE;
+
   size_t read(uint8_t* Buf, size_t Size = 1) OVERRIDE;
   bool write(uint8_t* Buf, size_t Size = 1) OVERRIDE;
   bool freeze() OVERRIDE;
   bool atEof() OVERRIDE;
-
-  static std::unique_ptr<RawStream> create(int Fd, bool CloseOnExit = true) {
-    // TODO(kschimpf): Can we make the shared pointer part of the reader?
-    std::unique_ptr<RawStream> Reader(new FdReader(Fd, CloseOnExit));
-    return Reader;
-  }
 
  protected:
   int Fd;
@@ -54,12 +57,6 @@ class FdReader : public RawStream {
   bool AtEof;
   bool CloseOnExit;
 
-  FdReader(int Fd, bool CloseOnExit)
-      : Fd(Fd),
-        CurSize(0),
-        BytesRemaining(0),
-        AtEof(false),
-        CloseOnExit(CloseOnExit) {}
   void closeFd();
   void fillBuffer();
 };
@@ -72,11 +69,6 @@ class FileReader FINAL : public FdReader {
  public:
   FileReader(const char* Filename);
   ~FileReader() OVERRIDE;
-  static std::unique_ptr<RawStream> create(const char* Filename) {
-    // TODO(kschimpf): Can we make the shared pointer part of the reader?
-    std::unique_ptr<RawStream> Reader(new FileReader(Filename));
-    return Reader;
-  }
 };
 
 }  // end of namespace decode

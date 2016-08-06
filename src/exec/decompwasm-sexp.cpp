@@ -37,16 +37,15 @@ bool UseFileStreams = true;
 const char* InputFilename = "-";
 const char* OutputFilename = "-";
 
-std::unique_ptr<RawStream> getInput() {
+std::shared_ptr<RawStream> getInput() {
   if (InputFilename == std::string("-")) {
     if (UseFileStreams)
-      return FdReader::create(STDIN_FILENO, false);
-    else
-      return StreamReader::create(std::cin);
+      return std::make_shared<FdReader>(STDIN_FILENO, false);
+    return std::make_shared<StreamReader>(std::cin);
   }
   if (UseFileStreams)
-    return FileReader::create(InputFilename);
-  return FstreamReader::create(OutputFilename);
+    return std::make_shared<FileReader>(InputFilename);
+  return std::make_shared<FstreamReader>(OutputFilename);
 }
 
 void usage(const char* AppName) {

@@ -44,12 +44,6 @@ class StreamWriter : public RawStream {
   bool freeze() OVERRIDE;
   bool atEof() OVERRIDE;
 
-  static std::unique_ptr<RawStream> create(std::ostream& Output) {
-    // TODO(kschimpf): Can we make the shared pointr part of the writer?
-    std::unique_ptr<RawStream> Writer(new StreamWriter(Output));
-    return Writer;
-  }
-
  protected:
   std::ostream& Output;
   static constexpr size_t kBufSize = 2;  // 4096;
@@ -68,12 +62,6 @@ class FstreamWriter FINAL : public StreamWriter {
  public:
   FstreamWriter(const char* Filename);
   ~FstreamWriter() OVERRIDE;
-
-  static std::unique_ptr<RawStream> create(const char* Filename) {
-    // TODO(kschimpf): Can we make the shared pointr part of the writer?
-    std::unique_ptr<RawStream> Writer(new FstreamWriter(Filename));
-    return Writer;
-  }
 
  private:
   std::ofstream FileOutput;

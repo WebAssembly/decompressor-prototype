@@ -39,28 +39,26 @@ bool UseFileStreams = true;
 const char* InputFilename = "-";
 const char* OutputFilename = "-";
 
-std::unique_ptr<RawStream> getInput() {
+std::shared_ptr<RawStream> getInput() {
   if (InputFilename == std::string("-")) {
     if (UseFileStreams)
-      return FdReader::create(STDIN_FILENO, false);
-    else
-      return StreamReader::create(std::cin);
+      return std::make_shared<FdReader>(STDIN_FILENO, false);
+    return std::make_shared<StreamReader>(std::cin);
   }
   if (UseFileStreams)
-    return FileReader::create(InputFilename);
-  return FstreamReader::create(OutputFilename);
+    return std::make_shared<FileReader>(InputFilename);
+  return std::make_shared<FstreamReader>(OutputFilename);
 }
 
-std::unique_ptr<RawStream> getOutput() {
+std::shared_ptr<RawStream> getOutput() {
   if (OutputFilename == std::string("-")) {
     if (UseFileStreams)
-      return FdWriter::create(STDOUT_FILENO, false);
-    else
-      return StreamWriter::create(std::cout);
+      return std::make_shared<FdWriter>(STDOUT_FILENO, false);
+    return std::make_shared<StreamWriter>(std::cout);
   }
   if (UseFileStreams)
-    return FileWriter::create(OutputFilename);
-  return FstreamWriter::create(OutputFilename);
+    return std::make_shared<FileWriter>(OutputFilename);
+  return std::make_shared<FstreamWriter>(OutputFilename);
 }
 
 void usage(const char* AppName) {
@@ -154,7 +152,7 @@ int main(int Argc, char* Argv[]) {
     if (Verbose)
       fprintf(stderr, "Loading default: %s\n", Argv[i]);
     if (BinaryReader::isBinary(Argv[i])) {
-      std::unique_ptr<RawStream> Stream = FileReader::create(Argv[i]);
+      std::shared_ptr<RawStream> Stream = std::make_shared<FileReader>(Argv[i]);
       BinaryReader Reader(std::make_shared<ReadBackedQueue>(std::move(Stream)),
                           SymTab);
       Reader.setTraceProgress(Verbose >= 2);

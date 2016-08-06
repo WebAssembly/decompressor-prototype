@@ -36,16 +36,15 @@ bool UseFileStreams = true;
 const char* InputFilename = "-";
 const char* OutputFilename = "-";
 
-std::unique_ptr<RawStream> getOutput() {
+std::shared_ptr<RawStream> getOutput() {
   if (OutputFilename == std::string("-")) {
     if (UseFileStreams)
-      return FdWriter::create(STDOUT_FILENO, false);
-    else
-      return StreamWriter::create(std::cout);
+      return std::make_shared<FdWriter>(STDOUT_FILENO, false);
+    return std::make_shared<StreamWriter>(std::cout);
   }
   if (UseFileStreams)
-    return FileWriter::create(OutputFilename);
-  return FstreamWriter::create(OutputFilename);
+    return std::make_shared<FileWriter>(OutputFilename);
+  return std::make_shared<FstreamWriter>(OutputFilename);
 }
 
 void usage(const char* AppName) {

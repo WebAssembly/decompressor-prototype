@@ -42,12 +42,6 @@ class FdWriter : public RawStream {
   bool freeze() OVERRIDE;
   bool atEof() OVERRIDE;
 
-  static std::unique_ptr<RawStream> create(int Fd, bool CloseOnExit = true) {
-    // TODO(kschimpf): Can we make the shared pointr part of the writer?
-    std::unique_ptr<RawStream> Writer(new FdWriter(Fd, CloseOnExit));
-    return Writer;
-  }
-
  protected:
   int Fd;
   static constexpr size_t kBufSize = 4096;
@@ -66,12 +60,6 @@ class FileWriter FINAL : public FdWriter {
  public:
   FileWriter(const char* Filename);
   ~FileWriter() OVERRIDE;
-
-  static std::unique_ptr<RawStream> create(const char* Filename) {
-    // TODO(kschimpf): Can we make the shared pointr part of the writer?
-    std::unique_ptr<RawStream> Writer(new FileWriter(Filename));
-    return Writer;
-  }
 };
 
 }  // end of namespace decode

@@ -21,12 +21,13 @@
 #define DECOMPRESSOR_SRC_STREAM_RAWSTREAM_H
 
 #include "utils/Defs.h"
+#include <memory>
 
 namespace wasm {
 
 namespace decode {
 
-class RawStream {
+class RawStream : public std::enable_shared_from_this<RawStream> {
   RawStream(const RawStream&) = delete;
   RawStream& operator=(const RawStream&) = delete;
 
