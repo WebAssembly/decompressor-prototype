@@ -89,6 +89,8 @@ class SymbolTable {
   SymbolTable& operator=(const SymbolTable&) = delete;
 
  public:
+  TraceClassSexp Trace;
+
   explicit SymbolTable();
   ~SymbolTable() { clear(); }
   // Gets existing symbol if known. Otherwise returns nullptr.
@@ -115,6 +117,7 @@ class SymbolTable {
   int NextCreationIndex;
   // TODO(KarlSchimpf): Use arena allocator on map.
   std::map<ExternalName, SymbolNode*> SymbolMap;
+
   void installDefinitions(Node* Root);
   void clearSubtreeCaches(Node* Nd,
                           VisitedNodesType& VisitedNodes,
@@ -156,14 +159,13 @@ class Node {
     int Index;
   };
 
-  // Turns on ability to get warning/error messages.
-  static TraceClassSexp Trace;
-
   virtual ~Node() {}
 
   NodeType getRtClassId() const { return Type; }
 
   NodeType getType() const { return Type; }
+
+  TraceClassSexp &getTrace() const { return Symtab.Trace; }
 
   // General API to children.
   virtual int getNumKids() const = 0;
@@ -195,9 +197,10 @@ class Node {
 
  protected:
   NodeType Type;
+  SymbolTable &Symtab;
   int CreationIndex;
   Node(SymbolTable &Symtab, NodeType Type)
-      : Type(Type), CreationIndex(Symtab.getNextCreationIndex()) {}
+      : Type(Type), Symtab(Symtab), CreationIndex(Symtab.getNextCreationIndex()) {}
   virtual void clearCaches(NodeVectorType& AdditionalNodes);
   virtual void installCaches(NodeVectorType& AdditionalNodes);
 };
@@ -578,12 +581,12 @@ class OpcodeNode FINAL : public SelectBaseNode {
     int compare(const WriteRange& R) const;
     bool operator<(const WriteRange& R) const { return compare(R) < 0; }
     void trace() const {
-      if (Trace.getTraceProgress())
-        traceInternal("");
+      if (Case->getTrace().getTraceProgress())
+        traceInternal("", Case->getTrace());
     }
     void trace(const char* Prefix) const {
-      if (Trace.getTraceProgress())
-        traceInternal(Prefix);
+      if (Case->getTrace().getTraceProgress())
+        traceInternal(Prefix, Case->getTrace());
     }
 
    private:
@@ -591,7 +594,7 @@ class OpcodeNode FINAL : public SelectBaseNode {
     decode::IntType Min;
     decode::IntType Max;
     uint32_t ShiftValue;
-    void traceInternal(const char* Prefix) const;
+    void traceInternal(const char* Prefix, TraceClassSexp &Trace) const;
   };
   void clearCaches(NodeVectorType& AdditionalNodes) OVERRIDE;
   void installCaches(NodeVectorType& AdditionalNodes) OVERRIDE;
