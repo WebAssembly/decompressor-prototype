@@ -62,6 +62,15 @@ class ReadStream : public std::enable_shared_from_this<ReadStream> {
   }
   virtual uint64_t readVaruint64Bits(decode::Cursor& Pos, uint32_t NumBits) = 0;
 
+  // The following virtuals are used to implement blocks.
+
+  // Reads in the stream specific block size.
+  virtual size_t readBlockSize(decode::Cursor& Pos) = 0;
+
+  // Sets Eob based on BlockSize (returned from readBlockSize), based
+  // on stream specific block size.
+  virtual void pushEobAddress(decode::Cursor& Pos, size_t BlockSize) = 0;
+
   decode::StreamType getType() const { return Type; }
 
   decode::StreamType getRtClassId() const { return Type; }
@@ -88,6 +97,8 @@ class ByteReadStream FINAL : public ReadStream {
   int64_t readVarint64Bits(decode::Cursor& Pos, uint32_t NumBits) OVERRIDE;
   uint32_t readVaruint32Bits(decode::Cursor& Pos, uint32_t NumBits) OVERRIDE;
   uint64_t readVaruint64Bits(decode::Cursor& Pos, uint32_t NumBits) OVERRIDE;
+  size_t readBlockSize(decode::Cursor& Pos) OVERRIDE;
+  void pushEobAddress(decode::Cursor& Pos, size_t BlockSize) OVERRIDE;
   static bool implementsClass(decode::StreamType RtClassID) {
     return RtClassID == decode::StreamType::Byte;
   }
