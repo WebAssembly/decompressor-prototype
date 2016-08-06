@@ -64,10 +64,9 @@ class Interpreter {
 
  private:
   decode::Cursor ReadPos;
-  ReadStream* Reader;
+  std::shared_ptr<ReadStream> Reader;
   decode::Cursor WritePos;
-  WriteStream* Writer;
-  alloc::Allocator* Alloc;
+  std::shared_ptr<WriteStream> Writer;
   filt::Node* DefaultFormat;
   filt::SymbolTable& Symtab;
   // The magic number of the input.

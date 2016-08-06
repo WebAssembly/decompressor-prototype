@@ -52,14 +52,13 @@ Interpreter::Interpreter(std::shared_ptr<Queue> Input,
                          std::shared_ptr<Queue> Output,
                          SymbolTable& Symtab)
     : ReadPos(StreamType::Byte, Input),
+      Reader(std::make_shared<ByteReadStream>()),
       WritePos(StreamType::Byte, Output),
-      Alloc(Allocator::Default),
+      Writer(std::make_shared<ByteWriteStream>()),
       Symtab(Symtab),
       LastReadValue(0),
       MinimizeBlockSize(false),
       Trace(ReadPos, WritePos, "InterpSexp") {
-  Reader = Alloc->create<ByteReadStream>();
-  Writer = Alloc->create<ByteWriteStream>();
   DefaultFormat = Symtab.create<Varuint64NoArgsNode>();
   CurSectionName.reserve(MaxExpectedSectionNameSize);
 }
@@ -155,7 +154,7 @@ IntType Interpreter::eval(const Node* Nd) {
         case StreamKind::Input:
           switch (Stream->getStreamType()) {
             case StreamType::Byte:
-              ReturnValue = int(isa<ByteReadStream>(Reader));
+              ReturnValue = int(isa<ByteReadStream>(Reader.get()));
               break;
             case StreamType::Bit:
             case StreamType::Int:
@@ -167,7 +166,7 @@ IntType Interpreter::eval(const Node* Nd) {
         case StreamKind::Output:
           switch (Stream->getStreamType()) {
             case StreamType::Byte:
-              ReturnValue = int(isa<ByteReadStream>(Writer));
+              ReturnValue = int(isa<ByteReadStream>(Writer.get()));
               break;
             case StreamType::Bit:
             case StreamType::Int:
@@ -502,8 +501,8 @@ void Interpreter::decompress() {
 
 void Interpreter::decompressBlock(const Node* Code) {
   TRACE_METHOD("decompressBlock", Trace);
-  auto* ByteWriter = dyn_cast<ByteWriteStream>(Writer);
-  bool IsByteReader = isa<ByteReadStream>(Reader);
+  auto* ByteWriter = dyn_cast<ByteWriteStream>(Writer.get());
+  bool IsByteReader = isa<ByteReadStream>(Reader.get());
   if (IsByteReader) {
     const uint32_t BlockSize = Reader->readVaruint32(ReadPos);
     Trace.traceUint32_t("block size", BlockSize);
@@ -554,7 +553,7 @@ void Interpreter::decompressSection() {
   // (optimizing) caches installed.
   TRACE_METHOD("decompressSection", Trace);
   LastReadValue = 0;
-  assert(isa<ByteReadStream>(Reader));
+  assert(isa<ByteReadStream>(Reader.get()));
 #if LOG_SECTIONS
   size_t SectionAddress = ReadPos.getCurByteAddress();
 #endif
