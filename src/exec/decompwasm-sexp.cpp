@@ -17,9 +17,9 @@
 
 #include "binary/BinaryReader.h"
 #include "sexp-parser/Driver.h"
-#include "stream/ByteQueue.h"
 #include "stream/FileReader.h"
 #include "stream/FileWriter.h"
+#include "stream/ReadBackedQueue.h"
 #include "stream/StreamReader.h"
 #include "stream/StreamWriter.h"
 #include "utils/Defs.h"
@@ -102,7 +102,7 @@ int main(int Argc, char* Argv[]) {
   }
   // TODO(karlschimpf) Use arena allocator once working.
   Malloc Allocator;
-  ReadBackedByteQueue Input(getInput());
+  ReadBackedQueue Input(getInput());
   SymbolTable Symtab(&Allocator);
   BinaryReader Reader(&Input, Symtab);
   Reader.setTraceProgress(Verbose >= 1);

@@ -18,11 +18,12 @@
 #include "binary/BinaryReader.h"
 #include "interp/Interpreter.h"
 #include "sexp-parser/Driver.h"
-#include "stream/ByteQueue.h"
 #include "stream/FileReader.h"
 #include "stream/FileWriter.h"
+#include "stream/ReadBackedQueue.h"
 #include "stream/StreamReader.h"
 #include "stream/StreamWriter.h"
+#include "stream/WriteBackedQueue.h"
 #include "utils/Defs.h"
 
 #include <cstring>
@@ -154,7 +155,7 @@ int main(int Argc, char* Argv[]) {
       fprintf(stderr, "Loading default: %s\n", Argv[i]);
     if (BinaryReader::isBinary(Argv[i])) {
       std::unique_ptr<RawStream> Stream = FileReader::create(Argv[i]);
-      ReadBackedByteQueue Input(std::move(Stream));
+      ReadBackedQueue Input(std::move(Stream));
       BinaryReader Reader(&Input, SymTab);
       Reader.setTraceProgress(Verbose >= 2);
       if (Reader.readFile()) {
@@ -169,8 +170,8 @@ int main(int Argc, char* Argv[]) {
       return exit_status(EXIT_FAILURE);
     }
   }
-  ReadBackedByteQueue Input(getInput());
-  WriteBackedByteQueue Output(getOutput());
+  ReadBackedQueue Input(getInput());
+  WriteBackedQueue Output(getOutput());
   Interpreter Decompressor(Input, Output, SymTab);
   Decompressor.setTraceProgress(Verbose >= 1, TraceIoDifference);
   Decompressor.setMinimizeBlockSize(MinimizeBlockSize);

@@ -20,7 +20,7 @@
 #ifndef DECOMPRESSOR_SRC_INTERP_INTERPRETER_H
 #define DECOMPRESSOR_SRC_INTERP_INTERPRETER_H
 
-#include "stream/ByteQueue.h"
+#include "stream/Queue.h"
 #include "stream/Cursor.h"
 #include "interp/ReadStream.h"
 #include "interp/TraceSexpReaderWriter.h"
@@ -45,8 +45,8 @@ class Interpreter {
 
  public:
   // TODO(kschimpf): Add Output.
-  Interpreter(decode::ByteQueue& Input,
-              decode::ByteQueue& Output,
+  Interpreter(decode::Queue& Input,
+              decode::Queue& Output,
               filt::SymbolTable& Symtab);
 
   ~Interpreter() {}

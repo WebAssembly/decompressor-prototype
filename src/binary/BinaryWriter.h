@@ -21,7 +21,7 @@
 #define DECOMPRESSOR_SRC_BINARY_BINGEN_H
 
 #include "binary/SectionSymbolTable.h"
-#include "stream/ByteQueue.h"
+#include "stream/Queue.h"
 #include "stream/Cursor.h"
 #include "interp/TraceSexpWriter.h"
 #include "interp/WriteStream.h"
@@ -41,7 +41,7 @@ class BinaryWriter {
   BinaryWriter& operator=(const BinaryWriter&) = delete;
 
  public:
-  BinaryWriter(decode::ByteQueue* Output, SymbolTable& Symtab);
+  BinaryWriter(decode::Queue* Output, SymbolTable& Symtab);
 
   ~BinaryWriter() { WritePos.freezeEof(); }
 
