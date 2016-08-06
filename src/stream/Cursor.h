@@ -20,7 +20,7 @@
 #ifndef DECOMPRESSOR_SRC_STREAM_CURSOR_H
 #define DECOMPRESSOR_SRC_STREAM_CURSOR_H
 
-#include "stream/ByteQueue.h"
+#include "stream/Queue.h"
 
 namespace wasm {
 
@@ -62,19 +62,19 @@ class Cursor : public PageCursor {
   Cursor& operator=(const Cursor&) = delete;
 
  public:
-  Cursor(StreamType Type, ByteQueue* Queue)
-      : Type(Type), Queue(Queue), EobPtr(Queue->getEofPtr()) {}
+  Cursor(StreamType Type, Queue* Que)
+      : Type(Type), Que(Que), EobPtr(Que->getEofPtr()) {}
   explicit Cursor(const Cursor& C)
       : PageCursor(C),
         Type(C.Type),
-        Queue(C.Queue),
+        Que(C.Que),
         EobPtr(C.EobPtr),
         CurByte(C.CurByte) {}
   ~Cursor() {}
 
   void swap(Cursor& C) {
     std::swap(Type, C.Type);
-    std::swap(Queue, C.Queue);
+    std::swap(Que, C.Que);
     std::swap(static_cast<PageCursor&>(*this), static_cast<PageCursor&>(C));
     std::swap(EobPtr, C.EobPtr);
     std::swap(CurByte, C.CurByte);
@@ -94,14 +94,14 @@ class Cursor : public PageCursor {
 
   uint32_t getNumExtraBitsWritten() const { return CurByte.BitsInByteValue; }
 
-  ByteQueue* getQueue() { return Queue; }
+  Queue* getQueue() { return Que; }
   bool atEob() {
     return getCurAddress() >= getEobAddress() || !readFillBuffer();
   }
 
   size_t getEobAddress() const { return EobPtr->getEobAddress(); }
 
-  void freezeEof() { Queue->freezeEof(getCurAddress()); }
+  void freezeEof() { Que->freezeEof(getCurAddress()); }
 
   void setEobAddress(size_t NewValue) { EobPtr->setEobAddress(NewValue); }
 
@@ -155,7 +155,7 @@ class Cursor : public PageCursor {
   // The following methods are for debugging.
   // ------------------------------------------------------------------------
 
-  void writeCurPage(FILE* File) { Queue->writePageAt(File, getCurAddress()); }
+  void writeCurPage(FILE* File) { Que->writePageAt(File, getCurAddress()); }
 
   void describe(FILE* File) {
     size_t EobAddress = getEobAddress();
@@ -170,7 +170,7 @@ class Cursor : public PageCursor {
  protected:
   StreamType Type;
   // The byte queue the cursor points to.
-  ByteQueue* Queue;
+  Queue* Que;
   // End of block address.
   std::shared_ptr<BlockEob> EobPtr;
   WorkingByte CurByte;

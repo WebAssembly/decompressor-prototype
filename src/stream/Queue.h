@@ -105,6 +105,38 @@ class Queue {
   // available for writing.
   size_t writeToPage(size_t Address, size_t WantedSize, PageCursor& Cursor);
 
+  // Reads a contiguous range of bytes into a buffer.
+  //
+  // Note: A read request may not be fully met. This function only guarantees
+  // to read 1 element from the queue, if eob hasn't been reached. This is
+  // done to minimize blocking. When possible, it will try to meet the full
+  // request.
+  //
+  // @param Address The address within the queue to read from. Automatically
+  //                incremented during read.
+  // @param Buffer  A pointer to a buffer to be filled (and contains at least
+  //                Size elements).
+  // @param Size    The number of requested elements to read.
+  // @result        The actual number of elements read. If zero, the eob was
+  //                reached. Valid return values are in [0..Size].
+  size_t read(size_t& Address, uint8_t* Buffer, size_t Size = 1);
+
+  // Writes a contiquous sequence of bytes in the given buffer.
+  //
+  // Note: If Address is larger than queue size, zero's are automatically
+  // inserted.
+  //
+  // @param Address The address within the queue to write to. Automatically
+  //                incremented during write.
+  // @param Buffer  A pointer to the buffer of elements to write.
+  // @param Size    The number of elements in the buffer to write.
+  // @result        True if successful (i.e. not beyond eob address).
+  bool write(size_t& Address, uint8_t* Buffer, size_t Size = 1);
+
+  // For debugging. Writes out sequence of bytes (on page associated with
+  // Address) in the queue.
+  void writePageAt(FILE* File, size_t Address);
+
   // Freezes eob of the queue. Not valid to read/write past the eob, once set.
   void freezeEof(size_t Address);
 

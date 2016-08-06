@@ -16,6 +16,7 @@
 ///
 
 #include "stream/Queue.h"
+#include "stream/WriteUtils.h"
 
 namespace wasm {
 
@@ -107,6 +108,54 @@ void Queue::freezeEof(size_t Address) {
   LastPage = Cursor.CurPage;
   if (Cursor.CurPage->Next)
     Cursor.CurPage->Next.reset();
+}
+
+void Queue::writePageAt(FILE* File, size_t Address) {
+  std::shared_ptr<Page> P = getPage(Address);
+  if (!P)
+    return;
+  size_t Size = Page::address(Address);
+  size_t Count = 0;
+  for (size_t i = 0; i < Size; ++i, ++Count) {
+    if (Count % 16 == 0) {
+      if (Count)
+        fputc('\n', File);
+    } else {
+      fputc(' ', File);
+    }
+    writeInt(File, P->Buffer[i], ValueFormat::Hexidecimal);
+  }
+  fputc('\n', File);
+}
+
+size_t Queue::read(size_t& Address, uint8_t* ToBuf, size_t WantedSize) {
+  size_t Count = 0;
+  PageCursor Cursor;
+  while (WantedSize) {
+    size_t FoundSize = readFromPage(Address, WantedSize, Cursor);
+    if (FoundSize == 0)
+      return Count;
+    uint8_t* FromBuf = Cursor.getBufferPtr();
+    memcpy(ToBuf, FromBuf, FoundSize);
+    Count += FoundSize;
+    WantedSize -= FoundSize;
+    Address += FoundSize;
+  }
+  return Count;
+}
+
+bool Queue::write(size_t& Address, uint8_t* FromBuf, size_t WantedSize) {
+  PageCursor Cursor;
+  while (WantedSize) {
+    size_t FoundSize = writeToPage(Address, WantedSize, Cursor);
+    if (FoundSize == 0)
+      return false;
+    uint8_t* ToBuf = Cursor.getBufferPtr();
+    memcpy(ToBuf, FromBuf, FoundSize);
+    Address += FoundSize;
+    WantedSize -= FoundSize;
+  }
+  return true;
 }
 
 }  // end of decode namespace

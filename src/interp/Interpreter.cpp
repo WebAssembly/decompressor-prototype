@@ -48,8 +48,8 @@ static constexpr uint32_t MaxExpectedSectionNameSize = 32;
 
 }  // end of anonymous namespace
 
-Interpreter::Interpreter(ByteQueue& Input,
-                         ByteQueue& Output,
+Interpreter::Interpreter(Queue& Input,
+                         Queue& Output,
                          SymbolTable& Symtab)
     : ReadPos(StreamType::Byte, &Input),
       WritePos(StreamType::Byte, &Output),

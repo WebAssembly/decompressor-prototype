@@ -23,7 +23,7 @@
 #include "binary/SectionSymbolTable.h"
 #include "interp/ReadStream.h"
 #include "interp/TraceSexpReader.h"
-#include "stream/ByteQueue.h"
+#include "stream/Queue.h"
 #include "sexp/Ast.h"
 #include "sexp/TextWriter.h"
 #include "stream/Cursor.h"
@@ -47,7 +47,7 @@ class BinaryReader {
   // Returns true if it begins with a WASM file magic number.
   static bool isBinary(const char* Filename);
 
-  BinaryReader(decode::ByteQueue* Input, SymbolTable& Symtab);
+  BinaryReader(decode::Queue* Input, SymbolTable& Symtab);
 
   ~BinaryReader() {}
 
