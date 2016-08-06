@@ -86,10 +86,29 @@ class WriteStream : public std::enable_shared_from_this<WriteStream> {
                                   decode::Cursor& Pos,
                                   uint32_t NumBits) = 0;
 
+  // The following virtuals are used to implement blocks.
+
+  // Returns stream specific address (i.e. bit address for bit streams, byte
+  // address for byte streams, and int address for int streams).
+  virtual size_t getStreamAddress(decode::Cursor& Pos) = 0;
+
+  // Saves the block size using a fixed format that is independent of
+  // the block size.
+  virtual void writeFixedBlockSize(decode::Cursor& Pos, size_t BlockSize) = 0;
+  virtual void writeVarintBlockSize(decode::Cursor& Pos, size_t BlockSIze) = 0;
+
+  // Returns the size of the block, defined by the range of the
+  // passed positions (specific to the stream).
+  virtual size_t getBlockSize(decode::Cursor& StartPos,
+                              decode::Cursor& EndPos) = 0;
+
+  // Moves Size elemens (stream specific) to StartAddress.
+  virtual void moveBlock(decode::Cursor& Pos, size_t StartAddress,
+                         size_t Size) = 0;
+
   decode::StreamType getType() const { return Type; }
 
   decode::StreamType getRtClassId() const { return Type; }
-
   static bool implementsClass(decode::StreamType /*RtClassId*/) { return true; }
 
  protected:
@@ -102,10 +121,12 @@ class ByteWriteStream FINAL : public WriteStream {
   ByteWriteStream& operator=(const ByteWriteStream&) = delete;
 
  public:
+#if 1
   static constexpr uint32_t BitsInWord = sizeof(uint32_t) * CHAR_BIT;
   static constexpr uint32_t ChunkSize = CHAR_BIT - 1;
   static constexpr uint32_t ChunksInWord =
       (BitsInWord + ChunkSize - 1) / ChunkSize;
+#endif
   ByteWriteStream() : WriteStream(decode::StreamType::Byte) {}
   void writeUint8Bits(uint8_t Value,
                       decode::Cursor& Pos,
@@ -128,8 +149,14 @@ class ByteWriteStream FINAL : public WriteStream {
   void writeVaruint64Bits(uint64_t Value,
                           decode::Cursor& Pos,
                           uint32_t NumBits) OVERRIDE;
-
-  void writeFixedVaruint32(uint32_t Value, decode::Cursor& Pos);
+  void writeFixedVaruint32(uint32_t Value, decode::Cursor& Pos) OVERRIDE;
+  size_t getStreamAddress(decode::Cursor& Pos) OVERRIDE;
+  void writeFixedBlockSize(decode::Cursor& Pos, size_t BlockSize) OVERRIDE;
+  void writeVarintBlockSize(decode::Cursor& Pos, size_t BlockSIze) OVERRIDE;
+  size_t getBlockSize(decode::Cursor& StartPos,
+                      decode::Cursor& EndPos) OVERRIDE;
+  void moveBlock(decode::Cursor& Pos, size_t StartAddress,
+                 size_t Size) OVERRIDE;
 
   static bool implementsClass(decode::StreamType RtClassId) {
     return RtClassId == decode::StreamType::Byte;

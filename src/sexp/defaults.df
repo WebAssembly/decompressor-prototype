@@ -56,9 +56,6 @@
       (loop.unbounded
         (eval 'code.opcode')     # reads instruction opcode
         (eval 'code.inst'))      # selects/parses corresponding instruction.
-      # Insert 0xFFFFFFFF eob opcode if not byte stream.
-      (if (and in.byte (not out.byte))
-        (write (u32.const 0xffffffff) (uint32)))
     )
   )
 
@@ -114,20 +111,7 @@
     )
   )
 
-  (define 'code.opcode'
-    # All opcodes single byte except EOB marker 0xFFFFFFFF.
-    (opcode (uint8)
-      (case (u8.const 0xFF)
-        (opcode (uint8)
-          (case (u8.const 0xFF)
-            (opcode (uint8)
-              (case (u8.const 0xFF) (uint8)) 
-            )
-          )
-        )
-      )
-    )
-  )
+  (define 'code.opcode' (uint8))
 
   (define 'data'
     (loop (varuint32 6)        # number of data segments.
