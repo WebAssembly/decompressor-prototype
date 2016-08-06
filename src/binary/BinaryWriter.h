@@ -41,7 +41,7 @@ class BinaryWriter {
   BinaryWriter& operator=(const BinaryWriter&) = delete;
 
  public:
-  BinaryWriter(decode::Queue* Output, SymbolTable& Symtab);
+  BinaryWriter(std::shared_ptr<decode::Queue> Output, SymbolTable& Symtab);
 
   ~BinaryWriter() { WritePos.freezeEof(); }
 

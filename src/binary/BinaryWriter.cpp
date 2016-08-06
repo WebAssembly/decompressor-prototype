@@ -32,7 +32,7 @@ namespace filt {
 
 namespace {}  // end of anonymous namespace
 
-BinaryWriter::BinaryWriter(decode::Queue* Output, SymbolTable& Symtab)
+BinaryWriter::BinaryWriter(std::shared_ptr<decode::Queue> Output, SymbolTable& Symtab)
     : WritePos(decode::StreamType::Byte, Output),
       Writer(nullptr),
       SectionSymtab(Symtab),

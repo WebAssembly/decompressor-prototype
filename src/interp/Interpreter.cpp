@@ -48,11 +48,11 @@ static constexpr uint32_t MaxExpectedSectionNameSize = 32;
 
 }  // end of anonymous namespace
 
-Interpreter::Interpreter(Queue& Input,
-                         Queue& Output,
+Interpreter::Interpreter(std::shared_ptr<Queue> Input,
+                         std::shared_ptr<Queue> Output,
                          SymbolTable& Symtab)
-    : ReadPos(StreamType::Byte, &Input),
-      WritePos(StreamType::Byte, &Output),
+    : ReadPos(StreamType::Byte, Input),
+      WritePos(StreamType::Byte, Output),
       Alloc(Allocator::Default),
       Symtab(Symtab),
       LastReadValue(0),

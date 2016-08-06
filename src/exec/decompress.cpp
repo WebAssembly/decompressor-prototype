@@ -155,8 +155,8 @@ int main(int Argc, char* Argv[]) {
       fprintf(stderr, "Loading default: %s\n", Argv[i]);
     if (BinaryReader::isBinary(Argv[i])) {
       std::unique_ptr<RawStream> Stream = FileReader::create(Argv[i]);
-      ReadBackedQueue Input(std::move(Stream));
-      BinaryReader Reader(&Input, SymTab);
+      BinaryReader Reader(std::make_shared<ReadBackedQueue>(std::move(Stream)),
+                          SymTab);
       Reader.setTraceProgress(Verbose >= 2);
       if (Reader.readFile()) {
         continue;
@@ -170,9 +170,9 @@ int main(int Argc, char* Argv[]) {
       return exit_status(EXIT_FAILURE);
     }
   }
-  ReadBackedQueue Input(getInput());
-  WriteBackedQueue Output(getOutput());
-  Interpreter Decompressor(Input, Output, SymTab);
+  Interpreter Decompressor(std::make_shared<ReadBackedQueue>(getInput()),
+                           std::make_shared<WriteBackedQueue>(getOutput()),
+                           SymTab);
   Decompressor.setTraceProgress(Verbose >= 1, TraceIoDifference);
   Decompressor.setMinimizeBlockSize(MinimizeBlockSize);
   Decompressor.decompress();

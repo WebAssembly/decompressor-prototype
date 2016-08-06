@@ -62,7 +62,7 @@ class Cursor : public PageCursor {
   Cursor& operator=(const Cursor&) = delete;
 
  public:
-  Cursor(StreamType Type, Queue* Que)
+  Cursor(StreamType Type, std::shared_ptr<Queue> Que)
       : Type(Type), Que(Que), EobPtr(Que->getEofPtr()) {}
   explicit Cursor(const Cursor& C)
       : PageCursor(C),
@@ -94,7 +94,8 @@ class Cursor : public PageCursor {
 
   uint32_t getNumExtraBitsWritten() const { return CurByte.BitsInByteValue; }
 
-  Queue* getQueue() { return Que; }
+  std::shared_ptr<Queue> getQueue() { return Que; }
+
   bool atEob() {
     return getCurAddress() >= getEobAddress() || !readFillBuffer();
   }
@@ -170,7 +171,7 @@ class Cursor : public PageCursor {
  protected:
   StreamType Type;
   // The byte queue the cursor points to.
-  Queue* Que;
+  std::shared_ptr<Queue> Que;
   // End of block address.
   std::shared_ptr<BlockEob> EobPtr;
   WorkingByte CurByte;
