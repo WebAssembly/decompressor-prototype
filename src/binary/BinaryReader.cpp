@@ -18,6 +18,7 @@
 // implements a reader to extract filter sections.
 
 #include "binary/BinaryReader.h"
+#include "interp/ByteReadStream.h"
 
 #include <cstdio>
 

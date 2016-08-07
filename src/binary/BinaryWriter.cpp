@@ -17,9 +17,10 @@
 
 // Implements a binary generator for filter s-expressions.
 
+#include "binary/BinaryWriter.h"
 #include "sexp/Ast.h"
 #include "sexp/TextWriter.h"
-#include "binary/BinaryWriter.h"
+#include "interp/ByteWriteStream.h"
 
 namespace wasm {
 
