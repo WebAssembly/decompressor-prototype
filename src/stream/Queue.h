@@ -48,6 +48,33 @@ static constexpr size_t kUndefinedAddress = std::numeric_limits<size_t>::max();
 
 typedef uint8_t BitsInByteType;
 
+struct BitAddress {
+ public:
+  BitAddress(size_t ByteAddr = 0, BitsInByteType BitAddr = 0)
+      : ByteAddr(ByteAddr), BitAddr(BitAddr) {}
+  BitAddress(const BitAddress &Address)
+      : ByteAddr(Address.ByteAddr), BitAddr(Address.BitAddr) {}
+  size_t getByteAddress() const { return ByteAddr; }
+  BitsInByteType getBitAddress() const { return BitAddr; }
+
+  bool operator==(const BitAddress& Addr) {
+    return ByteAddr == Addr.ByteAddr && BitAddr == Addr.BitAddr;
+  }
+
+  // For debugging
+  FILE* describe(FILE* File);
+
+ protected:
+  size_t ByteAddr;
+  BitsInByteType BitAddr;
+};
+
+inline FILE* describeByteAddress(FILE* File, size_t Address) {
+  BitAddress Addr(Address);
+  Addr.describe(File);
+  return File;
+}
+
 // Holds the end of a block within a queue. The outermost block is
 // always defined as enclosing the entire queue. Note: EobBitAddress
 // is the extra bits in the next byte, efter EobAddress, when eob doesn't
@@ -57,30 +84,35 @@ class BlockEob : public std::enable_shared_from_this<BlockEob> {
   BlockEob& operator=(const BlockEob&) = delete;
 
  public:
-  explicit BlockEob(size_t EobAddress = kUndefinedAddress,
-                    BitsInByteType EobBitAddress=0)
-      : EobAddress(EobAddress), EobBitAddress(EobBitAddress) {}
-  BlockEob(size_t EobAddress, const std::shared_ptr<BlockEob> EnclosingEobPtr)
-      : EobAddress(EobAddress), EobBitAddress(0),
-        EnclosingEobPtr(EnclosingEobPtr) {}
-  BlockEob(size_t EobAddress, BitsInByteType EobBitAddress,
+  explicit BlockEob(const BitAddress &Address) : EobAddress(Address) {}
+  explicit BlockEob(size_t ByteAddr = kUndefinedAddress,
+                    BitsInByteType BitAddr=0)
+      : EobAddress(ByteAddr, BitAddr) {}
+  BlockEob(size_t ByteAddr,
            const std::shared_ptr<BlockEob> EnclosingEobPtr)
-      : EobAddress(EobAddress), EobBitAddress(EobBitAddress),
-        EnclosingEobPtr(EnclosingEobPtr) {}
-  size_t getEobAddress() const { return EobAddress; }
-  BitsInByteType geEobBitAddress() const { return EobBitAddress; }
-  void setEobAddress(size_t Value, BitsInByteType BitValue=0) {
-    EobAddress = Value;
-    EobBitAddress = BitValue;
+      : EobAddress(ByteAddr), EnclosingEobPtr(EnclosingEobPtr) {}
+  BlockEob(size_t ByteAddr, BitsInByteType BitAddr,
+           const std::shared_ptr<BlockEob> EnclosingEobPtr)
+      : EobAddress(ByteAddr, BitAddr), EnclosingEobPtr(EnclosingEobPtr) {}
+  BlockEob(const BitAddress& Address,
+           const std::shared_ptr<BlockEob> EnclosingEobPtr)
+      : EobAddress(Address), EnclosingEobPtr(EnclosingEobPtr) {}
+  BitAddress&  getEobAddress() { return EobAddress; }
+  void setEobAddress(const BitAddress& Address) {
+    EobAddress = Address;
   }
-  bool undefinedEob() const { return EobAddress == kUndefinedAddress; }
+  bool isDefined() const {
+    return EobAddress.getByteAddress() != kUndefinedAddress;
+  }
   std::shared_ptr<BlockEob> getEnclosingEobPtr() const {
     return EnclosingEobPtr;
   }
 
+  // For debugging.
+  FILE* describe(FILE* File);
+
  private:
-  size_t EobAddress;
-  BitsInByteType EobBitAddress;
+  BitAddress EobAddress;
   std::shared_ptr<BlockEob> EnclosingEobPtr;
 };
 
@@ -102,7 +134,7 @@ class Queue : public std::enable_shared_from_this<Queue> {
 
   // Value unknown (returning maximum possible size) until frozen. When
   // frozen, returns the size of the buffer.
-  size_t currentSize() { return EofPtr->getEobAddress(); }
+  size_t currentSize() { return EofPtr->getEobAddress().getByteAddress(); }
 
   // Returns the actual size of the buffer (i.e. only those with pages still
   // in memory).
@@ -151,6 +183,10 @@ class Queue : public std::enable_shared_from_this<Queue> {
   // For debugging. Writes out sequence of bytes (on page associated with
   // Address) in the queue.
   void writePageAt(FILE* File, size_t Address);
+
+  size_t getEofAddress() const {
+    return EofPtr->getEobAddress().getByteAddress();
+  }
 
   // Freezes eob of the queue. Not valid to read/write past the eob, once set.
   void freezeEof(size_t Address);

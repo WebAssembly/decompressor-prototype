@@ -119,9 +119,7 @@ IntType Interpreter::eval(const Node* Nd) {
 #if LOG_FUNCTIONS || LOG_NUMBERED_BLOCK
       // NOTE: This assumes that blocks (outside of sections) are only
       // used to define functions.
-      fprintf(stderr, "@%" PRIxMAX "/@%" PRIxMAX " Function %" PRIuMAX "\n",
-              uintmax_t(ReadPos.getCurByteAddress()),
-              uintmax_t(WritePos.getCurByteAddress()),
+      fprintf(Trace.indent(), " Function %" PRIuMAX "\n",
               uintmax_t(LogBlockCount));
 #if LOG_NUMBERED_BLOCK
       if (LogBlockCount == LOG_FUNCTION_NUMBER)
@@ -188,8 +186,8 @@ IntType Interpreter::eval(const Node* Nd) {
         Trace.indent();
         decode::Cursor Lookahead(ReadPos);
         for (size_t i = 0; i < 10; ++i) {
-          if (!Lookahead.atEob())
-            fprintf(Trace.getFile(), " %x", Lookahead.readByte());
+          if (!Lookahead.atByteEob())
+            fprintf(Trace.indent(), " %x", Lookahead.readByte());
         }
         fprintf(Trace.getFile(), "\n");
       }
@@ -228,7 +226,7 @@ IntType Interpreter::eval(const Node* Nd) {
       break;
     }
     case OpLoopUnbounded: {
-      while (!ReadPos.atEob())
+      while (!ReadPos.atReadBitEob())
         for (auto* Kid : *Nd)
           eval(Kid);
       break;
@@ -495,7 +493,7 @@ void Interpreter::decompress() {
     fatal("Unable to decompress, WASM version number not known");
   Writer->writeUint32(Version, WritePos);
 
-  while (!ReadPos.atEob())
+  while (!ReadPos.atByteEob())
     decompressSection();
   WritePos.freezeEof();
 }
@@ -531,7 +529,8 @@ void Interpreter::evalOrCopy(const Node* Nd) {
     eval(Nd);
     return;
   }
-  while (!ReadPos.atEob())
+  // If not defined, must be at end of section, and hence byte aligned.
+  while (!ReadPos.atByteEob())
     Writer->writeUint8(Reader->readUint8(ReadPos), WritePos);
 }
 
@@ -547,7 +546,7 @@ void Interpreter::decompressSection() {
 #endif
   readSectionName();
 #if LOG_SECTIONS
-  fprintf(stderr, "@%" PRIxMAX " section '%s'\n", uintmax_t(SectionAddress),
+  fprintf(Trace.indent(), "@%" PRIxMAX " section '%s'\n", uintmax_t(SectionAddress),
           CurSectionName.c_str());
 #endif
   Trace.traceString("name", CurSectionName);

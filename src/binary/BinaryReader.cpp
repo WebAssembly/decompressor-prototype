@@ -178,7 +178,7 @@ FileNode* BinaryReader::readFile() {
   Version = Reader->readUint32(ReadPos);
   Trace.traceHexUint32_t("Version", Version);
   auto* File = Symtab->create<FileNode>();
-  while (!ReadPos.atEob())
+  while (!ReadPos.atByteEob())
     File->append(readSection());
   Trace.traceSexp(File);
   SectionSymtab.install(File);
@@ -196,7 +196,7 @@ SectionNode* BinaryReader::readSection() {
   readBlock([&]() {
     if (Name == "filter") {
       readSymbolTable();
-      while (!ReadPos.atEob())
+      while (!ReadPos.atByteEob())
         readNode();
     } else {
       // TODO(karlschimpf) Fix to actually read!

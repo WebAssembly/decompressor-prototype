@@ -65,7 +65,7 @@ void TraceClass::exit() {
   fprintf(File, "exit %s\n", Name);
 }
 
-void TraceClass::indent() {
+FILE* TraceClass::indent() {
   for (int i = 0; i < IndentLevel; ++i)
     fputs("  ", File);
   bool AddSeparator = false;
@@ -81,6 +81,7 @@ void TraceClass::indent() {
   if (AddSeparator)
     fputc(' ', File);
   traceContext();
+  return File;
 }
 
 void TraceClass::traceMessageInternal(const std::string& Message) {

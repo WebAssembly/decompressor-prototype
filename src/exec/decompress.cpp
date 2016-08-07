@@ -68,9 +68,6 @@ void usage(const char* AppName) {
   fprintf(stderr, "\n");
   fprintf(stderr, "Options:\n");
   fprintf(stderr, "  -d File\t\tFile containing default algorithms.\n");
-  fprintf(stderr,
-          "  --diff\t\tWhen tracing, "
-          "show byte difference between reader/writer.\n");
   fprintf(stderr, "  --expect-fail\t\tSucceed on failure/fail on success\n");
   fprintf(stderr, "  -h\t\t\tPrint this usage message.\n");
   fprintf(stderr, "  -i File\t\tFile to decompress ('-' implies stdin).\n");
@@ -100,7 +97,6 @@ void usage(const char* AppName) {
 int main(int Argc, char* Argv[]) {
   auto Symtab = std::make_shared<SymbolTable>();
   int Verbose = 0;
-  bool TraceIoDifference = false;
   bool MinimizeBlockSize = false;
   std::vector<int> DefaultIndices;
   for (int i = 1; i < Argc; ++i) {
@@ -111,8 +107,6 @@ int main(int Argc, char* Argv[]) {
         return exit_status(EXIT_FAILURE);
       }
       DefaultIndices.push_back(i);
-    } else if (Argv[i] == std::string("--diff")) {
-      TraceIoDifference = true;
     } else if (Argv[i] == std::string("--expect-fail")) {
       ExpectExitFail = true;
     } else if (Argv[i] == std::string("-h") ||
@@ -170,7 +164,7 @@ int main(int Argc, char* Argv[]) {
   Interpreter Decompressor(std::make_shared<ReadBackedQueue>(getInput()),
                            std::make_shared<WriteBackedQueue>(getOutput()),
                            Symtab);
-  Decompressor.setTraceProgress(Verbose >= 1, TraceIoDifference);
+  Decompressor.setTraceProgress(Verbose >= 1);
   Decompressor.setMinimizeBlockSize(MinimizeBlockSize);
   Decompressor.decompress();
   return exit_status(EXIT_SUCCESS);

@@ -55,9 +55,8 @@ class Interpreter {
   // to the corresponding output.
   void decompress();
 
-  void setTraceProgress(bool NewValue, bool TraceIoDifference = false) {
+  void setTraceProgress(bool NewValue) {
     Trace.setTraceProgress(NewValue);
-    Trace.setTraceIoDifference(TraceIoDifference);
   }
 
   void setMinimizeBlockSize(bool NewValue) { MinimizeBlockSize = NewValue; }

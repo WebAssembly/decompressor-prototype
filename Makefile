@@ -141,6 +141,7 @@ STRM_SRCS = \
 	FileReader.cpp \
 	FileWriter.cpp \
 	Cursor.cpp \
+	Page.cpp \
 	Queue.cpp \
 	ReadBackedQueue.cpp \
 	StreamReader.cpp \

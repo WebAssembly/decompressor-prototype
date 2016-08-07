@@ -67,7 +67,8 @@ class TraceClass : std::enable_shared_from_this<TraceClass> {
   TraceClass(const char* Label, FILE* File);
   virtual ~TraceClass();
   virtual void traceContext() const;
-  void indent();
+  // Prints trace prefix only.
+  FILE* indent();
   void traceMessage(const char* Message) {
     if (getTraceProgress())
       traceMessageInternal(Message);
