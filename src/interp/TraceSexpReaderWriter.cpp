@@ -63,10 +63,10 @@ TraceClassSexpReaderWriter::~TraceClassSexpReaderWriter() {
 void TraceClassSexpReaderWriter::traceContext() const {
   fprintf(File, "@%" PRIxMAX, uintmax_t(ReadPos.getCurByteAddress()));
   if (!ReadPos.isByteAligned())
-    fprintf(File, ":%" PRIuMAX, uintmax_t(ReadPos.getNumExtraBitsRead()));
+    fprintf(File, ":%" PRIuMAX, uintmax_t(ReadPos.getBitsInByteRead()));
   fprintf(File, "/@%" PRIxMAX, uintmax_t(WritePos.getCurByteAddress()));
   if (!WritePos.isByteAligned())
-    fprintf(File, ":%" PRIuMAX, uintmax_t(WritePos.getNumExtraBitsWritten()));
+    fprintf(File, ":%" PRIuMAX, uintmax_t(WritePos.getBitsInByteWritten()));
   fputc(' ', File);
   if (!TraceIoDifference)
     return;

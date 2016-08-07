@@ -29,32 +29,62 @@ namespace decode {
 class Cursor;
 // Holds bits in incomplete byte read/write.
 class WorkingByte {
-  friend class Cursor;
-
  public:
-  WorkingByte() : ByteValue(0), BitsInByteValue(0) {}
+  WorkingByte() : Value(0), BitsInValue(0) {}
 
-  bool isEmpty() const { return BitsInByteValue == 0; }
+  uint8_t getValue() const { return Value; }
+
+  bool isEmpty() const { return BitsInValue == 0; }
+
+  BitsInByteType getBitsInByteRead() const {
+    return (CHAR_BIT - BitsInValue) % 0x7;
+  }
+
+  BitsInByteType getReadBitsRemaining() const {
+    return BitsInValue;
+  }
+
+  BitsInByteType getBitsInByteWritten() const {
+    return BitsInValue;
+  }
+
+  BitsInByteType getWriteBitsRemaining() const {
+    return CHAR_BIT - BitsInValue;
+  }
+
+  uint8_t readBits(BitsInByteType NumBits) {
+    assert(NumBits <= BitsInValue);
+    uint8_t Result = Value >> (BitsInValue - NumBits);
+    BitsInValue -= NumBits;
+    Value &= ~uint32_t(0) << BitsInValue;
+    return Result;
+  }
+
+
+  void writeBits(uint8_t Value, BitsInByteType NumBits) {
+    assert(NumBits <= BitsInValue);
+    Value = (Value << NumBits) | Value;
+    BitsInValue += NumBits;
+  }
 
   // For debugging.
   void describe(FILE* File) {
-    fprintf(File, "[%u:%u] ", ByteValue, BitsInByteValue);
+    fprintf(File, "[%u:%u] ", Value, BitsInValue);
+  }
+
+  void setByte(uint8_t Byte) {
+    Value = Byte;
+    BitsInValue = CHAR_BIT;
+  }
+
+  void reset() {
+    Value = 0;
+    BitsInValue = 0;
   }
 
  private:
-  // The Value read/to write for the current byte being processed.
-  uint32_t ByteValue;
-  // Number of bytes in ByteValue.
-  uint32_t BitsInByteValue;
-
-  void setByte(uint8_t Byte) {
-    ByteValue = Byte;
-    BitsInByteValue = CHAR_BIT;
-  }
-  void resetByte() {
-    ByteValue = 0;
-    BitsInByteValue = 0;
-  }
+  uint8_t Value;
+  BitsInByteType BitsInValue;
 };
 
 class Cursor : public PageCursor {
@@ -88,11 +118,13 @@ class Cursor : public PageCursor {
 
   const WorkingByte& getWorkingByte() const { return CurByte; }
 
-  uint32_t getNumExtraBitsRead() const {
-    return (CHAR_BIT - CurByte.BitsInByteValue) % 0x7;
+  BitsInByteType getBitsInByteRead() const {
+    return CurByte.getBitsInByteRead();
   }
 
-  uint32_t getNumExtraBitsWritten() const { return CurByte.BitsInByteValue; }
+  BitsInByteType getBitsInByteWritten() const {
+    return CurByte.getBitsInByteWritten();
+  }
 
   std::shared_ptr<Queue> getQueue() { return Que; }
 

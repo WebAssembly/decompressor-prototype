@@ -46,19 +46,33 @@ namespace decode {
 
 static constexpr size_t kUndefinedAddress = std::numeric_limits<size_t>::max();
 
+typedef uint8_t BitsInByteType;
+
 // Holds the end of a block within a queue. The outermost block is
-// always defined as enclosing the entire queue.
+// always defined as enclosing the entire queue. Note: EobBitAddress
+// is the extra bits in the next byte, efter EobAddress, when eob doesn't
+// align on a byte boundary (i.e. only applies to bit streams).
 class BlockEob : public std::enable_shared_from_this<BlockEob> {
   BlockEob(const BlockEob&) = delete;
   BlockEob& operator=(const BlockEob&) = delete;
 
  public:
-  explicit BlockEob(size_t EobAddress = kUndefinedAddress)
-      : EobAddress(EobAddress) {}
+  explicit BlockEob(size_t EobAddress = kUndefinedAddress,
+                    BitsInByteType EobBitAddress=0)
+      : EobAddress(EobAddress), EobBitAddress(EobBitAddress) {}
   BlockEob(size_t EobAddress, const std::shared_ptr<BlockEob> EnclosingEobPtr)
-      : EobAddress(EobAddress), EnclosingEobPtr(EnclosingEobPtr) {}
+      : EobAddress(EobAddress), EobBitAddress(0),
+        EnclosingEobPtr(EnclosingEobPtr) {}
+  BlockEob(size_t EobAddress, BitsInByteType EobBitAddress,
+           const std::shared_ptr<BlockEob> EnclosingEobPtr)
+      : EobAddress(EobAddress), EobBitAddress(EobBitAddress),
+        EnclosingEobPtr(EnclosingEobPtr) {}
   size_t getEobAddress() const { return EobAddress; }
-  void setEobAddress(size_t Value) { EobAddress = Value; }
+  BitsInByteType geEobBitAddress() const { return EobBitAddress; }
+  void setEobAddress(size_t Value, BitsInByteType BitValue=0) {
+    EobAddress = Value;
+    EobBitAddress = BitValue;
+  }
   bool undefinedEob() const { return EobAddress == kUndefinedAddress; }
   std::shared_ptr<BlockEob> getEnclosingEobPtr() const {
     return EnclosingEobPtr;
@@ -66,6 +80,7 @@ class BlockEob : public std::enable_shared_from_this<BlockEob> {
 
  private:
   size_t EobAddress;
+  BitsInByteType EobBitAddress;
   std::shared_ptr<BlockEob> EnclosingEobPtr;
 };
 
