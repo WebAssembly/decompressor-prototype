@@ -62,22 +62,15 @@ uint32_t Cursor::readBits(uint32_t NumBits) {
   assert(NumBits <= MaxBitsAllowed);
   uint32_t Value = 0;
   while (NumBits != 0) {
-    if (NumBits <= CurByte.BitsInByteValue) {
-      Value = (Value << NumBits) |
-              (CurByte.ByteValue &
-               (~uint32_t(0) >> (CurByte.BitsInByteValue - NumBits)));
-      CurByte.ByteValue &= (uint32_t(1) << NumBits) - 1;
-      CurByte.BitsInByteValue -= NumBits;
+    BitsInByteType AvailBits = CurByte.getReadBitsRemaining();
+    if (NumBits <= AvailBits) {
+      Value = (Value << NumBits) | CurByte.readBits(NumBits);
       return Value;
     }
-    // Fill if empty.
-    if (CurByte.BitsInByteValue == 0) {
-      CurByte.setByte(readByte());
-      continue;
+    if (!CurByte.isEmpty()) {
+      Value = (Value << AvailBits) | CurByte.getValue();
+      NumBits -= AvailBits;
     }
-    // Use remaining byte value and continue.
-    Value = (Value << CurByte.BitsInByteValue) | CurByte.ByteValue;
-    NumBits -= CurByte.BitsInByteValue;
     CurByte.setByte(readByte());
   }
   return Value;
@@ -85,23 +78,22 @@ uint32_t Cursor::readBits(uint32_t NumBits) {
 
 void Cursor::writeBits(uint32_t Value, uint32_t NumBits) {
   assert(NumBits <= MaxBitsAllowed);
-  assert(Value == (~uint32_t(0) >> ((sizeof(uint32_t) * CHAR_BIT) - NumBits)));
   while (NumBits > 0) {
-    const uint32_t Room = CHAR_BIT - CurByte.BitsInByteValue;
-    if (Room >= NumBits) {
-      CurByte.ByteValue = (CurByte.ByteValue << NumBits) | Value;
-      CurByte.BitsInByteValue += NumBits;
-      if (Room == NumBits) {
-        writeByte(CurByte.ByteValue);
-        CurByte.resetByte();
+    const BitsInByteType AvailBits = CurByte.getWriteBitsRemaining();
+    if (AvailBits >= NumBits) {
+      CurByte.writeBits(Value, NumBits);
+      if (AvailBits == NumBits) {
+        writeByte(CurByte.getValue());
+        CurByte.reset();
       }
       return;
     }
-    CurByte.ByteValue = (CurByte.ByteValue << Room) | (Value >> Room);
-    Value = Value | ((uint32_t(1) << Room) - 1);
-    NumBits -= Room;
-    writeByte(CurByte.ByteValue);
-    CurByte.resetByte();
+    uint32_t Shift = NumBits - AvailBits;
+    CurByte.writeBits(Value >> Shift, AvailBits);
+    Value &= (uint32_t(1) << Shift) - 1;
+    NumBits -= AvailBits;
+    writeByte(CurByte.getValue());
+    CurByte.reset();
   }
 }
 

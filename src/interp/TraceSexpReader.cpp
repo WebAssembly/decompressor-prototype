@@ -46,7 +46,7 @@ TraceClassSexpReader::~TraceClassSexpReader() {
 void TraceClassSexpReader::traceContext() const {
   fprintf(File, "@%" PRIuMAX, uintmax_t(ReadPos.getCurByteAddress()));
   if (!ReadPos.isByteAligned()) {
-    fprintf(File, ":%u", ReadPos.getNumExtraBitsRead());
+    fprintf(File, ":%u", ReadPos.getBitsInByteRead());
   }
   fputc(' ', File);
 }

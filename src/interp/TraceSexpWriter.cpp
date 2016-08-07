@@ -46,7 +46,7 @@ TraceClassSexpWriter::~TraceClassSexpWriter() {
 void TraceClassSexpWriter::traceContext() const {
   fprintf(File, "@%" PRIuMAX, uintmax_t(WritePos.getCurByteAddress()));
   if (!WritePos.isByteAligned())
-    fprintf(File, ":%" PRIuMAX, uintmax_t(WritePos.getNumExtraBitsWritten()));
+    fprintf(File, ":%" PRIuMAX, uintmax_t(WritePos.getBitsInByteWritten()));
   fputc(' ', File);
 }
 
