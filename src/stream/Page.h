@@ -1,19 +1,18 @@
-/* -*- c++ -*- */
-/*
- * Copyright 2016 WebAssembly Community Group participants
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+// -*- c++ -*-
+//
+// Copyright 2016 WebAssembly Community Group participants
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 // Defines a generic base class for pages (of values). It is used to model
 // streams in the WASM decompressor.
@@ -108,11 +107,7 @@ class Page : public std::enable_shared_from_this<Page> {
   std::shared_ptr<Page> Next;
 
   // For debugging only.
-  void describe(FILE* File) {
-    fprintf(File, "Page[%" PRIuMAX "] [%" PRIuMAX ":%" PRIuMAX ") = %p\n",
-            uintmax_t(Index), uintmax_t(MinAddress), uintmax_t(MaxAddress),
-            (void*)this);
-  }
+  FILE* describe(FILE* File);
 };
 
 class PageCursor {
@@ -158,13 +153,7 @@ class PageCursor {
   std::shared_ptr<Page> CurPage;
 
   // For debugging only.
-  void describe(FILE* File) {
-    fprintf(File, "PC %" PRIuMAX ": ", uintmax_t(CurAddress));
-    if (CurPage)
-      CurPage->describe(File);
-    else
-      fprintf(File, " nullptr\n");
-  }
+  FILE* describe(FILE* File, bool IncludePage = false);
 
  private:
   size_t CurAddress;  // Relative to minimum index in page.

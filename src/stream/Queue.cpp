@@ -22,10 +22,23 @@ namespace wasm {
 
 namespace decode {
 
+FILE* BitAddress::describe(FILE* File) {
+  fprintf(File, "@%" PRIxMAX, ByteAddr);
+  if (BitAddr != 0)
+    fprintf(File, ":%u", BitAddr);
+  return File;
+}
+
+FILE* BlockEob::describe(FILE* File) {
+  fprintf(File, "eob");
+  return EobAddress.describe(File);
+}
+
 Queue::Queue()
     : MinPeekSize(32),
       EobFrozen(false),
       EofPtr(std::make_shared<BlockEob>()) {
+  fprintf(stderr, "EobFrozen = %u\n", EobFrozen);
   LastPage = FirstPage = std::make_shared<Page>(0);
   PageMap.push_back(LastPage);
 }
@@ -96,7 +109,9 @@ size_t Queue::writeToPage(size_t Address,
 }
 
 void Queue::freezeEof(size_t Address) {
+  fprintf(stderr, "Address = %" PRIxMAX "\n", uintmax_t(Address));
   assert(Address != kUndefinedAddress && "WASM stream too big to process");
+  fprintf(stderr, "freeze eof EobFrozen = %u\n", EobFrozen);
   assert(!EobFrozen);
   // This call zero-fill pages if writing hasn't reached Address yet.
   PageCursor Cursor;

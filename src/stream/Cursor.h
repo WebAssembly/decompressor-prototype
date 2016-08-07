@@ -36,7 +36,7 @@ class WorkingByte {
 
   bool isEmpty() const { return BitsInValue == 0; }
 
-  BitsInByteType getBitsInByteRead() const {
+  BitsInByteType getBitsRead() const {
     return (CHAR_BIT - BitsInValue) % 0x7;
   }
 
@@ -44,7 +44,7 @@ class WorkingByte {
     return BitsInValue;
   }
 
-  BitsInByteType getBitsInByteWritten() const {
+  BitsInByteType getBitsWritten() const {
     return BitsInValue;
   }
 
@@ -67,11 +67,6 @@ class WorkingByte {
     BitsInValue += NumBits;
   }
 
-  // For debugging.
-  void describe(FILE* File) {
-    fprintf(File, "[%u:%u] ", Value, BitsInValue);
-  }
-
   void setByte(uint8_t Byte) {
     Value = Byte;
     BitsInValue = CHAR_BIT;
@@ -81,6 +76,9 @@ class WorkingByte {
     Value = 0;
     BitsInValue = 0;
   }
+
+  // For debugging.
+  FILE* describe(FILE* File);
 
  private:
   uint8_t Value;
@@ -92,6 +90,7 @@ class Cursor : public PageCursor {
   Cursor& operator=(const Cursor&) = delete;
 
  public:
+
   Cursor(StreamType Type, std::shared_ptr<Queue> Que)
       : Type(Type), Que(Que), EobPtr(Que->getEofPtr()) {}
   explicit Cursor(const Cursor& C)
@@ -118,28 +117,35 @@ class Cursor : public PageCursor {
 
   const WorkingByte& getWorkingByte() const { return CurByte; }
 
-  BitsInByteType getBitsInByteRead() const {
-    return CurByte.getBitsInByteRead();
+  BitsInByteType getBitsRead() const {
+    return CurByte.getBitsRead();
   }
 
-  BitsInByteType getBitsInByteWritten() const {
-    return CurByte.getBitsInByteWritten();
+  BitsInByteType getBitsWritten() const {
+    return CurByte.getBitsWritten();
   }
 
   std::shared_ptr<Queue> getQueue() { return Que; }
 
-  bool atEob() {
-    return getCurAddress() >= getEobAddress() || !readFillBuffer();
+  bool atReadBitEob() {
+    return getCurReadBitAddress() == getEobAddress();
   }
 
-  size_t getEobAddress() const { return EobPtr->getEobAddress(); }
+  bool atByteEob() {
+    return getCurAddress() >= getEobAddress().getByteAddress()
+        || !readFillBuffer();
+  }
+
+  BitAddress& getEobAddress() const { return EobPtr->getEobAddress(); }
 
   void freezeEof() { Que->freezeEof(getCurAddress()); }
 
-  void setEobAddress(size_t NewValue) { EobPtr->setEobAddress(NewValue); }
+  void setEobAddress(const BitAddress& NewValue) {
+    EobPtr->setEobAddress(NewValue);
+  }
 
-  void pushEobAddress(size_t NewLocalEob) {
-    EobPtr = std::make_shared<BlockEob>(NewLocalEob, EobPtr);
+  void pushEobAddress(const BitAddress& NewValue) {
+    EobPtr = std::make_shared<BlockEob>(NewValue, EobPtr);
   }
 
   void popEobAddress() {
@@ -158,7 +164,7 @@ class Cursor : public PageCursor {
 
   void jumpToByteAddress(size_t NewAddress);
 
-  // Reads next byte. Returns zero if at end of buffer.
+  // Reads next byte. Returns zero if at end of file.
   uint8_t readByte() {
     assert(isByteAligned());
     if (isIndexAtEndOfPage() && !readFillBuffer())
@@ -166,7 +172,7 @@ class Cursor : public PageCursor {
     return PageCursor::readByte();
   }
 
-  // Writes next byte. Fails if at end of buffer.
+  // Writes next byte. Fails if at end of file.
   void writeByte(uint8_t Byte) {
     assert(isByteAligned());
     if (isIndexAtEndOfPage())
@@ -177,6 +183,16 @@ class Cursor : public PageCursor {
   // ------------------------------------------------------------------------
   // The following methods assume that the cursor is accessing a bit stream.
   // ------------------------------------------------------------------------
+
+  BitAddress getCurReadBitAddress() const {
+    BitAddress Address(getCurAddress(), getBitsRead());
+    return Address;
+  }
+
+  BitAddress getCurWriteBitAddress() const {
+    BitAddress Address(getCurAddress(), getBitsWritten());
+    return Address;
+  }
 
   // Reads up to 32 bits from the input.
   uint32_t readBits(uint32_t NumBits);
@@ -190,15 +206,8 @@ class Cursor : public PageCursor {
 
   void writeCurPage(FILE* File) { Que->writePageAt(File, getCurAddress()); }
 
-  void describe(FILE* File) {
-    size_t EobAddress = getEobAddress();
-    fprintf(File, "Cursor ");
-    if (!CurByte.isEmpty())
-      CurByte.describe(File);
-    if (EobAddress != kUndefinedAddress)
-      fprintf(File, " eob=%" PRIuMAX " ", uintmax_t(EobAddress));
-    PageCursor::describe(File);
-  }
+  // For debugging.
+  FILE* describe(FILE* File, bool IncludeDetail = false);
 
  protected:
   StreamType Type;

@@ -27,6 +27,11 @@ namespace wasm {
 
 namespace decode {
 
+FILE* WorkingByte::describe(FILE* File) {
+  fprintf(File, "[%u:%u] ", Value, BitsInValue);
+  return File;
+}
+
 void Cursor::jumpToByteAddress(size_t NewAddress) {
   if (isValidPageAddress(NewAddress)) {
     // We can reuse the same page, since NewAddress is within the page.
@@ -39,11 +44,11 @@ void Cursor::jumpToByteAddress(size_t NewAddress) {
 
 bool Cursor::readFillBuffer() {
   size_t CurAddress = getCurAddress();
-  if (CurAddress >= getEobAddress())
+  if (CurAddress >= Que->getEofAddress())
     return false;
   size_t BufferSize = Que->readFromPage(CurAddress, Page::Size, *this);
   if (BufferSize == 0) {
-    setEobAddress(Que->currentSize());
+    Que->freezeEof(CurAddress);
     return false;
   }
   return true;
@@ -51,8 +56,8 @@ bool Cursor::readFillBuffer() {
 
 void Cursor::writeFillBuffer() {
   size_t CurAddress = getCurAddress();
-  if (CurAddress >= getEobAddress())
-    fatal("Write past Eob");
+  if (CurAddress >= Que->getEofAddress())
+    fatal("Write past Eof");
   size_t BufferSize = Que->writeToPage(CurAddress, Page::Size, *this);
   if (BufferSize == 0)
     fatal("Write failed!\n");
@@ -95,6 +100,22 @@ void Cursor::writeBits(uint32_t Value, uint32_t NumBits) {
     writeByte(CurByte.getValue());
     CurByte.reset();
   }
+}
+
+FILE* Cursor::describe(FILE* File, bool IncludeDetail) {
+  if (IncludeDetail)
+    fprintf(File, "Cursor<");
+  PageCursor::describe(File, IncludeDetail);
+  if (!CurByte.isEmpty())
+    CurByte.describe(File);
+  if (!IncludeDetail)
+    return File;
+  if (EobPtr->isDefined()) {
+    fprintf(File, ", eob=");
+    getEobAddress().describe(File);
+  }
+  fputs(">", File);
+  return File;
 }
 
 }  // end of namespace decode

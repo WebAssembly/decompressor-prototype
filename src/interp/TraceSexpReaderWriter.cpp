@@ -25,27 +25,21 @@ TraceClassSexpReaderWriter::TraceClassSexpReaderWriter(decode::Cursor& ReadPos,
                                                        decode::Cursor& WritePos)
     : TraceClassSexp(),
       ReadPos(ReadPos),
-      WritePos(WritePos),
-      TraceIoDifference(false) {
-}
+      WritePos(WritePos) {}
 
 TraceClassSexpReaderWriter::TraceClassSexpReaderWriter(decode::Cursor& ReadPos,
                                                        decode::Cursor& WritePos,
                                                        const char* Label)
     : TraceClassSexp(Label),
       ReadPos(ReadPos),
-      WritePos(WritePos),
-      TraceIoDifference(false) {
-}
+      WritePos(WritePos) {}
 
 TraceClassSexpReaderWriter::TraceClassSexpReaderWriter(decode::Cursor& ReadPos,
                                                        decode::Cursor& WritePos,
                                                        FILE* File)
     : TraceClassSexp(File),
       ReadPos(ReadPos),
-      WritePos(WritePos),
-      TraceIoDifference(false) {
-}
+      WritePos(WritePos) {}
 
 TraceClassSexpReaderWriter::TraceClassSexpReaderWriter(decode::Cursor& ReadPos,
                                                        decode::Cursor& WritePos,
@@ -53,25 +47,16 @@ TraceClassSexpReaderWriter::TraceClassSexpReaderWriter(decode::Cursor& ReadPos,
                                                        FILE* File)
     : TraceClassSexp(Label, File),
       ReadPos(ReadPos),
-      WritePos(WritePos),
-      TraceIoDifference(false) {
-}
+      WritePos(WritePos) {}
 
 TraceClassSexpReaderWriter::~TraceClassSexpReaderWriter() {
 }
 
 void TraceClassSexpReaderWriter::traceContext() const {
-  fprintf(File, "@%" PRIxMAX, uintmax_t(ReadPos.getCurByteAddress()));
-  if (!ReadPos.isByteAligned())
-    fprintf(File, ":%" PRIuMAX, uintmax_t(ReadPos.getBitsInByteRead()));
-  fprintf(File, "/@%" PRIxMAX, uintmax_t(WritePos.getCurByteAddress()));
-  if (!WritePos.isByteAligned())
-    fprintf(File, ":%" PRIuMAX, uintmax_t(WritePos.getBitsInByteWritten()));
+  ReadPos.describe(File);
+  fputc('/', File);
+  WritePos.describe(File);
   fputc(' ', File);
-  if (!TraceIoDifference)
-    return;
-  fprintf(File, "[%" PRIuMAX "] ", uintmax_t(WritePos.getCurByteAddress() -
-                                             ReadPos.getCurByteAddress()));
 }
 
 }  // end of namespace interp
