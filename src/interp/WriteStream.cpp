@@ -29,6 +29,13 @@ namespace interp {
 
 namespace {
 
+#if 0
+static constexpr uint32_t BitsInWord = sizeof(uint32_t) * CHAR_BIT;
+static constexpr uint32_t ChunkSize = CHAR_BIT - 1;
+static constexpr uint32_t ChunksInWord =
+    (BitsInWord + ChunkSize - 1) / ChunkSize;
+#endif
+
 // Define LEB128 writers.
 #ifdef LEB128_LOOP_UNTIL
 #error("LEB128_LOOP_UNTIL already defined!")
@@ -133,9 +140,34 @@ void ByteWriteStream::writeVaruint64Bits(uint64_t Value,
   writeLEB128<uint64_t>(Value, Pos);
 }
 
-void ByteWriteStream::writeFixedVaruint32(uint32_t Value, Cursor& Pos) {
-  writeFixedLEB128<uint32_t>(Value, Pos);
+size_t ByteWriteStream::getStreamAddress(Cursor& Pos) {
+  return Pos.getCurByteAddress();
 }
+
+void ByteWriteStream::writeFixedBlockSize(Cursor& Pos,
+                                          size_t BlockSize) {
+  writeFixedLEB128<uint32_t>(BlockSize, Pos);
+}
+
+void ByteWriteStream::writeVarintBlockSize(decode::Cursor& Pos,
+                                           size_t BlockSize) {
+  writeVaruint32(BlockSize, Pos);
+}
+
+size_t ByteWriteStream::getBlockSize(decode::Cursor& StartPos,
+                                     decode::Cursor& EndPos) {
+  return EndPos.getCurByteAddress() -
+      (StartPos.getCurByteAddress() + ChunksInWord);
+}
+
+void ByteWriteStream::moveBlock(decode::Cursor& Pos, size_t StartAddress,
+                                size_t Size) {
+  Cursor CopyPos(StreamType::Byte, Pos.getQueue());
+  CopyPos.jumpToByteAddress(StartAddress);
+  for (size_t i = 0; i < Size; ++i)
+    Pos.writeByte(CopyPos.readByte());
+}
+
 
 }  // end of namespace decode
 

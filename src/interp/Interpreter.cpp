@@ -501,41 +501,28 @@ void Interpreter::decompress() {
 
 void Interpreter::decompressBlock(const Node* Code) {
   TRACE_METHOD("decompressBlock", Trace);
-  auto* ByteWriter = dyn_cast<ByteWriteStream>(Writer.get());
-  bool IsByteReader = isa<ByteReadStream>(Reader.get());
-  if (IsByteReader) {
-    const uint32_t BlockSize = Reader->readVaruint32(ReadPos);
-    Trace.traceUint32_t("block size", BlockSize);
-    ReadPos.pushEobAddress(ReadPos.getCurByteAddress() + BlockSize);
-  }
-  if (ByteWriter) {
-    Cursor BlockPos(WritePos);
-    ByteWriter->writeFixedVaruint32(0, WritePos);
-    size_t SizeAfterSizeWrite = WritePos.getCurByteAddress();
-    evalOrCopy(Code);
-    const size_t NewSize =
-        WritePos.getCurByteAddress() -
-        (BlockPos.getCurByteAddress() + ByteWriteStream::ChunksInWord);
-    if (!MinimizeBlockSize) {
-      ByteWriter->writeFixedVaruint32(NewSize, BlockPos);
-    } else {
-      ByteWriter->writeVaruint32(NewSize, BlockPos);
-      size_t SizeAfterBackPatch = BlockPos.getCurByteAddress();
-      size_t Diff = SizeAfterSizeWrite - SizeAfterBackPatch;
-      if (Diff) {
-        size_t End = WritePos.getCurByteAddress() - Diff;
-        Cursor CopyPos(StreamType::Byte, WritePos.getQueue());
-        CopyPos.jumpToByteAddress(SizeAfterSizeWrite);
-        for (size_t i = SizeAfterBackPatch; i < End; ++i)
-          BlockPos.writeByte(CopyPos.readByte());
-        WritePos.jumpToByteAddress(BlockPos.getCurByteAddress());
-      }
-    }
+  const uint32_t OldSize = Reader->readBlockSize(ReadPos);
+  Trace.traceUint32_t("block size", OldSize);
+  Reader->pushEobAddress(ReadPos, OldSize);
+  Cursor BlockStart(WritePos);
+  Writer->writeFixedBlockSize(WritePos, 0);
+  size_t SizeAfterSizeWrite = Writer->getStreamAddress(WritePos);
+  evalOrCopy(Code);
+  const size_t NewSize = Writer->getBlockSize(BlockStart, WritePos);
+  if (!MinimizeBlockSize) {
+    Writer->writeFixedBlockSize(BlockStart, NewSize);
   } else {
-    evalOrCopy(Code);
+    Writer->writeVarintBlockSize(BlockStart, NewSize);
+    size_t SizeAfterBackPatch = Writer->getStreamAddress(BlockStart);
+    size_t Diff = SizeAfterSizeWrite - SizeAfterBackPatch;
+    if (Diff) {
+      size_t CurAddress = Writer->getStreamAddress(WritePos);
+      Writer->moveBlock(BlockStart, SizeAfterSizeWrite,
+                        (CurAddress - Diff) - SizeAfterBackPatch);
+      WritePos.swap(BlockStart);
+    }
   }
-  if (IsByteReader)
-    ReadPos.popEobAddress();
+  ReadPos.popEobAddress();
 }
 
 void Interpreter::evalOrCopy(const Node* Nd) {

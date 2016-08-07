@@ -250,9 +250,10 @@ InternalName& BinaryReader::readInternalName() {
 
 void BinaryReader::readBlock(std::function<void()> ApplyFn) {
   TRACE_METHOD("readBlock", Trace);
-  const size_t BlockSize = Reader->readVaruint32(ReadPos);
+
+  const size_t BlockSize = Reader->readBlockSize(ReadPos);
   Trace.traceSize_t("Block size", BlockSize);
-  ReadPos.pushEobAddress(ReadPos.getCurByteAddress() + BlockSize);
+  Reader->pushEobAddress(ReadPos, BlockSize);
   ApplyFn();
   ReadPos.popEobAddress();
 }

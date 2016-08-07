@@ -102,6 +102,14 @@ uint64_t ByteReadStream::readVaruint64Bits(Cursor& Pos, uint32_t /*NumBits*/) {
   return readLEB128<uint64_t>(Pos);
 }
 
+size_t ByteReadStream::readBlockSize(decode::Cursor& Pos) {
+  return readVaruint32(Pos);
+}
+
+void ByteReadStream::pushEobAddress(decode::Cursor& Pos, size_t Address) {
+  Pos.pushEobAddress(Pos.getCurByteAddress() + Address);
+}
+
 }  // end of namespace decode
 
 }  // end of namespace wasm
