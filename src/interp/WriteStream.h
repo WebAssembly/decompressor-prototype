@@ -149,7 +149,6 @@ class ByteWriteStream FINAL : public WriteStream {
   void writeVaruint64Bits(uint64_t Value,
                           decode::Cursor& Pos,
                           uint32_t NumBits) OVERRIDE;
-  void writeFixedVaruint32(uint32_t Value, decode::Cursor& Pos) OVERRIDE;
   size_t getStreamAddress(decode::Cursor& Pos) OVERRIDE;
   void writeFixedBlockSize(decode::Cursor& Pos, size_t BlockSize) OVERRIDE;
   void writeVarintBlockSize(decode::Cursor& Pos, size_t BlockSIze) OVERRIDE;
