@@ -181,13 +181,13 @@ IntType Interpreter::eval(const Node* Nd) {
       fatal("Error found during evaluation");
       break;
     case OpEval:
-#ifdef LOG_EVAL
+#if LOG_EVAL
       if (Trace.getTraceProgress()) {
-        Trace.indent();
         decode::Cursor Lookahead(ReadPos);
-        for (size_t i = 0; i < 10; ++i) {
+        fprintf(Trace.indent(), "Lookahead:");
+        for (int i = 0; i < 10; ++i) {
           if (!Lookahead.atByteEob())
-            fprintf(Trace.indent(), " %x", Lookahead.readByte());
+            fprintf(Trace.getFile(), " %x", Lookahead.readByte());
         }
         fprintf(Trace.getFile(), "\n");
       }
@@ -227,9 +227,6 @@ IntType Interpreter::eval(const Node* Nd) {
     }
     case OpLoopUnbounded: {
       while (!ReadPos.atReadBitEob()) {
-        BitAddress &Tmp = ReadPos.getEobAddress();
-       Trace.traceHexSize_t("Eob byte: ", Tmp.getByteAddress());
-        Trace.traceUint8_t("Eob bit : ", Tmp.getBitAddress());
         for (auto* Kid : *Nd)
           eval(Kid);
       }
@@ -507,9 +504,6 @@ void Interpreter::decompressBlock(const Node* Code) {
   const uint32_t OldSize = Reader->readBlockSize(ReadPos);
   Trace.traceUint32_t("block size", OldSize);
   Reader->pushEobAddress(ReadPos, OldSize);
-  BitAddress &Tmp = ReadPos.getEobAddress();
-  Trace.traceHexSize_t("Eob byte: ", Tmp.getByteAddress());
-  Trace.traceUint8_t("Eob bit : ", Tmp.getBitAddress());
   Cursor BlockStart(WritePos);
   Writer->writeFixedBlockSize(WritePos, 0);
   size_t SizeAfterSizeWrite = Writer->getStreamAddress(WritePos);
