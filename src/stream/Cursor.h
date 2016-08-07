@@ -37,7 +37,7 @@ class WorkingByte {
   bool isEmpty() const { return BitsInValue == 0; }
 
   BitsInByteType getBitsRead() const {
-    return (CHAR_BIT - BitsInValue) % 0x7;
+    return (CHAR_BIT - BitsInValue) & 0x7;
   }
 
   BitsInByteType getReadBitsRemaining() const {
