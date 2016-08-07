@@ -157,12 +157,12 @@ STRM_LIB = $(LIBDIR)/$(LIBPREFIX)strm.a
 INTERP_SRCDIR = $(SRCDIR)/interp
 INTERP_OBJDIR = $(OBJDIR)/interp
 INTERP_SRCS = \
+	ByteReadStream.cpp \
+	ByteWriteStream.cpp \
 	Interpreter.cpp \
-	ReadStream.cpp \
 	TraceSexpReader.cpp \
 	TraceSexpReaderWriter.cpp \
-	TraceSexpWriter.cpp \
-	WriteStream.cpp
+	TraceSexpWriter.cpp
 
 INTERP_OBJS=$(patsubst %.cpp, $(INTERP_OBJDIR)/%.o, $(INTERP_SRCS))
 

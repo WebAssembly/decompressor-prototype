@@ -59,7 +59,7 @@ class BinaryReader {
   void setTraceProgress(bool NewValue) { Trace.setTraceProgress(NewValue); }
 
  private:
-  std::shared_ptr<interp::ByteReadStream> Reader;
+  std::shared_ptr<interp::ReadStream> Reader;
   decode::Cursor ReadPos;
   std::shared_ptr<SymbolTable> Symtab;
   SectionSymbolTable SectionSymtab;

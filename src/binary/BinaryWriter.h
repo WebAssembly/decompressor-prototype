@@ -57,7 +57,7 @@ class BinaryWriter {
 
  private:
   decode::Cursor WritePos;
-  std::shared_ptr<interp::ByteWriteStream> Writer;
+  std::shared_ptr<interp::WriteStream> Writer;
   SectionSymbolTable SectionSymtab;
   bool MinimizeBlockSize;
   interp::TraceClassSexpWriter Trace;

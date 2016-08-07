@@ -16,7 +16,7 @@
 
 // Implements defaults for stream readers.
 
-#include "interp/ReadStream.h"
+#include "interp/ByteReadStream.h"
 
 namespace {
 
@@ -68,8 +68,6 @@ Type readSignedLEB128(Cursor& Pos) {
 }  // end of anonymous namespace
 
 namespace wasm {
-
-using namespace decode;
 
 namespace interp {
 

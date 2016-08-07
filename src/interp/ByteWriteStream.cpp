@@ -17,7 +17,7 @@
 
 // Implements defaults for stream writers.
 
-#include "interp/WriteStream.h"
+#include "interp/ByteWriteStream.h"
 
 #include <iostream>
 

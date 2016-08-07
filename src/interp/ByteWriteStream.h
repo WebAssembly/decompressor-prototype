@@ -1,0 +1,79 @@
+// -*- C++ -*- */
+//
+// Copyright 2016 WebAssembly Community Group participants
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Defines the API for all stream writers.
+
+#ifndef DECOMPRESSOR_SRC_INTERP_BYTEWRITESTREAM_H
+#define DECOMPRESSOR_SRC_INTERP_BYTEWRITESTREAM_H
+
+#include "interp/WriteStream.h"
+
+#include <memory>
+
+namespace wasm {
+
+namespace interp {
+
+class ByteWriteStream FINAL : public WriteStream {
+  ByteWriteStream(const WriteStream&) = delete;
+  ByteWriteStream& operator=(const ByteWriteStream&) = delete;
+
+ public:
+  static constexpr uint32_t BitsInWord = sizeof(uint32_t) * CHAR_BIT;
+  static constexpr uint32_t ChunkSize = CHAR_BIT - 1;
+  static constexpr uint32_t ChunksInWord =
+      (BitsInWord + ChunkSize - 1) / ChunkSize;
+  ByteWriteStream() : WriteStream(decode::StreamType::Byte) {}
+  void writeUint8Bits(uint8_t Value,
+                      decode::Cursor& Pos,
+                      uint32_t NumBits) OVERRIDE;
+  void writeUint32Bits(uint32_t Value,
+                       decode::Cursor& Pos,
+                       uint32_t NumBits) OVERRIDE;
+  void writeUint64Bits(uint64_t Value,
+                       decode::Cursor& Pos,
+                       uint32_t NumBits) OVERRIDE;
+  void writeVarint32Bits(int32_t Value,
+                         decode::Cursor& Pos,
+                         uint32_t NumBits) OVERRIDE;
+  void writeVarint64Bits(int64_t Value,
+                         decode::Cursor& Pos,
+                         uint32_t NumBits) OVERRIDE;
+  void writeVaruint32Bits(uint32_t Value,
+                          decode::Cursor& Pos,
+                          uint32_t NumBits) OVERRIDE;
+  void writeVaruint64Bits(uint64_t Value,
+                          decode::Cursor& Pos,
+                          uint32_t NumBits) OVERRIDE;
+  void alignToByte(decode::Cursor& Pos) OVERRIDE;
+  size_t getStreamAddress(decode::Cursor& Pos) OVERRIDE;
+  void writeFixedBlockSize(decode::Cursor& Pos, size_t BlockSize) OVERRIDE;
+  void writeVarintBlockSize(decode::Cursor& Pos, size_t BlockSIze) OVERRIDE;
+  size_t getBlockSize(decode::Cursor& StartPos,
+                      decode::Cursor& EndPos) OVERRIDE;
+  void moveBlock(decode::Cursor& Pos, size_t StartAddress,
+                 size_t Size) OVERRIDE;
+
+  static bool implementsClass(decode::StreamType RtClassId) {
+    return RtClassId == decode::StreamType::Byte;
+  }
+};
+
+}  // end of namespace decode
+
+}  // end of namespace wasm
+
+#endif  // DECOMPRESSOR_SRC_INTERP_BYTEWRITESTREAM_H
