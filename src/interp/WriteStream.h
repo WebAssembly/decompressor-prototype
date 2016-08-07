@@ -1,19 +1,18 @@
-/* -*- C++ -*- */
-/*
- * Copyright 2016 WebAssembly Community Group participants
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+// -*- C++ -*- */
+//
+// Copyright 2016 WebAssembly Community Group participants
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 // Defines the API for all stream writers.
 
@@ -82,9 +81,12 @@ class WriteStream : public std::enable_shared_from_this<WriteStream> {
   void writeVaruint64(uint64_t Value, decode::Cursor& Pos) {
     writeVaruint64Bits(Value, Pos, 8);
   }
+
   virtual void writeVaruint64Bits(uint64_t Value,
                                   decode::Cursor& Pos,
                                   uint32_t NumBits) = 0;
+
+  virtual void alignToByte(decode::Cursor& Pos) = 0;
 
   // The following virtuals are used to implement blocks.
 
@@ -149,6 +151,7 @@ class ByteWriteStream FINAL : public WriteStream {
   void writeVaruint64Bits(uint64_t Value,
                           decode::Cursor& Pos,
                           uint32_t NumBits) OVERRIDE;
+  void alignToByte(decode::Cursor& Pos) OVERRIDE;
   size_t getStreamAddress(decode::Cursor& Pos) OVERRIDE;
   void writeFixedBlockSize(decode::Cursor& Pos, size_t BlockSize) OVERRIDE;
   void writeVarintBlockSize(decode::Cursor& Pos, size_t BlockSIze) OVERRIDE;

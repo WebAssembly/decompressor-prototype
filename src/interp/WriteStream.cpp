@@ -140,6 +140,8 @@ void ByteWriteStream::writeVaruint64Bits(uint64_t Value,
   writeLEB128<uint64_t>(Value, Pos);
 }
 
+void ByteWriteStream::alignToByte(decode::Cursor& Pos) {}
+
 size_t ByteWriteStream::getStreamAddress(Cursor& Pos) {
   return Pos.getCurByteAddress();
 }
