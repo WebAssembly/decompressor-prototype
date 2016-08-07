@@ -24,27 +24,26 @@ namespace decode {
 bool ReadBackedQueue::readFill(size_t Address) {
   if (Address < LastPage->getMaxAddress())
     return true;
-  if (EobFrozen)
+  // Fail to read if unknown gap!
+  if (EofFrozen || Address > LastPage->getMaxAddress())
     return false;
   // Read fill if possible, until at least one byte is available.
-  while (Address >= LastPage->getMaxAddress()) {
-    if (size_t SpaceAvailable = LastPage->spaceRemaining()) {
-      size_t NumBytes = Reader->read(
-          &(LastPage->Buffer[Page::address(Address)]), SpaceAvailable);
-      LastPage->incrementMaxAddress(NumBytes);
-      if (NumBytes == 0) {
-        EobFrozen = true;
-        return false;
-      }
-      continue;
+  if (size_t SpaceAvailable = LastPage->spaceRemaining()) {
+    size_t NumBytes = Reader->read(
+        &(LastPage->Buffer[Page::address(Address)]), SpaceAvailable);
+    LastPage->incrementMaxAddress(NumBytes);
+    if (NumBytes == 0) {
+      freezeEof(Address);
+      return false;
     }
-    std::shared_ptr<Page> NewPage =
-        std::make_shared<Page>(LastPage->getMaxAddress());
-    std::weak_ptr<Page> PlaceHolder(NewPage);
-    PageMap.push_back(PlaceHolder);
-    LastPage->Next = NewPage;
-    LastPage = NewPage;
+    return true;
   }
+  std::shared_ptr<Page> NewPage =
+      std::make_shared<Page>(LastPage->getMaxAddress());
+  std::weak_ptr<Page> PlaceHolder(NewPage);
+  PageMap.push_back(PlaceHolder);
+  LastPage->Next = NewPage;
+  LastPage = NewPage;
   return true;
 }
 

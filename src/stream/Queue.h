@@ -62,7 +62,7 @@ struct BitAddress {
   }
 
   // For debugging
-  FILE* describe(FILE* File);
+  FILE* describe(FILE* File) const;
 
  protected:
   size_t ByteAddr;
@@ -109,7 +109,7 @@ class BlockEob : public std::enable_shared_from_this<BlockEob> {
   }
 
   // For debugging.
-  FILE* describe(FILE* File);
+  FILE* describe(FILE* File) const;
 
  private:
   BitAddress EobAddress;
@@ -191,7 +191,7 @@ class Queue : public std::enable_shared_from_this<Queue> {
   // Freezes eob of the queue. Not valid to read/write past the eob, once set.
   void freezeEof(size_t Address);
 
-  bool isEofFrozen() const { return EobFrozen; }
+  bool isEofFrozen() const { return EofFrozen; }
 
   const std::shared_ptr<BlockEob>& getEofPtr() const { return EofPtr; }
 
@@ -200,7 +200,7 @@ class Queue : public std::enable_shared_from_this<Queue> {
   // bytes that the read can back up without freezing an address.
   size_t MinPeekSize;
   // True if end of queue buffer has been frozen.
-  bool EobFrozen;
+  bool EofFrozen;
   std::shared_ptr<BlockEob> EofPtr;
   // First page still in queue.
   std::shared_ptr<Page> FirstPage;

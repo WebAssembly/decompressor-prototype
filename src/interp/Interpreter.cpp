@@ -226,9 +226,13 @@ IntType Interpreter::eval(const Node* Nd) {
       break;
     }
     case OpLoopUnbounded: {
-      while (!ReadPos.atReadBitEob())
+      while (!ReadPos.atReadBitEob()) {
+        BitAddress &Tmp = ReadPos.getEobAddress();
+       Trace.traceHexSize_t("Eob byte: ", Tmp.getByteAddress());
+        Trace.traceUint8_t("Eob bit : ", Tmp.getBitAddress());
         for (auto* Kid : *Nd)
           eval(Kid);
+      }
       break;
     }
     case OpWrite:
@@ -503,6 +507,9 @@ void Interpreter::decompressBlock(const Node* Code) {
   const uint32_t OldSize = Reader->readBlockSize(ReadPos);
   Trace.traceUint32_t("block size", OldSize);
   Reader->pushEobAddress(ReadPos, OldSize);
+  BitAddress &Tmp = ReadPos.getEobAddress();
+  Trace.traceHexSize_t("Eob byte: ", Tmp.getByteAddress());
+  Trace.traceUint8_t("Eob bit : ", Tmp.getBitAddress());
   Cursor BlockStart(WritePos);
   Writer->writeFixedBlockSize(WritePos, 0);
   size_t SizeAfterSizeWrite = Writer->getStreamAddress(WritePos);
