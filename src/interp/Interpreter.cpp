@@ -27,7 +27,7 @@
 // call in the decompression algorithm.
 #define LOG_SECTIONS 0
 #define LOG_FUNCTIONS 0
-#define LOG_EVAL 0
+#define LOG_EVAL 1
 
 // The following two defines allows turning on tracing for the nth (zero based)
 // function.
@@ -183,13 +183,14 @@ IntType Interpreter::eval(const Node* Nd) {
     case OpEval:
 #if LOG_EVAL
       if (Trace.getTraceProgress()) {
-        decode::Cursor Lookahead(ReadPos);
+        decode::ReadCursor Lookahead(ReadPos);
         fprintf(Trace.indent(), "Lookahead:");
         for (int i = 0; i < 10; ++i) {
           if (!Lookahead.atByteEob())
             fprintf(Trace.getFile(), " %x", Lookahead.readByte());
         }
-        fprintf(Trace.getFile(), "\n");
+        fprintf(Trace.getFile(), " ");
+        fprintf(ReadPos.describe(Trace.getFile()), "\n");
       }
 #endif
       if (auto* Sym = dyn_cast<SymbolNode>(Nd->getKid(0))) {
