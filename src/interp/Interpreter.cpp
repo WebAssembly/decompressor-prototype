@@ -23,7 +23,8 @@
 
 #include <iostream>
 
-// The following turn on logging sections, functions in the decompression algorithm.
+// The following turn on logging sections, functions in the decompression
+// algorithm.
 #define LOG_SECTIONS 0
 #define LOG_FUNCTIONS 0
 // The following logs lookahead on each call to eval.
@@ -76,16 +77,16 @@ IntType Interpreter::eval(const Node* Nd) {
   TRACE_METHOD("eval", Trace);
   Trace.traceSexp(Nd);
 #if LOG_EVAL_LOOKAHEAD
-      if (Trace.getTraceProgress()) {
-        decode::ReadCursor Lookahead(ReadPos);
-        fprintf(Trace.indent(), "Lookahead:");
-        for (int i = 0; i < 10; ++i) {
-          if (!Lookahead.atByteEob())
-            fprintf(Trace.getFile(), " %x", Lookahead.readByte());
-        }
-        fprintf(Trace.getFile(), " ");
-        fprintf(ReadPos.describe(Trace.getFile(), true), "\n");
-      }
+  if (Trace.getTraceProgress()) {
+    decode::ReadCursor Lookahead(ReadPos);
+    fprintf(Trace.indent(), "Lookahead:");
+    for (int i = 0; i < 10; ++i) {
+      if (!Lookahead.atByteEob())
+        fprintf(Trace.getFile(), " %x", Lookahead.readByte());
+    }
+    fprintf(Trace.getFile(), " ");
+    fprintf(ReadPos.describe(Trace.getFile(), true), "\n");
+  }
 #endif
   IntType ReturnValue = 0;
   switch (NodeType Type = Nd->getType()) {
