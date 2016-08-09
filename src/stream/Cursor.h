@@ -122,38 +122,6 @@ class Cursor : public PageCursor {
 
   void jumpToByteAddress(size_t NewAddress);
 
-  // Reads next byte. Returns zero if at end of file.
-  uint8_t readByte() {
-    assert(isByteAligned());
-    if (isIndexAtEndOfPage() && !readFillBuffer())
-      return 0;
-    return PageCursor::readByte();
-  }
-
-  // Writes next byte. Fails if at end of file.
-  void writeByte(uint8_t Byte) {
-    assert(isByteAligned());
-    if (isIndexAtEndOfPage())
-      writeFillBuffer();
-    PageCursor::writeByte(Byte);
-  }
-
-  // ------------------------------------------------------------------------
-  // The following methods assume that the cursor is accessing a bit stream.
-  // ------------------------------------------------------------------------
-
-  // Reads up to 32 bits from the input.
-  uint32_t readBits(uint32_t NumBits);
-
-  // Writes up to 32 bits to the output.
-  void writeBits(uint32_t Value, uint32_t NumBits);
-
-  // ------------------------------------------------------------------------
-  // The following methods are for debugging.
-  // ------------------------------------------------------------------------
-
-  void writeCurPage(FILE* File) { Que->writePageAt(File, getCurAddress()); }
-
   // For debugging.
   FILE* describe(FILE* File, bool IncludeDetail = false);
 
@@ -165,13 +133,6 @@ class Cursor : public PageCursor {
   std::shared_ptr<BlockEob> EobPtr;
   WorkingByte CurByte;
 
-  // Returns true if able to fill the buffer with at least one byte.
-  bool readFillBuffer();
-
-  // Creates new pages in buffer so that writes can occur.
-  void writeFillBuffer();
-
- protected:
   Cursor(StreamType Type, std::shared_ptr<Queue> Que)
       : Type(Type), Que(Que), EobPtr(Que->getEofPtr()) {}
   explicit Cursor(const Cursor& C)
@@ -180,6 +141,11 @@ class Cursor : public PageCursor {
         Que(C.Que),
         EobPtr(C.EobPtr),
         CurByte(C.CurByte) {}
+
+  // Returns true if able to fill the buffer with at least one byte.
+  bool readFillBuffer();
+  // Creates new pages in buffer so that writes can occur.
+  void writeFillBuffer();
 };
 
 }  // end of namespace decode

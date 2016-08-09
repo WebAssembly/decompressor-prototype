@@ -25,7 +25,7 @@ namespace wasm {
 
 namespace decode {
 
-class ReadCursor : public Cursor {
+class ReadCursor FINAL : public Cursor {
   ReadCursor() = delete;
   ReadCursor& operator=(const ReadCursor&) = delete;
  public:
@@ -51,6 +51,18 @@ class ReadCursor : public Cursor {
     EobPtr = EobPtr->getEnclosingEobPtr();
     assert(EobPtr);
   }
+
+  // Reads next byte. Returns zero if at end of file. NOTE: Assumes byte
+  // aligned!
+  uint8_t readByte() {
+    assert(isByteAligned());
+    if (isIndexAtEndOfPage() && !readFillBuffer())
+      return 0;
+    return PageCursor::readByte();
+  }
+
+  // Reads up to 32 bits from the input.
+  uint32_t readBits(uint32_t NumBits);
 };
 
 }  // end of namespace decode

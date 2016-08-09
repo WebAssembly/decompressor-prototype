@@ -39,27 +39,41 @@ class ReadStream : public std::enable_shared_from_this<ReadStream> {
   uint8_t readUint8(decode::ReadCursor& Pos) { return readUint8Bits(Pos, 8); }
   virtual uint8_t readUint8Bits(decode::ReadCursor& Pos, uint32_t NumBits) = 0;
 
-  uint32_t readUint32(decode::ReadCursor& Pos) { return readUint32Bits(Pos, 8); }
-  virtual uint32_t readUint32Bits(decode::ReadCursor& Pos, uint32_t NumBits) = 0;
+  uint32_t readUint32(decode::ReadCursor& Pos) {
+    return readUint32Bits(Pos, 8);
+  }
+  virtual uint32_t readUint32Bits(decode::ReadCursor& Pos,
+                                  uint32_t NumBits) = 0;
 
-  uint64_t readUint64(decode::ReadCursor& Pos) { return readUint64Bits(Pos, 8); }
-  virtual uint64_t readUint64Bits(decode::ReadCursor& Pos, uint32_t NumBits) = 0;
+  uint64_t readUint64(decode::ReadCursor& Pos) {
+    return readUint64Bits(Pos, 8);
+  }
+  virtual uint64_t readUint64Bits(decode::ReadCursor& Pos,
+                                  uint32_t NumBits) = 0;
 
-  int32_t readVarint32(decode::ReadCursor& Pos) { return readVarint32Bits(Pos, 8); }
-  virtual int32_t readVarint32Bits(decode::ReadCursor& Pos, uint32_t NumBits) = 0;
+  int32_t readVarint32(decode::ReadCursor& Pos) {
+    return readVarint32Bits(Pos, 8);
+  }
+  virtual int32_t readVarint32Bits(decode::ReadCursor& Pos,
+                                   uint32_t NumBits) = 0;
 
-  int64_t readVarint64(decode::ReadCursor& Pos) { return readVarint64Bits(Pos, 8); }
-  virtual int64_t readVarint64Bits(decode::ReadCursor& Pos, uint32_t NumBits) = 0;
+  int64_t readVarint64(decode::ReadCursor& Pos) {
+    return readVarint64Bits(Pos, 8);
+  }
+  virtual int64_t readVarint64Bits(decode::ReadCursor& Pos,
+                                   uint32_t NumBits) = 0;
 
   uint32_t readVaruint32(decode::ReadCursor& Pos) {
     return readVaruint32Bits(Pos, 8);
   }
-  virtual uint32_t readVaruint32Bits(decode::ReadCursor& Pos, uint32_t NumBits) = 0;
+  virtual uint32_t readVaruint32Bits(decode::ReadCursor& Pos,
+                                     uint32_t NumBits) = 0;
 
   uint64_t readVaruint64(decode::ReadCursor& Pos) {
     return readVaruint64Bits(Pos, 8);
   }
-  virtual uint64_t readVaruint64Bits(decode::ReadCursor& Pos, uint32_t NumBits) = 0;
+  virtual uint64_t readVaruint64Bits(decode::ReadCursor& Pos,
+                                     uint32_t NumBits) = 0;
 
   // Align to nearest (next) byte boundary.
   virtual void alignToByte(decode::ReadCursor& Pos) = 0;

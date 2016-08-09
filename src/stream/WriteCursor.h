@@ -25,7 +25,7 @@ namespace wasm {
 
 namespace decode {
 
-class WriteCursor : public Cursor {
+class WriteCursor FINAL : public Cursor {
   WriteCursor() = delete;
   WriteCursor& operator=(const WriteCursor&) = delete;
  public:
@@ -40,6 +40,16 @@ class WriteCursor : public Cursor {
     return Address;
   }
 
+  // Writes next byte. Fails if at end of file. NOTE: Assumed byte aligned!
+  void writeByte(uint8_t Byte) {
+    assert(isByteAligned());
+    if (isIndexAtEndOfPage())
+      writeFillBuffer();
+    PageCursor::writeByte(Byte);
+  }
+
+  // Writes up to 32 bits to the output.
+  void writeBits(uint32_t Value, uint32_t NumBits);
 };
 
 }  // end of namespace decode

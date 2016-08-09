@@ -143,10 +143,12 @@ STRM_SRCS = \
 	Cursor.cpp \
 	Page.cpp \
 	Queue.cpp \
+	ReadCursor.cpp \
 	ReadBackedQueue.cpp \
 	StreamReader.cpp \
 	StreamWriter.cpp \
 	WriteBackedQueue.cpp \
+	WriteCursor.cpp \
 	WriteUtils.cpp
 
 STRM_OBJS=$(patsubst %.cpp, $(STRM_OBJDIR)/%.o, $(STRM_SRCS))
