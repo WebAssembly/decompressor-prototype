@@ -18,6 +18,7 @@
 // Implements defaults for stream writers.
 
 #include "interp/ByteWriteStream.h"
+#include "stream/ReadCursor.h"
 
 #include <iostream>
 
@@ -28,13 +29,6 @@ using namespace decode;
 namespace interp {
 
 namespace {
-
-#if 0
-static constexpr uint32_t BitsInWord = sizeof(uint32_t) * CHAR_BIT;
-static constexpr uint32_t ChunkSize = CHAR_BIT - 1;
-static constexpr uint32_t ChunksInWord =
-    (BitsInWord + ChunkSize - 1) / ChunkSize;
-#endif
 
 // Define LEB128 writers.
 #ifdef LEB128_LOOP_UNTIL
@@ -164,7 +158,7 @@ size_t ByteWriteStream::getBlockSize(decode::WriteCursor& StartPos,
 
 void ByteWriteStream::moveBlock(decode::WriteCursor& Pos, size_t StartAddress,
                                 size_t Size) {
-  WriteCursor CopyPos(StreamType::Byte, Pos.getQueue());
+  ReadCursor CopyPos(StreamType::Byte, Pos.getQueue());
   CopyPos.jumpToByteAddress(StartAddress);
   for (size_t i = 0; i < Size; ++i)
     Pos.writeByte(CopyPos.readByte());
