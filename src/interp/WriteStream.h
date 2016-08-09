@@ -105,7 +105,8 @@ class WriteStream : public std::enable_shared_from_this<WriteStream> {
                               decode::Cursor& EndPos) = 0;
 
   // Moves Size elemens (stream specific) to StartAddress.
-  virtual void moveBlock(decode::Cursor& Pos, size_t StartAddress,
+  virtual void moveBlock(decode::Cursor& Pos,
+                         size_t StartAddress,
                          size_t Size) = 0;
 
   decode::StreamType getType() const { return Type; }

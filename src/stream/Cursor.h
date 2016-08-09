@@ -36,17 +36,11 @@ class WorkingByte {
 
   bool isEmpty() const { return BitsInValue == 0; }
 
-  BitsInByteType getBitsRead() const {
-    return (CHAR_BIT - BitsInValue) & 0x7;
-  }
+  BitsInByteType getBitsRead() const { return (CHAR_BIT - BitsInValue) & 0x7; }
 
-  BitsInByteType getReadBitsRemaining() const {
-    return BitsInValue;
-  }
+  BitsInByteType getReadBitsRemaining() const { return BitsInValue; }
 
-  BitsInByteType getBitsWritten() const {
-    return BitsInValue;
-  }
+  BitsInByteType getBitsWritten() const { return BitsInValue; }
 
   BitsInByteType getWriteBitsRemaining() const {
     return CHAR_BIT - BitsInValue;
@@ -59,7 +53,6 @@ class WorkingByte {
     Value &= ~uint32_t(0) << BitsInValue;
     return Result;
   }
-
 
   void writeBits(uint8_t Value, BitsInByteType NumBits) {
     assert(NumBits <= BitsInValue);
@@ -90,7 +83,6 @@ class Cursor : public PageCursor {
   Cursor& operator=(const Cursor&) = delete;
 
  public:
-
   Cursor(StreamType Type, std::shared_ptr<Queue> Que)
       : Type(Type), Que(Que), EobPtr(Que->getEofPtr()) {}
   explicit Cursor(const Cursor& C)
@@ -117,23 +109,17 @@ class Cursor : public PageCursor {
 
   const WorkingByte& getWorkingByte() const { return CurByte; }
 
-  BitsInByteType getBitsRead() const {
-    return CurByte.getBitsRead();
-  }
+  BitsInByteType getBitsRead() const { return CurByte.getBitsRead(); }
 
-  BitsInByteType getBitsWritten() const {
-    return CurByte.getBitsWritten();
-  }
+  BitsInByteType getBitsWritten() const { return CurByte.getBitsWritten(); }
 
   std::shared_ptr<Queue> getQueue() { return Que; }
 
-  bool atReadBitEob() {
-    return getCurReadBitAddress() == getEobAddress();
-  }
+  bool atReadBitEob() { return getCurReadBitAddress() == getEobAddress(); }
 
   bool atByteEob() {
-    return getCurAddress() >= getEobAddress().getByteAddress()
-        || !readFillBuffer();
+    return getCurAddress() >= getEobAddress().getByteAddress() ||
+           !readFillBuffer();
   }
 
   BitAddress& getEobAddress() const { return EobPtr->getEobAddress(); }

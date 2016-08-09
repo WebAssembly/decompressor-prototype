@@ -39,7 +39,8 @@ BinaryWriter::BinaryWriter(std::shared_ptr<decode::Queue> Output,
       Writer(std::make_shared<ByteWriteStream>()),
       SectionSymtab(Symtab),
       MinimizeBlockSize(false),
-      Trace(WritePos, "BinaryWriter") {}
+      Trace(WritePos, "BinaryWriter") {
+}
 
 void BinaryWriter::writePreamble() {
   Writer->writeUint32(WasmBinaryMagic, WritePos);

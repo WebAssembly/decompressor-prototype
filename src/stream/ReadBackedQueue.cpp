@@ -22,13 +22,23 @@ namespace wasm {
 namespace decode {
 
 bool ReadBackedQueue::readFill(size_t Address) {
+  // Double check that there isn't more to read.
   if (Address < LastPage->getMaxAddress())
     return true;
-  // Fail to read if unknown gap!
-  if (EofFrozen || Address > LastPage->getMaxAddress())
+  if (EofFrozen)
     return false;
-  // Read fill if possible, until at least one byte is available.
-  if (size_t SpaceAvailable = LastPage->spaceRemaining()) {
+  while (Address >= LastPage->getMaxAddress()) {
+    size_t SpaceAvailable = LastPage->spaceRemaining();
+    // Create new page if current page full.
+    if (SpaceAvailable == 0) {
+      std::shared_ptr<Page> NewPage =
+          std::make_shared<Page>(LastPage->getMaxAddress());
+      std::weak_ptr<Page> PlaceHolder(NewPage);
+      PageMap.push_back(PlaceHolder);
+      LastPage->Next = NewPage;
+      LastPage = NewPage;
+      SpaceAvailable = Page::Size;
+    }
     size_t NumBytes = Reader->read(
         &(LastPage->Buffer[Page::address(Address)]), SpaceAvailable);
     LastPage->incrementMaxAddress(NumBytes);
@@ -36,14 +46,7 @@ bool ReadBackedQueue::readFill(size_t Address) {
       freezeEof(Address);
       return false;
     }
-    return true;
   }
-  std::shared_ptr<Page> NewPage =
-      std::make_shared<Page>(LastPage->getMaxAddress());
-  std::weak_ptr<Page> PlaceHolder(NewPage);
-  PageMap.push_back(PlaceHolder);
-  LastPage->Next = NewPage;
-  LastPage = NewPage;
   return true;
 }
 
