@@ -219,6 +219,10 @@ ifneq ($(RELEASE), 0)
   CXXFLAGS += -DNDEBUG
 endif
 
+ifdef LOGPAGE_SIZE
+  CXXFLAGS += -DWASM_DECODE_LOGPAGE_SIZE=$(LOGPAGE_SIZE)
+endif
+
 ###### Default Rule ######
 
 all: libs execs test-execs
@@ -497,6 +501,8 @@ test-all:
 .PHONY: test-all
 
 presubmit:
+	$(MAKE) clean-all
+	$(MAKE) test-all CXX=clang++ LOGPAGE_SIZE=2
 	$(MAKE) clean-all
 	$(MAKE) test-all CXX=g++
 	$(MAKE) clean-all

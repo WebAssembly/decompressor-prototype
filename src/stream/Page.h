@@ -61,8 +61,13 @@ class Page : public std::enable_shared_from_this<Page> {
   Page& operator=(const Page&) = delete;
 
  public:
-  // Allow up to a megabyte per page.
-  static constexpr size_t SizeLog2 = 16;
+  static constexpr size_t SizeLog2 =
+#ifdef WASM_DECODE_LOGPAGE_SIZE
+      WASM_DECODE_LOGPAGE_SIZE
+#else
+      16
+#endif
+      ;
   static constexpr size_t Size = 1 << SizeLog2;
   static constexpr size_t Mask = Size - 1;
 
@@ -84,10 +89,12 @@ class Page : public std::enable_shared_from_this<Page> {
   }
 
   size_t spaceRemaining() const {
-    return (MinAddress + Page::Size == MaxAddress)
-               ? 0
-               : (Page::Size - (MaxAddress & Page::Mask));
+    return MinAddress == MaxAddress
+               ? Page::Size
+               : Page::Size - (Page::address(MaxAddress - 1) + 1);
   }
+
+  size_t getPageIndex() const { return Index; }
 
   size_t getMinAddress() const { return MinAddress; }
 
@@ -133,11 +140,14 @@ class PageCursor {
   }
   void setCurAddress(size_t NewAddress) { CurAddress = NewAddress; }
   size_t getCurAddress() const { return CurAddress; }
+  size_t getRelativeAddress() const {
+    return CurAddress - CurPage->getMinAddress();
+  }
   void setMaxAddress(size_t Address) { CurPage->setMaxAddress(Address); }
   bool isIndexAtEndOfPage() const { return getCurAddress() == getMaxAddress(); }
   uint8_t* getBufferPtr() {
     assert(CurPage);
-    return CurPage->Buffer + getCurIndex();
+    return CurPage->Buffer + getRelativeAddress();
   }
   uint8_t readByte() {
     uint8_t Byte = *getBufferPtr();
@@ -155,9 +165,9 @@ class PageCursor {
   // For debugging only.
   FILE* describe(FILE* File, bool IncludePage = false);
 
- private:
-  size_t CurAddress;  // Relative to minimum index in page.
-  size_t getCurIndex() const { return CurAddress - CurPage->getMinAddress(); }
+ protected:
+  // Absolute address.
+  size_t CurAddress;
 };
 
 }  // end of namespace decode

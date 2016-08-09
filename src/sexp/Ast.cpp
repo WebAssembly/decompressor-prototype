@@ -111,10 +111,11 @@ std::string SymbolNode::getStringName() const {
   return Str;
 }
 
-SymbolTable::SymbolTable() :
-    // TODO(karlschimpf) Switch Alloc to an ArenaAllocator once working.
-    Trace("NodesTable"),
-    Alloc(std::make_shared<Malloc>()), NextCreationIndex(0) {
+SymbolTable::SymbolTable()
+    :  // TODO(karlschimpf) Switch Alloc to an ArenaAllocator once working.
+      Trace("NodesTable"),
+      Alloc(std::make_shared<Malloc>()),
+      NextCreationIndex(0) {
   Error = Alloc->create<ErrorNode>(*this);
 }
 
@@ -209,7 +210,7 @@ void SymbolTable::installDefinitions(Node* Root) {
     case OpRename: {
       if (auto* OldSymbol = dyn_cast<SymbolNode>(Root->getKid(0))) {
         if (auto* NewSymbol = dyn_cast<SymbolNode>(Root->getKid(1))) {
-          Node *Defn = const_cast<Node*>(OldSymbol->getDefineDefinition());
+          Node* Defn = const_cast<Node*>(OldSymbol->getDefineDefinition());
           NewSymbol->setDefineDefinition(Defn);
           return;
         }
@@ -409,7 +410,7 @@ int OpcodeNode::WriteRange::compare(const WriteRange& R) const {
 }
 
 void OpcodeNode::WriteRange::traceInternal(const char* Prefix,
-                                           TraceClassSexp &Trace) const {
+                                           TraceClassSexp& Trace) const {
   FILE* Out = Trace.getFile();
   Trace.indent();
   fprintf(Out, "[%" PRIxMAX "..%" PRIxMAX "](%" PRIuMAX "):\n", uintmax_t(Min),

@@ -338,8 +338,8 @@ IntType Interpreter::read(const Node* Nd) {
 
       return LastReadValue = 0;
     case OpMap: {
-      const auto *Map = cast<MapNode>(Nd);
-      const CaseNode *Case = Map->getCase(read(Map->getKid(0)));
+      const auto* Map = cast<MapNode>(Nd);
+      const CaseNode* Case = Map->getCase(read(Map->getKid(0)));
       return read(Case->getKid(1));
     }
     case OpOpcode: {
@@ -547,8 +547,8 @@ void Interpreter::decompressSection() {
 #endif
   readSectionName();
 #if LOG_SECTIONS
-  fprintf(Trace.indent(), "@%" PRIxMAX " section '%s'\n", uintmax_t(SectionAddress),
-          CurSectionName.c_str());
+  fprintf(Trace.indent(), "@%" PRIxMAX " section '%s'\n",
+          uintmax_t(SectionAddress), CurSectionName.c_str());
 #endif
   Trace.traceString("name", CurSectionName);
   SymbolNode* Sym = Symtab->getSymbol(CurSectionName);

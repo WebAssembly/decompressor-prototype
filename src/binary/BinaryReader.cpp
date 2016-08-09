@@ -51,7 +51,8 @@ BinaryReader::BinaryReader(std::shared_ptr<decode::Queue> Input,
       ReadPos(StreamType::Byte, Input),
       Symtab(Symtab),
       SectionSymtab(Symtab),
-      Trace(ReadPos, "BinaryReader") {}
+      Trace(ReadPos, "BinaryReader") {
+}
 
 template <class T>
 void BinaryReader::readNullary() {

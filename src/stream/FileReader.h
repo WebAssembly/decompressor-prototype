@@ -33,7 +33,6 @@ class FdReader : public RawStream {
   FdReader& operator=(const FdReader*) = delete;
 
  public:
-
   FdReader(int Fd, bool CloseOnExit)
       : Fd(Fd),
         CurSize(0),

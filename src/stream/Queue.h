@@ -52,7 +52,7 @@ struct BitAddress {
  public:
   BitAddress(size_t ByteAddr = 0, BitsInByteType BitAddr = 0)
       : ByteAddr(ByteAddr), BitAddr(BitAddr) {}
-  BitAddress(const BitAddress &Address)
+  BitAddress(const BitAddress& Address)
       : ByteAddr(Address.ByteAddr), BitAddr(Address.BitAddr) {}
   size_t getByteAddress() const { return ByteAddr; }
   BitsInByteType getBitAddress() const { return BitAddr; }
@@ -84,23 +84,21 @@ class BlockEob : public std::enable_shared_from_this<BlockEob> {
   BlockEob& operator=(const BlockEob&) = delete;
 
  public:
-  explicit BlockEob(const BitAddress &Address) : EobAddress(Address) {}
+  explicit BlockEob(const BitAddress& Address) : EobAddress(Address) {}
   explicit BlockEob(size_t ByteAddr = kUndefinedAddress,
-                    BitsInByteType BitAddr=0)
+                    BitsInByteType BitAddr = 0)
       : EobAddress(ByteAddr, BitAddr) {}
-  BlockEob(size_t ByteAddr,
-           const std::shared_ptr<BlockEob> EnclosingEobPtr)
+  BlockEob(size_t ByteAddr, const std::shared_ptr<BlockEob> EnclosingEobPtr)
       : EobAddress(ByteAddr), EnclosingEobPtr(EnclosingEobPtr) {}
-  BlockEob(size_t ByteAddr, BitsInByteType BitAddr,
+  BlockEob(size_t ByteAddr,
+           BitsInByteType BitAddr,
            const std::shared_ptr<BlockEob> EnclosingEobPtr)
       : EobAddress(ByteAddr, BitAddr), EnclosingEobPtr(EnclosingEobPtr) {}
   BlockEob(const BitAddress& Address,
            const std::shared_ptr<BlockEob> EnclosingEobPtr)
       : EobAddress(Address), EnclosingEobPtr(EnclosingEobPtr) {}
-  BitAddress&  getEobAddress() { return EobAddress; }
-  void setEobAddress(const BitAddress& Address) {
-    EobAddress = Address;
-  }
+  BitAddress& getEobAddress() { return EobAddress; }
+  void setEobAddress(const BitAddress& Address) { EobAddress = Address; }
   bool isDefined() const {
     return EobAddress.getByteAddress() != kUndefinedAddress;
   }
@@ -119,6 +117,7 @@ class BlockEob : public std::enable_shared_from_this<BlockEob> {
 class Queue : public std::enable_shared_from_this<Queue> {
   Queue(const Queue&) = delete;
   Queue& operator=(const Queue&) = delete;
+  friend class Cursor;
 
  public:
   Queue();
@@ -128,9 +127,7 @@ class Queue : public std::enable_shared_from_this<Queue> {
   // Defines the maximum Peek size into the queue when reading. That
   // is, The minimal number of bytes that the reader can back up without
   // freezing an address. Defaults to 32.
-  void setMinPeekSize(size_t NewValue) {
-    MinPeekSize = NewValue;
-  }
+  void setMinPeekSize(size_t NewValue) { MinPeekSize = NewValue; }
 
   // Value unknown (returning maximum possible size) until frozen. When
   // frozen, returns the size of the buffer.

@@ -64,15 +64,11 @@ size_t Queue::readFromPage(size_t Address,
                            size_t WantedSize,
                            PageCursor& Cursor) {
   // Start by read-filling if necessary.
-  if (Address >= LastPage->getMaxAddress()) {
-    if (!readFill(Address))
-      return 0;
-  }
+  if (Address >= LastPage->getMaxAddress() && !readFill(Address))
+    return 0;
   // Find page associated with Address.
   Cursor.CurPage = getPage(Address);
   Cursor.setCurAddress(Address);
-  if (!Cursor.CurPage)
-    return 0;
   dumpPreviousPages();
   // Compute largest contiguous range of elements available.
   if (Address + WantedSize > Cursor.getMaxAddress())
