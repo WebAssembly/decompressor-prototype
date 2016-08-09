@@ -353,7 +353,7 @@ IntType Interpreter::read(const Node* Nd) {
       return LastReadValue = dyn_cast<IntegerNode>(Nd)->getValue();
     }
     case OpPeek: {
-      Cursor InitialPos(ReadPos);
+      ReadCursor InitialPos(ReadPos);
       LastReadValue = read(Nd->getKid(0));
       ReadPos.swap(InitialPos);
       return LastReadValue;
@@ -504,7 +504,7 @@ void Interpreter::decompressBlock(const Node* Code) {
   const uint32_t OldSize = Reader->readBlockSize(ReadPos);
   Trace.traceUint32_t("block size", OldSize);
   Reader->pushEobAddress(ReadPos, OldSize);
-  Cursor BlockStart(WritePos);
+  WriteCursor BlockStart(WritePos);
   Writer->writeFixedBlockSize(WritePos, 0);
   size_t SizeAfterSizeWrite = Writer->getStreamAddress(WritePos);
   evalOrCopy(Code);

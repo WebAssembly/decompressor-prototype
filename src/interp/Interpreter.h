@@ -21,7 +21,8 @@
 #define DECOMPRESSOR_SRC_INTERP_INTERPRETER_H
 
 #include "stream/Queue.h"
-#include "stream/Cursor.h"
+#include "stream/ReadCursor.h"
+#include "stream/WriteCursor.h"
 #include "interp/ReadStream.h"
 #include "interp/TraceSexpReaderWriter.h"
 #include "interp/WriteStream.h"
@@ -60,9 +61,9 @@ class Interpreter {
   void setMinimizeBlockSize(bool NewValue) { MinimizeBlockSize = NewValue; }
 
  private:
-  decode::Cursor ReadPos;
+  decode::ReadCursor ReadPos;
   std::shared_ptr<ReadStream> Reader;
-  decode::Cursor WritePos;
+  decode::WriteCursor WritePos;
   std::shared_ptr<WriteStream> Writer;
   filt::Node* DefaultFormat;
   std::shared_ptr<filt::SymbolTable> Symtab;

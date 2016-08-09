@@ -23,10 +23,10 @@
 #include "binary/SectionSymbolTable.h"
 #include "interp/ReadStream.h"
 #include "interp/TraceSexpReader.h"
-#include "stream/Queue.h"
 #include "sexp/Ast.h"
 #include "sexp/TextWriter.h"
-#include "stream/Cursor.h"
+#include "stream/Queue.h"
+#include "stream/ReadCursor.h"
 #include "utils/Defs.h"
 
 #include <functional>
@@ -60,7 +60,7 @@ class BinaryReader {
 
  private:
   std::shared_ptr<interp::ReadStream> Reader;
-  decode::Cursor ReadPos;
+  decode::ReadCursor ReadPos;
   std::shared_ptr<SymbolTable> Symtab;
   SectionSymbolTable SectionSymtab;
   // The magic number of the input.
