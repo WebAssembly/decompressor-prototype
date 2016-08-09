@@ -22,7 +22,7 @@
 
 #include "binary/SectionSymbolTable.h"
 #include "stream/Queue.h"
-#include "stream/Cursor.h"
+#include "stream/WriteCursor.h"
 #include "interp/TraceSexpWriter.h"
 #include "interp/WriteStream.h"
 #include "utils/Defs.h"
@@ -56,7 +56,7 @@ class BinaryWriter {
   void setMinimizeBlockSize(bool NewValue) { MinimizeBlockSize = NewValue; }
 
  private:
-  decode::Cursor WritePos;
+  decode::WriteCursor WritePos;
   std::shared_ptr<interp::WriteStream> Writer;
   SectionSymbolTable SectionSymtab;
   bool MinimizeBlockSize;

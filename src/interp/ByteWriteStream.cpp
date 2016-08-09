@@ -18,6 +18,7 @@
 // Implements defaults for stream writers.
 
 #include "interp/ByteWriteStream.h"
+#include "stream/ReadCursor.h"
 
 #include <iostream>
 
@@ -28,13 +29,6 @@ using namespace decode;
 namespace interp {
 
 namespace {
-
-#if 0
-static constexpr uint32_t BitsInWord = sizeof(uint32_t) * CHAR_BIT;
-static constexpr uint32_t ChunkSize = CHAR_BIT - 1;
-static constexpr uint32_t ChunksInWord =
-    (BitsInWord + ChunkSize - 1) / ChunkSize;
-#endif
 
 // Define LEB128 writers.
 #ifdef LEB128_LOOP_UNTIL
@@ -53,22 +47,22 @@ static constexpr uint32_t ChunksInWord =
   } while (true)
 
 template <class Type>
-void writeLEB128(Type Value, Cursor& Pos) {
+void writeLEB128(Type Value, WriteCursor& Pos) {
   LEB128_LOOP_UNTIL(Value == 0);
 }
 
 template <class Type>
-void writePositiveLEB128(Type Value, Cursor& Pos) {
+void writePositiveLEB128(Type Value, WriteCursor& Pos) {
   LEB128_LOOP_UNTIL(Value == 0 && !(Byte & 0x40));
 }
 
 template <class Type>
-void writeNegativeLEB128(Type Value, Cursor& Pos) {
+void writeNegativeLEB128(Type Value, WriteCursor& Pos) {
   LEB128_LOOP_UNTIL(Value == -1 && (Byte & 0x40));
 }
 
 template <class Type>
-void writeFixedLEB128(Type Value, Cursor& Pos) {
+void writeFixedLEB128(Type Value, WriteCursor& Pos) {
   constexpr uint32_t BitsInWord = sizeof(Type) * CHAR_BIT;
   constexpr uint32_t ChunkSize = CHAR_BIT - 1;
   constexpr uint32_t ChunksInWord = (BitsInWord + ChunkSize - 1) / ChunkSize;
@@ -81,7 +75,7 @@ void writeFixedLEB128(Type Value, Cursor& Pos) {
 #endif
 
 template <class Type>
-void writeFixed(Type Value, Cursor& Pos) {
+void writeFixed(Type Value, WriteCursor& Pos) {
   constexpr uint32_t WordSize = sizeof(Type);
   constexpr Type Mask = (Type(1) << CHAR_BIT) - 1;
   for (uint32_t i = 0; i < WordSize; ++i) {
@@ -93,25 +87,25 @@ void writeFixed(Type Value, Cursor& Pos) {
 }  // end of anonymous namespace
 
 void ByteWriteStream::writeUint8Bits(uint8_t Value,
-                                     Cursor& Pos,
+                                     WriteCursor& Pos,
                                      uint32_t /*NumBits*/) {
   Pos.writeByte(uint8_t(Value));
 }
 
 void ByteWriteStream::writeUint32Bits(uint32_t Value,
-                                      Cursor& Pos,
+                                      WriteCursor& Pos,
                                       uint32_t /*NumBits*/) {
   writeFixed<uint32_t>(Value, Pos);
 }
 
 void ByteWriteStream::writeUint64Bits(uint64_t Value,
-                                      Cursor& Pos,
+                                      WriteCursor& Pos,
                                       uint32_t /*NumBits*/) {
   writeFixed<uint64_t>(Value, Pos);
 }
 
 void ByteWriteStream::writeVarint32Bits(int32_t Value,
-                                        Cursor& Pos,
+                                        WriteCursor& Pos,
                                         uint32_t /*NumBits*/) {
   if (Value < 0)
     writeNegativeLEB128<int32_t>(Value, Pos);
@@ -120,7 +114,7 @@ void ByteWriteStream::writeVarint32Bits(int32_t Value,
 }
 
 void ByteWriteStream::writeVarint64Bits(int64_t Value,
-                                        Cursor& Pos,
+                                        WriteCursor& Pos,
                                         uint32_t /*NumBits*/) {
   if (Value < 0)
     writeNegativeLEB128<int64_t>(Value, Pos);
@@ -129,42 +123,42 @@ void ByteWriteStream::writeVarint64Bits(int64_t Value,
 }
 
 void ByteWriteStream::writeVaruint32Bits(uint32_t Value,
-                                         Cursor& Pos,
+                                         WriteCursor& Pos,
                                          uint32_t /*NumBits*/) {
   writeLEB128<uint32_t>(Value, Pos);
 }
 
 void ByteWriteStream::writeVaruint64Bits(uint64_t Value,
-                                         Cursor& Pos,
+                                         WriteCursor& Pos,
                                          uint32_t /*NumBits*/) {
   writeLEB128<uint64_t>(Value, Pos);
 }
 
-void ByteWriteStream::alignToByte(decode::Cursor& Pos) {}
+void ByteWriteStream::alignToByte(decode::WriteCursor& Pos) {}
 
-size_t ByteWriteStream::getStreamAddress(Cursor& Pos) {
+size_t ByteWriteStream::getStreamAddress(WriteCursor& Pos) {
   return Pos.getCurByteAddress();
 }
 
-void ByteWriteStream::writeFixedBlockSize(Cursor& Pos,
+void ByteWriteStream::writeFixedBlockSize(WriteCursor& Pos,
                                           size_t BlockSize) {
   writeFixedLEB128<uint32_t>(BlockSize, Pos);
 }
 
-void ByteWriteStream::writeVarintBlockSize(decode::Cursor& Pos,
+void ByteWriteStream::writeVarintBlockSize(decode::WriteCursor& Pos,
                                            size_t BlockSize) {
   writeVaruint32(BlockSize, Pos);
 }
 
-size_t ByteWriteStream::getBlockSize(decode::Cursor& StartPos,
-                                     decode::Cursor& EndPos) {
+size_t ByteWriteStream::getBlockSize(decode::WriteCursor& StartPos,
+                                     decode::WriteCursor& EndPos) {
   return EndPos.getCurByteAddress() -
       (StartPos.getCurByteAddress() + ChunksInWord);
 }
 
-void ByteWriteStream::moveBlock(decode::Cursor& Pos, size_t StartAddress,
+void ByteWriteStream::moveBlock(decode::WriteCursor& Pos, size_t StartAddress,
                                 size_t Size) {
-  Cursor CopyPos(StreamType::Byte, Pos.getQueue());
+  ReadCursor CopyPos(StreamType::Byte, Pos.getQueue());
   CopyPos.jumpToByteAddress(StartAddress);
   for (size_t i = 0; i < Size; ++i)
     Pos.writeByte(CopyPos.readByte());

@@ -23,11 +23,12 @@
 
 #include <iostream>
 
-// The following turn on logging sections, functions, and bytes at each eval
-// call in the decompression algorithm.
+// The following turn on logging sections, functions in the decompression
+// algorithm.
 #define LOG_SECTIONS 0
 #define LOG_FUNCTIONS 0
-#define LOG_EVAL 0
+// The following logs lookahead on each call to eval.
+#define LOG_EVAL_LOOKAHEAD 0
 
 // The following two defines allows turning on tracing for the nth (zero based)
 // function.
@@ -75,6 +76,18 @@ IntType Interpreter::eval(const Node* Nd) {
   // TODO(kschimpf) Handle blocks.
   TRACE_METHOD("eval", Trace);
   Trace.traceSexp(Nd);
+#if LOG_EVAL_LOOKAHEAD
+  if (Trace.getTraceProgress()) {
+    decode::ReadCursor Lookahead(ReadPos);
+    fprintf(Trace.indent(), "Lookahead:");
+    for (int i = 0; i < 10; ++i) {
+      if (!Lookahead.atByteEob())
+        fprintf(Trace.getFile(), " %x", Lookahead.readByte());
+    }
+    fprintf(Trace.getFile(), " ");
+    fprintf(ReadPos.describe(Trace.getFile(), true), "\n");
+  }
+#endif
   IntType ReturnValue = 0;
   switch (NodeType Type = Nd->getType()) {
     case NO_SUCH_NODETYPE:
@@ -181,17 +194,6 @@ IntType Interpreter::eval(const Node* Nd) {
       fatal("Error found during evaluation");
       break;
     case OpEval:
-#if LOG_EVAL
-      if (Trace.getTraceProgress()) {
-        decode::Cursor Lookahead(ReadPos);
-        fprintf(Trace.indent(), "Lookahead:");
-        for (int i = 0; i < 10; ++i) {
-          if (!Lookahead.atByteEob())
-            fprintf(Trace.getFile(), " %x", Lookahead.readByte());
-        }
-        fprintf(Trace.getFile(), "\n");
-      }
-#endif
       if (auto* Sym = dyn_cast<SymbolNode>(Nd->getKid(0))) {
         ReturnValue = eval(Sym->getDefineDefinition());
         break;
@@ -353,7 +355,7 @@ IntType Interpreter::read(const Node* Nd) {
       return LastReadValue = dyn_cast<IntegerNode>(Nd)->getValue();
     }
     case OpPeek: {
-      Cursor InitialPos(ReadPos);
+      ReadCursor InitialPos(ReadPos);
       LastReadValue = read(Nd->getKid(0));
       ReadPos.swap(InitialPos);
       return LastReadValue;
@@ -504,14 +506,17 @@ void Interpreter::decompressBlock(const Node* Code) {
   const uint32_t OldSize = Reader->readBlockSize(ReadPos);
   Trace.traceUint32_t("block size", OldSize);
   Reader->pushEobAddress(ReadPos, OldSize);
-  Cursor BlockStart(WritePos);
+  WriteCursor BlockStart(WritePos);
   Writer->writeFixedBlockSize(WritePos, 0);
   size_t SizeAfterSizeWrite = Writer->getStreamAddress(WritePos);
   evalOrCopy(Code);
   const size_t NewSize = Writer->getBlockSize(BlockStart, WritePos);
+  Trace.traceUint32_t("OldSize", OldSize);
+  Trace.traceUint32_t("NewSize", NewSize);
   if (!MinimizeBlockSize) {
     Writer->writeFixedBlockSize(BlockStart, NewSize);
   } else {
+    Trace.traceMessage("Moving block...");
     Writer->writeVarintBlockSize(BlockStart, NewSize);
     size_t SizeAfterBackPatch = Writer->getStreamAddress(BlockStart);
     size_t Diff = SizeAfterSizeWrite - SizeAfterBackPatch;

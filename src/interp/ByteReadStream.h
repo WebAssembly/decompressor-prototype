@@ -31,16 +31,16 @@ class ByteReadStream FINAL : public ReadStream {
 
  public:
   ByteReadStream() : ReadStream(decode::StreamType::Byte) {}
-  uint8_t readUint8Bits(decode::Cursor& Pos, uint32_t NumBits) OVERRIDE;
-  uint32_t readUint32Bits(decode::Cursor& Pos, uint32_t NumBits) OVERRIDE;
-  uint64_t readUint64Bits(decode::Cursor& Pos, uint32_t NumBits) OVERRIDE;
-  int32_t readVarint32Bits(decode::Cursor& Pos, uint32_t NumBits) OVERRIDE;
-  int64_t readVarint64Bits(decode::Cursor& Pos, uint32_t NumBits) OVERRIDE;
-  uint32_t readVaruint32Bits(decode::Cursor& Pos, uint32_t NumBits) OVERRIDE;
-  uint64_t readVaruint64Bits(decode::Cursor& Pos, uint32_t NumBits) OVERRIDE;
-  void alignToByte(decode::Cursor& Pos) OVERRIDE;
-  size_t readBlockSize(decode::Cursor& Pos) OVERRIDE;
-  void pushEobAddress(decode::Cursor& Pos, size_t BlockSize) OVERRIDE;
+  uint8_t readUint8Bits(decode::ReadCursor& Pos, uint32_t NumBits) OVERRIDE;
+  uint32_t readUint32Bits(decode::ReadCursor& Pos, uint32_t NumBits) OVERRIDE;
+  uint64_t readUint64Bits(decode::ReadCursor& Pos, uint32_t NumBits) OVERRIDE;
+  int32_t readVarint32Bits(decode::ReadCursor& Pos, uint32_t NumBits) OVERRIDE;
+  int64_t readVarint64Bits(decode::ReadCursor& Pos, uint32_t NumBits) OVERRIDE;
+  uint32_t readVaruint32Bits(decode::ReadCursor& Pos, uint32_t NumBits) OVERRIDE;
+  uint64_t readVaruint64Bits(decode::ReadCursor& Pos, uint32_t NumBits) OVERRIDE;
+  void alignToByte(decode::ReadCursor& Pos) OVERRIDE;
+  size_t readBlockSize(decode::ReadCursor& Pos) OVERRIDE;
+  void pushEobAddress(decode::ReadCursor& Pos, size_t BlockSize) OVERRIDE;
   static bool implementsClass(decode::StreamType RtClassID) {
     return RtClassID == decode::StreamType::Byte;
   }

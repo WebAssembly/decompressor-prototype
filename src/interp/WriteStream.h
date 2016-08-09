@@ -20,7 +20,7 @@
 #define DECOMPRESSOR_SRC_INTERP_WRITESTREAM_H
 
 #include "sexp/Ast.h"
-#include "stream/Cursor.h"
+#include "stream/WriteCursor.h"
 #include "utils/Casting.h"
 
 #include <memory>
@@ -36,76 +36,78 @@ class WriteStream : public std::enable_shared_from_this<WriteStream> {
   WriteStream& operator=(const WriteStream&) = delete;
 
  public:
-  void writeUint8(uint8_t Value, decode::Cursor& Pos) {
+  void writeUint8(uint8_t Value, decode::WriteCursor& Pos) {
     writeUint8Bits(Value, Pos, 8);
   }
   virtual void writeUint8Bits(uint8_t,
-                              decode::Cursor& Pos,
+                              decode::WriteCursor& Pos,
                               uint32_t NumBits) = 0;
 
-  void writeUint32(uint32_t Value, decode::Cursor& Pos) {
+  void writeUint32(uint32_t Value, decode::WriteCursor& Pos) {
     writeUint32Bits(Value, Pos, 8);
   }
   virtual void writeUint32Bits(uint32_t Value,
-                               decode::Cursor& Pos,
+                               decode::WriteCursor& Pos,
                                uint32_t NumBits) = 0;
 
-  void writeUint64(uint64_t Value, decode::Cursor& Pos) {
+  void writeUint64(uint64_t Value, decode::WriteCursor& Pos) {
     writeUint64Bits(Value, Pos, 8);
   }
   virtual void writeUint64Bits(uint64_t Value,
-                               decode::Cursor& Pos,
+                               decode::WriteCursor& Pos,
                                uint32_t NumBits) = 0;
 
-  void writeVarint32(int32_t Value, decode::Cursor& Pos) {
+  void writeVarint32(int32_t Value, decode::WriteCursor& Pos) {
     writeVarint32Bits(Value, Pos, 8);
   }
   virtual void writeVarint32Bits(int32_t Value,
-                                 decode::Cursor& Pos,
+                                 decode::WriteCursor& Pos,
                                  uint32_t NumBits) = 0;
 
-  void writeVarint64(int64_t Value, decode::Cursor& Pos) {
+  void writeVarint64(int64_t Value, decode::WriteCursor& Pos) {
     return writeVarint64Bits(Value, Pos, 8);
   }
   virtual void writeVarint64Bits(int64_t Value,
-                                 decode::Cursor& Pos,
+                                 decode::WriteCursor& Pos,
                                  uint32_t NumBits) = 0;
 
-  void writeVaruint32(uint32_t Value, decode::Cursor& Pos) {
+  void writeVaruint32(uint32_t Value, decode::WriteCursor& Pos) {
     writeVaruint32Bits(Value, Pos, 8);
   }
   virtual void writeVaruint32Bits(uint32_t Value,
-                                  decode::Cursor& Pos,
+                                  decode::WriteCursor& Pos,
                                   uint32_t NumBits) = 0;
 
-  void writeVaruint64(uint64_t Value, decode::Cursor& Pos) {
+  void writeVaruint64(uint64_t Value, decode::WriteCursor& Pos) {
     writeVaruint64Bits(Value, Pos, 8);
   }
 
   virtual void writeVaruint64Bits(uint64_t Value,
-                                  decode::Cursor& Pos,
+                                  decode::WriteCursor& Pos,
                                   uint32_t NumBits) = 0;
 
-  virtual void alignToByte(decode::Cursor& Pos) = 0;
+  virtual void alignToByte(decode::WriteCursor& Pos) = 0;
 
   // The following virtuals are used to implement blocks.
 
   // Returns stream specific address (i.e. bit address for bit streams, byte
   // address for byte streams, and int address for int streams).
-  virtual size_t getStreamAddress(decode::Cursor& Pos) = 0;
+  virtual size_t getStreamAddress(decode::WriteCursor& Pos) = 0;
 
   // Saves the block size using a fixed format that is independent of
   // the block size.
-  virtual void writeFixedBlockSize(decode::Cursor& Pos, size_t BlockSize) = 0;
-  virtual void writeVarintBlockSize(decode::Cursor& Pos, size_t BlockSIze) = 0;
+  virtual void writeFixedBlockSize(decode::WriteCursor& Pos,
+                                   size_t BlockSize) = 0;
+  virtual void writeVarintBlockSize(decode::WriteCursor& Pos,
+                                    size_t BlockSIze) = 0;
 
   // Returns the size of the block, defined by the range of the
   // passed positions (specific to the stream).
-  virtual size_t getBlockSize(decode::Cursor& StartPos,
-                              decode::Cursor& EndPos) = 0;
+  virtual size_t getBlockSize(decode::WriteCursor& StartPos,
+                              decode::WriteCursor& EndPos) = 0;
 
   // Moves Size elemens (stream specific) to StartAddress.
-  virtual void moveBlock(decode::Cursor& Pos,
+  virtual void moveBlock(decode::WriteCursor& Pos,
                          size_t StartAddress,
                          size_t Size) = 0;
 

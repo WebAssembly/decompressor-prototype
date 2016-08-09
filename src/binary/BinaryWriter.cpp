@@ -205,7 +205,7 @@ void BinaryWriter::writeNode(const Node* Nd) {
 }
 
 void BinaryWriter::writeBlock(std::function<void()> ApplyFn) {
-  Cursor BlockStart(WritePos);
+  WriteCursor BlockStart(WritePos);
   Writer->writeFixedBlockSize(WritePos, 0);
   size_t SizeAfterSizeWrite = Writer->getStreamAddress(WritePos);
   ApplyFn();

@@ -38,33 +38,33 @@ class ByteWriteStream FINAL : public WriteStream {
       (BitsInWord + ChunkSize - 1) / ChunkSize;
   ByteWriteStream() : WriteStream(decode::StreamType::Byte) {}
   void writeUint8Bits(uint8_t Value,
-                      decode::Cursor& Pos,
+                      decode::WriteCursor& Pos,
                       uint32_t NumBits) OVERRIDE;
   void writeUint32Bits(uint32_t Value,
-                       decode::Cursor& Pos,
+                       decode::WriteCursor& Pos,
                        uint32_t NumBits) OVERRIDE;
   void writeUint64Bits(uint64_t Value,
-                       decode::Cursor& Pos,
+                       decode::WriteCursor& Pos,
                        uint32_t NumBits) OVERRIDE;
   void writeVarint32Bits(int32_t Value,
-                         decode::Cursor& Pos,
+                         decode::WriteCursor& Pos,
                          uint32_t NumBits) OVERRIDE;
   void writeVarint64Bits(int64_t Value,
-                         decode::Cursor& Pos,
+                         decode::WriteCursor& Pos,
                          uint32_t NumBits) OVERRIDE;
   void writeVaruint32Bits(uint32_t Value,
-                          decode::Cursor& Pos,
+                          decode::WriteCursor& Pos,
                           uint32_t NumBits) OVERRIDE;
   void writeVaruint64Bits(uint64_t Value,
-                          decode::Cursor& Pos,
+                          decode::WriteCursor& Pos,
                           uint32_t NumBits) OVERRIDE;
-  void alignToByte(decode::Cursor& Pos) OVERRIDE;
-  size_t getStreamAddress(decode::Cursor& Pos) OVERRIDE;
-  void writeFixedBlockSize(decode::Cursor& Pos, size_t BlockSize) OVERRIDE;
-  void writeVarintBlockSize(decode::Cursor& Pos, size_t BlockSIze) OVERRIDE;
-  size_t getBlockSize(decode::Cursor& StartPos,
-                      decode::Cursor& EndPos) OVERRIDE;
-  void moveBlock(decode::Cursor& Pos, size_t StartAddress,
+  void alignToByte(decode::WriteCursor& Pos) OVERRIDE;
+  size_t getStreamAddress(decode::WriteCursor& Pos) OVERRIDE;
+  void writeFixedBlockSize(decode::WriteCursor& Pos, size_t BlockSize) OVERRIDE;
+  void writeVarintBlockSize(decode::WriteCursor& Pos, size_t BlockSIze) OVERRIDE;
+  size_t getBlockSize(decode::WriteCursor& StartPos,
+                      decode::WriteCursor& EndPos) OVERRIDE;
+  void moveBlock(decode::WriteCursor& Pos, size_t StartAddress,
                  size_t Size) OVERRIDE;
 
   static bool implementsClass(decode::StreamType RtClassId) {

@@ -20,7 +20,7 @@
 #define DECOMPRESSOR_SRC_INTERP_READSTREAM_H
 
 #include "sexp/Ast.h"
-#include "stream/Cursor.h"
+#include "stream/ReadCursor.h"
 #include "utils/Casting.h"
 
 #include <memory>
@@ -36,42 +36,56 @@ class ReadStream : public std::enable_shared_from_this<ReadStream> {
   ReadStream& operator=(const ReadStream&) = delete;
 
  public:
-  uint8_t readUint8(decode::Cursor& Pos) { return readUint8Bits(Pos, 8); }
-  virtual uint8_t readUint8Bits(decode::Cursor& Pos, uint32_t NumBits) = 0;
+  uint8_t readUint8(decode::ReadCursor& Pos) { return readUint8Bits(Pos, 8); }
+  virtual uint8_t readUint8Bits(decode::ReadCursor& Pos, uint32_t NumBits) = 0;
 
-  uint32_t readUint32(decode::Cursor& Pos) { return readUint32Bits(Pos, 8); }
-  virtual uint32_t readUint32Bits(decode::Cursor& Pos, uint32_t NumBits) = 0;
+  uint32_t readUint32(decode::ReadCursor& Pos) {
+    return readUint32Bits(Pos, 8);
+  }
+  virtual uint32_t readUint32Bits(decode::ReadCursor& Pos,
+                                  uint32_t NumBits) = 0;
 
-  uint64_t readUint64(decode::Cursor& Pos) { return readUint64Bits(Pos, 8); }
-  virtual uint64_t readUint64Bits(decode::Cursor& Pos, uint32_t NumBits) = 0;
+  uint64_t readUint64(decode::ReadCursor& Pos) {
+    return readUint64Bits(Pos, 8);
+  }
+  virtual uint64_t readUint64Bits(decode::ReadCursor& Pos,
+                                  uint32_t NumBits) = 0;
 
-  int32_t readVarint32(decode::Cursor& Pos) { return readVarint32Bits(Pos, 8); }
-  virtual int32_t readVarint32Bits(decode::Cursor& Pos, uint32_t NumBits) = 0;
+  int32_t readVarint32(decode::ReadCursor& Pos) {
+    return readVarint32Bits(Pos, 8);
+  }
+  virtual int32_t readVarint32Bits(decode::ReadCursor& Pos,
+                                   uint32_t NumBits) = 0;
 
-  int64_t readVarint64(decode::Cursor& Pos) { return readVarint64Bits(Pos, 8); }
-  virtual int64_t readVarint64Bits(decode::Cursor& Pos, uint32_t NumBits) = 0;
+  int64_t readVarint64(decode::ReadCursor& Pos) {
+    return readVarint64Bits(Pos, 8);
+  }
+  virtual int64_t readVarint64Bits(decode::ReadCursor& Pos,
+                                   uint32_t NumBits) = 0;
 
-  uint32_t readVaruint32(decode::Cursor& Pos) {
+  uint32_t readVaruint32(decode::ReadCursor& Pos) {
     return readVaruint32Bits(Pos, 8);
   }
-  virtual uint32_t readVaruint32Bits(decode::Cursor& Pos, uint32_t NumBits) = 0;
+  virtual uint32_t readVaruint32Bits(decode::ReadCursor& Pos,
+                                     uint32_t NumBits) = 0;
 
-  uint64_t readVaruint64(decode::Cursor& Pos) {
+  uint64_t readVaruint64(decode::ReadCursor& Pos) {
     return readVaruint64Bits(Pos, 8);
   }
-  virtual uint64_t readVaruint64Bits(decode::Cursor& Pos, uint32_t NumBits) = 0;
+  virtual uint64_t readVaruint64Bits(decode::ReadCursor& Pos,
+                                     uint32_t NumBits) = 0;
 
   // Align to nearest (next) byte boundary.
-  virtual void alignToByte(decode::Cursor& Pos) = 0;
+  virtual void alignToByte(decode::ReadCursor& Pos) = 0;
 
   // The following virtuals are used to implement blocks.
 
   // Reads in the stream specific block size.
-  virtual size_t readBlockSize(decode::Cursor& Pos) = 0;
+  virtual size_t readBlockSize(decode::ReadCursor& Pos) = 0;
 
   // Sets Eob based on BlockSize (returned from readBlockSize), based
   // on stream specific block size.
-  virtual void pushEobAddress(decode::Cursor& Pos, size_t BlockSize) = 0;
+  virtual void pushEobAddress(decode::ReadCursor& Pos, size_t BlockSize) = 0;
 
   decode::StreamType getType() const { return Type; }
 
