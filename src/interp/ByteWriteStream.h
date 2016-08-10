@@ -61,10 +61,12 @@ class ByteWriteStream FINAL : public WriteStream {
   void alignToByte(decode::WriteCursor& Pos) OVERRIDE;
   size_t getStreamAddress(decode::WriteCursor& Pos) OVERRIDE;
   void writeFixedBlockSize(decode::WriteCursor& Pos, size_t BlockSize) OVERRIDE;
-  void writeVarintBlockSize(decode::WriteCursor& Pos, size_t BlockSIze) OVERRIDE;
+  void writeVarintBlockSize(decode::WriteCursor& Pos,
+                            size_t BlockSIze) OVERRIDE;
   size_t getBlockSize(decode::WriteCursor& StartPos,
                       decode::WriteCursor& EndPos) OVERRIDE;
-  void moveBlock(decode::WriteCursor& Pos, size_t StartAddress,
+  void moveBlock(decode::WriteCursor& Pos,
+                 size_t StartAddress,
                  size_t Size) OVERRIDE;
 
   static bool implementsClass(decode::StreamType RtClassId) {
