@@ -16,7 +16,6 @@
 
 #include "stream/WriteCursor.h"
 
-
 namespace wasm {
 
 namespace decode {

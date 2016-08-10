@@ -115,10 +115,6 @@ class Cursor : public PageCursor {
     return getCurAddress();
   }
 
-#if 0
-  void jumpToByteAddress(size_t NewAddress);
-#endif
-
   // For debugging.
   FILE* describe(FILE* File, bool IncludeDetail = false);
 
@@ -129,27 +125,42 @@ class Cursor : public PageCursor {
   // End of block address.
   std::shared_ptr<BlockEob> EobPtr;
   WorkingByte CurByte;
+  size_t GuaranteedBeforeEob;
+
   Cursor(StreamType Type, std::shared_ptr<Queue> Que)
       : PageCursor(Que->FirstPage, Que->FirstPage->getMinAddress()),
         Type(Type),
         Que(Que),
-        EobPtr(Que->getEofPtr()) {}
+        EobPtr(Que->getEofPtr()) {
+    updateGuaranteedBeforeEob();
+  }
+
   explicit Cursor(const Cursor& C)
       : PageCursor(C),
         Type(C.Type),
         Que(C.Que),
         EobPtr(C.EobPtr),
-        CurByte(C.CurByte) {}
+        CurByte(C.CurByte) {
+    updateGuaranteedBeforeEob();
+  }
 
   Cursor(const Cursor& C, size_t StartAddress)
       : PageCursor(C.Que->getPage(StartAddress), StartAddress),
         Type(C.Type),
         Que(C.Que),
         EobPtr(C.EobPtr),
-        CurByte(C.CurByte) {}
+        CurByte(C.CurByte) {
+    updateGuaranteedBeforeEob();
+  }
+
+  void updateGuaranteedBeforeEob() {
+    GuaranteedBeforeEob = std::min(CurPage->getMaxAddress(),
+                                   EobPtr->getEobAddress().getByteAddress());
+  }
 
   // Returns true if able to fill the buffer with at least one byte.
   bool readFillBuffer();
+
   // Creates new pages in buffer so that writes can occur.
   void writeFillBuffer();
 };

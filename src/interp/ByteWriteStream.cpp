@@ -134,14 +134,14 @@ void ByteWriteStream::writeVaruint64Bits(uint64_t Value,
   writeLEB128<uint64_t>(Value, Pos);
 }
 
-void ByteWriteStream::alignToByte(decode::WriteCursor& Pos) {}
+void ByteWriteStream::alignToByte(decode::WriteCursor& Pos) {
+}
 
 size_t ByteWriteStream::getStreamAddress(WriteCursor& Pos) {
   return Pos.getCurByteAddress();
 }
 
-void ByteWriteStream::writeFixedBlockSize(WriteCursor& Pos,
-                                          size_t BlockSize) {
+void ByteWriteStream::writeFixedBlockSize(WriteCursor& Pos, size_t BlockSize) {
   writeFixedLEB128<uint32_t>(BlockSize, Pos);
 }
 
@@ -153,16 +153,16 @@ void ByteWriteStream::writeVarintBlockSize(decode::WriteCursor& Pos,
 size_t ByteWriteStream::getBlockSize(decode::WriteCursor& StartPos,
                                      decode::WriteCursor& EndPos) {
   return EndPos.getCurByteAddress() -
-      (StartPos.getCurByteAddress() + ChunksInWord);
+         (StartPos.getCurByteAddress() + ChunksInWord);
 }
 
-void ByteWriteStream::moveBlock(decode::WriteCursor& Pos, size_t StartAddress,
+void ByteWriteStream::moveBlock(decode::WriteCursor& Pos,
+                                size_t StartAddress,
                                 size_t Size) {
   ReadCursor CopyPos(Pos, StartAddress);
   for (size_t i = 0; i < Size; ++i)
     Pos.writeByte(CopyPos.readByte());
 }
-
 
 }  // end of namespace decode
 

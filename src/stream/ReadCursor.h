@@ -28,28 +28,21 @@ namespace decode {
 class ReadCursor FINAL : public Cursor {
   ReadCursor() = delete;
   ReadCursor& operator=(const ReadCursor&) = delete;
+
  public:
-  ReadCursor(StreamType Type, std::shared_ptr<Queue> Que)
-      : Cursor(Type, Que) {
-    updateGuaranteedBeforeEob();
-  }
+  ReadCursor(StreamType Type, std::shared_ptr<Queue> Que) : Cursor(Type, Que) {}
 
-  explicit ReadCursor(const Cursor& C) : Cursor(C) {
-    updateGuaranteedBeforeEob();
-  }
+  explicit ReadCursor(const Cursor& C) : Cursor(C) {}
 
-  ReadCursor(const Cursor& C, size_t StartAddress) : Cursor(C, StartAddress) {
-    updateGuaranteedBeforeEob();
-  }
+  ReadCursor(const Cursor& C, size_t StartAddress) : Cursor(C, StartAddress) {}
 
   ~ReadCursor() {}
 
   bool atByteEob() {
     if (getCurAddress() < GuaranteedBeforeEob)
       return false;
-    bool Result =
-        getCurAddress() >= getEobAddress().getByteAddress() ||
-        !readFillBuffer();
+    bool Result = getCurAddress() >= getEobAddress().getByteAddress() ||
+                  !readFillBuffer();
     updateGuaranteedBeforeEob();
     return Result;
   }
@@ -84,24 +77,18 @@ class ReadCursor FINAL : public Cursor {
     if (getCurAddress() < GuaranteedBeforeEob)
       return PageCursor::readByte();
     bool atEof = isIndexAtEndOfPage() && !readFillBuffer();
-      updateGuaranteedBeforeEob();
-      if (atEof)
+    updateGuaranteedBeforeEob();
+    if (atEof)
       return 0;
     return PageCursor::readByte();
   }
 
   // Reads up to 32 bits from the input.
   uint32_t readBits(uint32_t NumBits);
-protected:
-  size_t GuaranteedBeforeEob;
-  void updateGuaranteedBeforeEob() {
-    GuaranteedBeforeEob = std::min(CurPage->getMaxAddress(),
-                                   EobPtr->getEobAddress().getByteAddress());
-  }
 };
 
 }  // end of namespace decode
 
 }  // end of namespace wasm
 
-#endif // DECOMPRESSOR_SRC_STREAM_READCURSOR_H
+#endif  // DECOMPRESSOR_SRC_STREAM_READCURSOR_H

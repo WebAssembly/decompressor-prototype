@@ -39,8 +39,8 @@ bool ReadBackedQueue::readFill(size_t Address) {
       LastPage = NewPage;
       SpaceAvailable = Page::Size;
     }
-    size_t NumBytes = Reader->read(
-        &(LastPage->Buffer[Page::address(Address)]), SpaceAvailable);
+    size_t NumBytes = Reader->read(&(LastPage->Buffer[Page::address(Address)]),
+                                   SpaceAvailable);
     LastPage->incrementMaxAddress(NumBytes);
     if (NumBytes == 0) {
       freezeEof(Address);

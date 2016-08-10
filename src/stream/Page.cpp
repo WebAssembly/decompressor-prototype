@@ -28,7 +28,7 @@ FILE* Page::describe(FILE* File) {
   return File;
 }
 
-PageCursor::PageCursor(Queue *Que)
+PageCursor::PageCursor(Queue* Que)
     : CurPage(Que->FirstPage), CurAddress(Que->FirstPage->getMinAddress()) {
   assert(CurPage);
 }

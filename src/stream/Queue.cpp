@@ -35,9 +35,7 @@ FILE* BlockEob::describe(FILE* File) const {
 }
 
 Queue::Queue()
-    : MinPeekSize(32),
-      EofFrozen(false),
-      EofPtr(std::make_shared<BlockEob>()) {
+    : MinPeekSize(32), EofFrozen(false), EofPtr(std::make_shared<BlockEob>()) {
   LastPage = FirstPage = std::make_shared<Page>(0);
   PageMap.push_back(LastPage);
 }

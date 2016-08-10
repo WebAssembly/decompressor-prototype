@@ -28,6 +28,7 @@ namespace decode {
 class WriteCursor FINAL : public Cursor {
   WriteCursor() = delete;
   WriteCursor& operator=(const WriteCursor&) = delete;
+
  public:
   WriteCursor(StreamType Type, std::shared_ptr<Queue> Que)
       : Cursor(Type, Que) {}
@@ -44,8 +45,11 @@ class WriteCursor FINAL : public Cursor {
   // Writes next byte. Fails if at end of file. NOTE: Assumed byte aligned!
   void writeByte(uint8_t Byte) {
     assert(isByteAligned());
+    if (getCurAddress() < GuaranteedBeforeEob)
+      return PageCursor::writeByte(Byte);
     if (isIndexAtEndOfPage())
       writeFillBuffer();
+    updateGuaranteedBeforeEob();
     PageCursor::writeByte(Byte);
   }
 
@@ -57,4 +61,4 @@ class WriteCursor FINAL : public Cursor {
 
 }  // end of namespace wasm
 
-#endif // DECOMPRESSOR_SRC_STREAM_WRITECURSOR_H
+#endif  // DECOMPRESSOR_SRC_STREAM_WRITECURSOR_H

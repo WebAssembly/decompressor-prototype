@@ -79,11 +79,13 @@ uint32_t ByteReadStream::readUint32Bits(ReadCursor& Pos, uint32_t /*NumBits*/) {
   return readFixed<uint32_t>(Pos);
 }
 
-int32_t ByteReadStream::readVarint32Bits(ReadCursor& Pos, uint32_t /*NumBits*/) {
+int32_t ByteReadStream::readVarint32Bits(ReadCursor& Pos,
+                                         uint32_t /*NumBits*/) {
   return readSignedLEB128<uint32_t>(Pos);
 }
 
-int64_t ByteReadStream::readVarint64Bits(ReadCursor& Pos, uint32_t /*NumBits*/) {
+int64_t ByteReadStream::readVarint64Bits(ReadCursor& Pos,
+                                         uint32_t /*NumBits*/) {
   return readSignedLEB128<uint64_t>(Pos);
 }
 
@@ -91,15 +93,18 @@ uint64_t ByteReadStream::readUint64Bits(ReadCursor& Pos, uint32_t /*NumBits*/) {
   return readFixed<uint64_t>(Pos);
 }
 
-uint32_t ByteReadStream::readVaruint32Bits(ReadCursor& Pos, uint32_t /*NumBits*/) {
+uint32_t ByteReadStream::readVaruint32Bits(ReadCursor& Pos,
+                                           uint32_t /*NumBits*/) {
   return readLEB128<uint32_t>(Pos);
 }
 
-uint64_t ByteReadStream::readVaruint64Bits(ReadCursor& Pos, uint32_t /*NumBits*/) {
+uint64_t ByteReadStream::readVaruint64Bits(ReadCursor& Pos,
+                                           uint32_t /*NumBits*/) {
   return readLEB128<uint64_t>(Pos);
 }
 
-void ByteReadStream::alignToByte(ReadCursor& /*Pos*/) {}
+void ByteReadStream::alignToByte(ReadCursor& /*Pos*/) {
+}
 
 size_t ByteReadStream::readBlockSize(decode::ReadCursor& Pos) {
   return readVaruint32(Pos);

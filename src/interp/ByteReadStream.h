@@ -36,8 +36,10 @@ class ByteReadStream FINAL : public ReadStream {
   uint64_t readUint64Bits(decode::ReadCursor& Pos, uint32_t NumBits) OVERRIDE;
   int32_t readVarint32Bits(decode::ReadCursor& Pos, uint32_t NumBits) OVERRIDE;
   int64_t readVarint64Bits(decode::ReadCursor& Pos, uint32_t NumBits) OVERRIDE;
-  uint32_t readVaruint32Bits(decode::ReadCursor& Pos, uint32_t NumBits) OVERRIDE;
-  uint64_t readVaruint64Bits(decode::ReadCursor& Pos, uint32_t NumBits) OVERRIDE;
+  uint32_t readVaruint32Bits(decode::ReadCursor& Pos,
+                             uint32_t NumBits) OVERRIDE;
+  uint64_t readVaruint64Bits(decode::ReadCursor& Pos,
+                             uint32_t NumBits) OVERRIDE;
   void alignToByte(decode::ReadCursor& Pos) OVERRIDE;
   size_t readBlockSize(decode::ReadCursor& Pos) OVERRIDE;
   void pushEobAddress(decode::ReadCursor& Pos, size_t BlockSize) OVERRIDE;
@@ -50,4 +52,4 @@ class ByteReadStream FINAL : public ReadStream {
 
 }  // end of namespace wasm
 
-#endif // DECOMPRESSOR_SRC_INTERP_BYTEREADSTREAM_H
+#endif  // DECOMPRESSOR_SRC_INTERP_BYTEREADSTREAM_H
