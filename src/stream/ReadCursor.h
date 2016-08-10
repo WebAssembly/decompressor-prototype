@@ -81,7 +81,11 @@ class ReadCursor FINAL : public Cursor {
   // aligned!
   uint8_t readByte() {
     assert(isByteAligned());
-    if (isIndexAtEndOfPage() && !readFillBuffer())
+    if (getCurAddress() < GuaranteedBeforeEob)
+      return PageCursor::readByte();
+    bool atEof = isIndexAtEndOfPage() && !readFillBuffer();
+      updateGuaranteedBeforeEob();
+      if (atEof)
       return 0;
     return PageCursor::readByte();
   }
