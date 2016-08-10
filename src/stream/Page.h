@@ -124,7 +124,7 @@ class PageCursor {
 #if 0
   PageCursor() : CurAddress(0) {}
 #endif
-  PageCursor(Queue *Que);
+  PageCursor(Queue* Que);
   PageCursor(std::shared_ptr<Page> CurPage, size_t CurAddress)
       : CurPage(CurPage), CurAddress(CurAddress) {
     assert(CurPage);

@@ -32,6 +32,7 @@ class WriteCursor FINAL : public Cursor {
   WriteCursor(StreamType Type, std::shared_ptr<Queue> Que)
       : Cursor(Type, Que) {}
   explicit WriteCursor(const WriteCursor& C) : Cursor(C) {}
+  WriteCursor(const Cursor& C, size_t StartAddress) : Cursor(C, StartAddress) {}
   ~WriteCursor() {}
 
   BitsInByteType getBitsWritten() const { return CurByte.getBitsWritten(); }
