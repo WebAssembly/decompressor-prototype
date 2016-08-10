@@ -132,9 +132,11 @@ class Cursor : public PageCursor {
   // End of block address.
   std::shared_ptr<BlockEob> EobPtr;
   WorkingByte CurByte;
-
   Cursor(StreamType Type, std::shared_ptr<Queue> Que)
-      : Type(Type), Que(Que), EobPtr(Que->getEofPtr()) {}
+      : PageCursor(Que->getPage(0), 0),
+        Type(Type),
+        Que(Que),
+        EobPtr(Que->getEofPtr()) {}
   explicit Cursor(const Cursor& C)
       : PageCursor(C),
         Type(C.Type),

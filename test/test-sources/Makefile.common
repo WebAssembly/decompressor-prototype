@@ -42,7 +42,19 @@ else ifndef RELEASE
   RELEASE = 0
 endif
 
-BUILDDIR = ../../build
+# PAGE_SIZE (if defined) specifies that log2 size (i.e. number of bits) to use
+# for page size.
+ifdef PAGE_SIZE
+  PAGE_BUILD_SUFFIX=/p$(PAGE_SIZE)
+  USE_PAGE_SIZE = $(PAGE_SIZE)
+  MAKE_PAGE_SIZE = "PAGESIZE=$(PAGE_SIZE)"
+else
+  USE_PAGE_SIZE = default
+  PAGE_BUILD_SUFFIX=
+  MAKE_PAGE_SIZE=
+endif
+
+BUILDDIR = ../../build$(PAGE_BUILD_SUFFIX)
 
 SEXP_SRCDIR = ../../src/sexp
 SEXP_DEFAULTS = $(SEXP_SRCDIR)/defaults.df

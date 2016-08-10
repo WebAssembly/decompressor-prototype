@@ -28,6 +28,11 @@ FILE* Page::describe(FILE* File) {
   return File;
 }
 
+PageCursor::PageCursor(Queue *Que)
+    : CurPage(Que->getPage(0)), CurAddress(0) {
+  assert(CurPage);
+}
+
 FILE* PageCursor::describe(FILE* File, bool IncludePage) {
   BitAddress Addr(CurAddress);
   Addr.describe(File);
