@@ -25,6 +25,7 @@ FILE* WorkingByte::describe(FILE* File) {
   return File;
 }
 
+#if 0
 void Cursor::jumpToByteAddress(size_t NewAddress) {
   if (isValidPageAddress(NewAddress)) {
     // We can reuse the same page, since NewAddress is within the page.
@@ -34,6 +35,7 @@ void Cursor::jumpToByteAddress(size_t NewAddress) {
   // Move to the wanted page.
   Que->readFromPage(NewAddress, 0, *this);
 }
+#endif
 
 bool Cursor::readFillBuffer() {
   size_t CurAddress = getCurAddress();

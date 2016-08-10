@@ -158,8 +158,7 @@ size_t ByteWriteStream::getBlockSize(decode::WriteCursor& StartPos,
 
 void ByteWriteStream::moveBlock(decode::WriteCursor& Pos, size_t StartAddress,
                                 size_t Size) {
-  ReadCursor CopyPos(StreamType::Byte, Pos.getQueue());
-  CopyPos.jumpToByteAddress(StartAddress);
+  ReadCursor CopyPos(Pos, StartAddress);
   for (size_t i = 0; i < Size; ++i)
     Pos.writeByte(CopyPos.readByte());
 }

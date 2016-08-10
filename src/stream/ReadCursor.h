@@ -30,11 +30,34 @@ class ReadCursor FINAL : public Cursor {
   ReadCursor& operator=(const ReadCursor&) = delete;
  public:
   ReadCursor(StreamType Type, std::shared_ptr<Queue> Que)
-      : Cursor(Type, Que) {}
-  explicit ReadCursor(const ReadCursor& C) : Cursor(C) {}
+      : Cursor(Type, Que) {
+    updateGuaranteedBeforeEob();
+  }
+
+  explicit ReadCursor(const Cursor& C) : Cursor(C) {
+    updateGuaranteedBeforeEob();
+  }
+
+  ReadCursor(const Cursor& C, size_t StartAddress) : Cursor(C, StartAddress) {
+    updateGuaranteedBeforeEob();
+  }
+
   ~ReadCursor() {}
 
-  bool atReadBitEob() { return getCurReadBitAddress() == getEobAddress(); }
+  bool atByteEob() {
+    if (getCurAddress() < GuaranteedBeforeEob)
+      return false;
+    bool Result =
+        getCurAddress() >= getEobAddress().getByteAddress() ||
+        !readFillBuffer();
+    updateGuaranteedBeforeEob();
+    return Result;
+  }
+
+  bool atReadBitEob() {
+    // TODO(karlschimpf): Fix this to check at byte level!
+    return atByteEob();
+  }
 
   BitsInByteType getBitsRead() const { return CurByte.getBitsRead(); }
 
@@ -45,11 +68,13 @@ class ReadCursor FINAL : public Cursor {
 
   void pushEobAddress(const BitAddress& NewValue) {
     EobPtr = std::make_shared<BlockEob>(NewValue, EobPtr);
+    updateGuaranteedBeforeEob();
   }
 
   void popEobAddress() {
     EobPtr = EobPtr->getEnclosingEobPtr();
     assert(EobPtr);
+    updateGuaranteedBeforeEob();
   }
 
   // Reads next byte. Returns zero if at end of file. NOTE: Assumes byte
@@ -63,6 +88,12 @@ class ReadCursor FINAL : public Cursor {
 
   // Reads up to 32 bits from the input.
   uint32_t readBits(uint32_t NumBits);
+protected:
+  size_t GuaranteedBeforeEob;
+  void updateGuaranteedBeforeEob() {
+    GuaranteedBeforeEob = std::min(CurPage->getMaxAddress(),
+                                   EobPtr->getEobAddress().getByteAddress());
+  }
 };
 
 }  // end of namespace decode

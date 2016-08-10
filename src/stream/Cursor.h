@@ -102,11 +102,6 @@ class Cursor : public PageCursor {
 
   std::shared_ptr<Queue> getQueue() { return Que; }
 
-  bool atByteEob() {
-    return getCurAddress() >= getEobAddress().getByteAddress() ||
-           !readFillBuffer();
-  }
-
   BitAddress& getEobAddress() const { return EobPtr->getEobAddress(); }
 
   void freezeEof() { Que->freezeEof(getCurAddress()); }
@@ -120,7 +115,9 @@ class Cursor : public PageCursor {
     return getCurAddress();
   }
 
+#if 0
   void jumpToByteAddress(size_t NewAddress);
+#endif
 
   // For debugging.
   FILE* describe(FILE* File, bool IncludeDetail = false);
@@ -139,6 +136,13 @@ class Cursor : public PageCursor {
         EobPtr(Que->getEofPtr()) {}
   explicit Cursor(const Cursor& C)
       : PageCursor(C),
+        Type(C.Type),
+        Que(C.Que),
+        EobPtr(C.EobPtr),
+        CurByte(C.CurByte) {}
+
+  Cursor(const Cursor& C, size_t StartAddress)
+      : PageCursor(C.Que->getPage(StartAddress), StartAddress),
         Type(C.Type),
         Que(C.Que),
         EobPtr(C.EobPtr),
