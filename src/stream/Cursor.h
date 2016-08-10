@@ -133,7 +133,7 @@ class Cursor : public PageCursor {
   std::shared_ptr<BlockEob> EobPtr;
   WorkingByte CurByte;
   Cursor(StreamType Type, std::shared_ptr<Queue> Que)
-      : PageCursor(Que->getPage(0), 0),
+      : PageCursor(Que->FirstPage, Que->FirstPage->getMinAddress()),
         Type(Type),
         Que(Que),
         EobPtr(Que->getEofPtr()) {}
