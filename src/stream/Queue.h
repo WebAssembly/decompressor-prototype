@@ -118,6 +118,7 @@ class Queue : public std::enable_shared_from_this<Queue> {
   Queue(const Queue&) = delete;
   Queue& operator=(const Queue&) = delete;
   friend class Cursor;
+  friend class PageCursor;
 
  public:
   Queue();

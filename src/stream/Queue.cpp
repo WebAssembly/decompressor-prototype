@@ -94,8 +94,6 @@ size_t Queue::writeToPage(size_t Address,
   }
   Cursor.CurPage = getPage(Address);
   Cursor.setCurAddress(Address);
-  if (!Cursor.CurPage)
-    return 0;
   dumpPreviousPages();
   // Compute largest contiguous range of bytes available.
   if (Address + WantedSize > Cursor.getMaxAddress())
@@ -107,7 +105,7 @@ void Queue::freezeEof(size_t Address) {
   assert(Address != kUndefinedAddress && "WASM stream too big to process");
   assert(!EofFrozen);
   // This call zero-fill pages if writing hasn't reached Address yet.
-  PageCursor Cursor;
+  PageCursor Cursor(this);
   writeToPage(Address, 0, Cursor);
   EofPtr->setEobAddress(Address);
   Cursor.setMaxAddress(Address);
@@ -138,7 +136,7 @@ void Queue::writePageAt(FILE* File, size_t Address) {
 
 size_t Queue::read(size_t& Address, uint8_t* ToBuf, size_t WantedSize) {
   size_t Count = 0;
-  PageCursor Cursor;
+  PageCursor Cursor(this);
   while (WantedSize) {
     size_t FoundSize = readFromPage(Address, WantedSize, Cursor);
     if (FoundSize == 0)
@@ -153,7 +151,7 @@ size_t Queue::read(size_t& Address, uint8_t* ToBuf, size_t WantedSize) {
 }
 
 bool Queue::write(size_t& Address, uint8_t* FromBuf, size_t WantedSize) {
-  PageCursor Cursor;
+  PageCursor Cursor(this);
   while (WantedSize) {
     size_t FoundSize = writeToPage(Address, WantedSize, Cursor);
     if (FoundSize == 0)

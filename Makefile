@@ -39,6 +39,18 @@ else ifndef RELEASE
   RELEASE = 0
 endif
 
+# PAGE_SIZE (if defined) specifies that log2 size (i.e. number of bits) to use
+# for page size.
+ifdef PAGE_SIZE
+  PAGE_BUILD_SUFFIX=/p$(PAGE_SIZE)
+  USE_PAGE_SIZE = $(PAGE_SIZE)
+  MAKE_PAGE_SIZE = "PAGESIZE=$(PAGE_SIZE)"
+else
+  USE_PAGE_SIZE = default
+  PAGE_BUILD_SUFFIX=
+  MAKE_PAGE_SIZE=
+endif
+
 CXX := clang++
 
 PLATFORM := Default
@@ -59,7 +71,7 @@ endif
 
 SRCDIR = src
 
-BUILDBASEDIR = build
+BUILDBASEDIR = build$(PAGE_BUILD_SUFFIX)
 ifeq ($(RELEASE), 0)
   BUILDDIR = $(BUILDBASEDIR)/debug
 else
@@ -206,6 +218,7 @@ $(info -----------------------------------------------)
 $(info Using PLATFORM = $(PLATFORM))
 $(info Using CXX = $(CXX))
 $(info Using RELEASE = $(RELEASE))
+$(info Using PAGE_SIZE = $(USE_PAGE_SIZE))
 $(info -----------------------------------------------)
 
 CCACHE := `command -v ccache`
@@ -221,8 +234,8 @@ ifneq ($(RELEASE), 0)
   CXXFLAGS += -DNDEBUG
 endif
 
-ifdef LOGPAGE_SIZE
-  CXXFLAGS += -DWASM_DECODE_LOGPAGE_SIZE=$(LOGPAGE_SIZE)
+ifdef DEFINE_PAGE_SIZE
+  CXXFLAGS += -DWASM_DECODE_PAGE_SIZE=$(PAGE_SIZE)
 endif
 
 ###### Default Rule ######
@@ -232,8 +245,8 @@ all: libs execs test-execs
 .PHONY: all
 
 build-all:
-	$(MAKE) DEBUG=0 RELEASE=1 all
-	$(MAKE) DEBUG=1 RELEASE=0 all
+	$(MAKE) $(MAKE_PAGE_SIZE) DEBUG=0 RELEASE=1 all
+	$(MAKE) $(MAKE_PAGE_SIZE) DEBUG=1 RELEASE=0 all
 	@echo "*** Built both debug and release versions ***"
 
 .PHONY: build-all
@@ -247,8 +260,8 @@ clean: clean-utils-objs clean-parser clean-sexp-objs clean-strm-objs \
 .PHONY: clean
 
 clean-all:
-	$(MAKE) DEBUG=0 RELEASE=1 clean
-	$(MAKE) DEBUG=1 RELEASE=0 clean
+	$(MAKE) $(MAKE_PAGE_SIZE) DEBUG=0 RELEASE=1 clean
+	$(MAKE) $(MAKE_PAGE_SIZE) DEBUG=1 RELEASE=0 clean
 	rm -rf $(BUILDBASEDIR)
 
 .PHONY: clean-all
@@ -496,19 +509,20 @@ test: all test-parser test-raw-streams test-byte-queues test-decompress \
 .PHONY: test
 
 test-all:
-	$(MAKE) DEBUG=0 RELEASE=1 test
-	$(MAKE)  DEBUG=1 RELEASE=0 test
+	$(MAKE) $(MAKE_PAGE_SIZE) DEBUG=0 RELEASE=1 test
+	$(MAKE) $(MAKE_PAGE_SIZE)  DEBUG=1 RELEASE=0 test
 	@echo "*** all tests passed on both debug and release builds ***"
 
 .PHONY: test-all
 
 presubmit:
-	$(MAKE) clean-all
-	$(MAKE) test-all CXX=clang++ LOGPAGE_SIZE=2
-	$(MAKE) clean-all
-	$(MAKE) test-all CXX=g++
-	$(MAKE) clean-all
-	$(MAKE) test-all CXX=clang++
+	$(MAKE) $(MAKE_PAGE_SIZE) clean-all
+	$(MAKE) test-all CXX=clang++ PAGE_SIZE=2
+	$(MAKE) $(MAKE_PAGE_SIZE) clean-all
+	$(MAKE) $(MAKE_PAGE_SIZE) test-all CXX=g++
+	$(MAKE) $(MAKE_PAGE_SIZE) clean-all
+	$(MAKE) $(MAKE_PAGE_SIZE) test-all CXX=clang++
+	$(MAKE) $(MAKE_PAGE_SIZE) clean-all
 	@echo "*** Presubmit tests passed ***"
 
 .PHONY: presubmit

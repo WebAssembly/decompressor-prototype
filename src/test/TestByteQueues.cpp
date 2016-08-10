@@ -113,8 +113,8 @@ int main(int Argc, char* Argv[]) {
   WriteBackedQueue Output(getOutput());
   // uint8_t Buffer[MaxBufSize];
   size_t Address = 0;
-  PageCursor ReadCursor;
-  PageCursor WriteCursor;
+  PageCursor ReadCursor(&Input);
+  PageCursor WriteCursor(&Output);
   while (Address < Input.currentSize()) {
     size_t ReadBytesAvailable =
         Input.readFromPage(Address, BufSize, ReadCursor);

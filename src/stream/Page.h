@@ -56,6 +56,8 @@ namespace wasm {
 
 namespace decode {
 
+class Queue;
+
 class Page : public std::enable_shared_from_this<Page> {
   Page(const Page&) = delete;
   Page& operator=(const Page&) = delete;
@@ -119,11 +121,18 @@ class Page : public std::enable_shared_from_this<Page> {
 
 class PageCursor {
  public:
+#if 0
   PageCursor() : CurAddress(0) {}
+#endif
+  PageCursor(Queue *Que);
   PageCursor(std::shared_ptr<Page> CurPage, size_t CurAddress)
-      : CurPage(CurPage), CurAddress(CurAddress) {}
+      : CurPage(CurPage), CurAddress(CurAddress) {
+    assert(CurPage);
+  }
   PageCursor(const PageCursor& PC)
-      : CurPage(PC.CurPage), CurAddress(PC.CurAddress) {}
+      : CurPage(PC.CurPage), CurAddress(PC.CurAddress) {
+    assert(CurPage);
+  }
   size_t getMinAddress() const {
     return CurPage ? CurPage->getMinAddress() : 0;
   }
