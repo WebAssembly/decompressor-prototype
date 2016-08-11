@@ -502,8 +502,8 @@ $(TEST_EXECDIR)/TestByteQueues: $(TEST_DIR)/TestByteQueues.cpp $(LIBS)
 
 ###### Testing ######
 
-test: all test-parser test-raw-streams test-byte-queues test-decompress \
-	test-decompsexp-wasm test-decompwasm-sexp
+test: all test-parser test-raw-streams test-byte-queues \
+	test-decompsexp-wasm test-decompwasm-sexp test-decompress
 	@echo "*** all tests passed ***"
 
 .PHONY: test

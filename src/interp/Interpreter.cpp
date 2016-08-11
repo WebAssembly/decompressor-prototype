@@ -94,6 +94,7 @@ IntType Interpreter::eval(const Node* Nd) {
     case OpConvert:
     case OpFilter:
     case OpBlockEndNoArgs:
+    case OpParam:
     case OpSymbol:
       // TODO(kschimpf): Fix above cases.
       fprintf(stderr, "Not implemented: %s\n", getNodeTypeName(Type));

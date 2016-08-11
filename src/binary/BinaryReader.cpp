@@ -72,6 +72,7 @@ void BinaryReader::readUnary() {
   NodeStack.push_back(Node);
 }
 
+#if 0
 template <class T>
 void BinaryReader::readUnarySymbol() {
   auto* Symbol = SectionSymtab.getIndexSymbol(Reader->readVaruint32(ReadPos));
@@ -79,6 +80,7 @@ void BinaryReader::readUnarySymbol() {
   Trace.traceSexp(Node);
   NodeStack.push_back(Node);
 }
+#endif
 
 template <class T>
 void BinaryReader::readUint8() {
@@ -288,9 +290,21 @@ void BinaryReader::readNode() {
     case OpError:
       readNullary<ErrorNode>();
       break;
-    case OpEval:
-      readUnarySymbol<EvalNode>();
+    case OpEval: {
+      auto* Node = Symtab->create<EvalNode>();
+      auto *Sym = SectionSymtab.getIndexSymbol(Reader->readVaruint32(ReadPos));
+      Node->append(Sym);
+      uint32_t NumParams = Reader->readVaruint32(ReadPos);
+      size_t StackSize = NodeStack.size();
+      if (StackSize < NumParams)
+        fatal("Can't find arguments for s-expression");
+      for (size_t i = StackSize - NumParams; i < StackSize; ++i)
+        Node->append(NodeStack[i]);
+      for (uint32_t i = 0; i < NumParams; ++i)
+        NodeStack.pop_back();
+      NodeStack.push_back(Node);
       break;
+    }
     case OpFilter:
       readNary<FilterNode>();
       break;
@@ -314,6 +328,9 @@ void BinaryReader::readNode() {
       break;
     case OpOr:
       readBinary<OrNode>();
+      break;
+    case OpParam:
+      readVaruint32<ParamNode>();
       break;
     case OpPeek:
       readUnary<PeekNode>();
