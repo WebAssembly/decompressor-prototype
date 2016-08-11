@@ -151,6 +151,7 @@ struct IntegerValue {
 %type <wasm::filt::Node *> opcode_case_expr
 %type <wasm::filt::Node *> opcode_expression
 %type <wasm::filt::OpcodeNode *> opcode_expr_list
+%type <wasm::filt::Node *> param_expression
 %type <wasm::filt::Node *> stream
 %type <wasm::filt::Node *> stream_conv
 %type <wasm::filt::Node *> stream_conv_list
@@ -237,8 +238,8 @@ declaration
         ;
 
 declaration_stmt_list
-        : "define" symbol statement {
-            $$ = Driver.create<DefineNode>($2, $3);
+        : "define" symbol param_expression statement {
+            $$ = Driver.create<DefineNode>($2, $3, $4);
           }
         | declaration_stmt_list statement {
             $$ = $1;
@@ -311,9 +312,7 @@ expression
         | constant_expression { $$ = $1; }
         | bool_expression { $$ = $1; }
         | map_expression { $$ = $1; }
-        | "(" "param" INTEGER ")" {
-            $$ = Driver.create<ParamNode>($3.Value, $3.Format);
-          }
+        | param_expression { $$ = $1; }
         | "(" "block.end" ")" {
             $$ = Driver.create<BlockEndNoArgsNode>();
           }
@@ -457,6 +456,12 @@ opcode_case
 opcode_case_expr
         : fixed_format_directive { $$ = $1; }
         | opcode_expression { $$ = $1; }
+        ;
+
+param_expression
+        : "(" "param" INTEGER ")" {
+            $$ = Driver.create<ParamNode>($3.Value, $3.Format);
+          }
         ;
 
 version : "(" "version" INTEGER ")" {

@@ -72,16 +72,6 @@ void BinaryReader::readUnary() {
   NodeStack.push_back(Node);
 }
 
-#if 0
-template <class T>
-void BinaryReader::readUnarySymbol() {
-  auto* Symbol = SectionSymtab.getIndexSymbol(Reader->readVaruint32(ReadPos));
-  auto* Node = Symtab->create<T>(Symbol);
-  Trace.traceSexp(Node);
-  NodeStack.push_back(Node);
-}
-#endif
-
 template <class T>
 void BinaryReader::readUint8() {
   auto* Node = Symtab->create<T>(Reader->readUint8(ReadPos));
@@ -281,9 +271,17 @@ void BinaryReader::readNode() {
     case OpConvert:
       readTernary<ConvertNode>();
       break;
-    case OpDefine:
-      readBinarySymbol<DefineNode>();
+    case OpDefine: {
+      auto* Symbol = SectionSymtab.getIndexSymbol(Reader->readVaruint32(ReadPos));
+      auto* Body = NodeStack.back();
+      NodeStack.pop_back();
+      auto* Params = NodeStack.back();
+      NodeStack.pop_back();
+      auto* Node = Symtab->create<DefineNode>(Symbol, Params, Body);
+      Trace.traceSexp(Node);
+      NodeStack.push_back(Node);
       break;
+    }
     case OpRename:
       readBinary<RenameNode>();
       break;

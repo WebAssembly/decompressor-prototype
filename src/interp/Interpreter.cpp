@@ -100,7 +100,6 @@ IntType Interpreter::eval(const Node* Nd) {
       fprintf(stderr, "Not implemented: %s\n", getNodeTypeName(Type));
       fatal("Unable to evaluate filter s-expression");
       break;
-    case OpDefine:
     case OpFile:
     case OpSection:
     case OpUndefine:
@@ -109,6 +108,9 @@ IntType Interpreter::eval(const Node* Nd) {
     case OpUnknownSection:
       fprintf(stderr, "Evaluating not allowed: %s\n", getNodeTypeName(Type));
       fatal("Unable to evaluate filter s-expression");
+      break;
+    case OpDefine:
+      ReturnValue = eval(Nd->getKid(2));
       break;
     case OpMap:
     case OpOpcode:
@@ -195,6 +197,7 @@ IntType Interpreter::eval(const Node* Nd) {
       fatal("Error found during evaluation");
       break;
     case OpEval:
+      // TODO(karlschimpf): Check parameter ussage?
       if (auto* Sym = dyn_cast<SymbolNode>(Nd->getKid(0))) {
         ReturnValue = eval(Sym->getDefineDefinition());
         break;

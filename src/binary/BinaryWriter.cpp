@@ -192,6 +192,7 @@ void BinaryWriter::writeNode(const Node* Nd) {
     }
     case OpDefine:
       writeNode(Nd->getKid(1));
+      writeNode(Nd->getKid(2));
       Writer->writeUint8(Opcode, WritePos);
       writeNode(Nd->getKid(0));
   }

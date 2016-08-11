@@ -113,7 +113,6 @@ std::string SymbolNode::getStringName() const {
 
 SymbolTable::SymbolTable()
     :  // TODO(karlschimpf) Switch Alloc to an ArenaAllocator once working.
-      Trace("NodesTable"),
       Alloc(std::make_shared<Malloc>()),
       NextCreationIndex(0) {
   Error = Alloc->create<ErrorNode>(*this);
@@ -200,7 +199,7 @@ void SymbolTable::installDefinitions(Node* Root) {
       return;
     case OpDefine: {
       if (auto* DefineSymbol = dyn_cast<SymbolNode>(Root->getKid(0))) {
-        DefineSymbol->setDefineDefinition(Root->getKid(1));
+        DefineSymbol->setDefineDefinition(Root);
         return;
       }
       Trace.errorSexp("Malformed: ", Root);

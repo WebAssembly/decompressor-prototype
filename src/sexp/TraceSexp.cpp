@@ -48,7 +48,8 @@ TextWriter* TraceClassSexp::getNewTextWriter() {
 
 void TraceClassSexp::traceSexpInternal(const char* Prefix, const Node* Node) {
   indent();
-  fprintf(File, "%s", Prefix);
+  if (Prefix)
+    fprintf(File, "%s: ", Prefix);
   getTextWriter()->writeAbbrev(File, Node);
 }
 

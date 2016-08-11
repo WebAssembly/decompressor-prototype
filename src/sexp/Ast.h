@@ -163,6 +163,10 @@ class Node {
 
   NodeType getType() const { return Type; }
 
+  const char* getName() const { return getNodeSexpName(getType()); }
+
+  const char* getNodeName() const { return getNodeTypeName(getType()); }
+
   TraceClassSexp& getTrace() const { return Symtab.Trace; }
 
   // General API to children.
@@ -456,7 +460,7 @@ class TernaryNode : public Node {
       : Node(Symtab, Type) {
     Kids[0] = Kid1;
     Kids[1] = Kid2;
-    Kids[1] = Kid3;
+    Kids[2] = Kid3;
   }
 };
 

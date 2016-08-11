@@ -91,7 +91,7 @@
   X(Param,             0x51, "param",            nullptr,           0, 0)      \
                                                                                \
   /* Declarations */                                                           \
-  X(Define,            0x60, "define",           nullptr,           2, 0)      \
+  X(Define,            0x60, "define",           nullptr,           2, 1)      \
   X(File,              0x62, "file",             nullptr,           0, 0)      \
   X(Section,           0x63, "section",          nullptr,           1, 0)      \
   X(Undefine,          0x64, "undefine",         nullptr,           1, 0)      \
@@ -146,7 +146,6 @@
 #define AST_BINARYNODE_TABLE                                                   \
   X(And)                                                                       \
   X(Case)                                                                      \
-  X(Define)                                                                    \
   X(IfThen)                                                                    \
   X(Loop)                                                                      \
   X(Or)                                                                        \
@@ -169,6 +168,7 @@
 //#define X(tag)
 #define AST_TERNARYNODE_TABLE                                                  \
   X(Convert)                                                                   \
+  X(Define)                                                                    \
   X(IfThenElse)                                                                \
 
 //#define X(tag)
