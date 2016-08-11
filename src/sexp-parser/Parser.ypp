@@ -101,6 +101,7 @@ struct IntegerValue {
 %token OPENPAREN     "("
 %token OR            "or"
 %token OUT           "out"
+%token PARAM         "param"
 %token PEEK          "peek"
 %token READ          "read"
 %token RENAME        "rename"
@@ -136,6 +137,7 @@ struct IntegerValue {
 %type <wasm::filt::Node *> declaration
 %type <wasm::filt::SectionNode *> declaration_list
 %type <wasm::filt::Node *> declaration_stmt_list
+%type <wasm::filt::Node *> eval_params
 %type <wasm::filt::Node *> expression
 %type <wasm::filt::Node *> file
 %type <wasm::filt::Node *> fixed_format_directive
@@ -149,6 +151,7 @@ struct IntegerValue {
 %type <wasm::filt::Node *> opcode_case_expr
 %type <wasm::filt::Node *> opcode_expression
 %type <wasm::filt::OpcodeNode *> opcode_expr_list
+%type <wasm::filt::Node *> param_expression
 %type <wasm::filt::Node *> stream
 %type <wasm::filt::Node *> stream_conv
 %type <wasm::filt::Node *> stream_conv_list
@@ -235,8 +238,8 @@ declaration
         ;
 
 declaration_stmt_list
-        : "define" symbol statement {
-            $$ = Driver.create<DefineNode>($2, $3);
+        : "define" symbol param_expression statement {
+            $$ = Driver.create<DefineNode>($2, $3, $4);
           }
         | declaration_stmt_list statement {
             $$ = $1;
@@ -293,19 +296,31 @@ bool_expression
           }
         ;
 
+eval_params
+        : symbol {
+            $$ = Driver.create<EvalNode>();
+            $$->append($1);
+          }
+        | eval_params statement {
+            $$ = $1;
+            $$->append($2);
+        }
+        ;
+
 expression
         : format_directive { $$ = $1; }
         | constant_expression { $$ = $1; }
         | bool_expression { $$ = $1; }
         | map_expression { $$ = $1; }
+        | param_expression { $$ = $1; }
         | "(" "block.end" ")" {
             $$ = Driver.create<BlockEndNoArgsNode>();
           }
         | "(" "error" ")" {
             $$ = Driver.create<ErrorNode>();
           }
-        | "(" "eval" symbol ")" {
-            $$ = Driver.create<EvalNode>($3);
+        | "(" "eval" eval_params ")" {
+            $$ = $3;
           }
         | "(" "write" expression expression ")" {
             $$ = Driver.create<WriteNode>($3, $4);
@@ -441,6 +456,12 @@ opcode_case
 opcode_case_expr
         : fixed_format_directive { $$ = $1; }
         | opcode_expression { $$ = $1; }
+        ;
+
+param_expression
+        : "(" "param" INTEGER ")" {
+            $$ = Driver.create<ParamNode>($3.Value, $3.Format);
+          }
         ;
 
 version : "(" "version" INTEGER ")" {

@@ -73,14 +73,6 @@ void BinaryReader::readUnary() {
 }
 
 template <class T>
-void BinaryReader::readUnarySymbol() {
-  auto* Symbol = SectionSymtab.getIndexSymbol(Reader->readVaruint32(ReadPos));
-  auto* Node = Symtab->create<T>(Symbol);
-  Trace.traceSexp(Node);
-  NodeStack.push_back(Node);
-}
-
-template <class T>
 void BinaryReader::readUint8() {
   auto* Node = Symtab->create<T>(Reader->readUint8(ReadPos));
   Trace.traceSexp(Node);
@@ -279,18 +271,38 @@ void BinaryReader::readNode() {
     case OpConvert:
       readTernary<ConvertNode>();
       break;
-    case OpDefine:
-      readBinarySymbol<DefineNode>();
+    case OpDefine: {
+      auto* Symbol = SectionSymtab.getIndexSymbol(Reader->readVaruint32(ReadPos));
+      auto* Body = NodeStack.back();
+      NodeStack.pop_back();
+      auto* Params = NodeStack.back();
+      NodeStack.pop_back();
+      auto* Node = Symtab->create<DefineNode>(Symbol, Params, Body);
+      Trace.traceSexp(Node);
+      NodeStack.push_back(Node);
       break;
+    }
     case OpRename:
       readBinary<RenameNode>();
       break;
     case OpError:
       readNullary<ErrorNode>();
       break;
-    case OpEval:
-      readUnarySymbol<EvalNode>();
+    case OpEval: {
+      auto* Node = Symtab->create<EvalNode>();
+      auto *Sym = SectionSymtab.getIndexSymbol(Reader->readVaruint32(ReadPos));
+      Node->append(Sym);
+      uint32_t NumParams = Reader->readVaruint32(ReadPos);
+      size_t StackSize = NodeStack.size();
+      if (StackSize < NumParams)
+        fatal("Can't find arguments for s-expression");
+      for (size_t i = StackSize - NumParams; i < StackSize; ++i)
+        Node->append(NodeStack[i]);
+      for (uint32_t i = 0; i < NumParams; ++i)
+        NodeStack.pop_back();
+      NodeStack.push_back(Node);
       break;
+    }
     case OpFilter:
       readNary<FilterNode>();
       break;
@@ -314,6 +326,9 @@ void BinaryReader::readNode() {
       break;
     case OpOr:
       readBinary<OrNode>();
+      break;
+    case OpParam:
+      readVaruint32<ParamNode>();
       break;
     case OpPeek:
       readUnary<PeekNode>();

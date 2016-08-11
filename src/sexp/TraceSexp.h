@@ -65,16 +65,16 @@ class TraceClassSexp : public utils::TraceClass {
 
   void errorSexp(const Node* Nd) { errorSexp("", Nd); }
 
- protected:
-  TextWriter* Writer;
-  void traceSexpInternal(const char* Prefix, const Node* Nd);
-  void traceNodeTypeInternal(const char* Prefix, NodeType Type);
-
   TextWriter* getTextWriter() {
     if (Writer == nullptr)
       Writer = getNewTextWriter();
     return Writer;
   }
+
+ protected:
+  TextWriter* Writer;
+  void traceSexpInternal(const char* Prefix, const Node* Nd);
+  void traceNodeTypeInternal(const char* Prefix, NodeType Type);
 
   TextWriter* getNewTextWriter();
 };

@@ -155,52 +155,46 @@ void BinaryWriter::writeNode(const Node* Nd) {
     case OpVarint32OneArg:
     case OpVarint64OneArg:
     case OpVaruint32OneArg:
-    case OpVaruint64OneArg: {
+    case OpVaruint64OneArg:
       // Operations that get a value in [1, 64]
       Writer->writeUint8(Opcode, WritePos);
       Writer->writeUint8(dyn_cast<IntegerNode>(Nd)->getValue(), WritePos);
       break;
-    }
-    case OpU8Const: {
+    case OpU8Const:
       Writer->writeUint8(Opcode, WritePos);
       Writer->writeUint8(cast<U8ConstNode>(Nd)->getValue(), WritePos);
       break;
-    }
-    case OpU32Const: {
+    case OpParam:
+    case OpVersion:
+    case OpU32Const:
       Writer->writeUint8(Opcode, WritePos);
-      Writer->writeVaruint32(cast<U32ConstNode>(Nd)->getValue(), WritePos);
+      Writer->writeVaruint32(cast<U8ConstNode>(Nd)->getValue(), WritePos);
       break;
-    }
-    case OpU64Const: {
+    case OpU64Const:
       Writer->writeUint8(Opcode, WritePos);
-      Writer->writeVaruint64(cast<U64ConstNode>(Nd)->getValue(), WritePos);
+      Writer->writeVaruint64(cast<U8ConstNode>(Nd)->getValue(), WritePos);
       break;
-    }
-    case OpVersion: {
+    case OpI32Const:
       Writer->writeUint8(Opcode, WritePos);
-      Writer->writeVaruint32(cast<VersionNode>(Nd)->getValue(), WritePos);
+      Writer->writeVarint32(cast<U8ConstNode>(Nd)->getValue(), WritePos);
       break;
-    }
-    case OpI32Const: {
+    case OpI64Const:
       Writer->writeUint8(Opcode, WritePos);
-      Writer->writeVarint32(cast<I32ConstNode>(Nd)->getValue(), WritePos);
+      Writer->writeVarint64(cast<U8ConstNode>(Nd)->getValue(), WritePos);
       break;
-    }
-    case OpI64Const: {
-      Writer->writeUint8(Opcode, WritePos);
-      Writer->writeVarint64(cast<I64ConstNode>(Nd)->getValue(), WritePos);
-      break;
-    }
     case OpEval: {
+      for (int i = 1; i < Nd->getNumKids(); ++i)
+        writeNode(Nd->getKid(i));
       Writer->writeUint8(Opcode, WritePos);
       writeNode(Nd->getKid(0));
+      Writer->writeVaruint32(Nd->getNumKids() - 1, WritePos);
       break;
     }
-    case OpDefine: {
+    case OpDefine:
       writeNode(Nd->getKid(1));
+      writeNode(Nd->getKid(2));
       Writer->writeUint8(Opcode, WritePos);
       writeNode(Nd->getKid(0));
-    }
   }
 }
 

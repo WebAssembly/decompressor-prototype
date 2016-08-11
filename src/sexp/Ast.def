@@ -37,7 +37,7 @@
   X(Block,             0x01, "block",            nullptr,           1, 0)      \
   X(Case,              0x02, "case",             nullptr,           2, 0)      \
   X(Error,             0x03, "error",            nullptr,           0, 0)      \
-  X(Eval,              0x04, "eval",             nullptr,           1, 0)      \
+  X(Eval,              0x04, "eval",             nullptr,           1, 1)      \
   X(Filter,            0x06, "filter",           nullptr,           0, 0)      \
   X(Loop,              0x07, "loop",             nullptr,           1, 1)      \
   X(LoopUnbounded,     0x08, "loop.unbounded",   nullptr,           0, 1)      \
@@ -86,11 +86,12 @@
   X(LastRead,          0x42, "read",             "lastRead",        0, 0)      \
   X(Write,             0x43, "write",            nullptr,           2, 0)      \
                                                                                \
-  /* Streams */                                                                \
+  /* Other exprressions */                                                     \
   X(Convert,           0x50, "convert",          nullptr,           2, 1)      \
+  X(Param,             0x51, "param",            nullptr,           0, 0)      \
                                                                                \
   /* Declarations */                                                           \
-  X(Define,            0x60, "define",           nullptr,           2, 0)      \
+  X(Define,            0x60, "define",           nullptr,           2, 1)      \
   X(File,              0x62, "file",             nullptr,           0, 0)      \
   X(Section,           0x63, "section",          nullptr,           1, 0)      \
   X(Undefine,          0x64, "undefine",         nullptr,           1, 0)      \
@@ -118,6 +119,7 @@
 #define AST_INTEGERNODE_TABLE                                                  \
   X(I32Const)                                                                  \
   X(I64Const)                                                                  \
+  X(Param)                                                                     \
   X(U8Const)                                                                   \
   X(U32Const)                                                                  \
   X(U64Const)                                                                  \
@@ -133,7 +135,6 @@
 //#define X(tag)
 #define AST_UNARYNODE_TABLE                                                    \
   X(Block)                                                                     \
-  X(Eval)                                                                      \
   X(LoopUnbounded)                                                             \
   X(Not)                                                                       \
   X(Peek)                                                                      \
@@ -145,7 +146,6 @@
 #define AST_BINARYNODE_TABLE                                                   \
   X(And)                                                                       \
   X(Case)                                                                      \
-  X(Define)                                                                    \
   X(IfThen)                                                                    \
   X(Loop)                                                                      \
   X(Or)                                                                        \
@@ -161,12 +161,14 @@
 #define AST_NARYNODE_TABLE                                                     \
   X(File)                                                                      \
   X(Filter)                                                                    \
+  X(Eval)                                                                      \
   X(Section)                                                                   \
   X(Sequence)                                                                  \
 
 //#define X(tag)
 #define AST_TERNARYNODE_TABLE                                                  \
   X(Convert)                                                                   \
+  X(Define)                                                                    \
   X(IfThenElse)                                                                \
 
 //#define X(tag)
