@@ -1,0 +1,203 @@
+# Copyright 2015 WebAssembly Community Group participants
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# This file is a test case for parameter passing. This file is the same as
+# defaults.df except for method 'code.opcode". Rather than reading a (uint8), it
+# uses the code passed as a parameter.
+
+(section 'filter'
+  (version 0)
+
+  (define 'code' (param 0)
+    (loop (varuint32 6)          # Number of function bodies.
+      (eval 'code.function'))
+  )
+
+  (define 'code.address' (param 0)
+    (varuint32 6)                # alignment
+    (varuint32 6)                # offset
+  )
+
+  (define 'code.br_table' (param 0)
+    (uint8)                      # table arity.
+    (loop (varuint32 6)          # number of targets.
+       (uint32 6))               # target depth.
+    (uint32 6)                   # default target depth.
+  )
+
+  (define 'code.br_target' (param 0)
+     (uint8)                     # br arity.
+     (varuint32 6)               # relative depth
+  )
+
+  (define 'code.call_args' (param 0)
+    (varuint32 6)                # function arity.
+    (varuint32 6)                # function index
+  )
+
+  (define 'code.function' (param 0)
+    (block
+      # block implicitly reads   # bytes using (varuint32) on byte stream.
+      (loop (varuint32 6)        # number of locals in function.
+        (eval 'code.local'))
+      (loop.unbounded
+        ## HACK
+        (eval 'code.opcode' (uint8))     # reads instruction opcode
+        (eval 'code.inst'))      # selects/parses corresponding instruction.
+    )
+  )
+
+  (define 'code.local' (param 0)
+    (varuint32 6)                # number of locals with type
+    (uint8 3)                    # type of locals.
+  )
+
+  (define 'code.inst' (param 0)
+    (switch (read)
+      # TODO(kschimpf) build asts based on arity of opcodes?
+      (void)                                 # simple one byte opcode.
+      # control flow operators.
+      (case (u8.const 0x06) (eval 'code.br_target'))    # br
+      (case (u8.const 0x07) (eval 'code.br_target'))    # br_if
+      (case (u8.const 0x08) (eval 'code.br_table'))     # br_table
+      (case (u8.const 0x09) (uint8))                    # return arity
+      # basic operators
+      (case (u8.const 0x10) (varint32 6))               # i32.const value
+      (case (u8.const 0x11) (varint64 6))               # i64.const value
+      (case (u8.const 0x12) (uint64))                   # f64.const value
+      (case (u8.const 0x13) (uint32))                   # f32.const value
+      (case (u8.const 0x14) (varuint32 6))              # get_local index
+      (case (u8.const 0x15) (varuint32 6))              # set_local index
+      (case (u8.const 0x16) (eval 'code.call_args'))    # call
+      (case (u8.const 0x17) (eval 'code.call_args'))    # call_indirect
+      (case (u8.const 0x18) (eval 'code.call_args'))    # call_import
+      # Memory-related operators
+      (case (u8.const 0x20) (eval 'code.address'))      # i32.load8_s address
+      (case (u8.const 0x21) (eval 'code.address'))      # i32.load8_u address
+      (case (u8.const 0x22) (eval 'code.address'))      # i32.load16_s address
+      (case (u8.const 0x23) (eval 'code.address'))      # i32.load16_u address
+      (case (u8.const 0x24) (eval 'code.address'))      # i64.load8_s address
+      (case (u8.const 0x25) (eval 'code.address'))      # i64.load8_u address
+      (case (u8.const 0x26) (eval 'code.address'))      # i64.load16_s address
+      (case (u8.const 0x27) (eval 'code.address'))      # i64.load16_u address
+      (case (u8.const 0x28) (eval 'code.address'))      # i64.load32_s address
+      (case (u8.const 0x29) (eval 'code.address'))      # i64.load32_u address
+      (case (u8.const 0x2a) (eval 'code.address'))      # i32.load address
+      (case (u8.const 0x2b) (eval 'code.address'))      # i64.load address
+      (case (u8.const 0x2c) (eval 'code.address'))      # f32.load address
+      (case (u8.const 0x2d) (eval 'code.address'))      # f64.load address
+      (case (u8.const 0x2e) (eval 'code.address'))      # i32.store8 address
+      (case (u8.const 0x2f) (eval 'code.address'))      # i32.store16 address
+      (case (u8.const 0x30) (eval 'code.address'))      # i64.store8 address
+      (case (u8.const 0x31) (eval 'code.address'))      # i64.store16 address
+      (case (u8.const 0x32) (eval 'code.address'))      # i64.store32 address
+      (case (u8.const 0x33) (eval 'code.address'))      # i32.store address
+      (case (u8.const 0x34) (eval 'code.address'))      # i64.store address
+      (case (u8.const 0x35) (eval 'code.address'))      # f32.store address
+      (case (u8.const 0x36) (eval 'code.address'))      # f64.store address
+      (case (u32.const 0xFFFFFFFF) (block.end))          # end function block
+    )
+  )
+
+# HACK
+#  (define 'code.opcode' (param 0) (uint8))
+  (define 'code.opcode' (param 1) (param 0))
+
+  (define 'data' (param 0)
+    (loop (varuint32 6)        # number of data segments.
+      (eval 'data.segment'))
+  )
+
+  (define 'data.segment' (param 0)
+    # The offset in linear memory at which to store the data.
+     (varuint32 6)
+    # The data
+    (loop (varuint32 6) (uint8))
+  )
+
+  (define 'export' (param 0)
+    (loop (varuint32 6)        # number of exports
+      (eval 'export.entry'))
+  )
+
+  (define 'export.entry' (param 0)
+    (varuint32 6)              # function index
+    (eval 'export.symbol')     # funtion name
+  )
+
+  (define 'export.symbol' (param 0)
+                               # reads in a function name
+    (loop (varuint32 6) (uint8))
+  )
+
+  (define 'function' (param 0)
+    (loop (varuint32 6)        # Number of type signatures.
+       (varuint32 6))          # type signature index
+  )
+
+  (define 'import' (param 0)
+    (loop (varuint32 6) (eval 'import.entry'))
+  )
+
+  (define 'import.entry' (param 0)
+    (varuint32 6)              # signature index of the import
+    (eval 'import.symbol')     # module name
+    (eval 'import.symbol')     # function name
+  )
+
+  (define 'import.symbol' (param 0)
+    (loop (varuint32 6) (uint8))
+  )
+
+  (define 'memory' (param 0)
+    (varuint32 6)              # Initial memory suze
+    (varuint32 6)              # maximum memory size
+    (uint8)                    # 1 if the memory is visible outside the module
+  )
+
+  (define 'name' (param 0)
+    (loop (varuint32 6)        # function name count.
+      (eval 'name.function'))
+  )
+
+  (define 'name.function' (param 0)
+    (eval 'name.symbol')       # function name
+    (loop (varuint32 6)        # number of local names.
+      (eval 'name.symbol'))    # local name
+  )
+
+  (define 'name.symbol' (param 0)
+                               # reads in a symbol name
+    (loop (varuint32 6) (uint8))
+  )
+
+  (define 'start' (param 0)
+    (varuint32 6)              # start function index.
+  )
+
+  (define 'table' (param 0)
+    (loop (varuint32 6)        # Number of table entries.
+       (varuint32 6))          # function index.
+  )
+
+  (define 'type' (param 0)
+    (loop (varuint32 6)        # number of signatures.
+      (uint8)                  # type form (0x040)
+      (loop (varuint32 6)      # number of parameters parameters
+        (uint8))               # parameter type.
+      (loop (varuint32 6)      # number of return types.
+        (uint8))               # return type.
+    )
+  )
+)
