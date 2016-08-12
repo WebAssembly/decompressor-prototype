@@ -181,9 +181,10 @@ class TraceClass : std::enable_shared_from_this<TraceClass> {
     if (getTraceProgress())
       traceHexInternal(Name, Value);
   }
-  void tracePointer(const char* Name, void* Ptr) {
+  template <typename T>
+  void tracePointer(const char* Name, T* Ptr) {
     if (getTraceProgress())
-      tracePointerInternal(Name, Ptr);
+      tracePointerInternal(Name, (void*)Ptr);
   }
   bool getTraceProgress() const { return wasm::isDebug() && TraceProgress; }
   void setTraceProgress(bool NewValue) { TraceProgress = NewValue; }
@@ -197,13 +198,6 @@ class TraceClass : std::enable_shared_from_this<TraceClass> {
   bool TraceProgress;
   std::vector<const char*> CallStack;
 
-  void init() {
-    Label = nullptr;
-    File = stderr;
-    IndentLevel = 0;
-    TraceProgress = false;
-  }
-
   void enter(const char* Name);
   void exit();
   void traceMessageInternal(const std::string& Message);
@@ -214,6 +208,9 @@ class TraceClass : std::enable_shared_from_this<TraceClass> {
   void traceUintInternal(const char* Name, uintmax_t Value);
   void traceHexInternal(const char* Name, uintmax_t Value);
   void tracePointerInternal(const char* Name, void* Value);
+
+ private:
+  inline void init();
 };
 
 }  // end of namespace utils

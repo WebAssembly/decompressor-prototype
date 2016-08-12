@@ -20,6 +20,7 @@
 #include "interp/ByteWriteStream.h"
 #include "interp/Interpreter.h"
 #include "sexp/TextWriter.h"
+#include "utils/backwards_iterator.h"
 
 #include <iostream>
 
@@ -71,6 +72,27 @@ uint32_t LogBlockCount = 0;
 }  // end of anonymous namespace
 #endif
 
+const Node* Interpreter::getParam(const Node* P) {
+  if (CallStack.empty())
+    fatal("Not inside a call frame, can't evaluate parameter accessor");
+  assert(isa<ParamNode>(P));
+  auto* Param = cast<ParamNode>(P);
+  // define in terms of kid index in caller.
+  IntType ParamIndex = Param->getValue() + 1;
+  SymbolNode* DefiningSym = Param->getDefiningSymbol();
+  for (const auto* Caller : backwards<ConstNodeVectorType>(CallStack)) {
+    assert(isa<EvalNode>(Caller));
+    const EvalNode* Eval = cast<EvalNode>(Caller);
+    if (DefiningSym != Eval->getCallName())
+      continue;
+    if (ParamIndex < IntType(Caller->getNumKids()))
+      return Caller->getKid(ParamIndex);
+  }
+  fatal("Can't evaluate parameter reference");
+  // Not reachable.
+  return P;
+}
+
 IntType Interpreter::eval(const Node* Nd) {
   // TODO(kschimpf): Fix for ast streams.
   // TODO(kschimpf) Handle blocks.
@@ -94,7 +116,6 @@ IntType Interpreter::eval(const Node* Nd) {
     case OpConvert:
     case OpFilter:
     case OpBlockEndNoArgs:
-    case OpParam:
     case OpSymbol:
       // TODO(kschimpf): Fix above cases.
       fprintf(stderr, "Not implemented: %s\n", getNodeTypeName(Type));
@@ -108,6 +129,9 @@ IntType Interpreter::eval(const Node* Nd) {
     case OpUnknownSection:
       fprintf(stderr, "Evaluating not allowed: %s\n", getNodeTypeName(Type));
       fatal("Unable to evaluate filter s-expression");
+      break;
+    case OpParam:
+      ReturnValue = eval(getParam(Nd));
       break;
     case OpDefine:
       ReturnValue = eval(Nd->getKid(2));
@@ -196,14 +220,26 @@ IntType Interpreter::eval(const Node* Nd) {
     case OpError:
       fatal("Error found during evaluation");
       break;
-    case OpEval:
-      // TODO(karlschimpf): Check parameter ussage?
-      if (auto* Sym = dyn_cast<SymbolNode>(Nd->getKid(0))) {
-        ReturnValue = eval(Sym->getDefineDefinition());
-        break;
+    case OpEval: {
+      auto* Sym = dyn_cast<SymbolNode>(Nd->getKid(0));
+      assert(Sym);
+      auto* Defn = dyn_cast<DefineNode>(Sym->getDefineDefinition());
+      assert(Defn);
+      auto* NumParams = dyn_cast<ParamNode>(Defn->getKid(1));
+      assert(NumParams);
+      int NumCallArgs = Nd->getNumKids() - 1;
+      if (NumParams->getValue() != IntType(NumCallArgs)) {
+        fprintf(Trace.getFile(), "Definition %s expects %" PRIuMAX
+                                 "parameters, found: %" PRIuMAX "\n",
+                Sym->getStringName().c_str(), uintmax_t(NumParams->getValue()),
+                uintmax_t(NumCallArgs));
+        fatal("Unable to evaluate call");
       }
-      fatal("Can't evaluate symbol");
+      CallStack.push_back(Nd);
+      ReturnValue = eval(Defn);
+      CallStack.pop_back();
       break;
+    }
     case OpIfThen:
       if (eval(Nd->getKid(0)) != 0)
         eval(Nd->getKid(1));
@@ -343,6 +379,8 @@ IntType Interpreter::read(const Node* Nd) {
       fatal("Read not implemented");
 
       return LastReadValue = 0;
+    case OpParam:
+      return LastReadValue = read(getParam(Nd));
     case OpMap: {
       const auto* Map = cast<MapNode>(Nd);
       const CaseNode* Case = Map->getCase(read(Map->getKid(0)));
@@ -412,6 +450,8 @@ IntType Interpreter::write(IntType Value, const wasm::filt::Node* Nd) {
       fprintf(stderr, "Write not implemented: %s\n", getNodeTypeName(Type));
       fatal("Write not implemented");
       break;
+    case OpParam:
+      return write(Value, getParam(Nd));
     case OpUint8NoArgs:
       Writer->writeUint8(Value, WritePos);
       break;

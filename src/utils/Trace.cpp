@@ -23,6 +23,13 @@ namespace wasm {
 
 namespace utils {
 
+void TraceClass::init() {
+  Label = "Trace";
+  File = stderr;
+  IndentLevel = 0;
+  TraceProgress = false;
+}
+
 TraceClass::TraceClass() {
   init();
 }
