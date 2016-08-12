@@ -551,7 +551,7 @@ test-decompress: $(BUILD_EXECDIR)/decompress
 
 .PHONY: test-decompress
 
-test-param-passing:
+test-param-passing: $(BUILD_EXECDIR)/decompress
 	$< -d test/test-sources/defaults-param-test.df \
 		-i $(TEST_SRCS_DIR)/toy.wasm -o - \
 		| diff - $(TEST_SRCS_DIR)/toy.wasm-w
