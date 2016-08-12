@@ -563,10 +563,8 @@ test-param-passing:
 .PHONY: test-param-passing
 
 test-decompsexp-wasm: $(BUILD_EXECDIR)/decompsexp-wasm
-	$< -m <  \
-		| diff - $(TEST_SRCS_DIR)/defaults.wasm
-	$< < test/test-sources/defaults-param-test.df \
-		| diff - $(TEST_SRCS_DIR)/defaults.wasm-w
+	$< -m < $(SEXP_DEFAULTS) | diff - $(TEST_SRCS_DIR)/defaults.wasm
+	$< < $(SEXP_DEFAULTS) | diff - $(TEST_SRCS_DIR)/defaults.wasm-w
 	@echo "*** sexp2wasm tests passed ***"
 
 .PHONY: test-decompsexp-wasm
