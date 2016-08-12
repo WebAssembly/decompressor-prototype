@@ -503,7 +503,8 @@ $(TEST_EXECDIR)/TestByteQueues: $(TEST_DIR)/TestByteQueues.cpp $(LIBS)
 ###### Testing ######
 
 test: all test-parser test-raw-streams test-byte-queues \
-	test-decompsexp-wasm test-decompwasm-sexp test-decompress
+	test-decompsexp-wasm test-decompwasm-sexp test-param-passing \
+        test-decompress
 	@echo "*** all tests passed ***"
 
 .PHONY: test
@@ -550,10 +551,25 @@ test-decompress: $(BUILD_EXECDIR)/decompress
 
 .PHONY: test-decompress
 
+test-param-passing:
+	$< -d test/test-sources/defaults-param-test.df \
+		-i $(TEST_SRCS_DIR)/toy.wasm -o - \
+		| diff - $(TEST_SRCS_DIR)/toy.wasm-w
+	$< -d test/test-sources/defaults-param-test.df \
+		-i $(TEST_SRCS_DIR)/toy.wasm -o - \
+		| diff - $(TEST_SRCS_DIR)/toy.wasm-w
+	@echo "*** test-param-passing passed ***"
+
+.PHONY: test-param-passing
+
 test-decompsexp-wasm: $(BUILD_EXECDIR)/decompsexp-wasm
-	$< -m < $(SEXP_DEFAULTS) | diff - $(TEST_SRCS_DIR)/defaults.wasm
-	$< < $(SEXP_DEFAULTS) | diff - $(TEST_SRCS_DIR)/defaults.wasm-w
+	$< -m <  \
+		| diff - $(TEST_SRCS_DIR)/defaults.wasm
+	$< < test/test-sources/defaults-param-test.df \
+		| diff - $(TEST_SRCS_DIR)/defaults.wasm-w
 	@echo "*** sexp2wasm tests passed ***"
+
+.PHONY: test-decompsexp-wasm
 
 test-decompwasm-sexp: $(BUILD_EXECDIR)/decompwasm-sexp
 	$< < test/test-sources/defaults.wasm \
@@ -561,6 +577,8 @@ test-decompwasm-sexp: $(BUILD_EXECDIR)/decompwasm-sexp
 	$< < test/test-sources/defaults.wasm-w \
 		| diff - $(TEST_SRCS_DIR)/defaults.df
 	@echo "*** wasm2sexp tests passed ***"
+
+.PHONY: test-decompwasm-sexp
 
 test-parser: $(TEST_EXECDIR)/TestParser
 	$< -w -f $(SEXP_DEFAULTS) | diff - $(TEST_SRCS_DIR)/defaults.dff
