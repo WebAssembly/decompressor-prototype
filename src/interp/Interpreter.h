@@ -77,6 +77,7 @@ class Interpreter {
   decode::IntType LastReadValue;
   bool MinimizeBlockSize;
   TraceClassSexpReaderWriter Trace;
+  filt::ConstNodeVectorType CallStack;
 
   void decompressSection();
   void readSectionName();
@@ -97,6 +98,7 @@ class Interpreter {
   // Reads opcode selector into Value. Returns the Bitsize to the (fixed) number
   // of bits used to read the opcode selector. Otherwise returns zero.
   uint32_t readOpcodeSelector(const filt::Node* Nd, decode::IntType& Value);
+  const filt::Node* getParam(const filt::Node* Param);
 };
 
 }  // end of namespace interp.

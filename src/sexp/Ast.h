@@ -13,7 +13,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
 
 // Defines an internal model of filter AST's.
 //
@@ -38,6 +37,7 @@
 #include "utils/Allocator.h"
 #include "utils/Casting.h"
 #include "utils/Defs.h"
+#include "utils/initialized_ptr.h"
 
 #include <array>
 #include <limits>
@@ -60,6 +60,7 @@ typedef std::string ExternalName;
 typedef ARENA_VECTOR(uint8_t) InternalName;
 typedef std::unordered_set<Node*> VisitedNodesType;
 typedef std::vector<Node*> NodeVectorType;
+typedef std::vector<const Node*> ConstNodeVectorType;
 
 static constexpr size_t NumNodeTypes = 0
 #define X(tag, opcode, sexp_name, type_name, text_num_args, text_max_args) +1
@@ -169,12 +170,21 @@ class Node {
 
   TraceClassSexp& getTrace() const { return Symtab.Trace; }
 
+  bool hasKids() const { return getNumKids() > 0; }
+
   // General API to children.
   virtual int getNumKids() const = 0;
 
   virtual Node* getKid(int Index) const = 0;
 
   virtual void setKid(int Index, Node* N) = 0;
+
+  // Validates the node, based on the parents.
+  virtual bool validateNode(NodeVectorType& Parents);
+
+  // Recursively walks tree and validates (Scope allows lexical validation).
+  // Returns true if validation succeeds.
+  bool validateSubtree(NodeVectorType& Parents);
 
   void setLastKid(Node* N) { setKid(getNumKids() - 1, N); }
 
@@ -228,7 +238,7 @@ class NullaryNode : public Node {
   NullaryNode(SymbolTable& Symtab, NodeType Type) : Node(Symtab, Type) {}
 };
 
-#define X(tag)                                                                \
+#define X(tag, NODE_DECLS)                                                    \
   class tag##Node FINAL : public NullaryNode {                                \
     tag##Node(const tag##Node&) = delete;                                     \
     tag##Node& operator=(const tag##Node&) = delete;                          \
@@ -238,6 +248,7 @@ class NullaryNode : public Node {
     explicit tag##Node(SymbolTable& Symtab) : NullaryNode(Symtab, Op##tag) {} \
     ~tag##Node() OVERRIDE {}                                                  \
     static bool implementsClass(NodeType Type) { return Type == Op##tag; }    \
+    NODE_DECLS                                                                \
   };
 AST_NULLARYNODE_TABLE
 #undef X
@@ -308,7 +319,7 @@ class IntegerNode : public NullaryNode {
       : NullaryNode(Symtab, Type), Value(Value), Format(Format) {}
 };
 
-#define X(tag)                                                             \
+#define X(tag, NODE_DECLS)                                                 \
   class tag##Node FINAL : public IntegerNode {                             \
     tag##Node(const tag##Node&) = delete;                                  \
     tag##Node& operator=(const tag##Node&) = delete;                       \
@@ -323,6 +334,7 @@ class IntegerNode : public NullaryNode {
     ~tag##Node() OVERRIDE {}                                               \
                                                                            \
     static bool implementsClass(NodeType Type) { return Type == Op##tag; } \
+    NODE_DECLS                                                             \
   };
 AST_INTEGERNODE_TABLE
 #undef X
@@ -381,7 +393,7 @@ class UnaryNode : public Node {
   }
 };
 
-#define X(tag)                                                             \
+#define X(tag, NODE_DECLS)                                                 \
   class tag##Node FINAL : public UnaryNode {                               \
     tag##Node(const tag##Node&) = delete;                                  \
     tag##Node& operator=(const tag##Node&) = delete;                       \
@@ -392,6 +404,7 @@ class UnaryNode : public Node {
         : UnaryNode(Symtab, Op##tag, Kid) {}                               \
     ~tag##Node() OVERRIDE {}                                               \
     static bool implementsClass(NodeType Type) { return Op##tag == Type; } \
+    NODE_DECLS                                                             \
   };
 AST_UNARYNODE_TABLE
 #undef X
@@ -420,7 +433,7 @@ class BinaryNode : public Node {
   }
 };
 
-#define X(tag)                                                             \
+#define X(tag, NODE_DECLS)                                                 \
   class tag##Node FINAL : public BinaryNode {                              \
     tag##Node(const tag##Node&) = delete;                                  \
     tag##Node& operator=(const tag##Node&) = delete;                       \
@@ -431,6 +444,7 @@ class BinaryNode : public Node {
         : BinaryNode(Symtab, Op##tag, Kid1, Kid2) {}                       \
     ~tag##Node() OVERRIDE {}                                               \
     static bool implementsClass(NodeType Type) { return Op##tag == Type; } \
+    NODE_DECLS                                                             \
   };
 AST_BINARYNODE_TABLE
 #undef X
@@ -464,7 +478,7 @@ class TernaryNode : public Node {
   }
 };
 
-#define X(tag)                                                             \
+#define X(tag, NODE_DECLS)                                                 \
   class tag##Node FINAL : public TernaryNode {                             \
     tag##Node(const tag##Node&) = delete;                                  \
     tag##Node& operator=(const tag##Node&) = delete;                       \
@@ -475,6 +489,7 @@ class TernaryNode : public Node {
         : TernaryNode(Symtab, Op##tag, Kid1, Kid2, Kid3) {}                \
     ~tag##Node() OVERRIDE {}                                               \
     static bool implementsClass(NodeType Type) { return Op##tag == Type; } \
+    NODE_DECLS                                                             \
   };
 AST_TERNARYNODE_TABLE
 #undef X
@@ -502,7 +517,7 @@ class NaryNode : public Node {
         Kids(alloc::TemplateAllocator<Node*>(Symtab.getAllocator().get())) {}
 };
 
-#define X(tag)                                                             \
+#define X(tag, NODE_DECLS)                                                 \
   class tag##Node FINAL : public NaryNode {                                \
     tag##Node(const tag##Node&) = delete;                                  \
     tag##Node& operator=(const tag##Node&) = delete;                       \
@@ -512,6 +527,7 @@ class NaryNode : public Node {
     explicit tag##Node(SymbolTable& Symtab) : NaryNode(Symtab, Op##tag) {} \
     ~tag##Node() OVERRIDE {}                                               \
     static bool implementsClass(NodeType Type) { return Op##tag == Type; } \
+    NODE_DECLS                                                             \
   };
 AST_NARYNODE_TABLE
 #undef X
@@ -532,7 +548,7 @@ class SelectBaseNode : public NaryNode {
   SelectBaseNode(SymbolTable& Symtab, NodeType Type) : NaryNode(Symtab, Type) {}
 };
 
-#define X(tag)                                                             \
+#define X(tag, NODE_DECLS)                                                 \
   class tag##Node FINAL : public SelectBaseNode {                          \
     tag##Node(const tag##Node&) = delete;                                  \
     tag##Node& operator=(const tag##Node&) = delete;                       \
@@ -542,6 +558,7 @@ class SelectBaseNode : public NaryNode {
     explicit tag##Node(SymbolTable& Symtab)                                \
         : SelectBaseNode(Symtab, Op##tag) {}                               \
     static bool implementsClass(NodeType Type) { return Op##tag == Type; } \
+    NODE_DECLS                                                             \
   };
 AST_SELECTNODE_TABLE
 #undef X

@@ -89,6 +89,24 @@ void Node::clearCaches(NodeVectorType& AdditionalNodes) {
 void Node::installCaches(NodeVectorType& AdditionalNodes) {
 }
 
+bool Node::validateSubtree(NodeVectorType& Parents) {
+  if (!validateNode(Parents))
+    return false;
+  if (hasKids()) {
+    Parents.push_back(this);
+    getTrace().traceInt("NumKids", getNumKids());
+    for (auto* Kid : *this)
+      if (!Kid->validateSubtree(Parents))
+        return false;
+    Parents.pop_back();
+  }
+  return true;
+}
+
+bool Node::validateNode(NodeVectorType& Scope) {
+  return true;
+}
+
 // Note: we create duumy virtual forceCompilation() to force legal
 // class definitions to be compiled in here. Classes not explicitly
 // instantiated here will not link. This used to force an error if
@@ -146,6 +164,9 @@ void SymbolTable::install(Node* Root) {
   }
   VisitedNodes.clear();
   installDefinitions(Root);
+  std::vector<Node*> Parents;
+  if (!Root->validateSubtree(Parents))
+    fatal("Unable to install algorthms, validation failed!");
   for (const auto& Pair : SymbolMap)
     installSubtreeCaches(Pair.second, VisitedNodes, AdditionalNodes);
   while (!AdditionalNodes.empty()) {
@@ -241,15 +262,15 @@ bool NullaryNode::implementsClass(NodeType Type) {
   switch (Type) {
     default:
       return false;
-#define X(tag)  \
-  case Op##tag: \
+#define X(tag, NODE_DECLS) \
+  case Op##tag:            \
     return true;
       AST_NULLARYNODE_TABLE
 #undef X
   }
 }
 
-#define X(tag) \
+#define X(tag, NODE_DECLS) \
   void tag##Node::forceCompilation() {}
 AST_NULLARYNODE_TABLE
 #undef X
@@ -269,15 +290,15 @@ bool UnaryNode::implementsClass(NodeType Type) {
   switch (Type) {
     default:
       return false;
-#define X(tag)  \
-  case Op##tag: \
+#define X(tag, NODE_DECLS) \
+  case Op##tag:            \
     return true;
       AST_UNARYNODE_TABLE
 #undef X
   }
 }
 
-#define X(tag) \
+#define X(tag, NODE_DECLS) \
   void tag##Node::forceCompilation() {}
 AST_UNARYNODE_TABLE
 #undef X
@@ -286,18 +307,47 @@ bool IntegerNode::implementsClass(NodeType Type) {
   switch (Type) {
     default:
       return false;
-#define X(tag)  \
-  case Op##tag: \
+#define X(tag, NODE_DECLS) \
+  case Op##tag:            \
     return true;
       AST_INTEGERNODE_TABLE
 #undef X
   }
 }
 
-#define X(tag) \
+#define X(tag, NODE_DECLS) \
   void tag##Node::forceCompilation() {}
 AST_INTEGERNODE_TABLE
 #undef X
+
+bool ParamNode::validateNode(NodeVectorType& Parents) {
+  TRACE_METHOD("validateNode", getTrace());
+  getTrace().traceSexp("this", this);
+  for (size_t i = Parents.size(); i > 0; --i) {
+    auto* Nd = Parents[i - 1];
+    auto* Define = cast<DefineNode>(Nd);
+    if (Define == nullptr)
+      continue;
+    getTrace().traceSexp("Enclosing define", Nd);
+    // Don't complain about this if specifying number of parameters for define.
+    if (i == Parents.size() && this == Define->getKid(1))
+      return true;
+    // Scope found. Check if parameter is legal.
+    if (!Define->isValidParam(getValue())) {
+      fprintf(getTrace().getFile(),
+              "Error: Param %" PRIuMAX " not defined for method: %s\n",
+              uintmax_t(getValue()), Define->getName().c_str());
+      return false;
+    }
+    auto* Sym = dyn_cast<SymbolNode>(Define->getKid(0));
+    if (Sym == nullptr)
+      return false;
+    DefiningSymbol = Sym;
+    getTrace().traceSexp("DefiningSymbol", DefiningSymbol.get());
+    return true;
+  }
+  return false;
+}
 
 Node* BinaryNode::getKid(int Index) const {
   if (Index < 2)
@@ -314,15 +364,15 @@ bool BinaryNode::implementsClass(NodeType Type) {
   switch (Type) {
     default:
       return false;
-#define X(tag)  \
-  case Op##tag: \
+#define X(tag, NODE_DECLS) \
+  case Op##tag:            \
     return true;
       AST_BINARYNODE_TABLE
 #undef X
   }
 }
 
-#define X(tag) \
+#define X(tag, NODE_DECLS) \
   void tag##Node::forceCompilation() {}
 AST_BINARYNODE_TABLE
 #undef X
@@ -342,32 +392,43 @@ bool TernaryNode::implementsClass(NodeType Type) {
   switch (Type) {
     default:
       return false;
-#define X(tag)  \
-  case Op##tag: \
+#define X(tag, NODE_DECLS) \
+  case Op##tag:            \
     return true;
       AST_TERNARYNODE_TABLE
 #undef X
   }
 }
 
-#define X(tag) \
+#define X(tag, NODE_DECLS) \
   void tag##Node::forceCompilation() {}
 AST_TERNARYNODE_TABLE
 #undef X
+
+// Returns nullptr if P is illegal, based on the define.
+bool DefineNode::isValidParam(IntType Index) {
+  assert(isa<ParamNode>(getKid(1)));
+  return Index < cast<ParamNode>(getKid(1))->getValue();
+}
+
+std::string DefineNode::getName() const {
+  assert(isa<SymbolNode>(getKid(0)));
+  return dyn_cast<SymbolNode>(getKid(0))->getStringName();
+}
 
 bool NaryNode::implementsClass(NodeType Type) {
   switch (Type) {
     default:
       return false;
-#define X(tag)  \
-  case Op##tag: \
+#define X(tag, NOD_DECLS) \
+  case Op##tag:           \
     return true;
       AST_NARYNODE_TABLE
 #undef X
   }
 }
 
-#define X(tag) \
+#define X(tag, NODE_DECLS) \
   void tag##Node::forceCompilation() {}
 AST_NARYNODE_TABLE
 #undef X
@@ -539,7 +600,7 @@ bool collectCaseWidths(IntType Key,
 
 }  // end of anonymous namespace
 
-#define X(tag) \
+#define X(tag, NODE_DECLS) \
   void tag##Node::forceCompilation() {}
 AST_SELECTNODE_TABLE
 #undef X

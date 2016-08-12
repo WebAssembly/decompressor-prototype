@@ -101,75 +101,95 @@
   /* Internal (not opcodes in compressed file) */                              \
   X(UnknownSection,    0xFF, "unknown.section", nullptr,           1, 0)       \
 
-//#define X(tag)
+//#define X(tag, NODE_DECLS)
 #define AST_NULLARYNODE_TABLE                                                  \
-  X(BlockEndNoArgs)                                                            \
-  X(Error)                                                                     \
-  X(LastRead)                                                                \
-  X(Uint8NoArgs)                                                               \
-  X(Uint32NoArgs)                                                              \
-  X(Uint64NoArgs)                                                              \
-  X(Varint32NoArgs)                                                            \
-  X(Varint64NoArgs)                                                            \
-  X(Varuint32NoArgs)                                                           \
-  X(Varuint64NoArgs)                                                           \
-  X(Void)                                                                      \
+  X(BlockEndNoArgs,)                                                           \
+  X(Error,)                                                                    \
+  X(LastRead,)                                                                 \
+  X(Uint8NoArgs,)                                                              \
+  X(Uint32NoArgs,)                                                             \
+  X(Uint64NoArgs,)                                                             \
+  X(Varint32NoArgs,)                                                           \
+  X(Varint64NoArgs,)                                                           \
+  X(Varuint32NoArgs,)                                                          \
+  X(Varuint64NoArgs,)                                                          \
+  X(Void,)                                                                     \
 
-//#define X(tag)
+//#define X(tag, NODE_DECLS)
 #define AST_INTEGERNODE_TABLE                                                  \
-  X(I32Const)                                                                  \
-  X(I64Const)                                                                  \
-  X(Param)                                                                     \
-  X(U8Const)                                                                   \
-  X(U32Const)                                                                  \
-  X(U64Const)                                                                  \
-  X(Uint32OneArg)                                                              \
-  X(Uint64OneArg)                                                              \
-  X(Uint8OneArg)                                                               \
-  X(Varint32OneArg)                                                            \
-  X(Varint64OneArg)                                                            \
-  X(Varuint32OneArg)                                                           \
-  X(Varuint64OneArg)                                                           \
-  X(Version)                                                                   \
+  X(I32Const,)                                                                 \
+  X(I64Const,)                                                                 \
+  X(Param, PARAM_DECLS )                                                       \
+  X(U8Const,)                                                                  \
+  X(U32Const,)                                                                 \
+  X(U64Const,)                                                                 \
+  X(Uint32OneArg,)                                                             \
+  X(Uint64OneArg,)                                                             \
+  X(Uint8OneArg,)                                                              \
+  X(Varint32OneArg,)                                                           \
+  X(Varint64OneArg,)                                                           \
+  X(Varuint32OneArg,)                                                          \
+  X(Varuint64OneArg,)                                                          \
+  X(Version,)                                                                  \
 
-//#define X(tag)
+#define PARAM_DECLS                                                            \
+  public:                                                                      \
+    bool validateNode(NodeVectorType &Parents) OVERRIDE;                       \
+    SymbolNode *getDefiningSymbol() const {                                    \
+      return DefiningSymbol.get();                                             \
+    }                                                                          \
+  private:                                                                     \
+    utils::initialized_ptr<SymbolNode> DefiningSymbol;                         \
+
+//#define X(tag, NODE_DECLS)
 #define AST_UNARYNODE_TABLE                                                    \
-  X(Block)                                                                     \
-  X(LoopUnbounded)                                                             \
-  X(Not)                                                                       \
-  X(Peek)                                                                      \
-  X(Read)                                                                      \
-  X(Undefine)                                                                  \
-  X(UnknownSection)                                                            \
+  X(Block,)                                                                    \
+  X(LoopUnbounded,)                                                            \
+  X(Not,)                                                                      \
+  X(Peek,)                                                                     \
+  X(Read,)                                                                     \
+  X(Undefine,)                                                                 \
+  X(UnknownSection,)                                                           \
 
-//#define X(tag)
+//#define X(tag, NODE_DECLS)
 #define AST_BINARYNODE_TABLE                                                   \
-  X(And)                                                                       \
-  X(Case)                                                                      \
-  X(IfThen)                                                                    \
-  X(Loop)                                                                      \
-  X(Or)                                                                        \
-  X(Rename)                                                                    \
-  X(Write)                                                                     \
+  X(And,)                                                                      \
+  X(Case,)                                                                     \
+  X(IfThen,)                                                                   \
+  X(Loop,)                                                                     \
+  X(Or,)                                                                       \
+  X(Rename,)                                                                   \
+  X(Write,)                                                                    \
 
-//#define X(tag)
+//#define X(tag, NODE_DECLS)
 #define AST_SELECTNODE_TABLE                                                   \
-  X(Switch)                                                                    \
-  X(Map)                                                                       \
+  X(Switch,)                                                                   \
+  X(Map,)                                                                      \
 
-//#define X(tag)
+//#define X(tag, NODE_DECLS)
 #define AST_NARYNODE_TABLE                                                     \
-  X(File)                                                                      \
-  X(Filter)                                                                    \
-  X(Eval)                                                                      \
-  X(Section)                                                                   \
-  X(Sequence)                                                                  \
+  X(File,)                                                                     \
+  X(Filter,)                                                                   \
+  X(Eval,EVAL_DECLS)                                                           \
+  X(Section,)                                                                  \
+  X(Sequence,)                                                                 \
 
-//#define X(tag)
+#define EVAL_DECLS                                                             \
+ public:                                                                       \
+  SymbolNode *getCallName() const {                                            \
+    return dyn_cast<SymbolNode>(getKid(0));                                    \
+  }                                                                            \
+
+//#define X(tag, NODE_DECLS)
 #define AST_TERNARYNODE_TABLE                                                  \
-  X(Convert)                                                                   \
-  X(Define)                                                                    \
-  X(IfThenElse)                                                                \
+  X(Convert,)                                                                  \
+  X(Define, DEFINE_DECLS)                                                      \
+  X(IfThenElse,)                                                               \
+
+#define DEFINE_DECLS                                                           \
+ public:                                                                       \
+  bool isValidParam(decode::IntType Index);                                    \
+  std::string getName() const;                                                 \
 
 //#define X(tag)
 #define AST_NODE_HAS_HIDDEN_SEQ                                                \
