@@ -48,10 +48,11 @@ bool BinaryReader::isBinary(const char* Filename) {
 BinaryReader::BinaryReader(std::shared_ptr<decode::Queue> Input,
                            std::shared_ptr<SymbolTable> Symtab)
     : Reader(std::make_shared<ByteReadStream>()),
-      ReadPos(StreamType::Byte, Input),
+      Input(Input),
+      ReadPos(nullptr),
       Symtab(Symtab),
       SectionSymtab(Symtab),
-      Trace(ReadPos, "BinaryReader") {
+      Trace(nullptr, "BinaryReader") {
 }
 
 template <class T>
@@ -74,35 +75,40 @@ void BinaryReader::readUnary() {
 
 template <class T>
 void BinaryReader::readUint8() {
-  auto* Node = Symtab->create<T>(Reader->readUint8(ReadPos));
+  assert(ReadPos);
+  auto* Node = Symtab->create<T>(Reader->readUint8(*ReadPos));
   TRACE_SEXP(nullptr, Node);
   NodeStack.push_back(Node);
 }
 
 template <class T>
 void BinaryReader::readVarint32() {
-  auto* Node = Symtab->create<T>(Reader->readVarint32(ReadPos));
+  assert(ReadPos);
+  auto* Node = Symtab->create<T>(Reader->readVarint32(*ReadPos));
   TRACE_SEXP(nullptr, Node);
   NodeStack.push_back(Node);
 }
 
 template <class T>
 void BinaryReader::readVarint64() {
-  auto* Node = Symtab->create<T>(Reader->readVarint64(ReadPos));
+  assert(ReadPos);
+  auto* Node = Symtab->create<T>(Reader->readVarint64(*ReadPos));
   TRACE_SEXP(nullptr, Node);
   NodeStack.push_back(Node);
 }
 
 template <class T>
 void BinaryReader::readVaruint32() {
-  auto* Node = Symtab->create<T>(Reader->readVaruint32(ReadPos));
+  assert(ReadPos);
+  auto* Node = Symtab->create<T>(Reader->readVaruint32(*ReadPos));
   TRACE_SEXP(nullptr, Node);
   NodeStack.push_back(Node);
 }
 
 template <class T>
 void BinaryReader::readVaruint64() {
-  auto* Node = Symtab->create<T>(Reader->readVarint64(ReadPos));
+  assert(ReadPos);
+  auto* Node = Symtab->create<T>(Reader->readVarint64(*ReadPos));
   TRACE_SEXP(nullptr, Node);
   NodeStack.push_back(Node);
 }
@@ -122,7 +128,8 @@ void BinaryReader::readBinary() {
 
 template <class T>
 void BinaryReader::readBinarySymbol() {
-  auto* Symbol = SectionSymtab.getIndexSymbol(Reader->readVaruint32(ReadPos));
+  assert(ReadPos);
+  auto* Symbol = SectionSymtab.getIndexSymbol(Reader->readVaruint32(*ReadPos));
   auto* Body = NodeStack.back();
   NodeStack.pop_back();
   auto* Node = Symtab->create<T>(Symbol, Body);
@@ -147,7 +154,8 @@ void BinaryReader::readTernary() {
 
 template <class T>
 void BinaryReader::readNary() {
-  uint32_t NumKids = Reader->readVaruint32(ReadPos);
+  assert(ReadPos);
+  uint32_t NumKids = Reader->readVaruint32(*ReadPos);
   size_t StackSize = NodeStack.size();
   if (StackSize < NumKids)
     fatal("Can't find arguments for s-expression");
@@ -161,25 +169,40 @@ void BinaryReader::readNary() {
 }
 
 FileNode* BinaryReader::readFile() {
+  ReadCursor ReadPosition(StreamType::Byte, Input);
+  return readFile(ReadPosition);
+}
+
+FileNode* BinaryReader::readFile(ReadCursor &NewReadPos) {
   TRACE_METHOD("readFile", Trace);
-  MagicNumber = Reader->readUint32(ReadPos);
+  ReadCursor* OldReadPos = ReadPos;
+  ReadPos = &NewReadPos;
+  MagicNumber = Reader->readUint32(*ReadPos);
   // TODO(kschimpf): Fix reading of uintX. Current implementation not same as
   // WASM binary reader.
   TRACE(uint32_t, "MagicNumber", MagicNumber);
   if (MagicNumber != WasmBinaryMagic)
     fatal("Unable to read, did not find WASM binary magic number");
-  Version = Reader->readUint32(ReadPos);
+  Version = Reader->readUint32(*ReadPos);
   TRACE(uint32_t, "Version", Version);
   auto* File = Symtab->create<FileNode>();
-  while (!ReadPos.atByteEob())
-    File->append(readSection());
+  while (!ReadPos->atByteEob())
+    File->append(readSection(*ReadPos));
   TRACE_SEXP(nullptr, File);
   SectionSymtab.install(File);
+  ReadPos = OldReadPos;
   return File;
 }
 
 SectionNode* BinaryReader::readSection() {
+  ReadCursor ReadPosition(StreamType::Byte, Input);
+  return readSection(ReadPosition);
+}
+
+SectionNode* BinaryReader::readSection(ReadCursor &NewReadPos) {
   TRACE_METHOD("readSection", Trace);
+  ReadCursor* OldReadPos = ReadPos;
+  ReadPos = &NewReadPos;
   ExternalName Name = readExternalName();
   auto* SectionName = Symtab->create<SymbolNode>(Name);
   auto* Section = Symtab->create<SectionNode>();
@@ -189,7 +212,7 @@ SectionNode* BinaryReader::readSection() {
   readBlock([&]() {
     if (Name == "filter") {
       readSymbolTable();
-      while (!ReadPos.atByteEob())
+      while (!ReadPos->atByteEob())
         readNode();
     } else {
       // TODO(karlschimpf) Fix to actually read!
@@ -204,6 +227,7 @@ SectionNode* BinaryReader::readSection() {
     Section->append(NodeStack[i]);
   for (size_t i = StartStackSize; i < StackSize; ++i)
     NodeStack.pop_back();
+  ReadPos = OldReadPos;
   TRACE_SEXP(nullptr, Section);
   return Section;
 }
@@ -211,7 +235,7 @@ SectionNode* BinaryReader::readSection() {
 void BinaryReader::readSymbolTable() {
   TRACE_METHOD("readSymbolTable", Trace);
   SectionSymtab.clear();
-  uint32_t NumSymbols = Reader->readVaruint32(ReadPos);
+  uint32_t NumSymbols = Reader->readVaruint32(*ReadPos);
   for (uint32_t i = 0; i < NumSymbols; ++i) {
     ExternalName& Name = readExternalName();
     TRACE(uint32_t, "Index", i);
@@ -223,9 +247,9 @@ void BinaryReader::readSymbolTable() {
 ExternalName& BinaryReader::readExternalName() {
   static ExternalName Name;
   Name.clear();
-  uint32_t NameSize = Reader->readVaruint32(ReadPos);
+  uint32_t NameSize = Reader->readVaruint32(*ReadPos);
   for (uint32_t i = 0; i < NameSize; ++i) {
-    uint8_t Byte = Reader->readUint8(ReadPos);
+    uint8_t Byte = Reader->readUint8(*ReadPos);
     Name.push_back(char(Byte));
   }
   return Name;
@@ -234,9 +258,9 @@ ExternalName& BinaryReader::readExternalName() {
 InternalName& BinaryReader::readInternalName() {
   static InternalName Name;
   Name.clear();
-  uint32_t NameSize = Reader->readVaruint32(ReadPos);
+  uint32_t NameSize = Reader->readVaruint32(*ReadPos);
   for (uint32_t i = 0; i < NameSize; ++i) {
-    uint8_t Byte = Reader->readUint8(ReadPos);
+    uint8_t Byte = Reader->readUint8(*ReadPos);
     Name.push_back(char(Byte));
   }
   return Name;
@@ -244,16 +268,16 @@ InternalName& BinaryReader::readInternalName() {
 
 void BinaryReader::readBlock(std::function<void()> ApplyFn) {
   TRACE_METHOD("readBlock", Trace);
-  const size_t BlockSize = Reader->readBlockSize(ReadPos);
+  const size_t BlockSize = Reader->readBlockSize(*ReadPos);
   TRACE(size_t, "Block size", BlockSize);
-  Reader->pushEobAddress(ReadPos, BlockSize);
+  Reader->pushEobAddress(*ReadPos, BlockSize);
   ApplyFn();
-  ReadPos.popEobAddress();
+  ReadPos->popEobAddress();
 }
 
 void BinaryReader::readNode() {
   TRACE_METHOD("readNode", Trace);
-  switch (NodeType Opcode = (NodeType)Reader->readUint8(ReadPos)) {
+  switch (NodeType Opcode = (NodeType)Reader->readUint8(*ReadPos)) {
     case OpAnd:
       readBinary<AndNode>();
       break;
@@ -271,7 +295,7 @@ void BinaryReader::readNode() {
       readTernary<ConvertNode>();
       break;
     case OpDefine: {
-      auto* Symbol = SectionSymtab.getIndexSymbol(Reader->readVaruint32(ReadPos));
+      auto* Symbol = SectionSymtab.getIndexSymbol(Reader->readVaruint32(*ReadPos));
       auto* Body = NodeStack.back();
       NodeStack.pop_back();
       auto* Params = NodeStack.back();
@@ -289,9 +313,9 @@ void BinaryReader::readNode() {
       break;
     case OpEval: {
       auto* Node = Symtab->create<EvalNode>();
-      auto *Sym = SectionSymtab.getIndexSymbol(Reader->readVaruint32(ReadPos));
+      auto *Sym = SectionSymtab.getIndexSymbol(Reader->readVaruint32(*ReadPos));
       Node->append(Sym);
-      uint32_t NumParams = Reader->readVaruint32(ReadPos);
+      uint32_t NumParams = Reader->readVaruint32(*ReadPos);
       size_t StackSize = NodeStack.size();
       if (StackSize < NumParams)
         fatal("Can't find arguments for s-expression");
@@ -354,7 +378,7 @@ void BinaryReader::readNode() {
       readNary<SequenceNode>();
       break;
     case OpStream: {
-      uint8_t Encoding = Reader->readUint8(ReadPos);
+      uint8_t Encoding = Reader->readUint8(*ReadPos);
       StreamKind StrmKind;
       StreamType StrmType;
       StreamNode::decode(Encoding, StrmKind, StrmType);
