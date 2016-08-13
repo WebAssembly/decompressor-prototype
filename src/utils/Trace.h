@@ -20,16 +20,36 @@
 #ifndef DECOMPRESSOR_SRC_UTILS_TRACE_H
 #define DECOMPRESSOR_SRC_UTILS_TRACE_H
 
+#ifdef NDEBUG
+#define TRACE_METHOD(Name, Trace)
+#define TRACE_USING(trace, type, name, value)
+#define TRACE(type, name, value)
+#define TRACE_MESSAGE_USING(trace, Message)
+#define TRACE_MESSAGE(Message)
+#else
+#define TRACE_METHOD(Name, Trace) \
+  TraceClass::Method tracEmethoD((Name), (Trace))
+#define TRACE_USING(trace, type, name, value)                                  \
+  do {                                                                         \
+    auto& tracE = (trace);                                                     \
+    if ((tracE).getTraceProgress())                                            \
+      (tracE).trace_##type((name), (value));                                   \
+  } while (false)
+#define TRACE(type, name, value) TRACE_USING(getTrace(), type, name, value)
+#define TRACE_MESSAGE_USING(trace, Message)                                    \
+  do {                                                                         \
+    auto &tracE = (trace);                                                     \
+    if (tracE.getTraceProgress())                                              \
+      tracE.trace_message(Message);                                            \
+  } while (false)
+
+#define TRACE_MESSAGE(Message) TRACE_MESSAGE_USING(getTrace(), Message)
+#endif
+
 #include "utils/Defs.h"
 
 #include <memory>
 #include <vector>
-
-#ifdef NDEBUG
-#define TRACE_METHOD(Name, Trace)
-#else
-#define TRACE_METHOD(Name, Trace) TraceClass::Method tracEmethoD(Name, Trace)
-#endif
 
 namespace wasm {
 
@@ -69,10 +89,96 @@ class TraceClass : std::enable_shared_from_this<TraceClass> {
   virtual void traceContext() const;
   // Prints trace prefix only.
   FILE* indent();
-  void traceMessage(const char* Message) {
-    if (getTraceProgress())
-      traceMessageInternal(Message);
+  void trace_message(const char* Message) {
+    traceMessageInternal(Message);
   }
+  void trace_message(std::string Message) {
+    traceMessageInternal(Message);
+  }
+  void trace_bool(const char* Name, bool Value) {
+    traceBoolInternal(Name, Value);
+  }
+  void trace_char(const char* Name, char Ch) {
+    traceCharInternal(Name, Ch);
+  }
+  void trace_signed_char(const char* Name, signed char Ch) {
+    traceCharInternal(Name, char(Ch));
+  }
+  void trace_unsigned_char(const char* Name, unsigned char Ch) {
+    traceCharInternal(Name, char(Ch));
+  }
+  void trace_string(const char* Name, std::string& Value) {
+    traceStringInternal(Name, Value);
+  }
+  void trace_short(const char* Name, short Value) {
+    traceIntInternal(Name, Value);
+  }
+  void trace_unsigned_short(const char* Name, unsigned short Value) {
+    traceUintInternal(Name, Value);
+  }
+  void trace_int(const char* Name, int Value) {
+    traceIntInternal(Name, Value);
+  }
+  void trace_unsigned_int(const char* Name, unsigned int Value) {
+    traceUintInternal(Name, Value);
+  }
+  void trace_long(const char* Name, long Value) {
+    traceIntInternal(Name, Value);
+  }
+  void trace_unsigned_long(const char* Name, unsigned long Value) {
+    traceUintInternal(Name, Value);
+  }
+  void trace_int8_t(const char* Name, int8_t Value) {
+    traceIntInternal(Name, Value);
+  }
+  void trace_uint8_t(const char* Name, uint8_t Value) {
+    traceUintInternal(Name, Value);
+  }
+  void trace_hex_uint8_t(const char* Name, uint8_t Value) {
+    traceHexInternal(Name, Value);
+  }
+  void trace_int16_t(const char* Name, int16_t Value) {
+    traceIntInternal(Name, Value);
+  }
+  void trace_uint16_t(const char* Name, uint16_t Value) {
+    traceUintInternal(Name, Value);
+  }
+  void trace_int32_t(const char* Name, int32_t Value) {
+    traceIntInternal(Name, Value);
+  }
+  void trace_uint32_t(const char* Name, uint32_t Value) {
+    traceUintInternal(Name, Value);
+  }
+  void trace_hex_uint32_t(const char* Name, uint32_t Value) {
+    traceHexInternal(Name, Value);
+  }
+  void trace_int64_t(const char* Name, int64_t Value) {
+    traceIntInternal(Name, Value);
+  }
+  void trace_intmax_t(const char* Name, intmax_t Value) {
+    traceIntInternal(Name, Value);
+  }
+  void trace_uint64_t(const char* Name, uint64_t Value) {
+    traceUintInternal(Name, Value);
+  }
+  void trace_uintmax_t(const char* Name, uintmax_t Value) {
+    traceUintInternal(Name, Value);
+  }
+  void trace_IntType(const char* Name, decode::IntType Value) {
+    traceUintInternal(Name, Value);
+  }
+  void trace_size_t(const char* Name, size_t Value) {
+    traceUintInternal(Name, Value);
+  }
+  void trace_hex_Size_t(const char* Name, size_t Value) {
+      traceHexInternal(Name, Value);
+  }
+  template <typename T>
+  void trace_void_ptr(const char* Name, T* Ptr) {
+    tracePointerInternal(Name, (void*)Ptr);
+  }
+
+  // TODO(karlschimpf): The following are being deprecated.
   void traceMessage(const std::string& Message) {
     if (getTraceProgress())
       traceMessageInternal(Message);

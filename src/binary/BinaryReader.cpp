@@ -57,7 +57,7 @@ BinaryReader::BinaryReader(std::shared_ptr<decode::Queue> Input,
 template <class T>
 void BinaryReader::readNullary() {
   auto* Node = Symtab->create<T>();
-  Trace.traceSexp(Node);
+  TRACE_SEXP(nullptr, Node);
   NodeStack.push_back(Node);
 }
 
@@ -68,42 +68,42 @@ void BinaryReader::readUnary() {
   Node* Arg = NodeStack.back();
   NodeStack.pop_back();
   auto* Node = Symtab->create<T>(Arg);
-  Trace.traceSexp(Node);
+  TRACE_SEXP(nullptr, Node);
   NodeStack.push_back(Node);
 }
 
 template <class T>
 void BinaryReader::readUint8() {
   auto* Node = Symtab->create<T>(Reader->readUint8(ReadPos));
-  Trace.traceSexp(Node);
+  TRACE_SEXP(nullptr, Node);
   NodeStack.push_back(Node);
 }
 
 template <class T>
 void BinaryReader::readVarint32() {
   auto* Node = Symtab->create<T>(Reader->readVarint32(ReadPos));
-  Trace.traceSexp(Node);
+  TRACE_SEXP(nullptr, Node);
   NodeStack.push_back(Node);
 }
 
 template <class T>
 void BinaryReader::readVarint64() {
   auto* Node = Symtab->create<T>(Reader->readVarint64(ReadPos));
-  Trace.traceSexp(Node);
+  TRACE_SEXP(nullptr, Node);
   NodeStack.push_back(Node);
 }
 
 template <class T>
 void BinaryReader::readVaruint32() {
   auto* Node = Symtab->create<T>(Reader->readVaruint32(ReadPos));
-  Trace.traceSexp(Node);
+  TRACE_SEXP(nullptr, Node);
   NodeStack.push_back(Node);
 }
 
 template <class T>
 void BinaryReader::readVaruint64() {
   auto* Node = Symtab->create<T>(Reader->readVarint64(ReadPos));
-  Trace.traceSexp(Node);
+  TRACE_SEXP(nullptr, Node);
   NodeStack.push_back(Node);
 }
 
@@ -116,7 +116,7 @@ void BinaryReader::readBinary() {
   Node* Arg1 = NodeStack.back();
   NodeStack.pop_back();
   auto* Node = Symtab->create<T>(Arg1, Arg2);
-  Trace.traceSexp(Node);
+  TRACE_SEXP(nullptr, Node);
   NodeStack.push_back(Node);
 }
 
@@ -126,7 +126,7 @@ void BinaryReader::readBinarySymbol() {
   auto* Body = NodeStack.back();
   NodeStack.pop_back();
   auto* Node = Symtab->create<T>(Symbol, Body);
-  Trace.traceSexp(Node);
+  TRACE_SEXP(nullptr, Node);
   NodeStack.push_back(Node);
 }
 
@@ -141,7 +141,7 @@ void BinaryReader::readTernary() {
   Node* Arg1 = NodeStack.back();
   NodeStack.pop_back();
   auto* Node = Symtab->create<T>(Arg1, Arg2, Arg3);
-  Trace.traceSexp(Node);
+  TRACE_SEXP(nullptr, Node);
   NodeStack.push_back(Node);
 }
 
@@ -156,7 +156,7 @@ void BinaryReader::readNary() {
     Node->append(NodeStack[i]);
   for (uint32_t i = 0; i < NumKids; ++i)
     NodeStack.pop_back();
-  Trace.traceSexp(Node);
+  TRACE_SEXP(nullptr, Node);
   NodeStack.push_back(Node);
 }
 
@@ -165,15 +165,15 @@ FileNode* BinaryReader::readFile() {
   MagicNumber = Reader->readUint32(ReadPos);
   // TODO(kschimpf): Fix reading of uintX. Current implementation not same as
   // WASM binary reader.
-  Trace.traceUint32_t("MagicNumber", MagicNumber);
+  TRACE(uint32_t, "MagicNumber", MagicNumber);
   if (MagicNumber != WasmBinaryMagic)
     fatal("Unable to read, did not find WASM binary magic number");
   Version = Reader->readUint32(ReadPos);
-  Trace.traceHexUint32_t("Version", Version);
+  TRACE(uint32_t, "Version", Version);
   auto* File = Symtab->create<FileNode>();
   while (!ReadPos.atByteEob())
     File->append(readSection());
-  Trace.traceSexp(File);
+  TRACE_SEXP(nullptr, File);
   SectionSymtab.install(File);
   return File;
 }
@@ -184,7 +184,7 @@ SectionNode* BinaryReader::readSection() {
   auto* SectionName = Symtab->create<SymbolNode>(Name);
   auto* Section = Symtab->create<SectionNode>();
   Section->append(SectionName);
-  Trace.traceString("Name", Name);
+  TRACE(string, "Name", Name);
   size_t StartStackSize = NodeStack.size();
   readBlock([&]() {
     if (Name == "filter") {
@@ -193,7 +193,7 @@ SectionNode* BinaryReader::readSection() {
         readNode();
     } else {
       // TODO(karlschimpf) Fix to actually read!
-      Trace.traceMessage("Skipping unknown Section" + Name);
+      TRACE_MESSAGE("Skipping unknown Section" + Name);
       fatal("Handling non-filter sections not implemented yet!");
     }
   });
@@ -204,7 +204,7 @@ SectionNode* BinaryReader::readSection() {
     Section->append(NodeStack[i]);
   for (size_t i = StartStackSize; i < StackSize; ++i)
     NodeStack.pop_back();
-  Trace.traceSexp(Section);
+  TRACE_SEXP(nullptr, Section);
   return Section;
 }
 
@@ -214,8 +214,8 @@ void BinaryReader::readSymbolTable() {
   uint32_t NumSymbols = Reader->readVaruint32(ReadPos);
   for (uint32_t i = 0; i < NumSymbols; ++i) {
     ExternalName& Name = readExternalName();
-    Trace.traceUint32_t("Index", i);
-    Trace.traceString("Symbol", Name);
+    TRACE(uint32_t, "Index", i);
+    TRACE(string, "Symbol", Name);
     SectionSymtab.addSymbol(Name);
   }
 }
@@ -244,9 +244,8 @@ InternalName& BinaryReader::readInternalName() {
 
 void BinaryReader::readBlock(std::function<void()> ApplyFn) {
   TRACE_METHOD("readBlock", Trace);
-
   const size_t BlockSize = Reader->readBlockSize(ReadPos);
-  Trace.traceSize_t("Block size", BlockSize);
+  TRACE(size_t, "Block size", BlockSize);
   Reader->pushEobAddress(ReadPos, BlockSize);
   ApplyFn();
   ReadPos.popEobAddress();
@@ -278,7 +277,7 @@ void BinaryReader::readNode() {
       auto* Params = NodeStack.back();
       NodeStack.pop_back();
       auto* Node = Symtab->create<DefineNode>(Symbol, Params, Body);
-      Trace.traceSexp(Node);
+      TRACE_SEXP(nullptr, Node);
       NodeStack.push_back(Node);
       break;
     }
@@ -360,7 +359,7 @@ void BinaryReader::readNode() {
       StreamType StrmType;
       StreamNode::decode(Encoding, StrmKind, StrmType);
       auto* Node = Symtab->create<StreamNode>(StrmKind, StrmType);
-      Trace.traceSexp(Node);
+      TRACE_SEXP(nullptr, Node);
       NodeStack.push_back(Node);
       break;
     }
@@ -432,7 +431,9 @@ void BinaryReader::readNode() {
     case OpSection:
     case OpSymbol:
     case OpUnknownSection:
-      Trace.traceHexUint32_t("Opcode: ", Opcode);
+      // Make sure Opcode is referenced in a release build.
+      (void)Opcode;
+      TRACE(hex_uint32_t, "Opcode: ", Opcode);
       fatal("Uses construct not implemented yet!");
       break;
   }

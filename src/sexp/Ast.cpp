@@ -94,7 +94,7 @@ bool Node::validateSubtree(NodeVectorType& Parents) {
     return false;
   if (hasKids()) {
     Parents.push_back(this);
-    getTrace().traceInt("NumKids", getNumKids());
+    TRACE(int, "NumKids", getNumKids());
     for (auto* Kid : *this)
       if (!Kid->validateSubtree(Parents))
         return false;
@@ -130,7 +130,8 @@ std::string SymbolNode::getStringName() const {
 }
 
 SymbolTable::SymbolTable()
-    :  // TODO(karlschimpf) Switch Alloc to an ArenaAllocator once working.
+    // TODO(karlschimpf) Switch Alloc to an ArenaAllocator once working.
+    : Trace("sexp st"),
       Alloc(std::make_shared<Malloc>()),
       NextCreationIndex(0) {
   Error = Alloc->create<ErrorNode>(*this);
@@ -185,7 +186,7 @@ void SymbolTable::clearSubtreeCaches(Node* Nd,
   if (VisitedNodes.count(Nd))
     return;
   TRACE_METHOD("clearSubtreeCaches", Trace);
-  Trace.traceSexp(Nd);
+  TRACE_SEXP(nullptr, Nd);
   VisitedNodes.insert(Nd);
   Nd->clearCaches(AdditionalNodes);
   for (auto* Kid : *Nd)
@@ -198,7 +199,7 @@ void SymbolTable::installSubtreeCaches(Node* Nd,
   if (VisitedNodes.count(Nd))
     return;
   TRACE_METHOD("installSubtreeCaches", Trace);
-  Trace.traceSexp(Nd);
+  TRACE_SEXP(nullptr, Nd);
   VisitedNodes.insert(Nd);
   Nd->installCaches(AdditionalNodes);
   for (auto* Kid : *Nd)
@@ -207,7 +208,7 @@ void SymbolTable::installSubtreeCaches(Node* Nd,
 
 void SymbolTable::installDefinitions(Node* Root) {
   TRACE_METHOD("installDefinitions", Trace);
-  Trace.traceSexp(Root);
+  TRACE_SEXP(nullptr, Root);
   if (Root == nullptr)
     return;
   switch (Root->getType()) {
@@ -223,7 +224,7 @@ void SymbolTable::installDefinitions(Node* Root) {
         DefineSymbol->setDefineDefinition(Root);
         return;
       }
-      Trace.errorSexp("Malformed: ", Root);
+      Trace.printSexp("Malformed", Root);
       fatal("Malformed define s-expression found!");
       return;
     }
@@ -235,7 +236,7 @@ void SymbolTable::installDefinitions(Node* Root) {
           return;
         }
       }
-      Trace.errorSexp("Malformed: ", Root);
+      Trace.printSexp("Malformed", Root);
       fatal("Malformed rename s-expression found!");
       return;
     }
@@ -244,7 +245,7 @@ void SymbolTable::installDefinitions(Node* Root) {
         UndefineSymbol->setDefineDefinition(nullptr);
         return;
       }
-      Trace.errorSexp("Can't undefine: ", Root);
+      Trace.printSexp("Can't undefine", Root);
       fatal("Malformed undefine s-expression found!");
     }
   }
@@ -322,13 +323,13 @@ AST_INTEGERNODE_TABLE
 
 bool ParamNode::validateNode(NodeVectorType& Parents) {
   TRACE_METHOD("validateNode", getTrace());
-  getTrace().traceSexp("this", this);
+  TRACE_SEXP(nullptr, this);
   for (size_t i = Parents.size(); i > 0; --i) {
     auto* Nd = Parents[i - 1];
     auto* Define = cast<DefineNode>(Nd);
     if (Define == nullptr)
       continue;
-    getTrace().traceSexp("Enclosing define", Nd);
+    TRACE_SEXP("Enclosing define", Nd);
     // Don't complain about this if specifying number of parameters for define.
     if (i == Parents.size() && this == Define->getKid(1))
       return true;
@@ -343,7 +344,7 @@ bool ParamNode::validateNode(NodeVectorType& Parents) {
     if (Sym == nullptr)
       return false;
     DefiningSymbol = Sym;
-    getTrace().traceSexp("DefiningSymbol", DefiningSymbol.get());
+    TRACE_SEXP("DefiningSymbol", DefiningSymbol.get());
     return true;
   }
   return false;
@@ -475,7 +476,7 @@ void OpcodeNode::WriteRange::traceInternal(const char* Prefix,
   Trace.indent();
   fprintf(Out, "[%" PRIxMAX "..%" PRIxMAX "](%" PRIuMAX "):\n", uintmax_t(Min),
           uintmax_t(Max), uintmax_t(ShiftValue));
-  Trace.traceSexp(Case);
+  TRACE_SEXP_USING(Trace, nullptr, Case);
 }
 
 namespace {
@@ -497,7 +498,7 @@ bool getCaseSelectorWidth(const Node* Nd, uint32_t& Width) {
   switch (Nd->getType()) {
     default:
       // Not allowed in opcode cases.
-      Nd->getTrace().errorSexp("Non-fixed width opcode format: ", Nd);
+      Nd->getTrace().printSexp("Non-fixed width opcode format", Nd);
       return false;
     case OpUint8NoArgs:
       Width = 8;
@@ -517,7 +518,7 @@ bool getCaseSelectorWidth(const Node* Nd, uint32_t& Width) {
   }
   Width = getIntegerValue(Nd->getKid(0));
   if (Width == 0 || Width >= MaxOpcodeWidth) {
-    Nd->getTrace().errorSexp("Bit size not valid: ", Nd);
+    Nd->getTrace().printSexp("Bit size not valid", Nd);
     return false;
   }
   return true;
@@ -537,7 +538,7 @@ bool collectCaseWidths(IntType Key,
   switch (Nd->getType()) {
     default:
       // Not allowed in opcode cases.
-      Nd->getTrace().errorSexp("Non-fixed width opcode format: ", Nd);
+      Nd->getTrace().printSexp("Non-fixed width opcode format", Nd);
       return false;
     case OpOpcode:
       if (isa<LastReadNode>(Nd->getKid(0))) {
@@ -551,18 +552,18 @@ bool collectCaseWidths(IntType Key,
             // Already handled by outer case.
             continue;
           if (!collectCaseWidths(CaseKey, CaseBody, CaseWidths)) {
-            Nd->getTrace().errorSexp("Inside: ", Nd);
+            Nd->getTrace().printSexp("Inside", Nd);
             return false;
           }
         }
       } else {
         uint32_t Width;
         if (!getCaseSelectorWidth(Nd->getKid(0), Width)) {
-          Nd->getTrace().errorSexp("Inside: ", Nd);
+          Nd->getTrace().printSexp("Inside", Nd);
           return false;
         }
         if (Width >= MaxOpcodeWidth) {
-          Nd->getTrace().errorSexp("Bit width(s) too big: ", Nd);
+          Nd->getTrace().printSexp("Bit width(s) too big", Nd);
           return false;
         }
         CaseWidths.insert(Width);
@@ -574,13 +575,13 @@ bool collectCaseWidths(IntType Key,
           const Node* CaseBody = Case->getKid(1);
           std::unordered_set<uint32_t> LocalCaseWidths;
           if (!collectCaseWidths(CaseKey, CaseBody, LocalCaseWidths)) {
-            Nd->getTrace().errorSexp("Inside: ", Nd);
+            Nd->getTrace().printSexp("Inside", Nd);
             return false;
           }
           for (uint32_t CaseWidth : LocalCaseWidths) {
             uint32_t CombinedWidth = Width + CaseWidth;
             if (CombinedWidth >= MaxOpcodeWidth) {
-              Nd->getTrace().errorSexp("Bit width(s) too big: ", Nd);
+              Nd->getTrace().printSexp("Bit width(s) too big", Nd);
               return false;
             }
             CaseWidths.insert(CombinedWidth);
@@ -613,7 +614,7 @@ void OpcodeNode::clearCaches(NodeVectorType& AdditionalNodes) {
 void OpcodeNode::installCaseRanges() {
   uint32_t InitialWidth;
   if (!getCaseSelectorWidth(getKid(0), InitialWidth)) {
-    getTrace().errorSexp("Inside: ", this);
+    getTrace().printSexp("Inside", this);
     fatal("Unable to install caches for opcode s-expression");
   }
   for (int i = 1, NumKids = getNumKids(); i < NumKids; ++i) {
@@ -622,14 +623,14 @@ void OpcodeNode::installCaseRanges() {
     std::unordered_set<uint32_t> CaseWidths;
     IntType Key = getIntegerValue(Case->getKid(0));
     if (!collectCaseWidths(Key, Case->getKid(1), CaseWidths)) {
-      getTrace().errorSexp("Inside: ", Case);
-      getTrace().errorSexp("Inside: ", this);
+      getTrace().printSexp("Inside", Case);
+      getTrace().printSexp("Inside ", this);
       fatal("Unable to install caches for opcode s-expression");
     }
     for (uint32_t NestedWidth : CaseWidths) {
       uint32_t Width = InitialWidth + NestedWidth;
       if (Width > MaxOpcodeWidth) {
-        getTrace().errorSexp("Bit width(s) too big: ", this);
+        getTrace().printSexp("Bit width(s) too big", this);
         fatal("Unable to install caches for opcode s-expression");
       }
       IntType Min = Key << NestedWidth;
@@ -644,9 +645,9 @@ void OpcodeNode::installCaseRanges() {
     const WriteRange& R1 = CaseRangeVector[i];
     const WriteRange& R2 = CaseRangeVector[i + 1];
     if (R1.getMax() >= R2.getMin()) {
-      getTrace().errorSexp("Range 1: ", R1.getCase());
-      getTrace().errorSexp("Range 2: ", R2.getCase());
-      getTrace().errorSexp("Inside: ", this);
+      getTrace().printSexp("Range 1", R1.getCase());
+      getTrace().printSexp("Range 2", R2.getCase());
+      getTrace().printSexp("Inside", this);
       fatal("Opcode case ranges not unique");
     }
   }
@@ -654,7 +655,7 @@ void OpcodeNode::installCaseRanges() {
 
 void OpcodeNode::installCaches(NodeVectorType& AdditionalNodes) {
   TRACE_METHOD("OpcodeNode::installCaches", getTrace());
-  getTrace().traceSexp(this);
+  TRACE_SEXP(nullptr, this);
   SelectBaseNode::installCaches(AdditionalNodes);
   installCaseRanges();
 }
