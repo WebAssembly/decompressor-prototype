@@ -431,6 +431,8 @@ void BinaryReader::readNode() {
     case OpSection:
     case OpSymbol:
     case OpUnknownSection:
+      // Make sure Opcode is referenced in a release build.
+      (void)Opcode;
       TRACE(hex_uint32_t, "Opcode: ", Opcode);
       fatal("Uses construct not implemented yet!");
       break;
