@@ -102,6 +102,10 @@ class Cursor : public PageCursor {
 
   std::shared_ptr<Queue> getQueue() { return Que; }
 
+  bool atEof() const {
+    return CurAddress >= Que->getEofAddress();
+  }
+
   BitAddress& getEobAddress() const { return EobPtr->getEobAddress(); }
 
   void freezeEof() { Que->freezeEof(getCurAddress()); }

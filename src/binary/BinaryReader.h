@@ -52,9 +52,17 @@ class BinaryReader {
 
   ~BinaryReader() {}
 
+  // Returns the input buffer to the caller, so that they can
+  // access it.
+  const std::shared_ptr<decode::Queue> &getInput() const { return Input; }
+
   FileNode* readFile();
 
+  FileNode* readFile(decode::ReadCursor &ReadPos);
+
   SectionNode* readSection();
+
+  SectionNode* readSection(decode::ReadCursor &ReadPos);
 
   void setTraceProgress(bool NewValue) { Trace.setTraceProgress(NewValue); }
 
@@ -62,7 +70,8 @@ class BinaryReader {
 
  private:
   std::shared_ptr<interp::ReadStream> Reader;
-  decode::ReadCursor ReadPos;
+  std::shared_ptr<decode::Queue> Input;
+  decode::ReadCursor *ReadPos;
   std::shared_ptr<SymbolTable> Symtab;
   SectionSymbolTable SectionSymtab;
   // The magic number of the input.

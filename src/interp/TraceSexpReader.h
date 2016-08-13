@@ -31,16 +31,21 @@ class TraceClassSexpReader : public filt::TraceClassSexp {
   TraceClassSexpReader& operator=(const TraceClassSexpReader&) = delete;
 
  public:
-  explicit TraceClassSexpReader(decode::Cursor& ReadPos);
-  TraceClassSexpReader(decode::Cursor& ReadPos, const char* Label);
-  TraceClassSexpReader(decode::Cursor& ReadPos, FILE* File);
-  TraceClassSexpReader(decode::Cursor& ReadPos, const char* Label, FILE* File);
+  explicit TraceClassSexpReader(decode::Cursor* ReadPos);
+  TraceClassSexpReader(decode::Cursor* ReadPos, const char* Label);
+  TraceClassSexpReader(decode::Cursor* ReadPos, FILE* File);
+  TraceClassSexpReader(decode::Cursor* ReadPos, const char* Label, FILE* File);
   ~TraceClassSexpReader();
 
   void traceContext() const OVERRIDE;
 
+  decode::Cursor* getReadPos() const { return ReadPos; }
+  void setReadPos(decode::Cursor* NewPos) {
+    ReadPos = NewPos;
+  }
+
  protected:
-  decode::Cursor& ReadPos;
+  decode::Cursor* ReadPos;
 };
 
 }  // end of namespace interp
