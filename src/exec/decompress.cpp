@@ -140,7 +140,7 @@ int main(int Argc, char* Argv[]) {
       return exit_status(EXIT_FAILURE);
     }
   }
-  Symtab->Trace.setTraceProgress(Verbose >= 4);
+  Symtab->getTrace().setTraceProgress(Verbose >= 4);
   for (int i : DefaultIndices) {
     if (Verbose)
       fprintf(stderr, "Loading default: %s\n", Argv[i]);

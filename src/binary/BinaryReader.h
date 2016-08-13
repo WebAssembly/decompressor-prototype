@@ -58,6 +58,8 @@ class BinaryReader {
 
   void setTraceProgress(bool NewValue) { Trace.setTraceProgress(NewValue); }
 
+  TraceClassSexpReader& getTrace() { return Trace; }
+
  private:
   std::shared_ptr<interp::ReadStream> Reader;
   decode::ReadCursor ReadPos;
