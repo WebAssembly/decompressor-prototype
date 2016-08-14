@@ -16,12 +16,15 @@
  */
 
 #include "binary/BinaryReader.h"
+#include "sexp/TextWriter.h"
 #include "sexp-parser/Driver.h"
 #include "stream/FileReader.h"
 #include "stream/FileWriter.h"
 #include "stream/ReadBackedQueue.h"
+#include "stream/ReadCursor.h"
 #include "stream/StreamReader.h"
 #include "stream/StreamWriter.h"
+#include "stream/WriteCursor.h"
 #include "utils/Defs.h"
 
 #include <cstring>
@@ -57,6 +60,8 @@ void usage(const char* AppName) {
   fprintf(stderr, "  -h\t\t\tPrint this usage message.\n");
   fprintf(stderr, "  -i File\t\tWasm file to read ('-' implies stdin).\n");
   fprintf(stderr,
+          "  -r N\t\t\tUse a stream runner to read input N chars at a time.\n");
+  fprintf(stderr,
           "  -o File\t\tFile with found s-expressions ('-' implies stdout).\n");
   fprintf(stderr, "  -s\t\t\tUse C++ streams instead of C file descriptors.\n");
   if (isDebug()) {
@@ -66,6 +71,7 @@ void usage(const char* AppName) {
 
 int main(int Argc, char* Argv[]) {
   int Verbose = 0;
+  int RunnerCount = 0;
   for (int i = 1; i < Argc; ++i) {
     if (Argv[i] == std::string("--expect-fail")) {
       ExpectExitFail = true;
@@ -87,6 +93,18 @@ int main(int Argc, char* Argv[]) {
         return exit_status(EXIT_FAILURE);
       }
       OutputFilename = Argv[i];
+    } else if (Argv[i] == std::string("-r")) {
+      if (++i >= Argc) {
+        fprintf(stderr, "No N specified after -r option\n");
+        usage(Argv[0]);
+        return exit_status(EXIT_FAILURE);
+      }
+      RunnerCount = atoi(Argv[i]);
+      if (RunnerCount == 0) {
+        fprintf(stderr, "-r N must be greater than zero\n");
+        usage(Argv[0]);
+        return exit_status(EXIT_FAILURE);
+      }
     } else if (Argv[i] == std::string("-s")) {
       UseFileStreams = true;
     } else if (isDebug() && (Argv[i] == std::string("-v") ||
@@ -98,15 +116,45 @@ int main(int Argc, char* Argv[]) {
       return exit_status(EXIT_FAILURE);
     }
   }
-  BinaryReader Reader(std::make_shared<ReadBackedQueue>(getInput()),
-                      std::make_shared<SymbolTable>());
-  Reader.setTraceProgress(Verbose >= 1);
-  FileNode* File = Reader.readFile();
+  FileNode* File = nullptr;
+  auto Input = std::make_shared<ReadBackedQueue>(getInput());
+  auto Symtab = std::make_shared<SymbolTable>();
+  if (RunnerCount) {
+    ReadCursor RawReadPos(StreamType::Byte, Input);
+    auto FillQueue = std::make_shared<Queue>();
+    auto FillReadPos = std::make_shared<ReadCursor>(StreamType::Byte,
+                                                    FillQueue);
+    std::shared_ptr<BinaryReader::Runner> Runner
+        = BinaryReader::startReadingFile(FillReadPos, Symtab);
+    Runner->setTraceProgress(Verbose >= 1);
+    WriteCursor *FillPos = Runner->getFillPos().get();
+    while (Runner->needsMoreInput()) {
+      // TODO(karlschimpf) Get a cleaner API for this!
+      // Fill queue with more input and resume.
+      size_t BytesRemaining = RunnerCount;
+      while (BytesRemaining) {
+        if (RawReadPos.atEof()) {
+          FillPos->freezeEof();
+          break;
+        }
+        FillPos->writeByte(RawReadPos.readByte());
+        --BytesRemaining;
+      }
+      Runner->resumeReading();
+    }
+    if (Runner->errorsFound())
+      fatal("Errors found while reading filter section!");
+    File = Runner->getFile();
+  } else {
+    BinaryReader Reader(Input, Symtab);
+    Reader.setTraceProgress(Verbose >= 1);
+    File = Reader.readFile();
+  }
   if (File == nullptr) {
     fprintf(stderr, "Unable to parse WASM module!\n");
     return exit_status(EXIT_FAILURE);
   }
   TextWriter Writer;
   Writer.write(stdout, File);
-  return exit_status(EXIT_FAILURE);
+  return exit_status(EXIT_SUCCESS);
 }

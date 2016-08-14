@@ -63,9 +63,10 @@ void TraceClass::enter(const char* Name) {
   fprintf(File, "enter %s\n", Name);
 }
 
-void TraceClass::exit() {
+void TraceClass::exit(const char *Name) {
   assert(~CallStack.empty());
-  const char* Name = CallStack.back();
+  if (Name == nullptr)
+    Name = CallStack.back();
   CallStack.pop_back();
   --IndentLevel;
   indent();
@@ -106,9 +107,9 @@ void TraceClass::traceCharInternal(const char* Name, char Ch) {
   fprintf(File, "%s = '%c'\n", Name, Ch);
 }
 
-void TraceClass::traceStringInternal(const char* Name, std::string& Value) {
+void TraceClass::traceStringInternal(const char* Name, const char* Value) {
   indent();
-  fprintf(File, "%s = '%s'\n", Name, Value.c_str());
+  fprintf(File, "%s = '%s'\n", Name, Value);
 }
 
 void TraceClass::traceIntInternal(const char* Name, intmax_t Value) {
