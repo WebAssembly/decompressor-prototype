@@ -73,10 +73,16 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
 #define X(tag, name) tag,
     BINARY_READER_METHODS_TABLE
 #undef X
+    // The following is necessary for some compilers, because otherwise a comma
+    // warning may occur.
+    RunMethod_NO_SUCH_METHOD
   };
   enum class RunState {
 #define X(tag, name) tag,
     BINARY_READER_STATES_TABLE
+    // The following is necessary for some compilers, because otherwise a comma
+    // warning may occur.
+    RunState_NO_SUCH_STATE
 #undef X
   };
   class Runner {
@@ -85,7 +91,7 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
     Runner(std::shared_ptr<BinaryReader> Reader,
            std::shared_ptr<decode::ReadCursor> ReadPos)
         : Reader(Reader), ReadPos(ReadPos),
-          CurMethod(RunMethod::Unknown),
+          CurMethod(RunMethod::RunMethod_NO_SUCH_METHOD),
           CurState(RunState::Failed),
           CurFile(nullptr),
           CurSection(nullptr) {

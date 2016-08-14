@@ -37,12 +37,14 @@ const char* RunMethodName[] = {
 #define X(tag, name) name,
     BINARY_READER_METHODS_TABLE
 #undef X
+    "RunMethod_NO_SUCH_METHOD"
 };
 
 const char* RunStateName[] = {
 #define X(tag, name) name,
     BINARY_READER_STATES_TABLE
 #undef X
+    "RunState_NO_SUCH_STATE"
 };
 
 } // end of anonymous namespace
@@ -241,7 +243,7 @@ void BinaryReader::Runner::resumeReading() {
             break;
         }
         break;
-      case RunMethod::Unknown:
+      case RunMethod::RunMethod_NO_SUCH_METHOD:
         fatal("resume on unknown method!");
         break;
     }

@@ -27,7 +27,6 @@
   X(Section,     "readSection")                                                \
   X(SectionBody, "readSectionBody")                                            \
   X(SymbolTable, "readSymbolTable")                                            \
-  X(Unknown,     "readUnknown")                                                \
 
 //#define(tag, name)
 #define BINARY_READER_STATES_TABLE                                             \
