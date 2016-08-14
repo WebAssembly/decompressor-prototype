@@ -30,11 +30,7 @@ bool Cursor::readFillBuffer() {
   if (CurAddress >= Que->getEofAddress())
     return false;
   size_t BufferSize = Que->readFromPage(CurAddress, Page::Size, *this);
-  if (BufferSize == 0) {
-    Que->freezeEof(CurAddress);
-    return false;
-  }
-  return true;
+  return BufferSize > 0;
 }
 
 void Cursor::writeFillBuffer() {

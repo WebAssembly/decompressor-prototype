@@ -1,19 +1,18 @@
-/* -*- C++ -*- */
-/*
- * Copyright 2016 WebAssembly Community Group participants
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+// -*- C++ -*- */
+//
+// Copyright 2016 WebAssembly Community Group participants
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 // implements a reader to extract filter sections.
 
@@ -28,6 +27,230 @@ using namespace wasm::utils;
 namespace wasm {
 
 namespace filt {
+
+namespace {
+// Note: Headroom is used to guarantee that we have enough space to
+// read any sexpression node.
+static constexpr size_t kResumeHeadroom = 100;
+
+const char* RunMethodName[] = {
+#define X(tag, name) name,
+    BINARY_READER_METHODS_TABLE
+#undef X
+    "RunMethod_NO_SUCH_METHOD"
+};
+
+const char* RunStateName[] = {
+#define X(tag, name) name,
+    BINARY_READER_STATES_TABLE
+#undef X
+    "RunState_NO_SUCH_STATE"
+};
+
+} // end of anonymous namespace
+
+bool BinaryReader::Runner::hasEnoughHeadroom() const {
+  return isEofFrozen() ||
+      (ReadPos->getCurByteAddress() + kResumeHeadroom
+       <= FillPos->getCurByteAddress());
+}
+
+void BinaryReader::Runner::resumeReading() {
+  TRACE_METHOD("resumeReading", getTrace());
+  // TODO(karlschimpf) Why is this lock necessary (stops core dump).
+  UsingReadPos Lock(*Reader, *ReadPos);
+  while (hasEnoughHeadroom()) {
+    TRACE(string, "method",
+          std::string(RunMethodName[int(CurMethod)])
+          + "." + RunStateName[int(CurState)]);
+    switch (CurMethod) {
+      case RunMethod::Block: {
+        switch (CurState) {
+          case RunState::Enter:
+            TRACE_ENTER(RunMethodName[int(CurMethod)]);
+            BlockStack.back().Size =
+                Reader->Reader->readBlockSize(*ReadPos.get());
+            TRACE(size_t, "Block size", BlockStack.back().Size);
+            Reader->Reader->pushEobAddress(*ReadPos,
+                                           BlockStack.back().Size);
+            pushFrame(BlockStack.back().Method, RunState::Exit);
+            break;
+          case RunState::Exit:
+            popFrame();
+            ReadPos->popEobAddress();
+            TRACE_EXIT_OVERRIDE(RunMethodName[int(RunMethod::Block)]);
+            break;
+          default:
+            fatal("resume reading block not implemented");
+            break;
+        }
+        break;
+      }
+      case RunMethod::File:
+        switch (CurState) {
+          case RunState::Enter: {
+            TRACE_ENTER(RunMethodName[int(CurMethod)]);
+            CurFile = Reader->readHeader();
+            pushFrame(RunMethod::Section, RunState::Loop);
+            break;
+          }
+          case RunState::Loop: {
+            CurFile->append(CurSection);
+            CurSection = nullptr;
+            if (ReadPos->atEof()) {
+              CurState = RunState::Exit;
+              break;
+            }
+            pushFrame(RunMethod::Section);
+            break;
+          }
+          case RunState::Exit: {
+            Reader->SectionSymtab.install(CurFile);
+            TRACE_EXIT_OVERRIDE(RunMethodName[int(RunMethod::File)]);
+            if (CallStack.empty()) {
+              CurState = RunState::Succeeded;
+              return;
+            }
+            popFrame();
+            break;
+          }
+          default:
+            fatal("resume reading file not implemented");
+            break;
+        }
+        break;
+      case RunMethod::Name: {
+        switch (CurState) {
+          case RunState::Enter: {
+            TRACE_ENTER(RunMethodName[int(CurMethod)]);
+            CurState = RunState::Loop;
+            Name.clear();
+            uint32_t Size = Reader->Reader->readVaruint32(*ReadPos.get());
+            enterCountedLoop(Size);
+            break;
+          }
+          case RunState::Loop: {
+            if (getThenDecIterCount() == 0) {
+              CurState = RunState::Exit;
+              break;
+            }
+            Name.push_back(char(Reader->Reader->readUint8(*ReadPos.get())));
+            break;
+          }
+          case RunState::Exit:
+            popFrame();
+            TRACE_EXIT_OVERRIDE(RunMethodName[int(RunMethod::Name)]);
+            break;
+          default:
+            fatal("resume reading name not implemented");
+            break;
+        }
+        break;
+      }
+      case RunMethod::Section:
+        switch (CurState) {
+          case RunState::Enter: {
+            TRACE_ENTER(RunMethodName[int(CurMethod)]);
+            pushFrame(RunMethod::Name, RunState::Setup);
+            break;
+          }
+          case RunState::Setup: {
+            CurSection = create<SectionNode>();
+            CurSection->append(create<SymbolNode>(Name));
+            // Save StartStackSize for exit.
+            pushLoopCount(Reader->NodeStack.size());
+            CurState = RunState::Exit;
+            pushBlock(RunMethod::SectionBody);
+            break;
+          }
+          case RunState::Exit: {
+            size_t StartStackSize = popLoopCount();
+            size_t StackSize = Reader->NodeStack.size();
+            if (StackSize < StartStackSize)
+              fatal("Malformed section: " + Name);
+            for (size_t i = StartStackSize; i < StackSize; ++i)
+              CurSection->append(Reader->NodeStack[i]);
+            for (size_t i = StartStackSize; i < StackSize; ++i)
+              Reader->NodeStack.pop_back();
+            TRACE_EXIT_OVERRIDE(RunMethodName[int(RunMethod::Section)]);
+            if (CallStack.empty()) {
+              CurState = RunState::Succeeded;
+              return;
+            }
+            popFrame();
+            break;
+          }
+          default:
+            fatal("resume reading section not implemented");
+            break;
+        }
+        break;
+      case RunMethod::SectionBody:
+        switch (CurState) {
+          case RunState::Enter: {
+            TRACE_ENTER(RunMethodName[int(CurMethod)]);
+            SymbolNode *Sym = CurSection->getSymbol();
+            assert(Sym);
+            if (Sym->getStringName() != "filter")
+              fatal("Handling non-filter sections not implemented!");
+            pushFrame(RunMethod::SymbolTable, RunState::Loop);
+            break;
+          }
+          case RunState::Loop:
+            if (ReadPos->atByteEob()) {
+              CurState = RunState::Exit;
+              break;
+            }
+            Reader->readNode();
+            break;
+          case RunState::Exit:
+            popFrame();
+            TRACE_EXIT_OVERRIDE(RunMethodName[int(RunMethod::SectionBody)]);
+            break;
+          default:
+            fatal("resume section body not implemented");
+            break;
+        }
+        break;
+      case RunMethod::SymbolTable:
+        switch (CurState) {
+          case RunState::Enter: {
+            TRACE_ENTER(RunMethodName[int(CurMethod)]);
+            Reader->SectionSymtab.clear();
+            enterCountedLoop(Reader->Reader->readVaruint32(*ReadPos.get()));
+            break;
+          }
+          case RunState::Loop: {
+            if (getThenDecIterCount() == 0) {
+              CurState = RunState::Exit;
+              break;
+            }
+            pushFrame(RunMethod::Name, RunState::LoopCont);
+            break;
+          }
+          case RunState::LoopCont:
+            TRACE(size_t, "index", Reader->SectionSymtab.getNumberSymbols());
+            TRACE(string, "Symbol", Name);
+            Reader->SectionSymtab.addSymbol(Name);
+            CurState = RunState::Loop;
+            break;
+          case RunState::Exit:
+            popFrame();
+            TRACE_EXIT_OVERRIDE(RunMethodName[int(RunMethod::SymbolTable)]);
+            break;
+          default:
+            fatal("resume reading symbol table not implemented");
+            break;
+        }
+        break;
+      case RunMethod::RunMethod_NO_SUCH_METHOD:
+        fatal("resume on unknown method!");
+        break;
+    }
+  }
+  TRACE_MESSAGE("waiting for more input");
+  return;
+}
 
 bool BinaryReader::isBinary(const char* Filename) {
   FILE* File = fopen(Filename, "r");
@@ -168,41 +391,44 @@ void BinaryReader::readNary() {
   NodeStack.push_back(Node);
 }
 
-FileNode* BinaryReader::readFile() {
-  ReadCursor ReadPosition(StreamType::Byte, Input);
-  return readFile(ReadPosition);
-}
-
-FileNode* BinaryReader::readFile(ReadCursor &NewReadPos) {
-  TRACE_METHOD("readFile", Trace);
-  ReadCursor* OldReadPos = ReadPos;
-  ReadPos = &NewReadPos;
+FileNode* BinaryReader::readHeader() {
+  TRACE_METHOD("readHeader", Trace);
   MagicNumber = Reader->readUint32(*ReadPos);
-  // TODO(kschimpf): Fix reading of uintX. Current implementation not same as
-  // WASM binary reader.
   TRACE(uint32_t, "MagicNumber", MagicNumber);
   if (MagicNumber != WasmBinaryMagic)
     fatal("Unable to read, did not find WASM binary magic number");
   Version = Reader->readUint32(*ReadPos);
   TRACE(uint32_t, "Version", Version);
-  auto* File = Symtab->create<FileNode>();
-  while (!ReadPos->atByteEob())
-    File->append(readSection(*ReadPos));
-  TRACE_SEXP(nullptr, File);
-  SectionSymtab.install(File);
-  ReadPos = OldReadPos;
+  auto *File = Symtab->create<FileNode>();
+  TRACE(int, "File kids", File->getNumKids());
   return File;
 }
 
-SectionNode* BinaryReader::readSection() {
-  ReadCursor ReadPosition(StreamType::Byte, Input);
+FileNode* BinaryReader::readFile(StreamType Type) {
+  ReadCursor ReadPosition(Type, Input);
+  return readFile(ReadPosition);
+}
+
+FileNode* BinaryReader::readFile(ReadCursor &NewReadPos) {
+  TRACE_METHOD("readFile", Trace);
+  UsingReadPos ReadLock(*this, NewReadPos);
+  auto *File = readHeader();
+  while (!ReadPos->atByteEob()) {
+    File->append(readSection(*ReadPos));
+  }
+  TRACE_SEXP(nullptr, File);
+  SectionSymtab.install(File);
+  return File;
+}
+
+SectionNode* BinaryReader::readSection(StreamType Type) {
+  ReadCursor ReadPosition(Type, Input);
   return readSection(ReadPosition);
 }
 
 SectionNode* BinaryReader::readSection(ReadCursor &NewReadPos) {
   TRACE_METHOD("readSection", Trace);
-  ReadCursor* OldReadPos = ReadPos;
-  ReadPos = &NewReadPos;
+  UsingReadPos ReadLock(*this, NewReadPos);
   ExternalName Name = readExternalName();
   auto* SectionName = Symtab->create<SymbolNode>(Name);
   auto* Section = Symtab->create<SectionNode>();
@@ -227,7 +453,6 @@ SectionNode* BinaryReader::readSection(ReadCursor &NewReadPos) {
     Section->append(NodeStack[i]);
   for (size_t i = StartStackSize; i < StackSize; ++i)
     NodeStack.pop_back();
-  ReadPos = OldReadPos;
   TRACE_SEXP(nullptr, Section);
   return Section;
 }
@@ -461,6 +686,30 @@ void BinaryReader::readNode() {
       fatal("Uses construct not implemented yet!");
       break;
   }
+}
+
+std::shared_ptr<BinaryReader::Runner> BinaryReader::startReadingSection(
+    std::shared_ptr<decode::ReadCursor> ReadPos,
+    std::shared_ptr<SymbolTable> Symtab) {
+  auto BinReader = std::make_shared<BinaryReader>(ReadPos->getQueue(), Symtab);
+  auto Rnnr = std::make_shared<Runner>(BinReader, ReadPos);
+  Rnnr->CurMethod = RunMethod::Section;
+  Rnnr->CurState = RunState::Enter;
+  return Rnnr;
+}
+
+std::shared_ptr<BinaryReader::Runner> BinaryReader::startReadingFile(
+    std::shared_ptr<decode::ReadCursor> ReadPos,
+    std::shared_ptr<SymbolTable> Symtab) {
+  // The following two voids are to make sure that the compiler doesn't complain
+  // about unused globals.
+  (void)RunMethodName;
+  (void)RunStateName;
+  auto BinReader = std::make_shared<BinaryReader>(ReadPos->getQueue(), Symtab);
+  auto Rnnr = std::make_shared<Runner>(BinReader, ReadPos);
+  Rnnr->CurMethod = RunMethod::File;
+  Rnnr->CurState = RunState::Enter;
+  return Rnnr;
 }
 
 }  // end of namespace filt
