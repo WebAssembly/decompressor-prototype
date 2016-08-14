@@ -16,6 +16,7 @@
  */
 
 #include "binary/BinaryReader.h"
+#include "sexp/TextWriter.h"
 #include "sexp-parser/Driver.h"
 #include "stream/FileReader.h"
 #include "stream/FileWriter.h"
@@ -123,17 +124,17 @@ int main(int Argc, char* Argv[]) {
     auto FillQueue = std::make_shared<Queue>();
     auto FillReadPos = std::make_shared<ReadCursor>(StreamType::Byte,
                                                     FillQueue);
-    WriteCursor FillWritePos(StreamType::Byte, FillQueue);
     std::shared_ptr<BinaryReader::Runner> Runner
         = BinaryReader::startReadingFile(FillReadPos, Symtab);
     Runner->setTraceProgress(Verbose >= 1);
     WriteCursor *FillPos = Runner->getFillPos().get();
     while (Runner->needsMoreInput()) {
+      // TODO(karlschimpf) Get a cleaner API for this!
       // Fill queue with more input and resume.
       size_t BytesRemaining = RunnerCount;
       while (BytesRemaining) {
         if (RawReadPos.atEof()) {
-          FillWritePos.freezeEof();
+          FillPos->freezeEof();
           break;
         }
         FillPos->writeByte(RawReadPos.readByte());

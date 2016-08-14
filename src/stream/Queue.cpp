@@ -112,6 +112,7 @@ void Queue::freezeEof(size_t Address) {
   LastPage = Cursor.CurPage;
   if (Cursor.CurPage->Next)
     Cursor.CurPage->Next.reset();
+  EofFrozen = true;
 }
 
 void Queue::writePageAt(FILE* File, size_t Address) {
