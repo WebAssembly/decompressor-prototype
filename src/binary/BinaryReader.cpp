@@ -699,6 +699,10 @@ std::shared_ptr<BinaryReader::Runner> BinaryReader::startReadingSection(
 std::shared_ptr<BinaryReader::Runner> BinaryReader::startReadingFile(
     std::shared_ptr<decode::ReadCursor> ReadPos,
     std::shared_ptr<SymbolTable> Symtab) {
+  // The following two voids are to make sure that the compiler doesn't complain
+  // about unused globals.
+  (void)RunMethodName;
+  (void)RunStateName;
   auto BinReader = std::make_shared<BinaryReader>(ReadPos->getQueue(), Symtab);
   auto Rnnr = std::make_shared<Runner>(BinReader, ReadPos);
   Rnnr->CurMethod = RunMethod::File;
