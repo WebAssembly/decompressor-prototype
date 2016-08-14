@@ -29,6 +29,83 @@ namespace wasm {
 
 namespace filt {
 
+namespace {
+// Note: Headroom is used to guarantee that we have enough space to
+// read any sexpression node.
+static constexpr size_t kResumeHeadroom = 100;
+} // end of anonymous namespace
+
+bool BinaryReader::Runner::hasEnoughHeadroom() const {
+  return isEofFrozen() ||
+      (ReadPos->getCurByteAddress() + kResumeHeadroom
+       <= FillPos->getCurByteAddress());
+}
+
+void BinaryReader::Runner::resumeReading() {
+  TRACE_METHOD("resumeReading", getTrace());
+  TRACE(size_t, "cursize", ReadPos->getCurByteAddress());
+  TRACE(size_t, "fillSize", FillPos->getCurByteAddress());
+
+  while (hasEnoughHeadroom()) {
+    switch (CurMethod) {
+      case RunMethod::File:
+        switch (CurState) {
+          case RunState::Enter: {
+            TRACE_ENTER("readFile");
+            UsingReadPos ReadLoc(*Reader, *ReadPos);
+            CurFile = Reader->readHeader();
+            CurState = RunState::FileSectionLoop;
+            break;
+          }
+          case RunState::FileSectionLoop:
+            TRACE_MESSAGE("resuming readFile");
+            if (ReadPos->atByteEob()) {
+              CurState = RunState::Exit;
+              break;
+            }
+            pushFrame(RunMethod::Section);
+            break;
+          case RunState::Exit: {
+            popFrame();
+            TRACE_EXIT();
+            break;
+          }
+          default:
+            fatal("resume on file not implemented");
+            break;
+        }
+        break;
+      case RunMethod::Section:
+        switch (CurState) {
+          case RunState::Enter: {
+            TRACE_ENTER("readSection");
+            UsingReadPos ReadLoc(*Reader, *ReadPos);
+            CurState = RunState::SectionNodeLoop;
+            break;
+          }
+          case RunState::SectionNodeLoop:
+            TRACE_MESSAGE("resuming readSection");
+            fatal("resuming readSection not implemented yet");
+            break;
+          case RunState::Exit: {
+            popFrame();
+            TRACE_EXIT();
+            break;
+          }
+          default:
+            fatal("resume of section not implemented");
+            break;
+        }
+        break;
+      case RunMethod::Unknown:
+        fatal("resume on unknown method!");
+        break;
+    }
+  }
+  TRACE_MESSAGE("waiting for more input");
+  return;
+}
+
 bool BinaryReader::isBinary(const char* Filename) {
   FILE* File = fopen(Filename, "r");
   if (File == nullptr)
@@ -168,41 +245,41 @@ void BinaryReader::readNary() {
   NodeStack.push_back(Node);
 }
 
-FileNode* BinaryReader::readFile() {
-  ReadCursor ReadPosition(StreamType::Byte, Input);
-  return readFile(ReadPosition);
-}
-
-FileNode* BinaryReader::readFile(ReadCursor &NewReadPos) {
-  TRACE_METHOD("readFile", Trace);
-  ReadCursor* OldReadPos = ReadPos;
-  ReadPos = &NewReadPos;
+FileNode* BinaryReader::readHeader() {
+  TRACE_METHOD("readHeader", Trace);
   MagicNumber = Reader->readUint32(*ReadPos);
-  // TODO(kschimpf): Fix reading of uintX. Current implementation not same as
-  // WASM binary reader.
   TRACE(uint32_t, "MagicNumber", MagicNumber);
   if (MagicNumber != WasmBinaryMagic)
     fatal("Unable to read, did not find WASM binary magic number");
   Version = Reader->readUint32(*ReadPos);
   TRACE(uint32_t, "Version", Version);
-  auto* File = Symtab->create<FileNode>();
+  return Symtab->create<FileNode>();
+}
+
+FileNode* BinaryReader::readFile(StreamType Type) {
+  ReadCursor ReadPosition(Type, Input);
+  return readFile(ReadPosition);
+}
+
+FileNode* BinaryReader::readFile(ReadCursor &NewReadPos) {
+  TRACE_METHOD("readFile", Trace);
+  UsingReadPos ReadLock(*this, NewReadPos);
+  auto *File = readHeader();
   while (!ReadPos->atByteEob())
     File->append(readSection(*ReadPos));
   TRACE_SEXP(nullptr, File);
   SectionSymtab.install(File);
-  ReadPos = OldReadPos;
   return File;
 }
 
-SectionNode* BinaryReader::readSection() {
-  ReadCursor ReadPosition(StreamType::Byte, Input);
+SectionNode* BinaryReader::readSection(StreamType Type) {
+  ReadCursor ReadPosition(Type, Input);
   return readSection(ReadPosition);
 }
 
 SectionNode* BinaryReader::readSection(ReadCursor &NewReadPos) {
   TRACE_METHOD("readSection", Trace);
-  ReadCursor* OldReadPos = ReadPos;
-  ReadPos = &NewReadPos;
+  UsingReadPos ReadLock(*this, NewReadPos);
   ExternalName Name = readExternalName();
   auto* SectionName = Symtab->create<SymbolNode>(Name);
   auto* Section = Symtab->create<SectionNode>();
@@ -227,10 +304,19 @@ SectionNode* BinaryReader::readSection(ReadCursor &NewReadPos) {
     Section->append(NodeStack[i]);
   for (size_t i = StartStackSize; i < StackSize; ++i)
     NodeStack.pop_back();
-  ReadPos = OldReadPos;
   TRACE_SEXP(nullptr, Section);
   return Section;
 }
+
+#if 0
+bool BinaryReader::readStartSection(ReadCursor &NewReadPos,
+                                    size_t StopAddress,
+                                    SectionNode*& Section) {
+  TRACE_METHOD("readSection", Trace);
+  Section = nullptr;
+  UsingReadPos ReadLoc(*this, NewReadPos);
+}
+#endif
 
 void BinaryReader::readSymbolTable() {
   TRACE_METHOD("readSymbolTable", Trace);
@@ -461,6 +547,26 @@ void BinaryReader::readNode() {
       fatal("Uses construct not implemented yet!");
       break;
   }
+}
+
+std::shared_ptr<BinaryReader::Runner> BinaryReader::startReadingSection(
+    std::shared_ptr<decode::ReadCursor> ReadPos,
+    std::shared_ptr<SymbolTable> Symtab) {
+  auto BinReader = std::make_shared<BinaryReader>(ReadPos->getQueue(), Symtab);
+  auto Rnnr = std::make_shared<Runner>(BinReader, ReadPos);
+  Rnnr->CurMethod = RunMethod::File;
+  Rnnr->CurState = RunState::Enter;
+  return Rnnr;
+}
+
+std::shared_ptr<BinaryReader::Runner> BinaryReader::startReadingFile(
+    std::shared_ptr<decode::ReadCursor> ReadPos,
+    std::shared_ptr<SymbolTable> Symtab) {
+  auto BinReader = std::make_shared<BinaryReader>(ReadPos->getQueue(), Symtab);
+  auto Rnnr = std::make_shared<Runner>(BinReader, ReadPos);
+  Rnnr->CurMethod = RunMethod::File;
+  Rnnr->CurState = RunState::Enter;
+  return Rnnr;
 }
 
 }  // end of namespace filt

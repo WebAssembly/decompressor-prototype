@@ -26,6 +26,10 @@
 #define TRACE(type, name, value)
 #define TRACE_MESSAGE_USING(trace, Message)
 #define TRACE_MESSAGE(Message)
+#define TRACE_ENTER_USING(name, trace)
+#define TRACE_ENTER(name)
+#define TRACE_EXIT_USING(trace)
+#define TRACE_EXIT()
 #else
 #define TRACE_METHOD(Name, Trace) \
   TraceClass::Method tracEmethoD((Name), (Trace))
@@ -42,8 +46,21 @@
     if (tracE.getTraceProgress())                                              \
       tracE.trace_message(Message);                                            \
   } while (false)
-
 #define TRACE_MESSAGE(Message) TRACE_MESSAGE_USING(getTrace(), Message)
+#define TRACE_ENTER_USING(name, trace)                                         \
+  do {                                                                         \
+    auto &tracE = (trace);                                                     \
+    if (tracE.getTraceProgress())                                              \
+      (trace).enter((name));                                                   \
+  } while(false)
+#define TRACE_ENTER(name) TRACE_ENTER_USING((name), getTrace())
+#define TRACE_EXIT_USING(trace)                                                \
+  do {                                                                         \
+    auto &tracE = (trace);                                                     \
+    if (tracE.getTraceProgress())                                              \
+      (trace).exit();                                                          \
+  } while (false)
+#define TRACE_EXIT() TRACE_EXIT_USING(getTrace())
 #endif
 
 #include "utils/Defs.h"
@@ -86,6 +103,8 @@ class TraceClass : std::enable_shared_from_this<TraceClass> {
   explicit TraceClass(FILE* File);
   TraceClass(const char* Label, FILE* File);
   virtual ~TraceClass();
+  void enter(const char* Name);
+  void exit();
   virtual void traceContext() const;
   // Prints trace prefix only.
   FILE* indent();
@@ -303,9 +322,6 @@ class TraceClass : std::enable_shared_from_this<TraceClass> {
   int IndentLevel;
   bool TraceProgress;
   std::vector<const char*> CallStack;
-
-  void enter(const char* Name);
-  void exit();
   void traceMessageInternal(const std::string& Message);
   void traceBoolInternal(const char* Name, bool Value);
   void traceCharInternal(const char* Name, char Ch);
