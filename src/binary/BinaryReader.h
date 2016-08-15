@@ -28,6 +28,7 @@
 #include "stream/ReadCursor.h"
 #include "stream/WriteCursor.h"
 #include "utils/Defs.h"
+#include "utils/ValueStack.h"
 
 #include <functional>
 #include <vector>
@@ -91,8 +92,6 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
     Runner(std::shared_ptr<BinaryReader> Reader,
            std::shared_ptr<decode::ReadCursor> ReadPos)
         : Reader(Reader), ReadPos(ReadPos),
-          CurMethod(RunMethod::RunMethod_NO_SUCH_METHOD),
-          CurState(RunState::Failed),
           CurFile(nullptr),
           CurSection(nullptr) {
       FillPos = std::make_shared<decode::WriteCursor>(
@@ -108,19 +107,19 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
       return !isSuccessful() && !errorsFound();
     }
     bool isSuccessful() const {
-      return CurState == RunState::Succeeded;
+      return getState() == RunState::Succeeded;
     }
     bool errorsFound() const {
-      return CurState == RunState::Failed;
+      return getState() == RunState::Failed;
     }
     bool isReadingSection() const {
-      return CurMethod == RunMethod::Section;
+      return getMethod() == RunMethod::Section;
     }
     SectionNode* getSection() {
       return (isSuccessful() && isReadingSection())  ? CurSection : nullptr;
     }
     bool isReadingFile() const {
-      return CurMethod == RunMethod::File;
+      return getMethod() == RunMethod::File;
     }
     FileNode* getFile() {
       return (isSuccessful() && isReadingFile()) ? CurFile : nullptr;
@@ -137,71 +136,112 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
     }
     TraceClassSexpReader& getTrace() { return Reader->getTrace(); }
    private:
+    std::shared_ptr<BinaryReader> Reader;
+    std::shared_ptr<decode::ReadCursor> ReadPos;
+    std::shared_ptr<decode::WriteCursor> FillPos;
+    ExternalName Name;
+    FileNode *CurFile;
+    SectionNode *CurSection;
+
+    // Define state of nested methods.
     struct CallFrame {
+      CallFrame() : Method(RunMethod::RunMethod_NO_SUCH_METHOD),
+                    State(RunState::Failed) {}
       CallFrame(RunMethod Method, RunState State)
           : Method(Method), State(State) {}
       RunMethod Method;
       RunState State;
     };
-    std::shared_ptr<BinaryReader> Reader;
-    std::shared_ptr<decode::ReadCursor> ReadPos;
-    std::shared_ptr<decode::WriteCursor> FillPos;
-    std::vector<CallFrame> CallStack;
-    void pushFrame(RunMethod NewMethod, RunState ResumeState) {
-      CallStack.push_back(CallFrame(CurMethod, ResumeState));
-      CurMethod = NewMethod;
-      CurState = RunState::Enter;
-    }
-    void pushFrame(RunMethod NewMethod) {
-      pushFrame(NewMethod, CurState);
-    }
-    void popFrame() {
-      CallFrame &Frame = CallStack.back();
-      CurMethod = Frame.Method;
-      CurState = Frame.State;
-      CallStack.pop_back();
-    }
-    std::vector<size_t> LoopCounter;
-    ExternalName Name;
-    RunMethod CurMethod;
-    RunState CurState;
-    FileNode *CurFile;
-    SectionNode *CurSection;
+    class CallFrameStack : public utils::ValueStack<CallFrame> {
+      CallFrameStack(const CallFrameStack&) = delete;
+      CallFrameStack& operator=(const CallFrameStack&) = delete;
+     public:
+      typedef utils::ValueStack<CallFrame> BaseClass;
+      CallFrameStack() {}
+      void push(RunMethod NewMethod) {
+        BaseClass::push();
+        Top.Method = NewMethod;
+        Top.State = RunState::Enter;
+      }
+      void push(RunMethod NewMethod, RunState ResumeState) {
+        Top.State = ResumeState;
+        BaseClass::push();
+        Top.Method = NewMethod;
+        Top.State = RunState::Enter;
+      }
+      RunMethod getMethod() const {
+        return Top.Method;
+      }
+      void setMethod(RunMethod NewMethod) {
+        Top.Method = NewMethod;
+      }
+      RunState getState() const {
+        return Top.State;
+      }
+      void setState(RunState NewState) {
+        Top.State = NewState;
+      }
+    } CallStack;
+
+    // Define stack of (i.e. local variable) Counter.
+    class CounterStack : public utils::ValueStack<size_t> {
+      CounterStack(const CounterStack&) = delete;
+      CounterStack& operator=(const CounterStack&) = delete;
+     public:
+      CounterStack() : utils::ValueStack<size_t>(0) {}
+      size_t operator--(int) {
+        return Top--;
+      }
+    } Counter;
+
+    // Define stack of nested block constructs.
     struct BlockFrame {
+      BlockFrame() : Method(RunMethod::RunMethod_NO_SUCH_METHOD),
+                     Size(0) {}
       BlockFrame(RunMethod Method, size_t Size)
           : Method(Method), Size(Size) {}
+      // Method to process the block
       RunMethod Method;
+      // The number of elements in the block.
       size_t Size;
     };
-    std::vector<BlockFrame> BlockStack;
-    void pushBlock(RunMethod Method) {
-      BlockStack.push_back(BlockFrame(Method, 0));
-      pushFrame(RunMethod::Block);
+
+    class BlockStack : public utils::ValueStack<BlockFrame> {
+      BlockStack(const BlockStack&) = delete;
+      BlockStack& operator=(const BlockStack&) = delete;
+      typedef utils::ValueStack<BlockFrame> BaseClass;
+     public:
+      BlockStack() {}
+      void push(RunMethod Method) {
+        BaseClass::push();
+        Top.Method = Method;
+        Top.Size = 0;
+      }
+      RunMethod getMethod() const {
+        return Top.Method;
+      }
+      size_t getSize() const {
+        return Top.Size;
+      }
+      void setSize(size_t Size) {
+        Top.Size = Size;
+      }
+    } Block;
+
+    RunMethod getMethod() const {
+      return CallStack.getMethod();
     }
-    size_t popBlock() {
-      size_t Size = BlockStack.back().Size;
-      BlockStack.pop_back();
-      return Size;
+    void setMethod(RunMethod NewMethod) {
+      CallStack.setMethod(NewMethod);
+      CallStack.setState(RunState::Enter);
+    }
+    RunState getState() const {
+      return CallStack.getState();
+    }
+    void setState(RunState NewState) {
+      CallStack.setState(NewState);
     }
     bool hasEnoughHeadroom() const;
-    void pushLoopCount(size_t Count) {
-      LoopCounter.push_back(Count);
-    }
-    size_t popLoopCount() {
-      size_t Count = LoopCounter.back();
-      LoopCounter.pop_back();
-      return Count;
-    }
-    void enterCountedLoop(size_t Count) {
-      pushLoopCount(Count);
-      CurState = RunState::Loop;
-    }
-    size_t getThenDecIterCount() {
-      size_t Count = LoopCounter.back()--;
-      if (Count == 0)
-        LoopCounter.pop_back();
-      return Count;
-    }
   };
 
   // Returns true if it begins with a WASM file magic number.
