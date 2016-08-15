@@ -22,7 +22,7 @@
 #include <cstdio>
 
 // Show call stack on enter/exit of resumeReading().
-#define LOG_CALLSTACK 1
+#define LOG_CALLSTACK 0
 
 using namespace wasm::decode;
 using namespace wasm::utils;
@@ -76,16 +76,22 @@ bool BinaryReader::Runner::hasEnoughHeadroom() const {
 }
 
 void BinaryReader::Runner::resumeReading() {
+#if 0
   TRACE_METHOD("resumeReading");
+#else
+  TRACE_ENTER(RunMethodName[int(getMethod())]);
+#endif
 #if LOG_CALLSTACK
   TRACE_BLOCK({ CallStack.describe(stderr); });
 #endif
   // TODO(karlschimpf) Why is this lock necessary (stops core dump).
   UsingReadPos Lock(*Reader, *ReadPos);
   while (hasEnoughHeadroom()) {
+#if 0
     TRACE(string, "method",
           std::string(RunMethodName[int(getMethod())])
           + "." + RunStateName[int(getState())]);
+#endif
     switch (getMethod()) {
       case RunMethod::Block: {
         switch (getState()) {
@@ -134,6 +140,9 @@ void BinaryReader::Runner::resumeReading() {
               setState(RunState::Succeeded);
 #if LOG_CALLSTACK
               TRACE_BLOCK({ CallStack.describe(stderr); });
+#endif
+#if 1
+              TRACE_EXIT_OVERRIDE(RunMethodName[int(getMethod())]);
 #endif
               return;
             }
@@ -205,6 +214,9 @@ void BinaryReader::Runner::resumeReading() {
               setState(RunState::Succeeded);
 #if LOG_CALLSTACK
               TRACE_BLOCK({ CallStack.describe(stderr); });
+#endif
+#if 1
+              TRACE_EXIT_OVERRIDE(RunMethodName[int(getMethod())]);
 #endif
               return;
             }
@@ -283,7 +295,10 @@ void BinaryReader::Runner::resumeReading() {
   }
   TRACE_MESSAGE("waiting for more input");
 #if LOG_CALLSTACK
-              TRACE_BLOCK({ CallStack.describe(stderr); });
+  TRACE_BLOCK({ CallStack.describe(stderr); });
+#endif
+#if 1
+  TRACE_EXIT_OVERRIDE(RunMethodName[int(getMethod())]);
 #endif
   return;
 }
