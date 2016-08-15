@@ -380,84 +380,11 @@ IntType Interpreter::readOpcode(const Node* Nd,
 }
 
 IntType Interpreter::read(const Node* Nd) {
-#if 0
-      CallStack.push_back(CallFrame(Nd, InterpreterMethod::Read));
-      runMethods();
-      ReturnStack.pop_back();
-#endif
-  switch (NodeType Type = Nd->getType()) {
-    default:
-      fprintf(stderr, "Read not implemented: %s\n", getNodeTypeName(Type));
-      fatal("Read not implemented");
-
-      return LastReadValue = 0;
-    case OpParam:
-      return LastReadValue = read(getParam(Nd));
-    case OpMap: {
-      const auto* Map = cast<MapNode>(Nd);
-      const CaseNode* Case = Map->getCase(read(Map->getKid(0)));
-      return read(Case->getKid(1));
-    }
-    case OpOpcode: {
-      return LastReadValue = readOpcode(Nd, 0, 0);
-    }
-    case OpI32Const:
-    case OpI64Const:
-    case OpU8Const:
-    case OpU32Const:
-    case OpU64Const:
-    case OpPeek:
-      CallStack.push_back(CallFrame(Nd, InterpreterMethod::Read));
-      runMethods();
-      ReturnStack.pop_back();
-      return LastReadValue;
-    case OpLastRead:
-      return LastReadValue;
-    case OpUint8NoArgs:
-#if 1
-      CallStack.push_back(CallFrame(Nd, InterpreterMethod::Read));
-      runMethods();
-      ReturnStack.pop_back();
-      return LastReadValue;
-#else
-      return LastReadValue = Reader->readUint8(ReadPos);
-#endif
-    case OpUint8OneArg:
-      return LastReadValue = Reader->readUint8Bits(
-                 ReadPos, cast<Uint8OneArgNode>(Nd)->getValue());
-    case OpUint32NoArgs:
-      return LastReadValue = Reader->readUint32(ReadPos);
-    case OpUint32OneArg:
-      return LastReadValue = Reader->readUint32Bits(
-                 ReadPos, cast<Uint32OneArgNode>(Nd)->getValue());
-    case OpUint64NoArgs:
-      return LastReadValue = Reader->readUint64(ReadPos);
-    case OpUint64OneArg:
-      return LastReadValue = Reader->readUint64Bits(
-                 ReadPos, cast<Uint64OneArgNode>(Nd)->getValue());
-    case OpVarint32NoArgs:
-      return LastReadValue = Reader->readVarint32(ReadPos);
-    case OpVarint32OneArg:
-      return LastReadValue = Reader->readVarint32Bits(
-                 ReadPos, cast<Varint32OneArgNode>(Nd)->getValue());
-    case OpVarint64NoArgs:
-      return LastReadValue = Reader->readVarint64(ReadPos);
-    case OpVarint64OneArg:
-      return LastReadValue = Reader->readVarint64Bits(
-                 ReadPos, cast<Varint64OneArgNode>(Nd)->getValue());
-    case OpVaruint32NoArgs:
-      return LastReadValue = Reader->readVaruint32(ReadPos);
-    case OpVaruint32OneArg:
-      return LastReadValue = Reader->readVaruint32Bits(
-                 ReadPos, cast<Varuint32OneArgNode>(Nd)->getValue());
-    case OpVaruint64NoArgs:
-      return LastReadValue = Reader->readVaruint64(ReadPos);
-    case OpVaruint64OneArg:
-      return LastReadValue = Reader->readVaruint64Bits(
-                 ReadPos, cast<Varuint64OneArgNode>(Nd)->getValue());
-    case OpVoid:
-      return LastReadValue = 0;
-  }
+  CallStack.push_back(CallFrame(Nd, InterpreterMethod::Read));
+  runMethods();
+  IntType Value = ReturnStack.back();
+  ReturnStack.pop_back();
+  return Value;
 }
 
 IntType Interpreter::write(IntType Value, const wasm::filt::Node* Nd) {
@@ -510,8 +437,60 @@ void Interpreter::runMethods() {
             pushReadReturnValue(LastReadValue);
             break;
           }
+          case OpLastRead:
+            pushReadReturnValue(LastReadValue);
+            break;
           case OpUint8NoArgs:
             pushReadReturnValue(Reader->readUint8(ReadPos));
+            break;
+          case OpUint8OneArg:
+            pushReadReturnValue(Reader->readUint8Bits(
+                ReadPos, cast<Uint8OneArgNode>(Nd)->getValue()));
+            break;
+          case OpUint32NoArgs:
+            pushReadReturnValue(Reader->readUint32(ReadPos));
+            break;
+          case OpUint32OneArg:
+            pushReadReturnValue(Reader->readUint32Bits(
+                ReadPos, cast<Uint32OneArgNode>(Nd)->getValue()));
+            break;
+          case OpUint64NoArgs:
+            pushReadReturnValue(Reader->readUint64(ReadPos));
+            break;
+          case OpUint64OneArg:
+            pushReadReturnValue(Reader->readUint64Bits(
+                ReadPos, cast<Uint64OneArgNode>(Nd)->getValue()));
+            break;
+          case OpVarint32NoArgs:
+            pushReadReturnValue(Reader->readVarint32(ReadPos));
+            break;
+          case OpVarint32OneArg:
+            pushReadReturnValue(Reader->readVarint32Bits(
+                ReadPos, cast<Varint32OneArgNode>(Nd)->getValue()));
+            break;
+          case OpVarint64NoArgs:
+            pushReadReturnValue(Reader->readVarint64(ReadPos));
+            break;
+          case OpVarint64OneArg:
+            pushReadReturnValue(Reader->readVarint64Bits(
+                ReadPos, cast<Varint64OneArgNode>(Nd)->getValue()));
+            break;
+          case OpVaruint32NoArgs:
+            pushReadReturnValue(Reader->readVaruint32(ReadPos));
+            break;
+          case OpVaruint32OneArg:
+            pushReadReturnValue(Reader->readVaruint32Bits(
+                ReadPos, cast<Varuint32OneArgNode>(Nd)->getValue()));
+            break;
+          case OpVaruint64NoArgs:
+            pushReadReturnValue(Reader->readVaruint64(ReadPos));
+            break;
+          case OpVaruint64OneArg:
+            pushReadReturnValue(Reader->readVaruint64Bits(
+                ReadPos, cast<Varuint64OneArgNode>(Nd)->getValue()));
+            break;
+          case OpVoid:
+            pushReadReturnValue(0);
             break;
         }
         break;
