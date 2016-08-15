@@ -61,6 +61,23 @@ class Interpreter {
   void setMinimizeBlockSize(bool NewValue) { MinimizeBlockSize = NewValue; }
 
  private:
+  enum class InterpreterMethod { Eval, Read, Write, Error };
+  class CallFrame {
+   public:
+    CallFrame() : Code(nullptr), Method(InterpreterMethod::Error) {}
+    CallFrame(const filt::Node *Code, InterpreterMethod Method)
+        : Code(Code), Method(Method) {}
+    explicit CallFrame(const CallFrame& M)
+        : Code(M.Code), Method(M.Method) {}
+    CallFrame& operator=(const CallFrame& F) {
+      Code = F.Code;
+      Method = F.Method;
+      return *this;
+    }
+    const filt::Node* Code;
+    InterpreterMethod Method;
+  };
+
   decode::ReadCursor ReadPos;
   std::shared_ptr<ReadStream> Reader;
   decode::WriteCursor WritePos;
@@ -73,11 +90,17 @@ class Interpreter {
   uint32_t Version;
   // The current section name (if applicable).
   std::string CurSectionName;
-  // The last read value.,
+  // The last read value.
   decode::IntType LastReadValue;
   bool MinimizeBlockSize;
   TraceClassSexpReaderWriter Trace;
-  filt::ConstNodeVectorType CallStack;
+  // The call stack of methods being applied.
+  std::vector<CallFrame> CallStack;
+  // The stack of passed/returned values.
+  std::vector<decode::IntType> ParamStack;
+  std::vector<decode::IntType> ReturnStack;
+  // The stack of (eval) calls.
+  filt::ConstNodeVectorType EvalStack;
 
   void decompressSection();
   void readSectionName();
@@ -92,6 +115,7 @@ class Interpreter {
   // Writes to output the given value, using format defined by Nd.
   // For convenience, returns written value.
   decode::IntType write(decode::IntType Value, const filt::Node* Nd);
+  // Internal driver for eval/read/write.
   decode::IntType readOpcode(const filt::Node* Sel,
                              decode::IntType PrefixValue,
                              uint32_t NumOpcodes);
@@ -99,6 +123,20 @@ class Interpreter {
   // of bits used to read the opcode selector. Otherwise returns zero.
   uint32_t readOpcodeSelector(const filt::Node* Nd, decode::IntType& Value);
   const filt::Node* getParam(const filt::Node* Param);
+
+  // Stack model
+  void runMethods();
+  void popArgAndReturnValue(decode::IntType Value) {
+    ParamStack.pop_back();
+    ReturnStack.push_back(Value);
+    CallStack.pop_back();
+  }
+  void pushReadReturnValue(decode::IntType Value) {
+    LastReadValue = Value;
+    ReturnStack.push_back(Value);
+    CallStack.pop_back();
+  }
+
 };
 
 }  // end of namespace interp.
