@@ -563,16 +563,20 @@ test-param-passing: $(BUILD_EXECDIR)/decompress
 .PHONY: test-param-passing
 
 test-decompsexp-wasm: $(BUILD_EXECDIR)/decompsexp-wasm
-	$< -m < $(SEXP_DEFAULTS) | diff - $(TEST_SRCS_DIR)/defaults.wasm
-	$< < $(SEXP_DEFAULTS) | diff - $(TEST_SRCS_DIR)/defaults.wasm-w
+	$< -m -i $(SEXP_DEFAULTS) | diff - $(TEST_SRCS_DIR)/defaults.wasm
+	$< -i $(SEXP_DEFAULTS) | diff - $(TEST_SRCS_DIR)/defaults.wasm-w
 	@echo "*** sexp2wasm tests passed ***"
 
 .PHONY: test-decompsexp-wasm
 
 test-decompwasm-sexp: $(BUILD_EXECDIR)/decompwasm-sexp
-	$< < test/test-sources/defaults.wasm \
+	$< -i test/test-sources/defaults.wasm \
 		| diff - $(TEST_SRCS_DIR)/defaults.df
-	$< < test/test-sources/defaults.wasm-w \
+	$< -i test/test-sources/defaults.wasm-w \
+		| diff - $(TEST_SRCS_DIR)/defaults.df
+	$< -r 5 -i test/test-sources/defaults.wasm \
+		| diff - $(TEST_SRCS_DIR)/defaults.df
+	$< -r 5 -i test/test-sources/defaults.wasm-w \
 		| diff - $(TEST_SRCS_DIR)/defaults.df
 	@echo "*** wasm2sexp tests passed ***"
 
