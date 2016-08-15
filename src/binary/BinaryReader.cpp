@@ -21,6 +21,9 @@
 
 #include <cstdio>
 
+// Show call stack on enter/exit of resumeReading().
+#define LOG_CALLSTACK 1
+
 using namespace wasm::decode;
 using namespace wasm::utils;
 
@@ -49,6 +52,23 @@ const char* RunStateName[] = {
 
 } // end of anonymous namespace
 
+void BinaryReader::Runner::CallFrame::describe(FILE* Out) {
+  fprintf(Out, "%s.%s", RunMethodName[int(Method)], RunStateName[int(State)]);
+}
+
+void BinaryReader::Runner::CallFrameStack::describe(FILE* Out) {
+  fprintf(Out, "*** CallStack ***\n");
+  for (auto& Frame : Stack) {
+    fputs("  ", Out);
+    Frame.describe(Out);
+    fputc('\n', Out);
+  }
+  fputs("  ", Out);
+  Top.describe(Out);
+  fputc('\n', Out);
+  fprintf(Out, "****************\n");
+}
+
 bool BinaryReader::Runner::hasEnoughHeadroom() const {
   return isEofFrozen() ||
       (ReadPos->getCurByteAddress() + kResumeHeadroom
@@ -57,6 +77,9 @@ bool BinaryReader::Runner::hasEnoughHeadroom() const {
 
 void BinaryReader::Runner::resumeReading() {
   TRACE_METHOD("resumeReading");
+#if LOG_CALLSTACK
+  TRACE_BLOCK({ CallStack.describe(stderr); });
+#endif
   // TODO(karlschimpf) Why is this lock necessary (stops core dump).
   UsingReadPos Lock(*Reader, *ReadPos);
   while (hasEnoughHeadroom()) {
@@ -109,6 +132,9 @@ void BinaryReader::Runner::resumeReading() {
             TRACE_EXIT_OVERRIDE(RunMethodName[int(RunMethod::File)]);
             if (CallStack.empty()) {
               setState(RunState::Succeeded);
+#if LOG_CALLSTACK
+              TRACE_BLOCK({ CallStack.describe(stderr); });
+#endif
               return;
             }
             CallStack.pop();
@@ -177,6 +203,9 @@ void BinaryReader::Runner::resumeReading() {
             TRACE_EXIT_OVERRIDE(RunMethodName[int(RunMethod::Section)]);
             if (CallStack.empty()) {
               setState(RunState::Succeeded);
+#if LOG_CALLSTACK
+              TRACE_BLOCK({ CallStack.describe(stderr); });
+#endif
               return;
             }
             CallStack.pop();
@@ -253,6 +282,9 @@ void BinaryReader::Runner::resumeReading() {
     }
   }
   TRACE_MESSAGE("waiting for more input");
+#if LOG_CALLSTACK
+              TRACE_BLOCK({ CallStack.describe(stderr); });
+#endif
   return;
 }
 
@@ -705,10 +737,6 @@ std::shared_ptr<BinaryReader::Runner> BinaryReader::startReadingSection(
 std::shared_ptr<BinaryReader::Runner> BinaryReader::startReadingFile(
     std::shared_ptr<decode::ReadCursor> ReadPos,
     std::shared_ptr<SymbolTable> Symtab) {
-  // The following two voids are to make sure that the compiler doesn't complain
-  // about unused globals.
-  (void)RunMethodName;
-  (void)RunStateName;
   auto BinReader = std::make_shared<BinaryReader>(ReadPos->getQueue(), Symtab);
   auto Rnnr = std::make_shared<Runner>(BinReader, ReadPos);
   Rnnr->setMethod(RunMethod::File);

@@ -113,17 +113,13 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
     bool errorsFound() const {
       return getState() == RunState::Failed;
     }
-    bool isReadingSection() const {
-      return getMethod() == RunMethod::Section;
-    }
     SectionNode* getSection() {
-      return (isSuccessful() && isReadingSection())  ? CurSection : nullptr;
-    }
-    bool isReadingFile() const {
-      return getMethod() == RunMethod::File;
+      return (isSuccessful() && getMethod() == RunMethod::Section)
+          ? CurSection : nullptr;
     }
     FileNode* getFile() {
-      return (isSuccessful() && isReadingFile()) ? CurFile : nullptr;
+      return (isSuccessful() && getMethod() == RunMethod::File)
+          ? CurFile : nullptr;
     }
     bool isEofFrozen() const { return FillPos->isEofFrozen(); }
     size_t filledSize() const { return FillPos->getCurByteAddress(); }
@@ -169,6 +165,8 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
           : Method(Method), State(State) {}
       RunMethod Method;
       RunState State;
+      // For debugging
+      void describe(FILE* Out);
     };
     class CallFrameStack : public utils::ValueStack<CallFrame> {
       CallFrameStack(const CallFrameStack&) = delete;
@@ -199,6 +197,8 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
       void setState(RunState NewState) {
         Top.State = NewState;
       }
+      // For debugging.
+      void describe(FILE* Out);
     } CallStack;
 
     // Define stack of (i.e. local variable) Counter.
