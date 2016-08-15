@@ -39,49 +39,47 @@
 
 #else
 
-#define TRACE_METHOD_USING(name, trace)                                        \
+#define TRACE_METHOD_USING(name, trace) \
   TraceClass::Method tracEmethoD((name), (trace))
 #define TRACE_METHOD(name) TRACE_METHOD_USING(name, getTrace())
-#define TRACE_USING(trace, type, name, value)                                  \
-  do {                                                                         \
-    auto& tracE = (trace);                                                     \
-    if ((tracE).getTraceProgress())                                            \
-      (tracE).trace_##type((name), (value));                                   \
+#define TRACE_USING(trace, type, name, value) \
+  do {                                        \
+    auto& tracE = (trace);                    \
+    if ((tracE).getTraceProgress())           \
+      (tracE).trace_##type((name), (value));  \
   } while (false)
 #define TRACE(type, name, value) TRACE_USING(getTrace(), type, name, value)
-#define TRACE_MESSAGE_USING(trace, Message)                                    \
-  do {                                                                         \
-    auto &tracE = (trace);                                                     \
-    if (tracE.getTraceProgress())                                              \
-      tracE.trace_message(Message);                                            \
+#define TRACE_MESSAGE_USING(trace, Message) \
+  do {                                      \
+    auto& tracE = (trace);                  \
+    if (tracE.getTraceProgress())           \
+      tracE.trace_message(Message);         \
   } while (false)
 #define TRACE_MESSAGE(Message) TRACE_MESSAGE_USING(getTrace(), Message)
-#define TRACE_ENTER_USING(name, trace)                                         \
-  do {                                                                         \
-    auto &tracE = (trace);                                                     \
-    if (tracE.getTraceProgress())                                              \
-      (trace).enter((name));                                                   \
-  } while(false)
-#define TRACE_ENTER(name) TRACE_ENTER_USING((name), getTrace())
-#define TRACE_EXIT_USING_OVERRIDE(trace, name)                                 \
-  do {                                                                         \
-    auto &tracE = (trace);                                                     \
-    if (tracE.getTraceProgress())                                              \
-      (trace).exit(name);                                                      \
+#define TRACE_ENTER_USING(name, trace) \
+  do {                                 \
+    auto& tracE = (trace);             \
+    if (tracE.getTraceProgress())      \
+      (trace).enter((name));           \
   } while (false)
-#define TRACE_EXIT_USING(trace)                                                \
-  TRACE_EXIT_USING_OVERRIDE((trace), nullptr)
+#define TRACE_ENTER(name) TRACE_ENTER_USING((name), getTrace())
+#define TRACE_EXIT_USING_OVERRIDE(trace, name) \
+  do {                                         \
+    auto& tracE = (trace);                     \
+    if (tracE.getTraceProgress())              \
+      (trace).exit(name);                      \
+  } while (false)
+#define TRACE_EXIT_USING(trace) TRACE_EXIT_USING_OVERRIDE((trace), nullptr)
 #define TRACE_EXIT() TRACE_EXIT_USING(getTrace())
-#define TRACE_EXIT_OVERRIDE(name)                                              \
-  TRACE_EXIT_USING_OVERRIDE(getTrace(), name)
-#define TRACE_BLOCK_USING(trace, code)                                         \
-  do {                                                                         \
-    auto &TRACE = (trace);                                                     \
-    if (TRACE.getTraceProgress()) {                                           \
-      code                                                                     \
-    }                                                                          \
-  } while(false)
-#define TRACE_BLOCK(code)  TRACE_BLOCK_USING(getTrace(), code)
+#define TRACE_EXIT_OVERRIDE(name) TRACE_EXIT_USING_OVERRIDE(getTrace(), name)
+#define TRACE_BLOCK_USING(trace, code) \
+  do {                                 \
+    auto& TRACE = (trace);             \
+    if (TRACE.getTraceProgress()) {    \
+      code                             \
+    }                                  \
+  } while (false)
+#define TRACE_BLOCK(code) TRACE_BLOCK_USING(getTrace(), code)
 #endif
 
 #include "utils/Defs.h"
@@ -129,18 +127,12 @@ class TraceClass : std::enable_shared_from_this<TraceClass> {
   virtual void traceContext() const;
   // Prints trace prefix only.
   FILE* indent();
-  void trace_message(const char* Message) {
-    traceMessageInternal(Message);
-  }
-  void trace_message(std::string Message) {
-    traceMessageInternal(Message);
-  }
+  void trace_message(const char* Message) { traceMessageInternal(Message); }
+  void trace_message(std::string Message) { traceMessageInternal(Message); }
   void trace_bool(const char* Name, bool Value) {
     traceBoolInternal(Name, Value);
   }
-  void trace_char(const char* Name, char Ch) {
-    traceCharInternal(Name, Ch);
-  }
+  void trace_char(const char* Name, char Ch) { traceCharInternal(Name, Ch); }
   void trace_signed_char(const char* Name, signed char Ch) {
     traceCharInternal(Name, char(Ch));
   }
@@ -162,9 +154,7 @@ class TraceClass : std::enable_shared_from_this<TraceClass> {
   void trace_unsigned_short(const char* Name, unsigned short Value) {
     traceUintInternal(Name, Value);
   }
-  void trace_int(const char* Name, int Value) {
-    traceIntInternal(Name, Value);
-  }
+  void trace_int(const char* Name, int Value) { traceIntInternal(Name, Value); }
   void trace_unsigned_int(const char* Name, unsigned int Value) {
     traceUintInternal(Name, Value);
   }
@@ -217,7 +207,7 @@ class TraceClass : std::enable_shared_from_this<TraceClass> {
     traceUintInternal(Name, Value);
   }
   void trace_hex_size_t(const char* Name, size_t Value) {
-      traceHexInternal(Name, Value);
+    traceHexInternal(Name, Value);
   }
   template <typename T>
   void trace_void_ptr(const char* Name, T* Ptr) {

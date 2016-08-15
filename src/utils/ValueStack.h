@@ -25,28 +25,21 @@ namespace wasm {
 
 namespace utils {
 
-template<typename T>
+template <typename T>
 class ValueStack {
   ValueStack(const ValueStack&) = delete;
   ValueStack& operator=(const ValueStack&) = delete;
+
  public:
   ValueStack() {}
   ValueStack(const T& Value) : Top(Value) {}
   ~ValueStack() {}
-  bool empty() const {
-    return Stack.empty();
-  }
-  const T& get() const {
-    return Top;
-  }
-  void set(const T& Value) {
-    Top = Value;
-  }
+  bool empty() const { return Stack.empty(); }
+  const T& get() const { return Top; }
+  void set(const T& Value) { Top = Value; }
   // Push top onto stack.
-  void push() {
-    Stack.push_back(Top);
-  }
-  void push(const T&Value) {
+  void push() { Stack.push_back(Top); }
+  void push(const T& Value) {
     push();
     Top = Value;
   }
@@ -55,13 +48,14 @@ class ValueStack {
     Top = Stack.back();
     Stack.pop_back();
   }
+
  protected:
   T Top;
   std::vector<T> Stack;
 };
 
-} // end of namespace utils
+}  // end of namespace utils
 
-} // end of namespace wasm
+}  // end of namespace wasm
 
-#endif // DECOMPRESSOR_SRC_UTILS_VALUESTACK_H
+#endif  // DECOMPRESSOR_SRC_UTILS_VALUESTACK_H

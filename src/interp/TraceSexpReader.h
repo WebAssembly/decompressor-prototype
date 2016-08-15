@@ -40,9 +40,7 @@ class TraceClassSexpReader : public filt::TraceClassSexp {
   void traceContext() const OVERRIDE;
 
   decode::Cursor* getReadPos() const { return ReadPos; }
-  void setReadPos(decode::Cursor* NewPos) {
-    ReadPos = NewPos;
-  }
+  void setReadPos(decode::Cursor* NewPos) { ReadPos = NewPos; }
 
  protected:
   decode::Cursor* ReadPos;

@@ -25,7 +25,7 @@
 #define TRACE_SEXP_USING(Trace, Name, Nd)
 #else
 #define TRACE_SEXP(Name, Nd) TRACE(node_ptr, (Name), (Nd))
-#define TRACE_SEXP_USING(trace, Name, Nd)                                      \
+#define TRACE_SEXP_USING(trace, Name, Nd) \
   TRACE_USING((trace), node_ptr, (Name), (Nd))
 #endif
 
@@ -88,9 +88,7 @@ class TraceClassSexp : public utils::TraceClass {
       traceNodeTypeInternal(Name, Type);
   }
 
-  void errorSexp(const char* Name, const Node* Nd) {
-    printSexp(Name, Nd);
-  }
+  void errorSexp(const char* Name, const Node* Nd) { printSexp(Name, Nd); }
 
   void errorSexp(const Node* Nd) { printSexp(nullptr, Nd); }
 

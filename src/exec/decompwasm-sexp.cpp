@@ -122,12 +122,12 @@ int main(int Argc, char* Argv[]) {
   if (RunnerCount) {
     ReadCursor RawReadPos(StreamType::Byte, Input);
     auto FillQueue = std::make_shared<Queue>();
-    auto FillReadPos = std::make_shared<ReadCursor>(StreamType::Byte,
-                                                    FillQueue);
-    std::shared_ptr<BinaryReader::Runner> Runner
-        = BinaryReader::startReadingFile(FillReadPos, Symtab);
+    auto FillReadPos =
+        std::make_shared<ReadCursor>(StreamType::Byte, FillQueue);
+    std::shared_ptr<BinaryReader::Runner> Runner =
+        BinaryReader::startReadingFile(FillReadPos, Symtab);
     Runner->setTraceProgress(Verbose >= 1);
-    WriteCursor *FillPos = Runner->getFillPos().get();
+    WriteCursor* FillPos = Runner->getFillPos().get();
     while (Runner->needsMoreInput()) {
       // TODO(karlschimpf) Get a cleaner API for this!
       // Fill queue with more input and resume.

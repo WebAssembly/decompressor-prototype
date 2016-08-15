@@ -90,7 +90,6 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
   SymbolTable& operator=(const SymbolTable&) = delete;
 
  public:
-
   explicit SymbolTable();
   ~SymbolTable() { clear(); }
   // Gets existing symbol if known. Otherwise returns nullptr.
@@ -604,9 +603,8 @@ class OpcodeNode FINAL : public SelectBaseNode {
     void trace(const char* Prefix) const {
       TRACE_BLOCK({ traceInternal(Prefix); });
     }
-    TraceClassSexp& getTrace() const {
-      return Case->getTrace();
-    }
+    TraceClassSexp& getTrace() const { return Case->getTrace(); }
+
    private:
     const CaseNode* Case;
     decode::IntType Min;

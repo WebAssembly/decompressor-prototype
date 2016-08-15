@@ -55,9 +55,7 @@ class BinaryWriter {
 
   void setMinimizeBlockSize(bool NewValue) { MinimizeBlockSize = NewValue; }
 
-  interp::TraceClassSexpWriter& getTrace() {
-    return Trace;
-  }
+  interp::TraceClassSexpWriter& getTrace() { return Trace; }
 
  private:
   decode::WriteCursor WritePos;

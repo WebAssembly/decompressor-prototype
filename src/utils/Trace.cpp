@@ -63,7 +63,7 @@ void TraceClass::enter(const char* Name) {
   fprintf(File, "enter %s\n", Name);
 }
 
-void TraceClass::exit(const char *Name) {
+void TraceClass::exit(const char* Name) {
   assert(~CallStack.empty());
   if (Name == nullptr)
     Name = CallStack.back();

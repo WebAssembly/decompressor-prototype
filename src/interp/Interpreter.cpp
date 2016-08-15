@@ -106,15 +106,15 @@ IntType Interpreter::eval(const Node* Nd) {
   TRACE_SEXP(nullptr, Nd);
 #if LOG_EVAL_LOOKAHEAD
   TRACE_BLOCK({
-      decode::ReadCursor Lookahead(ReadPos);
-      fprintf(TRACE.indent(), "Lookahead:");
-      for (int i = 0; i < 10; ++i) {
-        if (!Lookahead.atByteEob())
-          fprintf(TRACE.getFile(), " %x", Lookahead.readByte());
-      }
-      fprintf(TRACE.getFile(), " ");
-      fprintf(ReadPos.describe(TRACE.getFile(), true), "\n");
-    });
+    decode::ReadCursor Lookahead(ReadPos);
+    fprintf(TRACE.indent(), "Lookahead:");
+    for (int i = 0; i < 10; ++i) {
+      if (!Lookahead.atByteEob())
+        fprintf(TRACE.getFile(), " %x", Lookahead.readByte());
+    }
+    fprintf(TRACE.getFile(), " ");
+    fprintf(ReadPos.describe(TRACE.getFile(), true), "\n");
+  });
 #endif
   IntType ReturnValue = 0;
   switch (NodeType Type = Nd->getType()) {
@@ -167,19 +167,19 @@ IntType Interpreter::eval(const Node* Nd) {
       // NOTE: This assumes that blocks (outside of sections) are only
       // used to define functions.
       TRACE_BLOCK({
-          fprintf(TRACE.indent(), " Function %" PRIuMAX "\n",
-                  uintmax_t(LogBlockCount));
-          if (LOG_NUMBERED_BLOCK && LogBlockCount == LOG_FUNCTION_NUMBER)
-            TRACE.setTraceProgress(true);
-        });
+        fprintf(TRACE.indent(), " Function %" PRIuMAX "\n",
+                uintmax_t(LogBlockCount));
+        if (LOG_NUMBERED_BLOCK && LogBlockCount == LOG_FUNCTION_NUMBER)
+          TRACE.setTraceProgress(true);
+      });
 #endif
       decompressBlock(Nd->getKid(0));
 #if LOG_FUNCTIONS || LOG_NUMBERED_BLOCKS
 #if LOG_NUMBERED_BLOCK
       TRACE_BLOCK({
-          if (LogBlockCount == LOG_FUNCTION_NUMBER)
-            TRACE.setTraceProgress(0);
-        });
+        if (LogBlockCount == LOG_FUNCTION_NUMBER)
+          TRACE.setTraceProgress(0);
+      });
 #endif
       ++LogBlockCount;
 #endif
@@ -412,7 +412,8 @@ void Interpreter::runMethods() {
     switch (Frame.Method) {
       case InterpreterMethod::Error:
         assert(false);
-        fatal("An unrecoverable error has occured in Interpreter::runMethods()");
+        fatal(
+            "An unrecoverable error has occured in Interpreter::runMethods()");
         break;
       case InterpreterMethod::Eval:
         fatal("Eval/Read not yet implemented in runMethods");
@@ -420,7 +421,8 @@ void Interpreter::runMethods() {
       case InterpreterMethod::Read: {
         switch (NodeType Type = Nd->getType()) {
           default:
-            fprintf(stderr, "Read not implemented: %s\n", getNodeTypeName(Type));
+            fprintf(stderr, "Read not implemented: %s\n",
+                    getNodeTypeName(Type));
             fatal("Read not implemented");
             pushReadReturnValue(0);
             break;
@@ -503,7 +505,8 @@ void Interpreter::runMethods() {
         const Node* Nd = Frame.Code;
         switch (NodeType Type = Nd->getType()) {
           default:
-            fprintf(stderr, "Write not implemented: %s\n", getNodeTypeName(Type));
+            fprintf(stderr, "Write not implemented: %s\n",
+                    getNodeTypeName(Type));
             fatal("Write not implemented");
             break;
           case OpParam:
@@ -559,8 +562,8 @@ void Interpreter::runMethods() {
             popArgAndReturnValue(Value);
             break;
           case OpVaruint32OneArg:
-            Writer->writeVaruint32Bits(Value, WritePos,
-                                       cast<Varuint32OneArgNode>(Nd)->getValue());
+            Writer->writeVaruint32Bits(
+                Value, WritePos, cast<Varuint32OneArgNode>(Nd)->getValue());
             popArgAndReturnValue(Value);
             break;
           case OpVaruint64NoArgs:
@@ -568,8 +571,8 @@ void Interpreter::runMethods() {
             popArgAndReturnValue(Value);
             break;
           case OpVaruint64OneArg:
-            Writer->writeVaruint64Bits(Value, WritePos,
-                                       cast<Varuint64OneArgNode>(Nd)->getValue());
+            Writer->writeVaruint64Bits(
+                Value, WritePos, cast<Varuint64OneArgNode>(Nd)->getValue());
             popArgAndReturnValue(Value);
             break;
           case OpI32Const:
@@ -673,9 +676,9 @@ void Interpreter::decompressSection() {
   readSectionName();
 #if LOG_SECTIONS
   TRACE_BLOCK({
-      fprintf(TRACE.indent(), "@%" PRIxMAX " section '%s'\n",
-              uintmax_t(SectionAddress), CurSectionName.c_str());
-    });
+    fprintf(TRACE.indent(), "@%" PRIxMAX " section '%s'\n",
+            uintmax_t(SectionAddress), CurSectionName.c_str());
+  });
 #endif
   TRACE(string, "name", CurSectionName);
   SymbolNode* Sym = Symtab->getSymbol(CurSectionName);

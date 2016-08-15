@@ -104,14 +104,11 @@ class Cursor : public PageCursor {
 
   bool isEofFrozen() const { return Que->isEofFrozen(); }
 
-  bool atEof() const{
-    return isIndexAtEndOfPage() &&
-        !const_cast<Cursor*>(this)->readFillBuffer();
+  bool atEof() const {
+    return isIndexAtEndOfPage() && !const_cast<Cursor*>(this)->readFillBuffer();
   }
 
-  size_t getEofAddress() const {
-    return Que->getEofAddress();
-  }
+  size_t getEofAddress() const { return Que->getEofAddress(); }
 
   BitAddress& getEobAddress() const { return EobPtr->getEobAddress(); }
 

@@ -65,10 +65,9 @@ class Interpreter {
   class CallFrame {
    public:
     CallFrame() : Code(nullptr), Method(InterpreterMethod::Error) {}
-    CallFrame(const filt::Node *Code, InterpreterMethod Method)
+    CallFrame(const filt::Node* Code, InterpreterMethod Method)
         : Code(Code), Method(Method) {}
-    explicit CallFrame(const CallFrame& M)
-        : Code(M.Code), Method(M.Method) {}
+    explicit CallFrame(const CallFrame& M) : Code(M.Code), Method(M.Method) {}
     CallFrame& operator=(const CallFrame& F) {
       Code = F.Code;
       Method = F.Method;
@@ -94,7 +93,7 @@ class Interpreter {
   decode::IntType LastReadValue;
   bool MinimizeBlockSize;
   TraceClassSexpReaderWriter Trace;
-   // The call stack of methods being applied.
+  // The call stack of methods being applied.
   std::vector<CallFrame> CallStack;
   // The stack of passed/returned values.
   std::vector<decode::IntType> ParamStack;
@@ -137,7 +136,6 @@ class Interpreter {
     ReturnStack.push_back(Value);
     CallStack.pop_back();
   }
-
 };
 
 }  // end of namespace interp.
