@@ -95,7 +95,8 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
           CurMethod(RunMethod::RunMethod_NO_SUCH_METHOD),
           CurState(RunState::Failed),
           CurFile(nullptr),
-          CurSection(nullptr) {
+          CurSection(nullptr),
+          CurBlockApplyFcn(RunMethod::RunMethod_NO_SUCH_METHOD) {
       FillPos = std::make_shared<decode::WriteCursor>(
           *ReadPos.get(), ReadPos->getCurByteAddress());
     }
@@ -168,6 +169,7 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
     RunState CurState;
     FileNode *CurFile;
     SectionNode *CurSection;
+    RunMethod CurBlockApplyFcn;
 
     bool hasEnoughHeadroom() const;
 
@@ -181,37 +183,6 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
         return Top--;
       }
     } Counter;
-
-    // Define stack of nested block constructs.
-    struct BlockFrame {
-      BlockFrame() : Method(RunMethod::RunMethod_NO_SUCH_METHOD),
-                     Size(0) {}
-      // Method to process the block
-      RunMethod Method;
-      // The number of elements in the block.
-      size_t Size;
-    };
-    class BlockStack : public utils::ValueStack<BlockFrame> {
-      BlockStack(const BlockStack&) = delete;
-      BlockStack& operator=(const BlockStack&) = delete;
-      typedef utils::ValueStack<BlockFrame> BaseClass;
-     public:
-      BlockStack() {}
-      void push(RunMethod Method) {
-        BaseClass::push();
-        Top.Method = Method;
-        Top.Size = 0;
-      }
-      RunMethod getMethod() const {
-        return Top.Method;
-      }
-      size_t getSize() const {
-        return Top.Size;
-      }
-      void setSize(size_t Size) {
-        Top.Size = Size;
-      }
-    } Block;
   };
 
   // Returns true if it begins with a WASM file magic number.

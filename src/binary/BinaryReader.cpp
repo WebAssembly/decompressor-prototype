@@ -66,13 +66,15 @@ void BinaryReader::Runner::resumeReading() {
     switch (CurMethod) {
       case RunMethod::Block: {
         switch (CurState) {
-          case RunState::Enter:
+          case RunState::Enter: {
             TRACE_ENTER(RunMethodName[int(CurMethod)]);
-            Block.setSize(Reader->Reader->readBlockSize(*ReadPos.get()));
-            TRACE(size_t, "Block size", Block.getSize());
-            Reader->Reader->pushEobAddress(*ReadPos, Block.getSize());
-            pushFrame(Block.getMethod(), RunState::Exit);
+            size_t Size = Reader->Reader->readBlockSize(*ReadPos.get());
+            TRACE(size_t, "Block size", Size);
+            Reader->Reader->pushEobAddress(*ReadPos, Size);
+            pushFrame(CurBlockApplyFcn, RunState::Exit);
+            CurBlockApplyFcn = RunMethod::RunMethod_NO_SUCH_METHOD;
             break;
+          }
           case RunState::Exit:
             popFrame();
             ReadPos->popEobAddress();
@@ -158,7 +160,7 @@ void BinaryReader::Runner::resumeReading() {
             // Save StartStackSize for exit.
             Counter.push(Reader->NodeStack.size());
             CurState = RunState::Exit;
-            Block.push(RunMethod::SectionBody);
+            CurBlockApplyFcn = RunMethod::SectionBody;
             pushFrame(RunMethod::Block);
             break;
           }
