@@ -147,7 +147,7 @@ SymbolNode* SymbolTable::getSymbolDefinition(ExternalName& Name) {
 }
 
 void SymbolTable::install(Node* Root) {
-  TRACE_METHOD("install", Trace);
+  TRACE_METHOD("install");
   // Before starting, clear all known caches.
   VisitedNodesType VisitedNodes;
   NodeVectorType AdditionalNodes;
@@ -185,7 +185,7 @@ void SymbolTable::clearSubtreeCaches(Node* Nd,
                                      NodeVectorType& AdditionalNodes) {
   if (VisitedNodes.count(Nd))
     return;
-  TRACE_METHOD("clearSubtreeCaches", Trace);
+  TRACE_METHOD("clearSubtreeCaches");
   TRACE_SEXP(nullptr, Nd);
   VisitedNodes.insert(Nd);
   Nd->clearCaches(AdditionalNodes);
@@ -198,7 +198,7 @@ void SymbolTable::installSubtreeCaches(Node* Nd,
                                        NodeVectorType& AdditionalNodes) {
   if (VisitedNodes.count(Nd))
     return;
-  TRACE_METHOD("installSubtreeCaches", Trace);
+  TRACE_METHOD("installSubtreeCaches");
   TRACE_SEXP(nullptr, Nd);
   VisitedNodes.insert(Nd);
   Nd->installCaches(AdditionalNodes);
@@ -207,7 +207,7 @@ void SymbolTable::installSubtreeCaches(Node* Nd,
 }
 
 void SymbolTable::installDefinitions(Node* Root) {
-  TRACE_METHOD("installDefinitions", Trace);
+  TRACE_METHOD("installDefinitions");
   TRACE_SEXP(nullptr, Root);
   if (Root == nullptr)
     return;
@@ -322,7 +322,7 @@ AST_INTEGERNODE_TABLE
 #undef X
 
 bool ParamNode::validateNode(NodeVectorType& Parents) {
-  TRACE_METHOD("validateNode", getTrace());
+  TRACE_METHOD("validateNode");
   TRACE_SEXP(nullptr, this);
   for (size_t i = Parents.size(); i > 0; --i) {
     auto* Nd = Parents[i - 1];
@@ -470,13 +470,14 @@ int OpcodeNode::WriteRange::compare(const WriteRange& R) const {
   return 0;
 }
 
-void OpcodeNode::WriteRange::traceInternal(const char* Prefix,
-                                           TraceClassSexp& Trace) const {
-  FILE* Out = Trace.getFile();
-  Trace.indent();
-  fprintf(Out, "[%" PRIxMAX "..%" PRIxMAX "](%" PRIuMAX "):\n", uintmax_t(Min),
-          uintmax_t(Max), uintmax_t(ShiftValue));
-  TRACE_SEXP_USING(Trace, nullptr, Case);
+void OpcodeNode::WriteRange::traceInternal(const char* Prefix) const {
+  TRACE_BLOCK({
+      FILE* Out = TRACE.getFile();
+      TRACE.indent();
+      fprintf(Out, "[%" PRIxMAX "..%" PRIxMAX "](%" PRIuMAX "):\n", uintmax_t(Min),
+              uintmax_t(Max), uintmax_t(ShiftValue));
+      TRACE_SEXP_USING(TRACE, nullptr, Case);
+    });
 }
 
 namespace {
@@ -654,7 +655,7 @@ void OpcodeNode::installCaseRanges() {
 }
 
 void OpcodeNode::installCaches(NodeVectorType& AdditionalNodes) {
-  TRACE_METHOD("OpcodeNode::installCaches", getTrace());
+  TRACE_METHOD("OpcodeNode::installCaches");
   TRACE_SEXP(nullptr, this);
   SelectBaseNode::installCaches(AdditionalNodes);
   installCaseRanges();

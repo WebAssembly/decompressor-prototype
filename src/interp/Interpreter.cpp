@@ -102,19 +102,19 @@ const Node* Interpreter::getParam(const Node* P) {
 IntType Interpreter::eval(const Node* Nd) {
   // TODO(kschimpf): Fix for ast streams.
   // TODO(kschimpf) Handle blocks.
-  TRACE_METHOD("eval", Trace);
-  Trace.traceSexp(Nd);
+  TRACE_METHOD("eval");
+  TRACE_SEXP(nullptr, Nd);
 #if LOG_EVAL_LOOKAHEAD
-  if (Trace.getTraceProgress()) {
-    decode::ReadCursor Lookahead(ReadPos);
-    fprintf(Trace.indent(), "Lookahead:");
-    for (int i = 0; i < 10; ++i) {
-      if (!Lookahead.atByteEob())
-        fprintf(Trace.getFile(), " %x", Lookahead.readByte());
-    }
-    fprintf(Trace.getFile(), " ");
-    fprintf(ReadPos.describe(Trace.getFile(), true), "\n");
-  }
+  TRACE_BLOCK({
+      decode::ReadCursor Lookahead(ReadPos);
+      fprintf(TRACE.indent(), "Lookahead:");
+      for (int i = 0; i < 10; ++i) {
+        if (!Lookahead.atByteEob())
+          fprintf(TRACE.getFile(), " %x", Lookahead.readByte());
+      }
+      fprintf(TRACE.getFile(), " ");
+      fprintf(ReadPos.describe(TRACE.getFile(), true), "\n");
+    });
 #endif
   IntType ReturnValue = 0;
   switch (NodeType Type = Nd->getType()) {
@@ -166,18 +166,20 @@ IntType Interpreter::eval(const Node* Nd) {
 #if LOG_FUNCTIONS || LOG_NUMBERED_BLOCK
       // NOTE: This assumes that blocks (outside of sections) are only
       // used to define functions.
-      fprintf(Trace.indent(), " Function %" PRIuMAX "\n",
-              uintmax_t(LogBlockCount));
-#if LOG_NUMBERED_BLOCK
-      if (LogBlockCount == LOG_FUNCTION_NUMBER)
-        Trace.setTraceProgress(true);
-#endif
+      TRACE_BLOCK({
+          fprintf(TRACE.indent(), " Function %" PRIuMAX "\n",
+                  uintmax_t(LogBlockCount));
+          if (LOG_NUMBERED_BLOCK && LogBlockCount == LOG_FUNCTION_NUMBER)
+            TRACE.setTraceProgress(true);
+        });
 #endif
       decompressBlock(Nd->getKid(0));
 #if LOG_FUNCTIONS || LOG_NUMBERED_BLOCKS
 #if LOG_NUMBERED_BLOCK
-      if (LogBlockCount == LOG_FUNCTION_NUMBER)
-        Trace.setTraceProgress(0);
+      TRACE_BLOCK({
+          if (LogBlockCount == LOG_FUNCTION_NUMBER)
+            TRACE.setTraceProgress(0);
+        });
 #endif
       ++LogBlockCount;
 #endif
@@ -313,7 +315,7 @@ IntType Interpreter::eval(const Node* Nd) {
     case OpVoid:
       break;
   }
-  Trace.traceIntType("return value", ReturnValue);
+  TRACE(IntType, "return value", ReturnValue);
   return ReturnValue;
 }
 
@@ -351,7 +353,7 @@ uint32_t Interpreter::readOpcodeSelector(const Node* Nd, IntType& Value) {
 IntType Interpreter::readOpcode(const Node* Nd,
                                 IntType PrefixValue,
                                 uint32_t NumOpcodes) {
-  TRACE_METHOD("readOpcode", Trace);
+  TRACE_METHOD("readOpcode");
   switch (NodeType Type = Nd->getType()) {
     default:
       fprintf(stderr, "Illegal opcode selector: %s\n", getNodeTypeName(Type));
@@ -361,10 +363,10 @@ IntType Interpreter::readOpcode(const Node* Nd,
       const auto* Sel = cast<OpcodeNode>(Nd);
       const Node* SelectorNd = Sel->getKid(0);
       uint32_t SelectorSize = readOpcodeSelector(SelectorNd, LastReadValue);
-      Trace.traceUint32_t("selector value", LastReadValue);
+      TRACE(uint32_t, "selector value", LastReadValue);
       if (NumOpcodes > 0) {
-        Trace.traceIntType("prefix value", PrefixValue);
-        Trace.traceUint32_t("selector bitsize", SelectorSize);
+        TRACE(IntType, "prefix value", PrefixValue);
+        TRACE(uint32_t, "selector bitsize", SelectorSize);
         if (SelectorSize < 1 || SelectorSize >= 64)
           fatal("Opcode selector has illegal bitsize");
         LastReadValue |= PrefixValue << SelectorSize;
@@ -375,7 +377,7 @@ IntType Interpreter::readOpcode(const Node* Nd,
       break;
     }
   }
-  Trace.traceIntType("return value", LastReadValue);
+  TRACE(IntType, "return value", LastReadValue);
   return LastReadValue;
 }
 
@@ -397,7 +399,7 @@ IntType Interpreter::write(IntType Value, const wasm::filt::Node* Nd) {
 }
 
 void Interpreter::runMethods() {
-  TRACE_METHOD("runMethods", Trace);
+  TRACE_METHOD("runMethods");
   CallFrame Frame;
   int count = 0;
   while (!CallStack.empty()) {
@@ -405,8 +407,8 @@ void Interpreter::runMethods() {
       fatal("Too many iterations!");
     Frame = CallStack.back();
     const Node* Nd = Frame.Code;
-    Trace.traceSexp("CallFrame", Frame.Code);
-    Trace.traceInt("Method", int(Frame.Method));
+    TRACE_SEXP("CallFrame", Frame.Code);
+    TRACE(int, "Method", int(Frame.Method));
     switch (Frame.Method) {
       case InterpreterMethod::Error:
         assert(false);
@@ -497,7 +499,7 @@ void Interpreter::runMethods() {
       }
       case InterpreterMethod::Write: {
         IntType Value = ParamStack.back();
-        Trace.traceIntType("Value", Value);
+        TRACE(IntType, "Value", Value);
         const Node* Nd = Frame.Code;
         switch (NodeType Type = Nd->getType()) {
           default:
@@ -599,17 +601,17 @@ void Interpreter::runMethods() {
 }
 
 void Interpreter::decompress() {
-  TRACE_METHOD("decompress", Trace);
+  TRACE_METHOD("decompress");
   LastReadValue = 0;
   MagicNumber = Reader->readUint32(ReadPos);
   // TODO(kschimpf): Fix reading of uintX. Current implementation not same as
   // WASM binary reader.
-  Trace.traceUint32_t("magic number", MagicNumber);
+  TRACE(hex_uint32_t, "magic number", MagicNumber);
   if (MagicNumber != WasmBinaryMagic)
     fatal("Unable to decompress, did not find WASM binary magic number");
   Writer->writeUint32(MagicNumber, WritePos);
   Version = Reader->readUint32(ReadPos);
-  Trace.traceHexUint32_t("version", Version);
+  TRACE(hex_uint32_t, "version", Version);
   if (Version != WasmBinaryVersion)
     fatal("Unable to decompress, WASM version number not known");
   Writer->writeUint32(Version, WritePos);
@@ -620,21 +622,21 @@ void Interpreter::decompress() {
 }
 
 void Interpreter::decompressBlock(const Node* Code) {
-  TRACE_METHOD("decompressBlock", Trace);
+  TRACE_METHOD("decompressBlock");
   const uint32_t OldSize = Reader->readBlockSize(ReadPos);
-  Trace.traceUint32_t("block size", OldSize);
+  TRACE(uint32_t, "block size", OldSize);
   Reader->pushEobAddress(ReadPos, OldSize);
   WriteCursor BlockStart(WritePos);
   Writer->writeFixedBlockSize(WritePos, 0);
   size_t SizeAfterSizeWrite = Writer->getStreamAddress(WritePos);
   evalOrCopy(Code);
   const size_t NewSize = Writer->getBlockSize(BlockStart, WritePos);
-  Trace.traceUint32_t("OldSize", OldSize);
-  Trace.traceUint32_t("NewSize", NewSize);
+  TRACE(uint32_t, "OldSize", OldSize);
+  TRACE(uint32_t, "NewSize", NewSize);
   if (!MinimizeBlockSize) {
     Writer->writeFixedBlockSize(BlockStart, NewSize);
   } else {
-    Trace.traceMessage("Moving block...");
+    TRACE_MESSAGE("Moving block...");
     Writer->writeVarintBlockSize(BlockStart, NewSize);
     size_t SizeAfterBackPatch = Writer->getStreamAddress(BlockStart);
     size_t Diff = SizeAfterSizeWrite - SizeAfterBackPatch;
@@ -662,7 +664,7 @@ void Interpreter::decompressSection() {
   // TODO(kschimpf) Handle 'filter' sections specially (i.e. install).  This
   // includes calling "clearCaches" on all filter s-expressions to remove an
   // (optimizing) caches installed.
-  TRACE_METHOD("decompressSection", Trace);
+  TRACE_METHOD("decompressSection");
   LastReadValue = 0;
   assert(isa<ByteReadStream>(Reader.get()));
 #if LOG_SECTIONS
@@ -670,10 +672,12 @@ void Interpreter::decompressSection() {
 #endif
   readSectionName();
 #if LOG_SECTIONS
-  fprintf(Trace.indent(), "@%" PRIxMAX " section '%s'\n",
-          uintmax_t(SectionAddress), CurSectionName.c_str());
+  TRACE_BLOCK({
+      fprintf(TRACE.indent(), "@%" PRIxMAX " section '%s'\n",
+              uintmax_t(SectionAddress), CurSectionName.c_str());
+    });
 #endif
-  Trace.traceString("name", CurSectionName);
+  TRACE(string, "name", CurSectionName);
   SymbolNode* Sym = Symtab->getSymbol(CurSectionName);
   decompressBlock(Sym ? Sym->getDefineDefinition() : nullptr);
   Reader->alignToByte(ReadPos);

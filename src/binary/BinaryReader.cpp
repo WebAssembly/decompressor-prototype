@@ -56,7 +56,7 @@ bool BinaryReader::Runner::hasEnoughHeadroom() const {
 }
 
 void BinaryReader::Runner::resumeReading() {
-  TRACE_METHOD("resumeReading", getTrace());
+  TRACE_METHOD("resumeReading");
   // TODO(karlschimpf) Why is this lock necessary (stops core dump).
   UsingReadPos Lock(*Reader, *ReadPos);
   while (hasEnoughHeadroom()) {
@@ -392,7 +392,7 @@ void BinaryReader::readNary() {
 }
 
 FileNode* BinaryReader::readHeader() {
-  TRACE_METHOD("readHeader", Trace);
+  TRACE_METHOD("readHeader");
   MagicNumber = Reader->readUint32(*ReadPos);
   TRACE(uint32_t, "MagicNumber", MagicNumber);
   if (MagicNumber != WasmBinaryMagic)
@@ -410,7 +410,7 @@ FileNode* BinaryReader::readFile(StreamType Type) {
 }
 
 FileNode* BinaryReader::readFile(ReadCursor &NewReadPos) {
-  TRACE_METHOD("readFile", Trace);
+  TRACE_METHOD("readFile");
   UsingReadPos ReadLock(*this, NewReadPos);
   auto *File = readHeader();
   while (!ReadPos->atByteEob()) {
@@ -427,7 +427,7 @@ SectionNode* BinaryReader::readSection(StreamType Type) {
 }
 
 SectionNode* BinaryReader::readSection(ReadCursor &NewReadPos) {
-  TRACE_METHOD("readSection", Trace);
+  TRACE_METHOD("readSection");
   UsingReadPos ReadLock(*this, NewReadPos);
   ExternalName Name = readExternalName();
   auto* SectionName = Symtab->create<SymbolNode>(Name);
@@ -458,7 +458,7 @@ SectionNode* BinaryReader::readSection(ReadCursor &NewReadPos) {
 }
 
 void BinaryReader::readSymbolTable() {
-  TRACE_METHOD("readSymbolTable", Trace);
+  TRACE_METHOD("readSymbolTable");
   SectionSymtab.clear();
   uint32_t NumSymbols = Reader->readVaruint32(*ReadPos);
   for (uint32_t i = 0; i < NumSymbols; ++i) {
@@ -492,7 +492,7 @@ InternalName& BinaryReader::readInternalName() {
 }
 
 void BinaryReader::readBlock(std::function<void()> ApplyFn) {
-  TRACE_METHOD("readBlock", Trace);
+  TRACE_METHOD("readBlock");
   const size_t BlockSize = Reader->readBlockSize(*ReadPos);
   TRACE(size_t, "Block size", BlockSize);
   Reader->pushEobAddress(*ReadPos, BlockSize);
@@ -501,7 +501,7 @@ void BinaryReader::readBlock(std::function<void()> ApplyFn) {
 }
 
 void BinaryReader::readNode() {
-  TRACE_METHOD("readNode", Trace);
+  TRACE_METHOD("readNode");
   switch (NodeType Opcode = (NodeType)Reader->readUint8(*ReadPos)) {
     case OpAnd:
       readBinary<AndNode>();

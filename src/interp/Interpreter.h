@@ -94,7 +94,7 @@ class Interpreter {
   decode::IntType LastReadValue;
   bool MinimizeBlockSize;
   TraceClassSexpReaderWriter Trace;
-  // The call stack of methods being applied.
+   // The call stack of methods being applied.
   std::vector<CallFrame> CallStack;
   // The stack of passed/returned values.
   std::vector<decode::IntType> ParamStack;
@@ -102,6 +102,7 @@ class Interpreter {
   // The stack of (eval) calls.
   filt::ConstNodeVectorType EvalStack;
 
+  TraceClassSexpReaderWriter& getTrace() { return Trace; }
   void decompressSection();
   void readSectionName();
   void decompressBlock(const filt::Node* Code);
