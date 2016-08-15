@@ -26,7 +26,7 @@
 #else
 #define TRACE_SEXP(Name, Nd) TRACE(node_ptr, (Name), (Nd))
 #define TRACE_SEXP_USING(trace, Name, Nd)                                      \
-  TRACE_USING((Trace), node_ptr, (Name), (Nd))
+  TRACE_USING((trace), node_ptr, (Name), (Nd))
 #endif
 
 #include "sexp/NodeType.h"

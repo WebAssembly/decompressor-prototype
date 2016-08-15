@@ -599,20 +599,20 @@ class OpcodeNode FINAL : public SelectBaseNode {
     int compare(const WriteRange& R) const;
     bool operator<(const WriteRange& R) const { return compare(R) < 0; }
     void trace() const {
-      if (Case->getTrace().getTraceProgress())
-        traceInternal("", Case->getTrace());
+      TRACE_BLOCK({ traceInternal(""); });
     }
     void trace(const char* Prefix) const {
-      if (Case->getTrace().getTraceProgress())
-        traceInternal(Prefix, Case->getTrace());
+      TRACE_BLOCK({ traceInternal(Prefix); });
     }
-
+    TraceClassSexp& getTrace() const {
+      return Case->getTrace();
+    }
    private:
     const CaseNode* Case;
     decode::IntType Min;
     decode::IntType Max;
     uint32_t ShiftValue;
-    void traceInternal(const char* Prefix, TraceClassSexp& Trace) const;
+    void traceInternal(const char* Prefix) const;
   };
   void clearCaches(NodeVectorType& AdditionalNodes) OVERRIDE;
   void installCaches(NodeVectorType& AdditionalNodes) OVERRIDE;
