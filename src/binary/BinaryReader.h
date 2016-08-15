@@ -28,6 +28,9 @@
 #include "stream/ReadCursor.h"
 #include "stream/WriteCursor.h"
 #include "utils/Defs.h"
+#if 1
+#include "utils/ValueStack.h"
+#endif
 
 #include <functional>
 #include <vector>
@@ -161,12 +164,28 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
       CurState = Frame.State;
       CallStack.pop_back();
     }
+#if 0
     std::vector<size_t> LoopCounter;
+#endif
     ExternalName Name;
     RunMethod CurMethod;
     RunState CurState;
     FileNode *CurFile;
     SectionNode *CurSection;
+
+#if 1
+    // Define stack of (i.e. local variable) Counter.
+    class CounterStack : public utils::ValueStack<size_t> {
+      CounterStack(const CounterStack&) = delete;
+      CounterStack& operator=(const CounterStack&) = delete;
+     public:
+      CounterStack() : utils::ValueStack<size_t>(0) {}
+      size_t operator--(int) {
+        return Top--;
+      }
+    } Counter;
+#endif
+
     struct BlockFrame {
       BlockFrame(RunMethod Method, size_t Size)
           : Method(Method), Size(Size) {}
@@ -184,6 +203,7 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
       return Size;
     }
     bool hasEnoughHeadroom() const;
+#if 0
     void pushLoopCount(size_t Count) {
       LoopCounter.push_back(Count);
     }
@@ -202,6 +222,7 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
         LoopCounter.pop_back();
       return Count;
     }
+#endif
   };
 
   // Returns true if it begins with a WASM file magic number.
