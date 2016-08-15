@@ -148,6 +148,7 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
     std::shared_ptr<decode::ReadCursor> ReadPos;
     std::shared_ptr<decode::WriteCursor> FillPos;
     std::vector<CallFrame> CallStack;
+
     void pushFrame(RunMethod NewMethod, RunState ResumeState) {
       CallStack.push_back(CallFrame(CurMethod, ResumeState));
       CurMethod = NewMethod;
@@ -168,6 +169,8 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
     FileNode *CurFile;
     SectionNode *CurSection;
 
+    bool hasEnoughHeadroom() const;
+
     // Define stack of (i.e. local variable) Counter.
     class CounterStack : public utils::ValueStack<size_t> {
       CounterStack(const CounterStack&) = delete;
@@ -179,23 +182,36 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
       }
     } Counter;
 
+    // Define stack of nested block constructs.
     struct BlockFrame {
-      BlockFrame(RunMethod Method, size_t Size)
-          : Method(Method), Size(Size) {}
+      BlockFrame() : Method(RunMethod::RunMethod_NO_SUCH_METHOD),
+                     Size(0) {}
+      // Method to process the block
       RunMethod Method;
+      // The number of elements in the block.
       size_t Size;
     };
-    std::vector<BlockFrame> BlockStack;
-    void pushBlock(RunMethod Method) {
-      BlockStack.push_back(BlockFrame(Method, 0));
-      pushFrame(RunMethod::Block);
-    }
-    size_t popBlock() {
-      size_t Size = BlockStack.back().Size;
-      BlockStack.pop_back();
-      return Size;
-    }
-    bool hasEnoughHeadroom() const;
+    class BlockStack : public utils::ValueStack<BlockFrame> {
+      BlockStack(const BlockStack&) = delete;
+      BlockStack& operator=(const BlockStack&) = delete;
+      typedef utils::ValueStack<BlockFrame> BaseClass;
+     public:
+      BlockStack() {}
+      void push(RunMethod Method) {
+        BaseClass::push();
+        Top.Method = Method;
+        Top.Size = 0;
+      }
+      RunMethod getMethod() const {
+        return Top.Method;
+      }
+      size_t getSize() const {
+        return Top.Size;
+      }
+      void setSize(size_t Size) {
+        Top.Size = Size;
+      }
+    } Block;
   };
 
   // Returns true if it begins with a WASM file magic number.
