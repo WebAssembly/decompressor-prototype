@@ -92,8 +92,6 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
     Runner(std::shared_ptr<BinaryReader> Reader,
            std::shared_ptr<decode::ReadCursor> ReadPos)
         : Reader(Reader), ReadPos(ReadPos),
-          CurMethod(RunMethod::RunMethod_NO_SUCH_METHOD),
-          CurState(RunState::Failed),
           CurFile(nullptr),
           CurSection(nullptr),
           CurBlockApplyFcn(RunMethod::RunMethod_NO_SUCH_METHOD) {
@@ -110,19 +108,19 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
       return !isSuccessful() && !errorsFound();
     }
     bool isSuccessful() const {
-      return CurState == RunState::Succeeded;
+      return getState() == RunState::Succeeded;
     }
     bool errorsFound() const {
-      return CurState == RunState::Failed;
+      return getState() == RunState::Failed;
     }
     bool isReadingSection() const {
-      return CurMethod == RunMethod::Section;
+      return getMethod() == RunMethod::Section;
     }
     SectionNode* getSection() {
       return (isSuccessful() && isReadingSection())  ? CurSection : nullptr;
     }
     bool isReadingFile() const {
-      return CurMethod == RunMethod::File;
+      return getMethod() == RunMethod::File;
     }
     FileNode* getFile() {
       return (isSuccessful() && isReadingFile()) ? CurFile : nullptr;
@@ -139,39 +137,69 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
     }
     TraceClassSexpReader& getTrace() { return Reader->getTrace(); }
    private:
+    std::shared_ptr<BinaryReader> Reader;
+    std::shared_ptr<decode::ReadCursor> ReadPos;
+    std::shared_ptr<decode::WriteCursor> FillPos;
+    ExternalName Name;
+    FileNode *CurFile;
+    SectionNode *CurSection;
+    RunMethod CurBlockApplyFcn;
+
+    RunMethod getMethod() const {
+      return CallStack.getMethod();
+    }
+    void setMethod(RunMethod NewMethod) {
+      CallStack.setMethod(NewMethod);
+      CallStack.setState(RunState::Enter);
+    }
+    RunState getState() const {
+      return CallStack.getState();
+    }
+    void setState(RunState NewState) {
+      CallStack.setState(NewState);
+    }
+
+    bool hasEnoughHeadroom() const;
+
+    // Define state of nested methods.
     struct CallFrame {
+      CallFrame() : Method(RunMethod::RunMethod_NO_SUCH_METHOD),
+                    State(RunState::Failed) {}
       CallFrame(RunMethod Method, RunState State)
           : Method(Method), State(State) {}
       RunMethod Method;
       RunState State;
     };
-    std::shared_ptr<BinaryReader> Reader;
-    std::shared_ptr<decode::ReadCursor> ReadPos;
-    std::shared_ptr<decode::WriteCursor> FillPos;
-    std::vector<CallFrame> CallStack;
-
-    void pushFrame(RunMethod NewMethod, RunState ResumeState) {
-      CallStack.push_back(CallFrame(CurMethod, ResumeState));
-      CurMethod = NewMethod;
-      CurState = RunState::Enter;
-    }
-    void pushFrame(RunMethod NewMethod) {
-      pushFrame(NewMethod, CurState);
-    }
-    void popFrame() {
-      CallFrame &Frame = CallStack.back();
-      CurMethod = Frame.Method;
-      CurState = Frame.State;
-      CallStack.pop_back();
-    }
-    ExternalName Name;
-    RunMethod CurMethod;
-    RunState CurState;
-    FileNode *CurFile;
-    SectionNode *CurSection;
-    RunMethod CurBlockApplyFcn;
-
-    bool hasEnoughHeadroom() const;
+    class CallFrameStack : public utils::ValueStack<CallFrame> {
+      CallFrameStack(const CallFrameStack&) = delete;
+      CallFrameStack& operator=(const CallFrameStack&) = delete;
+     public:
+      typedef utils::ValueStack<CallFrame> BaseClass;
+      CallFrameStack() {}
+      void push(RunMethod NewMethod) {
+        BaseClass::push();
+        Top.Method = NewMethod;
+        Top.State = RunState::Enter;
+      }
+      void push(RunMethod NewMethod, RunState ResumeState) {
+        Top.State = ResumeState;
+        BaseClass::push();
+        Top.Method = NewMethod;
+        Top.State = RunState::Enter;
+      }
+      RunMethod getMethod() const {
+        return Top.Method;
+      }
+      void setMethod(RunMethod NewMethod) {
+        Top.Method = NewMethod;
+      }
+      RunState getState() const {
+        return Top.State;
+      }
+      void setState(RunState NewState) {
+        Top.State = NewState;
+      }
+    } CallStack;
 
     // Define stack of (i.e. local variable) Counter.
     class CounterStack : public utils::ValueStack<size_t> {

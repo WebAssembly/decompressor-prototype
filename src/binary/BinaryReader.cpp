@@ -61,22 +61,22 @@ void BinaryReader::Runner::resumeReading() {
   UsingReadPos Lock(*Reader, *ReadPos);
   while (hasEnoughHeadroom()) {
     TRACE(string, "method",
-          std::string(RunMethodName[int(CurMethod)])
-          + "." + RunStateName[int(CurState)]);
-    switch (CurMethod) {
+          std::string(RunMethodName[int(getMethod())])
+          + "." + RunStateName[int(getState())]);
+    switch (getMethod()) {
       case RunMethod::Block: {
-        switch (CurState) {
+        switch (getState()) {
           case RunState::Enter: {
-            TRACE_ENTER(RunMethodName[int(CurMethod)]);
+            TRACE_ENTER(RunMethodName[int(getMethod())]);
             size_t Size = Reader->Reader->readBlockSize(*ReadPos.get());
             TRACE(size_t, "Block size", Size);
             Reader->Reader->pushEobAddress(*ReadPos, Size);
-            pushFrame(CurBlockApplyFcn, RunState::Exit);
+            CallStack.push(CurBlockApplyFcn, RunState::Exit);
             CurBlockApplyFcn = RunMethod::RunMethod_NO_SUCH_METHOD;
             break;
           }
           case RunState::Exit:
-            popFrame();
+            CallStack.pop();
             ReadPos->popEobAddress();
             TRACE_EXIT_OVERRIDE(RunMethodName[int(RunMethod::Block)]);
             break;
@@ -87,31 +87,31 @@ void BinaryReader::Runner::resumeReading() {
         break;
       }
       case RunMethod::File:
-        switch (CurState) {
+        switch (getState()) {
           case RunState::Enter: {
-            TRACE_ENTER(RunMethodName[int(CurMethod)]);
+            TRACE_ENTER(RunMethodName[int(getMethod())]);
             CurFile = Reader->readHeader();
-            pushFrame(RunMethod::Section, RunState::Loop);
+            CallStack.push(RunMethod::Section, RunState::Loop);
             break;
           }
           case RunState::Loop: {
             CurFile->append(CurSection);
             CurSection = nullptr;
             if (ReadPos->atEof()) {
-              CurState = RunState::Exit;
+              setState(RunState::Exit);
               break;
             }
-            pushFrame(RunMethod::Section);
+            CallStack.push(RunMethod::Section);
             break;
           }
           case RunState::Exit: {
             Reader->SectionSymtab.install(CurFile);
             TRACE_EXIT_OVERRIDE(RunMethodName[int(RunMethod::File)]);
             if (CallStack.empty()) {
-              CurState = RunState::Succeeded;
+              setState(RunState::Succeeded);
               return;
             }
-            popFrame();
+            CallStack.pop();
             break;
           }
           default:
@@ -120,25 +120,25 @@ void BinaryReader::Runner::resumeReading() {
         }
         break;
       case RunMethod::Name: {
-        switch (CurState) {
+        switch (getState()) {
           case RunState::Enter: {
-            TRACE_ENTER(RunMethodName[int(CurMethod)]);
+            TRACE_ENTER(RunMethodName[int(getMethod())]);
             Name.clear();
             Counter.push(Reader->Reader->readVaruint32(*ReadPos.get()));
-            CurState = RunState::Loop;
+            setState(RunState::Loop);
             break;
           }
           case RunState::Loop: {
             if (Counter-- == 0) {
               Counter.pop();
-              CurState = RunState::Exit;
+              setState(RunState::Exit);
               break;
             }
             Name.push_back(char(Reader->Reader->readUint8(*ReadPos.get())));
             break;
           }
           case RunState::Exit:
-            popFrame();
+            CallStack.pop();
             TRACE_EXIT_OVERRIDE(RunMethodName[int(RunMethod::Name)]);
             break;
           default:
@@ -148,10 +148,10 @@ void BinaryReader::Runner::resumeReading() {
         break;
       }
       case RunMethod::Section:
-        switch (CurState) {
+        switch (getState()) {
           case RunState::Enter: {
-            TRACE_ENTER(RunMethodName[int(CurMethod)]);
-            pushFrame(RunMethod::Name, RunState::Setup);
+            TRACE_ENTER(RunMethodName[int(getMethod())]);
+            CallStack.push(RunMethod::Name, RunState::Setup);
             break;
           }
           case RunState::Setup: {
@@ -159,9 +159,9 @@ void BinaryReader::Runner::resumeReading() {
             CurSection->append(create<SymbolNode>(Name));
             // Save StartStackSize for exit.
             Counter.push(Reader->NodeStack.size());
-            CurState = RunState::Exit;
+            setState(RunState::Exit);
             CurBlockApplyFcn = RunMethod::SectionBody;
-            pushFrame(RunMethod::Block);
+            CallStack.push(RunMethod::Block);
             break;
           }
           case RunState::Exit: {
@@ -176,10 +176,10 @@ void BinaryReader::Runner::resumeReading() {
               Reader->NodeStack.pop_back();
             TRACE_EXIT_OVERRIDE(RunMethodName[int(RunMethod::Section)]);
             if (CallStack.empty()) {
-              CurState = RunState::Succeeded;
+              setState(RunState::Succeeded);
               return;
             }
-            popFrame();
+            CallStack.pop();
             break;
           }
           default:
@@ -188,25 +188,25 @@ void BinaryReader::Runner::resumeReading() {
         }
         break;
       case RunMethod::SectionBody:
-        switch (CurState) {
+        switch (getState()) {
           case RunState::Enter: {
-            TRACE_ENTER(RunMethodName[int(CurMethod)]);
+            TRACE_ENTER(RunMethodName[int(getMethod())]);
             SymbolNode *Sym = CurSection->getSymbol();
             assert(Sym);
             if (Sym->getStringName() != "filter")
               fatal("Handling non-filter sections not implemented!");
-            pushFrame(RunMethod::SymbolTable, RunState::Loop);
+            CallStack.push(RunMethod::SymbolTable, RunState::Loop);
             break;
           }
           case RunState::Loop:
             if (ReadPos->atByteEob()) {
-              CurState = RunState::Exit;
+              setState(RunState::Exit);
               break;
             }
             Reader->readNode();
             break;
           case RunState::Exit:
-            popFrame();
+            CallStack.pop();
             TRACE_EXIT_OVERRIDE(RunMethodName[int(RunMethod::SectionBody)]);
             break;
           default:
@@ -215,31 +215,31 @@ void BinaryReader::Runner::resumeReading() {
         }
         break;
       case RunMethod::SymbolTable:
-        switch (CurState) {
+        switch (getState()) {
           case RunState::Enter: {
-            TRACE_ENTER(RunMethodName[int(CurMethod)]);
+            TRACE_ENTER(RunMethodName[int(getMethod())]);
             Reader->SectionSymtab.clear();
             Counter.push(Reader->Reader->readVaruint32(*ReadPos.get()));
-            CurState = RunState::Loop;
+            setState(RunState::Loop);
             break;
           }
           case RunState::Loop: {
             if (Counter-- == 0) {
               Counter.pop();
-              CurState = RunState::Exit;
+              setState(RunState::Exit);
               break;
             }
-            pushFrame(RunMethod::Name, RunState::LoopCont);
+            CallStack.push(RunMethod::Name, RunState::LoopCont);
             break;
           }
           case RunState::LoopCont:
             TRACE(size_t, "index", Reader->SectionSymtab.getNumberSymbols());
             TRACE(string, "Symbol", Name);
             Reader->SectionSymtab.addSymbol(Name);
-            CurState = RunState::Loop;
+            setState(RunState::Loop);
             break;
           case RunState::Exit:
-            popFrame();
+            CallStack.pop();
             TRACE_EXIT_OVERRIDE(RunMethodName[int(RunMethod::SymbolTable)]);
             break;
           default:
@@ -697,8 +697,8 @@ std::shared_ptr<BinaryReader::Runner> BinaryReader::startReadingSection(
     std::shared_ptr<SymbolTable> Symtab) {
   auto BinReader = std::make_shared<BinaryReader>(ReadPos->getQueue(), Symtab);
   auto Rnnr = std::make_shared<Runner>(BinReader, ReadPos);
-  Rnnr->CurMethod = RunMethod::Section;
-  Rnnr->CurState = RunState::Enter;
+  Rnnr->setMethod(RunMethod::Section);
+  Rnnr->setState(RunState::Enter);
   return Rnnr;
 }
 
@@ -711,8 +711,8 @@ std::shared_ptr<BinaryReader::Runner> BinaryReader::startReadingFile(
   (void)RunStateName;
   auto BinReader = std::make_shared<BinaryReader>(ReadPos->getQueue(), Symtab);
   auto Rnnr = std::make_shared<Runner>(BinReader, ReadPos);
-  Rnnr->CurMethod = RunMethod::File;
-  Rnnr->CurState = RunState::Enter;
+  Rnnr->setMethod(RunMethod::File);
+  Rnnr->setState(RunState::Enter);
   return Rnnr;
 }
 
