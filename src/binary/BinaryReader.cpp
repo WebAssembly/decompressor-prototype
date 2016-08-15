@@ -123,24 +123,14 @@ void BinaryReader::Runner::resumeReading() {
         switch (CurState) {
           case RunState::Enter: {
             TRACE_ENTER(RunMethodName[int(CurMethod)]);
-            CurState = RunState::Loop;
             Name.clear();
-            uint32_t Size = Reader->Reader->readVaruint32(*ReadPos.get());
-#if 0
-            enterCountedLoop(Size);
-#else
-            Counter.push(Size);
+            Counter.push(Reader->Reader->readVaruint32(*ReadPos.get()));
             CurState = RunState::Loop;
-#endif
             break;
           }
           case RunState::Loop: {
-#if 0
-            if (getThenDecIterCount() == 0)
-#else
-            if (Counter-- == 0)
-#endif
-            {
+            if (Counter-- == 0) {
+              Counter.pop();
               CurState = RunState::Exit;
               break;
             }
@@ -168,22 +158,14 @@ void BinaryReader::Runner::resumeReading() {
             CurSection = create<SectionNode>();
             CurSection->append(create<SymbolNode>(Name));
             // Save StartStackSize for exit.
-#if 0
-            pushLoopCount(Reader->NodeStack.size());
-#else
             Counter.push(Reader->NodeStack.size());
-#endif
             CurState = RunState::Exit;
             pushBlock(RunMethod::SectionBody);
             break;
           }
           case RunState::Exit: {
-#if 0
-            size_t StartStackSize = popLoopCount();
-#else
             size_t StartStackSize = Counter.get();
             Counter.pop();
-#endif
             size_t StackSize = Reader->NodeStack.size();
             if (StackSize < StartStackSize)
               fatal("Malformed section: " + Name);
@@ -236,21 +218,13 @@ void BinaryReader::Runner::resumeReading() {
           case RunState::Enter: {
             TRACE_ENTER(RunMethodName[int(CurMethod)]);
             Reader->SectionSymtab.clear();
-#if 0
-            enterCountedLoop(Reader->Reader->readVaruint32(*ReadPos.get()));
-#else
             Counter.push(Reader->Reader->readVaruint32(*ReadPos.get()));
             CurState = RunState::Loop;
-#endif
             break;
           }
           case RunState::Loop: {
-#if 0
-            if (getThenDecIterCount() == 0)
-#else
-            if (Counter-- == 0)
-#endif
-            {
+            if (Counter-- == 0) {
+              Counter.pop();
               CurState = RunState::Exit;
               break;
             }
