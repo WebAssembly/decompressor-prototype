@@ -56,7 +56,7 @@ bool BinaryReader::Runner::hasEnoughHeadroom() const {
 }
 
 void BinaryReader::Runner::resumeReading() {
-  TRACE_METHOD("resumeReading");
+  TRACE_ENTER(RunMethodName[int(getMethod())]);
   // TODO(karlschimpf) Why is this lock necessary (stops core dump).
   UsingReadPos Lock(*Reader, *ReadPos);
   while (hasEnoughHeadroom()) {
@@ -107,6 +107,7 @@ void BinaryReader::Runner::resumeReading() {
             TRACE_EXIT_OVERRIDE(RunMethodName[int(RunMethod::File)]);
             if (CallStack.empty()) {
               setState(RunState::Succeeded);
+              TRACE_EXIT_OVERRIDE(RunMethodName[int(RunMethod::File)]);
               return;
             }
             CallStack.pop();
@@ -175,6 +176,7 @@ void BinaryReader::Runner::resumeReading() {
             TRACE_EXIT_OVERRIDE(RunMethodName[int(RunMethod::Section)]);
             if (CallStack.empty()) {
               setState(RunState::Succeeded);
+              TRACE_EXIT_OVERRIDE(RunMethodName[int(RunMethod::Section)]);
               return;
             }
             CallStack.pop();
@@ -250,7 +252,8 @@ void BinaryReader::Runner::resumeReading() {
         break;
     }
   }
-  TRACE_MESSAGE("waiting for more input");
+  TRACE_MESSAGE("waiting for more input ...");
+  TRACE_EXIT_OVERRIDE(RunMethodName[int(getMethod())]);
   return;
 }
 
