@@ -45,6 +45,7 @@ namespace wasm {
 namespace decode {
 
 static constexpr size_t kUndefinedAddress = std::numeric_limits<size_t>::max();
+static constexpr size_t kMaxAddress = std::numeric_limits<size_t>::max() - 1;
 
 typedef uint8_t BitsInByteType;
 

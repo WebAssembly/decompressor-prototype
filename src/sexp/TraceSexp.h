@@ -20,6 +20,15 @@
 #ifndef DECOMPRESSOR_SRC_SEXP_TRACESEXP_H
 #define DECOMPRESSOR_SRC_SEXP_TRACESEXP_H
 
+#ifdef NDEBUG
+#define TRACE_SEXP(Name, Nd)
+#define TRACE_SEXP_USING(Trace, Name, Nd)
+#else
+#define TRACE_SEXP(Name, Nd) TRACE(node_ptr, (Name), (Nd))
+#define TRACE_SEXP_USING(trace, Name, Nd)                                      \
+  TRACE_USING((Trace), node_ptr, (Name), (Nd))
+#endif
+
 #include "sexp/NodeType.h"
 #include "utils/Trace.h"
 
@@ -41,29 +50,16 @@ class TraceClassSexp : public utils::TraceClass {
   TraceClassSexp(const char* Label, FILE* File);
   ~TraceClassSexp();
 
-  void traceSexp(const Node* Nd) {
-    if (getTraceProgress())
-      traceSexpInternal("", Nd);
+  void trace_node_ptr(const char* Name, const Node* Nd) {
+    traceSexpInternal(Name, Nd);
+  }
+  void trace_NodeType(const char* Name, NodeType Type) {
+    traceNodeTypeInternal(Name, Type);
   }
 
-  void traceSexp(const char* Prefix, const Node* Nd) {
-    if (getTraceProgress())
-      traceSexpInternal(Prefix, Nd);
-  }
+  void printSexp(const char* Name, const Node* Nd);
 
-  void traceNodeType(NodeType Type) {
-    if (getTraceProgress())
-      traceNodeTypeInternal("", Type);
-  }
-
-  void traceNodeType(const char* Prefix, NodeType Type) {
-    if (getTraceProgress())
-      traceNodeTypeInternal(Prefix, Type);
-  }
-
-  void errorSexp(const char* Prefix, const Node* Nd);
-
-  void errorSexp(const Node* Nd) { errorSexp("", Nd); }
+  void printSexp(const Node* Nd) { printSexp(nullptr, Nd); }
 
   TextWriter* getTextWriter() {
     if (Writer == nullptr)
@@ -71,10 +67,37 @@ class TraceClassSexp : public utils::TraceClass {
     return Writer;
   }
 
+  // TODO(karlschimpf): Methods below here are deprecated.
+  void traceSexp(const Node* Nd) {
+    if (getTraceProgress())
+      traceSexpInternal("", Nd);
+  }
+
+  void traceSexp(const char* Name, const Node* Nd) {
+    if (getTraceProgress())
+      traceSexpInternal(Name, Nd);
+  }
+
+  void traceNodeType(NodeType Type) {
+    if (getTraceProgress())
+      traceNodeTypeInternal("", Type);
+  }
+
+  void traceNodeType(const char* Name, NodeType Type) {
+    if (getTraceProgress())
+      traceNodeTypeInternal(Name, Type);
+  }
+
+  void errorSexp(const char* Name, const Node* Nd) {
+    printSexp(Name, Nd);
+  }
+
+  void errorSexp(const Node* Nd) { printSexp(nullptr, Nd); }
+
  protected:
   TextWriter* Writer;
-  void traceSexpInternal(const char* Prefix, const Node* Nd);
-  void traceNodeTypeInternal(const char* Prefix, NodeType Type);
+  void traceSexpInternal(const char* Name, const Node* Nd);
+  void traceNodeTypeInternal(const char* Name, NodeType Type);
 
   TextWriter* getNewTextWriter();
 };

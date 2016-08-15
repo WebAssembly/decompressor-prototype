@@ -90,7 +90,6 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
   SymbolTable& operator=(const SymbolTable&) = delete;
 
  public:
-  TraceClassSexp Trace;
 
   explicit SymbolTable();
   ~SymbolTable() { clear(); }
@@ -110,7 +109,10 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
     return Alloc->create<T>(*this, std::forward<Args>(args)...);
   }
 
+  TraceClassSexp& getTrace() { return Trace; }
+
  private:
+  TraceClassSexp Trace;
   std::shared_ptr<alloc::Allocator> Alloc;
   Node* Error;
   int NextCreationIndex;
@@ -168,7 +170,7 @@ class Node {
 
   const char* getNodeName() const { return getNodeTypeName(getType()); }
 
-  TraceClassSexp& getTrace() const { return Symtab.Trace; }
+  TraceClassSexp& getTrace() const { return Symtab.getTrace(); }
 
   bool hasKids() const { return getNumKids() > 0; }
 

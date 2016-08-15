@@ -45,6 +45,9 @@ class SectionSymbolTable {
   const IndexLookupType& getVector() { return IndexLookup; }
   void addSymbol(std::string& Name);
   uint32_t getSymbolIndex(SymbolNode* Symbol);
+  IndexType getNumberSymbols() const {
+    return IndexLookup.size();
+  }
   void clear() {
     Symtab->clear();
     SymbolLookup.clear();

@@ -46,21 +46,22 @@ TextWriter* TraceClassSexp::getNewTextWriter() {
   return new TextWriter();
 }
 
-void TraceClassSexp::traceSexpInternal(const char* Prefix, const Node* Node) {
+void TraceClassSexp::traceSexpInternal(const char* Name, const Node* Node) {
   indent();
-  if (Prefix)
-    fprintf(File, "%s: ", Prefix);
+  if (Name)
+    fprintf(File, "%s: ", Name);
   getTextWriter()->writeAbbrev(File, Node);
 }
 
-void TraceClassSexp::errorSexp(const char* Prefix, const Node* Node) {
-  fprintf(File, "%s", Prefix);
+void TraceClassSexp::printSexp(const char* Name, const Node* Node) {
+  if (Name)
+    fprintf(File, "%s: ", Name);
   getTextWriter()->write(File, Node);
 }
 
-void TraceClassSexp::traceNodeTypeInternal(const char* Prefix, NodeType Type) {
+void TraceClassSexp::traceNodeTypeInternal(const char* Name, NodeType Type) {
   indent();
-  fprintf(File, "%s%s\n", Prefix, getNodeTypeName(Type));
+  fprintf(File, "%s%s\n", Name, getNodeTypeName(Type));
 }
 
 }  // end of namespace filt

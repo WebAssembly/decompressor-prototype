@@ -26,6 +26,8 @@
 
 namespace wasm {
 
+using namespace utils;
+
 namespace filt {
 
 namespace {
