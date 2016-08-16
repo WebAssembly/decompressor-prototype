@@ -94,7 +94,9 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
         : Reader(Reader), ReadPos(ReadPos),
           CurFile(nullptr),
           CurSection(nullptr),
-          CurBlockApplyFcn(RunMethod::RunMethod_NO_SUCH_METHOD) {
+          CurBlockApplyFcn(RunMethod::RunMethod_NO_SUCH_METHOD),
+          FrameStack(Frame),
+          CounterStack(Counter) {
       FillPos = std::make_shared<decode::WriteCursor>(
           *ReadPos.get(), ReadPos->getCurByteAddress());
     }
@@ -108,17 +110,17 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
       return !isSuccessful() && !errorsFound();
     }
     bool isSuccessful() const {
-      return getState() == RunState::Succeeded;
+      return Frame.State == RunState::Succeeded;
     }
     bool errorsFound() const {
-      return getState() == RunState::Failed;
+      return Frame.State == RunState::Failed;
     }
     SectionNode* getSection() {
-      return (isSuccessful() && getMethod() == RunMethod::Section)
+      return (isSuccessful() && Frame.Method == RunMethod::Finished)
           ? CurSection : nullptr;
     }
     FileNode* getFile() {
-      return (isSuccessful() && getMethod() == RunMethod::File)
+      return (isSuccessful() && Frame.Method == RunMethod::Finished)
           ? CurFile : nullptr;
     }
     bool isEofFrozen() const { return FillPos->isEofFrozen(); }
@@ -133,6 +135,27 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
     }
     TraceClassSexpReader& getTrace() { return Reader->getTrace(); }
    private:
+
+    // Define state of nested methods.
+    struct CallFrame {
+      CallFrame() { init(); }
+      CallFrame(RunMethod Method, RunState State)
+          : Method(Method), State(State) {}
+      void init() {
+        // Optimistically, assume we succeed.
+        Method = RunMethod::Finished;
+        State = RunState::Succeeded;
+      }
+      void fail() {
+        Method = RunMethod::Finished;
+        State = RunState::Failed;
+      }
+      RunMethod Method;
+      RunState State;
+      // For debugging
+      void describe(FILE* Out) const;
+    };
+
     std::shared_ptr<BinaryReader> Reader;
     std::shared_ptr<decode::ReadCursor> ReadPos;
     std::shared_ptr<decode::WriteCursor> FillPos;
@@ -140,77 +163,25 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
     FileNode *CurFile;
     SectionNode *CurSection;
     RunMethod CurBlockApplyFcn;
-
-    RunMethod getMethod() const {
-      return CallStack.getMethod();
-    }
-    void setMethod(RunMethod NewMethod) {
-      CallStack.setMethod(NewMethod);
-      CallStack.setState(RunState::Enter);
-    }
-    RunState getState() const {
-      return CallStack.getState();
-    }
-    void setState(RunState NewState) {
-      CallStack.setState(NewState);
-    }
+    CallFrame Frame;
+    utils::ValueStack<CallFrame> FrameStack;
+    size_t Counter;
+    utils::ValueStack<size_t> CounterStack;
 
     bool hasEnoughHeadroom() const;
 
-    // Define state of nested methods.
-    struct CallFrame {
-      CallFrame() : Method(RunMethod::RunMethod_NO_SUCH_METHOD),
-                    State(RunState::Failed) {}
-      CallFrame(RunMethod Method, RunState State)
-          : Method(Method), State(State) {}
-      RunMethod Method;
-      RunState State;
-      // For debugging
-      void describe(FILE* Out);
-    };
-    class CallFrameStack : public utils::ValueStack<CallFrame> {
-      CallFrameStack(const CallFrameStack&) = delete;
-      CallFrameStack& operator=(const CallFrameStack&) = delete;
-     public:
-      typedef utils::ValueStack<CallFrame> BaseClass;
-      CallFrameStack() {}
-      void push(RunMethod NewMethod) {
-        BaseClass::push();
-        Top.Method = NewMethod;
-        Top.State = RunState::Enter;
-      }
-      void push(RunMethod NewMethod, RunState ResumeState) {
-        Top.State = ResumeState;
-        BaseClass::push();
-        Top.Method = NewMethod;
-        Top.State = RunState::Enter;
-      }
-      RunMethod getMethod() const {
-        return Top.Method;
-      }
-      void setMethod(RunMethod NewMethod) {
-        Top.Method = NewMethod;
-      }
-      RunState getState() const {
-        return Top.State;
-      }
-      void setState(RunState NewState) {
-        Top.State = NewState;
-      }
-      // For debugging.
-      void describe(FILE* Out);
-    } CallStack;
+    // Schedules CallingMethod to be run next.
+    void call(RunMethod CallingMethod) {
+      FrameStack.push();
+      Frame.Method = CallingMethod;
+      Frame.State = RunState::Enter;
+    }
 
-    // Define stack of (i.e. local variable) Counter.
-    class CounterStack : public utils::ValueStack<size_t> {
-      CounterStack(const CounterStack&) = delete;
-      CounterStack& operator=(const CounterStack&) = delete;
-     public:
-      CounterStack() : utils::ValueStack<size_t>(0) {}
-      size_t operator--(int) {
-        return Top--;
-      }
-    } Counter;
+    // Stop processing and fail.
+    void fail();
+
+    void describeFrames(FILE* Out);
+
   };
 
   // Returns true if it begins with a WASM file magic number.
