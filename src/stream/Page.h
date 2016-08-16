@@ -64,8 +64,8 @@ class Page : public std::enable_shared_from_this<Page> {
 
  public:
   static constexpr size_t SizeLog2 =
-#ifdef WASM_DECODE_LOGPAGE_SIZE
-      WASM_DECODE_LOGPAGE_SIZE
+#ifdef WASM_DECODE_PAGE_SIZE
+      WASM_DECODE_PAGE_SIZE
 #else
       16
 #endif

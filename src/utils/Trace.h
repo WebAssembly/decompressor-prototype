@@ -40,7 +40,7 @@
 #else
 
 #define TRACE_METHOD_USING(name, trace) \
-  TraceClass::Method tracEmethoD((name), (trace))
+  wasm::utils::TraceClass::Method tracEmethoD((name), (trace))
 #define TRACE_METHOD(name) TRACE_METHOD_USING(name, getTrace())
 #define TRACE_USING(trace, type, name, value) \
   do {                                        \

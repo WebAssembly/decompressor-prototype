@@ -448,6 +448,17 @@ FileNode* BinaryReader::readHeader() {
   return File;
 }
 
+void BinaryReader::readBackFilled(std::shared_ptr<Runner> Runner) {
+  ReadCursor FillPos(*Runner->getFillPos());
+  Runner->getTrace().setTraceProgress(getTrace().getTraceProgress());
+  while (Runner->needsMoreInput()) {
+    while (!Runner->hasEnoughHeadroom()) {
+      FillPos.advance(Page::Size);
+    }
+    Runner->resumeReading();
+  }
+}
+
 FileNode* BinaryReader::readFile(StreamType Type) {
   ReadCursor ReadPosition(Type, Input);
   return readFile(ReadPosition);
@@ -455,14 +466,10 @@ FileNode* BinaryReader::readFile(StreamType Type) {
 
 FileNode* BinaryReader::readFile(ReadCursor &NewReadPos) {
   TRACE_METHOD("readFile");
-  UsingReadPos ReadLock(*this, NewReadPos);
-  auto *File = readHeader();
-  while (!ReadPos->atByteEob()) {
-    File->append(readSection(*ReadPos));
-  }
-  TRACE_SEXP(nullptr, File);
-  SectionSymtab.install(File);
-  return File;
+  std::shared_ptr<ReadCursor> Read = std::make_shared<ReadCursor>(NewReadPos);
+  std::shared_ptr<Runner> Runner = startReadingFile(Read, Symtab);
+  readBackFilled(Runner);
+  return Runner->getFile();
 }
 
 SectionNode* BinaryReader::readSection(StreamType Type) {
@@ -472,76 +479,10 @@ SectionNode* BinaryReader::readSection(StreamType Type) {
 
 SectionNode* BinaryReader::readSection(ReadCursor &NewReadPos) {
   TRACE_METHOD("readSection");
-  UsingReadPos ReadLock(*this, NewReadPos);
-  ExternalName Name = readExternalName();
-  auto* SectionName = Symtab->create<SymbolNode>(Name);
-  auto* Section = Symtab->create<SectionNode>();
-  Section->append(SectionName);
-  TRACE(string, "Name", Name);
-  size_t StartStackSize = NodeStack.size();
-  readBlock([&]() {
-    if (Name == "filter") {
-      readSymbolTable();
-      while (!ReadPos->atByteEob())
-        readNode();
-    } else {
-      // TODO(karlschimpf) Fix to actually read!
-      TRACE_MESSAGE("Skipping unknown Section" + Name);
-      fatal("Handling non-filter sections not implemented yet!");
-    }
-  });
-  size_t StackSize = NodeStack.size();
-  if (StackSize < StartStackSize)
-    fatal("Malformed section: " + Name);
-  for (size_t i = StartStackSize; i < StackSize; ++i)
-    Section->append(NodeStack[i]);
-  for (size_t i = StartStackSize; i < StackSize; ++i)
-    NodeStack.pop_back();
-  TRACE_SEXP(nullptr, Section);
-  return Section;
-}
-
-void BinaryReader::readSymbolTable() {
-  TRACE_METHOD("readSymbolTable");
-  SectionSymtab.clear();
-  uint32_t NumSymbols = Reader->readVaruint32(*ReadPos);
-  for (uint32_t i = 0; i < NumSymbols; ++i) {
-    ExternalName& Name = readExternalName();
-    TRACE(uint32_t, "Index", i);
-    TRACE(string, "Symbol", Name);
-    SectionSymtab.addSymbol(Name);
-  }
-}
-
-ExternalName& BinaryReader::readExternalName() {
-  static ExternalName Name;
-  Name.clear();
-  uint32_t NameSize = Reader->readVaruint32(*ReadPos);
-  for (uint32_t i = 0; i < NameSize; ++i) {
-    uint8_t Byte = Reader->readUint8(*ReadPos);
-    Name.push_back(char(Byte));
-  }
-  return Name;
-}
-
-InternalName& BinaryReader::readInternalName() {
-  static InternalName Name;
-  Name.clear();
-  uint32_t NameSize = Reader->readVaruint32(*ReadPos);
-  for (uint32_t i = 0; i < NameSize; ++i) {
-    uint8_t Byte = Reader->readUint8(*ReadPos);
-    Name.push_back(char(Byte));
-  }
-  return Name;
-}
-
-void BinaryReader::readBlock(std::function<void()> ApplyFn) {
-  TRACE_METHOD("readBlock");
-  const size_t BlockSize = Reader->readBlockSize(*ReadPos);
-  TRACE(size_t, "Block size", BlockSize);
-  Reader->pushEobAddress(*ReadPos, BlockSize);
-  ApplyFn();
-  ReadPos->popEobAddress();
+  std::shared_ptr<ReadCursor> Read = std::make_shared<ReadCursor>(NewReadPos);
+  std::shared_ptr<Runner> Runner = startReadingSection(Read, Symtab);
+  readBackFilled(Runner);
+  return Runner->getSection();
 }
 
 void BinaryReader::readNode() {

@@ -148,7 +148,7 @@ int main(int Argc, char* Argv[]) {
       std::shared_ptr<RawStream> Stream = std::make_shared<FileReader>(Argv[i]);
       BinaryReader Reader(std::make_shared<ReadBackedQueue>(std::move(Stream)),
                           Symtab);
-      Reader.setTraceProgress(Verbose >= 2);
+      Reader.getTrace().setTraceProgress(Verbose >= 2);
       if (Reader.readFile()) {
         continue;
       }

@@ -26,12 +26,15 @@ FILE* WorkingByte::describe(FILE* File) {
 }
 
 size_t Cursor::advance(size_t Distance) {
+  size_t WantedAddress = CurAddress + Distance;
   size_t DistanceMoved = 0;
-  while (DistanceMoved < Distance && CurAddress < Que->getEofAddress()) {
+  while (CurAddress < WantedAddress && CurAddress < Que->getEofAddress()) {
     size_t Size = Que->readFromPage(CurAddress, Page::Size, *this);
     if (Size == 0)
       break;
+    CurAddress += Size;
     DistanceMoved += Size;
+    CurPage = Que->getPage(CurAddress);
   }
   return DistanceMoved;
 }
