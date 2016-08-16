@@ -382,7 +382,11 @@ IntType Interpreter::readOpcode(const Node* Nd,
 }
 
 IntType Interpreter::read(const Node* Nd) {
-  CallStack.push_back(CallFrame(Nd, InterpreterMethod::Read));
+#if 0
+  CallStack.push_back(CallFrame(InterpMethod::Read, Nd));
+#else
+  CallStack.push(InterpMethod::Read, Nd);
+#endif
   runMethods();
   IntType Value = ReturnStack.back();
   ReturnStack.pop_back();
@@ -390,7 +394,11 @@ IntType Interpreter::read(const Node* Nd) {
 }
 
 IntType Interpreter::write(IntType Value, const wasm::filt::Node* Nd) {
-  CallStack.push_back(CallFrame(Nd, InterpreterMethod::Write));
+#if 0
+  CallStack.push_back(CallFrame(InterpMethod::Write, Nd));
+#else
+  CallStack.push(InterpMethod::Write, Nd);
+#endif
   ParamStack.push_back(Value);
   runMethods();
   assert(Value == ReturnStack.back());
@@ -400,25 +408,39 @@ IntType Interpreter::write(IntType Value, const wasm::filt::Node* Nd) {
 
 void Interpreter::runMethods() {
   TRACE_METHOD("runMethods");
+#if 0
   CallFrame Frame;
+#endif
   int count = 0;
   while (!CallStack.empty()) {
     if (count++ >= 10)
       fatal("Too many iterations!");
+#if 0
     Frame = CallStack.back();
     const Node* Nd = Frame.Code;
     TRACE_SEXP("CallFrame", Frame.Code);
     TRACE(int, "Method", int(Frame.Method));
-    switch (Frame.Method) {
-      case InterpreterMethod::Error:
+#else
+    const Node* Nd = CallStack.getCode();
+    InterpMethod Method = CallStack.getMethod();
+    TRACE(int, "Method", int(Method));
+    TRACE_SEXP("Code", Nd);
+#endif
+#if 0
+    switch (Frame.Method)
+#else
+    switch (Method)
+#endif
+ {
+      case InterpMethod::InterpMethod_NO_SUCH_METHOD:
         assert(false);
         fatal(
             "An unrecoverable error has occured in Interpreter::runMethods()");
         break;
-      case InterpreterMethod::Eval:
+      case InterpMethod::Eval:
         fatal("Eval/Read not yet implemented in runMethods");
         break;
-      case InterpreterMethod::Read: {
+      case InterpMethod::Read: {
         switch (NodeType Type = Nd->getType()) {
           default:
             fprintf(stderr, "Read not implemented: %s\n",
@@ -499,10 +521,14 @@ void Interpreter::runMethods() {
         }
         break;
       }
-      case InterpreterMethod::Write: {
+      case InterpMethod::Write: {
         IntType Value = ParamStack.back();
         TRACE(IntType, "Value", Value);
+#if 0
         const Node* Nd = Frame.Code;
+#else
+        const Node* Nd = CallStack.getCode();
+#endif
         switch (NodeType Type = Nd->getType()) {
           default:
             fprintf(stderr, "Write not implemented: %s\n",
@@ -510,7 +536,11 @@ void Interpreter::runMethods() {
             fatal("Write not implemented");
             break;
           case OpParam:
+#if 0
             Frame.Code = getParam(Nd);
+#else
+            CallStack.setCode(Nd);
+#endif
             continue;
           case OpUint8NoArgs:
             Writer->writeUint8(Value, WritePos);

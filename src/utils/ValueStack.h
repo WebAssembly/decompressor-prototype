@@ -48,7 +48,9 @@ class ValueStack {
     Top = Stack.back();
     Stack.pop_back();
   }
-
+  void reserve(size_t Size) {
+    Stack.reserve(Size);
+  }
  protected:
   T Top;
   std::vector<T> Stack;
