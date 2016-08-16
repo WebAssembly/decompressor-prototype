@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Defines a (non-empty) stack of values.
+// Defines a stack-backed value.
 
 #ifndef DECOMPRESSOR_SRC_UTILS_VALUESTACK_H
 #define DECOMPRESSOR_SRC_UTILS_VALUESTACK_H
@@ -27,32 +27,59 @@ namespace utils {
 
 template <typename T>
 class ValueStack {
+  ValueStack() = delete;
   ValueStack(const ValueStack&) = delete;
   ValueStack& operator=(const ValueStack&) = delete;
 
  public:
-  ValueStack() {}
-  ValueStack(const T& Value) : Top(Value) {}
+  class Iterator {
+   public:
+    Iterator(const ValueStack<T>* Stack, size_t Index)
+        : Stack(Stack), Index(Index) {}
+    Iterator(const Iterator& Iter) : Stack(Iter.Stack), Index(Iter.Index) {}
+    void operator++() { ++Index; }
+    void operator--() { --Index; }
+    Iterator& operator=(const Iterator& Iter) {
+      Stack = Iter.Stack;
+      Index = Iter.Index;
+      return *this;
+    }
+    bool operator==(const Iterator& Iter) {
+      return Index == Iter.Index && Stack == Iter.Stack;
+    }
+    bool operator!=(const Iterator& Iter) {
+      return Index != Iter.Index || Stack != Iter.Stack;
+    }
+    const T& operator*() const {
+      if (Index < Stack->Stack.size())
+        return Stack->Stack.at(Index);
+      return Stack->Value;
+    }
+
+   private:
+    const ValueStack<T>* Stack;
+    size_t Index;
+  };
+
+  Iterator begin() const { return Iterator(this, 0); }
+  Iterator end() const { return Iterator(this, Stack.size()); }
+
+  ValueStack(T& Value) : Value(Value) {}
   ~ValueStack() {}
   bool empty() const { return Stack.empty(); }
-  const T& get() const { return Top; }
-  void set(const T& Value) { Top = Value; }
-  // Push top onto stack.
-  void push() { Stack.push_back(Top); }
-  void push(const T& Value) {
-    push();
-    Top = Value;
-  }
+  void push() { Stack.push_back(Value); }
+  // Push Value onto stack
+  void push(const T& Value) { Stack.push_back(Value); }
   void pop() {
     assert(!Stack.empty());
-    Top = Stack.back();
+    Value = Stack.back();
     Stack.pop_back();
   }
-  void reserve(size_t Size) {
-    Stack.reserve(Size);
-  }
+  void clear() { Stack.clear(); }
+  void reserve(size_t Size) { Stack.reserve(Size); }
+
  protected:
-  T Top;
+  T& Value;
   std::vector<T> Stack;
 };
 

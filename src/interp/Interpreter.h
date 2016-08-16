@@ -66,14 +66,14 @@ class Interpreter {
 #define X(tag, name) tag,
     INTERPRETER_METHODS_TABLE
 #undef X
-    InterpMethod_NO_SUCH_METHOD
+        InterpMethod_NO_SUCH_METHOD
   };
 
   enum class InterpState {
 #define X(tag, name) tag,
     INTERPRETER_STATES_TABLE
 #undef X
-    InterpState_NO_SUCH_STATE
+        InterpState_NO_SUCH_STATE
   };
 
   // The call stack of methods being applied.
@@ -81,15 +81,17 @@ class Interpreter {
     CallFrame()
         : Method(InterpMethod::InterpMethod_NO_SUCH_METHOD),
           State(InterpState::InterpState_NO_SUCH_STATE),
-          Code(nullptr) {}
-    CallFrame(InterpMethod Method, const filt::Node* Code)
-        : Method(Method), State(InterpState::Enter), Code(Code) {}
+          Nd(nullptr) {}
+    CallFrame(InterpMethod Method, const filt::Node* Nd)
+        : Method(Method), State(InterpState::Enter), Nd(Nd) {}
     CallFrame(const CallFrame& M)
-        : Method(M.Method), State(M.State), Code(M.Code) {}
+        : Method(M.Method), State(M.State), Nd(M.Nd) {}
     InterpMethod Method;
     InterpState State;
-    const filt::Node* Code;
+    const filt::Node* Nd;
   };
+
+#if 0
   class CallFrameStack : public utils::ValueStack<CallFrame> {
     CallFrameStack(const CallFrameStack&) = delete;
     CallFrameStack &operator=(const CallFrameStack&) = delete;
@@ -122,6 +124,7 @@ class Interpreter {
     }
     void describe(FILE* Out);
   } CallStack;
+#endif
 
   decode::ReadCursor ReadPos;
   std::shared_ptr<ReadStream> Reader;
@@ -143,11 +146,20 @@ class Interpreter {
   // The call stack of methods being applied.
   std::vector<CallFrame> CallStack;
 #endif
+  CallFrame Frame;
+  utils::ValueStack<CallFrame> FrameStack;
   // The stack of passed/returned values.
   std::vector<decode::IntType> ParamStack;
   std::vector<decode::IntType> ReturnStack;
   // The stack of (eval) calls.
   filt::ConstNodeVectorType EvalStack;
+
+  void Call(InterpMethod Method, const filt::Node* Nd) {
+    FrameStack.push();
+    Frame.Method = Method;
+    Frame.State = InterpState::Enter;
+    Frame.Nd = Nd;
+  }
 
   TraceClassSexpReaderWriter& getTrace() { return Trace; }
   void decompressSection();
@@ -180,7 +192,7 @@ class Interpreter {
 #if 0
     CallStack.pop_back();
 #else
-    CallStack.pop();
+    FrameStack.pop();
 #endif
   }
   void pushReadReturnValue(decode::IntType Value) {
@@ -189,7 +201,7 @@ class Interpreter {
 #if 0
     CallStack.pop_back();
 #else
-    CallStack.pop();
+    FrameStack.pop();
 #endif
   }
 };

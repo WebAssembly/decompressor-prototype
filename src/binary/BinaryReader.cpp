@@ -52,19 +52,19 @@ const char* RunStateName[] = {
 
 } // end of anonymous namespace
 
-void BinaryReader::Runner::CallFrame::describe(FILE* Out) {
+void BinaryReader::Runner::CallFrame::describe(FILE* Out) const {
   fprintf(Out, "%s.%s", RunMethodName[int(Method)], RunStateName[int(State)]);
 }
 
-void BinaryReader::Runner::CallFrameStack::describe(FILE* Out) {
+void BinaryReader::Runner::describeFrames(FILE* Out) {
   fprintf(Out, "*** CallStack ***\n");
-  for (auto& Frame : Stack) {
+  for (auto& Frame : FrameStack) {
     fputs("  ", Out);
     Frame.describe(Out);
     fputc('\n', Out);
   }
   fputs("  ", Out);
-  Top.describe(Out);
+  Frame.describe(Out);
   fputc('\n', Out);
   fprintf(Out, "****************\n");
 }
@@ -75,38 +75,47 @@ bool BinaryReader::Runner::hasEnoughHeadroom() const {
        <= FillPos->getCurByteAddress());
 }
 
+void BinaryReader::Runner::fail() {
+  TRACE_MESSAGE("method failed");
+  while (!FrameStack.empty()) {
+    TRACE_EXIT_OVERRIDE(RunMethodName[int(Frame.Method)]);
+    FrameStack.pop();
+  }
+  Frame.fail();
+}
+
 void BinaryReader::Runner::resumeReading() {
-#if 0
-  TRACE_METHOD("resumeReading");
-#else
-  TRACE_ENTER(RunMethodName[int(getMethod())]);
-#endif
 #if LOG_CALLSTACK
-  TRACE_BLOCK({ CallStack.describe(stderr); });
+  TRACE_ENTER("resumeReading");
+  TRACE_BLOCK({ describeFrames(stderr); });
 #endif
   // TODO(karlschimpf) Why is this lock necessary (stops core dump).
   UsingReadPos Lock(*Reader, *ReadPos);
   while (hasEnoughHeadroom()) {
-#if 0
-    TRACE(string, "method",
-          std::string(RunMethodName[int(getMethod())])
-          + "." + RunStateName[int(getState())]);
+    switch (Frame.Method) {
+      case RunMethod::Finished: {
+        assert(FrameStack.empty());
+#if LOG_CALLSTACK
+        TRACE_BLOCK({ describeFrames(stderr); });
+        TRACE_EXIT_OVERRIDE("resumeReading");
 #endif
-    switch (getMethod()) {
+        return;
+      }
       case RunMethod::Block: {
-        switch (getState()) {
+        switch (Frame.State) {
           case RunState::Enter: {
-            TRACE_ENTER(RunMethodName[int(getMethod())]);
+            TRACE_ENTER(RunMethodName[int(Frame.Method)]);
             size_t Size = Reader->Reader->readBlockSize(*ReadPos.get());
             TRACE(size_t, "Block size", Size);
             Reader->Reader->pushEobAddress(*ReadPos, Size);
-            CallStack.push(CurBlockApplyFcn, RunState::Exit);
-            CurBlockApplyFcn = RunMethod::RunMethod_NO_SUCH_METHOD;
+            Frame.State = RunState::Exit;
+            call(CurBlockApplyFcn);
             break;
           }
           case RunState::Exit:
-            CallStack.pop();
+            FrameStack.pop();
             ReadPos->popEobAddress();
+            CurBlockApplyFcn = RunMethod::RunMethod_NO_SUCH_METHOD;
             TRACE_EXIT_OVERRIDE(RunMethodName[int(RunMethod::Block)]);
             break;
           default:
@@ -116,37 +125,28 @@ void BinaryReader::Runner::resumeReading() {
         break;
       }
       case RunMethod::File:
-        switch (getState()) {
+        switch (Frame.State) {
           case RunState::Enter: {
-            TRACE_ENTER(RunMethodName[int(getMethod())]);
+            TRACE_ENTER(RunMethodName[int(Frame.Method)]);
             CurFile = Reader->readHeader();
-            CallStack.push(RunMethod::Section, RunState::Loop);
+            Frame.State = RunState::Loop;
+            call(RunMethod::Section);
             break;
           }
           case RunState::Loop: {
             CurFile->append(CurSection);
             CurSection = nullptr;
             if (ReadPos->atEof()) {
-              setState(RunState::Exit);
+              Frame.State = RunState::Exit;
               break;
             }
-            CallStack.push(RunMethod::Section);
+            call(RunMethod::Section);
             break;
           }
           case RunState::Exit: {
             Reader->SectionSymtab.install(CurFile);
-            TRACE_EXIT_OVERRIDE(RunMethodName[int(RunMethod::File)]);
-            if (CallStack.empty()) {
-              setState(RunState::Succeeded);
-#if LOG_CALLSTACK
-              TRACE_BLOCK({ CallStack.describe(stderr); });
-#endif
-#if 1
-              TRACE_EXIT_OVERRIDE(RunMethodName[int(getMethod())]);
-#endif
-              return;
-            }
-            CallStack.pop();
+            FrameStack.pop();
+            TRACE_EXIT_OVERRIDE(RunMethodName[int(RunMethod::Name)]);
             break;
           }
           default:
@@ -155,25 +155,26 @@ void BinaryReader::Runner::resumeReading() {
         }
         break;
       case RunMethod::Name: {
-        switch (getState()) {
+        switch (Frame.State) {
           case RunState::Enter: {
-            TRACE_ENTER(RunMethodName[int(getMethod())]);
+            TRACE_ENTER(RunMethodName[int(Frame.Method)]);
             Name.clear();
-            Counter.push(Reader->Reader->readVaruint32(*ReadPos.get()));
-            setState(RunState::Loop);
+            CounterStack.push();
+            Counter = Reader->Reader->readVaruint32(*ReadPos.get());
+            Frame.State = RunState::Loop;
             break;
           }
           case RunState::Loop: {
             if (Counter-- == 0) {
-              Counter.pop();
-              setState(RunState::Exit);
+              CounterStack.pop();
+              Frame.State = RunState::Exit;
               break;
             }
             Name.push_back(char(Reader->Reader->readUint8(*ReadPos.get())));
             break;
           }
           case RunState::Exit:
-            CallStack.pop();
+            FrameStack.pop();
             TRACE_EXIT_OVERRIDE(RunMethodName[int(RunMethod::Name)]);
             break;
           default:
@@ -183,25 +184,27 @@ void BinaryReader::Runner::resumeReading() {
         break;
       }
       case RunMethod::Section:
-        switch (getState()) {
+        switch (Frame.State) {
           case RunState::Enter: {
-            TRACE_ENTER(RunMethodName[int(getMethod())]);
-            CallStack.push(RunMethod::Name, RunState::Setup);
+            TRACE_ENTER(RunMethodName[int(Frame.Method)]);
+            Frame.State = RunState::Setup;
+            call(RunMethod::Name);
             break;
           }
           case RunState::Setup: {
             CurSection = create<SectionNode>();
             CurSection->append(create<SymbolNode>(Name));
             // Save StartStackSize for exit.
-            Counter.push(Reader->NodeStack.size());
-            setState(RunState::Exit);
+            CounterStack.push();
+            Counter = Reader->NodeStack.size();
             CurBlockApplyFcn = RunMethod::SectionBody;
-            CallStack.push(RunMethod::Block);
+            Frame.State = RunState::Exit;
+            call(RunMethod::Block);
             break;
           }
           case RunState::Exit: {
-            size_t StartStackSize = Counter.get();
-            Counter.pop();
+            size_t StartStackSize = Counter;
+            CounterStack.pop();
             size_t StackSize = Reader->NodeStack.size();
             if (StackSize < StartStackSize)
               fatal("Malformed section: " + Name);
@@ -209,18 +212,8 @@ void BinaryReader::Runner::resumeReading() {
               CurSection->append(Reader->NodeStack[i]);
             for (size_t i = StartStackSize; i < StackSize; ++i)
               Reader->NodeStack.pop_back();
-            TRACE_EXIT_OVERRIDE(RunMethodName[int(RunMethod::Section)]);
-            if (CallStack.empty()) {
-              setState(RunState::Succeeded);
-#if LOG_CALLSTACK
-              TRACE_BLOCK({ CallStack.describe(stderr); });
-#endif
-#if 1
-              TRACE_EXIT_OVERRIDE(RunMethodName[int(getMethod())]);
-#endif
-              return;
-            }
-            CallStack.pop();
+            FrameStack.pop();
+            TRACE_EXIT_OVERRIDE(RunMethodName[int(RunMethod::Name)]);
             break;
           }
           default:
@@ -229,25 +222,26 @@ void BinaryReader::Runner::resumeReading() {
         }
         break;
       case RunMethod::SectionBody:
-        switch (getState()) {
+        switch (Frame.State) {
           case RunState::Enter: {
-            TRACE_ENTER(RunMethodName[int(getMethod())]);
+            TRACE_ENTER(RunMethodName[int(Frame.Method)]);
             SymbolNode *Sym = CurSection->getSymbol();
             assert(Sym);
             if (Sym->getStringName() != "filter")
               fatal("Handling non-filter sections not implemented!");
-            CallStack.push(RunMethod::SymbolTable, RunState::Loop);
+            Frame.State = RunState::Loop;
+            call(RunMethod::SymbolTable);
             break;
           }
           case RunState::Loop:
             if (ReadPos->atByteEob()) {
-              setState(RunState::Exit);
+              Frame.State = RunState::Exit;
               break;
             }
             Reader->readNode();
             break;
           case RunState::Exit:
-            CallStack.pop();
+            FrameStack.pop();
             TRACE_EXIT_OVERRIDE(RunMethodName[int(RunMethod::SectionBody)]);
             break;
           default:
@@ -256,31 +250,33 @@ void BinaryReader::Runner::resumeReading() {
         }
         break;
       case RunMethod::SymbolTable:
-        switch (getState()) {
+        switch (Frame.State) {
           case RunState::Enter: {
-            TRACE_ENTER(RunMethodName[int(getMethod())]);
+            TRACE_ENTER(RunMethodName[int(Frame.Method)]);
             Reader->SectionSymtab.clear();
-            Counter.push(Reader->Reader->readVaruint32(*ReadPos.get()));
-            setState(RunState::Loop);
+            CounterStack.push();
+            Counter = Reader->Reader->readVaruint32(*ReadPos.get());
+            Frame.State = RunState::Loop;
             break;
           }
           case RunState::Loop: {
             if (Counter-- == 0) {
-              Counter.pop();
-              setState(RunState::Exit);
+              CounterStack.pop();
+              Frame.State = RunState::Exit;
               break;
             }
-            CallStack.push(RunMethod::Name, RunState::LoopCont);
+            Frame.State = RunState::LoopCont;
+            call(RunMethod::Name);
             break;
           }
           case RunState::LoopCont:
             TRACE(size_t, "index", Reader->SectionSymtab.getNumberSymbols());
             TRACE(string, "Symbol", Name);
             Reader->SectionSymtab.addSymbol(Name);
-            setState(RunState::Loop);
+            Frame.State = RunState::Loop;
             break;
           case RunState::Exit:
-            CallStack.pop();
+            FrameStack.pop();
             TRACE_EXIT_OVERRIDE(RunMethodName[int(RunMethod::SymbolTable)]);
             break;
           default:
@@ -293,12 +289,9 @@ void BinaryReader::Runner::resumeReading() {
         break;
     }
   }
-  TRACE_MESSAGE("waiting for more input");
 #if LOG_CALLSTACK
-  TRACE_BLOCK({ CallStack.describe(stderr); });
-#endif
-#if 1
-  TRACE_EXIT_OVERRIDE(RunMethodName[int(getMethod())]);
+  TRACE_BLOCK({ describeFrames(stderr); });
+  TRACE_EXIT_OVERRIDE("resumeReading");
 #endif
   return;
 }
@@ -744,8 +737,8 @@ std::shared_ptr<BinaryReader::Runner> BinaryReader::startReadingSection(
     std::shared_ptr<SymbolTable> Symtab) {
   auto BinReader = std::make_shared<BinaryReader>(ReadPos->getQueue(), Symtab);
   auto Rnnr = std::make_shared<Runner>(BinReader, ReadPos);
-  Rnnr->setMethod(RunMethod::Section);
-  Rnnr->setState(RunState::Enter);
+  Rnnr->Frame.init();
+  Rnnr->call(RunMethod::Section);
   return Rnnr;
 }
 
@@ -754,8 +747,8 @@ std::shared_ptr<BinaryReader::Runner> BinaryReader::startReadingFile(
     std::shared_ptr<SymbolTable> Symtab) {
   auto BinReader = std::make_shared<BinaryReader>(ReadPos->getQueue(), Symtab);
   auto Rnnr = std::make_shared<Runner>(BinReader, ReadPos);
-  Rnnr->setMethod(RunMethod::File);
-  Rnnr->setState(RunState::Enter);
+  Rnnr->Frame.init();
+  Rnnr->call(RunMethod::File);
   return Rnnr;
 }
 

@@ -63,10 +63,11 @@ Interpreter::Interpreter(std::shared_ptr<Queue> Input,
       Symtab(Symtab),
       LastReadValue(0),
       MinimizeBlockSize(false),
-      Trace(ReadPos, WritePos, "InterpSexp") {
+      Trace(ReadPos, WritePos, "InterpSexp"),
+      FrameStack(Frame) {
   DefaultFormat = Symtab->create<Varuint64NoArgsNode>();
   CurSectionName.reserve(MaxExpectedSectionNameSize);
-  CallStack.reserve(DefaultStackSize);
+  FrameStack.reserve(DefaultStackSize);
   ParamStack.reserve(DefaultStackSize);
   ReturnStack.reserve(DefaultStackSize);
   EvalStack.reserve(DefaultStackSize);
@@ -382,11 +383,7 @@ IntType Interpreter::readOpcode(const Node* Nd,
 }
 
 IntType Interpreter::read(const Node* Nd) {
-#if 0
-  CallStack.push_back(CallFrame(InterpMethod::Read, Nd));
-#else
-  CallStack.push(InterpMethod::Read, Nd);
-#endif
+  Call(InterpMethod::Read, Nd);
   runMethods();
   IntType Value = ReturnStack.back();
   ReturnStack.pop_back();
@@ -394,11 +391,7 @@ IntType Interpreter::read(const Node* Nd) {
 }
 
 IntType Interpreter::write(IntType Value, const wasm::filt::Node* Nd) {
-#if 0
-  CallStack.push_back(CallFrame(InterpMethod::Write, Nd));
-#else
-  CallStack.push(InterpMethod::Write, Nd);
-#endif
+  Call(InterpMethod::Write, Nd);
   ParamStack.push_back(Value);
   runMethods();
   assert(Value == ReturnStack.back());
@@ -412,26 +405,12 @@ void Interpreter::runMethods() {
   CallFrame Frame;
 #endif
   int count = 0;
-  while (!CallStack.empty()) {
+  while (!FrameStack.empty()) {
     if (count++ >= 10)
       fatal("Too many iterations!");
-#if 0
-    Frame = CallStack.back();
-    const Node* Nd = Frame.Code;
-    TRACE_SEXP("CallFrame", Frame.Code);
     TRACE(int, "Method", int(Frame.Method));
-#else
-    const Node* Nd = CallStack.getCode();
-    InterpMethod Method = CallStack.getMethod();
-    TRACE(int, "Method", int(Method));
-    TRACE_SEXP("Code", Nd);
-#endif
-#if 0
-    switch (Frame.Method)
-#else
-    switch (Method)
-#endif
- {
+    TRACE_SEXP("Code", Frame.Nd);
+    switch (Frame.Method) {
       case InterpMethod::InterpMethod_NO_SUCH_METHOD:
         assert(false);
         fatal(
@@ -441,7 +420,7 @@ void Interpreter::runMethods() {
         fatal("Eval/Read not yet implemented in runMethods");
         break;
       case InterpMethod::Read: {
-        switch (NodeType Type = Nd->getType()) {
+        switch (NodeType Type = Frame.Nd->getType()) {
           default:
             fprintf(stderr, "Read not implemented: %s\n",
                     getNodeTypeName(Type));
@@ -453,12 +432,12 @@ void Interpreter::runMethods() {
           case OpU8Const:
           case OpU32Const:
           case OpU64Const:
-            pushReadReturnValue(dyn_cast<IntegerNode>(Nd)->getValue());
+            pushReadReturnValue(dyn_cast<IntegerNode>(Frame.Nd)->getValue());
             break;
           case OpPeek: {
             // TODO(karlschimpf) Remove nested read.
             ReadCursor InitialPos(ReadPos);
-            LastReadValue = read(Nd->getKid(0));
+            LastReadValue = read(Frame.Nd->getKid(0));
             ReadPos.swap(InitialPos);
             pushReadReturnValue(LastReadValue);
             break;
@@ -471,49 +450,49 @@ void Interpreter::runMethods() {
             break;
           case OpUint8OneArg:
             pushReadReturnValue(Reader->readUint8Bits(
-                ReadPos, cast<Uint8OneArgNode>(Nd)->getValue()));
+                ReadPos, cast<Uint8OneArgNode>(Frame.Nd)->getValue()));
             break;
           case OpUint32NoArgs:
             pushReadReturnValue(Reader->readUint32(ReadPos));
             break;
           case OpUint32OneArg:
             pushReadReturnValue(Reader->readUint32Bits(
-                ReadPos, cast<Uint32OneArgNode>(Nd)->getValue()));
+                ReadPos, cast<Uint32OneArgNode>(Frame.Nd)->getValue()));
             break;
           case OpUint64NoArgs:
             pushReadReturnValue(Reader->readUint64(ReadPos));
             break;
           case OpUint64OneArg:
             pushReadReturnValue(Reader->readUint64Bits(
-                ReadPos, cast<Uint64OneArgNode>(Nd)->getValue()));
+                ReadPos, cast<Uint64OneArgNode>(Frame.Nd)->getValue()));
             break;
           case OpVarint32NoArgs:
             pushReadReturnValue(Reader->readVarint32(ReadPos));
             break;
           case OpVarint32OneArg:
             pushReadReturnValue(Reader->readVarint32Bits(
-                ReadPos, cast<Varint32OneArgNode>(Nd)->getValue()));
+                ReadPos, cast<Varint32OneArgNode>(Frame.Nd)->getValue()));
             break;
           case OpVarint64NoArgs:
             pushReadReturnValue(Reader->readVarint64(ReadPos));
             break;
           case OpVarint64OneArg:
             pushReadReturnValue(Reader->readVarint64Bits(
-                ReadPos, cast<Varint64OneArgNode>(Nd)->getValue()));
+                ReadPos, cast<Varint64OneArgNode>(Frame.Nd)->getValue()));
             break;
           case OpVaruint32NoArgs:
             pushReadReturnValue(Reader->readVaruint32(ReadPos));
             break;
           case OpVaruint32OneArg:
             pushReadReturnValue(Reader->readVaruint32Bits(
-                ReadPos, cast<Varuint32OneArgNode>(Nd)->getValue()));
+                ReadPos, cast<Varuint32OneArgNode>(Frame.Nd)->getValue()));
             break;
           case OpVaruint64NoArgs:
             pushReadReturnValue(Reader->readVaruint64(ReadPos));
             break;
           case OpVaruint64OneArg:
             pushReadReturnValue(Reader->readVaruint64Bits(
-                ReadPos, cast<Varuint64OneArgNode>(Nd)->getValue()));
+                ReadPos, cast<Varuint64OneArgNode>(Frame.Nd)->getValue()));
             break;
           case OpVoid:
             pushReadReturnValue(0);
@@ -524,11 +503,7 @@ void Interpreter::runMethods() {
       case InterpMethod::Write: {
         IntType Value = ParamStack.back();
         TRACE(IntType, "Value", Value);
-#if 0
-        const Node* Nd = Frame.Code;
-#else
-        const Node* Nd = CallStack.getCode();
-#endif
+        const Node* Nd = Frame.Nd;
         switch (NodeType Type = Nd->getType()) {
           default:
             fprintf(stderr, "Write not implemented: %s\n",
@@ -536,12 +511,8 @@ void Interpreter::runMethods() {
             fatal("Write not implemented");
             break;
           case OpParam:
-#if 0
-            Frame.Code = getParam(Nd);
-#else
-            CallStack.setCode(Nd);
-#endif
-            continue;
+            Call(InterpMethod::Write, getParam(Nd));
+            break;
           case OpUint8NoArgs:
             Writer->writeUint8(Value, WritePos);
             popArgAndReturnValue(Value);

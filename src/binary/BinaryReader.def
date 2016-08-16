@@ -23,6 +23,7 @@
   /* enum name,  text name */                                                  \
   X(Block,       "readBlock")                                                  \
   X(File,        "readFile")                                                   \
+  X(Finished,    "Finished")                                                   \
   X(Name,        "readName")                                                   \
   X(Section,     "readSection")                                                \
   X(SectionBody, "readSectionBody")                                            \
