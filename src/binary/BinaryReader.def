@@ -18,17 +18,18 @@
 #ifndef DECOMPRESSOR_SRC_BINARY_BINARYREADER_DEF
 #define DECOMPRESSOR_SRC_BINARY_BINARYREADER_DEF
 
-//#define(tag, name)
+//#define X(tag, name)
 #define BINARY_READER_METHODS_TABLE                                            \
-  /* enum name, text name */                                                   \
+  /* enum name,  text name */                                                  \
   X(Block,       "readBlock")                                                  \
   X(File,        "readFile")                                                   \
+  X(Finished,    "Finished")                                                   \
   X(Name,        "readName")                                                   \
   X(Section,     "readSection")                                                \
   X(SectionBody, "readSectionBody")                                            \
   X(SymbolTable, "readSymbolTable")                                            \
 
-//#define(tag, name)
+//#define X(tag, name)
 #define BINARY_READER_STATES_TABLE                                             \
   /* enum name, text name */                                                   \
   X(Enter,     "enter")                                                        \
