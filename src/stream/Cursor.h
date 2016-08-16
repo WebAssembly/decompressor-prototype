@@ -118,6 +118,11 @@ class Cursor : public PageCursor {
 
   void freezeEof() { Que->freezeEof(getCurAddress()); }
 
+  // Try to advance Distance bytes. Returns actual number of bytes advanced.  If
+  // zero is returned (and Distance > 0), no more bytes are available to advance
+  // on.
+  size_t advance(size_t Distance);
+
   // ------------------------------------------------------------------------
   // The following methods assume that the cursor is accessing a byte stream.
   // ------------------------------------------------------------------------

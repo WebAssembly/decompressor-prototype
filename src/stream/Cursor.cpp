@@ -25,6 +25,17 @@ FILE* WorkingByte::describe(FILE* File) {
   return File;
 }
 
+size_t Cursor::advance(size_t Distance) {
+  size_t DistanceMoved = 0;
+  while (DistanceMoved < Distance && CurAddress < Que->getEofAddress()) {
+    size_t Size = Que->readFromPage(CurAddress, Page::Size, *this);
+    if (Size == 0)
+      break;
+    DistanceMoved += Size;
+  }
+  return DistanceMoved;
+}
+
 bool Cursor::readFillBuffer() {
   size_t CurAddress = getCurAddress();
   if (CurAddress >= Que->getEofAddress())
