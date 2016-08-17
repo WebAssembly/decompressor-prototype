@@ -134,7 +134,6 @@ IntType Interpreter::eval(const Node* Nd) {
     case OpRename:
     case OpVersion:
     case OpUnknownSection:
-
       fprintf(stderr, "Evaluating not allowed: %s\n", getNodeTypeName(Type));
       fatal("Unable to evaluate filter s-expression");
       break;
@@ -364,9 +363,7 @@ IntType Interpreter::readOpcode(const Node* Nd,
       const auto* Sel = cast<OpcodeNode>(Nd);
       const Node* SelectorNd = Sel->getKid(0);
       uint32_t SelectorSize = readOpcodeSelector(SelectorNd, LastReadValue);
-      TRACE(uint32_t, "selector value", LastReadValue);
       if (NumOpcodes > 0) {
-        TRACE(IntType, "prefix value", PrefixValue);
         TRACE(uint32_t, "selector bitsize", SelectorSize);
         if (SelectorSize < 1 || SelectorSize >= 64)
           fatal("Opcode selector has illegal bitsize");
@@ -378,7 +375,6 @@ IntType Interpreter::readOpcode(const Node* Nd,
       break;
     }
   }
-  TRACE(IntType, "return value", LastReadValue);
   return LastReadValue;
 }
 
@@ -401,9 +397,6 @@ IntType Interpreter::write(IntType Value, const wasm::filt::Node* Nd) {
 
 void Interpreter::runMethods() {
   TRACE_METHOD("runMethods");
-#if 0
-  CallFrame Frame;
-#endif
   int count = 0;
   while (!FrameStack.empty()) {
     if (count++ >= 10)
@@ -635,12 +628,10 @@ void Interpreter::decompressBlock(const Node* Code) {
   size_t SizeAfterSizeWrite = Writer->getStreamAddress(WritePos);
   evalOrCopy(Code);
   const size_t NewSize = Writer->getBlockSize(BlockStart, WritePos);
-  TRACE(uint32_t, "OldSize", OldSize);
-  TRACE(uint32_t, "NewSize", NewSize);
+  TRACE(uint32_t, "New block size", NewSize);
   if (!MinimizeBlockSize) {
     Writer->writeFixedBlockSize(BlockStart, NewSize);
   } else {
-    TRACE_MESSAGE("Moving block...");
     Writer->writeVarintBlockSize(BlockStart, NewSize);
     size_t SizeAfterBackPatch = Writer->getStreamAddress(BlockStart);
     size_t Diff = SizeAfterSizeWrite - SizeAfterBackPatch;
@@ -689,6 +680,7 @@ void Interpreter::decompressSection() {
 }
 
 void Interpreter::readSectionName() {
+  TRACE_METHOD("readSectionName");
   CurSectionName.clear();
   uint32_t NameSize = Reader->readVaruint32(ReadPos);
   Writer->writeVaruint32(NameSize, WritePos);

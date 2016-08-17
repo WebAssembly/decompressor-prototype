@@ -19,8 +19,12 @@
 
 #include "sexp/TraceSexp.h"
 #include "sexp/TextWriter.h"
+#include "stream/ReadCursor.h"
+#include "stream/WriteCursor.h"
 
 namespace wasm {
+
+using namespace decode;
 
 namespace filt {
 
@@ -61,7 +65,21 @@ void TraceClassSexp::printSexp(const char* Name, const Node* Node) {
 
 void TraceClassSexp::traceNodeTypeInternal(const char* Name, NodeType Type) {
   indent();
-  fprintf(File, "%s%s\n", Name, getNodeTypeName(Type));
+  fprintf(File, "%s = %s\n", Name, getNodeTypeName(Type));
+}
+
+void TraceClassSexp::trace_ReadCursor(const char* Name, ReadCursor& ReadPos) {
+  indent();
+  fprintf(File, "%s = ", Name);
+  ReadPos.describe(File);
+  fputc('\n', File);
+}
+
+void TraceClassSexp::trace_WriteCursor(const char* Name, WriteCursor& WritePos) {
+  indent();
+  fprintf(File, "%s = ", Name);
+  WritePos.describe(File);
+  fputc('\n', File);
 }
 
 }  // end of namespace filt

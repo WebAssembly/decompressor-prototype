@@ -34,6 +34,11 @@
 
 namespace wasm {
 
+namespace decode {
+class ReadCursor;
+class WriteCursor;
+}
+
 namespace filt {
 
 class Node;
@@ -67,6 +72,14 @@ class TraceClassSexp : public utils::TraceClass {
     return Writer;
   }
 
+  void trace_ReadCursor(const char* Name, decode::ReadCursor& ReadPos);
+
+  void trace_WriteCursor(const char* Name, decode::WriteCursor& ReadPos);
+
+  void errorSexp(const char* Name, const Node* Nd) { printSexp(Name, Nd); }
+
+  void errorSexp(const Node* Nd) { printSexp(nullptr, Nd); }
+
   // TODO(karlschimpf): Methods below here are deprecated.
   void traceSexp(const Node* Nd) {
     if (getTraceProgress())
@@ -87,10 +100,6 @@ class TraceClassSexp : public utils::TraceClass {
     if (getTraceProgress())
       traceNodeTypeInternal(Name, Type);
   }
-
-  void errorSexp(const char* Name, const Node* Nd) { printSexp(Name, Nd); }
-
-  void errorSexp(const Node* Nd) { printSexp(nullptr, Nd); }
 
  protected:
   TextWriter* Writer;

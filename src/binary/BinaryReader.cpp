@@ -444,7 +444,6 @@ FileNode* BinaryReader::readHeader() {
   Version = Reader->readUint32(*ReadPos);
   TRACE(uint32_t, "Version", Version);
   auto *File = Symtab->create<FileNode>();
-  TRACE(int, "File kids", File->getNumKids());
   return File;
 }
 
@@ -465,7 +464,6 @@ FileNode* BinaryReader::readFile(StreamType Type) {
 }
 
 FileNode* BinaryReader::readFile(ReadCursor &NewReadPos) {
-  TRACE_METHOD("readFile");
   std::shared_ptr<ReadCursor> Read = std::make_shared<ReadCursor>(NewReadPos);
   std::shared_ptr<Runner> Runner = startReadingFile(Read, Symtab);
   readBackFilled(Runner);
@@ -478,7 +476,6 @@ SectionNode* BinaryReader::readSection(StreamType Type) {
 }
 
 SectionNode* BinaryReader::readSection(ReadCursor &NewReadPos) {
-  TRACE_METHOD("readSection");
   std::shared_ptr<ReadCursor> Read = std::make_shared<ReadCursor>(NewReadPos);
   std::shared_ptr<Runner> Runner = startReadingSection(Read, Symtab);
   readBackFilled(Runner);
@@ -487,7 +484,8 @@ SectionNode* BinaryReader::readSection(ReadCursor &NewReadPos) {
 
 void BinaryReader::readNode() {
   TRACE_METHOD("readNode");
-  switch (NodeType Opcode = (NodeType)Reader->readUint8(*ReadPos)) {
+  NodeType Opcode = (NodeType)Reader->readUint8(*ReadPos);
+  switch (Opcode) {
     case OpAnd:
       readBinary<AndNode>();
       break;
@@ -665,8 +663,6 @@ void BinaryReader::readNode() {
     case OpSection:
     case OpSymbol:
     case OpUnknownSection:
-      // Make sure Opcode is referenced in a release build.
-      (void)Opcode;
       TRACE(hex_uint32_t, "Opcode: ", Opcode);
       fatal("Uses construct not implemented yet!");
       break;

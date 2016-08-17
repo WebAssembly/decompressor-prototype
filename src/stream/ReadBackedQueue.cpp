@@ -31,12 +31,7 @@ bool ReadBackedQueue::readFill(size_t Address) {
     size_t SpaceAvailable = LastPage->spaceRemaining();
     // Create new page if current page full.
     if (SpaceAvailable == 0) {
-      std::shared_ptr<Page> NewPage =
-          std::make_shared<Page>(LastPage->getMaxAddress());
-      std::weak_ptr<Page> PlaceHolder(NewPage);
-      PageMap.push_back(PlaceHolder);
-      LastPage->Next = NewPage;
-      LastPage = NewPage;
+      appendPage();
       SpaceAvailable = Page::Size;
     }
     size_t NumBytes = Reader->read(&(LastPage->Buffer[Page::address(Address)]),

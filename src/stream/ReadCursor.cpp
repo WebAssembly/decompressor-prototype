@@ -20,6 +20,17 @@ namespace wasm {
 
 namespace decode {
 
+uint8_t ReadCursor::readByte() {
+  assert(isByteAligned());
+  if (getCurAddress() < GuaranteedBeforeEob)
+    return readOneByte();
+  bool atEof = isIndexAtEndOfPage() && !readFillBuffer();
+  updateGuaranteedBeforeEob();
+  if (atEof)
+    return 0;
+  return readOneByte();
+}
+
 uint32_t ReadCursor::readBits(uint32_t NumBits) {
   assert(NumBits <= sizeof(uint32_t) * CHAR_BIT);
   uint32_t Value = 0;
@@ -36,6 +47,20 @@ uint32_t ReadCursor::readBits(uint32_t NumBits) {
     CurByte.setByte(readByte());
   }
   return Value;
+}
+
+size_t ReadCursor::advance(size_t Distance) {
+  size_t WantedAddress = CurAddress + Distance;
+  size_t DistanceMoved = 0;
+  while (CurAddress < WantedAddress && CurAddress < Que->getEofAddress()) {
+    size_t Size = Que->readFromPage(CurAddress, Page::Size, *this);
+    if (Size == 0)
+      break;
+    CurAddress += Size;
+    DistanceMoved += Size;
+    CurPage = Que->getReadPage(CurAddress);
+  }
+  return DistanceMoved;
 }
 
 }  // end of namespace decode

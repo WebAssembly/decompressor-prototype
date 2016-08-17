@@ -25,20 +25,6 @@ FILE* WorkingByte::describe(FILE* File) {
   return File;
 }
 
-size_t Cursor::advance(size_t Distance) {
-  size_t WantedAddress = CurAddress + Distance;
-  size_t DistanceMoved = 0;
-  while (CurAddress < WantedAddress && CurAddress < Que->getEofAddress()) {
-    size_t Size = Que->readFromPage(CurAddress, Page::Size, *this);
-    if (Size == 0)
-      break;
-    CurAddress += Size;
-    DistanceMoved += Size;
-    CurPage = Que->getPage(CurAddress);
-  }
-  return DistanceMoved;
-}
-
 bool Cursor::readFillBuffer() {
   size_t CurAddress = getCurAddress();
   if (CurAddress >= Que->getEofAddress())
@@ -56,19 +42,23 @@ void Cursor::writeFillBuffer() {
     fatal("Write failed!\n");
 }
 
-FILE* Cursor::describe(FILE* File, bool IncludeDetail) {
+FILE* Cursor::describe(FILE* File, bool IncludeDetail, bool AddEoln) {
   if (IncludeDetail)
-    fprintf(File, "Cursor<");
+    fputs("Cursor<", File);
   PageCursor::describe(File, IncludeDetail);
-  if (!CurByte.isEmpty())
+  if (!CurByte.isEmpty()) {
+    fputc(' ', File);
     CurByte.describe(File);
+  }
   if (!IncludeDetail)
     return File;
   if (EobPtr->isDefined()) {
     fprintf(File, ", eob=");
     getEobAddress().describe(File);
   }
-  fputs(">", File);
+  fputc('>', File);
+  if (AddEoln)
+    fputc('\n', File);
   return File;
 }
 

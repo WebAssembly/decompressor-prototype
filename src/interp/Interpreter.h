@@ -91,41 +91,6 @@ class Interpreter {
     const filt::Node* Nd;
   };
 
-#if 0
-  class CallFrameStack : public utils::ValueStack<CallFrame> {
-    CallFrameStack(const CallFrameStack&) = delete;
-    CallFrameStack &operator=(const CallFrameStack&) = delete;
-   public:
-    typedef utils::ValueStack<CallFrame> BaseClass;
-    CallFrameStack() {}
-    void push(InterpMethod Method, const filt::Node* Code) {
-      BaseClass::push();
-      Top.Method = Method;
-      Top.State = InterpState::Enter;
-      Top.Code = Code;
-    }
-    InterpMethod getMethod() const {
-      return Top.Method;
-    }
-    void setMethod(InterpMethod NewMethod) {
-      Top.Method = NewMethod;
-    }
-    InterpState getState() const {
-      return Top.State;
-    }
-    void setState(InterpState NewState) {
-      Top.State = NewState;
-    }
-    const filt::Node* getCode() const {
-      return Top.Code;
-    }
-    void setCode(const filt::Node* Nd) {
-      Top.Code = Nd;
-    }
-    void describe(FILE* Out);
-  } CallStack;
-#endif
-
   decode::ReadCursor ReadPos;
   std::shared_ptr<ReadStream> Reader;
   decode::WriteCursor WritePos;
@@ -142,10 +107,7 @@ class Interpreter {
   decode::IntType LastReadValue;
   bool MinimizeBlockSize;
   TraceClassSexpReaderWriter Trace;
-#if 0
-  // The call stack of methods being applied.
-  std::vector<CallFrame> CallStack;
-#endif
+  // Tracks the call stack of methods.
   CallFrame Frame;
   utils::ValueStack<CallFrame> FrameStack;
   // The stack of passed/returned values.
@@ -189,20 +151,12 @@ class Interpreter {
   void popArgAndReturnValue(decode::IntType Value) {
     ParamStack.pop_back();
     ReturnStack.push_back(Value);
-#if 0
-    CallStack.pop_back();
-#else
     FrameStack.pop();
-#endif
   }
   void pushReadReturnValue(decode::IntType Value) {
     LastReadValue = Value;
     ReturnStack.push_back(Value);
-#if 0
-    CallStack.pop_back();
-#else
     FrameStack.pop();
-#endif
   }
 };
 

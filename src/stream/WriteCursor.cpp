@@ -20,6 +20,16 @@ namespace wasm {
 
 namespace decode {
 
+void WriteCursor::writeByte(uint8_t Byte) {
+  assert(isByteAligned());
+  if (getCurAddress() < GuaranteedBeforeEob)
+    return writeOneByte(Byte);
+  if (isIndexAtEndOfPage())
+    writeFillBuffer();
+  updateGuaranteedBeforeEob();
+  writeOneByte(Byte);
+}
+
 void WriteCursor::writeBits(uint32_t Value, uint32_t NumBits) {
   assert(NumBits <= sizeof(uint32_t) * CHAR_BIT);
   while (NumBits > 0) {

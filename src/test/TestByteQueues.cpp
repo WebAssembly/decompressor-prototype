@@ -20,7 +20,9 @@
 #include "stream/FileReader.h"
 #include "stream/FileWriter.h"
 #include "stream/ReadBackedQueue.h"
+#include "stream/ReadCursor.h"
 #include "stream/WriteBackedQueue.h"
+#include "stream/WriteCursor.h"
 
 #include <cstring>
 #include <unistd.h>
@@ -109,23 +111,23 @@ int main(int Argc, char* Argv[]) {
       return exit_status(EXIT_FAILURE);
     }
   }
-  ReadBackedQueue Input(getInput());
-  WriteBackedQueue Output(getOutput());
+  auto Input = std::make_shared<ReadBackedQueue>(getInput());
+  auto Output = std::make_shared<WriteBackedQueue>(getOutput());
   // uint8_t Buffer[MaxBufSize];
   size_t Address = 0;
-  PageCursor ReadCursor(&Input);
-  PageCursor WriteCursor(&Output);
-  while (Address < Input.currentSize()) {
+  ReadCursor ReadPos(Input);
+  WriteCursor WritePos(Output);
+  while (Address < Input->currentSize()) {
     size_t ReadBytesAvailable =
-        Input.readFromPage(Address, BufSize, ReadCursor);
+        Input->readFromPage(Address, BufSize, ReadPos);
     if (ReadBytesAvailable == 0) {
-      WriteCursor.setMaxAddress(Address);
+      WritePos.setMaxAddress(Address);
       break;
     }
     size_t NextAddress = Address + ReadBytesAvailable;
     while (ReadBytesAvailable) {
       size_t WriteBytesAvailable =
-          Output.writeToPage(Address, ReadBytesAvailable, WriteCursor);
+          Output->writeToPage(Address, ReadBytesAvailable, WritePos);
       if (WriteBytesAvailable == 0) {
         fprintf(stderr, "Unable to write address %d, returned zero bytes",
                 int(Address));
@@ -138,7 +140,7 @@ int main(int Argc, char* Argv[]) {
       }
       // TODO(karlschimpf): Fix API to allow range copies.
       for (size_t i = 0; i < WriteBytesAvailable; ++i)
-        WriteCursor.writeByte(ReadCursor.readByte());
+        WritePos.writeByte(ReadPos.readByte());
       ReadBytesAvailable -= WriteBytesAvailable;
     }
     Address = NextAddress;
