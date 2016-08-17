@@ -64,8 +64,8 @@ class Page : public std::enable_shared_from_this<Page> {
 
  public:
   static constexpr size_t SizeLog2 =
-#ifdef WASM_DECODE_LOGPAGE_SIZE
-      WASM_DECODE_LOGPAGE_SIZE
+#ifdef WASM_DECODE_PAGE_SIZE
+      WASM_DECODE_PAGE_SIZE
 #else
       16
 #endif
@@ -83,12 +83,7 @@ class Page : public std::enable_shared_from_this<Page> {
     return Address & Page::Mask;
   }
 
-  Page(size_t MinAddress)
-      : Index(Page::index(MinAddress)),
-        MinAddress(MinAddress),
-        MaxAddress(MinAddress) {
-    std::memset(&Buffer, 0, Page::Size);
-  }
+  Page(size_t MinAddress);
 
   size_t spaceRemaining() const {
     return MinAddress == MaxAddress
@@ -120,6 +115,8 @@ class Page : public std::enable_shared_from_this<Page> {
 };
 
 class PageCursor {
+  PageCursor() = delete;
+  friend class Queue;
  public:
   PageCursor(Queue* Que);
   PageCursor(std::shared_ptr<Page> CurPage, size_t CurAddress)
@@ -155,23 +152,12 @@ class PageCursor {
     assert(CurPage);
     return CurPage->Buffer + getRelativeAddress();
   }
-  uint8_t readByte() {
-    uint8_t Byte = *getBufferPtr();
-    ++CurAddress;
-    return Byte;
-  }
-  void writeByte(uint8_t Byte) {
-    *getBufferPtr() = Byte;
-    ++CurAddress;
-  }
-
-  // TODO(karlschimpf): Make this private.
-  std::shared_ptr<Page> CurPage;
 
   // For debugging only.
   FILE* describe(FILE* File, bool IncludePage = false);
 
  protected:
+  std::shared_ptr<Page> CurPage;
   // Absolute address.
   size_t CurAddress;
 };

@@ -30,11 +30,14 @@ class ReadCursor FINAL : public Cursor {
   ReadCursor& operator=(const ReadCursor&) = delete;
 
  public:
+  ReadCursor(std::shared_ptr<Queue> Que) : Cursor(StreamType::Byte, Que) {}
+
   ReadCursor(StreamType Type, std::shared_ptr<Queue> Que) : Cursor(Type, Que) {}
 
   explicit ReadCursor(const Cursor& C) : Cursor(C) {}
 
-  ReadCursor(const Cursor& C, size_t StartAddress) : Cursor(C, StartAddress) {}
+  ReadCursor(const Cursor& C, size_t StartAddress)
+      : Cursor(C, StartAddress, true) {}
 
   ~ReadCursor() {}
 
@@ -72,19 +75,26 @@ class ReadCursor FINAL : public Cursor {
 
   // Reads next byte. Returns zero if at end of file. NOTE: Assumes byte
   // aligned!
-  uint8_t readByte() {
-    assert(isByteAligned());
-    if (getCurAddress() < GuaranteedBeforeEob)
-      return PageCursor::readByte();
-    bool atEof = isIndexAtEndOfPage() && !readFillBuffer();
-    updateGuaranteedBeforeEob();
-    if (atEof)
-      return 0;
-    return PageCursor::readByte();
-  }
+  uint8_t readByte();
 
   // Reads up to 32 bits from the input.
   uint32_t readBits(uint32_t NumBits);
+
+  // Try to advance Distance bytes. Returns actual number of bytes advanced.  If
+  // zero is returned (and Distance > 0), no more bytes are available to advance
+  // on.
+  size_t advance(size_t Distance);
+
+ protected:
+  uint8_t readOneByte() {
+    uint8_t Byte = *getBufferPtr();
+    ++CurAddress;
+    CurPage = Que->getReadPage(CurAddress);
+    assert(CurPage);
+    assert(CurPage == Que->getCachedPage(CurAddress));
+    return Byte;
+  }
+
 };
 
 }  // end of namespace decode

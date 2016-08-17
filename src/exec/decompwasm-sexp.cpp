@@ -126,7 +126,7 @@ int main(int Argc, char* Argv[]) {
         std::make_shared<ReadCursor>(StreamType::Byte, FillQueue);
     std::shared_ptr<BinaryReader::Runner> Runner =
         BinaryReader::startReadingFile(FillReadPos, Symtab);
-    Runner->setTraceProgress(Verbose >= 1);
+    Runner->getTrace().setTraceProgress(Verbose >= 1);
     WriteCursor* FillPos = Runner->getFillPos().get();
     while (Runner->needsMoreInput()) {
       // TODO(karlschimpf) Get a cleaner API for this!
@@ -147,7 +147,7 @@ int main(int Argc, char* Argv[]) {
     File = Runner->getFile();
   } else {
     BinaryReader Reader(Input, Symtab);
-    Reader.setTraceProgress(Verbose >= 1);
+    Reader.getTrace().setTraceProgress(Verbose >= 1);
     File = Reader.readFile();
   }
   if (File == nullptr) {

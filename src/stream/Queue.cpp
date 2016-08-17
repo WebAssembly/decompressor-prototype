@@ -45,6 +45,30 @@ Queue::~Queue() {
     dumpFirstPage();
 }
 
+void Queue::describe(FILE* Out) {
+  fprintf(Out, "**** Queue %p ***\n", (void*)this);
+  fprintf(Out, "First = %p, Last = %p\n", (void*)FirstPage.get(), (void*)LastPage.get());
+  for (size_t i = 0; i < PageMap.size(); ++i) {
+    std::shared_ptr<Page> Pg = PageMap[i].lock();
+    fprintf(Out, "[%" PRIuMAX "] = %p", uintmax_t(i), (void*)Pg.get());
+    if (Pg) {
+      fprintf(Out, " page %" PRIuMAX " [%" PRIxMAX "..%" PRIxMAX ") Next = %p",
+              uintmax_t(Pg->getPageIndex()),
+              uintmax_t(Pg->getMinAddress()), uintmax_t(Pg->getMaxAddress()),
+              (void*)Pg->Next.get());
+    }
+    fprintf(Out, "\n");
+  }
+  fprintf(Out, "*****************\n");
+}
+
+void Queue::appendPage() {
+  std::shared_ptr<Page> NewPage = std::make_shared<Page>(LastPage->getMaxAddress());
+  PageMap.push_back(NewPage);
+  LastPage->Next = NewPage;
+  LastPage = NewPage;
+}
+
 void Queue::dumpFirstPage() {
   FirstPage = FirstPage->Next;
 }
@@ -58,6 +82,53 @@ bool Queue::readFill(size_t Address) {
   return Address < LastPage->getMaxAddress();
 }
 
+bool Queue::writeFill(size_t Address) {
+  // Expand till page exists.
+  while (Address >= LastPage->getMaxAddress()) {
+    if (EofFrozen)
+      return false;
+    LastPage->setMaxAddress(LastPage->getMinAddress() + Page::Size);
+    if (Address < LastPage->getMaxAddress())
+      return true;
+    appendPage();
+  }
+  return true;
+}
+
+std::shared_ptr<Page> Queue::readFillToPage(size_t Index) {
+  while (Index > LastPage->Index) {
+    bool ReadFillNextPage =
+        readFill(LastPage->getMinAddress() + Page::Size);
+    if (!ReadFillNextPage && Index > LastPage->Index) {
+      // This should only happen if we reach eof. Verify,
+      // If so, allow page wrap so that we can have a cursor pointing
+      // to the eof position.
+      if (LastPage->getMinAddress() + Page::Size != LastPage->getMaxAddress())
+        fatal("readFillToPage failed!");
+      appendPage();
+    }
+  }
+  assert(Index < PageMap.size());
+  return PageMap[Index].lock();
+}
+
+std::shared_ptr<Page> Queue::writeFillToPage(size_t Index) {
+  while (Index > LastPage->Index) {
+    bool WriteFillNextPage =
+        writeFill(LastPage->getMinAddress() + Page::Size);
+    if (!WriteFillNextPage && Index > LastPage->Index) {
+      // This should only happen if we reach eof. Verify,
+      // If so, allow page wrap so that we can have a cursor pointing
+      // to the eof position.
+      if (LastPage->getMinAddress() + Page::Size != LastPage->getMaxAddress())
+        fatal("readFillToPage failed!");
+      appendPage();
+    }
+  }
+  assert(Index < PageMap.size());
+  return PageMap[Index].lock();
+}
+
 size_t Queue::readFromPage(size_t Address,
                            size_t WantedSize,
                            PageCursor& Cursor) {
@@ -65,7 +136,7 @@ size_t Queue::readFromPage(size_t Address,
   if (Address >= LastPage->getMaxAddress() && !readFill(Address))
     return 0;
   // Find page associated with Address.
-  Cursor.CurPage = getPage(Address);
+  Cursor.CurPage = getCachedPage(Address);
   Cursor.setCurAddress(Address);
   dumpPreviousPages();
   // Compute largest contiguous range of elements available.
@@ -78,19 +149,9 @@ size_t Queue::writeToPage(size_t Address,
                           size_t WantedSize,
                           PageCursor& Cursor) {
   // Expand till page exists.
-  while (Address >= LastPage->getMaxAddress()) {
-    if (EofFrozen)
-      return 0;
-    LastPage->setMaxAddress(LastPage->getMinAddress() + Page::Size);
-    if (Address < LastPage->getMaxAddress())
-      break;
-    std::shared_ptr<Page> NewPage(
-        std::make_shared<Page>(LastPage->getMaxAddress()));
-    PageMap.push_back(NewPage);
-    LastPage->Next = NewPage;
-    LastPage = NewPage;
-  }
-  Cursor.CurPage = getPage(Address);
+  if (!writeFill(Address))
+    return 0;
+  Cursor.CurPage = getCachedPage(Address);
   Cursor.setCurAddress(Address);
   dumpPreviousPages();
   // Compute largest contiguous range of bytes available.
@@ -116,7 +177,7 @@ void Queue::freezeEof(size_t Address) {
 }
 
 void Queue::writePageAt(FILE* File, size_t Address) {
-  std::shared_ptr<Page> P = getPage(Address);
+  std::shared_ptr<Page> P = getWritePage(Address);
   if (!P)
     return;
   size_t Size = Page::address(Address);

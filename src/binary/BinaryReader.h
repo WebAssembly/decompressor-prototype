@@ -130,9 +130,6 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
     T* create(Args&&... args) {
       return Reader->Symtab->create<T>(std::forward<Args>(args)...);
     }
-    void setTraceProgress(bool NewValue) {
-      Reader->setTraceProgress(NewValue);
-    }
     TraceClassSexpReader& getTrace() { return Reader->getTrace(); }
    private:
 
@@ -212,8 +209,6 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
 
   SectionNode* readSection(decode::ReadCursor &ReadPos);
 
-  void setTraceProgress(bool NewValue) { Trace.setTraceProgress(NewValue); }
-
   TraceClassSexpReader& getTrace() { return Trace; }
 
  private:
@@ -229,14 +224,10 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
   std::vector<Node*> NodeStack;
   TraceClassSexpReader Trace;
 
-  // Reads in a name and returns the read name. Reference is only good till
-  // next call to readInternalName() or ReadExternalName().
-  InternalName& readInternalName();
-  ExternalName& readExternalName();
+  // Runs methods will read-fill of input.
+  void readBackFilled(std::shared_ptr<Runner> Runner);
 
   FileNode* readHeader();
-  void readBlock(std::function<void()> ApplyFn);
-  void readSymbolTable();
   void readNode();
 
   // General ast readers.

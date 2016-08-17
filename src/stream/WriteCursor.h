@@ -30,10 +30,12 @@ class WriteCursor FINAL : public Cursor {
   WriteCursor& operator=(const WriteCursor&) = delete;
 
  public:
+  WriteCursor(std::shared_ptr<Queue> Que) : Cursor(StreamType::Byte, Que) {}
   WriteCursor(StreamType Type, std::shared_ptr<Queue> Que)
       : Cursor(Type, Que) {}
   explicit WriteCursor(const WriteCursor& C) : Cursor(C) {}
-  WriteCursor(const Cursor& C, size_t StartAddress) : Cursor(C, StartAddress) {}
+  WriteCursor(const Cursor& C, size_t StartAddress)
+      : Cursor(C, StartAddress, false) {}
   ~WriteCursor() {}
 
   BitsInByteType getBitsWritten() const { return CurByte.getBitsWritten(); }
@@ -43,18 +45,20 @@ class WriteCursor FINAL : public Cursor {
   }
 
   // Writes next byte. Fails if at end of file. NOTE: Assumed byte aligned!
-  void writeByte(uint8_t Byte) {
-    assert(isByteAligned());
-    if (getCurAddress() < GuaranteedBeforeEob)
-      return PageCursor::writeByte(Byte);
-    if (isIndexAtEndOfPage())
-      writeFillBuffer();
-    updateGuaranteedBeforeEob();
-    PageCursor::writeByte(Byte);
-  }
+  void writeByte(uint8_t Byte);
 
   // Writes up to 32 bits to the output.
   void writeBits(uint32_t Value, uint32_t NumBits);
+
+protected:
+  void writeOneByte(uint8_t Byte) {
+    *getBufferPtr() = Byte;
+    ++CurAddress;
+    CurPage = Que->getWritePage(CurAddress);
+    assert(CurPage);
+    assert(CurPage == Que->getCachedPage(CurAddress));
+  }
+
 };
 
 }  // end of namespace decode

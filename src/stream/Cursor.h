@@ -128,7 +128,7 @@ class Cursor : public PageCursor {
   }
 
   // For debugging.
-  FILE* describe(FILE* File, bool IncludeDetail = false);
+  FILE* describe(FILE* File, bool IncludeDetail = false, bool AddEoln = false);
 
  protected:
   StreamType Type;
@@ -156,12 +156,15 @@ class Cursor : public PageCursor {
     updateGuaranteedBeforeEob();
   }
 
-  Cursor(const Cursor& C, size_t StartAddress)
-      : PageCursor(C.Que->getPage(StartAddress), StartAddress),
+  Cursor(const Cursor& C, size_t StartAddress, bool ForRead)
+      : PageCursor(C),
         Type(C.Type),
         Que(C.Que),
         EobPtr(C.EobPtr),
         CurByte(C.CurByte) {
+    CurAddress = StartAddress;
+    CurPage = ForRead
+        ? Que->getReadPage(StartAddress) : Que->getWritePage(StartAddress);
     updateGuaranteedBeforeEob();
   }
 

@@ -42,19 +42,23 @@ void Cursor::writeFillBuffer() {
     fatal("Write failed!\n");
 }
 
-FILE* Cursor::describe(FILE* File, bool IncludeDetail) {
+FILE* Cursor::describe(FILE* File, bool IncludeDetail, bool AddEoln) {
   if (IncludeDetail)
-    fprintf(File, "Cursor<");
+    fputs("Cursor<", File);
   PageCursor::describe(File, IncludeDetail);
-  if (!CurByte.isEmpty())
+  if (!CurByte.isEmpty()) {
+    fputc(' ', File);
     CurByte.describe(File);
+  }
   if (!IncludeDetail)
     return File;
   if (EobPtr->isDefined()) {
     fprintf(File, ", eob=");
     getEobAddress().describe(File);
   }
-  fputs(">", File);
+  fputc('>', File);
+  if (AddEoln)
+    fputc('\n', File);
   return File;
 }
 

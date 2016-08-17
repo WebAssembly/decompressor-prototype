@@ -120,6 +120,8 @@ class Queue : public std::enable_shared_from_this<Queue> {
   Queue& operator=(const Queue&) = delete;
   friend class Cursor;
   friend class PageCursor;
+  friend class ReadCursor;
+  friend class WriteCursor;
 
  public:
   Queue();
@@ -194,6 +196,8 @@ class Queue : public std::enable_shared_from_this<Queue> {
 
   const std::shared_ptr<BlockEob>& getEofPtr() const { return EofPtr; }
 
+  void describe(FILE* Out);
+
  protected:
   // Minimum peek size to maintain. That is, the minimal number of
   // bytes that the read can back up without freezing an address.
@@ -209,14 +213,34 @@ class Queue : public std::enable_shared_from_this<Queue> {
   typedef std::vector<std::weak_ptr<Page>> PageMapType;
   PageMapType PageMap;
 
+  void appendPage();
+
   // Returns the page in the queue referred to Address, or nullptr if no
   // such page is in the byte queue.
-  std::shared_ptr<Page> getPage(size_t Address) const {
+  std::shared_ptr<Page> getReadPage(size_t Address) const {
     size_t Index = Page::index(Address);
     if (Index >= PageMap.size())
-      return nullptr;
+      return const_cast<Queue*>(this)->readFillToPage(Index);
     return PageMap[Index].lock();
   }
+
+  std::shared_ptr<Page> getWritePage(size_t Address) const {
+    size_t Index = Page::index(Address);
+    if (Index >= PageMap.size())
+      return const_cast<Queue*>(this)->writeFillToPage(Index);
+    return PageMap[Index].lock();
+  }
+
+  std::shared_ptr<Page> getCachedPage(size_t Address) const {
+    size_t Index = Page::index(Address);
+    if (Index >= PageMap.size())
+      return 0;
+    return PageMap[Index].lock();
+  }
+
+  std::shared_ptr<Page> readFillToPage(size_t Index);
+
+  std::shared_ptr<Page> writeFillToPage(size_t Index);
 
   bool isValidPageAddress(size_t Address) {
     return Page::index(Address) < PageMap.size();
@@ -240,6 +264,8 @@ class Queue : public std::enable_shared_from_this<Queue> {
   // Returns true if successful. If applicable, reads from input to fill the
   // buffer as appropriate.
   virtual bool readFill(size_t Address);
+
+  virtual bool writeFill(size_t Address);
 };
 
 }  // end of namespace decode
