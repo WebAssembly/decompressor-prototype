@@ -168,6 +168,8 @@ class Interpreter {
     LastReadValue = Value;
     ReturnStack.push_back(Value);
     FrameStack.pop();
+    TRACE(IntType, "returns", LastReadValue);
+    Frame.State = InterpState::Exit;
   }
 
   bool hasEnoughHeadroom() const;
