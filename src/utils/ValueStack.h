@@ -62,11 +62,12 @@ class ValueStack {
   };
 
   Iterator begin() const { return Iterator(this, 0); }
-  Iterator end() const { return Iterator(this, Stack.size()); }
+  Iterator end() const { return Iterator(this, size()); }
 
   ValueStack(T& Value) : Value(Value) {}
   ~ValueStack() {}
   bool empty() const { return Stack.empty(); }
+  size_t size() const { return Stack.size() + 1; }
   void push() { Stack.push_back(Value); }
   // Push Value onto stack
   void push(const T& Value) { Stack.push_back(Value); }

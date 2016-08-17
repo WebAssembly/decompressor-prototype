@@ -51,6 +51,22 @@ static constexpr uint32_t MaxExpectedSectionNameSize = 32;
 
 static constexpr size_t DefaultStackSize = 256;
 
+// Note: Headroom is used to guarantee that we have enough space to
+// read any sexpression node.
+static constexpr size_t kResumeHeadroom = 100;
+
+const char* InterpMethodName[] = {
+#define X(tag, name) name,
+    INTERPRETER_METHODS_TABLE
+#undef X
+    "NO_SUCH_METHOD"};
+
+const char* InterpStateName[] = {
+#define X(tag, name) name,
+    INTERPRETER_STATES_TABLE
+#undef X
+    "NO_SUCH_STATE"};
+
 }  // end of anonymous namespace
 
 Interpreter::Interpreter(std::shared_ptr<Queue> Input,
@@ -78,6 +94,25 @@ namespace {
 uint32_t LogBlockCount = 0;
 }  // end of anonymous namespace
 #endif
+
+void Interpreter::describeFrameStack(FILE* File) {
+  fprintf(File, "*** Frame Statck ***\n");
+  for (auto Frame : FrameStack) {
+    fprintf(File, "%s.%s ", InterpMethodName[int(Frame.Method)],
+            InterpStateName[int(Frame.State)]);
+    if (Frame.Method == InterpMethod::Write) {
+      fprintf(File, "%" PRIuMAX " ", ParamStack.back());
+    }
+    getTrace().getTextWriter()->writeAbbrev(File, Frame.Nd);
+  }
+  fprintf(File, "********************\n");
+}
+
+bool Interpreter::hasEnoughHeadroom() const {
+  return ReadPos.isEofFrozen() ||
+         (ReadPos.getCurByteAddress() + kResumeHeadroom <=
+          ReadPos.getCurByteAddress());
+}
 
 const Node* Interpreter::getParam(const Node* P) {
   if (EvalStack.empty())
@@ -380,7 +415,7 @@ IntType Interpreter::readOpcode(const Node* Nd,
 
 IntType Interpreter::read(const Node* Nd) {
   Call(InterpMethod::Read, Nd);
-  runMethods();
+  readBackFilled();
   IntType Value = ReturnStack.back();
   ReturnStack.pop_back();
   return Value;
@@ -389,22 +424,41 @@ IntType Interpreter::read(const Node* Nd) {
 IntType Interpreter::write(IntType Value, const wasm::filt::Node* Nd) {
   Call(InterpMethod::Write, Nd);
   ParamStack.push_back(Value);
-  runMethods();
+  readBackFilled();
   assert(Value == ReturnStack.back());
   ReturnStack.pop_back();
   return Value;
 }
 
+void Interpreter::readBackFilled() {
+  TRACE_METHOD("readBackFilled");
+  if (FrameStack.empty())
+    // Clear from previous run.
+    Frame.reset();
+  ReadCursor FillPos(ReadPos);
+  while (needsMoreInput() && !isFinished()) {
+    while (!hasEnoughHeadroom()) {
+      FillPos.advance(Page::Size);
+    }
+    runMethods();
+  }
+}
+
+void Interpreter::fail() {
+  TRACE_METHOD("method failed");
+  while (!FrameStack.empty()) {
+    // TODO(karlschimpf): Add trace exit?
+    FrameStack.pop();
+  }
+  Frame.fail();
+}
+
 void Interpreter::runMethods() {
   TRACE_METHOD("runMethods");
-  int count = 0;
-  while (!FrameStack.empty()) {
-    if (count++ >= 10)
-      fatal("Too many iterations!");
-    TRACE(int, "Method", int(Frame.Method));
-    TRACE_SEXP("Code", Frame.Nd);
+  TRACE_BLOCK({ describeFrameStack(tracE.getFile()); });
+  while (hasEnoughHeadroom()) {
     switch (Frame.Method) {
-      case InterpMethod::InterpMethod_NO_SUCH_METHOD:
+      case InterpMethod::NO_SUCH_METHOD:
         assert(false);
         fatal(
             "An unrecoverable error has occured in Interpreter::runMethods()");
@@ -412,6 +466,9 @@ void Interpreter::runMethods() {
       case InterpMethod::Eval:
         fatal("Eval/Read not yet implemented in runMethods");
         break;
+      case InterpMethod::Finished:
+        assert(FrameStack.empty());
+        return;
       case InterpMethod::Read: {
         switch (NodeType Type = Frame.Nd->getType()) {
           default:
@@ -505,6 +562,7 @@ void Interpreter::runMethods() {
             break;
           case OpParam:
             Call(InterpMethod::Write, getParam(Nd));
+            FrameStack.pop();
             break;
           case OpUint8NoArgs:
             Writer->writeUint8(Value, WritePos);
@@ -588,6 +646,7 @@ void Interpreter::runMethods() {
             write(Value >> SelShift, Sel->getKid(0));
             if (Case)
               write(Value & CaseMask, Case->getKid(1));
+            FrameStack.pop();
             break;
           }
         }

@@ -47,15 +47,15 @@ Queue::~Queue() {
 
 void Queue::describe(FILE* Out) {
   fprintf(Out, "**** Queue %p ***\n", (void*)this);
-  fprintf(Out, "First = %p, Last = %p\n", (void*)FirstPage.get(), (void*)LastPage.get());
+  fprintf(Out, "First = %p, Last = %p\n", (void*)FirstPage.get(),
+          (void*)LastPage.get());
   for (size_t i = 0; i < PageMap.size(); ++i) {
     std::shared_ptr<Page> Pg = PageMap[i].lock();
     fprintf(Out, "[%" PRIuMAX "] = %p", uintmax_t(i), (void*)Pg.get());
     if (Pg) {
       fprintf(Out, " page %" PRIuMAX " [%" PRIxMAX "..%" PRIxMAX ") Next = %p",
-              uintmax_t(Pg->getPageIndex()),
-              uintmax_t(Pg->getMinAddress()), uintmax_t(Pg->getMaxAddress()),
-              (void*)Pg->Next.get());
+              uintmax_t(Pg->getPageIndex()), uintmax_t(Pg->getMinAddress()),
+              uintmax_t(Pg->getMaxAddress()), (void*)Pg->Next.get());
     }
     fprintf(Out, "\n");
   }
@@ -63,7 +63,8 @@ void Queue::describe(FILE* Out) {
 }
 
 void Queue::appendPage() {
-  std::shared_ptr<Page> NewPage = std::make_shared<Page>(LastPage->getMaxAddress());
+  std::shared_ptr<Page> NewPage =
+      std::make_shared<Page>(LastPage->getMaxAddress());
   PageMap.push_back(NewPage);
   LastPage->Next = NewPage;
   LastPage = NewPage;
@@ -97,8 +98,7 @@ bool Queue::writeFill(size_t Address) {
 
 std::shared_ptr<Page> Queue::readFillToPage(size_t Index) {
   while (Index > LastPage->Index) {
-    bool ReadFillNextPage =
-        readFill(LastPage->getMinAddress() + Page::Size);
+    bool ReadFillNextPage = readFill(LastPage->getMinAddress() + Page::Size);
     if (!ReadFillNextPage && Index > LastPage->Index) {
       // This should only happen if we reach eof. Verify,
       // If so, allow page wrap so that we can have a cursor pointing
@@ -114,8 +114,7 @@ std::shared_ptr<Page> Queue::readFillToPage(size_t Index) {
 
 std::shared_ptr<Page> Queue::writeFillToPage(size_t Index) {
   while (Index > LastPage->Index) {
-    bool WriteFillNextPage =
-        writeFill(LastPage->getMinAddress() + Page::Size);
+    bool WriteFillNextPage = writeFill(LastPage->getMinAddress() + Page::Size);
     if (!WriteFillNextPage && Index > LastPage->Index) {
       // This should only happen if we reach eof. Verify,
       // If so, allow page wrap so that we can have a cursor pointing

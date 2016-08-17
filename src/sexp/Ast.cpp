@@ -472,11 +472,11 @@ int OpcodeNode::WriteRange::compare(const WriteRange& R) const {
 
 void OpcodeNode::WriteRange::traceInternal(const char* Prefix) const {
   TRACE_BLOCK({
-    FILE* Out = TRACE.getFile();
-    TRACE.indent();
+    FILE* Out = tracE.getFile();
+    tracE.indent();
     fprintf(Out, "[%" PRIxMAX "..%" PRIxMAX "](%" PRIuMAX "):\n",
             uintmax_t(Min), uintmax_t(Max), uintmax_t(ShiftValue));
-    TRACE_SEXP_USING(TRACE, nullptr, Case);
+    tracE.errorSexp(Case);
   });
 }
 

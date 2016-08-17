@@ -94,7 +94,6 @@ class ReadCursor FINAL : public Cursor {
     assert(CurPage == Que->getCachedPage(CurAddress));
     return Byte;
   }
-
 };
 
 }  // end of namespace decode

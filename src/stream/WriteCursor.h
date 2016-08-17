@@ -50,7 +50,7 @@ class WriteCursor FINAL : public Cursor {
   // Writes up to 32 bits to the output.
   void writeBits(uint32_t Value, uint32_t NumBits);
 
-protected:
+ protected:
   void writeOneByte(uint8_t Byte) {
     *getBufferPtr() = Byte;
     ++CurAddress;
@@ -58,7 +58,6 @@ protected:
     assert(CurPage);
     assert(CurPage == Que->getCachedPage(CurAddress));
   }
-
 };
 
 }  // end of namespace decode

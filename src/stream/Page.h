@@ -117,6 +117,7 @@ class Page : public std::enable_shared_from_this<Page> {
 class PageCursor {
   PageCursor() = delete;
   friend class Queue;
+
  public:
   PageCursor(Queue* Que);
   PageCursor(std::shared_ptr<Page> CurPage, size_t CurAddress)

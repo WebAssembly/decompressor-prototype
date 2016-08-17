@@ -74,8 +74,8 @@
 #define TRACE_EXIT_OVERRIDE(name) TRACE_EXIT_USING_OVERRIDE(getTrace(), name)
 #define TRACE_BLOCK_USING(trace, code) \
   do {                                 \
-    auto& TRACE = (trace);             \
-    if (TRACE.getTraceProgress()) {    \
+    auto& tracE = (trace);             \
+    if (tracE.getTraceProgress()) {    \
       code                             \
     }                                  \
   } while (false)

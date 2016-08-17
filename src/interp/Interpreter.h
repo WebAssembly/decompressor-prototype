@@ -66,26 +66,33 @@ class Interpreter {
 #define X(tag, name) tag,
     INTERPRETER_METHODS_TABLE
 #undef X
-        InterpMethod_NO_SUCH_METHOD
+        NO_SUCH_METHOD
   };
 
   enum class InterpState {
 #define X(tag, name) tag,
     INTERPRETER_STATES_TABLE
 #undef X
-        InterpState_NO_SUCH_STATE
+        NO_SUCH_STATE
   };
 
   // The call stack of methods being applied.
   struct CallFrame {
-    CallFrame()
-        : Method(InterpMethod::InterpMethod_NO_SUCH_METHOD),
-          State(InterpState::InterpState_NO_SUCH_STATE),
-          Nd(nullptr) {}
+    CallFrame() { reset(); }
     CallFrame(InterpMethod Method, const filt::Node* Nd)
         : Method(Method), State(InterpState::Enter), Nd(Nd) {}
     CallFrame(const CallFrame& M)
         : Method(M.Method), State(M.State), Nd(M.Nd) {}
+    void reset() {
+      Method = InterpMethod::Finished;
+      State = InterpState::Succeeded;
+      Nd = nullptr;
+    }
+    void fail() {
+      Method = InterpMethod::Finished;
+      State = InterpState::Failed;
+      Nd = nullptr;
+    }
     InterpMethod Method;
     InterpState State;
     const filt::Node* Nd;
@@ -116,12 +123,16 @@ class Interpreter {
   // The stack of (eval) calls.
   filt::ConstNodeVectorType EvalStack;
 
+  void fail();
+
   void Call(InterpMethod Method, const filt::Node* Nd) {
     FrameStack.push();
     Frame.Method = Method;
     Frame.State = InterpState::Enter;
     Frame.Nd = Nd;
   }
+
+  void describeFrameStack(FILE* Out);
 
   TraceClassSexpReaderWriter& getTrace() { return Trace; }
   void decompressSection();
@@ -158,6 +169,16 @@ class Interpreter {
     ReturnStack.push_back(Value);
     FrameStack.pop();
   }
+
+  bool hasEnoughHeadroom() const;
+  bool needsMoreInput() const { return !isSuccessful() && !errorsFound(); }
+  bool isFinished() const { return Frame.Method == InterpMethod::Finished; }
+  bool isSuccessful() const { return Frame.State == InterpState::Succeeded; }
+  bool errorsFound() const { return Frame.State == InterpState::Failed; }
+
+  // Fills input stream using the read backing of the input stream, so that
+  // runMethods can use a push model.
+  void readBackFilled();
 };
 
 }  // end of namespace interp.
