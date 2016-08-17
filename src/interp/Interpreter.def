@@ -23,9 +23,11 @@
 #define INTERPRETER_METHODS_TABLE                                              \
   /* enum name , text name */                                                  \
   X(Eval,        "eval")                                                       \
+  X(Finished,    "finished")                                                   \
   X(Read,        "read")                                                       \
   X(Write,       "write")                                                      \
 
+//#define X(tag, name)
 #define INTERPRETER_STATES_TABLE                                               \
   /* enum name, text name */                                                   \
   X(Enter,     "enter")                                                        \

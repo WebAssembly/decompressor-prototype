@@ -22,12 +22,11 @@ namespace wasm {
 namespace decode {
 
 Page::Page(size_t MinAddress)
-      : Index(Page::index(MinAddress)),
-        MinAddress(MinAddress),
-        MaxAddress(MinAddress) {
-    std::memset(&Buffer, 0, Page::Size);
-  }
-
+    : Index(Page::index(MinAddress)),
+      MinAddress(MinAddress),
+      MaxAddress(MinAddress) {
+  std::memset(&Buffer, 0, Page::Size);
+}
 
 FILE* Page::describe(FILE* File) {
   fprintf(File, "Page[%" PRIuMAX "] [%" PRIxMAX ":%" PRIxMAX ") = %p",

@@ -75,7 +75,8 @@ void TraceClassSexp::trace_ReadCursor(const char* Name, ReadCursor& ReadPos) {
   fputc('\n', File);
 }
 
-void TraceClassSexp::trace_WriteCursor(const char* Name, WriteCursor& WritePos) {
+void TraceClassSexp::trace_WriteCursor(const char* Name,
+                                       WriteCursor& WritePos) {
   indent();
   fprintf(File, "%s = ", Name);
   WritePos.describe(File);

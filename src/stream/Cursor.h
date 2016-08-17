@@ -163,8 +163,8 @@ class Cursor : public PageCursor {
         EobPtr(C.EobPtr),
         CurByte(C.CurByte) {
     CurAddress = StartAddress;
-    CurPage = ForRead
-        ? Que->getReadPage(StartAddress) : Que->getWritePage(StartAddress);
+    CurPage = ForRead ? Que->getReadPage(StartAddress)
+                      : Que->getWritePage(StartAddress);
     updateGuaranteedBeforeEob();
   }
 

@@ -163,6 +163,13 @@ void TextWriter::writeNodeKids(const Node* Nd, bool EmbeddedInParent) {
 void TextWriter::writeNode(const Node* Nd,
                            bool AddNewline,
                            bool EmbedInParent) {
+  if (Nd == nullptr) {
+    Indent _(this, AddNewline);
+    fprintf(File, "null");
+    LineEmpty = false;
+    maybeWriteNewline(AddNewline);
+    return;
+  }
   NodeType Type = Nd->getType();
   if (const auto* Int = dyn_cast<IntegerNode>(Nd)) {
     Parenthesize _(this, Type, AddNewline);
@@ -295,6 +302,12 @@ void TextWriter::writeNodeKidsAbbrev(const Node* Nd, bool EmbeddedInParent) {
 void TextWriter::writeNodeAbbrev(const Node* Nd,
                                  bool AddNewline,
                                  bool EmbedInParent) {
+  if (Nd == nullptr) {
+    fprintf(File, "null");
+    LineEmpty = false;
+    maybeWriteNewline(AddNewline);
+    return;
+  }
   if (isa<IntegerNode>(Nd)) {
     writeNode(Nd, AddNewline, EmbedInParent);
     return;
