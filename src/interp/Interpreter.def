@@ -34,6 +34,7 @@
   X(Exit,      "exit")                                                         \
   X(Loop,      "loop")                                                         \
   X(Failed,    "failed")                                                       \
+  X(Step2,     "Step2")                                                        \
   X(Succeeded, "Succeeded")                                                    \
 
 #endif // DECOMPRESSOR_SRC_INTERP_INTERPRETER_DEF
