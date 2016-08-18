@@ -66,19 +66,27 @@ static constexpr size_t kResumeHeadroom = 100;
 INTERPRETER_METHODS_TABLE
 #undef X
 
-const char* InterpMethodName[] = {
+const char* MethodName[] = {
 #define X(tag, name) Method##tag##Name,
     INTERPRETER_METHODS_TABLE
 #undef X
     "NO_SUCH_METHOD"};
 
-const char* InterpStateName[] = {
+const char* StateName[] = {
 #define X(tag, name) name,
     INTERPRETER_STATES_TABLE
 #undef X
     "NO_SUCH_STATE"};
 
 }  // end of anonymous namespace
+
+const char* Interpreter::getName(Method M) {
+  return MethodName[int(M)];
+}
+
+const char* Interpreter::getName(State S) {
+  return StateName[int(S)];
+}
 
 Interpreter::Interpreter(std::shared_ptr<Queue> Input,
                          std::shared_ptr<Queue> Output,
@@ -102,8 +110,8 @@ Interpreter::Interpreter(std::shared_ptr<Queue> Input,
 }
 
 void Interpreter::CallFrame::describe(FILE* File, TextWriter* Writer) const {
-  fprintf(File, "%s.%s = %" PRIuMAX ": ", InterpMethodName[int(Method)],
-          InterpStateName[int(State)], uintmax_t(ReturnValue));
+  fprintf(File, "%s.%s = %" PRIuMAX ": ", MethodName[int(CallMethod)],
+          StateName[int(CallState)], uintmax_t(ReturnValue));
   Writer->writeAbbrev(File, Nd);
 }
 
@@ -203,6 +211,33 @@ IntType Interpreter::eval(const Node* Nd) {
 #endif
   IntType ReturnValue = 0;
   switch (NodeType Type = Nd->getType()) {
+    case OpError:
+    case OpLastRead:
+    case OpI32Const:
+    case OpI64Const:
+    case OpU8Const:
+    case OpU32Const:
+    case OpU64Const:
+    case OpUint8NoArgs:
+    case OpUint8OneArg:
+    case OpUint32NoArgs:
+    case OpUint32OneArg:
+    case OpUint64NoArgs:
+    case OpUint64OneArg:
+    case OpVarint32NoArgs:
+    case OpVarint32OneArg:
+    case OpVarint64NoArgs:
+    case OpVarint64OneArg:
+    case OpVaruint32NoArgs:
+    case OpVaruint32OneArg:
+    case OpVaruint64NoArgs:
+    case OpVaruint64OneArg:
+    case OpVoid:
+      callTopLevel(Method::Eval, Nd);
+      readBackFilled();
+      TRACE(IntType, "returns", Frame.ReturnValue);
+      ReturnValue = Frame.ReturnValue;
+      break;
     case NO_SUCH_NODETYPE:
     case OpConvert:
     case OpFilter:
@@ -230,9 +265,6 @@ IntType Interpreter::eval(const Node* Nd) {
     case OpMap:
     case OpOpcode:
       ReturnValue = write(read(Nd), Nd);
-      break;
-    case OpLastRead:
-      ReturnValue = read(Nd);
       break;
     case OpSwitch: {
       const auto* Sel = cast<SwitchNode>(Nd);
@@ -310,9 +342,6 @@ IntType Interpreter::eval(const Node* Nd) {
       }
       break;
     }
-    case OpError:
-      fatal("Error found during evaluation");
-      break;
     case OpEval: {
       auto* Sym = dyn_cast<SymbolNode>(Nd->getKid(0));
       assert(Sym);
@@ -342,13 +371,6 @@ IntType Interpreter::eval(const Node* Nd) {
         eval(Nd->getKid(1));
       else
         eval(Nd->getKid(2));
-      break;
-    case OpI32Const:
-    case OpI64Const:
-    case OpU8Const:
-    case OpU32Const:
-    case OpU64Const:
-      ReturnValue = read(Nd);
       break;
     case OpLoop: {
       IntType Count = eval(Nd->getKid(0));
@@ -380,24 +402,10 @@ IntType Interpreter::eval(const Node* Nd) {
       for (auto* Kid : *Nd)
         eval(Kid);
       break;
-    case OpUint8NoArgs:
-    case OpUint8OneArg:
-    case OpUint32NoArgs:
-    case OpUint32OneArg:
-    case OpUint64NoArgs:
-    case OpUint64OneArg:
-    case OpVarint32NoArgs:
-    case OpVarint32OneArg:
-    case OpVarint64NoArgs:
-    case OpVarint64OneArg:
-    case OpVaruint32NoArgs:
-    case OpVaruint32OneArg:
-    case OpVaruint64NoArgs:
-    case OpVaruint64OneArg:
-      ReturnValue = write(read(Nd), Nd);
-      break;
+#if 0
     case OpVoid:
       break;
+#endif
   }
   TRACE(IntType, "return value", ReturnValue);
   return ReturnValue;
@@ -464,7 +472,7 @@ IntType Interpreter::readOpcode(const Node* Nd,
 
 IntType Interpreter::read(const Node* Nd) {
   TRACE_METHOD("oldread");
-  callTopLevel(InterpMethod::Read, Nd);
+  callTopLevel(Method::Read, Nd);
   readBackFilled();
   TRACE(IntType, "returns", Frame.ReturnValue);
   return Frame.ReturnValue;
@@ -472,13 +480,14 @@ IntType Interpreter::read(const Node* Nd) {
 
 IntType Interpreter::write(IntType Value, const wasm::filt::Node* Nd) {
   TRACE_METHOD("oldwrite");
-  callTopLevel(InterpMethod::Write, Nd, Value);
+  callTopLevel(Method::Write, Nd, Value);
   readBackFilled();
   TRACE(IntType, "returns", Frame.ReturnValue);
   return Frame.ReturnValue;
 }
 
-void Interpreter::callTopLevel(InterpMethod Method, const filt::Node* Nd,
+void Interpreter::callTopLevel(Method Method,
+                               const filt::Node* Nd,
                                decode::IntType Value) {
   TRACE(IntType, "ReturnValue", Value);
   // First verify stacks cleared.
@@ -510,8 +519,8 @@ void Interpreter::readBackFilled() {
 void Interpreter::fail() {
   TRACE_MESSAGE("method failed");
   while (!FrameStack.empty()) {
-    TRACE_EXIT_OVERRIDE(InterpMethodName[int(Frame.Method)]);
-    FrameStack.pop();
+    TraceExitFrame();
+    popAndReturn(0);
   }
   Frame.fail();
 }
@@ -522,48 +531,113 @@ void Interpreter::runMethods() {
   TRACE_BLOCK({ describeFrameStack(tracE.getFile()); });
 #endif
   while (hasEnoughHeadroom()) {
-    switch (Frame.Method) {
-      case InterpMethod::NO_SUCH_METHOD:
+    switch (Frame.CallMethod) {
+      case Method::NO_SUCH_METHOD:
         assert(false);
-        fatal(
-            "An unrecoverable error has occured in Interpreter::runMethods()");
+        fail();
         break;
-      case InterpMethod::Eval:
-        fatal("Eval/Read not yet implemented in runMethods");
-        break;
-      case InterpMethod::Finished:
-        assert(FrameStack.empty());
-        switch (Frame.State) {
-          case InterpState::Succeeded:
-          case InterpState::Failed:
+      case Method::Eval:
+        switch (Frame.Nd->getType()) {
+          default:
+            fail();
             break;
-          default:
-            TRACE(string, "State", InterpStateName[int(Frame.State)]);
-            TRACE_MESSAGE("Malformed finish state found, Correcting!");
-            Frame.State = InterpState::Failed;
-        }
-#if LOG_RUNMETHODS
-        TRACE_BLOCK({ describeFrameStack(tracE.getFile()); });
-        TRACE_EXIT_OVERRIDE("runMethods");
-#endif
-        return;
-      case InterpMethod::Read: {
-        switch (NodeType Type = Frame.Nd->getType()) {
-          default:
-            fprintf(stderr, "Read not implemented: %s\n",
-                    getNodeTypeName(Type));
-            fatal("Read not implemented");
-            popAndReturnReadValue(0);
+          case OpError:
+            TraceEnterFrame();
+            fail();
             break;
           case OpI32Const:
           case OpI64Const:
           case OpU8Const:
           case OpU32Const:
           case OpU64Const:
-            assert(Frame.State == InterpState::Enter);
-            TRACE_ENTER(MethodReadName);
+          case OpLastRead:
+            switch (Frame.CallState) {
+              case State::Enter:
+                TraceEnterFrame();
+                Frame.CallState = State::Exit;
+                call(Method::Read, Frame.Nd);
+                break;
+                break;
+              case State::Exit:
+                popAndReturn(Frame.ReturnValue);
+                TraceExitFrame();
+                break;
+              default:
+                fail();
+                break;
+            }
+            break;
+          case OpUint8NoArgs:
+          case OpUint8OneArg:
+          case OpUint32NoArgs:
+          case OpUint32OneArg:
+          case OpUint64NoArgs:
+          case OpUint64OneArg:
+          case OpVarint32NoArgs:
+          case OpVarint32OneArg:
+          case OpVarint64NoArgs:
+          case OpVarint64OneArg:
+          case OpVaruint32NoArgs:
+          case OpVaruint32OneArg:
+          case OpVaruint64NoArgs:
+          case OpVaruint64OneArg: {
+            switch (Frame.CallState) {
+              case State::Enter:
+                TraceEnterFrame();
+                Frame.CallState = State::Step2;
+                call(Method::Read, Frame.Nd);
+                break;
+              case State::Step2: {
+                Frame.CallState = State::Exit;
+                call(Method::Write, Frame.Nd, Frame.ReturnValue);
+                break;
+              }
+              case State::Exit:
+                popAndReturn(Frame.ReturnValue);
+                TraceExitFrame();
+                break;
+              default:
+                fail();
+                break;
+            }
+            break;
+          }
+          case OpVoid:
+            TraceEnterFrame();
+            popAndReturn(0);
+            TraceExitFrame();
+            break;
+        }
+        break;
+      case Method::Finished:
+        assert(FrameStack.empty());
+        switch (Frame.CallState) {
+          case State::Succeeded:
+          case State::Failed:
+            break;
+          default:
+            TRACE(string, "State", StateName[int(Frame.CallState)]);
+            TRACE_MESSAGE("Malformed finish state found, Correcting!");
+            Frame.CallState = State::Failed;
+        }
+#if LOG_RUNMETHODS
+        TRACE_BLOCK({ describeFrameStack(tracE.getFile()); });
+        TRACE_EXIT_OVERRIDE("runMethods");
+#endif
+        return;
+      case Method::Read: {
+        switch (Frame.Nd->getType()) {
+          default:
+            fail();
+            break;
+          case OpI32Const:
+          case OpI64Const:
+          case OpU8Const:
+          case OpU32Const:
+          case OpU64Const:
+            TraceEnterFrame();
             popAndReturnReadValue(dyn_cast<IntegerNode>(Frame.Nd)->getValue());
-            TRACE_EXIT_OVERRIDE(MethodReadName);
+            TraceExitFrame();
             break;
           case OpPeek: {
             // TODO(karlschimpf) Remove nested read.
@@ -574,257 +648,226 @@ void Interpreter::runMethods() {
             break;
           }
           case OpLastRead:
-            assert(Frame.State == InterpState::Enter);
-            TRACE_ENTER(MethodReadName);
+            TraceEnterFrame();
             popAndReturnReadValue(LastReadValue);
-            TRACE_EXIT_OVERRIDE(MethodReadName);
+            TraceExitFrame();
             break;
           case OpUint8NoArgs:
-            assert(Frame.State == InterpState::Enter);
-            TRACE_ENTER(MethodReadName);
+            TraceEnterFrame();
             popAndReturnReadValue(Reader->readUint8(ReadPos));
-            TRACE_EXIT_OVERRIDE(MethodReadName);
+            TraceExitFrame();
             break;
           case OpUint8OneArg:
-            assert(Frame.State == InterpState::Enter);
-            TRACE_ENTER(MethodReadName);
+            TraceEnterFrame();
             popAndReturnReadValue(Reader->readUint8Bits(
                 ReadPos, cast<Uint8OneArgNode>(Frame.Nd)->getValue()));
-            TRACE_EXIT_OVERRIDE(MethodReadName);
+            TraceExitFrame();
             break;
           case OpUint32NoArgs:
-            assert(Frame.State == InterpState::Enter);
-            TRACE_ENTER(MethodReadName);
+            TraceEnterFrame();
             popAndReturnReadValue(Reader->readUint32(ReadPos));
-            TRACE_EXIT_OVERRIDE(MethodReadName);
+            TraceExitFrame();
             break;
           case OpUint32OneArg:
-            assert(Frame.State == InterpState::Enter);
-            TRACE_ENTER(MethodReadName);
+            TraceEnterFrame();
             popAndReturnReadValue(Reader->readUint32Bits(
                 ReadPos, cast<Uint32OneArgNode>(Frame.Nd)->getValue()));
-            TRACE_EXIT_OVERRIDE(MethodReadName);
+            TraceExitFrame();
             break;
           case OpUint64NoArgs:
-            assert(Frame.State == InterpState::Enter);
-            TRACE_ENTER(MethodReadName);
+            TraceEnterFrame();
             popAndReturnReadValue(Reader->readUint64(ReadPos));
-            TRACE_EXIT_OVERRIDE(MethodReadName);
+            TraceExitFrame();
             break;
           case OpUint64OneArg:
-            assert(Frame.State == InterpState::Enter);
-            TRACE_ENTER(MethodReadName);
+            TraceEnterFrame();
             popAndReturnReadValue(Reader->readUint64Bits(
                 ReadPos, cast<Uint64OneArgNode>(Frame.Nd)->getValue()));
-            TRACE_EXIT_OVERRIDE(MethodReadName);
+            TraceExitFrame();
             break;
           case OpVarint32NoArgs:
-            assert(Frame.State == InterpState::Enter);
-            TRACE_ENTER(MethodReadName);
+            TraceEnterFrame();
             popAndReturnReadValue(Reader->readVarint32(ReadPos));
-            TRACE_EXIT_OVERRIDE(MethodReadName);
+            TraceExitFrame();
             break;
           case OpVarint32OneArg:
-            assert(Frame.State == InterpState::Enter);
-            TRACE_ENTER(MethodReadName);
+            TraceEnterFrame();
             popAndReturnReadValue(Reader->readVarint32Bits(
                 ReadPos, cast<Varint32OneArgNode>(Frame.Nd)->getValue()));
-            TRACE_EXIT_OVERRIDE(MethodReadName);
+            TraceExitFrame();
             break;
           case OpVarint64NoArgs:
-            assert(Frame.State == InterpState::Enter);
-            TRACE_ENTER(MethodReadName);
+            TraceEnterFrame();
             popAndReturnReadValue(Reader->readVarint64(ReadPos));
-            TRACE_EXIT_OVERRIDE(MethodReadName);
+            TraceExitFrame();
             break;
           case OpVarint64OneArg:
-            assert(Frame.State == InterpState::Enter);
-            TRACE_ENTER(MethodReadName);
+            TraceEnterFrame();
             popAndReturnReadValue(Reader->readVarint64Bits(
                 ReadPos, cast<Varint64OneArgNode>(Frame.Nd)->getValue()));
-            TRACE_EXIT_OVERRIDE(MethodReadName);
+            TraceExitFrame();
             break;
           case OpVaruint32NoArgs:
-            assert(Frame.State == InterpState::Enter);
-            TRACE_ENTER(MethodReadName);
+            TraceEnterFrame();
             popAndReturnReadValue(Reader->readVaruint32(ReadPos));
-            TRACE_EXIT_OVERRIDE(MethodReadName);
+            TraceExitFrame();
             break;
           case OpVaruint32OneArg:
-            assert(Frame.State == InterpState::Enter);
-            TRACE_ENTER(MethodReadName);
+            TraceEnterFrame();
             popAndReturnReadValue(Reader->readVaruint32Bits(
                 ReadPos, cast<Varuint32OneArgNode>(Frame.Nd)->getValue()));
-            TRACE_EXIT_OVERRIDE(MethodReadName);
+            TraceExitFrame();
             break;
           case OpVaruint64NoArgs:
-            assert(Frame.State == InterpState::Enter);
-            TRACE_ENTER(MethodReadName);
+            TraceEnterFrame();
             popAndReturnReadValue(Reader->readVaruint64(ReadPos));
-            TRACE_EXIT_OVERRIDE(MethodReadName);
+            TraceExitFrame();
             break;
           case OpVaruint64OneArg:
-            assert(Frame.State == InterpState::Enter);
-            TRACE_ENTER(MethodReadName);
+            TraceEnterFrame();
             popAndReturnReadValue(Reader->readVaruint64Bits(
                 ReadPos, cast<Varuint64OneArgNode>(Frame.Nd)->getValue()));
-            TRACE_EXIT_OVERRIDE(MethodReadName);
+            TraceExitFrame();
             break;
           case OpVoid:
-            assert(Frame.State == InterpState::Enter);
-            TRACE_ENTER(MethodReadName);
+            TraceEnterFrame();
             popAndReturnReadValue(0);
-            TRACE_EXIT_OVERRIDE(MethodReadName);
+            TraceExitFrame();
             break;
         }
         break;
       }
-      case InterpMethod::Write: {
+      case Method::Write: {
         const Node* Nd = Frame.Nd;
-        switch (NodeType Type = Nd->getType()) {
+        switch (Nd->getType()) {
           default:
-            fprintf(stderr, "Write not implemented: %s\n",
-                    getNodeTypeName(Type));
-            fatal("Write not implemented");
+            fail();
             break;
           case OpParam:
-            switch (Frame.State) {
-              case InterpState::Enter: {
-                TRACE_ENTER(MethodWriteName);
+            switch (Frame.CallState) {
+              case State::Enter: {
+                TraceEnterFrame();
                 installWriteValue();
-                Frame.State = InterpState::Exit;
-                call(InterpMethod::Write, getParam(Nd), WriteValue);
+                Frame.CallState = State::Exit;
+                call(Method::Write, getParam(Nd), WriteValue);
                 break;
-                case InterpState::Exit:
+                case State::Exit:
                   FrameStack.pop();
-                  TRACE_EXIT_OVERRIDE(MethodWriteName);
+                  TraceExitFrame();
                   break;
                 default:
-                  fatal("Error while parsing parameter!");
+                  fail();
                   break;
               }
             }
             break;
           case OpUint8NoArgs:
-            assert(Frame.State == InterpState::Enter);
-            TRACE_ENTER(MethodWriteName);
+            TraceEnterFrame();
             installWriteValue();
             Writer->writeUint8(WriteValue, WritePos);
             popAndReturnWriteValue();
-            TRACE_EXIT_OVERRIDE(MethodWriteName);
+            TraceExitFrame();
             break;
           case OpUint8OneArg:
-            assert(Frame.State == InterpState::Enter);
-            TRACE_ENTER(MethodWriteName);
+
+            TraceEnterFrame();
             installWriteValue();
             Writer->writeUint8Bits(WriteValue, WritePos,
                                    cast<Uint8OneArgNode>(Nd)->getValue());
             popAndReturnWriteValue();
-            TRACE_EXIT_OVERRIDE(MethodWriteName);
+            TraceExitFrame();
             break;
           case OpUint32NoArgs:
-            assert(Frame.State == InterpState::Enter);
-            TRACE_ENTER(MethodWriteName);
+            TraceEnterFrame();
             installWriteValue();
             Writer->writeUint32(WriteValue, WritePos);
             popAndReturnWriteValue();
-            TRACE_EXIT_OVERRIDE(MethodWriteName);
+            TraceExitFrame();
             break;
           case OpUint32OneArg:
-            assert(Frame.State == InterpState::Enter);
-            TRACE_ENTER(MethodWriteName);
+            TraceEnterFrame();
             installWriteValue();
             Writer->writeUint32Bits(WriteValue, WritePos,
                                     cast<Uint32OneArgNode>(Nd)->getValue());
             popAndReturnWriteValue();
-            TRACE_EXIT_OVERRIDE(MethodWriteName);
+            TraceExitFrame();
             break;
           case OpUint64NoArgs:
-            assert(Frame.State == InterpState::Enter);
-            TRACE_ENTER(MethodWriteName);
+            TraceEnterFrame();
             installWriteValue();
             Writer->writeUint64(WriteValue, WritePos);
             popAndReturnWriteValue();
-            TRACE_EXIT_OVERRIDE(MethodWriteName);
+            TraceExitFrame();
             break;
           case OpUint64OneArg:
-            assert(Frame.State == InterpState::Enter);
-            TRACE_ENTER(MethodWriteName);
+            TraceEnterFrame();
             installWriteValue();
             Writer->writeUint64Bits(WriteValue, WritePos,
                                     cast<Uint64OneArgNode>(Nd)->getValue());
             popAndReturnWriteValue();
-            TRACE_EXIT_OVERRIDE(MethodWriteName);
+            TraceExitFrame();
             break;
           case OpVarint32NoArgs:
-            assert(Frame.State == InterpState::Enter);
-            TRACE_ENTER(MethodWriteName);
+            TraceEnterFrame();
             installWriteValue();
             Writer->writeVarint32(WriteValue, WritePos);
             popAndReturnWriteValue();
-            TRACE_EXIT_OVERRIDE(MethodWriteName);
+            TraceExitFrame();
             break;
           case OpVarint32OneArg:
-            assert(Frame.State == InterpState::Enter);
-            TRACE_ENTER(MethodWriteName);
+            TraceEnterFrame();
             installWriteValue();
             Writer->writeVarint32Bits(WriteValue, WritePos,
                                       cast<Varint32OneArgNode>(Nd)->getValue());
             popAndReturnWriteValue();
-            TRACE_EXIT_OVERRIDE(MethodWriteName);
+            TraceExitFrame();
             break;
           case OpVarint64NoArgs:
-            assert(Frame.State == InterpState::Enter);
-            TRACE_ENTER(MethodWriteName);
+            TraceEnterFrame();
             installWriteValue();
             Writer->writeVarint64(WriteValue, WritePos);
             popAndReturnWriteValue();
-            TRACE_EXIT_OVERRIDE(MethodWriteName);
+            TraceExitFrame();
             break;
           case OpVarint64OneArg:
-            assert(Frame.State == InterpState::Enter);
-            TRACE_ENTER(MethodWriteName);
+            TraceEnterFrame();
             installWriteValue();
             Writer->writeVarint64Bits(WriteValue, WritePos,
                                       cast<Varint64OneArgNode>(Nd)->getValue());
             popAndReturnWriteValue();
-            TRACE_EXIT_OVERRIDE(MethodWriteName);
+            TraceExitFrame();
             break;
           case OpVaruint32NoArgs:
-            assert(Frame.State == InterpState::Enter);
-            TRACE_ENTER(MethodWriteName);
+            TraceEnterFrame();
             installWriteValue();
             Writer->writeVaruint32(WriteValue, WritePos);
             popAndReturnWriteValue();
-            TRACE_EXIT_OVERRIDE(MethodWriteName);
+            TraceExitFrame();
             break;
           case OpVaruint32OneArg:
-            assert(Frame.State == InterpState::Enter);
-            TRACE_ENTER(MethodWriteName);
+            TraceEnterFrame();
             installWriteValue();
             Writer->writeVaruint32Bits(
                 WriteValue, WritePos,
                 cast<Varuint32OneArgNode>(Nd)->getValue());
             popAndReturnWriteValue();
-            TRACE_EXIT_OVERRIDE(MethodWriteName);
+            TraceExitFrame();
             break;
           case OpVaruint64NoArgs:
-            assert(Frame.State == InterpState::Enter);
-            TRACE_ENTER(MethodWriteName);
+            TraceEnterFrame();
             installWriteValue();
             Writer->writeVaruint64(WriteValue, WritePos);
             popAndReturnWriteValue();
-            TRACE_EXIT_OVERRIDE(MethodWriteName);
+            TraceExitFrame();
             break;
           case OpVaruint64OneArg:
-            assert(Frame.State == InterpState::Enter);
-            TRACE_ENTER(MethodWriteName);
+            TraceEnterFrame();
             installWriteValue();
             Writer->writeVaruint64Bits(
                 WriteValue, WritePos,
                 cast<Varuint64OneArgNode>(Nd)->getValue());
             popAndReturnWriteValue();
-            TRACE_EXIT_OVERRIDE(MethodWriteName);
+            TraceExitFrame();
             break;
           case OpI32Const:
           case OpI64Const:
@@ -834,16 +877,15 @@ void Interpreter::runMethods() {
           case OpMap:
           case OpPeek:
           case OpVoid:
-            assert(Frame.State == InterpState::Enter);
-            TRACE_ENTER(MethodWriteName);
+            TraceEnterFrame();
             installWriteValue();
             popAndReturnWriteValue();
-            TRACE_EXIT_OVERRIDE(MethodWriteName);
+            TraceExitFrame();
             break;
           case OpOpcode: {
-            switch (Frame.State) {
-              case InterpState::Enter: {
-                TRACE_ENTER(MethodWriteName);
+            switch (Frame.CallState) {
+              case State::Enter: {
+                TraceEnterFrame();
                 installWriteValue();
                 const auto* Sel = cast<OpcodeNode>(Nd);
                 OpcodeLocalsStack.push();
@@ -851,26 +893,25 @@ void Interpreter::runMethods() {
                     WriteValue, OpcodeLocals.SelShift, OpcodeLocals.CaseMask);
                 WriteValueStack.push();
                 WriteValue >>= OpcodeLocals.SelShift;
-                Frame.State = InterpState::Exit;
-                call(InterpMethod::Write, Sel->getKid(0), WriteValue);
+                Frame.CallState = State::Exit;
+                call(Method::Write, Sel->getKid(0), WriteValue);
                 break;
               }
-              case InterpState::Step2:
+              case State::Step2:
                 OpcodeLocalsStack.pop();
-                Frame.State = InterpState::Exit;
+                Frame.CallState = State::Exit;
                 if (OpcodeLocals.Case) {
                   WriteValueStack.push();
                   WriteValue &= OpcodeLocals.CaseMask;
-                  call(InterpMethod::Write, OpcodeLocals.Case->getKid(1),
-                       WriteValue);
+                  call(Method::Write, OpcodeLocals.Case->getKid(1), WriteValue);
                 }
                 break;
-              case InterpState::Exit:
+              case State::Exit:
                 popAndReturnWriteValue();
-                TRACE_EXIT_OVERRIDE(MethodWriteName);
+                TraceExitFrame();
                 break;
               default:
-                fatal("Error while writing opcode value!");
+                fail();
                 break;
             }
             break;
