@@ -87,15 +87,22 @@ class Interpreter {
       Method = InterpMethod::Finished;
       State = InterpState::Succeeded;
       Nd = nullptr;
+      ReturnValue = 0;
     }
     void fail() {
       Method = InterpMethod::Finished;
       State = InterpState::Failed;
       Nd = nullptr;
+      ReturnValue = 0;
     }
+    void describe(FILE* File, filt::TextWriter* Writer) const;
     InterpMethod Method;
     InterpState State;
     const filt::Node* Nd;
+    // Holds return value from last called routine, except when
+    // exiting.  Note: For method write, this corresponds to the value
+    // to write as well.
+    decode::IntType ReturnValue;
   };
 
   decode::ReadCursor ReadPos;
@@ -114,22 +121,45 @@ class Interpreter {
   decode::IntType LastReadValue;
   bool MinimizeBlockSize;
   TraceClassSexpReaderWriter Trace;
-  // Tracks the call stack of methods.
-  CallFrame Frame;
-  utils::ValueStack<CallFrame> FrameStack;
-  // The stack of passed/returned values.
-  std::vector<decode::IntType> ParamStack;
-  std::vector<decode::IntType> ReturnStack;
   // The stack of (eval) calls.
   filt::ConstNodeVectorType EvalStack;
 
+  // Tracks the call stack of methods.
+  CallFrame Frame;
+  utils::ValueStack<CallFrame> FrameStack;
+  // The stack of passed Values (write methods).
+  decode::IntType WriteValue;
+  utils::ValueStack<decode::IntType> WriteValueStack;
+  // The stack of opcode Selshift/CaseMasks.
+  struct OpcodeLocalsFrame {
+    uint32_t SelShift;
+    decode::IntType CaseMask;
+    const filt::CaseNode* Case;
+    OpcodeLocalsFrame() { reset(); }
+    void describe(FILE* File, filt::TextWriter* Writer = nullptr) const;
+    void reset() {
+      SelShift = 0;
+      CaseMask = 0;
+      Case = 0;
+    }
+  };
+  OpcodeLocalsFrame OpcodeLocals;
+  utils::ValueStack<OpcodeLocalsFrame> OpcodeLocalsStack;
+
   void fail();
 
-  void Call(InterpMethod Method, const filt::Node* Nd) {
+  void callTopLevel(InterpMethod Method,
+                    const filt::Node* Nd,
+                    decode::IntType ReturnValue = 0);
+
+  void call(InterpMethod Method,
+            const filt::Node* Nd,
+            decode::IntType ReturnValue = 0) {
     FrameStack.push();
     Frame.Method = Method;
     Frame.State = InterpState::Enter;
     Frame.Nd = Nd;
+    Frame.ReturnValue = ReturnValue;
   }
 
   void describeFrameStack(FILE* Out);
@@ -159,17 +189,24 @@ class Interpreter {
 
   // Stack model
   void runMethods();
-  void popArgAndReturnValue(decode::IntType Value) {
-    ParamStack.pop_back();
-    ReturnStack.push_back(Value);
+  void popAndReturn(decode::IntType Value) {
     FrameStack.pop();
+    Frame.ReturnValue = Value;
+    TRACE(IntType, "returns", Value);
   }
-  void pushReadReturnValue(decode::IntType Value) {
+  void installWriteValue() {
+    WriteValueStack.push();
+    WriteValue = Frame.ReturnValue;
+    Frame.ReturnValue = 0;
+    TRACE(IntType, "WriteValue", WriteValue);
+  }
+  void popAndReturnWriteValue() {
+    popAndReturn(WriteValue);
+    WriteValueStack.pop();
+  }
+  void popAndReturnReadValue(decode::IntType Value) {
     LastReadValue = Value;
-    ReturnStack.push_back(Value);
-    FrameStack.pop();
-    TRACE(IntType, "returns", LastReadValue);
-    Frame.State = InterpState::Exit;
+    popAndReturn(Value);
   }
 
   bool hasEnoughHeadroom() const;
