@@ -62,42 +62,44 @@ class Interpreter {
   void setMinimizeBlockSize(bool NewValue) { MinimizeBlockSize = NewValue; }
 
  private:
-  enum class InterpMethod {
+  enum class Method {
 #define X(tag, name) tag,
     INTERPRETER_METHODS_TABLE
 #undef X
         NO_SUCH_METHOD
   };
+  static const char* getName(Method M);
 
-  enum class InterpState {
+  enum class State {
 #define X(tag, name) tag,
     INTERPRETER_STATES_TABLE
 #undef X
         NO_SUCH_STATE
   };
+  static const char* getName(State C);
 
   // The call stack of methods being applied.
   struct CallFrame {
     CallFrame() { reset(); }
-    CallFrame(InterpMethod Method, const filt::Node* Nd)
-        : Method(Method), State(InterpState::Enter), Nd(Nd) {}
+    CallFrame(Method CallMethod, const filt::Node* Nd)
+        : CallMethod(CallMethod), CallState(State::Enter), Nd(Nd) {}
     CallFrame(const CallFrame& M)
-        : Method(M.Method), State(M.State), Nd(M.Nd) {}
+        : CallMethod(M.CallMethod), CallState(M.CallState), Nd(M.Nd) {}
     void reset() {
-      Method = InterpMethod::Finished;
-      State = InterpState::Succeeded;
+      CallMethod = Method::Finished;
+      CallState = State::Succeeded;
       Nd = nullptr;
       ReturnValue = 0;
     }
     void fail() {
-      Method = InterpMethod::Finished;
-      State = InterpState::Failed;
+      CallMethod = Method::Finished;
+      CallState = State::Failed;
       Nd = nullptr;
       ReturnValue = 0;
     }
     void describe(FILE* File, filt::TextWriter* Writer) const;
-    InterpMethod Method;
-    InterpState State;
+    Method CallMethod;
+    State CallState;
     const filt::Node* Nd;
     // Holds return value from last called routine, except when
     // exiting.  Note: For method write, this corresponds to the value
@@ -148,16 +150,17 @@ class Interpreter {
 
   void fail();
 
-  void callTopLevel(InterpMethod Method,
+  void callTopLevel(Method Method,
                     const filt::Node* Nd,
                     decode::IntType ReturnValue = 0);
 
-  void call(InterpMethod Method,
+  void call(Method Method,
             const filt::Node* Nd,
             decode::IntType ReturnValue = 0) {
+    Frame.ReturnValue = 0;
     FrameStack.push();
-    Frame.Method = Method;
-    Frame.State = InterpState::Enter;
+    Frame.CallMethod = Method;
+    Frame.CallState = State::Enter;
     Frame.Nd = Nd;
     Frame.ReturnValue = ReturnValue;
   }
@@ -189,6 +192,12 @@ class Interpreter {
 
   // Stack model
   void runMethods();
+  void TraceEnterFrame() {
+    assert(Frame.CallState == Interpreter::State::Enter);
+    TRACE_ENTER(getName(Frame.CallMethod));
+    TRACE_SEXP(nullptr, Frame.Nd);
+  }
+  void TraceExitFrame() { TRACE_EXIT_OVERRIDE(getName(Frame.CallMethod)); }
   void popAndReturn(decode::IntType Value) {
     FrameStack.pop();
     Frame.ReturnValue = Value;
@@ -211,9 +220,9 @@ class Interpreter {
 
   bool hasEnoughHeadroom() const;
   bool needsMoreInput() const { return !isSuccessful() && !errorsFound(); }
-  bool isFinished() const { return Frame.Method == InterpMethod::Finished; }
-  bool isSuccessful() const { return Frame.State == InterpState::Succeeded; }
-  bool errorsFound() const { return Frame.State == InterpState::Failed; }
+  bool isFinished() const { return Frame.CallMethod == Method::Finished; }
+  bool isSuccessful() const { return Frame.CallState == State::Succeeded; }
+  bool errorsFound() const { return Frame.CallState == State::Failed; }
 
   // Fills input stream using the read backing of the input stream, so that
   // runMethods can use a push model.
