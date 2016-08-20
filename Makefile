@@ -159,6 +159,8 @@ STRM_SRCS = \
 	ReadBackedQueue.cpp \
 	StreamReader.cpp \
 	StreamWriter.cpp \
+	StringReader.cpp \
+	StringWriter.cpp \
 	WriteBackedQueue.cpp \
 	WriteCursor.cpp \
 	WriteUtils.cpp
@@ -255,7 +257,7 @@ build-all:
 
 clean: clean-utils-objs clean-parser clean-sexp-objs clean-strm-objs \
        clean-interp-objs clean-binary-objs clean-execs clean-libs \
-       clean-test-execs
+       clean-test-execs clean-unit-tests
 
 .PHONY: clean
 
@@ -617,3 +619,42 @@ test-byte-queues: $(TEST_EXECDIR)/TestByteQueues
 	@echo "*** test byte queues passed ***"
 
 .PHONY: test-byte-queues
+
+
+###### Unit tests ######
+
+GTEST_DIR = ../googletest/googletest
+GTEST_INCLUDE = $(GTEST_DIR)/include
+GTEST_SRC_DIR = $(GTEST_DIR)/include
+GTEST_LIB = $(GTEST_DIR)/out/libgtest.a
+
+UNITTEST_DIR = $(SRCDIR)/unit-tests
+UNITTEST_EXECDIR = $(BUILDDIR)/unit-tests
+
+UNITTEST_SRCS = \
+	test-string-reader.cpp
+
+UNITTEST_EXECS = $(patsubst %.cpp, $(UNITTEST_EXECDIR)/%, $(UNITTEST_SRCS))
+
+UNITTEST_TESTS = $(patsubst %.cpp, $(UNITTEST_EXECDIR)/%.test, $(UNITTEST_SRCS))
+
+$(UNITTEST_EXECS): | $(UNITTEST_EXECDIR)
+
+$(UNITTEST_EXECDIR):
+	mkdir -p $@
+
+-include $(foreach dep,$(UNITTEST_SRCS:.cpp=.d),$(UNITTEST_EXECDIR)/$(dep))
+
+$(UNITTEST_EXECS): $(UNITTEST_EXECDIR)/%: $(UNITTEST_DIR)/%.cpp $(LIBS)
+	$(CPP_COMPILER) $(CXXFLAGS) -I$(GTEST_INCLUDE) $< $(LIBS) \
+		$(GTEST_LIB) -lpthread -o $@
+
+$(UNITTEST_TESTS): $(UNITTEST_EXECDIR)/%.test: $(UNITTEST_EXECDIR)/%
+	$<
+
+unit-tests: $(UNITTEST_TESTS)
+
+.PHONY: unit-tests $(UNITTEST_TESTS)
+
+clean-unit-tests:
+	rm -rf $(UNITTEST_EXECDIR)/*
