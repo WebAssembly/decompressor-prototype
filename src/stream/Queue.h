@@ -252,7 +252,7 @@ class Queue : public std::enable_shared_from_this<Queue> {
   typedef std::vector<std::weak_ptr<Page>> PageMapType;
   PageMapType PageMap;
 
-  std::shared_ptr<Page> failThenGetErrorPage(size_t& PageAddress);
+  std::shared_ptr<Page> failThenGetErrorPage(size_t& Address);
 
   bool appendPage();
 
@@ -260,25 +260,33 @@ class Queue : public std::enable_shared_from_this<Queue> {
 
   // Returns the page in the queue referred to Address, or nullptr if no
   // such page is in the byte queue.
-  std::shared_ptr<Page> getReadPage(size_t& Address) {
+  std::shared_ptr<Page> getReadPage(size_t& Address) const {
     size_t Index = Page::index(Address);
     if (Index >= PageMap.size())
-      return readFillToPage(Index, Address);
-    return PageMap[Index].lock();
+      return const_cast<Queue*>(this)->readFillToPage(Index, Address);
+    return getDefinedPage(Index, Address);
   }
 
   std::shared_ptr<Page> getWritePage(size_t& Address) const {
     size_t Index = Page::index(Address);
     if (Index >= PageMap.size())
       return const_cast<Queue*>(this)->writeFillToPage(Index, Address);
-    return PageMap[Index].lock();
+    return getDefinedPage(Index, Address);
   }
 
   std::shared_ptr<Page> getCachedPage(size_t& Address) {
     size_t Index = Page::index(Address);
     if (Index >= PageMap.size())
       return failThenGetErrorPage(Address);
-    return PageMap[Index].lock();
+    return getDefinedPage(Index, Address);
+  }
+
+  std::shared_ptr<Page> getDefinedPage(size_t Index, size_t& Address) const {
+    assert(Index < PageMap.size());
+    std::shared_ptr<Page> Pg = PageMap[Index].lock();
+    if (Pg)
+      return Pg;
+    return const_cast<Queue*>(this)->failThenGetErrorPage(Address);
   }
 
   std::shared_ptr<Page> readFillToPage(size_t Index, size_t& Address);
@@ -287,12 +295,6 @@ class Queue : public std::enable_shared_from_this<Queue> {
 
   bool isValidPageAddress(size_t Address) {
     return Page::index(Address) < PageMap.size();
-  }
-
-  // Returns the page with the given PageIndex, or nullptr if no such
-  // page is in the byte queue.
-  std::shared_ptr<Page> getPageAt(size_t PageIndex) const {
-    return (PageIndex >= PageMap.size()) ? nullptr : PageMap[PageIndex].lock();
   }
 
   // Dumps and deletes the first page.  Note: Dumping only occurs if a

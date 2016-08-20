@@ -89,9 +89,9 @@ std::shared_ptr<Page> Queue::getErrorPage() {
   return ErrorPage;
 }
 
-std::shared_ptr<Page> Queue::failThenGetErrorPage(size_t& PageAddress) {
+std::shared_ptr<Page> Queue::failThenGetErrorPage(size_t& Address) {
   fail();
-  PageAddress = kErrorPageAddress;
+  Address = kErrorPageAddress;
   return getErrorPage();
 }
 
@@ -145,8 +145,7 @@ std::shared_ptr<Page> Queue::readFillToPage(size_t Index, size_t& Address) {
         return failThenGetErrorPage(Address);
     }
   }
-  assert(Index < PageMap.size());
-  return PageMap[Index].lock();
+  return getDefinedPage(Index, Address);
 }
 
 std::shared_ptr<Page> Queue::writeFillToPage(size_t Index, size_t& Address) {
@@ -161,8 +160,7 @@ std::shared_ptr<Page> Queue::writeFillToPage(size_t Index, size_t& Address) {
         return failThenGetErrorPage(Address);
     }
   }
-  assert(Index < PageMap.size());
-  return PageMap[Index].lock();
+  return getDefinedPage(Index, Address);
 }
 
 size_t Queue::readFromPage(size_t& Address,
