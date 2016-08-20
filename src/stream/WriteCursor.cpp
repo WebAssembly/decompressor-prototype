@@ -22,7 +22,7 @@ namespace decode {
 
 void WriteCursor::writeByte(uint8_t Byte) {
   assert(isByteAligned());
-  if (getCurAddress() < GuaranteedBeforeEob)
+  if (CurAddress < GuaranteedBeforeEob)
     return writeOneByte(Byte);
   if (isIndexAtEndOfPage())
     writeFillBuffer();

@@ -1,81 +1,81 @@
-// -*- C++ -*-
-//
-// Copyright 2016 WebAssembly Community Group participants
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+ // -*- C++ -*-
+ //
+ // Copyright 2016 WebAssembly Community Group participants
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+ // you may not use this file except in compliance with the License.
+ // You may obtain a copy of the License at
+ //
+ //     http://www.apache.org/licenses/LICENSE-2.0
+ //
+ // Unless required by applicable law or agreed to in writing, software
+ // distributed under the License is distributed on an "AS IS" BASIS,
+ // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ // See the License for the specific language governing permissions and
+ // limitations under the License.
 
-// Defines a pointer into a byte stream.
+ // Defines a pointer into a byte stream.
 
-#ifndef DECOMPRESSOR_SRC_STREAM_CURSOR_H
-#define DECOMPRESSOR_SRC_STREAM_CURSOR_H
+ #ifndef DECOMPRESSOR_SRC_STREAM_CURSOR_H
+ #define DECOMPRESSOR_SRC_STREAM_CURSOR_H
 
-#include "stream/Queue.h"
+ #include "stream/Queue.h"
 
-namespace wasm {
+ namespace wasm {
 
-namespace decode {
+ namespace decode {
 
-class Cursor;
-// Holds bits in incomplete byte read/write.
-class WorkingByte {
- public:
-  WorkingByte() : Value(0), BitsInValue(0) {}
+ class Cursor;
+ // Holds bits in incomplete byte read/write.
+ class WorkingByte {
+  public:
+   WorkingByte() : Value(0), BitsInValue(0) {}
 
-  uint8_t getValue() const { return Value; }
+   uint8_t getValue() const { return Value; }
 
-  bool isEmpty() const { return BitsInValue == 0; }
+   bool isEmpty() const { return BitsInValue == 0; }
 
-  BitsInByteType getBitsRead() const { return (CHAR_BIT - BitsInValue) & 0x7; }
+   BitsInByteType getBitsRead() const { return (CHAR_BIT - BitsInValue) & 0x7; }
 
-  BitsInByteType getReadBitsRemaining() const { return BitsInValue; }
+   BitsInByteType getReadBitsRemaining() const { return BitsInValue; }
 
-  BitsInByteType getBitsWritten() const { return BitsInValue; }
+   BitsInByteType getBitsWritten() const { return BitsInValue; }
 
-  BitsInByteType getWriteBitsRemaining() const {
-    return CHAR_BIT - BitsInValue;
-  }
+   BitsInByteType getWriteBitsRemaining() const {
+     return CHAR_BIT - BitsInValue;
+   }
 
-  uint8_t readBits(BitsInByteType NumBits) {
-    assert(NumBits <= BitsInValue);
-    uint8_t Result = Value >> (BitsInValue - NumBits);
-    BitsInValue -= NumBits;
-    Value &= ~uint32_t(0) << BitsInValue;
-    return Result;
-  }
+   uint8_t readBits(BitsInByteType NumBits) {
+     assert(NumBits <= BitsInValue);
+     uint8_t Result = Value >> (BitsInValue - NumBits);
+     BitsInValue -= NumBits;
+     Value &= ~uint32_t(0) << BitsInValue;
+     return Result;
+   }
 
-  void writeBits(uint8_t Value, BitsInByteType NumBits) {
-    assert(NumBits <= BitsInValue);
-    Value = (Value << NumBits) | Value;
-    BitsInValue += NumBits;
-  }
+   void writeBits(uint8_t Value, BitsInByteType NumBits) {
+     assert(NumBits <= BitsInValue);
+     Value = (Value << NumBits) | Value;
+     BitsInValue += NumBits;
+   }
 
-  void setByte(uint8_t Byte) {
-    Value = Byte;
-    BitsInValue = CHAR_BIT;
-  }
+   void setByte(uint8_t Byte) {
+     Value = Byte;
+     BitsInValue = CHAR_BIT;
+   }
 
-  void reset() {
-    Value = 0;
-    BitsInValue = 0;
-  }
+   void reset() {
+     Value = 0;
+     BitsInValue = 0;
+   }
 
-  // For debugging.
-  FILE* describe(FILE* File);
+   // For debugging.
+   FILE* describe(FILE* File);
 
- private:
-  uint8_t Value;
-  BitsInByteType BitsInValue;
-};
+  private:
+   uint8_t Value;
+   BitsInByteType BitsInValue;
+ };
 
 class Cursor : public PageCursor {
   Cursor() = delete;
@@ -95,6 +95,10 @@ class Cursor : public PageCursor {
   StreamType getType() const { return Type; }
 
   void reset() {}
+
+  bool isBroken() const {
+    return Que->isBroken(*this);
+  }
 
   bool isByteAligned() const { return CurByte.isEmpty(); }
 
@@ -116,15 +120,16 @@ class Cursor : public PageCursor {
     return EobPtr->getEobAddress().getByteAddress();
   }
 
-  void freezeEof() { Que->freezeEof(getCurAddress()); }
+  void freezeEof() { Que->freezeEof(CurAddress); }
 
   // ------------------------------------------------------------------------
   // The following methods assume that the cursor is accessing a byte stream.
   // ------------------------------------------------------------------------
 
   size_t getCurByteAddress() const {
+    // TODO: Remove: Just use getCurAddress().
     assert(isByteAligned());
-    return getCurAddress();
+    return CurAddress;
   }
 
   // For debugging.
@@ -162,9 +167,9 @@ class Cursor : public PageCursor {
         Que(C.Que),
         EobPtr(C.EobPtr),
         CurByte(C.CurByte) {
-    CurAddress = StartAddress;
     CurPage = ForRead ? Que->getReadPage(StartAddress)
                       : Que->getWritePage(StartAddress);
+    CurAddress = StartAddress;
     updateGuaranteedBeforeEob();
   }
 
@@ -178,6 +183,8 @@ class Cursor : public PageCursor {
 
   // Creates new pages in buffer so that writes can occur.
   void writeFillBuffer();
+
+  void fail();
 };
 
 }  // end of namespace decode

@@ -83,7 +83,12 @@ class Page : public std::enable_shared_from_this<Page> {
     return Address & Page::Mask;
   }
 
-  Page(size_t MinAddress);
+  // Returns the minimum address for a page index.
+  static constexpr size_t minAddressForPage(size_t PageIndex) {
+    return PageIndex << SizeLog2;
+  }
+
+  Page(size_t PageIndex);
 
   size_t spaceRemaining() const {
     return MinAddress == MaxAddress
@@ -115,10 +120,9 @@ class Page : public std::enable_shared_from_this<Page> {
 };
 
 class PageCursor {
-  PageCursor() = delete;
   friend class Queue;
-
  public:
+  PageCursor() : CurAddress(0) {}
   PageCursor(Queue* Que);
   PageCursor(std::shared_ptr<Page> CurPage, size_t CurAddress)
       : CurPage(CurPage), CurAddress(CurAddress) {
@@ -128,13 +132,13 @@ class PageCursor {
       : CurPage(PC.CurPage), CurAddress(PC.CurAddress) {
     assert(CurPage);
   }
-  size_t getMinAddress() const {
-    return CurPage ? CurPage->getMinAddress() : 0;
-  }
   PageCursor& operator=(const PageCursor& C) {
     CurPage = C.CurPage;
     CurAddress = C.CurAddress;
     return *this;
+  }
+  size_t getMinAddress() const {
+    return CurPage ? CurPage->getMinAddress() : 0;
   }
   size_t getMaxAddress() const {
     return CurPage ? CurPage->getMaxAddress() : 0;
@@ -153,10 +157,8 @@ class PageCursor {
     assert(CurPage);
     return CurPage->Buffer + getRelativeAddress();
   }
-
   // For debugging only.
   FILE* describe(FILE* File, bool IncludePage = false);
-
  protected:
   std::shared_ptr<Page> CurPage;
   // Absolute address.

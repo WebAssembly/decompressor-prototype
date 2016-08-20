@@ -32,7 +32,7 @@ void WriteBackedQueue::dumpFirstPage() {
   size_t Address = 0;
   size_t Size = FirstPage->getMaxAddress() - FirstPage->getMinAddress();
   if (!Writer->write(&FirstPage->Buffer[Address], Size))
-    fatal("Write to raw stream failed in Queue::dumpFirstPage");
+    fail();
   Queue::dumpFirstPage();
 }
 

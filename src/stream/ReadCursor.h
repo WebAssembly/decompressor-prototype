@@ -42,9 +42,9 @@ class ReadCursor FINAL : public Cursor {
   ~ReadCursor() {}
 
   bool atByteEob() {
-    if (getCurAddress() < GuaranteedBeforeEob)
+    if (CurAddress < GuaranteedBeforeEob)
       return false;
-    bool Result = getCurAddress() >= getEobAddress().getByteAddress() ||
+    bool Result = CurAddress >= getEobAddress().getByteAddress() ||
                   !readFillBuffer();
     updateGuaranteedBeforeEob();
     return Result;
@@ -58,7 +58,7 @@ class ReadCursor FINAL : public Cursor {
   BitsInByteType getBitsRead() const { return CurByte.getBitsRead(); }
 
   BitAddress getCurReadBitAddress() const {
-    BitAddress Address(getCurAddress(), getBitsRead());
+    BitAddress Address(CurAddress, getBitsRead());
     return Address;
   }
 
@@ -91,7 +91,6 @@ class ReadCursor FINAL : public Cursor {
     ++CurAddress;
     CurPage = Que->getReadPage(CurAddress);
     assert(CurPage);
-    assert(CurPage == Que->getCachedPage(CurAddress));
     return Byte;
   }
 };
