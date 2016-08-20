@@ -29,13 +29,26 @@ FILE* BitAddress::describe(FILE* File) const {
   return File;
 }
 
+void BlockEob::fail() {
+  BlockEob* Next = this;
+  while (Next) {
+    Next->EobAddress.reset();
+    Next = Next->EnclosingEobPtr.get();
+  }
+}
+
 FILE* BlockEob::describe(FILE* File) const {
-  fprintf(File, "eob");
+  fprintf(File, "eob=");
   return EobAddress.describe(File);
 }
 
 Queue::Queue()
-    : MinPeekSize(32), EofFrozen(false), EofPtr(std::make_shared<BlockEob>()) {
+    : MinPeekSize(32),
+      EofFrozen(false),
+      Status(StatusValue::Good),
+      EofPtr(std::make_shared<BlockEob>()) {
+  // Verify we have space for kErrorPageAddress and kUndefinedAddress.
+  assert(Page::SizeLog2 > 1);
   LastPage = FirstPage = std::make_shared<Page>(0);
   PageMap.push_back(LastPage);
 }
@@ -51,23 +64,46 @@ void Queue::describe(FILE* Out) {
           (void*)LastPage.get());
   for (size_t i = 0; i < PageMap.size(); ++i) {
     std::shared_ptr<Page> Pg = PageMap[i].lock();
-    fprintf(Out, "[%" PRIuMAX "] = %p", uintmax_t(i), (void*)Pg.get());
-    if (Pg) {
-      fprintf(Out, " page %" PRIuMAX " [%" PRIxMAX "..%" PRIxMAX ") Next = %p",
-              uintmax_t(Pg->getPageIndex()), uintmax_t(Pg->getMinAddress()),
-              uintmax_t(Pg->getMaxAddress()), (void*)Pg->Next.get());
-    }
+    if (Pg)
+      Pg->describe(Out);
+    else
+      fprintf(Out, "Page[%" PRIuMAX "] = nullptr", uintmax_t(i));
     fprintf(Out, "\n");
+  }
+  if (ErrorPage) {
+    fputs("Error ", Out);
+    ErrorPage->describe(Out);
   }
   fprintf(Out, "*****************\n");
 }
 
-void Queue::appendPage() {
-  std::shared_ptr<Page> NewPage =
-      std::make_shared<Page>(LastPage->getMaxAddress());
+void Queue::fail() {
+  Status = StatusValue::Bad;
+  EofPtr->setEobAddress(0);
+}
+
+std::shared_ptr<Page> Queue::getErrorPage() {
+  if (ErrorPage)
+    return ErrorPage;
+  ErrorPage = std::make_shared<Page>(kErrorPageIndex);
+  return ErrorPage;
+}
+
+std::shared_ptr<Page> Queue::failThenGetErrorPage(size_t& PageAddress) {
+  fail();
+  PageAddress = kErrorPageAddress;
+  return getErrorPage();
+}
+
+bool Queue::appendPage() {
+  size_t NewPageIndex = LastPage->getPageIndex() + 1;
+  if (NewPageIndex > kMaxPageIndex)
+    return false;
+  std::shared_ptr<Page> NewPage = std::make_shared<Page>(NewPageIndex);
   PageMap.push_back(NewPage);
   LastPage->Next = NewPage;
   LastPage = NewPage;
+  return true;
 }
 
 void Queue::dumpFirstPage() {
@@ -91,44 +127,45 @@ bool Queue::writeFill(size_t Address) {
     LastPage->setMaxAddress(LastPage->getMinAddress() + Page::Size);
     if (Address < LastPage->getMaxAddress())
       return true;
-    appendPage();
+    if (!appendPage())
+      return false;
   }
   return true;
 }
 
-std::shared_ptr<Page> Queue::readFillToPage(size_t Index) {
+std::shared_ptr<Page> Queue::readFillToPage(size_t Index, size_t& Address) {
   while (Index > LastPage->Index) {
     bool ReadFillNextPage = readFill(LastPage->getMinAddress() + Page::Size);
     if (!ReadFillNextPage && Index > LastPage->Index) {
       // This should only happen if we reach eof. Verify,
       // If so, allow page wrap so that we can have a cursor pointing
       // to the eof position.
-      if (LastPage->getMinAddress() + Page::Size != LastPage->getMaxAddress())
-        fatal("readFillToPage failed!");
-      appendPage();
+      if ((LastPage->getMinAddress() + Page::Size != LastPage->getMaxAddress())
+          || !appendPage())
+        return failThenGetErrorPage(Address);
     }
   }
   assert(Index < PageMap.size());
   return PageMap[Index].lock();
 }
 
-std::shared_ptr<Page> Queue::writeFillToPage(size_t Index) {
+std::shared_ptr<Page> Queue::writeFillToPage(size_t Index, size_t& Address) {
   while (Index > LastPage->Index) {
     bool WriteFillNextPage = writeFill(LastPage->getMinAddress() + Page::Size);
     if (!WriteFillNextPage && Index > LastPage->Index) {
       // This should only happen if we reach eof. Verify,
       // If so, allow page wrap so that we can have a cursor pointing
       // to the eof position.
-      if (LastPage->getMinAddress() + Page::Size != LastPage->getMaxAddress())
-        fatal("readFillToPage failed!");
-      appendPage();
+      if ((LastPage->getMinAddress() + Page::Size != LastPage->getMaxAddress())
+          || !appendPage())
+        return failThenGetErrorPage(Address);
     }
   }
   assert(Index < PageMap.size());
   return PageMap[Index].lock();
 }
 
-size_t Queue::readFromPage(size_t Address,
+size_t Queue::readFromPage(size_t& Address,
                            size_t WantedSize,
                            PageCursor& Cursor) {
   // Start by read-filling if necessary.
@@ -144,7 +181,7 @@ size_t Queue::readFromPage(size_t Address,
   return WantedSize;
 }
 
-size_t Queue::writeToPage(size_t Address,
+size_t Queue::writeToPage(size_t& Address,
                           size_t WantedSize,
                           PageCursor& Cursor) {
   // Expand till page exists.
@@ -159,38 +196,25 @@ size_t Queue::writeToPage(size_t Address,
   return WantedSize;
 }
 
-void Queue::freezeEof(size_t Address) {
-  assert(Address != kUndefinedAddress && "WASM stream too big to process");
-  assert(!EofFrozen);
-  // This call zero-fill pages if writing hasn't reached Address yet.
+void Queue::freezeEof(size_t& Address) {
+  assert(Address <= kMaxEofAddress && "WASM stream too big to process");
+  if (EofFrozen && Address != EofPtr->getEobAddress().getByteAddress()) {
+    fail();
+    Address = 0;
+  }
+  // This call zero-fills pages if writing hasn't reached Address yet.
   PageCursor Cursor(this);
   writeToPage(Address, 0, Cursor);
   EofPtr->setEobAddress(Address);
-  Cursor.setMaxAddress(Address);
-  // TODO(karlschimpf): If adding threads, make this update thread safe.
-  // If any pages exist after Cursor, remove them.
-  LastPage = Cursor.CurPage;
-  if (Cursor.CurPage->Next)
-    Cursor.CurPage->Next.reset();
   EofFrozen = true;
-}
-
-void Queue::writePageAt(FILE* File, size_t Address) {
-  std::shared_ptr<Page> P = getWritePage(Address);
-  if (!P)
-    return;
-  size_t Size = Page::address(Address);
-  size_t Count = 0;
-  for (size_t i = 0; i < Size; ++i, ++Count) {
-    if (Count % 16 == 0) {
-      if (Count)
-        fputc('\n', File);
-    } else {
-      fputc(' ', File);
-    }
-    writeInt(File, P->Buffer[i], ValueFormat::Hexidecimal);
+  if (!isBroken(Cursor)) {
+    Cursor.setMaxAddress(Address);
+    // TODO(karlschimpf): If adding threads, make this update thread safe.
+    // If any pages exist after Cursor, remove them.
+    LastPage = Cursor.CurPage;
+    if (Cursor.CurPage->Next)
+      Cursor.CurPage->Next.reset();
   }
-  fputc('\n', File);
 }
 
 size_t Queue::read(size_t& Address, uint8_t* ToBuf, size_t WantedSize) {

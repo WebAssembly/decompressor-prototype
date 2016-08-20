@@ -26,7 +26,7 @@
 // the value you must always use address N.
 //
 // It is assumed that jumping on reads and writes are valid. However, back jumps
-// are only safe if you already have a shared pointer to the address to be
+// are only safe if you already have a cursor pointing to the page to be
 // backpatched.
 //
 // TODO(KarlSchimpf): Locking of reads/writes for threading has not yet been
@@ -44,12 +44,19 @@ namespace wasm {
 
 namespace decode {
 
+// Note: We reserve the last page to be an "error" page. This allows us to
+// guarantee that read/write cursors are always associated with a (defined)
+// page.
+static constexpr size_t kMaxEofAddress = ~size_t(0) << Page::SizeLog2;
+static constexpr size_t kMaxPageIndex = Page::index(kMaxEofAddress);
+static constexpr size_t kErrorPageAddress = kMaxEofAddress + 1;
+static constexpr size_t kErrorPageIndex = Page::index(kErrorPageAddress);
 static constexpr size_t kUndefinedAddress = std::numeric_limits<size_t>::max();
-static constexpr size_t kMaxAddress = std::numeric_limits<size_t>::max() - 1;
 
 typedef uint8_t BitsInByteType;
 
 struct BitAddress {
+  friend class BlockEob;
  public:
   BitAddress(size_t ByteAddr = 0, BitsInByteType BitAddr = 0)
       : ByteAddr(ByteAddr), BitAddr(BitAddr) {}
@@ -57,9 +64,14 @@ struct BitAddress {
       : ByteAddr(Address.ByteAddr), BitAddr(Address.BitAddr) {}
   size_t getByteAddress() const { return ByteAddr; }
   BitsInByteType getBitAddress() const { return BitAddr; }
-
   bool operator==(const BitAddress& Addr) {
     return ByteAddr == Addr.ByteAddr && BitAddr == Addr.BitAddr;
+  }
+  bool isGood() const {
+    return ByteAddr <= kMaxEofAddress;
+  }
+  bool isDefined() const {
+    return ByteAddr != kUndefinedAddress;
   }
 
   // For debugging
@@ -68,13 +80,11 @@ struct BitAddress {
  protected:
   size_t ByteAddr;
   BitsInByteType BitAddr;
+  void reset() {
+    ByteAddr = 0;
+    BitAddr = 0;
+  }
 };
-
-inline FILE* describeByteAddress(FILE* File, size_t Address) {
-  BitAddress Addr(Address);
-  Addr.describe(File);
-  return File;
-}
 
 // Holds the end of a block within a queue. The outermost block is
 // always defined as enclosing the entire queue. Note: EobBitAddress
@@ -85,27 +95,42 @@ class BlockEob : public std::enable_shared_from_this<BlockEob> {
   BlockEob& operator=(const BlockEob&) = delete;
 
  public:
-  explicit BlockEob(const BitAddress& Address) : EobAddress(Address) {}
-  explicit BlockEob(size_t ByteAddr = kUndefinedAddress,
+  explicit BlockEob(const BitAddress& Address) : EobAddress(Address) {
+    init();
+  }
+  explicit BlockEob(size_t ByteAddr = kMaxEofAddress,
                     BitsInByteType BitAddr = 0)
-      : EobAddress(ByteAddr, BitAddr) {}
+      : EobAddress(ByteAddr, BitAddr) {
+    init();
+  }
   BlockEob(size_t ByteAddr, const std::shared_ptr<BlockEob> EnclosingEobPtr)
-      : EobAddress(ByteAddr), EnclosingEobPtr(EnclosingEobPtr) {}
+      : EobAddress(ByteAddr), EnclosingEobPtr(EnclosingEobPtr) {
+    init();
+  }
   BlockEob(size_t ByteAddr,
            BitsInByteType BitAddr,
            const std::shared_ptr<BlockEob> EnclosingEobPtr)
-      : EobAddress(ByteAddr, BitAddr), EnclosingEobPtr(EnclosingEobPtr) {}
+      : EobAddress(ByteAddr, BitAddr), EnclosingEobPtr(EnclosingEobPtr) {
+    init();
+  }
   BlockEob(const BitAddress& Address,
            const std::shared_ptr<BlockEob> EnclosingEobPtr)
-      : EobAddress(Address), EnclosingEobPtr(EnclosingEobPtr) {}
+      : EobAddress(Address), EnclosingEobPtr(EnclosingEobPtr) {
+    init();
+  }
   BitAddress& getEobAddress() { return EobAddress; }
   void setEobAddress(const BitAddress& Address) { EobAddress = Address; }
+  bool isGood() const {
+    return EobAddress.isGood();
+  }
   bool isDefined() const {
-    return EobAddress.getByteAddress() != kUndefinedAddress;
+    return EobAddress.isDefined();
   }
   std::shared_ptr<BlockEob> getEnclosingEobPtr() const {
     return EnclosingEobPtr;
   }
+
+  void fail();
 
   // For debugging.
   FILE* describe(FILE* File) const;
@@ -113,6 +138,9 @@ class BlockEob : public std::enable_shared_from_this<BlockEob> {
  private:
   BitAddress EobAddress;
   std::shared_ptr<BlockEob> EnclosingEobPtr;
+  void init() {
+    assert(isGood());
+  }
 };
 
 class Queue : public std::enable_shared_from_this<Queue> {
@@ -124,6 +152,7 @@ class Queue : public std::enable_shared_from_this<Queue> {
   friend class WriteCursor;
 
  public:
+  enum class StatusValue { Good , Bad };
   Queue();
 
   virtual ~Queue();
@@ -145,13 +174,15 @@ class Queue : public std::enable_shared_from_this<Queue> {
 
   // Update Cursor to point to the given Address, and make (up to) WantedSize
   // elements available for reading. Returns the actual number of elements
-  // available for reading.
-  size_t readFromPage(size_t Address, size_t WantedSize, PageCursor& Cursor);
+  // available for reading. Note: Address will be moved to an error address
+  // if an error occurs while reading.
+  size_t readFromPage(size_t& Address, size_t WantedSize, PageCursor& Cursor);
 
   // Update Cursor to point to the given Address, and make (up to) WantedSize
   // elements available for writing. Returns the actual number of elements
-  // available for writing.
-  size_t writeToPage(size_t Address, size_t WantedSize, PageCursor& Cursor);
+  // available for writing. Note: Address will be moved to an error address
+  // if an error occurs while writing.
+  size_t writeToPage(size_t& Address, size_t WantedSize, PageCursor& Cursor);
 
   // Reads a contiguous range of bytes into a buffer.
   //
@@ -181,20 +212,25 @@ class Queue : public std::enable_shared_from_this<Queue> {
   // @result        True if successful (i.e. not beyond eob address).
   bool write(size_t& Address, uint8_t* Buffer, size_t Size = 1);
 
-  // For debugging. Writes out sequence of bytes (on page associated with
-  // Address) in the queue.
-  void writePageAt(FILE* File, size_t Address);
-
   size_t getEofAddress() const {
     return EofPtr->getEobAddress().getByteAddress();
   }
 
   // Freezes eob of the queue. Not valid to read/write past the eob, once set.
-  void freezeEof(size_t Address);
+  // Note: May change Address if queue is broken, or Address not valid.
+  void freezeEof(size_t& Address);
 
+  bool isBroken(const PageCursor &C) const {
+    assert(C.CurPage);
+    return C.CurPage->getPageIndex() >= kErrorPageIndex;
+  }
   bool isEofFrozen() const { return EofFrozen; }
+  bool isGood() const { return Status == StatusValue::Good; }
 
   const std::shared_ptr<BlockEob>& getEofPtr() const { return EofPtr; }
+
+  // Mark queue as broken.
+  void fail();
 
   void describe(FILE* Out);
 
@@ -204,43 +240,50 @@ class Queue : public std::enable_shared_from_this<Queue> {
   size_t MinPeekSize;
   // True if end of queue buffer has been frozen.
   bool EofFrozen;
+  StatusValue Status;
   std::shared_ptr<BlockEob> EofPtr;
   // First page still in queue.
   std::shared_ptr<Page> FirstPage;
   // Page at the current end of buffer.
   std::shared_ptr<Page> LastPage;
+  // Page to use if an error occurs.
+  std::shared_ptr<Page> ErrorPage;
   // Fast page lookup map (from page index)
   typedef std::vector<std::weak_ptr<Page>> PageMapType;
   PageMapType PageMap;
 
-  void appendPage();
+  std::shared_ptr<Page> failThenGetErrorPage(size_t& PageAddress);
+
+  bool appendPage();
+
+  std::shared_ptr<Page> getErrorPage();
 
   // Returns the page in the queue referred to Address, or nullptr if no
   // such page is in the byte queue.
-  std::shared_ptr<Page> getReadPage(size_t Address) const {
+  std::shared_ptr<Page> getReadPage(size_t& Address) {
     size_t Index = Page::index(Address);
     if (Index >= PageMap.size())
-      return const_cast<Queue*>(this)->readFillToPage(Index);
+      return readFillToPage(Index, Address);
     return PageMap[Index].lock();
   }
 
-  std::shared_ptr<Page> getWritePage(size_t Address) const {
+  std::shared_ptr<Page> getWritePage(size_t& Address) const {
     size_t Index = Page::index(Address);
     if (Index >= PageMap.size())
-      return const_cast<Queue*>(this)->writeFillToPage(Index);
+      return const_cast<Queue*>(this)->writeFillToPage(Index, Address);
     return PageMap[Index].lock();
   }
 
-  std::shared_ptr<Page> getCachedPage(size_t Address) const {
+  std::shared_ptr<Page> getCachedPage(size_t& Address) {
     size_t Index = Page::index(Address);
     if (Index >= PageMap.size())
-      return 0;
+      return failThenGetErrorPage(Address);
     return PageMap[Index].lock();
   }
 
-  std::shared_ptr<Page> readFillToPage(size_t Index);
+  std::shared_ptr<Page> readFillToPage(size_t Index, size_t& Address);
 
-  std::shared_ptr<Page> writeFillToPage(size_t Index);
+  std::shared_ptr<Page> writeFillToPage(size_t Index, size_t& Address);
 
   bool isValidPageAddress(size_t Address) {
     return Page::index(Address) < PageMap.size();

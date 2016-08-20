@@ -40,7 +40,7 @@ class WriteCursor FINAL : public Cursor {
 
   BitsInByteType getBitsWritten() const { return CurByte.getBitsWritten(); }
   BitAddress getCurWriteBitAddress() const {
-    BitAddress Address(getCurAddress(), getBitsWritten());
+    BitAddress Address(CurAddress, getBitsWritten());
     return Address;
   }
 
@@ -56,7 +56,6 @@ class WriteCursor FINAL : public Cursor {
     ++CurAddress;
     CurPage = Que->getWritePage(CurAddress);
     assert(CurPage);
-    assert(CurPage == Que->getCachedPage(CurAddress));
   }
 };
 

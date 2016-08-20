@@ -22,7 +22,7 @@ namespace decode {
 
 uint8_t ReadCursor::readByte() {
   assert(isByteAligned());
-  if (getCurAddress() < GuaranteedBeforeEob)
+  if (CurAddress < GuaranteedBeforeEob)
     return readOneByte();
   bool atEof = isIndexAtEndOfPage() && !readFillBuffer();
   updateGuaranteedBeforeEob();

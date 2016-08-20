@@ -31,7 +31,8 @@ bool ReadBackedQueue::readFill(size_t Address) {
     size_t SpaceAvailable = LastPage->spaceRemaining();
     // Create new page if current page full.
     if (SpaceAvailable == 0) {
-      appendPage();
+      if (!appendPage())
+        return false;
       SpaceAvailable = Page::Size;
     }
     size_t NumBytes = Reader->read(&(LastPage->Buffer[Page::address(Address)]),

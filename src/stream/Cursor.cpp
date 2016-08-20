@@ -25,8 +25,15 @@ FILE* WorkingByte::describe(FILE* File) {
   return File;
 }
 
+void Cursor::fail() {
+  Que->fail();
+  CurPage = Que->getErrorPage();
+  CurAddress = kErrorPageAddress;
+  updateGuaranteedBeforeEob();
+  EobPtr->fail();
+}
+
 bool Cursor::readFillBuffer() {
-  size_t CurAddress = getCurAddress();
   if (CurAddress >= Que->getEofAddress())
     return false;
   size_t BufferSize = Que->readFromPage(CurAddress, Page::Size, *this);
@@ -34,12 +41,13 @@ bool Cursor::readFillBuffer() {
 }
 
 void Cursor::writeFillBuffer() {
-  size_t CurAddress = getCurAddress();
-  if (CurAddress >= Que->getEofAddress())
-    fatal("Write past Eof");
+  if (CurAddress >= Que->getEofAddress()) {
+    fail();
+    return;
+  }
   size_t BufferSize = Que->writeToPage(CurAddress, Page::Size, *this);
   if (BufferSize == 0)
-    fatal("Write failed!\n");
+    fail();
 }
 
 FILE* Cursor::describe(FILE* File, bool IncludeDetail, bool AddEoln) {
