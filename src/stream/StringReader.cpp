@@ -13,29 +13,34 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
 
-#include "stream/WriteBackedQueue.h"
+// Implements a string reader.
+
+#include "stream/StringReader.h"
 
 namespace wasm {
 
 namespace decode {
 
-WriteBackedQueue::~WriteBackedQueue() {
-  // NOTE: we must override the base destructor so that calls to dumpFirstPage
-  // is the one local to this class!
-  while (FirstPage)
-    dumpFirstPage();
+size_t StringReader::read(uint8_t* Buf, size_t Size) {
+  if (Cursor >= Str.size())
+     return 0;
+  size_t Available = Str.size() - Cursor;
+  if (Available > Size)
+    Available = Size;
+  for (size_t i = 0; i < Available; ++i)
+    *(Buf++) = uint8_t(Str[Cursor++]);
+  return Available;
 }
 
-void WriteBackedQueue::dumpFirstPage() {
-  size_t Address = 0;
-  size_t Size = FirstPage->getMaxAddress() - FirstPage->getMinAddress();
-  if (!Writer->write(&FirstPage->Buffer[Address], Size))
-    fail();
-  Queue::dumpFirstPage();
+bool StringReader::write(uint8_t* Buf, size_t Size) { return false; }
+
+bool StringReader::freeze() {
+  return true;
 }
 
-}  // end of decode namespace
+bool StringReader::atEof() { return Cursor >= Str.size(); }
 
-}  // end of wasm namespace
+}  // end of namespace decode
+
+}  // end of namespace wasm

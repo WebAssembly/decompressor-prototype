@@ -13,29 +13,33 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
 
-#include "stream/WriteBackedQueue.h"
+// Implements a string writer.
+
+#include "stream/StringWriter.h"
 
 namespace wasm {
 
 namespace decode {
 
-WriteBackedQueue::~WriteBackedQueue() {
-  // NOTE: we must override the base destructor so that calls to dumpFirstPage
-  // is the one local to this class!
-  while (FirstPage)
-    dumpFirstPage();
+size_t StringWriter::read(uint8_t*, size_t) { return 0; }
+
+bool StringWriter::write(uint8_t* Buf, size_t Size) {
+  if (IsFrozen)
+    return false;
+  for (size_t i = 0; i < Size; ++i)
+    Str.push_back(*(Buf++));
+  return true;
 }
 
-void WriteBackedQueue::dumpFirstPage() {
-  size_t Address = 0;
-  size_t Size = FirstPage->getMaxAddress() - FirstPage->getMinAddress();
-  if (!Writer->write(&FirstPage->Buffer[Address], Size))
-    fail();
-  Queue::dumpFirstPage();
+bool StringWriter::freeze() {
+  return IsFrozen = true;
 }
 
-}  // end of decode namespace
+bool StringWriter::atEof() {
+  return IsFrozen;
+}
 
-}  // end of wasm namespace
+}  // end of namespace decode
+
+}  // end of namespace wasm

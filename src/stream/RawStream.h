@@ -55,7 +55,7 @@ class RawStream : public std::enable_shared_from_this<RawStream> {
   virtual bool freeze() = 0;
 
   // Returns true if at the end of stream.
-  // WARNING: This is not set until after a read occurs.
+  // WARNING: This may not set until after a read occurs.
   virtual bool atEof() = 0;
 };
 
