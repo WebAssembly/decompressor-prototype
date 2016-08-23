@@ -775,7 +775,6 @@ void Interpreter::runMethods() {
               case State::Enter:
                 TraceEnterFrame();
                 Frame.CallState = State::Loop;
-                call(Method::Eval, Frame.Nd->getKid(0));
                 break;
               case State::Loop:
                 if (ReadPos.atReadBitEob()) {
