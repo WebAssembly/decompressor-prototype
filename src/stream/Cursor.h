@@ -90,6 +90,7 @@ class Cursor : public PageCursor {
     std::swap(static_cast<PageCursor&>(*this), static_cast<PageCursor&>(C));
     std::swap(EobPtr, C.EobPtr);
     std::swap(CurByte, C.CurByte);
+    std::swap(GuaranteedBeforeEob, C.GuaranteedBeforeEob);
   }
 
   StreamType getType() const { return Type; }
