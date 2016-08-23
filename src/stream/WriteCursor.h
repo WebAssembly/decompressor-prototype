@@ -26,17 +26,26 @@ namespace wasm {
 namespace decode {
 
 class WriteCursor FINAL : public Cursor {
-  WriteCursor() = delete;
-  WriteCursor& operator=(const WriteCursor&) = delete;
-
  public:
+  // Note: The nullary write cursor should not be used until it has been
+  // assigned a value.
+  WriteCursor() : Cursor() {}
+
   WriteCursor(std::shared_ptr<Queue> Que) : Cursor(StreamType::Byte, Que) {}
+
   WriteCursor(StreamType Type, std::shared_ptr<Queue> Que)
       : Cursor(Type, Que) {}
+
   explicit WriteCursor(const WriteCursor& C) : Cursor(C) {}
   WriteCursor(const Cursor& C, size_t StartAddress)
       : Cursor(C, StartAddress, false) {}
+
   ~WriteCursor() {}
+
+  WriteCursor& operator=(const WriteCursor& C) {
+    assign(C);
+    return *this;
+  }
 
   BitsInByteType getBitsWritten() const { return CurByte.getBitsWritten(); }
   BitAddress getCurWriteBitAddress() const {

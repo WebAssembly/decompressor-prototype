@@ -132,6 +132,15 @@ class Interpreter {
   // The stack of passed Values (write methods).
   decode::IntType WriteValue;
   utils::ValueStack<decode::IntType> WriteValueStack;
+  // The stack of read cursors (used by peek)
+  decode::ReadCursor PeekPos;
+  utils::ValueStack<decode::ReadCursor> PeekPosStack;
+  // The stack of block patch locations.
+  decode::WriteCursor BlockStart;
+  utils::ValueStack<decode::WriteCursor> BlockStartStack;
+  // The stack of loop counters.
+  size_t LoopCounter;
+  utils::ValueStack<size_t> LoopCounterStack;
   // The stack of opcode Selshift/CaseMasks.
   struct OpcodeLocalsFrame {
     uint32_t SelShift;
@@ -149,6 +158,8 @@ class Interpreter {
   utils::ValueStack<OpcodeLocalsFrame> OpcodeLocalsStack;
 
   void fail();
+
+  void fail(const char* Message);
 
   void callTopLevel(Method Method,
                     const filt::Node* Nd,

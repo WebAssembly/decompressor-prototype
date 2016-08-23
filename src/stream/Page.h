@@ -121,6 +121,7 @@ class Page : public std::enable_shared_from_this<Page> {
 
 class PageCursor {
   friend class Queue;
+
  public:
   PageCursor() : CurAddress(0) {}
   PageCursor(Queue* Que);
@@ -130,7 +131,7 @@ class PageCursor {
   }
   PageCursor(const PageCursor& PC)
       : CurPage(PC.CurPage), CurAddress(PC.CurAddress) {
-    assert(CurPage);
+    //    assert(CurPage);
   }
   PageCursor& operator=(const PageCursor& C) {
     CurPage = C.CurPage;
@@ -158,7 +159,9 @@ class PageCursor {
     return CurPage->Buffer + getRelativeAddress();
   }
   // For debugging only.
+  Page* getCurPage() const { return CurPage.get(); }
   FILE* describe(FILE* File, bool IncludePage = false);
+
  protected:
   std::shared_ptr<Page> CurPage;
   // Absolute address.

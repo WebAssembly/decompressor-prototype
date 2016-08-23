@@ -140,8 +140,9 @@ std::shared_ptr<Page> Queue::readFillToPage(size_t Index, size_t& Address) {
       // This should only happen if we reach eof. Verify,
       // If so, allow page wrap so that we can have a cursor pointing
       // to the eof position.
-      if ((LastPage->getMinAddress() + Page::Size != LastPage->getMaxAddress())
-          || !appendPage())
+      if ((LastPage->getMinAddress() + Page::Size !=
+           LastPage->getMaxAddress()) ||
+          !appendPage())
         return failThenGetErrorPage(Address);
     }
   }
@@ -155,8 +156,9 @@ std::shared_ptr<Page> Queue::writeFillToPage(size_t Index, size_t& Address) {
       // This should only happen if we reach eof. Verify,
       // If so, allow page wrap so that we can have a cursor pointing
       // to the eof position.
-      if ((LastPage->getMinAddress() + Page::Size != LastPage->getMaxAddress())
-          || !appendPage())
+      if ((LastPage->getMinAddress() + Page::Size !=
+           LastPage->getMaxAddress()) ||
+          !appendPage())
         return failThenGetErrorPage(Address);
     }
   }
