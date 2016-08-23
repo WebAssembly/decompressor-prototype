@@ -25,6 +25,9 @@ namespace wasm {
 
 namespace utils {
 
+// A stack backed value. That is, top is stored in a local variable, and methods
+// push() and pop() move data to/from the stack. Conceptually, top is part of
+// the stack.
 template <typename T>
 class ValueStack {
   ValueStack() = delete;

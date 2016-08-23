@@ -57,6 +57,7 @@ typedef uint8_t BitsInByteType;
 
 struct BitAddress {
   friend class BlockEob;
+
  public:
   BitAddress(size_t ByteAddr = 0, BitsInByteType BitAddr = 0)
       : ByteAddr(ByteAddr), BitAddr(BitAddr) {}
@@ -67,12 +68,8 @@ struct BitAddress {
   bool operator==(const BitAddress& Addr) {
     return ByteAddr == Addr.ByteAddr && BitAddr == Addr.BitAddr;
   }
-  bool isGood() const {
-    return ByteAddr <= kMaxEofAddress;
-  }
-  bool isDefined() const {
-    return ByteAddr != kUndefinedAddress;
-  }
+  bool isGood() const { return ByteAddr <= kMaxEofAddress; }
+  bool isDefined() const { return ByteAddr != kUndefinedAddress; }
 
   // For debugging
   FILE* describe(FILE* File) const;
@@ -95,9 +92,7 @@ class BlockEob : public std::enable_shared_from_this<BlockEob> {
   BlockEob& operator=(const BlockEob&) = delete;
 
  public:
-  explicit BlockEob(const BitAddress& Address) : EobAddress(Address) {
-    init();
-  }
+  explicit BlockEob(const BitAddress& Address) : EobAddress(Address) { init(); }
   explicit BlockEob(size_t ByteAddr = kMaxEofAddress,
                     BitsInByteType BitAddr = 0)
       : EobAddress(ByteAddr, BitAddr) {
@@ -120,12 +115,8 @@ class BlockEob : public std::enable_shared_from_this<BlockEob> {
   }
   BitAddress& getEobAddress() { return EobAddress; }
   void setEobAddress(const BitAddress& Address) { EobAddress = Address; }
-  bool isGood() const {
-    return EobAddress.isGood();
-  }
-  bool isDefined() const {
-    return EobAddress.isDefined();
-  }
+  bool isGood() const { return EobAddress.isGood(); }
+  bool isDefined() const { return EobAddress.isDefined(); }
   std::shared_ptr<BlockEob> getEnclosingEobPtr() const {
     return EnclosingEobPtr;
   }
@@ -138,9 +129,7 @@ class BlockEob : public std::enable_shared_from_this<BlockEob> {
  private:
   BitAddress EobAddress;
   std::shared_ptr<BlockEob> EnclosingEobPtr;
-  void init() {
-    assert(isGood());
-  }
+  void init() { assert(isGood()); }
 };
 
 class Queue : public std::enable_shared_from_this<Queue> {
@@ -152,7 +141,7 @@ class Queue : public std::enable_shared_from_this<Queue> {
   friend class WriteCursor;
 
  public:
-  enum class StatusValue { Good , Bad };
+  enum class StatusValue { Good, Bad };
   Queue();
 
   virtual ~Queue();
@@ -220,7 +209,7 @@ class Queue : public std::enable_shared_from_this<Queue> {
   // Note: May change Address if queue is broken, or Address not valid.
   void freezeEof(size_t& Address);
 
-  bool isBroken(const PageCursor &C) const {
+  bool isBroken(const PageCursor& C) const {
     assert(C.CurPage);
     return C.CurPage->getPageIndex() >= kErrorPageIndex;
   }

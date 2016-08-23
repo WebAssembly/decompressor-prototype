@@ -22,6 +22,7 @@
 //#define X(tag, name)
 #define INTERPRETER_METHODS_TABLE                                              \
   /* enum name , text name */                                                  \
+  X(EvalBlock,   "evalBlock")                                                  \
   X(Eval,        "eval")                                                       \
   X(Finished,    "finished")                                                   \
   X(Read,        "read")                                                       \
@@ -34,6 +35,7 @@
   X(Exit,      "exit")                                                         \
   X(Loop,      "loop")                                                         \
   X(Failed,    "failed")                                                       \
+  X(MinBlock,  "minimize block")                                               \
   X(Step2,     "Step2")                                                        \
   X(Succeeded, "Succeeded")                                                    \
 

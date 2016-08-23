@@ -26,10 +26,11 @@ namespace wasm {
 namespace decode {
 
 class ReadCursor FINAL : public Cursor {
-  ReadCursor() = delete;
-  ReadCursor& operator=(const ReadCursor&) = delete;
-
  public:
+  // Note: The nullary read cursor should not be used until it has been assigned
+  // a valid value.
+  ReadCursor() : Cursor() {}
+
   ReadCursor(std::shared_ptr<Queue> Que) : Cursor(StreamType::Byte, Que) {}
 
   ReadCursor(StreamType Type, std::shared_ptr<Queue> Que) : Cursor(Type, Que) {}
@@ -41,11 +42,16 @@ class ReadCursor FINAL : public Cursor {
 
   ~ReadCursor() {}
 
+  ReadCursor& operator=(const ReadCursor& C) {
+    assign(C);
+    return *this;
+  }
+
   bool atByteEob() {
     if (CurAddress < GuaranteedBeforeEob)
       return false;
-    bool Result = CurAddress >= getEobAddress().getByteAddress() ||
-                  !readFillBuffer();
+    bool Result =
+        CurAddress >= getEobAddress().getByteAddress() || !readFillBuffer();
     updateGuaranteedBeforeEob();
     return Result;
   }
