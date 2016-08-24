@@ -230,255 +230,14 @@ const Node* Interpreter::getParam(const Node* P) {
 }
 
 IntType Interpreter::eval(const Node* Nd) {
-  // TODO(kschimpf): Fix for ast streams.
-  // TODO(kschimpf) Handle blocks.
   TRACE_METHOD("oldeval");
-  TRACE_SEXP(nullptr, Nd);
   // TODO(karlschimpf): Remove this when fully transitioned.
   if (!FrameStack.empty())
     fatal("Nested calls no longer allowed!");
-#if LOG_EVAL_LOOKAHEAD
-  TRACE_BLOCK({
-    decode::ReadCursor Lookahead(ReadPos);
-    fprintf(TRACE.indent(), "Lookahead:");
-    for (int i = 0; i < 10; ++i) {
-      if (!Lookahead.atByteEob())
-        fprintf(TRACE.getFile(), " %x", Lookahead.readByte());
-    }
-    fprintf(TRACE.getFile(), " ");
-    fprintf(ReadPos.describe(TRACE.getFile(), true), "\n");
-  });
-#endif
-  IntType ReturnValue = 0;
-  switch (NodeType Type = Nd->getType()) {
-    case OpError:
-    case OpLastRead:
-    case OpI32Const:
-    case OpI64Const:
-    case OpU8Const:
-    case OpU32Const:
-    case OpU64Const:
-    case OpUint8NoArgs:
-    case OpUint8OneArg:
-    case OpUint32NoArgs:
-    case OpUint32OneArg:
-    case OpUint64NoArgs:
-    case OpUint64OneArg:
-    case OpVarint32NoArgs:
-    case OpVarint32OneArg:
-    case OpVarint64NoArgs:
-    case OpVarint64OneArg:
-    case OpVaruint32NoArgs:
-    case OpVaruint32OneArg:
-    case OpVaruint64NoArgs:
-    case OpVaruint64OneArg:
-    case OpVoid:
-    case OpWrite:
-    case OpDefine:
-    case OpLoop:
-    case OpSequence:
-    case OpEval:
-    case OpBlock:
-    case OpLoopUnbounded:
-    case OpSwitch:
-    case OpCase:
-    case OpParam:
-      callTopLevel(Method::Eval, Nd);
-      readBackFilled();
-      TRACE(IntType, "returns", Frame.ReturnValue);
-      ReturnValue = Frame.ReturnValue;
-      break;
-    case NO_SUCH_NODETYPE:
-    case OpConvert:
-    case OpFilter:
-    case OpBlockEndNoArgs:
-    case OpSymbol:
-      // TODO(kschimpf): Fix above cases.
-      fprintf(stderr, "Not implemented: %s\n", getNodeTypeName(Type));
-      fatal("Unable to evaluate filter s-expression");
-      break;
-    case OpFile:
-    case OpSection:
-    case OpUndefine:
-    case OpRename:
-    case OpVersion:
-    case OpUnknownSection:
-      fprintf(stderr, "Evaluating not allowed: %s\n", getNodeTypeName(Type));
-      fatal("Unable to evaluate filter s-expression");
-      break;
-#if 0
-    case OpParam:
-      ReturnValue = eval(getParam(Nd));
-      break;
-#endif
-#if 0
-    case OpDefine:
-      ReturnValue = eval(Nd->getKid(2));
-      break;
-#endif
-    case OpMap:
-    case OpOpcode:
-      ReturnValue = write(read(Nd), Nd);
-      break;
-#if 0
-    case OpSwitch: {
-      const auto* Sel = cast<SwitchNode>(Nd);
-      IntType Selector = eval(Sel->getKid(0));
-      if (const auto* Case = Sel->getCase(Selector))
-        eval(Case);
-      else
-        eval(Sel->getKid(1));
-      break;
-    }
-#endif
-#if 0
-    case OpCase:
-      eval(Nd->getKid(1));
-      break;
-#endif
-#if 0
-    case OpBlock:
-#if LOG_FUNCTIONS || LOG_NUMBERED_BLOCK
-      // NOTE: This assumes that blocks (outside of sections) are only
-      // used to define functions.
-      TRACE_BLOCK({
-          fprintf(TRACE.indent(), " Function %" PRIuMAX "\n",
-                  uintmax_t(LogBlockCount));
-          if (LOG_NUMBERED_BLOCK && LogBlockCount == LOG_FUNCTION_NUMBER)
-            TRACE.setTraceProgress(true);
-        });
-#endif
-      decompressBlock(Nd->getKid(0));
-#if LOG_FUNCTIONS || LOG_NUMBERED_BLOCKS
-#if LOG_NUMBERED_BLOCK
-      TRACE_BLOCK({
-        if (LogBlockCount == LOG_FUNCTION_NUMBER)
-          TRACE.setTraceProgress(0);
-      });
-#endif
-      ++LogBlockCount;
-#endif
-      break;
-#endif
-    case OpAnd:
-      if (eval(Nd->getKid(0)) != 0 && eval(Nd->getKid(1)) != 0)
-        ReturnValue = 1;
-      break;
-    case OpNot:
-      if (eval(Nd->getKid(0)) == 0)
-        ReturnValue = 1;
-      break;
-    case OpOr:
-      if (eval(Nd->getKid(0)) != 0 || eval(Nd->getKid(1)) != 0)
-        ReturnValue = 1;
-      break;
-    case OpStream: {
-      const auto* Stream = cast<StreamNode>(Nd);
-      switch (Stream->getStreamKind()) {
-        case StreamKind::Input:
-          switch (Stream->getStreamType()) {
-            case StreamType::Byte:
-              ReturnValue = int(isa<ByteReadStream>(Reader.get()));
-              break;
-            case StreamType::Bit:
-            case StreamType::Int:
-            case StreamType::Ast:
-              Trace.errorSexp("Stream check: ", Nd);
-              fatal("Stream check not implemented");
-              break;
-          }
-        case StreamKind::Output:
-          switch (Stream->getStreamType()) {
-            case StreamType::Byte:
-              ReturnValue = int(isa<ByteReadStream>(Writer.get()));
-              break;
-            case StreamType::Bit:
-            case StreamType::Int:
-            case StreamType::Ast:
-              Trace.errorSexp("Stream check: ", Nd);
-              fatal("Stream check not implemented");
-              break;
-          }
-      }
-      break;
-    }
-#if 0
-    case OpEval: {
-      auto* Sym = dyn_cast<SymbolNode>(Nd->getKid(0));
-      assert(Sym);
-      auto* Defn = dyn_cast<DefineNode>(Sym->getDefineDefinition());
-      assert(Defn);
-      auto* NumParams = dyn_cast<ParamNode>(Defn->getKid(1));
-      assert(NumParams);
-      int NumCallArgs = Nd->getNumKids() - 1;
-      if (NumParams->getValue() != IntType(NumCallArgs)) {
-        fprintf(Trace.getFile(), "Definition %s expects %" PRIuMAX
-                                 "parameters, found: %" PRIuMAX "\n",
-                Sym->getStringName().c_str(), uintmax_t(NumParams->getValue()),
-                uintmax_t(NumCallArgs));
-        fatal("Unable to evaluate call");
-      }
-      EvalStack.push_back(Nd);
-      ReturnValue = eval(Defn);
-      EvalStack.pop_back();
-      break;
-    }
-#endif
-    case OpIfThen:
-      if (eval(Nd->getKid(0)) != 0)
-        eval(Nd->getKid(1));
-      break;
-    case OpIfThenElse:
-      if (eval(Nd->getKid(0)) != 0)
-        eval(Nd->getKid(1));
-      else
-        eval(Nd->getKid(2));
-      break;
-#if 0
-    case OpLoop: {
-      IntType Count = eval(Nd->getKid(0));
-      int NumKids = Nd->getNumKids();
-      for (IntType i = 0; i < Count; ++i) {
-        for (int j = 1; j < NumKids; ++j) {
-          eval(Nd->getKid(j));
-        }
-      }
-      break;
-    }
-#endif
-#if 0
-    case OpLoopUnbounded: {
-      while (!ReadPos.atReadBitEob()) {
-        for (auto* Kid : *Nd)
-          eval(Kid);
-      }
-      break;
-    }
-#endif
-#if 0
-    case OpWrite:
-      ReturnValue = write(read(Nd->getKid(0)), Nd->getKid(1));
-      break;
-#endif
-    case OpPeek:
-      ReturnValue = read(Nd);
-      break;
-    case OpRead:
-      ReturnValue = read(Nd->getKid(1));
-      break;
-#if 0
-    case OpSequence:
-      for (auto* Kid : *Nd)
-        eval(Kid);
-      break;
-#endif
-#if 0
-    case OpVoid:
-      break;
-#endif
-  }
-  TRACE(IntType, "return value", ReturnValue);
-  return ReturnValue;
+  callTopLevel(Method::Eval, Nd);
+  readBackFilled();
+  TRACE(IntType, "returns", Frame.ReturnValue);
+  return Frame.ReturnValue;
 }
 
 uint32_t Interpreter::readOpcodeSelector(const Node* Nd, IntType& Value) {
@@ -631,8 +390,34 @@ void Interpreter::runMethods() {
         fail("Unknown internal method call!");
         break;
       case Method::Eval:
+#if LOG_EVAL_LOOKAHEAD
+        if (Frame.State == State::Enter) {
+          TRACE_BLOCK({
+            decode::ReadCursor Lookahead(ReadPos);
+            fprintf(TRACE.indent(), "Lookahead:");
+            for (int i = 0; i < 10; ++i) {
+              if (!Lookahead.atByteEob())
+                fprintf(TRACE.getFile(), " %x", Lookahead.readByte());
+            }
+            fprintf(TRACE.getFile(), " ");
+            fprintf(ReadPos.describe(TRACE.getFile(), true), "\n");
+          });
+        }
+#endif
         switch (Frame.Nd->getType()) {
-          default:
+          case OpBlockEndNoArgs:
+          case OpConvert:
+          case OpFilter:
+            fail("Eval not implemented yet for construct");
+            break;
+          case NO_SUCH_NODETYPE:
+          case OpFile:
+          case OpRename:
+          case OpSymbol:
+          case OpSection:
+          case OpUndefine:
+          case OpUnknownSection:
+          case OpVersion:
             fail("Eval not allowed on construct!");
             break;
           case OpError:
@@ -645,6 +430,8 @@ void Interpreter::runMethods() {
           case OpU32Const:
           case OpU64Const:
           case OpLastRead:
+          case OpPeek:
+          case OpRead:
             switch (Frame.CallState) {
               case State::Enter:
                 TraceEnterFrame();
@@ -673,18 +460,19 @@ void Interpreter::runMethods() {
           case OpVaruint32NoArgs:
           case OpVaruint32OneArg:
           case OpVaruint64NoArgs:
-          case OpVaruint64OneArg: {
+          case OpVaruint64OneArg:
+          case OpMap:
+          case OpOpcode:
             switch (Frame.CallState) {
               case State::Enter:
                 TraceEnterFrame();
                 Frame.CallState = State::Step2;
                 call(Method::Read, Frame.Nd);
                 break;
-              case State::Step2: {
+              case State::Step2:
                 Frame.CallState = State::Exit;
                 call(Method::Write, Frame.Nd, Frame.ReturnValue);
                 break;
-              }
               case State::Exit:
                 popAndReturn(Frame.ReturnValue);
                 TraceExitFrame();
@@ -694,7 +482,6 @@ void Interpreter::runMethods() {
                 break;
             }
             break;
-          }
           case OpWrite:
             switch (Frame.CallState) {
               case State::Enter:
@@ -702,11 +489,103 @@ void Interpreter::runMethods() {
                 Frame.CallState = State::Step2;
                 call(Method::Read, Frame.Nd->getKid(0));
                 break;
-              case State::Step2: {
+              case State::Step2:
                 Frame.CallState = State::Exit;
                 call(Method::Write, Frame.Nd->getKid(1), Frame.ReturnValue);
                 break;
-              }
+              case State::Exit:
+                popAndReturn(Frame.ReturnValue);
+                TraceExitFrame();
+                break;
+              default:
+                fail("Bad internal state for method Eval");
+                break;
+            }
+            break;
+          case OpStream: {
+            TraceEnterFrame();
+            const auto* Stream = cast<StreamNode>(Frame.Nd);
+            switch (Stream->getStreamKind()) {
+              case StreamKind::Input:
+                switch (Stream->getStreamType()) {
+                  case StreamType::Byte:
+                    popAndReturn(int(isa<ByteReadStream>(Reader.get())));
+                    TraceExitFrame();
+                    break;
+                  case StreamType::Bit:
+                  case StreamType::Int:
+                  case StreamType::Ast:
+                    Trace.errorSexp("Stream check: ", Frame.Nd);
+                    fail("Stream check not implemented!");
+                    break;
+                }
+                break;
+              case StreamKind::Output:
+                switch (Stream->getStreamType()) {
+                  case StreamType::Byte:
+                    popAndReturn(int(isa<ByteReadStream>(Writer.get())));
+                    TraceExitFrame();
+                    break;
+                  case StreamType::Bit:
+                  case StreamType::Int:
+                  case StreamType::Ast:
+                    Trace.errorSexp("Stream check: ", Frame.Nd);
+                    fail("Stream check not implemented!");
+                    break;
+                }
+                break;
+            }
+            break;
+          }
+          case OpNot:
+            switch (Frame.CallState) {
+              case State::Enter:
+                TraceEnterFrame();
+                Frame.CallState = State::Exit;
+                call(Method::Eval, Frame.Nd->getKid(0));
+                break;
+              case State::Exit:
+                popAndReturn(Frame.ReturnValue != 0);
+                TraceExitFrame();
+                break;
+              default:
+                fail("Bad internal state for method Eval");
+                break;
+            }
+            break;
+          case OpAnd:
+            switch (Frame.CallState) {
+              case State::Enter:
+                TraceEnterFrame();
+                Frame.CallState = State::Step2;
+                call(Method::Eval, Frame.Nd->getKid(0));
+                break;
+              case State::Step2:
+                Frame.CallState = State::Exit;
+                if (Frame.ReturnValue != 0)
+                  call(Method::Eval, Frame.Nd->getKid(1));
+                break;
+              case State::Exit:
+                popAndReturn(Frame.ReturnValue);
+                TraceExitFrame();
+                break;
+              default:
+                fail("Bad internal state for method Eval");
+                break;
+            }
+            break;
+          case OpOr:
+            switch (Frame.CallState) {
+              case State::Enter:
+                TraceEnterFrame();
+                Frame.CallState = State::Step2;
+                call(Method::Eval, Frame.Nd->getKid(0));
+                break;
+              case State::Step2:
+                Frame.CallState = State::Exit;
+                if (Frame.ReturnValue == 0)
+                  call(Method::Eval, Frame.Nd->getKid(1));
+                break;
               case State::Exit:
                 popAndReturn(Frame.ReturnValue);
                 TraceExitFrame();
@@ -782,6 +661,50 @@ void Interpreter::runMethods() {
                   break;
                 }
                 call(Method::Eval, Frame.Nd->getKid(0));
+                break;
+              case State::Exit:
+                popAndReturn(0);
+                TraceExitFrame();
+                break;
+              default:
+                fail("Bad internal state for method Eval");
+                break;
+            }
+            break;
+          case OpIfThen:
+            switch (Frame.CallState) {
+              case State::Enter:
+                TraceEnterFrame();
+                Frame.CallState = State::Step2;
+                call(Method::Eval, Frame.Nd->getKid(0));
+                break;
+              case State::Step2:
+                Frame.CallState = State::Exit;
+                if (Frame.ReturnValue != 0)
+                  call(Method::Eval, Frame.Nd->getKid(1));
+                break;
+              case State::Exit:
+                popAndReturn(0);
+                TraceExitFrame();
+                break;
+              default:
+                fail("Bad internal state for method Eval");
+                break;
+            }
+            break;
+          case OpIfThenElse:
+            switch (Frame.CallState) {
+              case State::Enter:
+                TraceEnterFrame();
+                Frame.CallState = State::Step2;
+                call(Method::Eval, Frame.Nd->getKid(0));
+                break;
+              case State::Step2:
+                Frame.CallState = State::Exit;
+                if (Frame.ReturnValue != 0)
+                  call(Method::Eval, Frame.Nd->getKid(1));
+                else
+                  call(Method::Eval, Frame.Nd->getKid(2));
                 break;
               case State::Exit:
                 popAndReturn(0);
@@ -907,12 +830,12 @@ void Interpreter::runMethods() {
                 // NOTE: This assumes that blocks (outside of sections) are only
                 // used to define functions.
                 TRACE_BLOCK({
-                    fprintf(TRACE.indent(), " Function %" PRIuMAX "\n",
-                            uintmax_t(LogBlockCount));
-                    if (LOG_NUMBERED_BLOCK &&
-                        LogBlockCount == LOG_FUNCTION_NUMBER)
-                      TRACE.setTraceProgress(true);
-                  });
+                  fprintf(TRACE.indent(), " Function %" PRIuMAX "\n",
+                          uintmax_t(LogBlockCount));
+                  if (LOG_NUMBERED_BLOCK &&
+                      LogBlockCount == LOG_FUNCTION_NUMBER)
+                    TRACE.setTraceProgress(true);
+                });
 #endif
                 Frame.CallState = State::Exit;
                 call(Method::EvalBlock, Frame.Nd->getKid(0));
@@ -921,9 +844,9 @@ void Interpreter::runMethods() {
 #if LOG_FUNCTIONS || LOG_NUMBERED_BLOCKS
 #if LOG_NUMBERED_BLOCK
                 TRACE_BLOCK({
-                    if (LogBlockCount == LOG_FUNCTION_NUMBER)
-                      TRACE.setTraceProgress(0);
-                  });
+                  if (LogBlockCount == LOG_FUNCTION_NUMBER)
+                    TRACE.setTraceProgress(0);
+                });
 #endif
                 ++LogBlockCount;
 #endif
@@ -954,7 +877,8 @@ void Interpreter::runMethods() {
             Writer->writeFixedBlockSize(WritePos, 0);
             BlockStartStack.push();
             BlockStart = WritePos;
-            Frame.CallState = MinimizeBlockSize ? State::MinBlock : State::Step2;
+            Frame.CallState =
+                MinimizeBlockSize ? State::MinBlock : State::Step2;
             call(Method::Eval, Frame.Nd);
             break;
           }
@@ -962,8 +886,7 @@ void Interpreter::runMethods() {
             // Non-minimized block. Just backpatch in new size.
             WriteCursor WritePosAfterSizeWrite(BlockStart);
             BlockStartStack.pop();
-            const size_t NewSize =
-                Writer->getBlockSize(BlockStart, WritePos);
+            const size_t NewSize = Writer->getBlockSize(BlockStart, WritePos);
             TRACE(uint32_t, "New block size", NewSize);
             Writer->writeFixedBlockSize(BlockStart, NewSize);
             Frame.CallState = State::Exit;
@@ -975,8 +898,7 @@ void Interpreter::runMethods() {
             // size.
             WriteCursor WritePosAfterSizeWrite(BlockStart);
             BlockStartStack.pop();
-            const size_t NewSize =
-                Writer->getBlockSize(BlockStart, WritePos);
+            const size_t NewSize = Writer->getBlockSize(BlockStart, WritePos);
             TRACE(uint32_t, "New block size", NewSize);
             Writer->writeVarintBlockSize(BlockStart, NewSize);
             size_t SizeAfterBackPatch = Writer->getStreamAddress(BlockStart);
@@ -1021,7 +943,39 @@ void Interpreter::runMethods() {
         return;
       case Method::Read: {
         switch (Frame.Nd->getType()) {
-          default:
+          case OpBlock:
+          case OpBlockEndNoArgs:
+          case OpCase:
+          case OpConvert:
+          case OpDefine:
+          case OpFile:
+          case OpFilter:
+          case OpIfThen:
+          case OpIfThenElse:
+          case OpLoop:
+          case OpLoopUnbounded:
+          case OpRename:
+          case OpSection:
+          case OpSequence:
+          case OpSwitch:
+          case OpSymbol:
+          case OpUndefine:
+          case OpUnknownSection:
+          case OpVersion:
+          case NO_SUCH_NODETYPE:
+            fail("Construct not readable!");
+            break;
+          case OpAnd:
+          case OpError:
+          case OpEval:
+          case OpMap:
+          case OpNot:
+          case OpOpcode:
+          case OpOr:
+          case OpParam:
+          case OpRead:
+          case OpStream:
+          case OpWrite:
             fail("Read not implemented for construct!");
             break;
           case OpI32Const:
@@ -1147,25 +1101,54 @@ void Interpreter::runMethods() {
       case Method::Write: {
         const Node* Nd = Frame.Nd;
         switch (Nd->getType()) {
-          default:
+          case OpBlock:
+          case OpBlockEndNoArgs:
+          case OpCase:
+          case OpConvert:
+          case OpDefine:
+          case OpFile:
+          case OpFilter:
+          case OpIfThen:
+          case OpIfThenElse:
+          case OpLoop:
+          case OpLoopUnbounded:
+          case OpRename:
+          case OpSection:
+          case OpSequence:
+          case OpSwitch:
+          case OpSymbol:
+          case OpUndefine:
+          case OpUnknownSection:
+          case OpVersion:
+          case NO_SUCH_NODETYPE:
+            fail("Construct not readable!");
+            break;
+          case OpAnd:
+          case OpError:
+          case OpEval:
+          case OpLastRead:
+          case OpNot:
+          case OpOr:
+          case OpRead:
+          case OpStream:
+          case OpWrite:
             fail("Write not implemented for construct!");
             break;
           case OpParam:
             switch (Frame.CallState) {
-              case State::Enter: {
+              case State::Enter:
                 TraceEnterFrame();
                 installWriteValue();
                 Frame.CallState = State::Exit;
                 call(Method::Write, getParam(Nd), WriteValue);
                 break;
-                case State::Exit:
-                  FrameStack.pop();
-                  TraceExitFrame();
-                  break;
-                default:
-                  fail("Bad internal state for method Write");
-                  break;
-              }
+              case State::Exit:
+                FrameStack.pop();
+                TraceExitFrame();
+                break;
+              default:
+                fail("Bad internal state for method Write");
+                break;
             }
             break;
           case OpUint8NoArgs:
@@ -1176,7 +1159,6 @@ void Interpreter::runMethods() {
             TraceExitFrame();
             break;
           case OpUint8OneArg:
-
             TraceEnterFrame();
             installWriteValue();
             Writer->writeUint8Bits(WriteValue, WritePos,
