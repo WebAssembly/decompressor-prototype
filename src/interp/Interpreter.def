@@ -25,6 +25,7 @@
   X(EvalBlock,   "evalBlock")                                                  \
   X(Eval,        "eval")                                                       \
   X(Finished,    "finished")                                                   \
+  X(GetParam,    "getParam")                                                   \
   X(Read,        "read")                                                       \
   X(Write,       "write")                                                      \
 

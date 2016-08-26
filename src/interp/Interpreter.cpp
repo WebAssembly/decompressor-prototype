@@ -103,28 +103,30 @@ Interpreter::Interpreter(std::shared_ptr<Queue> Input,
       MinimizeBlockSize(false),
       Trace(ReadPos, WritePos, "InterpSexp"),
       FrameStack(Frame),
-      CallingEval(nullptr),
       CallingEvalStack(CallingEval),
-      EvalClosureIndex(0),
-      EvalClosureIndexStack(EvalClosureIndex),
       WriteValueStack(WriteValue),
       PeekPosStack(PeekPos),
       BlockStartStack(BlockStart),
       LoopCounter(0),
       LoopCounterStack(LoopCounter),
-      OpcodeLocalsStack(OpcodeLocals) {
+      OpcodeLocalsStack(OpcodeLocals),
+      FoundParameter(nullptr) {
   DefaultFormat = Symtab->create<Varuint64NoArgsNode>();
   CurSectionName.reserve(MaxExpectedSectionNameSize);
   FrameStack.reserve(DefaultStackSize);
   WriteValueStack.reserve(DefaultStackSize);
   CallingEvalStack.reserve(DefaultStackSize);
-  EvalClosureIndexStack.reserve(DefaultStackSize);
 }
 
 void Interpreter::CallFrame::describe(FILE* File, TextWriter* Writer) const {
   fprintf(File, "%s.%s = %" PRIuMAX ": ", MethodName[int(CallMethod)],
           StateName[int(CallState)], uintmax_t(ReturnValue));
   Writer->writeAbbrev(File, Nd);
+}
+
+void Interpreter::EvalFrame::describe(FILE* File, TextWriter* Writer) const {
+  fprintf(File, "cc = %" PRIuMAX ": ", uintmax_t(CallingEvalIndex));
+  Writer->writeAbbrev(File, Caller);
 }
 
 void Interpreter::OpcodeLocalsFrame::describe(FILE* File,
@@ -159,16 +161,9 @@ void Interpreter::describeWriteValueStack(FILE* File) {
 
 void Interpreter::describeCallingEvalStack(FILE* File) {
   fprintf(File, "*** Eval Call Stack ****\n");
-  for (const auto* Nd : CallingEvalStack.iterRange(1))
-    getTrace().getTextWriter()->writeAbbrev(File, Nd);
+  for (const auto& Frame : CallingEvalStack.iterRange(1))
+    Frame.describe(File, getTrace().getTextWriter());
   fprintf(File, "************************\n");
-}
-
-void Interpreter::describeEvalClosureIndexStack(FILE* File) {
-  fprintf(File, "*** Eval Closure Index Stack ***\n");
-  for (size_t Value : EvalClosureIndexStack.iterRange(1))
-    fprintf(File, "%" PRIuMAX "\n", uintmax_t(Value));
-  fprintf(File, "********************************\n");
 }
 
 void Interpreter::describePeekPosStack(FILE* File) {
@@ -206,8 +201,6 @@ void Interpreter::describeAllNonemptyStacks(FILE* File) {
     describeWriteValueStack(File);
   if (!CallingEvalStack.empty())
     describeCallingEvalStack(File);
-  if (!EvalClosureIndexStack.empty())
-    describeEvalClosureIndexStack(File);
   if (!PeekPosStack.empty())
     describePeekPosStack(File);
   if (!LoopCounterStack.empty())
@@ -227,6 +220,7 @@ bool Interpreter::hasEnoughHeadroom() const {
 const Node* Interpreter::getParam(const Node* P) {
   // TODO: Convert to state model so that closure can be updated properly.
   TRACE_METHOD("getParam");
+#if 0
   TRACE_SEXP("P", P);
   if (CallingEvalStack.empty())
     fatal("Not inside a call frame, can't evaluate parameter accessor");
@@ -235,6 +229,16 @@ const Node* Interpreter::getParam(const Node* P) {
   // define in terms of kid index in caller.
   IntType ParamIndex = Param->getValue() + 1;
   SymbolNode* DefiningSym = Param->getDefiningSymbol();
+  TRACE_SEXP("DefiningSym", DefiningSym);
+  EvalFrame *Frame = &CallingEval;
+  while (Frame) {
+    TRACE_BLOCK({
+        fprintf(tracE.getFile(), "Calling Frame: ");
+        Frame->describe(tracE.getFile(), tracE.getTextWriter());
+      });
+    if (DefiningSym != Frame->Caller->getCallName())
+      continue;
+  }
   for (const auto* Caller :
        CallingEvalStack.riterRange(0, EvalClosureIndex + 1)) {
     if (Caller == nullptr)
@@ -243,11 +247,13 @@ const Node* Interpreter::getParam(const Node* P) {
     assert(isa<EvalNode>(Caller));
     TRACE_SEXP("Caller", Caller);
     const EvalNode* Eval = cast<EvalNode>(Caller);
+    TRACE_SEXP("CallName", Eval->getCallName());
     if (DefiningSym != Eval->getCallName())
       continue;
     if (ParamIndex < IntType(Caller->getNumKids()))
       return Caller->getKid(ParamIndex);
   }
+#endif
   fatal("Can't evaluate parameter reference");
   // Not reachable.
   return P;
@@ -797,13 +803,15 @@ void Interpreter::runMethods() {
             }
             break;
           case OpParam:
+            // TODO(karlschimpf): Move this to methods Read/Write?
             switch (Frame.CallState) {
               case State::Enter:
                 TraceEnterFrame();
                 Frame.CallState = State::Exit;
-                call(Method::Eval, getParam(Frame.Nd));
+                call(Method::GetParam, Frame.Nd);
                 break;
               case State::Exit:
+                fail("Not implemented yet");
                 popAndReturn(0);
                 TraceExitFrame();
                 break;
@@ -831,17 +839,15 @@ void Interpreter::runMethods() {
                           uintmax_t(NumCallArgs));
                   fatal("Unable to evaluate call");
                 }
-                EvalClosureIndexStack.push();
-                EvalClosureIndex = CallingEvalStack.sizeWithTop();
                 CallingEvalStack.push();
-                CallingEval = Frame.Nd;
+                CallingEval.Caller = cast<EvalNode>(Frame.Nd);
+                CallingEval.CallingEvalindex = CallingEvalStack.size();
                 Frame.CallState = State::Exit;
                 call(Method::Eval, Defn);
                 break;
               }
               case State::Exit:
                 CallingEvalStack.pop();
-                EvalClosureIndexStack.pop();
                 popAndReturn(Frame.ReturnValue);
                 TraceExitFrame();
                 break;
@@ -969,6 +975,53 @@ void Interpreter::runMethods() {
         TRACE_EXIT_OVERRIDE("runMethods");
 #endif
         return;
+      case Method::GetParam: {
+        switch (Frame.CallState) {
+          case State::Enter: {
+            TraceEnterFrame();
+            FoundParameter = nullptr;
+            if (CallingEvalStack.empty()) {
+              fail("Not inside a call frame, can't evaluate parameter accessor!");
+              break;
+            }
+            Frame.CallState = State::Exit;
+            assert(isa<ParamNode>(Frame.Nd));
+            auto* Param = cast<ParamNode>(Frame.Nd);
+            IntType ParamIndex = Param->getValue() + 1;
+            SymbolNode* DefiningSym = Param->getDefiningSymbol();
+            TRACE_SEXP("DefiningSym", DefiningSym);
+            bool Found = false;
+            for (size_t i = EvalClosureIndex; i > 0; --i) {
+              const auto* Caller = dyn_cast<EvalNode>(CallingEvalStack.at(i));
+              assert(Caller != nullptr);
+              TRACE_SEXP("Caller", Caller);
+              if (DefiningSym != Caller->getCallName())
+                continue;
+              EvalClosureIndexStack.push();
+              EvalClosureIndex = i - 1;
+              if (ParamIndex >= IntType(Caller->getNumKids())) {
+                Found = false;
+                break;
+              }
+              Found = true;
+              call(Method::Eval, Caller->getKid(ParamIndex));
+              break;
+            }
+            if (!Found)
+              fail("Parameter reference doesn't match callling context!");
+            break;
+          }
+          case State::Exit:
+            EvalClosureIndexStack.pop();
+            popAndReturn(Frame.ReturnValue);
+            TraceExitFrame();
+            break;
+          default:
+            fail("Bad internal state for method GetParam");
+            break;
+        }
+        break;
+      }
       case Method::Read: {
         switch (Frame.Nd->getType()) {
           case OpBlock:

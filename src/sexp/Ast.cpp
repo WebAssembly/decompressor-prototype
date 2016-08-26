@@ -326,9 +326,11 @@ bool ParamNode::validateNode(NodeVectorType& Parents) {
   TRACE_SEXP(nullptr, this);
   for (size_t i = Parents.size(); i > 0; --i) {
     auto* Nd = Parents[i - 1];
-    auto* Define = cast<DefineNode>(Nd);
-    if (Define == nullptr)
+    auto* Define = dyn_cast<DefineNode>(Nd);
+    if (Define == nullptr) {
+      TRACE_SEXP("parent Nd", Nd);
       continue;
+    }
     TRACE_SEXP("Enclosing define", Nd);
     // Don't complain about this if specifying number of parameters for define.
     if (i == Parents.size() && this == Define->getKid(1))
