@@ -44,7 +44,7 @@
 #define LOG_FUNCTION_NUMBER 0
 
 // The following shows stack contents on each iteration of runMethods();
-#define LOG_CALLSTACKS 0
+#define LOG_CALLSTACKS 1
 
 namespace wasm {
 
@@ -103,6 +103,10 @@ Interpreter::Interpreter(std::shared_ptr<Queue> Input,
       MinimizeBlockSize(false),
       Trace(ReadPos, WritePos, "InterpSexp"),
       FrameStack(Frame),
+      CallingEval(nullptr),
+      CallingEvalStack(CallingEval),
+      EvalClosureIndex(0),
+      EvalClosureIndexStack(EvalClosureIndex),
       WriteValueStack(WriteValue),
       PeekPosStack(PeekPos),
       BlockStartStack(BlockStart),
@@ -113,7 +117,8 @@ Interpreter::Interpreter(std::shared_ptr<Queue> Input,
   CurSectionName.reserve(MaxExpectedSectionNameSize);
   FrameStack.reserve(DefaultStackSize);
   WriteValueStack.reserve(DefaultStackSize);
-  EvalStack.reserve(DefaultStackSize);
+  CallingEvalStack.reserve(DefaultStackSize);
+  EvalClosureIndexStack.reserve(DefaultStackSize);
 }
 
 void Interpreter::CallFrame::describe(FILE* File, TextWriter* Writer) const {
@@ -140,66 +145,77 @@ uint32_t LogBlockCount = 0;
 
 void Interpreter::describeFrameStack(FILE* File) {
   fprintf(File, "*** Frame Stack ***\n");
-  for (auto& Frame : FrameStack) {
+  for (auto& Frame : FrameStack)
     Frame.describe(File, getTrace().getTextWriter());
-  }
-  if (!WriteValueStack.empty()) {
-    fprintf(File, "*** WriteValue Stack ***\n");
-    bool SkippedFirst = false;
-    for (auto& Value : WriteValueStack) {
-      if (SkippedFirst)
-        fprintf(File, "%" PRIuMAX "\n", uintmax_t(Value));
-      else
-        SkippedFirst = true;
-    }
-  }
-  if (!EvalStack.empty()) {
-    fprintf(File, "*** Eval Stack ****\n");
-    for (const auto& Nd : EvalStack) {
-      getTrace().getTextWriter()->writeAbbrev(File, Nd);
-    }
-  }
-  if (!PeekPosStack.empty()) {
-    fprintf(File, "*** Peek Pos Stack ***\n");
-    bool SkippedFirst = false;
-    for (const auto& Pos : PeekPosStack) {
-      if (SkippedFirst)
-        fprintf(File, "@%" PRIxMAX "\n", uintmax_t(Pos.getCurAddress()));
-      else
-        SkippedFirst = true;
-    }
-  }
-  if (!LoopCounterStack.empty()) {
-    fprintf(File, "*** Loop Counter Stack ***\n");
-    bool SkippedFirst = false;
-    for (const auto& Count : LoopCounterStack) {
-      if (SkippedFirst)
-        fprintf(File, "%" PRIxMAX "\n", uintmax_t(Count));
-      else
-        SkippedFirst = true;
-    }
-  }
-  if (!BlockStartStack.empty()) {
-    fprintf(File, "*** Block Start Stack ***\n");
-    bool SkippedFirst = false;
-    for (const auto& Pos : BlockStartStack) {
-      if (SkippedFirst)
-        fprintf(File, "@%" PRIxMAX "\n", uintmax_t(Pos.getCurAddress()));
-      else
-        SkippedFirst = true;
-    }
-  }
-  if (!OpcodeLocalsStack.empty()) {
-    fprintf(File, "*** Opcode Stack ***\n");
-    bool SkippedFirst = false;
-    for (auto& Frame : OpcodeLocalsStack) {
-      if (SkippedFirst)
-        Frame.describe(File, getTrace().getTextWriter());
-      else
-        SkippedFirst = true;
-    }
-  }
   fprintf(File, "*******************\n");
+}
+
+void Interpreter::describeWriteValueStack(FILE* File) {
+  fprintf(File, "*** WriteValue Stack ***\n");
+  for (auto& Value : WriteValueStack.iterRange(1))
+    fprintf(File, "%" PRIuMAX "\n", uintmax_t(Value));
+  fprintf(File, "************************\n");
+}
+
+void Interpreter::describeCallingEvalStack(FILE* File) {
+  fprintf(File, "*** Eval Call Stack ****\n");
+  for (const auto* Nd : CallingEvalStack.iterRange(1))
+    getTrace().getTextWriter()->writeAbbrev(File, Nd);
+  fprintf(File, "************************\n");
+}
+
+void Interpreter::describeEvalClosureIndexStack(FILE* File) {
+  fprintf(File, "*** Eval Closure Index Stack ***\n");
+  for (size_t Value : EvalClosureIndexStack.iterRange(1))
+    fprintf(File, "%" PRIuMAX "\n", uintmax_t(Value));
+  fprintf(File, "********************************\n");
+}
+
+void Interpreter::describePeekPosStack(FILE* File) {
+  fprintf(File, "*** Peek Pos Stack ***\n");
+  fprintf(File, "**********************\n");
+  for (const auto& Pos : PeekPosStack.iterRange(1))
+    fprintf(File, "@%" PRIxMAX "\n", uintmax_t(Pos.getCurAddress()));
+  fprintf(File, "**********************\n");
+}
+
+void Interpreter::describeLoopCounterStack(FILE* File) {
+  fprintf(File, "*** Loop Counter Stack ***\n");
+  for (const auto& Count : LoopCounterStack.iterRange(1))
+    fprintf(File, "%" PRIxMAX "\n", uintmax_t(Count));
+  fprintf(File, "**************************\n");
+}
+
+void Interpreter::describeBlockStartStack(FILE* File) {
+  fprintf(File, "*** Block Start Stack ***\n");
+  for (const auto& Pos : BlockStartStack.iterRange(1))
+    fprintf(File, "@%" PRIxMAX "\n", uintmax_t(Pos.getCurAddress()));
+  fprintf(File, "*************************\n");
+}
+
+void Interpreter::describeOpcodeLocalStack(FILE* File) {
+  fprintf(File, "*** Opcode Stack ***\n");
+  for (auto& Frame : OpcodeLocalsStack.iterRange(1))
+    Frame.describe(File, getTrace().getTextWriter());
+  fprintf(File, "********************\n");
+}
+
+void Interpreter::describeAllNonemptyStacks(FILE* File) {
+  describeFrameStack(File);
+  if (!WriteValueStack.empty())
+    describeWriteValueStack(File);
+  if (!CallingEvalStack.empty())
+    describeCallingEvalStack(File);
+  if (!EvalClosureIndexStack.empty())
+    describeEvalClosureIndexStack(File);
+  if (!PeekPosStack.empty())
+    describePeekPosStack(File);
+  if (!LoopCounterStack.empty())
+    describeLoopCounterStack(File);
+  if (!BlockStartStack.empty())
+    describeBlockStartStack(File);
+  if (!OpcodeLocalsStack.empty())
+    describeOpcodeLocalStack(File);
 }
 
 bool Interpreter::hasEnoughHeadroom() const {
@@ -209,15 +225,23 @@ bool Interpreter::hasEnoughHeadroom() const {
 }
 
 const Node* Interpreter::getParam(const Node* P) {
-  if (EvalStack.empty())
+  // TODO: Convert to state model so that closure can be updated properly.
+  TRACE_METHOD("getParam");
+  TRACE_SEXP("P", P);
+  if (CallingEvalStack.empty())
     fatal("Not inside a call frame, can't evaluate parameter accessor");
   assert(isa<ParamNode>(P));
   auto* Param = cast<ParamNode>(P);
   // define in terms of kid index in caller.
   IntType ParamIndex = Param->getValue() + 1;
   SymbolNode* DefiningSym = Param->getDefiningSymbol();
-  for (const auto* Caller : backwards<ConstNodeVectorType>(EvalStack)) {
+  for (const auto* Caller :
+       CallingEvalStack.riterRange(0, EvalClosureIndex + 1)) {
+    if (Caller == nullptr)
+      // This should only happen when at stack[0], but be safe for all cases.
+      continue;
     assert(isa<EvalNode>(Caller));
+    TRACE_SEXP("Caller", Caller);
     const EvalNode* Eval = cast<EvalNode>(Caller);
     if (DefiningSym != Eval->getCallName())
       continue;
@@ -378,11 +402,11 @@ void Interpreter::fail(const char* Message) {
 void Interpreter::runMethods() {
 #if LOG_RUNMETHODS
   TRACE_ENTER("runMethods");
-  TRACE_BLOCK({ describeFrameStack(tracE.getFile()); });
+  TRACE_BLOCK({ describeAllNonemptyStacks(tracE.getFile()); });
 #endif
   while (hasEnoughHeadroom() && !errorsFound()) {
 #if LOG_CALLSTACKS
-    TRACE_BLOCK({ describeFrameStack(tracE.getFile()); });
+    TRACE_BLOCK({ describeAllNonemptyStacks(tracE.getFile()); });
 #endif
     switch (Frame.CallMethod) {
       case Method::NO_SUCH_METHOD:
@@ -807,13 +831,17 @@ void Interpreter::runMethods() {
                           uintmax_t(NumCallArgs));
                   fatal("Unable to evaluate call");
                 }
-                EvalStack.push_back(Frame.Nd);
+                EvalClosureIndexStack.push();
+                EvalClosureIndex = CallingEvalStack.sizeWithTop();
+                CallingEvalStack.push();
+                CallingEval = Frame.Nd;
                 Frame.CallState = State::Exit;
                 call(Method::Eval, Defn);
                 break;
               }
               case State::Exit:
-                EvalStack.pop_back();
+                CallingEvalStack.pop();
+                EvalClosureIndexStack.pop();
                 popAndReturn(Frame.ReturnValue);
                 TraceExitFrame();
                 break;
@@ -937,7 +965,7 @@ void Interpreter::runMethods() {
             Frame.CallState = State::Failed;
         }
 #if LOG_RUNMETHODS
-        TRACE_BLOCK({ describeFrameStack(tracE.getFile()); });
+        TRACE_BLOCK({ describeAllNonemptyStacks(tracE.getFile()); });
         TRACE_EXIT_OVERRIDE("runMethods");
 #endif
         return;
@@ -968,9 +996,7 @@ void Interpreter::runMethods() {
           case OpAnd:
           case OpError:
           case OpEval:
-          case OpMap:
           case OpNot:
-          case OpOpcode:
           case OpOr:
           case OpParam:
           case OpRead:
@@ -1090,6 +1116,21 @@ void Interpreter::runMethods() {
                 ReadPos, cast<Varuint64OneArgNode>(Frame.Nd)->getValue()));
             TraceExitFrame();
             break;
+          case OpOpcode:
+            // TODO: Flatten this.
+            TraceEnterFrame();
+            popAndReturnReadValue(readOpcode(Frame.Nd, 0, 0));
+            TraceExitFrame();
+            break;
+          case OpMap: {
+            // TODO: Flatten this.
+            TraceEnterFrame();
+            const auto* Map = cast<MapNode>(Frame.Nd);
+            const CaseNode* Case = Map->getCase(read(Map->getKid(0)));
+            popAndReturnReadValue(read(Case->getKid(1)));
+            TraceExitFrame();
+            break;
+          }
           case OpVoid:
             TraceEnterFrame();
             popAndReturnReadValue(0);
@@ -1311,7 +1352,7 @@ void Interpreter::runMethods() {
     }
   }
 #if LOG_RUNMETHODS
-  TRACE_BLOCK({ describeFrameStack(tracE.getFile()); });
+  TRACE_BLOCK({ describeAllNonemptyStacks(tracE.getFile()); });
   TRACE_EXIT_OVERRIDE("runMethods");
 #endif
 }

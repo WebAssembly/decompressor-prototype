@@ -35,6 +35,7 @@ class ValueStack {
   ValueStack& operator=(const ValueStack&) = delete;
 
  public:
+  // Iterator pointer for iterating over the stack.
   class Iterator {
    public:
     Iterator(const ValueStack<T>* Stack, size_t Index)
@@ -54,6 +55,57 @@ class ValueStack {
       return Index != Iter.Index || Stack != Iter.Stack;
     }
     const T& operator*() const {
+      if (Index < Stack->size())
+        return Stack->Stack.at(Index);
+      return Stack->Value;
+    }
+
+   private:
+    const ValueStack<T>* Stack;
+    size_t Index;
+  };
+
+  // Iterator for range [BeginIndex, EndIndex).
+  // Max range is: [0, sizeWithTop()]
+  class IteratorRange {
+   public:
+    IteratorRange(const ValueStack<T>* Stack,
+                  size_t BeginIndex,
+                  size_t EndIndex)
+        : Stack(Stack), BeginIndex(BeginIndex), EndIndex(EndIndex) {}
+    IteratorRange(const ValueStack<T>* Stack, size_t BeginIndex)
+        : Stack(Stack),
+          BeginIndex(BeginIndex),
+          EndIndex(Stack->sizeWithTop()) {}
+    Iterator begin() { return Iterator(Stack, BeginIndex); }
+    Iterator end() { return Iterator(Stack, EndIndex); }
+
+   private:
+    const ValueStack<T>* Stack;
+    size_t BeginIndex;
+    size_t EndIndex;
+  };
+
+  class BackwardIterator {
+   public:
+    BackwardIterator(const ValueStack<T>* Stack, size_t Index)
+        : Stack(Stack), Index(Index) {}
+    BackwardIterator(const BackwardIterator& Iter)
+        : Stack(Iter.Stack), Index(Iter.Index) {}
+    void operator++() { --Index; }
+    void operator--() { ++Index; }
+    BackwardIterator& operator=(const BackwardIterator& Iter) {
+      Stack = Iter.Stack;
+      Index = Iter.Index;
+      return *this;
+    }
+    bool operator==(const BackwardIterator& Iter) {
+      return Index == Iter.Index && Stack == Iter.Stack;
+    }
+    bool operator!=(const BackwardIterator& Iter) {
+      return Index != Iter.Index || Stack != Iter.Stack;
+    }
+    const T& operator*() const {
       if (Index < Stack->Stack.size())
         return Stack->Stack.at(Index);
       return Stack->Value;
@@ -64,13 +116,56 @@ class ValueStack {
     size_t Index;
   };
 
-  Iterator begin() const { return Iterator(this, 0); }
-  Iterator end() const { return Iterator(this, size()); }
+  // reverse iterate over range[BeginIndex, EndIndex).
+  // Max range is [0, sizeWithTop()).
+  class BackwardIteratorRange {
+   public:
+    BackwardIteratorRange(const ValueStack<T>* Stack,
+                          size_t BeginIndex,
+                          size_t EndIndex)
+        : Stack(Stack), BeginIndex(BeginIndex), EndIndex(EndIndex) {}
+    BackwardIteratorRange(const ValueStack<T>* Stack, size_t BeginIndex)
+        : Stack(Stack),
+          BeginIndex(BeginIndex),
+          EndIndex(Stack->sizeWithTop()) {}
+    BackwardIterator begin() { return BackwardIterator(Stack, EndIndex - 1); }
+    BackwardIterator end() { return BackwardIterator(Stack, BeginIndex - 1); }
 
+   private:
+    const ValueStack<T>* Stack;
+    size_t BeginIndex;
+    size_t EndIndex;
+  };
+
+  Iterator begin() const { return Iterator(this, 0); }
+  Iterator end() const { return Iterator(this, sizeWithTop()); }
+  IteratorRange iterRange(size_t BeginIndex, size_t EndIndex) const {
+    assert(BeginIndex < sizeWithTop());
+    assert(EndIndex <= sizeWithTop());
+    return IteratorRange(this, BeginIndex, EndIndex);
+  }
+  IteratorRange iterRange(size_t BeginIndex) const {
+    assert(BeginIndex < sizeWithTop());
+    return IteratorRange(this, BeginIndex);
+  }
+  BackwardIterator rbegin() const { return BackwardIterator(this, size()); }
+  BackwardIterator rend() const { return BackWardIterator(this, size_t(-1)); }
+  BackwardIteratorRange riterRange(size_t BeginIndex, size_t EndIndex) const {
+    assert(BeginIndex < sizeWithTop());
+    assert(EndIndex <= sizeWithTop());
+    return BackwardIteratorRange(this, BeginIndex, EndIndex);
+  }
+  BackwardIteratorRange riterRange(size_t BeginIndex) const {
+    assert(BeginIndex < sizeWithTop());
+    return BackwardIteratorRange(this, BeginIndex);
+  }
   ValueStack(T& Value) : Value(Value) {}
   ~ValueStack() {}
+  // Note: Empty doesn't include top.
   bool empty() const { return Stack.empty(); }
-  size_t size() const { return Stack.size() + 1; }
+  // Note: Size doesn't include top.
+  size_t size() const { return Stack.size(); }
+  size_t sizeWithTop() const { return Stack.size() + 1; }
   void push() { Stack.push_back(Value); }
   // Push Value onto stack
   void push(const T& Value) { Stack.push_back(Value); }

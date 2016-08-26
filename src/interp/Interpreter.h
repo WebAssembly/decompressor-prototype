@@ -123,12 +123,17 @@ class Interpreter {
   decode::IntType LastReadValue;
   bool MinimizeBlockSize;
   TraceClassSexpReaderWriter Trace;
-  // The stack of (eval) calls.
-  filt::ConstNodeVectorType EvalStack;
 
-  // Tracks the call stack of methods.
+  // The stack of called methods.
   CallFrame Frame;
   utils::ValueStack<CallFrame> FrameStack;
+  // The stack of (eval) calls.
+  const filt::Node* CallingEval;
+  utils::ValueStack<const filt::Node*> CallingEvalStack;
+  // The closure stack of (eval) calls. That is, where in EvalStack
+  // parameter references should be looked up.
+  size_t EvalClosureIndex;
+  utils::ValueStack<size_t> EvalClosureIndexStack;
   // The stack of passed Values (write methods).
   decode::IntType WriteValue;
   utils::ValueStack<decode::IntType> WriteValueStack;
@@ -175,8 +180,6 @@ class Interpreter {
     Frame.Nd = Nd;
     Frame.ReturnValue = ReturnValue;
   }
-
-  void describeFrameStack(FILE* Out);
 
   TraceClassSexpReaderWriter& getTrace() { return Trace; }
   void decompressSection();
@@ -238,6 +241,17 @@ class Interpreter {
   // Fills input stream using the read backing of the input stream, so that
   // runMethods can use a push model.
   void readBackFilled();
+
+  // For debugging only.
+  void describeFrameStack(FILE* Out);
+  void describeWriteValueStack(FILE* Out);
+  void describeCallingEvalStack(FILE* Out);
+  void describeEvalClosureIndexStack(FILE* Out);
+  void describePeekPosStack(FILE* Out);
+  void describeLoopCounterStack(FILE* Out);
+  void describeBlockStartStack(FILE* Out);
+  void describeOpcodeLocalStack(FILE* Out);
+  void describeAllNonemptyStacks(FILE* Out);
 };
 
 }  // end of namespace interp.
