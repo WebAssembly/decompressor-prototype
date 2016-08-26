@@ -623,7 +623,7 @@ test-byte-queues: $(TEST_EXECDIR)/TestByteQueues
 
 ###### Unit tests ######
 
-GTEST_DIR = ../googletest/googletest
+GTEST_DIR = third_party/googletest/googletest
 GTEST_INCLUDE = $(GTEST_DIR)/include
 GTEST_SRC_DIR = $(GTEST_DIR)/include
 GTEST_LIB = $(GTEST_DIR)/out/libgtest.a
