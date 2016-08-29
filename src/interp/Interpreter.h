@@ -116,6 +116,7 @@ class Interpreter {
     }
     EvalFrame(const EvalFrame& F)
         : Caller(F.Caller), CallingEvalIndex(F.CallingEvalIndex) {}
+    bool isDefined() const { return Caller != nullptr; }
     void reset() {
       Caller = nullptr;
       CallingEvalIndex = 0;
@@ -139,6 +140,7 @@ class Interpreter {
   std::string CurSectionName;
   // The last read value.
   decode::IntType LastReadValue;
+  Method DispatchedMethod;
   bool MinimizeBlockSize;
   TraceClassSexpReaderWriter Trace;
 
@@ -175,8 +177,6 @@ class Interpreter {
   };
   OpcodeLocalsFrame OpcodeLocals;
   utils::ValueStack<OpcodeLocalsFrame> OpcodeLocalsStack;
-  // The parameter found from Method::GetParam.
-  const filt::Node* FoundParameter;
 
   void fail();
 
