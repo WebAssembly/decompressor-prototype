@@ -100,13 +100,11 @@ Interpreter::Interpreter(std::shared_ptr<Queue> Input,
       Writer(std::make_shared<ByteWriteStream>()),
       Symtab(Symtab),
       LastReadValue(0),
+      DispatchedMethod(Method::NO_SUCH_METHOD),
       MinimizeBlockSize(false),
       Trace(ReadPos, WritePos, "InterpSexp"),
       FrameStack(Frame),
-      CallingEval(nullptr),
       CallingEvalStack(CallingEval),
-      EvalClosureIndex(0),
-      EvalClosureIndexStack(EvalClosureIndex),
       WriteValueStack(WriteValue),
       PeekPosStack(PeekPos),
       BlockStartStack(BlockStart),
@@ -118,13 +116,17 @@ Interpreter::Interpreter(std::shared_ptr<Queue> Input,
   FrameStack.reserve(DefaultStackSize);
   WriteValueStack.reserve(DefaultStackSize);
   CallingEvalStack.reserve(DefaultStackSize);
-  EvalClosureIndexStack.reserve(DefaultStackSize);
 }
 
 void Interpreter::CallFrame::describe(FILE* File, TextWriter* Writer) const {
   fprintf(File, "%s.%s = %" PRIuMAX ": ", MethodName[int(CallMethod)],
           StateName[int(CallState)], uintmax_t(ReturnValue));
   Writer->writeAbbrev(File, Nd);
+}
+
+void Interpreter::EvalFrame::describe(FILE* File, TextWriter* Writer) const {
+  fprintf(File, "cc = %" PRIuMAX ": ", uintmax_t(CallingEvalIndex));
+  Writer->writeAbbrev(File, Caller);
 }
 
 void Interpreter::OpcodeLocalsFrame::describe(FILE* File,
@@ -159,16 +161,9 @@ void Interpreter::describeWriteValueStack(FILE* File) {
 
 void Interpreter::describeCallingEvalStack(FILE* File) {
   fprintf(File, "*** Eval Call Stack ****\n");
-  for (const auto* Nd : CallingEvalStack.iterRange(1))
-    getTrace().getTextWriter()->writeAbbrev(File, Nd);
+  for (const auto& Frame : CallingEvalStack.iterRange(1))
+    Frame.describe(File, getTrace().getTextWriter());
   fprintf(File, "************************\n");
-}
-
-void Interpreter::describeEvalClosureIndexStack(FILE* File) {
-  fprintf(File, "*** Eval Closure Index Stack ***\n");
-  for (size_t Value : EvalClosureIndexStack.iterRange(1))
-    fprintf(File, "%" PRIuMAX "\n", uintmax_t(Value));
-  fprintf(File, "********************************\n");
 }
 
 void Interpreter::describePeekPosStack(FILE* File) {
@@ -206,8 +201,6 @@ void Interpreter::describeAllNonemptyStacks(FILE* File) {
     describeWriteValueStack(File);
   if (!CallingEvalStack.empty())
     describeCallingEvalStack(File);
-  if (!EvalClosureIndexStack.empty())
-    describeEvalClosureIndexStack(File);
   if (!PeekPosStack.empty())
     describePeekPosStack(File);
   if (!LoopCounterStack.empty())
@@ -227,6 +220,7 @@ bool Interpreter::hasEnoughHeadroom() const {
 const Node* Interpreter::getParam(const Node* P) {
   // TODO: Convert to state model so that closure can be updated properly.
   TRACE_METHOD("getParam");
+#if 0
   TRACE_SEXP("P", P);
   if (CallingEvalStack.empty())
     fatal("Not inside a call frame, can't evaluate parameter accessor");
@@ -235,6 +229,16 @@ const Node* Interpreter::getParam(const Node* P) {
   // define in terms of kid index in caller.
   IntType ParamIndex = Param->getValue() + 1;
   SymbolNode* DefiningSym = Param->getDefiningSymbol();
+  TRACE_SEXP("DefiningSym", DefiningSym);
+  EvalFrame *Frame = &CallingEval;
+  while (Frame) {
+    TRACE_BLOCK({
+        fprintf(tracE.getFile(), "Calling Frame: ");
+        Frame->describe(tracE.getFile(), tracE.getTextWriter());
+      });
+    if (DefiningSym != Frame->Caller->getCallName())
+      continue;
+  }
   for (const auto* Caller :
        CallingEvalStack.riterRange(0, EvalClosureIndex + 1)) {
     if (Caller == nullptr)
@@ -243,11 +247,13 @@ const Node* Interpreter::getParam(const Node* P) {
     assert(isa<EvalNode>(Caller));
     TRACE_SEXP("Caller", Caller);
     const EvalNode* Eval = cast<EvalNode>(Caller);
+    TRACE_SEXP("CallName", Eval->getCallName());
     if (DefiningSym != Eval->getCallName())
       continue;
     if (ParamIndex < IntType(Caller->getNumKids()))
       return Caller->getKid(ParamIndex);
   }
+#endif
   fatal("Can't evaluate parameter reference");
   // Not reachable.
   return P;
@@ -801,7 +807,8 @@ void Interpreter::runMethods() {
               case State::Enter:
                 TraceEnterFrame();
                 Frame.CallState = State::Exit;
-                call(Method::Eval, getParam(Frame.Nd));
+                DispatchedMethod = Method::Eval;
+                call(Method::EvalParam, Frame.Nd);
                 break;
               case State::Exit:
                 popAndReturn(0);
@@ -831,17 +838,16 @@ void Interpreter::runMethods() {
                           uintmax_t(NumCallArgs));
                   fatal("Unable to evaluate call");
                 }
-                EvalClosureIndexStack.push();
-                EvalClosureIndex = CallingEvalStack.sizeWithTop();
+                size_t CallingEvalIndex = CallingEvalStack.size();
                 CallingEvalStack.push();
-                CallingEval = Frame.Nd;
+                CallingEval.Caller = cast<EvalNode>(Frame.Nd);
+                CallingEval.CallingEvalIndex = CallingEvalIndex;
                 Frame.CallState = State::Exit;
                 call(Method::Eval, Defn);
                 break;
               }
               case State::Exit:
                 CallingEvalStack.pop();
-                EvalClosureIndexStack.pop();
                 popAndReturn(Frame.ReturnValue);
                 TraceExitFrame();
                 break;
@@ -969,6 +975,57 @@ void Interpreter::runMethods() {
         TRACE_EXIT_OVERRIDE("runMethods");
 #endif
         return;
+      case Method::EvalParam: {
+        switch (Frame.CallState) {
+          case State::Enter: {
+            TraceEnterFrame();
+            if (CallingEvalStack.empty()) {
+              fail(
+                  "Not inside a call frame, can't evaluate parameter "
+                  "accessor!");
+              break;
+            }
+            Frame.CallState = State::Failed;  // reset if match found.
+            assert(isa<ParamNode>(Frame.Nd));
+            auto* Param = cast<ParamNode>(Frame.Nd);
+            TRACE_SEXP("Param", Param);
+            IntType ParamIndex = Param->getValue() + 1;
+            SymbolNode* DefiningSym = Param->getDefiningSymbol();
+            TRACE_SEXP("DefiningSym", DefiningSym);
+            const EvalFrame* CandidateEval = &CallingEval;
+            while (CandidateEval->isDefined()) {
+              TRACE_SEXP("Caller", CandidateEval->Caller);
+              if (DefiningSym != CandidateEval->Caller->getCallName()) {
+                CandidateEval =
+                    &CallingEvalStack.at(CandidateEval->CallingEvalIndex);
+                continue;
+              }
+              if (ParamIndex >= IntType(CandidateEval->Caller->getNumKids()))
+                // Failing context!
+                break;
+              const Node* Context = CandidateEval->Caller->getKid(ParamIndex);
+              CallingEvalStack.push();
+              CallingEval =
+                  CallingEvalStack.at(CandidateEval->CallingEvalIndex);
+              Frame.CallState = State::Exit;
+              call(DispatchedMethod, Context);
+              break;
+            }
+            if (Frame.CallState == State::Failed)
+              fail("Parameter reference doesn't match callling context!");
+            break;
+          }
+          case State::Exit:
+            CallingEvalStack.pop();
+            popAndReturn(Frame.ReturnValue);
+            TraceExitFrame();
+            break;
+          default:
+            fail("Bad internal state for method GetParam");
+            break;
+        }
+        break;
+      }
       case Method::Read: {
         switch (Frame.Nd->getType()) {
           case OpBlock:
@@ -998,7 +1055,6 @@ void Interpreter::runMethods() {
           case OpEval:
           case OpNot:
           case OpOr:
-          case OpParam:
           case OpRead:
           case OpStream:
           case OpWrite:
@@ -1012,6 +1068,23 @@ void Interpreter::runMethods() {
             TraceEnterFrame();
             popAndReturnReadValue(dyn_cast<IntegerNode>(Frame.Nd)->getValue());
             TraceExitFrame();
+            break;
+          case OpParam:
+            switch (Frame.CallState) {
+              case State::Enter:
+                TraceEnterFrame();
+                Frame.CallState = State::Exit;
+                DispatchedMethod = Method::Read;
+                call(Method::EvalParam, Frame.Nd);
+                break;
+              case State::Exit:
+                popAndReturnReadValue(LastReadValue);
+                TraceExitFrame();
+                break;
+              default:
+                fail("Bad internal state for method Write");
+                break;
+            }
             break;
           case OpPeek: {
             switch (Frame.CallState) {
@@ -1181,10 +1254,11 @@ void Interpreter::runMethods() {
                 TraceEnterFrame();
                 installWriteValue();
                 Frame.CallState = State::Exit;
-                call(Method::Write, getParam(Nd), WriteValue);
+                DispatchedMethod = Method::Write;
+                call(Method::EvalParam, getParam(Nd), WriteValue);
                 break;
               case State::Exit:
-                FrameStack.pop();
+                popAndReturnWriteValue();
                 TraceExitFrame();
                 break;
               default:

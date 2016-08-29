@@ -24,6 +24,7 @@
   /* enum name , text name */                                                  \
   X(EvalBlock,   "evalBlock")                                                  \
   X(Eval,        "eval")                                                       \
+  X(EvalParam,   "evalParam")                                                   \
   X(Finished,    "finished")                                                   \
   X(Read,        "read")                                                       \
   X(Write,       "write")                                                      \

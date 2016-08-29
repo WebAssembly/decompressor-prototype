@@ -107,6 +107,25 @@ class Interpreter {
     decode::IntType ReturnValue;
   };
 
+  // The stack of calling "eval" expressions.
+  struct EvalFrame {
+    EvalFrame() { reset(); }
+    EvalFrame(const filt::EvalNode* Caller, size_t CallingEvalIndex)
+        : Caller(Caller), CallingEvalIndex(CallingEvalIndex) {
+      assert(Caller != nullptr);
+    }
+    EvalFrame(const EvalFrame& F)
+        : Caller(F.Caller), CallingEvalIndex(F.CallingEvalIndex) {}
+    bool isDefined() const { return Caller != nullptr; }
+    void reset() {
+      Caller = nullptr;
+      CallingEvalIndex = 0;
+    }
+    void describe(FILE* File, filt::TextWriter* Writer) const;
+    const filt::EvalNode* Caller;
+    size_t CallingEvalIndex;
+  };
+
   decode::ReadCursor ReadPos;
   std::shared_ptr<ReadStream> Reader;
   decode::WriteCursor WritePos;
@@ -121,6 +140,7 @@ class Interpreter {
   std::string CurSectionName;
   // The last read value.
   decode::IntType LastReadValue;
+  Method DispatchedMethod;
   bool MinimizeBlockSize;
   TraceClassSexpReaderWriter Trace;
 
@@ -128,12 +148,8 @@ class Interpreter {
   CallFrame Frame;
   utils::ValueStack<CallFrame> FrameStack;
   // The stack of (eval) calls.
-  const filt::Node* CallingEval;
-  utils::ValueStack<const filt::Node*> CallingEvalStack;
-  // The closure stack of (eval) calls. That is, where in EvalStack
-  // parameter references should be looked up.
-  size_t EvalClosureIndex;
-  utils::ValueStack<size_t> EvalClosureIndexStack;
+  EvalFrame CallingEval;
+  utils::ValueStack<EvalFrame> CallingEvalStack;
   // The stack of passed Values (write methods).
   decode::IntType WriteValue;
   utils::ValueStack<decode::IntType> WriteValueStack;
@@ -246,7 +262,6 @@ class Interpreter {
   void describeFrameStack(FILE* Out);
   void describeWriteValueStack(FILE* Out);
   void describeCallingEvalStack(FILE* Out);
-  void describeEvalClosureIndexStack(FILE* Out);
   void describePeekPosStack(FILE* Out);
   void describeLoopCounterStack(FILE* Out);
   void describeBlockStartStack(FILE* Out);

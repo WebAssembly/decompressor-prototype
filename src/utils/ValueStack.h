@@ -166,6 +166,12 @@ class ValueStack {
   // Note: Size doesn't include top.
   size_t size() const { return Stack.size(); }
   size_t sizeWithTop() const { return Stack.size() + 1; }
+  const T& at(size_t Index) const {
+    if (Index < Stack.size())
+      return Stack.at(Index);
+    assert(Index == Stack.size());
+    return Value;
+  }
   void push() { Stack.push_back(Value); }
   // Push Value onto stack
   void push(const T& Value) { Stack.push_back(Value); }

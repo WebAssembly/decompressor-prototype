@@ -110,9 +110,12 @@
     )
   )
 
-# HACK
+# HACK - Do 2 levels of calls to verify that parameter closure lookup
+# is handled correctly.
 #  (define 'code.opcode' (param 0) (uint8))
-  (define 'code.opcode' (param 1) (param 0))
+  (define 'code.opcode' (param 1)
+    (eval 'code.opcode1' (param 0)))
+  (define 'code.opcode1' (param 1) (param 0))
 
   (define 'data' (param 0)
     (loop (varuint32 6)        # number of data segments.
