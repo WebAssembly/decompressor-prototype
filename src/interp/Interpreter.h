@@ -140,6 +140,8 @@ class Interpreter {
   std::string CurSectionName;
   // The last read value.
   decode::IntType LastReadValue;
+  // Holds the method to call (i.e. dispatch) if code expects a method to be
+  // provided by the caller.
   Method DispatchedMethod;
   bool MinimizeBlockSize;
   TraceClassSexpReaderWriter Trace;
@@ -182,19 +184,43 @@ class Interpreter {
 
   void fail(const char* Message);
 
-  void callTopLevel(Method Method,
-                    const filt::Node* Nd,
-                    decode::IntType ReturnValue = 0);
+  // Initializes all internal stacks, for an initial call to Method with
+  // argument Nd.
+  void callTopLevel(Method Method, const filt::Node* Nd);
 
-  void call(Method Method,
-            const filt::Node* Nd,
-            decode::IntType ReturnValue = 0) {
+  // Sets up code to call Method with argument Nd.
+  void call(Method Method, const filt::Node* Nd) {
     Frame.ReturnValue = 0;
     FrameStack.push();
     Frame.CallMethod = Method;
     Frame.CallState = State::Enter;
     Frame.Nd = Nd;
-    Frame.ReturnValue = ReturnValue;
+    Frame.ReturnValue = 0;
+  }
+
+  // Sets up code to call write method Method with arguments Nd and WriteValue.
+  // Note: Method may not be Method::Write. Rather, it may be some intermediate
+  // method that sets up a call to Method::Write using field DispatchesMethod.
+  void callWrite(Method Method,
+                 const filt::Node* Nd,
+                 decode::IntType WriteValue) {
+    call(Method, Nd);
+    WriteValueStack.push();
+    this->WriteValue = WriteValue;
+  }
+
+  // Sets up code to return from method Write to the calling method.
+  void popAndReturnWriteValue() {
+    assert(Frame.CallMethod == Method::Write);
+    popAndReturn(WriteValue);
+    WriteValueStack.pop();
+  }
+
+  // Sets up code to return from method Read to the calling method, returning
+  // Value.
+  void popAndReturnReadValue(decode::IntType Value) {
+    LastReadValue = Value;
+    popAndReturn(Value);
   }
 
   TraceClassSexpReaderWriter& getTrace() { return Trace; }
@@ -208,17 +234,12 @@ class Interpreter {
   decode::IntType eval(const filt::Node* Nd);
   // Reads input as defined by Nd. Returns read value.
   decode::IntType read(const filt::Node* Nd);
-  // Writes to output the given value, using format defined by Nd.
-  // For convenience, returns written value.
-  decode::IntType write(decode::IntType Value, const filt::Node* Nd);
-  // Internal driver for eval/read/write.
   decode::IntType readOpcode(const filt::Node* Sel,
                              decode::IntType PrefixValue,
                              uint32_t NumOpcodes);
   // Reads opcode selector into Value. Returns the Bitsize to the (fixed) number
   // of bits used to read the opcode selector. Otherwise returns zero.
   uint32_t readOpcodeSelector(const filt::Node* Nd, decode::IntType& Value);
-  const filt::Node* getParam(const filt::Node* Param);
 
   // Stack model
   void runMethods();
@@ -232,20 +253,6 @@ class Interpreter {
     FrameStack.pop();
     Frame.ReturnValue = Value;
     TRACE(IntType, "returns", Value);
-  }
-  void installWriteValue() {
-    WriteValueStack.push();
-    WriteValue = Frame.ReturnValue;
-    Frame.ReturnValue = 0;
-    TRACE(IntType, "WriteValue", WriteValue);
-  }
-  void popAndReturnWriteValue() {
-    popAndReturn(WriteValue);
-    WriteValueStack.pop();
-  }
-  void popAndReturnReadValue(decode::IntType Value) {
-    LastReadValue = Value;
-    popAndReturn(Value);
   }
 
   bool hasEnoughHeadroom() const;

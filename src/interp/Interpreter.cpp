@@ -217,48 +217,6 @@ bool Interpreter::hasEnoughHeadroom() const {
           ReadPos.getCurByteAddress());
 }
 
-const Node* Interpreter::getParam(const Node* P) {
-  // TODO: Convert to state model so that closure can be updated properly.
-  TRACE_METHOD("getParam");
-#if 0
-  TRACE_SEXP("P", P);
-  if (CallingEvalStack.empty())
-    fatal("Not inside a call frame, can't evaluate parameter accessor");
-  assert(isa<ParamNode>(P));
-  auto* Param = cast<ParamNode>(P);
-  // define in terms of kid index in caller.
-  IntType ParamIndex = Param->getValue() + 1;
-  SymbolNode* DefiningSym = Param->getDefiningSymbol();
-  TRACE_SEXP("DefiningSym", DefiningSym);
-  EvalFrame *Frame = &CallingEval;
-  while (Frame) {
-    TRACE_BLOCK({
-        fprintf(tracE.getFile(), "Calling Frame: ");
-        Frame->describe(tracE.getFile(), tracE.getTextWriter());
-      });
-    if (DefiningSym != Frame->Caller->getCallName())
-      continue;
-  }
-  for (const auto* Caller :
-       CallingEvalStack.riterRange(0, EvalClosureIndex + 1)) {
-    if (Caller == nullptr)
-      // This should only happen when at stack[0], but be safe for all cases.
-      continue;
-    assert(isa<EvalNode>(Caller));
-    TRACE_SEXP("Caller", Caller);
-    const EvalNode* Eval = cast<EvalNode>(Caller);
-    TRACE_SEXP("CallName", Eval->getCallName());
-    if (DefiningSym != Eval->getCallName())
-      continue;
-    if (ParamIndex < IntType(Caller->getNumKids()))
-      return Caller->getKid(ParamIndex);
-  }
-#endif
-  fatal("Can't evaluate parameter reference");
-  // Not reachable.
-  return P;
-}
-
 IntType Interpreter::eval(const Node* Nd) {
   TRACE_METHOD("oldeval");
   // TODO(karlschimpf): Remove this when fully transitioned.
@@ -340,18 +298,7 @@ IntType Interpreter::read(const Node* Nd) {
   return Frame.ReturnValue;
 }
 
-IntType Interpreter::write(IntType Value, const wasm::filt::Node* Nd) {
-  TRACE_METHOD("oldwrite");
-  callTopLevel(Method::Write, Nd, Value);
-  readBackFilled();
-  TRACE(IntType, "returns", Frame.ReturnValue);
-  return Frame.ReturnValue;
-}
-
-void Interpreter::callTopLevel(Method Method,
-                               const filt::Node* Nd,
-                               decode::IntType Value) {
-  TRACE(IntType, "ReturnValue", Value);
+void Interpreter::callTopLevel(Method Method, const filt::Node* Nd) {
   // First verify stacks cleared.
   Frame.reset();
   FrameStack.clear();
@@ -365,7 +312,7 @@ void Interpreter::callTopLevel(Method Method,
   BlockStartStack.clear();
   OpcodeLocals.reset();
   OpcodeLocalsStack.clear();
-  call(Method, Nd, Value);
+  call(Method, Nd);
 }
 
 void Interpreter::readBackFilled() {
@@ -501,7 +448,7 @@ void Interpreter::runMethods() {
                 break;
               case State::Step2:
                 Frame.CallState = State::Exit;
-                call(Method::Write, Frame.Nd, Frame.ReturnValue);
+                callWrite(Method::Write, Frame.Nd, Frame.ReturnValue);
                 break;
               case State::Exit:
                 popAndReturn(Frame.ReturnValue);
@@ -521,7 +468,8 @@ void Interpreter::runMethods() {
                 break;
               case State::Step2:
                 Frame.CallState = State::Exit;
-                call(Method::Write, Frame.Nd->getKid(1), Frame.ReturnValue);
+                callWrite(Method::Write, Frame.Nd->getKid(1),
+                          Frame.ReturnValue);
                 break;
               case State::Exit:
                 popAndReturn(Frame.ReturnValue);
@@ -1213,8 +1161,7 @@ void Interpreter::runMethods() {
         break;
       }
       case Method::Write: {
-        const Node* Nd = Frame.Nd;
-        switch (Nd->getType()) {
+        switch (Frame.Nd->getType()) {
           case OpBlock:
           case OpBlockEndNoArgs:
           case OpCase:
@@ -1252,10 +1199,9 @@ void Interpreter::runMethods() {
             switch (Frame.CallState) {
               case State::Enter:
                 TraceEnterFrame();
-                installWriteValue();
                 Frame.CallState = State::Exit;
                 DispatchedMethod = Method::Write;
-                call(Method::EvalParam, getParam(Nd), WriteValue);
+                callWrite(Method::EvalParam, Frame.Nd, WriteValue);
                 break;
               case State::Exit:
                 popAndReturnWriteValue();
@@ -1268,108 +1214,98 @@ void Interpreter::runMethods() {
             break;
           case OpUint8NoArgs:
             TraceEnterFrame();
-            installWriteValue();
             Writer->writeUint8(WriteValue, WritePos);
             popAndReturnWriteValue();
             TraceExitFrame();
             break;
           case OpUint8OneArg:
             TraceEnterFrame();
-            installWriteValue();
             Writer->writeUint8Bits(WriteValue, WritePos,
-                                   cast<Uint8OneArgNode>(Nd)->getValue());
+                                   cast<Uint8OneArgNode>(Frame.Nd)->getValue());
             popAndReturnWriteValue();
             TraceExitFrame();
             break;
           case OpUint32NoArgs:
             TraceEnterFrame();
-            installWriteValue();
             Writer->writeUint32(WriteValue, WritePos);
             popAndReturnWriteValue();
             TraceExitFrame();
             break;
           case OpUint32OneArg:
             TraceEnterFrame();
-            installWriteValue();
-            Writer->writeUint32Bits(WriteValue, WritePos,
-                                    cast<Uint32OneArgNode>(Nd)->getValue());
+            Writer->writeUint32Bits(
+                WriteValue, WritePos,
+                cast<Uint32OneArgNode>(Frame.Nd)->getValue());
             popAndReturnWriteValue();
             TraceExitFrame();
             break;
           case OpUint64NoArgs:
             TraceEnterFrame();
-            installWriteValue();
             Writer->writeUint64(WriteValue, WritePos);
             popAndReturnWriteValue();
             TraceExitFrame();
             break;
           case OpUint64OneArg:
             TraceEnterFrame();
-            installWriteValue();
-            Writer->writeUint64Bits(WriteValue, WritePos,
-                                    cast<Uint64OneArgNode>(Nd)->getValue());
+            Writer->writeUint64Bits(
+                WriteValue, WritePos,
+                cast<Uint64OneArgNode>(Frame.Nd)->getValue());
             popAndReturnWriteValue();
             TraceExitFrame();
             break;
           case OpVarint32NoArgs:
             TraceEnterFrame();
-            installWriteValue();
             Writer->writeVarint32(WriteValue, WritePos);
             popAndReturnWriteValue();
             TraceExitFrame();
             break;
           case OpVarint32OneArg:
             TraceEnterFrame();
-            installWriteValue();
-            Writer->writeVarint32Bits(WriteValue, WritePos,
-                                      cast<Varint32OneArgNode>(Nd)->getValue());
+            Writer->writeVarint32Bits(
+                WriteValue, WritePos,
+                cast<Varint32OneArgNode>(Frame.Nd)->getValue());
             popAndReturnWriteValue();
             TraceExitFrame();
             break;
           case OpVarint64NoArgs:
             TraceEnterFrame();
-            installWriteValue();
             Writer->writeVarint64(WriteValue, WritePos);
             popAndReturnWriteValue();
             TraceExitFrame();
             break;
           case OpVarint64OneArg:
             TraceEnterFrame();
-            installWriteValue();
-            Writer->writeVarint64Bits(WriteValue, WritePos,
-                                      cast<Varint64OneArgNode>(Nd)->getValue());
+            Writer->writeVarint64Bits(
+                WriteValue, WritePos,
+                cast<Varint64OneArgNode>(Frame.Nd)->getValue());
             popAndReturnWriteValue();
             TraceExitFrame();
             break;
           case OpVaruint32NoArgs:
             TraceEnterFrame();
-            installWriteValue();
             Writer->writeVaruint32(WriteValue, WritePos);
             popAndReturnWriteValue();
             TraceExitFrame();
             break;
           case OpVaruint32OneArg:
             TraceEnterFrame();
-            installWriteValue();
             Writer->writeVaruint32Bits(
                 WriteValue, WritePos,
-                cast<Varuint32OneArgNode>(Nd)->getValue());
+                cast<Varuint32OneArgNode>(Frame.Nd)->getValue());
             popAndReturnWriteValue();
             TraceExitFrame();
             break;
           case OpVaruint64NoArgs:
             TraceEnterFrame();
-            installWriteValue();
             Writer->writeVaruint64(WriteValue, WritePos);
             popAndReturnWriteValue();
             TraceExitFrame();
             break;
           case OpVaruint64OneArg:
             TraceEnterFrame();
-            installWriteValue();
             Writer->writeVaruint64Bits(
                 WriteValue, WritePos,
-                cast<Varuint64OneArgNode>(Nd)->getValue());
+                cast<Varuint64OneArgNode>(Frame.Nd)->getValue());
             popAndReturnWriteValue();
             TraceExitFrame();
             break;
@@ -1382,7 +1318,6 @@ void Interpreter::runMethods() {
           case OpPeek:
           case OpVoid:
             TraceEnterFrame();
-            installWriteValue();
             popAndReturnWriteValue();
             TraceExitFrame();
             break;
@@ -1390,15 +1325,14 @@ void Interpreter::runMethods() {
             switch (Frame.CallState) {
               case State::Enter: {
                 TraceEnterFrame();
-                installWriteValue();
-                const auto* Sel = cast<OpcodeNode>(Nd);
+                const auto* Sel = cast<OpcodeNode>(Frame.Nd);
                 OpcodeLocalsStack.push();
                 OpcodeLocals.Case = Sel->getWriteCase(
                     WriteValue, OpcodeLocals.SelShift, OpcodeLocals.CaseMask);
                 WriteValueStack.push();
                 WriteValue >>= OpcodeLocals.SelShift;
                 Frame.CallState = State::Exit;
-                call(Method::Write, Sel->getKid(0), WriteValue);
+                callWrite(Method::Write, Sel->getKid(0), WriteValue);
                 break;
               }
               case State::Step2:
@@ -1407,7 +1341,8 @@ void Interpreter::runMethods() {
                 if (OpcodeLocals.Case) {
                   WriteValueStack.push();
                   WriteValue &= OpcodeLocals.CaseMask;
-                  call(Method::Write, OpcodeLocals.Case->getKid(1), WriteValue);
+                  callWrite(Method::Write, OpcodeLocals.Case->getKid(1),
+                            WriteValue);
                 }
                 break;
               case State::Exit:
