@@ -22,10 +22,13 @@
 //#define X(tag, name)
 #define INTERPRETER_METHODS_TABLE                                              \
   /* enum name , text name */                                                  \
+  X(CopyBlock,   "copyBlock")                                                  \
   X(Eval,        "eval")                                                       \
   X(EvalBlock,   "evalBlock")                                                  \
   X(EvalParam,   "evalParam")                                                  \
   X(Finished,    "finished")                                                   \
+  X(GetSecName,  "getSecName")                                                 \
+  X(GetSection,  "getSection")                                                 \
   X(Read,        "read")                                                       \
   X(ReadOpcode,  "readOpcode")                                                 \
   X(Write,       "write")                                                      \

@@ -225,15 +225,6 @@ class Interpreter {
 
   TraceClassSexpReaderWriter& getTrace() { return Trace; }
   void decompressSection();
-  void readSectionName();
-  void decompressBlock(const filt::Node* Code);
-  // Evaluates code if nonnull. Otherwise copies to end of block.
-  void evalOrCopy(const filt::Node* Code);
-
-  // Evaluates Nd. Returns read value if applicable. Zero otherwise.
-  decode::IntType eval(const filt::Node* Nd);
-  // Reads input as defined by Nd. Returns read value.
-  decode::IntType read(const filt::Node* Nd);
 
   // Stack model
   void runMethods();

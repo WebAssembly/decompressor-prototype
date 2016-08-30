@@ -121,7 +121,10 @@ Interpreter::Interpreter(std::shared_ptr<Queue> Input,
 void Interpreter::CallFrame::describe(FILE* File, TextWriter* Writer) const {
   fprintf(File, "%s.%s = %" PRIuMAX ": ", MethodName[int(CallMethod)],
           StateName[int(CallState)], uintmax_t(ReturnValue));
-  Writer->writeAbbrev(File, Nd);
+  if (Nd)
+    Writer->writeAbbrev(File, Nd);
+  else
+    fprintf(File, "nullptr\n");
 }
 
 void Interpreter::EvalFrame::describe(FILE* File, TextWriter* Writer) const {
@@ -217,28 +220,6 @@ bool Interpreter::hasEnoughHeadroom() const {
           ReadPos.getCurByteAddress());
 }
 
-IntType Interpreter::eval(const Node* Nd) {
-  TRACE_METHOD("oldeval");
-  // TODO(karlschimpf): Remove this when fully transitioned.
-  if (!FrameStack.empty())
-    fatal("Nested calls no longer allowed!");
-  callTopLevel(Method::Eval, Nd);
-  readBackFilled();
-  TRACE(IntType, "returns", Frame.ReturnValue);
-  return Frame.ReturnValue;
-}
-
-IntType Interpreter::read(const Node* Nd) {
-  TRACE_METHOD("oldread");
-  // TODO(karlschimpf): Remove this when fully transitioned.
-  if (!FrameStack.empty())
-    fatal("Nested calls no longer allowed!");
-  callTopLevel(Method::Read, Nd);
-  readBackFilled();
-  TRACE(IntType, "returns", Frame.ReturnValue);
-  return Frame.ReturnValue;
-}
-
 void Interpreter::callTopLevel(Method Method, const filt::Node* Nd) {
   // First verify stacks cleared.
   Frame.reset();
@@ -306,6 +287,28 @@ void Interpreter::runMethods() {
       case Method::NO_SUCH_METHOD:
         assert(false);
         fail("Unknown internal method call!");
+        break;
+      case Method::CopyBlock:
+        switch (Frame.CallState) {
+          case State::Enter:
+            TraceEnterFrame();
+            Frame.CallState = State::Loop;
+            break;
+          case State::Loop:
+            if (ReadPos.atByteEob()) {
+              Frame.CallState = State::Exit;
+              break;
+            }
+            Writer->writeUint8(Reader->readUint8(ReadPos), WritePos);
+            break;
+          case State::Exit:
+            popAndReturn();
+            TraceExitFrame();
+            break;
+          default:
+            fail("Bad internal state for method copy block!");
+            break;
+        }
         break;
       case Method::Eval:
 #if LOG_EVAL_LOOKAHEAD
@@ -1094,23 +1097,103 @@ void Interpreter::runMethods() {
                 TraceExitFrame();
                 break;
               default:
-                fail("Bad internal state for method Eval");
+                fail("Bad internal state for method Read");
                 break;
             }
             break;
           case OpMap: {  // Method::Read
-            // TODO: Flatten this.
-            TraceEnterFrame();
-            const auto* Map = cast<MapNode>(Frame.Nd);
-            const CaseNode* Case = Map->getCase(read(Map->getKid(0)));
-            popAndReturnReadValue(read(Case->getKid(1)));
-            TraceExitFrame();
+            switch (Frame.CallState) {
+              case State::Enter:
+                TraceEnterFrame();
+                Frame.CallState = State::Step2;
+                call(Method::Read, Frame.Nd);
+                break;
+              case State::Step2:
+                Frame.CallState = State::Exit;
+                call(Method::Read,
+                     cast<MapNode>(Frame.Nd)->getCase(Frame.ReturnValue));
+                break;
+              case State::Exit:
+                popAndReturn(Frame.ReturnValue);
+                TraceExitFrame();
+                break;
+              default:
+                fail("Bad internal state for method Read");
+                break;
+            }
             break;
           }
           case OpVoid:  // Method::Read
             TraceEnterFrame();
             popAndReturnReadValue(0);
             TraceExitFrame();
+            break;
+        }
+        break;
+      case Method::GetSecName:
+        switch (Frame.CallState) {
+          case State::Enter:
+            TraceEnterFrame();
+            CurSectionName.clear();
+            LoopCounterStack.push();
+            LoopCounter = Reader->readVaruint32(ReadPos);
+            Writer->writeVaruint32(LoopCounter, WritePos);
+            Frame.CallState = State::Loop;
+            break;
+          case State::Loop: {
+            if (LoopCounter == 0) {
+              Frame.CallState = State::Exit;
+              break;
+            }
+            --LoopCounter;
+            uint8_t Byte = Reader->readUint8(ReadPos);
+            Writer->writeUint8(Byte, WritePos);
+            CurSectionName.push_back(char(Byte));
+            break;
+          }
+          case State::Exit:
+            popAndReturn();
+            TraceExitFrame();
+            break;
+          default:
+            fail("Bad internal state for method EvalBlock");
+            break;
+        }
+        break;
+      case Method::GetSection:
+        switch (Frame.CallState) {
+          case State::Enter:
+            TraceEnterFrame();
+            assert(isa<ByteReadStream>(Reader.get()));
+#if LOG_SECTIONS
+            TRACE(hex_size_t, "SectionAddress", ReadPos.getCurByteAddress());
+#endif
+            Frame.CallState = State::Step2;
+            call(Method::GetSecName, nullptr);
+            break;
+          case State::Step2: {
+            TRACE(string, "Section", CurSectionName);
+            // TODO(kschimpf) Handle 'filter' sections specially (i.e. install).
+            SymbolNode* Sym = Symtab->getSymbol(CurSectionName);
+            const Node* Algorithm = nullptr;
+            if (Sym) {
+              Algorithm = Sym->getDefineDefinition();
+              DispatchedMethod = Method::Eval;
+            } else {
+              DispatchedMethod = Method::CopyBlock;
+            }
+            Frame.CallState = State::Exit;
+            call(Method::EvalBlock, Algorithm);
+            break;
+          }
+          case State::Exit:
+            Reader->alignToByte(ReadPos);
+            Writer->alignToByte(WritePos);
+            popAndReturn();
+            TraceExitFrame();
+            break;
+          default:
+            fail("Bad internal state for method EvalBlock");
             break;
         }
         break;
@@ -1423,8 +1506,8 @@ void Interpreter::runMethods() {
           case OpU8Const:
           case OpU32Const:
           case OpU64Const:
-          case OpMap:
           case OpPeek:
+          case OpMap:
           case OpVoid:  // Method::Write
             TraceEnterFrame();
             popAndReturnWriteValue();
@@ -1495,77 +1578,12 @@ void Interpreter::decompress() {
   WritePos.freezeEof();
 }
 
-void Interpreter::decompressBlock(const Node* Code) {
-  TRACE_METHOD("decompressBlock");
-  const uint32_t OldSize = Reader->readBlockSize(ReadPos);
-  TRACE(uint32_t, "block size", OldSize);
-  Reader->pushEobAddress(ReadPos, OldSize);
-  WriteCursor BlockStart(WritePos);
-  Writer->writeFixedBlockSize(WritePos, 0);
-  size_t SizeAfterSizeWrite = Writer->getStreamAddress(WritePos);
-  evalOrCopy(Code);
-  const size_t NewSize = Writer->getBlockSize(BlockStart, WritePos);
-  TRACE(uint32_t, "New block size", NewSize);
-  if (!MinimizeBlockSize) {
-    Writer->writeFixedBlockSize(BlockStart, NewSize);
-  } else {
-    Writer->writeVarintBlockSize(BlockStart, NewSize);
-    size_t SizeAfterBackPatch = Writer->getStreamAddress(BlockStart);
-    size_t Diff = SizeAfterSizeWrite - SizeAfterBackPatch;
-    if (Diff) {
-      size_t CurAddress = Writer->getStreamAddress(WritePos);
-      Writer->moveBlock(BlockStart, SizeAfterSizeWrite,
-                        (CurAddress - Diff) - SizeAfterBackPatch);
-      WritePos.swap(BlockStart);
-    }
-  }
-  ReadPos.popEobAddress();
-}
-
-void Interpreter::evalOrCopy(const Node* Nd) {
-  if (Nd) {
-    eval(Nd);
-    return;
-  }
-  // If not defined, must be at end of section, and hence byte aligned.
-  while (!ReadPos.atByteEob())
-    Writer->writeUint8(Reader->readUint8(ReadPos), WritePos);
-}
-
 void Interpreter::decompressSection() {
-  // TODO(kschimpf) Handle 'filter' sections specially (i.e. install).  This
-  // includes calling "clearCaches" on all filter s-expressions to remove an
-  // (optimizing) caches installed.
-  TRACE_METHOD("decompressSection");
-  LastReadValue = 0;
-  assert(isa<ByteReadStream>(Reader.get()));
-#if LOG_SECTIONS
-  size_t SectionAddress = ReadPos.getCurByteAddress();
-#endif
-  readSectionName();
-#if LOG_SECTIONS
-  TRACE_BLOCK({
-    fprintf(TRACE.indent(), "@%" PRIxMAX " section '%s'\n",
-            uintmax_t(SectionAddress), CurSectionName.c_str());
-  });
-#endif
-  TRACE(string, "name", CurSectionName);
-  SymbolNode* Sym = Symtab->getSymbol(CurSectionName);
-  decompressBlock(Sym ? Sym->getDefineDefinition() : nullptr);
-  Reader->alignToByte(ReadPos);
-  Writer->alignToByte(WritePos);
-}
-
-void Interpreter::readSectionName() {
-  TRACE_METHOD("readSectionName");
-  CurSectionName.clear();
-  uint32_t NameSize = Reader->readVaruint32(ReadPos);
-  Writer->writeVaruint32(NameSize, WritePos);
-  for (uint32_t i = 0; i < NameSize; ++i) {
-    uint8_t Byte = Reader->readUint8(ReadPos);
-    Writer->writeUint8(Byte, WritePos);
-    CurSectionName.push_back(char(Byte));
-  }
+  TRACE_METHOD("olddecompressSection");
+  if (!FrameStack.empty())
+    fatal("Nested calls no longer allowed!");
+  callTopLevel(Method::GetSection, nullptr);
+  readBackFilled();
 }
 
 }  // end of namespace interp.
