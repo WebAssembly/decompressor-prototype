@@ -152,7 +152,7 @@ class Interpreter {
   // The stack of (eval) calls.
   EvalFrame CallingEval;
   utils::ValueStack<EvalFrame> CallingEvalStack;
-  // The stack of passed Values (write methods).
+  // The stack of passed write Values.
   decode::IntType WriteValue;
   utils::ValueStack<decode::IntType> WriteValueStack;
   // The stack of read cursors (used by peek)
@@ -174,7 +174,7 @@ class Interpreter {
     void reset() {
       SelShift = 0;
       CaseMask = 0;
-      Case = 0;
+      Case = nullptr;
     }
   };
   OpcodeLocalsFrame OpcodeLocals;
@@ -234,12 +234,6 @@ class Interpreter {
   decode::IntType eval(const filt::Node* Nd);
   // Reads input as defined by Nd. Returns read value.
   decode::IntType read(const filt::Node* Nd);
-  decode::IntType readOpcode(const filt::Node* Sel,
-                             decode::IntType PrefixValue,
-                             uint32_t NumOpcodes);
-  // Reads opcode selector into Value. Returns the Bitsize to the (fixed) number
-  // of bits used to read the opcode selector. Otherwise returns zero.
-  uint32_t readOpcodeSelector(const filt::Node* Nd, decode::IntType& Value);
 
   // Stack model
   void runMethods();
@@ -249,7 +243,7 @@ class Interpreter {
     TRACE_SEXP(nullptr, Frame.Nd);
   }
   void TraceExitFrame() { TRACE_EXIT_OVERRIDE(getName(Frame.CallMethod)); }
-  void popAndReturn(decode::IntType Value) {
+  void popAndReturn(decode::IntType Value = 0) {
     FrameStack.pop();
     Frame.ReturnValue = Value;
     TRACE(IntType, "returns", Value);

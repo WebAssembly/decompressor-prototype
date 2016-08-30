@@ -22,11 +22,12 @@
 //#define X(tag, name)
 #define INTERPRETER_METHODS_TABLE                                              \
   /* enum name , text name */                                                  \
-  X(EvalBlock,   "evalBlock")                                                  \
   X(Eval,        "eval")                                                       \
-  X(EvalParam,   "evalParam")                                                   \
+  X(EvalBlock,   "evalBlock")                                                  \
+  X(EvalParam,   "evalParam")                                                  \
   X(Finished,    "finished")                                                   \
   X(Read,        "read")                                                       \
+  X(ReadOpcode,  "readOpcode")                                                 \
   X(Write,       "write")                                                      \
 
 //#define X(tag, name)
@@ -38,6 +39,7 @@
   X(Failed,    "failed")                                                       \
   X(MinBlock,  "minimize block")                                               \
   X(Step2,     "Step2")                                                        \
+  X(Step3,     "Step3")                                                        \
   X(Succeeded, "Succeeded")                                                    \
 
 #endif // DECOMPRESSOR_SRC_INTERP_INTERPRETER_DEF
