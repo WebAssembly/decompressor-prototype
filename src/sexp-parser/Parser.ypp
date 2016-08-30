@@ -371,9 +371,6 @@ format_directive
               Driver.error("varuint64 expects 2 <= bitsize <= 64");
             $$ = Driver.create<Varuint64OneArgNode>($3.Value, $3.Format);
           }
-        | "(" "opcode" opcode_expression ")" {
-            $$ = $3;
-          }
         ;
 
 fixed_format_directive
