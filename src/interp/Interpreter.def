@@ -27,6 +27,7 @@
   X(EvalBlock,   "evalBlock")                                                  \
   X(EvalParam,   "evalParam")                                                  \
   X(Finished,    "finished")                                                   \
+  X(GetFile,     "getFile")                                                    \
   X(GetSecName,  "getSecName")                                                 \
   X(GetSection,  "getSection")                                                 \
   X(Read,        "read")                                                       \
