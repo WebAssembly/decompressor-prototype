@@ -84,11 +84,13 @@ const char* StateName[] = {
 }  // end of anonymous namespace
 
 const char* Interpreter::getName(Method M) {
-  return MethodName[int(M)];
+  size_t Index = size_t(M);
+  return Index < size(MethodName) ? MethodName[Index] : "NO_SUCH_METHOD";
 }
 
 const char* Interpreter::getName(State S) {
-  return StateName[int(S)];
+  size_t Index = size_t(S);
+  return Index < size(StateName) ? StateName[Index] : "NO_SUCH_STATE";
 }
 
 Interpreter::Interpreter(std::shared_ptr<Queue> Input,
@@ -266,12 +268,23 @@ void Interpreter::fail() {
   Frame.fail();
 }
 
-void Interpreter::fail(const char* Message) {
+void Interpreter::fail(const std::string& Message) {
   FILE* Out = getTrace().getFile();
-  fprintf(Out, "Error: ");
-  getTrace().getTextWriter()->writeAbbrev(Out, Frame.Nd);
-  fprintf(Out, "Error: %s\n: ", Message);
+  if (Frame.Nd) {
+    fprintf(Out, "Error: ");
+    getTrace().getTextWriter()->writeAbbrev(Out, Frame.Nd);
+  }
+  fprintf(Out, "Error: (method %s) %s\n: ", getName(Frame.CallMethod),
+          Message.c_str());
   fail();
+}
+
+void Interpreter::failBadState() {
+  fail("Bad internal state for method Eval");
+}
+
+void Interpreter::failNotImplemented() {
+  fail("Method not implemented!");
 }
 
 void Interpreter::runMethods() {
@@ -285,8 +298,7 @@ void Interpreter::runMethods() {
 #endif
     switch (Frame.CallMethod) {
       case Method::NO_SUCH_METHOD:
-        assert(false);
-        fail("Unknown internal method call!");
+        failNotImplemented();
         break;
       case Method::CopyBlock:
         switch (Frame.CallState) {
@@ -306,7 +318,7 @@ void Interpreter::runMethods() {
             TraceExitFrame();
             break;
           default:
-            fail("Bad internal state for method copy block!");
+            failBadState();
             break;
         }
         break;
@@ -329,7 +341,7 @@ void Interpreter::runMethods() {
           case OpBlockEndNoArgs:
           case OpConvert:
           case OpFilter:  // Method::Eval
-            fail("Eval not implemented yet for construct");
+            failNotImplemented();
             break;
           case NO_SUCH_NODETYPE:
           case OpFile:
@@ -339,7 +351,7 @@ void Interpreter::runMethods() {
           case OpUndefine:
           case OpUnknownSection:
           case OpVersion:  // Method::Eval
-            fail("Eval not allowed on construct!");
+            fail("Not allowed!");
             break;
           case OpError:  // Method::Eval
             TraceEnterFrame();
@@ -364,7 +376,7 @@ void Interpreter::runMethods() {
                 TraceExitFrame();
                 break;
               default:
-                fail("Bad internal state for method Eval");
+                failBadState();
                 break;
             }
             break;
@@ -399,7 +411,7 @@ void Interpreter::runMethods() {
                 TraceExitFrame();
                 break;
               default:
-                fail("Bad internal state for method Eval");
+                failBadState();
                 break;
             }
             break;
@@ -420,7 +432,7 @@ void Interpreter::runMethods() {
                 TraceExitFrame();
                 break;
               default:
-                fail("Bad internal state for method Eval");
+                failBadState();
                 break;
             }
             break;
@@ -471,7 +483,7 @@ void Interpreter::runMethods() {
                 TraceExitFrame();
                 break;
               default:
-                fail("Bad internal state for method Eval");
+                failBadState();
                 break;
             }
             break;
@@ -492,7 +504,7 @@ void Interpreter::runMethods() {
                 TraceExitFrame();
                 break;
               default:
-                fail("Bad internal state for method Eval");
+                failBadState();
                 break;
             }
             break;
@@ -513,7 +525,7 @@ void Interpreter::runMethods() {
                 TraceExitFrame();
                 break;
               default:
-                fail("Bad internal state for method Eval");
+                failBadState();
                 break;
             }
             break;
@@ -538,7 +550,7 @@ void Interpreter::runMethods() {
                 TraceExitFrame();
                 break;
               default:
-                fail("Bad internal state for method Eval");
+                failBadState();
                 break;
             }
             break;
@@ -567,7 +579,7 @@ void Interpreter::runMethods() {
                 TraceExitFrame();
                 break;
               default:
-                fail("Bad internal state for method Eval");
+                failBadState();
                 break;
             }
             break;
@@ -589,7 +601,7 @@ void Interpreter::runMethods() {
                 TraceExitFrame();
                 break;
               default:
-                fail("Bad internal state for method Eval");
+                failBadState();
                 break;
             }
             break;
@@ -610,7 +622,7 @@ void Interpreter::runMethods() {
                 TraceExitFrame();
                 break;
               default:
-                fail("Bad internal state for method Eval");
+                failBadState();
                 break;
             }
             break;
@@ -633,7 +645,7 @@ void Interpreter::runMethods() {
                 TraceExitFrame();
                 break;
               default:
-                fail("Bad internal state for method Eval");
+                failBadState();
                 break;
             }
             break;
@@ -658,7 +670,7 @@ void Interpreter::runMethods() {
                 TraceExitFrame();
                 break;
               default:
-                fail("Bad internal state for method Eval");
+                failBadState();
                 break;
             }
             break;
@@ -674,7 +686,7 @@ void Interpreter::runMethods() {
                 TraceExitFrame();
                 break;
               default:
-                fail("Bad internal state for method Eval");
+                failBadState();
                 break;
             }
             break;
@@ -690,7 +702,7 @@ void Interpreter::runMethods() {
                 TraceExitFrame();
                 break;
               default:
-                fail("Bad internal state for method Eval");
+                failBadState();
                 break;
             }
             break;
@@ -707,7 +719,7 @@ void Interpreter::runMethods() {
                 TraceExitFrame();
                 break;
               default:
-                fail("Bad internal state for method Eval");
+                failBadState();
                 break;
             }
             break;
@@ -744,7 +756,7 @@ void Interpreter::runMethods() {
                 TraceExitFrame();
                 break;
               default:
-                fail("Bad internal state for method Eval");
+                failBadState();
                 break;
             }
             break;
@@ -781,7 +793,7 @@ void Interpreter::runMethods() {
                 TraceExitFrame();
                 break;
               default:
-                fail("Bad internal state for method Eval");
+                failBadState();
                 break;
             }
             break;
@@ -848,7 +860,7 @@ void Interpreter::runMethods() {
             TraceExitFrame();
             break;
           default:
-            fail("Bad internal state for method EvalBlock");
+            failBadState();
             break;
         }
         break;
@@ -914,7 +926,7 @@ void Interpreter::runMethods() {
             TraceExitFrame();
             break;
           default:
-            fail("Bad internal state for method GetParam");
+            failBadState();
             break;
         }
         break;
@@ -939,9 +951,6 @@ void Interpreter::runMethods() {
           case OpUndefine:
           case OpUnknownSection:
           case OpVersion:
-          case NO_SUCH_NODETYPE:  // Method::Read
-            fail("Construct not readable!");
-            break;
           case OpAnd:
           case OpError:
           case OpEval:
@@ -949,8 +958,9 @@ void Interpreter::runMethods() {
           case OpOr:
           case OpRead:
           case OpStream:
-          case OpWrite:  // Method::Read
-            fail("Read not implemented for construct!");
+          case OpWrite:
+          case NO_SUCH_NODETYPE:  // Method::Read
+            failNotImplemented();
             break;
           case OpI32Const:
           case OpI64Const:
@@ -974,7 +984,7 @@ void Interpreter::runMethods() {
                 TraceExitFrame();
                 break;
               default:
-                fail("Bad internal state for method Write");
+                failBadState();
                 break;
             }
             break;
@@ -994,7 +1004,7 @@ void Interpreter::runMethods() {
                 TraceExitFrame();
                 break;
               default:
-                fail("Bad internal state for method Read");
+                failBadState();
                 break;
             }
             break;
@@ -1097,7 +1107,7 @@ void Interpreter::runMethods() {
                 TraceExitFrame();
                 break;
               default:
-                fail("Bad internal state for method Read");
+                failBadState();
                 break;
             }
             break;
@@ -1118,7 +1128,7 @@ void Interpreter::runMethods() {
                 TraceExitFrame();
                 break;
               default:
-                fail("Bad internal state for method Read");
+                failBadState();
                 break;
             }
             break;
@@ -1127,6 +1137,44 @@ void Interpreter::runMethods() {
             TraceEnterFrame();
             popAndReturnReadValue(0);
             TraceExitFrame();
+            break;
+        }
+        break;
+      case Method::GetFile:
+        switch (Frame.CallState) {
+          case State::Enter:
+            TraceEnterFrame();
+            MagicNumber = Reader->readUint32(ReadPos);
+            TRACE(hex_uint32_t, "magic number", MagicNumber);
+            if (MagicNumber != WasmBinaryMagic) {
+              fail(
+                  "Unable to compress. Did not find WASM binary magic number!");
+              break;
+            }
+            Writer->writeUint32(MagicNumber, WritePos);
+            Version = Reader->readUint32(ReadPos);
+            TRACE(hex_uint32_t, "version", Version);
+            if (Version != WasmBinaryVersion) {
+              fail("Unable to compress. WASM version not known");
+              break;
+            }
+            Writer->writeUint32(Version, WritePos);
+            Frame.CallState = State::Loop;
+            break;
+          case State::Loop:
+            if (ReadPos.atByteEob()) {
+              Frame.CallState = State::Exit;
+              break;
+            }
+            call(Method::GetSection, nullptr);
+            break;
+          case State::Exit:
+            WritePos.freezeEof();
+            popAndReturn();
+            TraceExitFrame();
+            break;
+          default:
+            failBadState();
             break;
         }
         break;
@@ -1156,7 +1204,7 @@ void Interpreter::runMethods() {
             TraceExitFrame();
             break;
           default:
-            fail("Bad internal state for method EvalBlock");
+            failBadState();
             break;
         }
         break;
@@ -1193,7 +1241,7 @@ void Interpreter::runMethods() {
             TraceExitFrame();
             break;
           default:
-            fail("Bad internal state for method EvalBlock");
+            failBadState();
             break;
         }
         break;
@@ -1201,7 +1249,7 @@ void Interpreter::runMethods() {
         // Note: Assumes that caller pushes OpcodeLocals;
         switch (Frame.Nd->getType()) {
           default:
-            fail("Illegal opcode construct!");
+            failNotImplemented();
             break;
           case OpOpcode:  // Method::ReadOpcode
             switch (Frame.CallState) {
@@ -1237,7 +1285,7 @@ void Interpreter::runMethods() {
                 TraceExitFrame();
                 break;
               default:
-                fail("Bad internal state for method ReadOpcode");
+                failBadState();
                 break;
             }
           case OpUint8NoArgs:  // Method::ReadOpcode
@@ -1254,7 +1302,7 @@ void Interpreter::runMethods() {
                 TraceExitFrame();
                 break;
               default:
-                fail("Bad internal state for method ReadOpcode");
+                failBadState();
                 break;
             }
             break;
@@ -1273,7 +1321,7 @@ void Interpreter::runMethods() {
                 TraceExitFrame();
                 break;
               default:
-                fail("Bad internal state for method ReadOpcode");
+                failBadState();
                 break;
             }
           case OpUint32NoArgs:  // Method::ReadOpcode
@@ -1290,7 +1338,7 @@ void Interpreter::runMethods() {
                 TraceExitFrame();
                 break;
               default:
-                fail("Bad internal state for method ReadOpcode");
+                failBadState();
                 break;
             }
             break;
@@ -1309,7 +1357,7 @@ void Interpreter::runMethods() {
                 TraceExitFrame();
                 break;
               default:
-                fail("Bad internal state for method ReadOpcode");
+                failBadState();
                 break;
             }
             break;
@@ -1327,7 +1375,7 @@ void Interpreter::runMethods() {
                 TraceExitFrame();
                 break;
               default:
-                fail("Bad internal state for method ReadOpcode");
+                failBadState();
                 break;
             }
             break;
@@ -1346,7 +1394,7 @@ void Interpreter::runMethods() {
                 TraceExitFrame();
                 break;
               default:
-                fail("Bad internal state for method ReadOpcode");
+                failBadState();
                 break;
             }
             break;
@@ -1373,9 +1421,6 @@ void Interpreter::runMethods() {
           case OpUndefine:
           case OpUnknownSection:
           case OpVersion:
-          case NO_SUCH_NODETYPE:  // Method::Write
-            fail("Construct not readable!");
-            break;
           case OpAnd:
           case OpError:
           case OpEval:
@@ -1384,8 +1429,9 @@ void Interpreter::runMethods() {
           case OpOr:
           case OpRead:
           case OpStream:
-          case OpWrite:  // Method::Write
-            fail("Write not implemented for construct!");
+          case OpWrite:
+          case NO_SUCH_NODETYPE:  // Method::Write
+            failNotImplemented();
             break;
           case OpParam:  // Method::Write
             switch (Frame.CallState) {
@@ -1400,7 +1446,7 @@ void Interpreter::runMethods() {
                 TraceExitFrame();
                 break;
               default:
-                fail("Bad internal state for method Write");
+                failBadState();
                 break;
             }
             break;
@@ -1542,7 +1588,7 @@ void Interpreter::runMethods() {
                 TraceExitFrame();
                 break;
               default:
-                fail("Bad internal state for method Write");
+                failBadState();
                 break;
             }
             break;
@@ -1558,31 +1604,8 @@ void Interpreter::runMethods() {
 }
 
 void Interpreter::decompress() {
-  TRACE_METHOD("decompress");
-  LastReadValue = 0;
-  MagicNumber = Reader->readUint32(ReadPos);
-  // TODO(kschimpf): Fix reading of uintX. Current implementation not same as
-  // WASM binary reader.
-  TRACE(hex_uint32_t, "magic number", MagicNumber);
-  if (MagicNumber != WasmBinaryMagic)
-    fatal("Unable to decompress, did not find WASM binary magic number");
-  Writer->writeUint32(MagicNumber, WritePos);
-  Version = Reader->readUint32(ReadPos);
-  TRACE(hex_uint32_t, "version", Version);
-  if (Version != WasmBinaryVersion)
-    fatal("Unable to decompress, WASM version number not known");
-  Writer->writeUint32(Version, WritePos);
-
-  while (!ReadPos.atByteEob())
-    decompressSection();
-  WritePos.freezeEof();
-}
-
-void Interpreter::decompressSection() {
-  TRACE_METHOD("olddecompressSection");
-  if (!FrameStack.empty())
-    fatal("Nested calls no longer allowed!");
-  callTopLevel(Method::GetSection, nullptr);
+  assert(FrameStack.empty());
+  callTopLevel(Method::GetFile, nullptr);
   readBackFilled();
 }
 

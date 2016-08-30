@@ -181,8 +181,9 @@ class Interpreter {
   utils::ValueStack<OpcodeLocalsFrame> OpcodeLocalsStack;
 
   void fail();
-
-  void fail(const char* Message);
+  void fail(const std::string& Message);
+  void failBadState();
+  void failNotImplemented();
 
   // Initializes all internal stacks, for an initial call to Method with
   // argument Nd.
@@ -209,6 +210,12 @@ class Interpreter {
     this->WriteValue = WriteValue;
   }
 
+  void popAndReturn(decode::IntType Value = 0) {
+    FrameStack.pop();
+    Frame.ReturnValue = Value;
+    TRACE(IntType, "returns", Value);
+  }
+
   // Sets up code to return from method Write to the calling method.
   void popAndReturnWriteValue() {
     assert(Frame.CallMethod == Method::Write);
@@ -224,21 +231,12 @@ class Interpreter {
   }
 
   TraceClassSexpReaderWriter& getTrace() { return Trace; }
-  void decompressSection();
-
-  // Stack model
-  void runMethods();
   void TraceEnterFrame() {
     assert(Frame.CallState == Interpreter::State::Enter);
     TRACE_ENTER(getName(Frame.CallMethod));
     TRACE_SEXP(nullptr, Frame.Nd);
   }
   void TraceExitFrame() { TRACE_EXIT_OVERRIDE(getName(Frame.CallMethod)); }
-  void popAndReturn(decode::IntType Value = 0) {
-    FrameStack.pop();
-    Frame.ReturnValue = Value;
-    TRACE(IntType, "returns", Value);
-  }
 
   bool hasEnoughHeadroom() const;
   bool needsMoreInput() const { return !isSuccessful() && !errorsFound(); }
@@ -246,8 +244,7 @@ class Interpreter {
   bool isSuccessful() const { return Frame.CallState == State::Succeeded; }
   bool errorsFound() const { return Frame.CallState == State::Failed; }
 
-  // Fills input stream using the read backing of the input stream, so that
-  // runMethods can use a push model.
+  void runMethods();
   void readBackFilled();
 
   // For debugging only.
