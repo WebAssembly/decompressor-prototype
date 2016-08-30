@@ -53,6 +53,12 @@ endif
 
 CXX := clang++
 
+ifeq ($(CXX),clang++)
+  CXX_SUBDIR =
+else
+  CXX_SUBDIR = /$(CXX)
+endif
+
 PLATFORM := Default
 
 # Define platform specific stuff.
@@ -71,7 +77,7 @@ endif
 
 SRCDIR = src
 
-BUILDBASEDIR = build$(PAGE_BUILD_SUFFIX)
+BUILDBASEDIR = build$(CXX_SUBDIR)$(PAGE_BUILD_SUFFIX)
 ifeq ($(RELEASE), 0)
   BUILDDIR = $(BUILDBASEDIR)/debug
 else
@@ -221,6 +227,7 @@ $(info Using PLATFORM = $(PLATFORM))
 $(info Using CXX = $(CXX))
 $(info Using RELEASE = $(RELEASE))
 $(info Using PAGE_SIZE = $(USE_PAGE_SIZE))
+$(info Using CXX_SUBDIR = $(CXX_SUBDIR))
 $(info -----------------------------------------------)
 
 CCACHE := `command -v ccache`
@@ -548,7 +555,7 @@ test-decompress: $(BUILD_EXECDIR)/decompress
 	$< -d $(TEST_SRCS_DIR)/defaults.wasm -m \
 		-i $(TEST_SRCS_DIR)/if-then-br.wasm -o - \
 		| diff - $(TEST_SRCS_DIR)/if-then-br.wasm
-	cd test/test-sources; make test RELEASE=$(RELEASE)
+	cd test/test-sources; make test RELEASE=$(RELEASE) CXX=$(CXX)
 	@echo "*** decompress tests passed ***"
 
 .PHONY: test-decompress

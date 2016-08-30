@@ -42,6 +42,14 @@ else ifndef RELEASE
   RELEASE = 0
 endif
 
+CXX := clang++
+
+ifeq ($(CXX),clang++)
+  CXX_SUBDIR =
+else
+  CXX_SUBDIR = /$(CXX)
+endif
+
 # PAGE_SIZE (if defined) specifies that log2 size (i.e. number of bits) to use
 # for page size.
 ifdef PAGE_SIZE
@@ -54,7 +62,7 @@ else
   MAKE_PAGE_SIZE=
 endif
 
-BUILDDIR = ../../build$(PAGE_BUILD_SUFFIX)
+BUILDDIR = ../../build$(CXX_SUBDIR)$(PAGE_BUILD_SUFFIX)
 
 SEXP_SRCDIR = ../../src/sexp
 SEXP_DEFAULTS = $(SEXP_SRCDIR)/defaults.df
