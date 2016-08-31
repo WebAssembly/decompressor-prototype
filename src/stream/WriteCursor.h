@@ -54,18 +54,24 @@ class WriteCursor FINAL : public Cursor {
   }
 
   // Writes next byte. Fails if at end of file. NOTE: Assumed byte aligned!
-  void writeByte(uint8_t Byte);
+  void writeByte(uint8_t Byte) {
+    assert(isByteAligned());
+    if (CurAddress < GuaranteedBeforeEob)
+      return writeOneByte(Byte);
+    writeFillWriteByte(Byte);
+  }
 
   // Writes up to 32 bits to the output.
   void writeBits(uint32_t Value, uint32_t NumBits);
 
  protected:
   void writeOneByte(uint8_t Byte) {
+    assert(CurPage);
     *getBufferPtr() = Byte;
     ++CurAddress;
-    CurPage = Que->getWritePage(CurAddress);
-    assert(CurPage);
   }
+
+  void writeFillWriteByte(uint8_t Byte);
 };
 
 }  // end of namespace decode

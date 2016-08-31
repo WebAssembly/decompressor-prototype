@@ -98,12 +98,9 @@ class ReadCursor FINAL : public Cursor {
 
  protected:
   uint8_t readOneByte() {
+    assert(CurPage);
     uint8_t Byte = *getBufferPtr();
     ++CurAddress;
-#if 0
-    CurPage = Que->getReadPage(CurAddress);
-    assert(CurPage);
-#endif
     return Byte;
   }
 
