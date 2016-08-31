@@ -75,7 +75,8 @@ void usage(const char* AppName) {
   fprintf(stderr,
           "  -o File\t\tGenerated Decompressed File ('-' implies stdout).\n");
   fprintf(stderr, "  -s\t\t\tUse C++ streams instead of C file descriptors.\n");
-  fprintf(stderr, "  -t N\t\t\tDecompress N times (used to test performance).\n");
+  fprintf(stderr,
+          "  -t N\t\t\tDecompress N times (used to test performance).\n");
   if (isDebug()) {
     fprintf(stderr,
             "  -v | --verbose\t"
