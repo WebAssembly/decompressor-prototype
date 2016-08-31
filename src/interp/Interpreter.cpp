@@ -331,7 +331,6 @@ void Interpreter::runMethods() {
         }
 #endif
         switch (Frame.Nd->getType()) {
-          case OpBlockEndNoArgs:
           case OpConvert:
           case OpFilter:  // Method::Eval
             failNotImplemented();
@@ -926,7 +925,6 @@ void Interpreter::runMethods() {
       case Method::Read:
         switch (Frame.Nd->getType()) {
           case OpBlock:
-          case OpBlockEndNoArgs:
           case OpCase:
           case OpConvert:
           case OpDefine:
@@ -1396,7 +1394,6 @@ void Interpreter::runMethods() {
       case Method::Write:
         switch (Frame.Nd->getType()) {
           case OpBlock:
-          case OpBlockEndNoArgs:
           case OpCase:
           case OpConvert:
           case OpDefine:

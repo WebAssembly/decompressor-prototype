@@ -218,7 +218,6 @@ id ({letter}|{digit}|[_.])*
 "and"             return Parser::make_AND(Driver.getLoc());
 "ast"             return Parser::make_AST(Driver.getLoc());
 "block"           return Parser::make_BLOCK(Driver.getLoc());
-"block.end"       return Parser::make_BLOCKEND(Driver.getLoc());
 "bit"             return Parser::make_BIT(Driver.getLoc());
 "byte"            return Parser::make_BYTE(Driver.getLoc());
 "case"            return Parser::make_CASE(Driver.getLoc());

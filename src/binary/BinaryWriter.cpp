@@ -72,7 +72,6 @@ void BinaryWriter::writeNode(const Node* Nd) {
     }
     case OpAnd:
     case OpBlock:
-    case OpBlockEndNoArgs:
     case OpCase:
     case OpConvert:
     case OpOr:

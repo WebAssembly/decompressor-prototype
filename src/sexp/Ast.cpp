@@ -170,18 +170,30 @@ SymbolNode* SymbolTable::getSymbolDefinition(ExternalName& Name) {
 
 #define X(tag, defval, mergable, NODE_DECLS)                \
   tag##Node* SymbolTable::get##tag##Definition(             \
-      IntType Value, ValueFormat Format, bool isDefault) {  \
+      IntType Value, ValueFormat Format) {                  \
     if (mergable) {                                         \
-      IntegerValue I(Op##tag, Value, Format, isDefault);    \
+      IntegerValue I(Op##tag, Value, Format, false)    ;    \
       IntegerNode* Node = IntMap[I];                        \
       if (Node == nullptr) {                                \
-        Node = create<tag##Node>(Value, Format, isDefault); \
+        Node = create<tag##Node>(Value, Format)       ;     \
         IntMap[I] = Node;                                   \
       }                                                     \
       return dyn_cast<tag##Node>(Node);                     \
-    } else {                                                \
-      return create<tag##Node>(Value, Format, isDefault);   \
     }                                                       \
+    return create<tag##Node>(Value, Format);                \
+  }                                                         \
+  tag##Node* SymbolTable::get##tag##Definition() {          \
+    if (mergable) {                                         \
+      IntegerValue I(Op##tag, (defval),                     \
+                     ValueFormat::Decimal, true);           \
+      IntegerNode* Node = IntMap[I];                        \
+      if (Node == nullptr) {                                \
+        Node = create<tag##Node>();                         \
+        IntMap[I] = Node;                                   \
+      }                                                     \
+      return dyn_cast<tag##Node>(Node);                     \
+    }                                                       \
+    return create<tag##Node>();                             \
   }
 AST_INTEGERNODE_TABLE
 #undef X

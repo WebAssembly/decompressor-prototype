@@ -142,10 +142,10 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
   SymbolNode* getSymbolDefinition(ExternalName& Name);
 // Gets integer node (as defined by the arguments) if known. Otherwise
 // returns newly created integer.
-#define X(tag, defval, mergable, NODE_DECLS)                  \
-  tag##Node* get##tag##Definition(decode::IntType Value,      \
-                                  decode::ValueFormat Format, \
-                                  bool isDefault = false);
+#define X(tag, defval, mergable, NODE_DECLS)                    \
+  tag##Node* get##tag##Definition(decode::IntType Value,        \
+                                  decode::ValueFormat Format);  \
+  tag##Node* get##tag##Definition();
   AST_INTEGERNODE_TABLE
 #undef X
   // Install definitions in tree defined by root.
@@ -388,9 +388,11 @@ class IntegerNode : public NullaryNode {
    public:                                                                 \
     tag##Node(SymbolTable& Symtab,                                         \
               decode::IntType Value,                                       \
-              decode::ValueFormat Format = decode::ValueFormat::Decimal,   \
-              bool isDefault = false)                                      \
-        : IntegerNode(Symtab, Op##tag, Value, Format, isDefault) {}        \
+              decode::ValueFormat Format = decode::ValueFormat::Decimal)   \
+    : IntegerNode(Symtab, Op##tag, Value, Format, false) {}                \
+    tag##Node(SymbolTable& Symtab)                                         \
+    : IntegerNode(Symtab, Op##tag, (defval),                               \
+      decode::ValueFormat::Decimal,  true) {}                              \
     ~tag##Node() OVERRIDE {}                                               \
                                                                            \
     static bool implementsClass(NodeType Type) { return Type == Op##tag; } \

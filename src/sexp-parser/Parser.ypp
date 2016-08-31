@@ -79,7 +79,6 @@ struct IntValue {
 %token AST           "ast"
 %token BIT           "bit"
 %token BLOCK         "block"
-%token BLOCKEND      "block.end"
 %token BYTE          "byte"
 %token CASE          "case"
 %token CLOSEPAREN    ")"
@@ -313,9 +312,6 @@ expression
         | bool_expression { $$ = $1; }
         | map_expression { $$ = $1; }
         | param_expression { $$ = $1; }
-        | "(" "block.end" ")" {
-            $$ = Driver.create<BlockEndNoArgsNode>();
-          }
         | "(" "error" ")" {
             $$ = Driver.create<ErrorNode>();
           }
@@ -340,7 +336,7 @@ format_directive
         : fixed_format_directive { $$ = $1; }
         | opcode_expression { $$ = $1; }
         | "(" "varint32" ")" {
-            $$ = Driver.create<Varint32NoArgsNode>();
+            $$ = Driver.getVarint32OneArgDefinition();
           }
         | "(" "varint32" INTEGER ")" {
             if ($3.Value < 2 || $3.Value > 32)
@@ -348,7 +344,7 @@ format_directive
             $$ = Driver.getVarint32OneArgDefinition($3.Value, $3.Format);
           }
         | "(" "varint64" ")" {
-            $$ = Driver.create<Varint64NoArgsNode>();
+            $$ = Driver.getVarint64OneArgDefinition();
           }
         | "(" "varint64" INTEGER ")" {
             if ($3.Value < 2 || $3.Value > 64)
@@ -356,7 +352,7 @@ format_directive
             $$ = Driver.getVarint64OneArgDefinition($3.Value, $3.Format);
           }
         | "(" "varuint32" ")" {
-            $$ = Driver.create<Varuint32NoArgsNode>();
+            $$ = Driver.getVaruint32OneArgDefinition();
           }
         | "(" "varuint32" INTEGER ")" {
             if ($3.Value < 2 || $3.Value > 32)
@@ -364,7 +360,7 @@ format_directive
             $$ = Driver.getVaruint32OneArgDefinition($3.Value, $3.Format);
           }
         | "(" "varuint64" ")" {
-            $$ = Driver.create<Varuint64NoArgsNode>();
+            $$ = Driver.getVaruint64OneArgDefinition();
           }
         | "(" "varuint64" INTEGER ")" {
             if ($3.Value < 2 || $3.Value > 64)
@@ -378,7 +374,7 @@ fixed_format_directive
             $$ = Driver.create<VoidNode>();
           }
         | "(" "uint8" ")" {
-            $$ = Driver.create<Uint8NoArgsNode>();
+            $$ = Driver.getUint8OneArgDefinition();
           }
         | "(" "uint8" INTEGER ")" {
             if ($3.Value > 8)
@@ -386,7 +382,7 @@ fixed_format_directive
             $$ = Driver.getUint8OneArgDefinition($3.Value, $3.Format);
           }
         | "(" "uint32" ")" {
-            $$ = Driver.create<Uint32NoArgsNode>();
+            $$ = Driver.getUint32OneArgDefinition();
           }
         | "(" "uint32" INTEGER ")"  {
             if ($3.Value > 32)
@@ -394,7 +390,7 @@ fixed_format_directive
             $$ = Driver.getUint32OneArgDefinition($3.Value, $3.Format);
           }
         | "(" "uint64" ")" {
-            $$ = Driver.create<Uint64NoArgsNode>();
+            $$ = Driver.getUint64OneArgDefinition();
           }
         | "(" "uint64" INTEGER ")"  {
             if ($3.Value > 64)
@@ -459,12 +455,18 @@ param_expression
         : "(" "param" INTEGER ")" {
             $$ = Driver.getParamDefinition($3.Value, $3.Format);
           }
+        | "(" "param" ")" {
+            $$ = Driver.getParamDefinition();
+          }
         ;
 
 version : "(" "version" INTEGER ")" {
             if ($3.Value != 0)
               Driver.error("Currently, only (version 0) is supported");
             $$ = Driver.getVersionDefinition($3.Value, $3.Format);
+          }
+        | "(" "version" ")" {
+            $$ = Driver.getVersionDefinition();
           }
         ;
 

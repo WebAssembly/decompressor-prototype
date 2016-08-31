@@ -32,7 +32,6 @@
   /* enum name, opcode */                                                      \
                                                                                \
   /* Control flow operators */                                                 \
-  X(BlockEndNoArgs,    0x00, "block.end",        "BlockEndNoArgs",  0, 0)      \
   X(Block,             0x01, "block",            nullptr,           1, 0)      \
   X(Case,              0x02, "case",             nullptr,           2, 0)      \
   X(Error,             0x03, "error",            nullptr,           0, 0)      \
@@ -102,7 +101,6 @@
 
 //#define X(tag, NODE_DECLS)
 #define AST_NULLARYNODE_TABLE                                                  \
-  X(BlockEndNoArgs,)                                                           \
   X(Error,)                                                                    \
   X(LastRead,)                                                                 \
   X(Uint8NoArgs,)                                                              \
@@ -127,9 +125,9 @@
   X(U8Const, 0, true,)                                                         \
   X(U32Const, 0, true,)                                                        \
   X(U64Const, 0, true,)                                                        \
-  X(Uint32OneArg, 0, true,)                                                    \
-  X(Uint64OneArg, 0, true,)                                                    \
-  X(Uint8OneArg, 0, true,)                                                     \
+  X(Uint32OneArg, 32, true,)                                                    \
+  X(Uint64OneArg, 64, true,)                                                    \
+  X(Uint8OneArg, 8, true,)                                                     \
   X(Varint32OneArg, 8, true,)                                                  \
   X(Varint64OneArg, 8, true,)                                                  \
   X(Varuint32OneArg, 8, true,)                                                 \

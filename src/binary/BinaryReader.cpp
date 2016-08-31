@@ -492,9 +492,6 @@ void BinaryReader::readNode() {
     case OpBlock:
       readUnary<BlockNode>();
       break;
-    case OpBlockEndNoArgs:
-      readNullary<BlockEndNoArgsNode>();
-      break;
     case OpCase: {
       readBinary<CaseNode>();
       break;

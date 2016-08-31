@@ -16,42 +16,40 @@
 # This file defines the default algorithms for decompressing a WASM
 # module.
 
-# TODO(kschimpf) Generate AST's.
-
 (section 'filter'
-  (version 0)
+  (version)
 
-  (define 'code' (param 0)
-    (loop (varuint32 6)          # Number of function bodies.
+  (define 'code' (param)
+    (loop (varuint32)            # Number of function bodies.
       (eval 'code.function'))
   )
 
-  (define 'code.address' (param 0)
-    (varuint32 6)                # alignment
-    (varuint32 6)                # offset
+  (define 'code.address' (param)
+    (varuint32)                  # alignment
+    (varuint32)                  # offset
   )
 
-  (define 'code.br_table' (param 0)
+  (define 'code.br_table' (param)
     (uint8)                      # table arity.
-    (loop (varuint32 6)          # number of targets.
-       (uint32 6))               # target depth.
-    (uint32 6)                   # default target depth.
+    (loop (varuint32)            # number of targets.
+       (uint32))                 # target depth.
+    (uint32)                     # default target depth.
   )
 
-  (define 'code.br_target' (param 0)
+  (define 'code.br_target' (param)
      (uint8)                     # br arity.
-     (varuint32 6)               # relative depth
+     (varuint32)                 # relative depth
   )
 
-  (define 'code.call_args' (param 0)
-    (varuint32 6)                # function arity.
-    (varuint32 6)                # function index
+  (define 'code.call_args' (param)
+    (varuint32)                  # function arity.
+    (varuint32)                  # function index
   )
 
-  (define 'code.function' (param 0)
+  (define 'code.function' (param)
     (block
       # block implicitly reads   # bytes using (varuint32) on byte stream.
-      (loop (varuint32 6)        # number of locals in function.
+      (loop (varuint32)          # number of locals in function.
         (eval 'code.local'))
       (loop.unbounded
         (eval 'code.opcode')     # reads instruction opcode
@@ -59,27 +57,27 @@
     )
   )
 
-  (define 'code.local' (param 0)
-    (varuint32 6)                # number of locals with type
-    (uint8 3)                    # type of locals.
+  (define 'code.local' (param)
+    (varuint32)                  # number of locals with type
+    (uint8)                      # type of locals.
   )
 
-  (define 'code.inst' (param 0)
+  (define 'code.inst' (param)
     (switch (read)
       # TODO(kschimpf) build asts based on arity of opcodes?
-      (void)                                 # simple one byte opcode.
+      (void)                                      # simple one byte opcode.
       # control flow operators.
       (case (u8.const 0x06) (eval 'code.br_target'))    # br
       (case (u8.const 0x07) (eval 'code.br_target'))    # br_if
       (case (u8.const 0x08) (eval 'code.br_table'))     # br_table
       (case (u8.const 0x09) (uint8))                    # return arity
       # basic operators
-      (case (u8.const 0x10) (varint32 6))               # i32.const value
-      (case (u8.const 0x11) (varint64 6))               # i64.const value
+      (case (u8.const 0x10) (varint32))                 # i32.const value
+      (case (u8.const 0x11) (varint64))                 # i64.const value
       (case (u8.const 0x12) (uint64))                   # f64.const value
       (case (u8.const 0x13) (uint32))                   # f32.const value
-      (case (u8.const 0x14) (varuint32 6))              # get_local index
-      (case (u8.const 0x15) (varuint32 6))              # set_local index
+      (case (u8.const 0x14) (varuint32))                # get_local index
+      (case (u8.const 0x15) (varuint32))                # set_local index
       (case (u8.const 0x16) (eval 'code.call_args'))    # call
       (case (u8.const 0x17) (eval 'code.call_args'))    # call_indirect
       (case (u8.const 0x18) (eval 'code.call_args'))    # call_import
@@ -107,95 +105,94 @@
       (case (u8.const 0x34) (eval 'code.address'))      # i64.store address
       (case (u8.const 0x35) (eval 'code.address'))      # f32.store address
       (case (u8.const 0x36) (eval 'code.address'))      # f64.store address
-      (case (u32.const 0xFFFFFFFF) (block.end))          # end function block
     )
   )
 
-  (define 'code.opcode' (param 0) (uint8))
+  (define 'code.opcode' (param) (uint8))
 
-  (define 'data' (param 0)
-    (loop (varuint32 6)        # number of data segments.
+  (define 'data' (param)
+    (loop (varuint32)          # number of data segments.
       (eval 'data.segment'))
   )
 
-  (define 'data.segment' (param 0)
+  (define 'data.segment' (param)
     # The offset in linear memory at which to store the data.
-     (varuint32 6)
+     (varuint32)
     # The data
-    (loop (varuint32 6) (uint8))
+    (loop (varuint32) (uint8))
   )
 
-  (define 'export' (param 0)
-    (loop (varuint32 6)        # number of exports
+  (define 'export' (param)
+    (loop (varuint32)          # number of exports
       (eval 'export.entry'))
   )
 
-  (define 'export.entry' (param 0)
-    (varuint32 6)              # function index
+  (define 'export.entry' (param)
+    (varuint32)                # function index
     (eval 'export.symbol')     # funtion name
   )
 
-  (define 'export.symbol' (param 0)
+  (define 'export.symbol' (param)
                                # reads in a function name
-    (loop (varuint32 6) (uint8))
+    (loop (varuint32) (uint8))
   )
 
-  (define 'function' (param 0)
-    (loop (varuint32 6)        # Number of type signatures.
-       (varuint32 6))          # type signature index
+  (define 'function' (param)
+    (loop (varuint32)          # Number of type signatures.
+       (varuint32))            # type signature index
   )
 
-  (define 'import' (param 0)
-    (loop (varuint32 6) (eval 'import.entry'))
+  (define 'import' (param)
+    (loop (varuint32) (eval 'import.entry'))
   )
 
-  (define 'import.entry' (param 0)
-    (varuint32 6)              # signature index of the import
+  (define 'import.entry' (param)
+    (varuint32)                # signature index of the import
     (eval 'import.symbol')     # module name
     (eval 'import.symbol')     # function name
   )
 
-  (define 'import.symbol' (param 0)
-    (loop (varuint32 6) (uint8))
+  (define 'import.symbol' (param)
+    (loop (varuint32) (uint8))
   )
 
-  (define 'memory' (param 0)
-    (varuint32 6)              # Initial memory suze
-    (varuint32 6)              # maximum memory size
-    (uint8)                    # 1 if the memory is visible outside the module
+  (define 'memory' (param)
+    (varuint32)              # Initial memory suze
+    (varuint32)              # maximum memory size
+    (uint8)                  # 1 if the memory is visible outside the module
   )
 
-  (define 'name' (param 0)
-    (loop (varuint32 6)        # function name count.
+  (define 'name' (param)
+    (loop (varuint32)        # function name count.
       (eval 'name.function'))
   )
 
-  (define 'name.function' (param 0)
+  (define 'name.function' (param)
     (eval 'name.symbol')       # function name
-    (loop (varuint32 6)        # number of local names.
+    (loop (varuint32)          # number of local names.
       (eval 'name.symbol'))    # local name
   )
 
-  (define 'name.symbol' (param 0)
+  (define 'name.symbol' (param)
                                # reads in a symbol name
-    (loop (varuint32 6) (uint8))
+    (loop (varuint32) (uint8))
   )
 
-  (define 'start' (param 0)
-    (varuint32 6)              # start function index.
+  (define 'start' (param)
+    (varuint32)                # start function index.
   )
 
-  (define 'table' (param 0)
-    (loop (varuint32 6)        # Number of table entries.
-       (varuint32 6))          # function index.
+  (define 'table' (param)
+    (loop (varuint32)         # Number of table entries.
+       (varuint32))           # function index.
   )
 
-  (define 'type' (param 0)
-    (loop (varuint32 6)        # number of signatures.
+  (define 'type' (param)
+    (loop (varuint32)          # number of signatures.
       (uint8)                  # type form (0x040)
-      (loop (varuint32 6)      # number of parameters parameters
+      (loop (varuint32)        # number of parameters parameters
         (uint8))               # parameter type.
-      (loop (varuint32 6)      # number of return types.
+      (loop (varuint32)        # number of return types.
         (uint8))               # return type.
     )
   )
