@@ -81,7 +81,12 @@ class ReadCursor FINAL : public Cursor {
 
   // Reads next byte. Returns zero if at end of file. NOTE: Assumes byte
   // aligned!
-  uint8_t readByte();
+  uint8_t readByte() {
+    assert(isByteAligned());
+    if (CurAddress < GuaranteedBeforeEob)
+      return readOneByte();
+    return readByteAfterReadFill();
+  }
 
   // Reads up to 32 bits from the input.
   uint32_t readBits(uint32_t NumBits);
@@ -93,12 +98,13 @@ class ReadCursor FINAL : public Cursor {
 
  protected:
   uint8_t readOneByte() {
+    assert(CurPage);
     uint8_t Byte = *getBufferPtr();
     ++CurAddress;
-    CurPage = Que->getReadPage(CurAddress);
-    assert(CurPage);
     return Byte;
   }
+
+  uint8_t readByteAfterReadFill();
 };
 
 }  // end of namespace decode
