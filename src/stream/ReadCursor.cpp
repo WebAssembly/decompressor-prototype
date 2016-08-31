@@ -20,10 +20,20 @@ namespace wasm {
 
 namespace decode {
 
+#if 0
 uint8_t ReadCursor::readByte() {
   assert(isByteAligned());
   if (CurAddress < GuaranteedBeforeEob)
     return readOneByte();
+  bool atEof = isIndexAtEndOfPage() && !readFillBuffer();
+  updateGuaranteedBeforeEob();
+  if (atEof)
+    return 0;
+  return readOneByte();
+}
+#endif
+
+uint8_t ReadCursor::readByteAfterReadFill() {
   bool atEof = isIndexAtEndOfPage() && !readFillBuffer();
   updateGuaranteedBeforeEob();
   if (atEof)
