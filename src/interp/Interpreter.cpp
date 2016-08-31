@@ -243,9 +243,6 @@ void Interpreter::readBackFilled() {
 #if LOG_RUNMETHODS
   TRACE_METHOD("readBackFilled");
 #endif
-  if (FrameStack.empty())
-    // Clear from previous run.
-    Frame.reset();
   ReadCursor FillPos(ReadPos);
   while (needsMoreInput() && !errorsFound()) {
     while (!hasEnoughHeadroom()) {
@@ -253,10 +250,6 @@ void Interpreter::readBackFilled() {
     }
     runMethods();
   }
-  // TODO(karlschimpf): Remove this when transitioned to runMethods()
-  // medel complete.
-  if (errorsFound())
-    fatal("Unable to continue, errors found");
 }
 
 void Interpreter::fail() {
@@ -740,7 +733,7 @@ void Interpreter::runMethods() {
                           Sym->getStringName().c_str(),
                           uintmax_t(NumParams->getValue()),
                           uintmax_t(NumCallArgs));
-                  fatal("Unable to evaluate call");
+                  fail("Unable to evaluate call");
                 }
                 size_t CallingEvalIndex = CallingEvalStack.size();
                 CallingEvalStack.push();
