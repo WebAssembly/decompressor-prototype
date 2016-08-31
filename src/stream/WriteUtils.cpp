@@ -25,6 +25,8 @@ namespace decode {
 
 namespace {
 
+const char* ValueFormatName[] = {"decimal", "signed decimal", "hexidecimal"};
+
 IntType IntTypeMaxPower10 = 0;  // Zero implies need computing.
 
 IntType getIntTypeMaxPower10() {
@@ -55,6 +57,12 @@ decode::IntType moduloByPower10(decode::IntType Value,
 }
 
 }  // end of anonymous namespace
+
+const char* getName(ValueFormat Format) {
+  size_t Index = size_t(Format);
+  return Index < size(ValueFormatName) ? ValueFormatName[Index]
+                                       : "unknown format";
+}
 
 void writeInt(FILE* File, IntType Value, ValueFormat Format) {
   switch (Format) {

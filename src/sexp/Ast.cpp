@@ -79,6 +79,28 @@ const char* getNodeTypeName(NodeType Type) {
   return Name;
 }
 
+void IntegerValue::describe(FILE* Out) const {
+  fprintf(Out, "%s<", getNodeSexpName(Type));
+  writeInt(Out, Value, Format);
+  fprintf(Out, ", %s>", getName(Format));
+}
+
+int IntegerValue::compare(const IntegerValue& V) const {
+  if (Type < V.Type)
+    return -1;
+  if (Type > V.Type)
+    return 1;
+  if (Value < V.Value)
+    return -1;
+  if (Value > V.Value)
+    return 1;
+  if (Format < V.Format)
+    return -1;
+  if (Format > V.Format)
+    return 1;
+  return 0;
+}
+
 void Node::append(Node*) {
   decode::fatal("Node::append not supported for ast node!");
 }
@@ -145,6 +167,24 @@ SymbolNode* SymbolTable::getSymbolDefinition(ExternalName& Name) {
   }
   return Node;
 }
+
+#define X(tag, defval, mergable, NODE_DECLS)                         \
+  tag##Node* SymbolTable::get##tag##Definition(IntType Value,        \
+                                               ValueFormat Format) { \
+    if (mergable) {                                                  \
+      IntegerValue I(Op##tag, Value, Format);                        \
+      IntegerNode* Node = IntMap[I];                                 \
+      if (Node == nullptr) {                                         \
+        Node = create<tag##Node>(Value, Format);                     \
+        IntMap[I] = Node;                                            \
+      }                                                              \
+      return dyn_cast<tag##Node>(Node);                              \
+    } else {                                                         \
+      return create<tag##Node>(Value, Format);                       \
+    }                                                                \
+  }
+AST_INTEGERNODE_TABLE
+#undef X
 
 void SymbolTable::install(Node* Root) {
   TRACE_METHOD("install");
@@ -308,15 +348,15 @@ bool IntegerNode::implementsClass(NodeType Type) {
   switch (Type) {
     default:
       return false;
-#define X(tag, NODE_DECLS) \
-  case Op##tag:            \
+#define X(tag, defval, mergable, NODE_DECLS) \
+  case Op##tag:                              \
     return true;
       AST_INTEGERNODE_TABLE
 #undef X
   }
 }
 
-#define X(tag, NODE_DECLS) \
+#define X(tag, defval, mergable, NODE_DECLS) \
   void tag##Node::forceCompilation() {}
 AST_INTEGERNODE_TABLE
 #undef X

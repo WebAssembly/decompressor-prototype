@@ -51,6 +51,15 @@ class Driver {
     return Table->create<T>(std::forward<Args>(args)...);
   }
 
+#define X(tag, defval, mergable, NODE_DECLS)                       \
+  tag##Node* get##tag##Definition(                                 \
+      decode::IntType Value,                                       \
+      decode::ValueFormat Format = decode::ValueFormat::Decimal) { \
+    return Table->get##tag##Definition(Value, Format);             \
+  }
+  AST_INTEGERNODE_TABLE
+#undef X
+
   SymbolNode* getSymbolDefinition(ExternalName& Name) {
     return Table->getSymbolDefinition(Name);
   }
