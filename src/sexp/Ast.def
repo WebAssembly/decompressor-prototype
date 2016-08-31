@@ -54,19 +54,12 @@
   X(U64Const,          0x16, "u64.const",        nullptr,           1, 0)      \
                                                                                \
   /* Formatting */                                                             \
-  X(Uint32NoArgs,      0x20, "uint32",           "uint32NoArgs",    0, 0)      \
   X(Uint32OneArg,      0x21, "uint32",           "uint32OneArg",    1, 0)      \
-  X(Uint64NoArgs,      0x22, "uint64",           "uint64NoArgs",    0, 0)      \
   X(Uint64OneArg,      0x23, "uint64",           "uint64OneArg",    1, 0)      \
-  X(Uint8NoArgs,       0x24, "uint8",            "uint8NoArgs",     0, 0)      \
   X(Uint8OneArg,       0x25, "uint8",            "uint8OneArg",     1, 0)      \
-  X(Varint32NoArgs,    0x26, "varint32",         "varint32NoArgs",  0, 0)      \
   X(Varint32OneArg,    0x27, "varint32",         "varint32OneArg",  1, 0)      \
-  X(Varint64NoArgs,    0x28, "varint64",         "varint64NoArgs",  0, 0)      \
   X(Varint64OneArg,    0x29, "varint64",         "varint64OneArg",  1, 0)      \
-  X(Varuint32NoArgs,   0x2a, "varuint32",        "varuint32NoArgs", 0, 0)      \
   X(Varuint32OneArg,   0x2b, "varuint32",        "varuint32OneArg", 1, 0)      \
-  X(Varuint64NoArgs,   0x2c, "varuint64",        "varuint64NoArgs", 0, 0)      \
   X(Varuint64OneArg,   0x2d, "varuint64",        "varuint64OneArg", 1, 0)      \
   X(Opcode,            0x2e, "opcode",           nullptr,           1, 0)      \
                                                                                \
@@ -103,13 +96,6 @@
 #define AST_NULLARYNODE_TABLE                                                  \
   X(Error,)                                                                    \
   X(LastRead,)                                                                 \
-  X(Uint8NoArgs,)                                                              \
-  X(Uint32NoArgs,)                                                             \
-  X(Uint64NoArgs,)                                                             \
-  X(Varint32NoArgs,)                                                           \
-  X(Varint64NoArgs,)                                                           \
-  X(Varuint32NoArgs,)                                                          \
-  X(Varuint64NoArgs,)                                                          \
   X(Void,)                                                                     \
 
 //#define X(tag, defval, mergable, NODE_DECLS)

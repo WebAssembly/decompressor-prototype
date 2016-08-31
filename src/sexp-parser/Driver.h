@@ -57,9 +57,7 @@ class Driver {
       decode::ValueFormat Format = decode::ValueFormat::Decimal) { \
     return Table->get##tag##Definition(Value, Format);             \
   }                                                                \
-  tag##Node* get##tag##Definition() {                              \
-    return Table->get##tag##Definition();                          \
-  }
+  tag##Node* get##tag##Definition() { return Table->get##tag##Definition(); }
   AST_INTEGERNODE_TABLE
 #undef X
 

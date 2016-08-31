@@ -592,20 +592,11 @@ void BinaryReader::readNode() {
       NodeStack.push_back(Node);
       break;
     }
-    case OpUint32NoArgs:
-      readNullary<Uint32NoArgsNode>();
-      break;
     case OpUint32OneArg:
       readUint8<Uint32OneArgNode>();
       break;
-    case OpUint64NoArgs:
-      readNullary<Uint64NoArgsNode>();
-      break;
     case OpUint64OneArg:
       readUint8<Uint64OneArgNode>();
-      break;
-    case OpUint8NoArgs:
-      readNullary<Uint8NoArgsNode>();
       break;
     case OpUint8OneArg:
       readUint8<Uint8OneArgNode>();
@@ -622,26 +613,14 @@ void BinaryReader::readNode() {
     case OpU64Const:
       readVaruint64<U64ConstNode>();
       break;
-    case OpVarint32NoArgs:
-      readNullary<Varint32NoArgsNode>();
-      break;
     case OpVarint32OneArg:
       readUint8<Varint32OneArgNode>();
-      break;
-    case OpVarint64NoArgs:
-      readNullary<Varint64NoArgsNode>();
       break;
     case OpVarint64OneArg:
       readUint8<Varint64OneArgNode>();
       break;
-    case OpVaruint32NoArgs:
-      readNullary<Varuint32NoArgsNode>();
-      break;
     case OpVaruint32OneArg:
       readUint8<Varuint32OneArgNode>();
-      break;
-    case OpVaruint64NoArgs:
-      readNullary<Varuint64NoArgsNode>();
       break;
     case OpVaruint64OneArg:
       readUint8<Varuint64OneArgNode>();

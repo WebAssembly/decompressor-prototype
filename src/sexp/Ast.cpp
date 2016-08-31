@@ -168,32 +168,31 @@ SymbolNode* SymbolTable::getSymbolDefinition(ExternalName& Name) {
   return Node;
 }
 
-#define X(tag, defval, mergable, NODE_DECLS)                \
-  tag##Node* SymbolTable::get##tag##Definition(             \
-      IntType Value, ValueFormat Format) {                  \
-    if (mergable) {                                         \
-      IntegerValue I(Op##tag, Value, Format, false)    ;    \
-      IntegerNode* Node = IntMap[I];                        \
-      if (Node == nullptr) {                                \
-        Node = create<tag##Node>(Value, Format)       ;     \
-        IntMap[I] = Node;                                   \
-      }                                                     \
-      return dyn_cast<tag##Node>(Node);                     \
-    }                                                       \
-    return create<tag##Node>(Value, Format);                \
-  }                                                         \
-  tag##Node* SymbolTable::get##tag##Definition() {          \
-    if (mergable) {                                         \
-      IntegerValue I(Op##tag, (defval),                     \
-                     ValueFormat::Decimal, true);           \
-      IntegerNode* Node = IntMap[I];                        \
-      if (Node == nullptr) {                                \
-        Node = create<tag##Node>();                         \
-        IntMap[I] = Node;                                   \
-      }                                                     \
-      return dyn_cast<tag##Node>(Node);                     \
-    }                                                       \
-    return create<tag##Node>();                             \
+#define X(tag, defval, mergable, NODE_DECLS)                         \
+  tag##Node* SymbolTable::get##tag##Definition(IntType Value,        \
+                                               ValueFormat Format) { \
+    if (mergable) {                                                  \
+      IntegerValue I(Op##tag, Value, Format, false);                 \
+      IntegerNode* Node = IntMap[I];                                 \
+      if (Node == nullptr) {                                         \
+        Node = create<tag##Node>(Value, Format);                     \
+        IntMap[I] = Node;                                            \
+      }                                                              \
+      return dyn_cast<tag##Node>(Node);                              \
+    }                                                                \
+    return create<tag##Node>(Value, Format);                         \
+  }                                                                  \
+  tag##Node* SymbolTable::get##tag##Definition() {                   \
+    if (mergable) {                                                  \
+      IntegerValue I(Op##tag, (defval), ValueFormat::Decimal, true); \
+      IntegerNode* Node = IntMap[I];                                 \
+      if (Node == nullptr) {                                         \
+        Node = create<tag##Node>();                                  \
+        IntMap[I] = Node;                                            \
+      }                                                              \
+      return dyn_cast<tag##Node>(Node);                              \
+    }                                                                \
+    return create<tag##Node>();                                      \
   }
 AST_INTEGERNODE_TABLE
 #undef X
@@ -555,19 +554,8 @@ bool getCaseSelectorWidth(const Node* Nd, uint32_t& Width) {
       // Not allowed in opcode cases.
       Nd->getTrace().printSexp("Non-fixed width opcode format", Nd);
       return false;
-    case OpUint8NoArgs:
-      Width = 8;
-      return true;
     case OpUint8OneArg:
-      break;
-    case OpUint32NoArgs:
-      Width = 32;
-      return true;
     case OpUint32OneArg:
-      break;
-    case OpUint64NoArgs:
-      Width = 64;
-      return true;
     case OpUint64OneArg:
       break;
   }
@@ -644,11 +632,8 @@ bool collectCaseWidths(IntType Key,
         }
       }
       return true;
-    case OpUint8NoArgs:
     case OpUint8OneArg:
-    case OpUint32NoArgs:
     case OpUint32OneArg:
-    case OpUint64NoArgs:
     case OpUint64OneArg:
       return addFormatWidth(Nd, CaseWidths);
   }

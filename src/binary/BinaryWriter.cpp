@@ -83,14 +83,7 @@ void BinaryWriter::writeNode(const Node* Nd) {
     case OpLoopUnbounded:
     case OpPeek:
     case OpRead:
-    case OpUint32NoArgs:
-    case OpUint64NoArgs:
-    case OpUint8NoArgs:
     case OpUndefine:
-    case OpVarint32NoArgs:
-    case OpVarint64NoArgs:
-    case OpVaruint32NoArgs:
-    case OpVaruint64NoArgs:
     case OpLastRead:
     case OpRename:
     case OpVoid:
