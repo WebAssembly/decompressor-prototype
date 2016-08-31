@@ -51,7 +51,7 @@ class Driver {
     return Table->create<T>(std::forward<Args>(args)...);
   }
 
-#define X(tag, defval, mergable, NODE_DECLS)                       \
+#define X(tag, format, defval, mergable, NODE_DECLS)               \
   tag##Node* get##tag##Definition(                                 \
       decode::IntType Value,                                       \
       decode::ValueFormat Format = decode::ValueFormat::Decimal) { \

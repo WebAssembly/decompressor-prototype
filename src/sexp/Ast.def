@@ -54,13 +54,13 @@
   X(U64Const,          0x16, "u64.const",        nullptr,           1, 0)      \
                                                                                \
   /* Formatting */                                                             \
-  X(Uint32OneArg,      0x21, "uint32",           "uint32OneArg",    1, 0)      \
-  X(Uint64OneArg,      0x23, "uint64",           "uint64OneArg",    1, 0)      \
-  X(Uint8OneArg,       0x25, "uint8",            "uint8OneArg",     1, 0)      \
-  X(Varint32OneArg,    0x27, "varint32",         "varint32OneArg",  1, 0)      \
-  X(Varint64OneArg,    0x29, "varint64",         "varint64OneArg",  1, 0)      \
-  X(Varuint32OneArg,   0x2b, "varuint32",        "varuint32OneArg", 1, 0)      \
-  X(Varuint64OneArg,   0x2d, "varuint64",        "varuint64OneArg", 1, 0)      \
+  X(Uint32,            0x21, "uint32",           "uint32",          1, 0)      \
+  X(Uint64,            0x23, "uint64",           "uint64",          1, 0)      \
+  X(Uint8,             0x25, "uint8",            "uint8",           1, 0)      \
+  X(Varint32,          0x27, "varint32",         "varint32",        1, 0)      \
+  X(Varint64,          0x29, "varint64",         "varint64",        1, 0)      \
+  X(Varuint32,         0x2b, "varuint32",        "varuint32",       1, 0)      \
+  X(Varuint64,         0x2d, "varuint64",        "varuint64",       1, 0)      \
   X(Opcode,            0x2e, "opcode",           nullptr,           1, 0)      \
                                                                                \
   /* Boolean tests */                                                          \
@@ -101,24 +101,25 @@
 //#define X(tag, defval, mergable, NODE_DECLS)
 // where:
 //   tag: enumeration name (less Op prefix).
+//   format: Format for printing out value.
 //   defval: Default value assumed if not provided.
 //   mergable: True if instances can be merged.
 //   NODE_DECLS: Other declarations for the node.
 #define AST_INTEGERNODE_TABLE                                                  \
-  X(I32Const, 0, true,)                                                        \
-  X(I64Const, 0, true,)                                                        \
-  X(Param, 0, false, PARAM_DECLS)                                              \
-  X(U8Const, 0, true,)                                                         \
-  X(U32Const, 0, true,)                                                        \
-  X(U64Const, 0, true,)                                                        \
-  X(Uint32OneArg, 32, true,)                                                    \
-  X(Uint64OneArg, 64, true,)                                                    \
-  X(Uint8OneArg, 8, true,)                                                     \
-  X(Varint32OneArg, 8, true,)                                                  \
-  X(Varint64OneArg, 8, true,)                                                  \
-  X(Varuint32OneArg, 8, true,)                                                 \
-  X(Varuint64OneArg, 8, true,)                                                 \
-  X(Version, 0, true,)                                                         \
+  X(I32Const, Varint32, 0, true,)                                              \
+  X(I64Const, Varint64, 0, true,)                                              \
+  X(Param, Varuint32, 0, false, PARAM_DECLS)                                   \
+  X(U8Const, Uint8, 0, true,)                                                  \
+  X(U32Const, Varuint32, 0, true,)                                             \
+  X(U64Const, Varuint64, 0, true,)                                             \
+  X(Uint32, Uint8, 32, true,)                                                  \
+  X(Uint64, Uint8, 64, true,)                                                  \
+  X(Uint8, Uint8, 8, true,)                                                    \
+  X(Varint32, Uint8, 8, true,)                                                 \
+  X(Varint64, Uint8,  8, true,)                                                \
+  X(Varuint32, Uint8, 8, true,)                                                \
+  X(Varuint64, Uint8, 8, true,)                                                \
+  X(Version, Varuint32, 0, true,)                                              \
 
 #define PARAM_DECLS                                                            \
   public:                                                                      \

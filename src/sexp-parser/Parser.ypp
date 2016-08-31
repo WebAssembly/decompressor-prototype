@@ -336,36 +336,36 @@ format_directive
         : fixed_format_directive { $$ = $1; }
         | opcode_expression { $$ = $1; }
         | "(" "varint32" ")" {
-            $$ = Driver.getVarint32OneArgDefinition();
+            $$ = Driver.getVarint32Definition();
           }
         | "(" "varint32" INTEGER ")" {
             if ($3.Value < 2 || $3.Value > 32)
               Driver.error("varint32 expects 2 <= bitsize <= 32");
-            $$ = Driver.getVarint32OneArgDefinition($3.Value, $3.Format);
+            $$ = Driver.getVarint32Definition($3.Value, $3.Format);
           }
         | "(" "varint64" ")" {
-            $$ = Driver.getVarint64OneArgDefinition();
+            $$ = Driver.getVarint64Definition();
           }
         | "(" "varint64" INTEGER ")" {
             if ($3.Value < 2 || $3.Value > 64)
               Driver.error("varint64 expects 2 <= bitsize <= 64");
-            $$ = Driver.getVarint64OneArgDefinition($3.Value, $3.Format);
+            $$ = Driver.getVarint64Definition($3.Value, $3.Format);
           }
         | "(" "varuint32" ")" {
-            $$ = Driver.getVaruint32OneArgDefinition();
+            $$ = Driver.getVaruint32Definition();
           }
         | "(" "varuint32" INTEGER ")" {
             if ($3.Value < 2 || $3.Value > 32)
               Driver.error("varuint32 expects 2 <= bitsize <= 32");
-            $$ = Driver.getVaruint32OneArgDefinition($3.Value, $3.Format);
+            $$ = Driver.getVaruint32Definition($3.Value, $3.Format);
           }
         | "(" "varuint64" ")" {
-            $$ = Driver.getVaruint64OneArgDefinition();
+            $$ = Driver.getVaruint64Definition();
           }
         | "(" "varuint64" INTEGER ")" {
             if ($3.Value < 2 || $3.Value > 64)
               Driver.error("varuint64 expects 2 <= bitsize <= 64");
-            $$ = Driver.getVaruint64OneArgDefinition($3.Value, $3.Format);
+            $$ = Driver.getVaruint64Definition($3.Value, $3.Format);
           }
         ;
 
@@ -374,28 +374,28 @@ fixed_format_directive
             $$ = Driver.create<VoidNode>();
           }
         | "(" "uint8" ")" {
-            $$ = Driver.getUint8OneArgDefinition();
+            $$ = Driver.getUint8Definition();
           }
         | "(" "uint8" INTEGER ")" {
             if ($3.Value > 8)
               Driver.error("uint8 bitsize > 8");
-            $$ = Driver.getUint8OneArgDefinition($3.Value, $3.Format);
+            $$ = Driver.getUint8Definition($3.Value, $3.Format);
           }
         | "(" "uint32" ")" {
-            $$ = Driver.getUint32OneArgDefinition();
+            $$ = Driver.getUint32Definition();
           }
         | "(" "uint32" INTEGER ")"  {
             if ($3.Value > 32)
               Driver.error("uint32 bitsize > 32");
-            $$ = Driver.getUint32OneArgDefinition($3.Value, $3.Format);
+            $$ = Driver.getUint32Definition($3.Value, $3.Format);
           }
         | "(" "uint64" ")" {
-            $$ = Driver.getUint64OneArgDefinition();
+            $$ = Driver.getUint64Definition();
           }
         | "(" "uint64" INTEGER ")"  {
             if ($3.Value > 64)
               Driver.error("uint64 bitsize > 64");
-            $$ = Driver.getUint64OneArgDefinition($3.Value, $3.Format);
+            $$ = Driver.getUint64Definition($3.Value, $3.Format);
           }
         ;
 

@@ -168,7 +168,7 @@ SymbolNode* SymbolTable::getSymbolDefinition(ExternalName& Name) {
   return Node;
 }
 
-#define X(tag, defval, mergable, NODE_DECLS)                         \
+#define X(tag, format, defval, mergable, NODE_DECLS)                 \
   tag##Node* SymbolTable::get##tag##Definition(IntType Value,        \
                                                ValueFormat Format) { \
     if (mergable) {                                                  \
@@ -359,15 +359,15 @@ bool IntegerNode::implementsClass(NodeType Type) {
   switch (Type) {
     default:
       return false;
-#define X(tag, defval, mergable, NODE_DECLS) \
-  case Op##tag:                              \
+#define X(tag, format, defval, mergable, NODE_DECLS)                           \
+  case Op##tag:                                                                \
     return true;
       AST_INTEGERNODE_TABLE
 #undef X
   }
 }
 
-#define X(tag, defval, mergable, NODE_DECLS) \
+#define X(tag, format, defval, mergable, NODE_DECLS)     \
   void tag##Node::forceCompilation() {}
 AST_INTEGERNODE_TABLE
 #undef X
@@ -554,9 +554,9 @@ bool getCaseSelectorWidth(const Node* Nd, uint32_t& Width) {
       // Not allowed in opcode cases.
       Nd->getTrace().printSexp("Non-fixed width opcode format", Nd);
       return false;
-    case OpUint8OneArg:
-    case OpUint32OneArg:
-    case OpUint64OneArg:
+    case OpUint8:
+    case OpUint32:
+    case OpUint64:
       break;
   }
   Width = getIntegerValue(Nd->getKid(0));
@@ -632,9 +632,9 @@ bool collectCaseWidths(IntType Key,
         }
       }
       return true;
-    case OpUint8OneArg:
-    case OpUint32OneArg:
-    case OpUint64OneArg:
+    case OpUint8:
+    case OpUint32:
+    case OpUint64:
       return addFormatWidth(Nd, CaseWidths);
   }
 }

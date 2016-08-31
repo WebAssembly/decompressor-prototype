@@ -57,7 +57,7 @@ class Node;
 class SymbolNode;
 class SymbolTable;
 
-#define X(tag, defval, mergable, NODE_DECLS) class tag##Node;
+#define X(tag, format, defval, mergable, NODE_DECLS) class tag##Node;
 AST_INTEGERNODE_TABLE
 #undef X
 
@@ -142,7 +142,7 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
   SymbolNode* getSymbolDefinition(ExternalName& Name);
 // Gets integer node (as defined by the arguments) if known. Otherwise
 // returns newly created integer.
-#define X(tag, defval, mergable, NODE_DECLS)                   \
+#define X(tag, format, defval, mergable, NODE_DECLS)           \
   tag##Node* get##tag##Definition(decode::IntType Value,       \
                                   decode::ValueFormat Format); \
   tag##Node* get##tag##Definition();
@@ -378,7 +378,7 @@ class IntegerNode : public NullaryNode {
         isDefault(isDefault) {}
 };
 
-#define X(tag, defval, mergable, NODE_DECLS)                               \
+#define X(tag, format, defval, mergable, NODE_DECLS)                       \
   class tag##Node FINAL : public IntegerNode {                             \
     tag##Node(const tag##Node&) = delete;                                  \
     tag##Node& operator=(const tag##Node&) = delete;                       \

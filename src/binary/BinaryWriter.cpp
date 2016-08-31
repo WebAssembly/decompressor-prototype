@@ -70,6 +70,20 @@ void BinaryWriter::writeNode(const Node* Nd) {
       fatal("Unable to write filter s-expression");
       break;
     }
+#define X(tag, format, defval, mergable, NODE_DECLS)                           \
+    case Op##tag: {                                                            \
+      Writer->writeUint8(Opcode, WritePos);                                    \
+      auto *Int = cast<tag##Node>(Nd);                                         \
+      if (Int->isDefaultValue()) {                                             \
+        Writer->writeUint8(1, WritePos);                                       \
+      } else {                                                                 \
+        Writer->writeUint8(0, WritePos);                                       \
+        Writer->write##format(Int->getValue(), WritePos);                      \
+      }                                                                        \
+      break;                                                                   \
+    }
+    AST_INTEGERNODE_TABLE
+#undef X
     case OpAnd:
     case OpBlock:
     case OpCase:
@@ -140,39 +154,6 @@ void BinaryWriter::writeNode(const Node* Nd) {
       Writer->writeVaruint32(SectionSymtab.getSymbolIndex(Sym), WritePos);
       break;
     }
-    case OpUint32OneArg:
-    case OpUint64OneArg:
-    case OpUint8OneArg:
-    case OpVarint32OneArg:
-    case OpVarint64OneArg:
-    case OpVaruint32OneArg:
-    case OpVaruint64OneArg:
-      // Operations that get a value in [1, 64]
-      Writer->writeUint8(Opcode, WritePos);
-      Writer->writeUint8(dyn_cast<IntegerNode>(Nd)->getValue(), WritePos);
-      break;
-    case OpU8Const:
-      Writer->writeUint8(Opcode, WritePos);
-      Writer->writeUint8(cast<U8ConstNode>(Nd)->getValue(), WritePos);
-      break;
-    case OpParam:
-    case OpVersion:
-    case OpU32Const:
-      Writer->writeUint8(Opcode, WritePos);
-      Writer->writeVaruint32(cast<U8ConstNode>(Nd)->getValue(), WritePos);
-      break;
-    case OpU64Const:
-      Writer->writeUint8(Opcode, WritePos);
-      Writer->writeVaruint64(cast<U8ConstNode>(Nd)->getValue(), WritePos);
-      break;
-    case OpI32Const:
-      Writer->writeUint8(Opcode, WritePos);
-      Writer->writeVarint32(cast<U8ConstNode>(Nd)->getValue(), WritePos);
-      break;
-    case OpI64Const:
-      Writer->writeUint8(Opcode, WritePos);
-      Writer->writeVarint64(cast<U8ConstNode>(Nd)->getValue(), WritePos);
-      break;
     case OpEval: {
       for (int i = 1; i < Nd->getNumKids(); ++i)
         writeNode(Nd->getKid(i));
