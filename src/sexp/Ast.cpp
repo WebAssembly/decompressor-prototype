@@ -98,7 +98,7 @@ int IntegerValue::compare(const IntegerValue& V) const {
     return -1;
   if (Format > V.Format)
     return 1;
-  return 0;
+  return int(isDefault) - int(V.isDefault);
 }
 
 void Node::append(Node*) {
@@ -168,20 +168,20 @@ SymbolNode* SymbolTable::getSymbolDefinition(ExternalName& Name) {
   return Node;
 }
 
-#define X(tag, defval, mergable, NODE_DECLS)                         \
-  tag##Node* SymbolTable::get##tag##Definition(IntType Value,        \
-                                               ValueFormat Format) { \
-    if (mergable) {                                                  \
-      IntegerValue I(Op##tag, Value, Format);                        \
-      IntegerNode* Node = IntMap[I];                                 \
-      if (Node == nullptr) {                                         \
-        Node = create<tag##Node>(Value, Format);                     \
-        IntMap[I] = Node;                                            \
-      }                                                              \
-      return dyn_cast<tag##Node>(Node);                              \
-    } else {                                                         \
-      return create<tag##Node>(Value, Format);                       \
-    }                                                                \
+#define X(tag, defval, mergable, NODE_DECLS)                \
+  tag##Node* SymbolTable::get##tag##Definition(             \
+      IntType Value, ValueFormat Format, bool isDefault) {  \
+    if (mergable) {                                         \
+      IntegerValue I(Op##tag, Value, Format, isDefault);    \
+      IntegerNode* Node = IntMap[I];                        \
+      if (Node == nullptr) {                                \
+        Node = create<tag##Node>(Value, Format, isDefault); \
+        IntMap[I] = Node;                                   \
+      }                                                     \
+      return dyn_cast<tag##Node>(Node);                     \
+    } else {                                                \
+      return create<tag##Node>(Value, Format, isDefault);   \
+    }                                                       \
   }
 AST_INTEGERNODE_TABLE
 #undef X

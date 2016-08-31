@@ -90,22 +90,29 @@ struct AstTraitsType {
 
 extern AstTraitsType AstTraits[NumNodeTypes];
 
+// Models integer values (as used in AST nodes).
 class IntegerValue {
  public:
   IntegerValue()
       : Type(NO_SUCH_NODETYPE),
         Value(0),
-        Format(decode::ValueFormat::Decimal) {}
-  explicit IntegerValue(
-      decode::IntType Value,
-      decode::ValueFormat Format = decode::ValueFormat::Decimal)
-      : Type(NO_SUCH_NODETYPE), Value(Value), Format(Format) {}
+        Format(decode::ValueFormat::Decimal),
+        isDefault(false) {}
+  explicit IntegerValue(decode::IntType Value, decode::ValueFormat Format)
+      : Type(NO_SUCH_NODETYPE),
+        Value(Value),
+        Format(Format),
+        isDefault(false) {}
   IntegerValue(NodeType Type,
                decode::IntType Value,
-               decode::ValueFormat Format = decode::ValueFormat::Decimal)
-      : Type(Type), Value(Value), Format(Format) {}
+               decode::ValueFormat Format,
+               bool isDefault = false)
+      : Type(Type), Value(Value), Format(Format), isDefault(isDefault) {}
   explicit IntegerValue(const IntegerValue& V)
-      : Type(V.Type), Value(V.Value), Format(V.Format) {}
+      : Type(V.Type),
+        Value(V.Value),
+        Format(V.Format),
+        isDefault(V.isDefault) {}
   virtual int compare(const IntegerValue& V) const;
   bool operator<(const IntegerValue& V) const { return compare(V) < 0; }
   bool operator<=(const IntegerValue& V) const { return compare(V) <= 0; }
@@ -116,6 +123,7 @@ class IntegerValue {
   NodeType Type;
   decode::IntType Value;
   decode::ValueFormat Format;
+  bool isDefault;
   // For debugging.
   virtual void describe(FILE* Out) const;
 };
@@ -134,10 +142,10 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
   SymbolNode* getSymbolDefinition(ExternalName& Name);
 // Gets integer node (as defined by the arguments) if known. Otherwise
 // returns newly created integer.
-#define X(tag, defval, mergable, NODE_DECLS) \
-  tag##Node* get##tag##Definition(           \
-      decode::IntType Value,                 \
-      decode::ValueFormat Format = decode::ValueFormat::Decimal);
+#define X(tag, defval, mergable, NODE_DECLS)                  \
+  tag##Node* get##tag##Definition(decode::IntType Value,      \
+                                  decode::ValueFormat Format, \
+                                  bool isDefault = false);
   AST_INTEGERNODE_TABLE
 #undef X
   // Install definitions in tree defined by root.
@@ -351,23 +359,23 @@ class IntegerNode : public NullaryNode {
   decode::ValueFormat getFormat() const { return Format; }
   decode::IntType getValue() const { return Value; }
   static bool implementsClass(NodeType Type);
-  bool isValueVisible() { return ValueVisible; }
-  void setValueVisible(bool NewValue) { ValueVisible = NewValue; }
+  bool isDefaultValue() const { return isDefault; }
 
  protected:
   decode::IntType Value;
   decode::ValueFormat Format;
-  bool ValueVisible;
+  bool isDefault;
   // Note: ValueFormat provided so that we can echo back out same
   // representation as when lexing s-expressions.
   IntegerNode(SymbolTable& Symtab,
               NodeType Type,
               decode::IntType Value,
-              decode::ValueFormat Format = decode::ValueFormat::Decimal)
+              decode::ValueFormat Format,
+              bool isDefault = false)
       : NullaryNode(Symtab, Type),
         Value(Value),
         Format(Format),
-        ValueVisible(true) {}
+        isDefault(isDefault) {}
 };
 
 #define X(tag, defval, mergable, NODE_DECLS)                               \
@@ -380,8 +388,9 @@ class IntegerNode : public NullaryNode {
    public:                                                                 \
     tag##Node(SymbolTable& Symtab,                                         \
               decode::IntType Value,                                       \
-              decode::ValueFormat Format = decode::ValueFormat::Decimal)   \
-        : IntegerNode(Symtab, Op##tag, Value, Format) {}                   \
+              decode::ValueFormat Format = decode::ValueFormat::Decimal,   \
+              bool isDefault = false)                                      \
+        : IntegerNode(Symtab, Op##tag, Value, Format, isDefault) {}        \
     ~tag##Node() OVERRIDE {}                                               \
                                                                            \
     static bool implementsClass(NodeType Type) { return Type == Op##tag; } \
