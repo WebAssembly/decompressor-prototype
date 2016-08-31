@@ -61,6 +61,11 @@ class Interpreter {
 
   void setMinimizeBlockSize(bool NewValue) { MinimizeBlockSize = NewValue; }
 
+  bool needsMoreInput() const { return !isSuccessful() && !errorsFound(); }
+  bool isFinished() const { return Frame.CallMethod == Method::Finished; }
+  bool isSuccessful() const { return Frame.CallState == State::Succeeded; }
+  bool errorsFound() const { return Frame.CallState == State::Failed; }
+
  private:
   enum class Method {
 #define X(tag, name) tag,
@@ -239,10 +244,6 @@ class Interpreter {
   void TraceExitFrame() { TRACE_EXIT_OVERRIDE(getName(Frame.CallMethod)); }
 
   bool hasEnoughHeadroom() const;
-  bool needsMoreInput() const { return !isSuccessful() && !errorsFound(); }
-  bool isFinished() const { return Frame.CallMethod == Method::Finished; }
-  bool isSuccessful() const { return Frame.CallState == State::Succeeded; }
-  bool errorsFound() const { return Frame.CallState == State::Failed; }
 
   void runMethods();
   void readBackFilled();

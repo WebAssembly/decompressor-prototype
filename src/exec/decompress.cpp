@@ -75,6 +75,7 @@ void usage(const char* AppName) {
   fprintf(stderr,
           "  -o File\t\tGenerated Decompressed File ('-' implies stdout).\n");
   fprintf(stderr, "  -s\t\t\tUse C++ streams instead of C file descriptors.\n");
+  fprintf(stderr, "  -t N\t\t\tDecompress N times (used to test performance).\n");
   if (isDebug()) {
     fprintf(stderr,
             "  -v | --verbose\t"
@@ -99,6 +100,7 @@ int main(int Argc, char* Argv[]) {
   int Verbose = 0;
   bool MinimizeBlockSize = false;
   std::vector<int> DefaultIndices;
+  size_t NumTries = 1;
   for (int i = 1; i < Argc; ++i) {
     if (Argv[i] == std::string("-d")) {
       if (++i >= Argc) {
@@ -131,6 +133,13 @@ int main(int Argc, char* Argv[]) {
       OutputFilename = Argv[i];
     } else if (Argv[i] == std::string("-s")) {
       UseFileStreams = true;
+    } else if (Argv[i] == std::string("-t")) {
+      if (++i >= Argc) {
+        fprintf(stderr, "No count specified after -t option\n");
+        usage(Argv[0]);
+        return exit_status(EXIT_FAILURE);
+      }
+      NumTries += atol(Argv[i]);
     } else if (isDebug() && (Argv[i] == std::string("-v") ||
                              Argv[i] == std::string("--verbose"))) {
       ++Verbose;
@@ -161,11 +170,17 @@ int main(int Argc, char* Argv[]) {
       return exit_status(EXIT_FAILURE);
     }
   }
-  Interpreter Decompressor(std::make_shared<ReadBackedQueue>(getInput()),
-                           std::make_shared<WriteBackedQueue>(getOutput()),
-                           Symtab);
-  Decompressor.setTraceProgress(Verbose >= 1);
-  Decompressor.setMinimizeBlockSize(MinimizeBlockSize);
-  Decompressor.decompress();
+  for (size_t i = 0; i < NumTries; ++i) {
+    Interpreter Decompressor(std::make_shared<ReadBackedQueue>(getInput()),
+                             std::make_shared<WriteBackedQueue>(getOutput()),
+                             Symtab);
+    Decompressor.setTraceProgress(Verbose >= 1);
+    Decompressor.setMinimizeBlockSize(MinimizeBlockSize);
+    Decompressor.decompress();
+    if (Decompressor.errorsFound()) {
+      fatal("Failed to decompress due to errors!");
+      exit_status(EXIT_FAILURE);
+    }
+  }
   return exit_status(EXIT_SUCCESS);
 }
