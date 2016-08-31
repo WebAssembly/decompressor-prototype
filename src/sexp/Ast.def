@@ -32,7 +32,6 @@
   /* enum name, opcode */                                                      \
                                                                                \
   /* Control flow operators */                                                 \
-  X(BlockEndNoArgs,    0x00, "block.end",        "BlockEndNoArgs",  0, 0)      \
   X(Block,             0x01, "block",            nullptr,           1, 0)      \
   X(Case,              0x02, "case",             nullptr,           2, 0)      \
   X(Error,             0x03, "error",            nullptr,           0, 0)      \
@@ -48,27 +47,20 @@
   /* Constants */                                                              \
   X(Void,              0x10, "void",             nullptr,           0, 0)      \
   X(Symbol,            0x11, "symbol",           nullptr,           0, 0)      \
-  X(I32Const,          0x12, "i32.const",        nullptr,           0, 0)      \
-  X(I64Const,          0x13, "i64.const",        nullptr,           0, 0)      \
-  X(U8Const,           0x14, "u8.const",         nullptr,           0, 0)      \
-  X(U32Const,          0x15, "u32.const",        nullptr,           0, 0)      \
-  X(U64Const,          0x16, "u64.const",        nullptr,           0, 0)      \
+  X(I32Const,          0x12, "i32.const",        nullptr,           1, 0)      \
+  X(I64Const,          0x13, "i64.const",        nullptr,           1, 0)      \
+  X(U8Const,           0x14, "u8.const",         nullptr,           1, 0)      \
+  X(U32Const,          0x15, "u32.const",        nullptr,           1, 0)      \
+  X(U64Const,          0x16, "u64.const",        nullptr,           1, 0)      \
                                                                                \
   /* Formatting */                                                             \
-  X(Uint32NoArgs,      0x20, "uint32",           "uint32NoArgs",    0, 0)      \
-  X(Uint32OneArg,      0x21, "uint32",           "uint32OneArg",    0, 0)      \
-  X(Uint64NoArgs,      0x22, "uint64",           "uint64NoArgs",    0, 0)      \
-  X(Uint64OneArg,      0x23, "uint64",           "uint64OneArg",    0, 0)      \
-  X(Uint8NoArgs,       0x24, "uint8",            "uint8NoArgs",     0, 0)      \
-  X(Uint8OneArg,       0x25, "uint8",            "uint8OneArg",     0, 0)      \
-  X(Varint32NoArgs,    0x26, "varint32",         "varint32NoArgs",  0, 0)      \
-  X(Varint32OneArg,    0x27, "varint32",         "varint32OneArg",  0, 0)      \
-  X(Varint64NoArgs,    0x28, "varint64",         "varint64NoArgs",  0, 0)      \
-  X(Varint64OneArg,    0x29, "varint64",         "varint64OneArg",  0, 0)      \
-  X(Varuint32NoArgs,   0x2a, "varuint32",        "varuint32NoArgs", 0, 0)      \
-  X(Varuint32OneArg,   0x2b, "varuint32",        "varuint32OneArg", 0, 0)      \
-  X(Varuint64NoArgs,   0x2c, "varuint64",        "varuint64NoArgs", 0, 0)      \
-  X(Varuint64OneArg,   0x2d, "varuint64",        "varuint64OneArg", 0, 0)      \
+  X(Uint32,            0x21, "uint32",           "uint32",          1, 0)      \
+  X(Uint64,            0x23, "uint64",           "uint64",          1, 0)      \
+  X(Uint8,             0x25, "uint8",            "uint8",           1, 0)      \
+  X(Varint32,          0x27, "varint32",         "varint32",        1, 0)      \
+  X(Varint64,          0x29, "varint64",         "varint64",        1, 0)      \
+  X(Varuint32,         0x2b, "varuint32",        "varuint32",       1, 0)      \
+  X(Varuint64,         0x2d, "varuint64",        "varuint64",       1, 0)      \
   X(Opcode,            0x2e, "opcode",           nullptr,           1, 0)      \
                                                                                \
   /* Boolean tests */                                                          \
@@ -87,14 +79,14 @@
                                                                                \
   /* Other exprressions */                                                     \
   X(Convert,           0x50, "convert",          nullptr,           2, 1)      \
-  X(Param,             0x51, "param",            nullptr,           0, 0)      \
+  X(Param,             0x51, "param",            nullptr,           1, 0)      \
                                                                                \
   /* Declarations */                                                           \
   X(Define,            0x60, "define",           nullptr,           2, 1)      \
   X(File,              0x62, "file",             nullptr,           0, 0)      \
   X(Section,           0x63, "section",          nullptr,           1, 0)      \
   X(Undefine,          0x64, "undefine",         nullptr,           1, 0)      \
-  X(Version,           0x65, "version",          nullptr,           0, 0)      \
+  X(Version,           0x65, "version",          nullptr,           1, 0)      \
   X(Rename,            0x66, "rename",           nullptr,           2, 0)      \
                                                                                \
   /* Internal (not opcodes in compressed file) */                              \
@@ -102,34 +94,32 @@
 
 //#define X(tag, NODE_DECLS)
 #define AST_NULLARYNODE_TABLE                                                  \
-  X(BlockEndNoArgs,)                                                           \
   X(Error,)                                                                    \
   X(LastRead,)                                                                 \
-  X(Uint8NoArgs,)                                                              \
-  X(Uint32NoArgs,)                                                             \
-  X(Uint64NoArgs,)                                                             \
-  X(Varint32NoArgs,)                                                           \
-  X(Varint64NoArgs,)                                                           \
-  X(Varuint32NoArgs,)                                                          \
-  X(Varuint64NoArgs,)                                                          \
   X(Void,)                                                                     \
 
-//#define X(tag, NODE_DECLS)
+//#define X(tag, defval, mergable, NODE_DECLS)
+// where:
+//   tag: enumeration name (less Op prefix).
+//   format: Format for printing out value.
+//   defval: Default value assumed if not provided.
+//   mergable: True if instances can be merged.
+//   NODE_DECLS: Other declarations for the node.
 #define AST_INTEGERNODE_TABLE                                                  \
-  X(I32Const,)                                                                 \
-  X(I64Const,)                                                                 \
-  X(Param, PARAM_DECLS )                                                       \
-  X(U8Const,)                                                                  \
-  X(U32Const,)                                                                 \
-  X(U64Const,)                                                                 \
-  X(Uint32OneArg,)                                                             \
-  X(Uint64OneArg,)                                                             \
-  X(Uint8OneArg,)                                                              \
-  X(Varint32OneArg,)                                                           \
-  X(Varint64OneArg,)                                                           \
-  X(Varuint32OneArg,)                                                          \
-  X(Varuint64OneArg,)                                                          \
-  X(Version,)                                                                  \
+  X(I32Const, Varint32, 0, true,)                                              \
+  X(I64Const, Varint64, 0, true,)                                              \
+  X(Param, Varuint32, 0, false, PARAM_DECLS)                                   \
+  X(U8Const, Uint8, 0, true,)                                                  \
+  X(U32Const, Varuint32, 0, true,)                                             \
+  X(U64Const, Varuint64, 0, true,)                                             \
+  X(Uint32, Uint8, 32, true,)                                                  \
+  X(Uint64, Uint8, 64, true,)                                                  \
+  X(Uint8, Uint8, 8, true,)                                                    \
+  X(Varint32, Uint8, 8, true,)                                                 \
+  X(Varint64, Uint8,  8, true,)                                                \
+  X(Varuint32, Uint8, 8, true,)                                                \
+  X(Varuint64, Uint8, 8, true,)                                                \
+  X(Version, Varuint32, 0, true,)                                              \
 
 #define PARAM_DECLS                                                            \
   public:                                                                      \

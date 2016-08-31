@@ -173,8 +173,10 @@ void TextWriter::writeNode(const Node* Nd,
   NodeType Type = Nd->getType();
   if (const auto* Int = dyn_cast<IntegerNode>(Nd)) {
     Parenthesize _(this, Type, AddNewline);
-    fputc(' ', File);
-    writeInt(File, Int->getValue(), Int->getFormat());
+    if (!Int->isDefaultValue()) {
+      fputc(' ', File);
+      writeInt(File, Int->getValue(), Int->getFormat());
+    }
     LineEmpty = false;
     return;
   }

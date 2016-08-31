@@ -112,7 +112,7 @@ static IntType read_Integer(const std::string &Name, size_t StartIndex = 0) {
 
 static Parser::symbol_type make_Integer(Driver &Driver,
                                         const std::string &Name) {
-  IntegerValue Value;
+  IntValue Value;
   Value.Value = read_Integer(Name);
   Value.Format = ValueFormat::Decimal;
   return Parser::make_INTEGER(Value, Driver.getLoc());
@@ -121,7 +121,7 @@ static Parser::symbol_type make_Integer(Driver &Driver,
 static Parser::symbol_type make_SignedInteger(Driver &Driver,
                                               const std::string &Name) {
   IntType UnsignedValue = read_Integer(Name, 1);
-  IntegerValue Value;
+  IntValue Value;
   Value.Value = IntType(- SignedIntType(UnsignedValue));
   Value.Format =
       Driver.getMaintainIntegerFormatting()
@@ -171,7 +171,7 @@ static Parser::symbol_type make_HexInteger(Driver &Driver,
   for (size_t i = 2, Count = Name.size(); i < Count; ++i) {
     HexValue = (HexValue << 4) + getHex(Name[i]);
   }
-  IntegerValue Value;
+  IntValue Value;
   Value.Value = HexValue;
   Value.Format =
       Driver.getMaintainIntegerFormatting()
@@ -218,7 +218,6 @@ id ({letter}|{digit}|[_.])*
 "and"             return Parser::make_AND(Driver.getLoc());
 "ast"             return Parser::make_AST(Driver.getLoc());
 "block"           return Parser::make_BLOCK(Driver.getLoc());
-"block.end"       return Parser::make_BLOCKEND(Driver.getLoc());
 "bit"             return Parser::make_BIT(Driver.getLoc());
 "byte"            return Parser::make_BYTE(Driver.getLoc());
 "case"            return Parser::make_CASE(Driver.getLoc());

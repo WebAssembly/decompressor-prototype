@@ -486,14 +486,26 @@ void BinaryReader::readNode() {
   TRACE_METHOD("readNode");
   NodeType Opcode = (NodeType)Reader->readUint8(*ReadPos);
   switch (Opcode) {
+#define X(tag, format, defval, mergable, NODE_DECLS)                           \
+    case Op##tag: {                                                            \
+      Node* Nd;                                                                \
+      if (Reader->readUint8(*ReadPos)) {                                       \
+        Nd = Symtab->get##tag##Definition();                                   \
+      } else {                                                                 \
+        Nd = Symtab->get##tag##Definition(                                     \
+            Reader->read##format(*ReadPos), ValueFormat::Decimal);             \
+      }                                                                        \
+      TRACE_SEXP(nullptr, Nd);                                                 \
+      NodeStack.push_back(Nd);                                                 \
+      break;                                                                   \
+    }
+    AST_INTEGERNODE_TABLE
+#undef X
     case OpAnd:
       readBinary<AndNode>();
       break;
     case OpBlock:
       readUnary<BlockNode>();
-      break;
-    case OpBlockEndNoArgs:
-      readNullary<BlockEndNoArgsNode>();
       break;
     case OpCase: {
       readBinary<CaseNode>();
@@ -543,12 +555,6 @@ void BinaryReader::readNode() {
     case OpIfThenElse:
       readTernary<IfThenElseNode>();
       break;
-    case OpI32Const:
-      readVarint32<I32ConstNode>();
-      break;
-    case OpI64Const:
-      readVarint64<I64ConstNode>();
-      break;
     case OpLoop:
       readBinary<LoopNode>();
       break;
@@ -557,9 +563,6 @@ void BinaryReader::readNode() {
       break;
     case OpOr:
       readBinary<OrNode>();
-      break;
-    case OpParam:
-      readVaruint32<ParamNode>();
       break;
     case OpPeek:
       readUnary<PeekNode>();
@@ -595,62 +598,8 @@ void BinaryReader::readNode() {
       NodeStack.push_back(Node);
       break;
     }
-    case OpUint32NoArgs:
-      readNullary<Uint32NoArgsNode>();
-      break;
-    case OpUint32OneArg:
-      readUint8<Uint32OneArgNode>();
-      break;
-    case OpUint64NoArgs:
-      readNullary<Uint64NoArgsNode>();
-      break;
-    case OpUint64OneArg:
-      readUint8<Uint64OneArgNode>();
-      break;
-    case OpUint8NoArgs:
-      readNullary<Uint8NoArgsNode>();
-      break;
-    case OpUint8OneArg:
-      readUint8<Uint8OneArgNode>();
-      break;
     case OpUndefine:
       readUnary<UndefineNode>();
-      break;
-    case OpU8Const:
-      readUint8<U8ConstNode>();
-      break;
-    case OpU32Const:
-      readVaruint32<U32ConstNode>();
-      break;
-    case OpU64Const:
-      readVaruint64<U64ConstNode>();
-      break;
-    case OpVarint32NoArgs:
-      readNullary<Varint32NoArgsNode>();
-      break;
-    case OpVarint32OneArg:
-      readUint8<Varint32OneArgNode>();
-      break;
-    case OpVarint64NoArgs:
-      readNullary<Varint64NoArgsNode>();
-      break;
-    case OpVarint64OneArg:
-      readUint8<Varint64OneArgNode>();
-      break;
-    case OpVaruint32NoArgs:
-      readNullary<Varuint32NoArgsNode>();
-      break;
-    case OpVaruint32OneArg:
-      readUint8<Varuint32OneArgNode>();
-      break;
-    case OpVaruint64NoArgs:
-      readNullary<Varuint64NoArgsNode>();
-      break;
-    case OpVaruint64OneArg:
-      readUint8<Varuint64OneArgNode>();
-      break;
-    case OpVersion:
-      readVaruint32<VersionNode>();
       break;
     case OpVoid:
       readNullary<VoidNode>();

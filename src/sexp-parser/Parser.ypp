@@ -37,7 +37,7 @@ namespace filt {
 class Driver;
 class Node;
 
-struct IntegerValue {
+struct IntValue {
   wasm::decode::IntType Value;
   wasm::decode::ValueFormat Format;
 };
@@ -79,7 +79,6 @@ struct IntegerValue {
 %token AST           "ast"
 %token BIT           "bit"
 %token BLOCK         "block"
-%token BLOCKEND      "block.end"
 %token BYTE          "byte"
 %token CASE          "case"
 %token CLOSEPAREN    ")"
@@ -125,7 +124,7 @@ struct IntegerValue {
 
 // Terminal classes
 %token <wasm::filt::ExternalName> IDENTIFIER
-%token <wasm::filt::IntegerValue> INTEGER
+%token <wasm::filt::IntValue> INTEGER
 
 // Nonterminal classes.
 %type <wasm::filt::Node *> block_stmt_list
@@ -209,19 +208,19 @@ case_stmt_list
 
 constant_expression
         : "(" "i32.const" INTEGER ")" {
-            $$ = Driver.create<I32ConstNode>($3.Value, $3.Format);
+            $$ = Driver.getI32ConstDefinition($3.Value, $3.Format);
           }
         | "(" "i64.const" INTEGER ")" {
-            $$ = Driver.create<I64ConstNode>($3.Value, $3.Format);
+            $$ = Driver.getI64ConstDefinition($3.Value, $3.Format);
           }
         | "(" "u8.const" INTEGER ")" {
-            $$ = Driver.create<U8ConstNode>($3.Value, $3.Format);
+            $$ = Driver.getU8ConstDefinition($3.Value, $3.Format);
           }
         | "(" "u32.const" INTEGER ")" {
-            $$ = Driver.create<U32ConstNode>($3.Value, $3.Format);
+            $$ = Driver.getU32ConstDefinition($3.Value, $3.Format);
           }
         | "(" "u64.const" INTEGER ")" {
-            $$ = Driver.create<U64ConstNode>($3.Value, $3.Format);
+            $$ = Driver.getU64ConstDefinition($3.Value, $3.Format);
           }
         ;
 
@@ -313,9 +312,6 @@ expression
         | bool_expression { $$ = $1; }
         | map_expression { $$ = $1; }
         | param_expression { $$ = $1; }
-        | "(" "block.end" ")" {
-            $$ = Driver.create<BlockEndNoArgsNode>();
-          }
         | "(" "error" ")" {
             $$ = Driver.create<ErrorNode>();
           }
@@ -340,36 +336,36 @@ format_directive
         : fixed_format_directive { $$ = $1; }
         | opcode_expression { $$ = $1; }
         | "(" "varint32" ")" {
-            $$ = Driver.create<Varint32NoArgsNode>();
+            $$ = Driver.getVarint32Definition();
           }
         | "(" "varint32" INTEGER ")" {
             if ($3.Value < 2 || $3.Value > 32)
               Driver.error("varint32 expects 2 <= bitsize <= 32");
-            $$ = Driver.create<Varint32OneArgNode>($3.Value, $3.Format);
+            $$ = Driver.getVarint32Definition($3.Value, $3.Format);
           }
         | "(" "varint64" ")" {
-            $$ = Driver.create<Varint64NoArgsNode>();
+            $$ = Driver.getVarint64Definition();
           }
         | "(" "varint64" INTEGER ")" {
             if ($3.Value < 2 || $3.Value > 64)
               Driver.error("varint64 expects 2 <= bitsize <= 64");
-            $$ = Driver.create<Varint64OneArgNode>($3.Value, $3.Format);
+            $$ = Driver.getVarint64Definition($3.Value, $3.Format);
           }
         | "(" "varuint32" ")" {
-            $$ = Driver.create<Varuint32NoArgsNode>();
+            $$ = Driver.getVaruint32Definition();
           }
         | "(" "varuint32" INTEGER ")" {
             if ($3.Value < 2 || $3.Value > 32)
               Driver.error("varuint32 expects 2 <= bitsize <= 32");
-            $$ = Driver.create<Varuint32OneArgNode>($3.Value, $3.Format);
+            $$ = Driver.getVaruint32Definition($3.Value, $3.Format);
           }
         | "(" "varuint64" ")" {
-            $$ = Driver.create<Varuint64NoArgsNode>();
+            $$ = Driver.getVaruint64Definition();
           }
         | "(" "varuint64" INTEGER ")" {
             if ($3.Value < 2 || $3.Value > 64)
               Driver.error("varuint64 expects 2 <= bitsize <= 64");
-            $$ = Driver.create<Varuint64OneArgNode>($3.Value, $3.Format);
+            $$ = Driver.getVaruint64Definition($3.Value, $3.Format);
           }
         ;
 
@@ -378,28 +374,28 @@ fixed_format_directive
             $$ = Driver.create<VoidNode>();
           }
         | "(" "uint8" ")" {
-            $$ = Driver.create<Uint8NoArgsNode>();
+            $$ = Driver.getUint8Definition();
           }
         | "(" "uint8" INTEGER ")" {
             if ($3.Value > 8)
               Driver.error("uint8 bitsize > 8");
-            $$ = Driver.create<Uint8OneArgNode>($3.Value, $3.Format);
+            $$ = Driver.getUint8Definition($3.Value, $3.Format);
           }
         | "(" "uint32" ")" {
-            $$ = Driver.create<Uint32NoArgsNode>();
+            $$ = Driver.getUint32Definition();
           }
         | "(" "uint32" INTEGER ")"  {
             if ($3.Value > 32)
               Driver.error("uint32 bitsize > 32");
-            $$ = Driver.create<Uint32OneArgNode>($3.Value, $3.Format);
+            $$ = Driver.getUint32Definition($3.Value, $3.Format);
           }
         | "(" "uint64" ")" {
-            $$ = Driver.create<Uint64NoArgsNode>();
+            $$ = Driver.getUint64Definition();
           }
         | "(" "uint64" INTEGER ")"  {
             if ($3.Value > 64)
               Driver.error("uint64 bitsize > 64");
-            $$ = Driver.create<Uint64OneArgNode>($3.Value, $3.Format);
+            $$ = Driver.getUint64Definition($3.Value, $3.Format);
           }
         ;
 
@@ -457,14 +453,20 @@ opcode_case_expr
 
 param_expression
         : "(" "param" INTEGER ")" {
-            $$ = Driver.create<ParamNode>($3.Value, $3.Format);
+            $$ = Driver.getParamDefinition($3.Value, $3.Format);
+          }
+        | "(" "param" ")" {
+            $$ = Driver.getParamDefinition();
           }
         ;
 
 version : "(" "version" INTEGER ")" {
             if ($3.Value != 0)
               Driver.error("Currently, only (version 0) is supported");
-            $$ = Driver.create<VersionNode>($3.Value, $3.Format);
+            $$ = Driver.getVersionDefinition($3.Value, $3.Format);
+          }
+        | "(" "version" ")" {
+            $$ = Driver.getVersionDefinition();
           }
         ;
 

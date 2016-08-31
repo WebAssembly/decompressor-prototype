@@ -52,9 +52,14 @@ namespace wasm {
 
 namespace filt {
 
+class IntegerNode;
 class Node;
 class SymbolNode;
 class SymbolTable;
+
+#define X(tag, format, defval, mergable, NODE_DECLS) class tag##Node;
+AST_INTEGERNODE_TABLE
+#undef X
 
 typedef std::string ExternalName;
 typedef ARENA_VECTOR(uint8_t) InternalName;
@@ -85,6 +90,44 @@ struct AstTraitsType {
 
 extern AstTraitsType AstTraits[NumNodeTypes];
 
+// Models integer values (as used in AST nodes).
+class IntegerValue {
+ public:
+  IntegerValue()
+      : Type(NO_SUCH_NODETYPE),
+        Value(0),
+        Format(decode::ValueFormat::Decimal),
+        isDefault(false) {}
+  explicit IntegerValue(decode::IntType Value, decode::ValueFormat Format)
+      : Type(NO_SUCH_NODETYPE),
+        Value(Value),
+        Format(Format),
+        isDefault(false) {}
+  IntegerValue(NodeType Type,
+               decode::IntType Value,
+               decode::ValueFormat Format,
+               bool isDefault = false)
+      : Type(Type), Value(Value), Format(Format), isDefault(isDefault) {}
+  explicit IntegerValue(const IntegerValue& V)
+      : Type(V.Type),
+        Value(V.Value),
+        Format(V.Format),
+        isDefault(V.isDefault) {}
+  virtual int compare(const IntegerValue& V) const;
+  bool operator<(const IntegerValue& V) const { return compare(V) < 0; }
+  bool operator<=(const IntegerValue& V) const { return compare(V) <= 0; }
+  bool operator==(const IntegerValue& V) const { return compare(V) == 0; }
+  bool operator!=(const IntegerValue& V) const { return compare(V) != 0; }
+  bool operator>=(const IntegerValue& V) const { return compare(V) >= 0; }
+  bool operator>(const IntegerValue& V) const { return compare(V) > 0; }
+  NodeType Type;
+  decode::IntType Value;
+  decode::ValueFormat Format;
+  bool isDefault;
+  // For debugging.
+  virtual void describe(FILE* Out) const;
+};
+
 class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
   SymbolTable(const SymbolTable&) = delete;
   SymbolTable& operator=(const SymbolTable&) = delete;
@@ -97,6 +140,14 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
   // Gets existing symbol if known. Otherwise returns newly created symbol.
   // Used to keep symbols unique within filter s-expressions.
   SymbolNode* getSymbolDefinition(ExternalName& Name);
+// Gets integer node (as defined by the arguments) if known. Otherwise
+// returns newly created integer.
+#define X(tag, format, defval, mergable, NODE_DECLS)           \
+  tag##Node* get##tag##Definition(decode::IntType Value,       \
+                                  decode::ValueFormat Format); \
+  tag##Node* get##tag##Definition();
+  AST_INTEGERNODE_TABLE
+#undef X
   // Install definitions in tree defined by root.
   void install(Node* Root);
   std::shared_ptr<alloc::Allocator> getAllocator() const { return Alloc; }
@@ -117,6 +168,8 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
   int NextCreationIndex;
   // TODO(KarlSchimpf): Use arena allocator on map.
   std::map<ExternalName, SymbolNode*> SymbolMap;
+  // TODO(karlschimpf): Use arena allocator on map.
+  std::map<IntegerValue, IntegerNode*> IntMap;
 
   void installDefinitions(Node* Root);
   void clearSubtreeCaches(Node* Nd,
@@ -305,22 +358,27 @@ class IntegerNode : public NullaryNode {
   ~IntegerNode() OVERRIDE {}
   decode::ValueFormat getFormat() const { return Format; }
   decode::IntType getValue() const { return Value; }
-
   static bool implementsClass(NodeType Type);
+  bool isDefaultValue() const { return isDefault; }
 
  protected:
   decode::IntType Value;
   decode::ValueFormat Format;
+  bool isDefault;
   // Note: ValueFormat provided so that we can echo back out same
   // representation as when lexing s-expressions.
   IntegerNode(SymbolTable& Symtab,
               NodeType Type,
               decode::IntType Value,
-              decode::ValueFormat Format = decode::ValueFormat::Decimal)
-      : NullaryNode(Symtab, Type), Value(Value), Format(Format) {}
+              decode::ValueFormat Format,
+              bool isDefault = false)
+      : NullaryNode(Symtab, Type),
+        Value(Value),
+        Format(Format),
+        isDefault(isDefault) {}
 };
 
-#define X(tag, NODE_DECLS)                                                 \
+#define X(tag, format, defval, mergable, NODE_DECLS)                       \
   class tag##Node FINAL : public IntegerNode {                             \
     tag##Node(const tag##Node&) = delete;                                  \
     tag##Node& operator=(const tag##Node&) = delete;                       \
@@ -331,7 +389,13 @@ class IntegerNode : public NullaryNode {
     tag##Node(SymbolTable& Symtab,                                         \
               decode::IntType Value,                                       \
               decode::ValueFormat Format = decode::ValueFormat::Decimal)   \
-        : IntegerNode(Symtab, Op##tag, Value, Format) {}                   \
+        : IntegerNode(Symtab, Op##tag, Value, Format, false) {}            \
+    tag##Node(SymbolTable& Symtab)                                         \
+        : IntegerNode(Symtab,                                              \
+                      Op##tag,                                             \
+                      (defval),                                            \
+                      decode::ValueFormat::Decimal,                        \
+                      true) {}                                             \
     ~tag##Node() OVERRIDE {}                                               \
                                                                            \
     static bool implementsClass(NodeType Type) { return Type == Op##tag; } \
