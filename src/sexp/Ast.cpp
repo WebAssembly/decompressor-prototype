@@ -359,15 +359,15 @@ bool IntegerNode::implementsClass(NodeType Type) {
   switch (Type) {
     default:
       return false;
-#define X(tag, format, defval, mergable, NODE_DECLS)                           \
-  case Op##tag:                                                                \
+#define X(tag, format, defval, mergable, NODE_DECLS) \
+  case Op##tag:                                      \
     return true;
       AST_INTEGERNODE_TABLE
 #undef X
   }
 }
 
-#define X(tag, format, defval, mergable, NODE_DECLS)     \
+#define X(tag, format, defval, mergable, NODE_DECLS) \
   void tag##Node::forceCompilation() {}
 AST_INTEGERNODE_TABLE
 #undef X

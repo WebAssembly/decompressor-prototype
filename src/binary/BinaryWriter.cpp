@@ -70,19 +70,19 @@ void BinaryWriter::writeNode(const Node* Nd) {
       fatal("Unable to write filter s-expression");
       break;
     }
-#define X(tag, format, defval, mergable, NODE_DECLS)                           \
-    case Op##tag: {                                                            \
-      Writer->writeUint8(Opcode, WritePos);                                    \
-      auto *Int = cast<tag##Node>(Nd);                                         \
-      if (Int->isDefaultValue()) {                                             \
-        Writer->writeUint8(1, WritePos);                                       \
-      } else {                                                                 \
-        Writer->writeUint8(0, WritePos);                                       \
-        Writer->write##format(Int->getValue(), WritePos);                      \
-      }                                                                        \
-      break;                                                                   \
-    }
-    AST_INTEGERNODE_TABLE
+#define X(tag, format, defval, mergable, NODE_DECLS)    \
+  case Op##tag: {                                       \
+    Writer->writeUint8(Opcode, WritePos);               \
+    auto* Int = cast<tag##Node>(Nd);                    \
+    if (Int->isDefaultValue()) {                        \
+      Writer->writeUint8(1, WritePos);                  \
+    } else {                                            \
+      Writer->writeUint8(0, WritePos);                  \
+      Writer->write##format(Int->getValue(), WritePos); \
+    }                                                   \
+    break;                                              \
+  }
+      AST_INTEGERNODE_TABLE
 #undef X
     case OpAnd:
     case OpBlock:
