@@ -121,8 +121,8 @@ Interpreter::Interpreter(std::shared_ptr<Queue> Input,
 }
 
 void Interpreter::CallFrame::describe(FILE* File, TextWriter* Writer) const {
-  fprintf(File, "%s.%s = %" PRIuMAX ": ", MethodName[int(CallMethod)],
-          StateName[int(CallState)], uintmax_t(ReturnValue));
+  fprintf(File, "%s.%s = %" PRIuMAX ": ", getName(CallMethod),
+          getName(CallState), uintmax_t(ReturnValue));
   if (Nd)
     Writer->writeAbbrev(File, Nd);
   else
@@ -855,7 +855,7 @@ void Interpreter::resume() {
           case State::Failed:
             break;
           default:
-            TRACE(string, "State", StateName[int(Frame.CallState)]);
+            TRACE(string, "State", getName(Frame.CallState));
             TRACE_MESSAGE("Malformed finish state found, Correcting!");
             Frame.CallState = State::Failed;
         }

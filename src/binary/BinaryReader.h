@@ -117,6 +117,10 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
 
   TraceClassSexpReader& getTrace() { return Trace; }
 
+  TextWriter* getTextWriter() const {
+    return Trace.getTextWriter();
+  }
+
  private:
   std::shared_ptr<interp::ReadStream> Reader;
   decode::ReadCursor ReadPos;
@@ -128,8 +132,7 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
   uint32_t MagicNumber;
   // The version of the input.
   uint32_t Version;
-  std::vector<Node*> NodeStack;
-  TraceClassSexpReader Trace;
+  mutable TraceClassSexpReader Trace;
 
   template <typename T, typename... Args>
   T* create(Args&&... args) {
@@ -200,6 +203,7 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
   RunMethod CurBlockApplyFcn;
   CallFrame Frame;
   utils::ValueStack<CallFrame> FrameStack;
+  std::vector<Node*> NodeStack;
   size_t Counter;
   utils::ValueStack<size_t> CounterStack;
 
@@ -209,24 +213,20 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
     FrameStack.push();
     Frame.Method = CallingMethod;
     Frame.State = RunState::Enter;
+    TRACE_ENTER(getName(CallingMethod));
   }
 
   // Schedule a return from the current method (i.e the return will happen in
   // the next iteration of resume()).
   void returnFromCall() {
+    TRACE_EXIT_OVERRIDE(getName(Frame.Method));
     FrameStack.pop();
   }
-
-  void TraceEnterFrame() {
-    assert(Frame.State == RunState::Enter);
-    TRACE_ENTER(getName(Frame.Method));
-  }
-
-  void TraceExitFrame() { TRACE_EXIT_OVERRIDE(getName(Frame.Method)); }
 
   void describeFrameStack(FILE* Out) const;
   void describeCounterStack(FILE* Out) const;
   void describeCurBlockApplyFcn(FILE* Out) const;
+  void describeNodeStack(FILE* Out, TextWriter* Writer) const;
   void describeRunState(FILE* Out) const;
 };
 

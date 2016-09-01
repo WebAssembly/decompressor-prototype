@@ -18,6 +18,7 @@
 
 #include "binary/BinaryReader.h"
 #include "interp/ByteReadStream.h"
+#include "sexp/TextWriter.h"
 
 #include <cstdio>
 
@@ -67,7 +68,7 @@ const char* BinaryReader::getName(RunState State) {
 }
 
 void BinaryReader::CallFrame::describe(FILE* Out) const {
-  fprintf(Out, "%s.%s", getName(Method), getName(State));
+  fprintf(Out, "%s.%s\n", getName(Method), getName(State));
 }
 
 void BinaryReader::describeFrameStack(FILE* Out) const {
@@ -75,7 +76,6 @@ void BinaryReader::describeFrameStack(FILE* Out) const {
   for (auto& Frame : FrameStack) {
     fputs("  ", Out);
     Frame.describe(Out);
-    fputc('\n', Out);
   }
   fprintf(Out, "*******************\n");
 }
@@ -92,16 +92,27 @@ void BinaryReader::describeCounterStack(FILE* Out) const {
 
 void BinaryReader::describeCurBlockApplyFcn(FILE* Out) const {
   if (CurBlockApplyFcn != RunMethod::NO_SUCH_METHOD) {
-    fprintf(Out, "****************\n");
-    fprintf(Out, "ApplyFcn = %s\n", getName(CurBlockApplyFcn));
-    fprintf(Out, "****************\n");
+    fprintf(Out, "*** Apply Fcn ***\n");
+    fprintf(Out, "%s\n", getName(CurBlockApplyFcn));
+    fprintf(Out, "*****************\n");
   }
+}
+
+void BinaryReader::describeNodeStack(FILE* Out,
+                                     TextWriter* Writer) const {
+  if (NodeStack.empty())
+    return;
+  fprintf(Out, "*** Node Stack ***\n");
+  for (auto* Nd : NodeStack)
+    Writer->writeAbbrev(Out, Nd);
+  fprintf(Out, "******************\n");
 }
 
 void BinaryReader::describeRunState(FILE* Out) const {
   describeFrameStack(Out);
   describeCounterStack(Out);
   describeCurBlockApplyFcn(Out);
+  describeNodeStack(Out, getTextWriter());
 }
 
 bool BinaryReader::hasEnoughHeadroom() const {
@@ -113,7 +124,6 @@ bool BinaryReader::hasEnoughHeadroom() const {
 void BinaryReader::fail() {
   TRACE_MESSAGE("method failed");
   while (!FrameStack.empty()) {
-    TraceExitFrame();
     returnFromCall();
   }
   Frame.fail();
@@ -128,7 +138,7 @@ void BinaryReader::fail(const std::string& Message) {
 
 void BinaryReader::resume() {
 #if LOG_CALLSTACK
-  TRACE_ENTER("resume");
+  TRACE_MESSAGE("enter resume");
 #endif
   while (hasEnoughHeadroom()) {
 #if LOG_CALLSTACK
@@ -146,12 +156,20 @@ void BinaryReader::resume() {
         break;
       case RunMethod::Finished: {
         assert(FrameStack.empty());
+        switch (Frame.State) {
+          case RunState::Succeeded:
+          case RunState::Failed:
+            break;
+          default:
+            TRACE(string, "State", getName(Frame.State));
+            TRACE_MESSAGE("Malformed finish state found, Correcting!");
+            Frame.State = RunState::Failed;
+        }
         return;
       }
       case RunMethod::Block: {
         switch (Frame.State) {
           case RunState::Enter: {
-            TRACE_ENTER(RunMethodName[int(Frame.Method)]);
             size_t Size = Reader->readBlockSize(ReadPos);
             TRACE(size_t, "Block size", Size);
             Reader->pushEobAddress(ReadPos, Size);
@@ -161,10 +179,10 @@ void BinaryReader::resume() {
             break;
           }
           case RunState::Exit:
-            FrameStack.pop();
+            returnFromCall();
             ReadPos.popEobAddress();
             CurBlockApplyFcn = RunMethod::NO_SUCH_METHOD;
-            TRACE_EXIT_OVERRIDE(RunMethodName[int(RunMethod::Block)]);
+            returnFromCall();
             break;
           default:
             fatal("resume reading block not implemented");
@@ -175,7 +193,6 @@ void BinaryReader::resume() {
       case RunMethod::File:
         switch (Frame.State) {
           case RunState::Enter: {
-            TRACE_ENTER(RunMethodName[int(Frame.Method)]);
             CurFile = readHeader();
             Frame.State = RunState::Loop;
             call(RunMethod::Section);
@@ -183,6 +200,7 @@ void BinaryReader::resume() {
           }
           case RunState::Loop: {
             CurFile->append(CurSection);
+            TRACE_SEXP("CurSection", CurSection);
             CurSection = nullptr;
             if (ReadPos.atEof()) {
               Frame.State = RunState::Exit;
@@ -193,8 +211,7 @@ void BinaryReader::resume() {
           }
           case RunState::Exit: {
             SectionSymtab.install(CurFile);
-            FrameStack.pop();
-            TRACE_EXIT_OVERRIDE(RunMethodName[int(RunMethod::Name)]);
+            returnFromCall();
             break;
           }
           default:
@@ -205,7 +222,6 @@ void BinaryReader::resume() {
       case RunMethod::Name: {
         switch (Frame.State) {
           case RunState::Enter: {
-            TraceEnterFrame();
             Name.clear();
             CounterStack.push();
             Counter = Reader->readVaruint32(ReadPos);
@@ -223,7 +239,6 @@ void BinaryReader::resume() {
           }
           case RunState::Exit:
             returnFromCall();
-            TraceExitFrame();
             break;
           default:
             fatal("resume reading name not implemented");
@@ -234,7 +249,6 @@ void BinaryReader::resume() {
       case RunMethod::Section:
         switch (Frame.State) {
           case RunState::Enter: {
-            TRACE_ENTER(RunMethodName[int(Frame.Method)]);
             Frame.State = RunState::Setup;
             call(RunMethod::Name);
             break;
@@ -260,8 +274,7 @@ void BinaryReader::resume() {
               CurSection->append(NodeStack[i]);
             for (size_t i = StartStackSize; i < StackSize; ++i)
               NodeStack.pop_back();
-            FrameStack.pop();
-            TRACE_EXIT_OVERRIDE(RunMethodName[int(RunMethod::Name)]);
+            returnFromCall();
             break;
           }
           default:
@@ -272,7 +285,6 @@ void BinaryReader::resume() {
       case RunMethod::SectionBody:
         switch (Frame.State) {
           case RunState::Enter: {
-            TRACE_ENTER(RunMethodName[int(Frame.Method)]);
             SymbolNode *Sym = CurSection->getSymbol();
             assert(Sym);
             if (Sym->getStringName() != "filter")
@@ -289,8 +301,10 @@ void BinaryReader::resume() {
             readNode();
             break;
           case RunState::Exit:
-            FrameStack.pop();
-            TRACE_EXIT_OVERRIDE(RunMethodName[int(RunMethod::SectionBody)]);
+            for (auto* Nd : NodeStack)
+              CurSection->append(Nd);
+            NodeStack.clear();
+            returnFromCall();
             break;
           default:
             fatal("resume section body not implemented");
@@ -300,7 +314,6 @@ void BinaryReader::resume() {
       case RunMethod::SymbolTable:
         switch (Frame.State) {
           case RunState::Enter: {
-            TRACE_ENTER(RunMethodName[int(Frame.Method)]);
             SectionSymtab.clear();
             CounterStack.push();
             Counter = Reader->readVaruint32(ReadPos);
@@ -324,8 +337,7 @@ void BinaryReader::resume() {
             Frame.State = RunState::Loop;
             break;
           case RunState::Exit:
-            FrameStack.pop();
-            TRACE_EXIT_OVERRIDE(RunMethodName[int(RunMethod::SymbolTable)]);
+            returnFromCall();
             break;
           default:
             fatal("resume reading symbol table not implemented");
@@ -339,7 +351,7 @@ void BinaryReader::resume() {
   }
 #if LOG_CALLSTACK
   TRACE_BLOCK({ describeRunState(stderr); });
-  TRACE_EXIT_OVERRIDE("resume");
+  TRACE_MESSAGE("exit resume");
 #endif
   return;
 }
@@ -503,7 +515,7 @@ void BinaryReader::readBackFilled() {
 }
 
 FileNode* BinaryReader::readFile() {
-  TRACE_METHOD("readFile");
+  TRACE_METHOD("toplevel.readFile");
   startReadingFile();
   readBackFilled();
   TRACE_BLOCK({ describeRunState(stderr); });
@@ -511,6 +523,7 @@ FileNode* BinaryReader::readFile() {
 }
 
 SectionNode* BinaryReader::readSection() {
+  TRACE_METHOD("toplevel.readSection");
   startReadingSection();
   readBackFilled();
   return getSection();
@@ -653,13 +666,11 @@ void BinaryReader::readNode() {
 }
 
 void BinaryReader::startReadingSection() {
-  TRACE_METHOD("startReadingSection");
   Frame.init();
   call(RunMethod::Section);
 }
 
 void BinaryReader::startReadingFile() {
-  TRACE_METHOD("startReadingFile");
   Frame.init();
   call(RunMethod::File);
 }
