@@ -116,41 +116,37 @@ int main(int Argc, char* Argv[]) {
       return exit_status(EXIT_FAILURE);
     }
   }
-  FileNode* File = nullptr;
-  auto Input = std::make_shared<ReadBackedQueue>(getInput());
+  auto RawInput = getInput();
+  auto Input = RunnerCount ? std::make_shared<Queue>()
+                           : std::make_shared<ReadBackedQueue>(RawInput);
   auto Symtab = std::make_shared<SymbolTable>();
+  BinaryReader Reader(Input, Symtab);
+  Reader.getTrace().setTraceProgress(Verbose >= 1);
   if (RunnerCount) {
-    ReadCursor RawReadPos(StreamType::Byte, Input);
-    auto FillQueue = std::make_shared<Queue>();
-    auto FillReadPos =
-        std::make_shared<ReadCursor>(StreamType::Byte, FillQueue);
-    std::shared_ptr<BinaryReader::Runner> Runner =
-        BinaryReader::startReadingFile(FillReadPos, Symtab);
-    Runner->getTrace().setTraceProgress(Verbose >= 1);
-    WriteCursor* FillPos = Runner->getFillPos().get();
-    while (Runner->needsMoreInput()) {
-      // TODO(karlschimpf) Get a cleaner API for this!
-      // Fill queue with more input and resume.
-      size_t BytesRemaining = RunnerCount;
-      while (BytesRemaining) {
-        if (RawReadPos.atEof()) {
-          FillPos->freezeEof();
-          break;
+    constexpr size_t BufSize = 1024;
+    uint8_t Buffer[BufSize];
+    if (BufSize < size_t(RunnerCount))
+      fatal("Buffer size (-r) can't exceed" + std::to_string(BufSize));
+    WriteCursor FillPos(StreamType::Byte, Input);
+    Reader.startReadingFile();
+    bool ReachedEof = false;
+    while (!Reader.finishedProcessingInput()) {
+      if (!ReachedEof) {
+        size_t Count = RawInput->read(Buffer, RunnerCount);
+        for (size_t i = 0; i < Count; ++i)
+          FillPos.writeByte(Buffer[i]);
+        if (Count == 0) {
+          FillPos.freezeEof();
+          ReachedEof = true;
         }
-        FillPos->writeByte(RawReadPos.readByte());
-        --BytesRemaining;
       }
-      Runner->resumeReading();
+      Reader.resume();
     }
-    if (Runner->errorsFound())
-      fatal("Errors found while reading filter section!");
-    File = Runner->getFile();
   } else {
-    BinaryReader Reader(Input, Symtab);
-    Reader.getTrace().setTraceProgress(Verbose >= 1);
-    File = Reader.readFile();
+    Reader.readFile();
   }
-  if (File == nullptr) {
+  FileNode* File = Reader.getFile();
+  if (Reader.errorsFound()) {
     fprintf(stderr, "Unable to parse WASM module!\n");
     return exit_status(EXIT_FAILURE);
   }

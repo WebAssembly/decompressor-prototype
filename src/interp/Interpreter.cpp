@@ -267,7 +267,7 @@ void Interpreter::fail(const std::string& Message) {
     fprintf(Out, "Error: ");
     getTrace().getTextWriter()->writeAbbrev(Out, Frame.Nd);
   }
-  fprintf(Out, "Error: (method %s) %s\n: ", getName(Frame.CallMethod),
+  fprintf(Out, "Error: (method %s) %s\n", getName(Frame.CallMethod),
           Message.c_str());
   fail();
 }
@@ -1246,8 +1246,7 @@ void Interpreter::runMethods() {
                 break;
               case State::Exit:
                 OpcodeLocals.CaseMask = Frame.ReturnValue;
-                OpcodeLocals.SelShift =
-                    cast<Uint8Node>(Frame.Nd)->getValue();
+                OpcodeLocals.SelShift = cast<Uint8Node>(Frame.Nd)->getValue();
                 popAndReturn();
                 TraceExitFrame();
                 break;
@@ -1264,8 +1263,7 @@ void Interpreter::runMethods() {
                 break;
               case State::Exit:
                 OpcodeLocals.CaseMask = Frame.ReturnValue;
-                OpcodeLocals.SelShift =
-                    cast<Uint32Node>(Frame.Nd)->getValue();
+                OpcodeLocals.SelShift = cast<Uint32Node>(Frame.Nd)->getValue();
                 popAndReturn();
                 TraceExitFrame();
                 break;
@@ -1283,8 +1281,7 @@ void Interpreter::runMethods() {
                 break;
               case State::Exit:
                 OpcodeLocals.CaseMask = Frame.ReturnValue;
-                OpcodeLocals.SelShift =
-                    cast<Uint64Node>(Frame.Nd)->getValue();
+                OpcodeLocals.SelShift = cast<Uint64Node>(Frame.Nd)->getValue();
                 popAndReturn();
                 TraceExitFrame();
                 break;
@@ -1353,33 +1350,29 @@ void Interpreter::runMethods() {
             break;
           case OpUint32:  // Method::Write
             TraceEnterFrame();
-            Writer->writeUint32Bits(
-                WriteValue, WritePos,
-                cast<Uint32Node>(Frame.Nd)->getValue());
+            Writer->writeUint32Bits(WriteValue, WritePos,
+                                    cast<Uint32Node>(Frame.Nd)->getValue());
             popAndReturnWriteValue();
             TraceExitFrame();
             break;
           case OpUint64:  // Method::Write
             TraceEnterFrame();
-            Writer->writeUint64Bits(
-                WriteValue, WritePos,
-                cast<Uint64Node>(Frame.Nd)->getValue());
+            Writer->writeUint64Bits(WriteValue, WritePos,
+                                    cast<Uint64Node>(Frame.Nd)->getValue());
             popAndReturnWriteValue();
             TraceExitFrame();
             break;
           case OpVarint32:  // Method::Write
             TraceEnterFrame();
-            Writer->writeVarint32Bits(
-                WriteValue, WritePos,
-                cast<Varint32Node>(Frame.Nd)->getValue());
+            Writer->writeVarint32Bits(WriteValue, WritePos,
+                                      cast<Varint32Node>(Frame.Nd)->getValue());
             popAndReturnWriteValue();
             TraceExitFrame();
             break;
           case OpVarint64:  // Method::Write
             TraceEnterFrame();
-            Writer->writeVarint64Bits(
-                WriteValue, WritePos,
-                cast<Varint64Node>(Frame.Nd)->getValue());
+            Writer->writeVarint64Bits(WriteValue, WritePos,
+                                      cast<Varint64Node>(Frame.Nd)->getValue());
             popAndReturnWriteValue();
             TraceExitFrame();
             break;

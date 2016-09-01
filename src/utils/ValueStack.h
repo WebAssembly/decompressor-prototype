@@ -140,23 +140,23 @@ class ValueStack {
   Iterator begin() const { return Iterator(this, 0); }
   Iterator end() const { return Iterator(this, sizeWithTop()); }
   IteratorRange iterRange(size_t BeginIndex, size_t EndIndex) const {
-    assert(BeginIndex < sizeWithTop());
+    assert(BeginIndex <= sizeWithTop());
     assert(EndIndex <= sizeWithTop());
     return IteratorRange(this, BeginIndex, EndIndex);
   }
   IteratorRange iterRange(size_t BeginIndex) const {
-    assert(BeginIndex < sizeWithTop());
+    assert(BeginIndex <= sizeWithTop());
     return IteratorRange(this, BeginIndex);
   }
   BackwardIterator rbegin() const { return BackwardIterator(this, size()); }
   BackwardIterator rend() const { return BackWardIterator(this, size_t(-1)); }
   BackwardIteratorRange riterRange(size_t BeginIndex, size_t EndIndex) const {
-    assert(BeginIndex < sizeWithTop());
+    assert(BeginIndex <= sizeWithTop());
     assert(EndIndex <= sizeWithTop());
     return BackwardIteratorRange(this, BeginIndex, EndIndex);
   }
   BackwardIteratorRange riterRange(size_t BeginIndex) const {
-    assert(BeginIndex < sizeWithTop());
+    assert(BeginIndex <= sizeWithTop());
     return BackwardIteratorRange(this, BeginIndex);
   }
   ValueStack(T& Value) : Value(Value) {}
