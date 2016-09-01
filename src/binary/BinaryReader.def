@@ -27,7 +27,7 @@
   X(Name,        "readName")                                                   \
   X(Section,     "readSection")                                                \
   X(SectionBody, "readSectionBody")                                            \
-  X(Started,     "Started")                                                    \
+  X(Started,     "started")                                                    \
   X(SymbolTable, "readSymbolTable")                                            \
 
 //#define X(tag, name)

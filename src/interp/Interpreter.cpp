@@ -24,10 +24,10 @@
 
 #include <iostream>
 
-// By default, methods runMethods() and readBackFilled() are not traced,
+// By default, methods resume() and readBackFilled() are not traced,
 // since they are the glue between a push and pull models. Rather, they
 // conceptually mimic the natural call structure. If you want to trace
-// runMethods() and readBackFilled() as well, change this flag to 1.
+// resume() and readBackFilled() as well, change this flag to 1.
 #define LOG_RUNMETHODS 0
 // The following tracks runMetthods() and readBackFilled(), which run
 // interpreter methods with tracing showing equivalent non-push inter
@@ -43,8 +43,8 @@
 #define LOG_NUMBERED_BLOCK 0
 #define LOG_FUNCTION_NUMBER 0
 
-// The following shows stack contents on each iteration of runMethods();
-#define LOG_CALLSTACKS 1
+// The following shows stack contents on each iteration of resume();
+#define LOG_CALLSTACKS 0
 
 namespace wasm {
 
@@ -244,11 +244,10 @@ void Interpreter::readBackFilled() {
   TRACE_METHOD("readBackFilled");
 #endif
   ReadCursor FillPos(ReadPos);
-  while (needsMoreInput() && !errorsFound()) {
-    while (!hasEnoughHeadroom()) {
+  while (!isFinished()) {
+    if (!FillPos.atEof())
       FillPos.advance(Page::Size);
-    }
-    runMethods();
+    resume();
   }
 }
 
@@ -280,9 +279,9 @@ void Interpreter::failNotImplemented() {
   fail("Method not implemented!");
 }
 
-void Interpreter::runMethods() {
+void Interpreter::resume() {
 #if LOG_RUNMETHODS
-  TRACE_ENTER("runMethods");
+  TRACE_ENTER("resume");
   TRACE_BLOCK({ describeAllNonemptyStacks(tracE.getFile()); });
 #endif
   while (hasEnoughHeadroom() && !errorsFound()) {
@@ -862,7 +861,7 @@ void Interpreter::runMethods() {
         }
 #if LOG_RUNMETHODS
         TRACE_BLOCK({ describeAllNonemptyStacks(tracE.getFile()); });
-        TRACE_EXIT_OVERRIDE("runMethods");
+        TRACE_EXIT_OVERRIDE("resume");
 #endif
         return;
       case Method::EvalParam:
@@ -1292,6 +1291,15 @@ void Interpreter::runMethods() {
             break;
         }
         break;
+      case Method::Started:
+        // If reached, we finished processing the input.
+        assert(FrameStack.empty());
+        Frame.CallMethod = Method::Finished;
+        if (ReadPos.atEof())
+          Frame.CallState = State::Succeeded;
+        else
+          fail("Extraneous bytes found at the end of the input stream");
+        break;
       case Method::Write:
         switch (Frame.Nd->getType()) {
           case OpBlock:
@@ -1444,7 +1452,7 @@ void Interpreter::runMethods() {
   }
 #if LOG_RUNMETHODS
   TRACE_BLOCK({ describeAllNonemptyStacks(tracE.getFile()); });
-  TRACE_EXIT_OVERRIDE("runMethods");
+  TRACE_EXIT_OVERRIDE("resume");
 #endif
 }
 

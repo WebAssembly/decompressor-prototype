@@ -136,7 +136,7 @@ void BinaryReader::resume() {
 #endif
     switch (Frame.Method) {
       case RunMethod::Started:
-        // If reached, we finished with success!
+        // If reached, we finished processing the input.
         assert(FrameStack.empty());
         Frame.Method = RunMethod::Finished;
         if (ReadPos.atEof())
@@ -495,10 +495,9 @@ FileNode* BinaryReader::readHeader() {
 
 void BinaryReader::readBackFilled() {
   decode::ReadCursor FillPos(ReadPos);
-  while (!finishedProcessingInput()) {
-    while (!hasEnoughHeadroom()) {
+  while (!isFinished()) {
+    if (!FillPos.atEof())
       FillPos.advance(Page::Size);
-    }
     resume();
   }
 }

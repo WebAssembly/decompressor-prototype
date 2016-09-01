@@ -90,9 +90,7 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
         ? CurSection : nullptr;
   }
 
-  bool finishedProcessingInput() const {
-    return isSuccessful() || errorsFound();
-  }
+  bool isFinished() const { return Frame.State == RunState::Succeeded; }
 
   bool isSuccessful() const {
     return Frame.State == RunState::Succeeded;
