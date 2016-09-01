@@ -61,7 +61,6 @@ class Interpreter {
 
   void setMinimizeBlockSize(bool NewValue) { MinimizeBlockSize = NewValue; }
 
-  bool needsMoreInput() const { return !isSuccessful() && !errorsFound(); }
   bool isFinished() const { return Frame.CallMethod == Method::Finished; }
   bool isSuccessful() const { return Frame.CallState == State::Succeeded; }
   bool errorsFound() const { return Frame.CallState == State::Failed; }
@@ -91,8 +90,8 @@ class Interpreter {
     CallFrame(const CallFrame& M)
         : CallMethod(M.CallMethod), CallState(M.CallState), Nd(M.Nd) {}
     void reset() {
-      CallMethod = Method::Finished;
-      CallState = State::Succeeded;
+      CallMethod = Method::Started;
+      CallState = State::Enter;
       Nd = nullptr;
       ReturnValue = 0;
     }
@@ -245,7 +244,7 @@ class Interpreter {
 
   bool hasEnoughHeadroom() const;
 
-  void runMethods();
+  void resume();
   void readBackFilled();
 
   // For debugging only.

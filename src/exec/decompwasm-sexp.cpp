@@ -130,7 +130,7 @@ int main(int Argc, char* Argv[]) {
     WriteCursor FillPos(StreamType::Byte, Input);
     Reader.startReadingFile();
     bool ReachedEof = false;
-    while (!Reader.finishedProcessingInput()) {
+    while (!Reader.isFinished()) {
       if (!ReachedEof) {
         size_t Count = RawInput->read(Buffer, RunnerCount);
         for (size_t i = 0; i < Count; ++i)
