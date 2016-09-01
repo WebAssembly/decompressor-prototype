@@ -139,10 +139,10 @@ void BinaryReader::resume() {
         // If reached, we finished processing the input.
         assert(FrameStack.empty());
         Frame.Method = RunMethod::Finished;
-        if (ReadPos.atEof())
+        if (ReadPos.atEof() && ReadPos.isQueueGood())
           Frame.State = RunState::Succeeded;
         else
-          fail("Extranous bytes found at end of input stream");
+          fail("Malformed input in decompression algorithms file");
         break;
       case RunMethod::Finished: {
         assert(FrameStack.empty());

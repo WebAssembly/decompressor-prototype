@@ -1295,10 +1295,10 @@ void Interpreter::resume() {
         // If reached, we finished processing the input.
         assert(FrameStack.empty());
         Frame.CallMethod = Method::Finished;
-        if (ReadPos.atEof())
+        if (ReadPos.atEof() && ReadPos.isQueueGood())
           Frame.CallState = State::Succeeded;
         else
-          fail("Extraneous bytes found at the end of the input stream");
+          fail("Malformed input in compressed file");
         break;
       case Method::Write:
         switch (Frame.Nd->getType()) {

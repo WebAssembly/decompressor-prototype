@@ -105,6 +105,8 @@ class Cursor : public PageCursor {
 
   void reset() {}
 
+  bool isQueueGood() const { return Que->isGood(); }
+
   bool isBroken() const { return Que->isBroken(*this); }
 
   bool isByteAligned() const { return CurByte.isEmpty(); }
