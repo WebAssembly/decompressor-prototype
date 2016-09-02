@@ -179,7 +179,6 @@ void BinaryReader::resume() {
             break;
           }
           case RunState::Exit:
-            returnFromCall();
             ReadPos.popEobAddress();
             CurBlockApplyFcn = RunMethod::NO_SUCH_METHOD;
             returnFromCall();
@@ -246,6 +245,156 @@ void BinaryReader::resume() {
         }
         break;
       }
+      case RunMethod::Node:
+        switch (Frame.State) {
+          case RunState::Enter: {
+            NodeType Opcode = (NodeType)Reader->readUint8(ReadPos);
+            Frame.State = RunState::Exit;
+            switch (Opcode) {
+              case OpAnd:
+                readBinary<AndNode>();
+                break;
+              case OpBlock:
+                readUnary<BlockNode>();
+                break;
+              case OpCase:
+                readBinary<CaseNode>();
+                break;
+              case OpConvert:
+                readTernary<ConvertNode>();
+                break;
+              case OpDefine: {
+                auto* Symbol =
+                    SectionSymtab.getIndexSymbol(Reader->readVaruint32(ReadPos));
+                auto* Body = NodeStack.back();
+                NodeStack.pop_back();
+                auto* Params = NodeStack.back();
+                NodeStack.pop_back();
+                auto* Node = Symtab->create<DefineNode>(Symbol, Params, Body);
+                TRACE_SEXP(nullptr, Node);
+                NodeStack.push_back(Node);
+                break;
+              }
+              case OpError:
+                readNullary<ErrorNode>();
+                break;
+              case OpEval: {
+                auto* Node = Symtab->create<EvalNode>();
+                auto *Sym =
+                    SectionSymtab.getIndexSymbol(Reader->readVaruint32(ReadPos));
+                Node->append(Sym);
+                uint32_t NumParams = Reader->readVaruint32(ReadPos);
+                size_t StackSize = NodeStack.size();
+                if (StackSize < NumParams) {
+                  fail("Can't find arguments for eval s-expression");
+                  break;
+                }
+                for (size_t i = StackSize - NumParams; i < StackSize; ++i)
+                  Node->append(NodeStack[i]);
+                for (uint32_t i = 0; i < NumParams; ++i)
+                  NodeStack.pop_back();
+                TRACE_SEXP(nullptr, Node);
+                NodeStack.push_back(Node);
+                break;
+              }
+              case OpFilter:
+                readNary<FilterNode>();
+                break;
+              case OpIfThen:
+                readBinary<IfThenNode>();
+                break;
+              case OpIfThenElse:
+                readTernary<IfThenElseNode>();
+                break;
+              case OpLastRead:
+                readNullary<LastReadNode>();
+                break;
+              case OpLoop:
+                readBinary<LoopNode>();
+                break;
+              case OpLoopUnbounded:
+                readUnary<LoopUnboundedNode>();
+                break;
+              case OpMap:
+                readNary<MapNode>();
+                break;
+              case OpNot:
+                readUnary<NotNode>();
+                break;
+              case OpOpcode:
+                readNary<OpcodeNode>();
+                break;
+              case OpOr:
+                readBinary<OrNode>();
+                break;
+              case OpPeek:
+                readUnary<PeekNode>();
+                break;
+              case OpRead:
+                readUnary<ReadNode>();
+                break;
+             case OpRename:
+                readBinary<RenameNode>();
+                break;
+              case OpSequence:
+                readNary<SequenceNode>();
+                break;
+              case OpStream: {
+                uint8_t Encoding = Reader->readUint8(ReadPos);
+                StreamKind StrmKind;
+                StreamType StrmType;
+                StreamNode::decode(Encoding, StrmKind, StrmType);
+                auto* Node = Symtab->create<StreamNode>(StrmKind, StrmType);
+                TRACE_SEXP(nullptr, Node);
+                NodeStack.push_back(Node);
+                break;
+              }
+              case OpSwitch:
+                readNary<SwitchNode>();
+                break;
+              case OpUndefine:
+                readUnary<UndefineNode>();
+                break;
+              case OpVoid:
+                readNullary<VoidNode>();
+                break;
+              case OpWrite:
+                readBinary<WriteNode>();
+                break;
+              // The following read integer nodes.
+#define X(tag, format, defval, mergable, NODE_DECLS)                           \
+              case Op##tag: {                                                  \
+                Node* Nd;                                                      \
+                if (Reader->readUint8(ReadPos)) {                              \
+                  Nd = Symtab->get##tag##Definition();                         \
+                } else {                                                       \
+                  Nd = Symtab->get##tag##Definition(                           \
+                      Reader->read##format(ReadPos), ValueFormat::Decimal);    \
+                }                                                              \
+                TRACE_SEXP(nullptr, Nd);                                       \
+                NodeStack.push_back(Nd);                                       \
+                break;                                                         \
+              }
+              AST_INTEGERNODE_TABLE
+#undef X
+              case NO_SUCH_NODETYPE:
+              case OpFile:
+              case OpSection:
+              case OpSymbol:
+              case OpUnknownSection:
+                fail("Illegal opcode given to readNode");
+                break;
+            }
+            break;
+          }
+          case RunState::Exit:
+            returnFromCall();
+            break;
+          default:
+            fatal("resume reading name not implemented");
+            break;
+        }
+        break;
       case RunMethod::Section:
         switch (Frame.State) {
           case RunState::Enter: {
@@ -298,12 +447,9 @@ void BinaryReader::resume() {
               Frame.State = RunState::Exit;
               break;
             }
-            readNode();
+            call(RunMethod::Node);
             break;
           case RunState::Exit:
-            for (auto* Nd : NodeStack)
-              CurSection->append(Nd);
-            NodeStack.clear();
             returnFromCall();
             break;
           default:
@@ -380,7 +526,7 @@ BinaryReader::BinaryReader(std::shared_ptr<decode::Queue> Input,
       Input(Input),
       Symtab(Symtab),
       SectionSymtab(Symtab),
-      Trace(nullptr, "BinaryReader"),
+      Trace(&ReadPos, "BinaryReader"),
       CurFile(nullptr),
       CurBlockApplyFcn(RunMethod::NO_SUCH_METHOD),
       FrameStack(Frame),
@@ -396,8 +542,10 @@ void BinaryReader::readNullary() {
 
 template <class T>
 void BinaryReader::readUnary() {
-  if (NodeStack.size() < 1)
-    fatal("Can't find arguments for s-expression");
+  if (NodeStack.size() < 1) {
+    fail("Can't find argument for unary s-expression");
+    return;
+  }
   Node* Arg = NodeStack.back();
   NodeStack.pop_back();
   auto* Node = Symtab->create<T>(Arg);
@@ -442,8 +590,10 @@ void BinaryReader::readVaruint64() {
 
 template <class T>
 void BinaryReader::readBinary() {
-  if (NodeStack.size() < 2)
-    fatal("Can't find arguments for s-expression");
+  if (NodeStack.size() < 2) {
+    fail("Can't find arguments for binary s-expression");
+    return;
+  }
   Node* Arg2 = NodeStack.back();
   NodeStack.pop_back();
   Node* Arg1 = NodeStack.back();
@@ -465,8 +615,10 @@ void BinaryReader::readBinarySymbol() {
 
 template <class T>
 void BinaryReader::readTernary() {
-  if (NodeStack.size() < 3)
-    fatal("Can't find arguments for s-expression");
+  if (NodeStack.size() < 3) {
+    fail("Can't find argument or ternary s-expression");
+    return;
+  }
   Node* Arg3 = NodeStack.back();
   NodeStack.pop_back();
   Node* Arg2 = NodeStack.back();
@@ -482,8 +634,10 @@ template <class T>
 void BinaryReader::readNary() {
   uint32_t NumKids = Reader->readVaruint32(ReadPos);
   size_t StackSize = NodeStack.size();
-  if (StackSize < NumKids)
-    fatal("Can't find arguments for s-expression");
+  if (StackSize < NumKids) {
+    fail("Can't find arguments for n-ary s-expression");
+    return;
+  }
   auto* Node = Symtab->create<T>();
   for (size_t i = StackSize - NumKids; i < StackSize; ++i)
     Node->append(NodeStack[i]);
@@ -527,142 +681,6 @@ SectionNode* BinaryReader::readSection() {
   startReadingSection();
   readBackFilled();
   return getSection();
-}
-
-void BinaryReader::readNode() {
-  TRACE_METHOD("readNode");
-  NodeType Opcode = (NodeType)Reader->readUint8(ReadPos);
-  switch (Opcode) {
-#define X(tag, format, defval, mergable, NODE_DECLS)                           \
-    case Op##tag: {                                                            \
-      Node* Nd;                                                                \
-      if (Reader->readUint8(ReadPos)) {                                       \
-        Nd = Symtab->get##tag##Definition();                                   \
-      } else {                                                                 \
-        Nd = Symtab->get##tag##Definition(                                     \
-            Reader->read##format(ReadPos), ValueFormat::Decimal);             \
-      }                                                                        \
-      TRACE_SEXP(nullptr, Nd);                                                 \
-      NodeStack.push_back(Nd);                                                 \
-      break;                                                                   \
-    }
-    AST_INTEGERNODE_TABLE
-#undef X
-    case OpAnd:
-      readBinary<AndNode>();
-      break;
-    case OpBlock:
-      readUnary<BlockNode>();
-      break;
-    case OpCase: {
-      readBinary<CaseNode>();
-      break;
-    }
-    case OpConvert:
-      readTernary<ConvertNode>();
-      break;
-    case OpDefine: {
-      auto* Symbol = SectionSymtab.getIndexSymbol(Reader->readVaruint32(ReadPos));
-      auto* Body = NodeStack.back();
-      NodeStack.pop_back();
-      auto* Params = NodeStack.back();
-      NodeStack.pop_back();
-      auto* Node = Symtab->create<DefineNode>(Symbol, Params, Body);
-      TRACE_SEXP(nullptr, Node);
-      NodeStack.push_back(Node);
-      break;
-    }
-    case OpRename:
-      readBinary<RenameNode>();
-      break;
-    case OpError:
-      readNullary<ErrorNode>();
-      break;
-    case OpEval: {
-      auto* Node = Symtab->create<EvalNode>();
-      auto *Sym = SectionSymtab.getIndexSymbol(Reader->readVaruint32(ReadPos));
-      Node->append(Sym);
-      uint32_t NumParams = Reader->readVaruint32(ReadPos);
-      size_t StackSize = NodeStack.size();
-      if (StackSize < NumParams)
-        fatal("Can't find arguments for s-expression");
-      for (size_t i = StackSize - NumParams; i < StackSize; ++i)
-        Node->append(NodeStack[i]);
-      for (uint32_t i = 0; i < NumParams; ++i)
-        NodeStack.pop_back();
-      NodeStack.push_back(Node);
-      break;
-    }
-    case OpFilter:
-      readNary<FilterNode>();
-      break;
-    case OpIfThen:
-      readBinary<IfThenNode>();
-      break;
-    case OpIfThenElse:
-      readTernary<IfThenElseNode>();
-      break;
-    case OpLoop:
-      readBinary<LoopNode>();
-      break;
-    case OpLoopUnbounded:
-      readUnary<LoopUnboundedNode>();
-      break;
-    case OpOr:
-      readBinary<OrNode>();
-      break;
-    case OpPeek:
-      readUnary<PeekNode>();
-      break;
-    case OpNot:
-      readUnary<NotNode>();
-      break;
-    case OpRead:
-      readUnary<ReadNode>();
-      break;
-    case OpWrite:
-      readBinary<WriteNode>();
-      break;
-    case OpOpcode:
-      readNary<OpcodeNode>();
-      break;
-    case OpMap:
-      readNary<MapNode>();
-      break;
-    case OpSwitch:
-      readNary<SwitchNode>();
-      break;
-    case OpSequence:
-      readNary<SequenceNode>();
-      break;
-    case OpStream: {
-      uint8_t Encoding = Reader->readUint8(ReadPos);
-      StreamKind StrmKind;
-      StreamType StrmType;
-      StreamNode::decode(Encoding, StrmKind, StrmType);
-      auto* Node = Symtab->create<StreamNode>(StrmKind, StrmType);
-      TRACE_SEXP(nullptr, Node);
-      NodeStack.push_back(Node);
-      break;
-    }
-    case OpUndefine:
-      readUnary<UndefineNode>();
-      break;
-    case OpVoid:
-      readNullary<VoidNode>();
-      break;
-    case OpLastRead:
-      readNullary<LastReadNode>();
-      break;
-    case NO_SUCH_NODETYPE:
-    case OpFile:
-    case OpSection:
-    case OpSymbol:
-    case OpUnknownSection:
-      TRACE(hex_uint32_t, "Opcode: ", Opcode);
-      fatal("Uses construct not implemented yet!");
-      break;
-  }
 }
 
 void BinaryReader::startReadingSection() {
