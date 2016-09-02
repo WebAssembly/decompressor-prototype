@@ -37,38 +37,36 @@ namespace {
 // read any sexpression node.
 static constexpr size_t kResumeHeadroom = 100;
 
-const char* RunMethodName[] = {
+const char* MethodName[] = {
 #define X(tag, name) name,
     BINARY_READER_METHODS_TABLE
 #undef X
-    "NO_SUCH_METHOD"
-};
+    "NO_SUCH_METHOD"};
 
-const char* RunStateName[] = {
+const char* StateName[] = {
 #define X(tag, name) name,
     BINARY_READER_STATES_TABLE
 #undef X
-    "NO_SUCH_STATE"
-};
+    "NO_SUCH_STATE"};
 
-} // end of anonymous namespace
+}  // end of anonymous namespace
 
-const char* BinaryReader::getName(RunMethod Method) {
-  size_t Index = size_t(Method);
-  if (Index < size(RunMethodName))
-    return RunMethodName[Index];
+const char* BinaryReader::getName(Method CallMethod) {
+  size_t Index = size_t(CallMethod);
+  if (Index < size(MethodName))
+    return MethodName[Index];
   return "UNDEFINED_METHOD";
 }
 
-const char* BinaryReader::getName(RunState State) {
-  size_t Index = size_t(State);
-  if (Index < size(RunStateName))
-    return RunStateName[Index];
+const char* BinaryReader::getName(State CallState) {
+  size_t Index = size_t(CallState);
+  if (Index < size(StateName))
+    return StateName[Index];
   return "UNDEFINED_STATE";
 }
 
 void BinaryReader::CallFrame::describe(FILE* Out) const {
-  fprintf(Out, "%s.%s\n", getName(Method), getName(State));
+  fprintf(Out, "%s.%s\n", getName(CallMethod), getName(CallState));
 }
 
 void BinaryReader::describeFrameStack(FILE* Out) const {
@@ -91,15 +89,14 @@ void BinaryReader::describeCounterStack(FILE* Out) const {
 }
 
 void BinaryReader::describeCurBlockApplyFcn(FILE* Out) const {
-  if (CurBlockApplyFcn != RunMethod::NO_SUCH_METHOD) {
+  if (CurBlockApplyFcn != Method::NO_SUCH_METHOD) {
     fprintf(Out, "*** Apply Fcn ***\n");
     fprintf(Out, "%s\n", getName(CurBlockApplyFcn));
     fprintf(Out, "*****************\n");
   }
 }
 
-void BinaryReader::describeNodeStack(FILE* Out,
-                                     TextWriter* Writer) const {
+void BinaryReader::describeNodeStack(FILE* Out, TextWriter* Writer) const {
   if (NodeStack.empty())
     return;
   fprintf(Out, "*** Node Stack ***\n");
@@ -108,7 +105,7 @@ void BinaryReader::describeNodeStack(FILE* Out,
   fprintf(Out, "******************\n");
 }
 
-void BinaryReader::describeRunState(FILE* Out) const {
+void BinaryReader::describeState(FILE* Out) const {
   describeFrameStack(Out);
   describeCounterStack(Out);
   describeCurBlockApplyFcn(Out);
@@ -116,9 +113,8 @@ void BinaryReader::describeRunState(FILE* Out) const {
 }
 
 bool BinaryReader::hasEnoughHeadroom() const {
-  return isEofFrozen() ||
-      (ReadPos.getCurByteAddress() + kResumeHeadroom
-       <= FillPos.getCurByteAddress());
+  return isEofFrozen() || (ReadPos.getCurByteAddress() + kResumeHeadroom <=
+                           FillPos.getCurByteAddress());
 }
 
 void BinaryReader::fail() {
@@ -135,14 +131,14 @@ void BinaryReader::fail() {
 
 void BinaryReader::fail(const std::string& Message) {
   FILE* Out = getTrace().getFile();
-  fprintf(Out, "Error: (method %s) %s\n", getName(Frame.Method),
+  fprintf(Out, "Error: (method %s) %s\n", getName(Frame.CallMethod),
           Message.c_str());
   fail();
 }
 
 void BinaryReader::failBadState() {
-  fail(std::string("Bad internal filter s-expression state in method: ")
-       + getName(Frame.Method));
+  fail(std::string("Bad internal filter s-expression state in method: ") +
+       getName(Frame.CallMethod));
 }
 
 void BinaryReader::resume() {
@@ -151,45 +147,45 @@ void BinaryReader::resume() {
 #endif
   while (hasEnoughHeadroom()) {
 #if LOG_CALLSTACK
-  TRACE_BLOCK({ describeRunState(stderr); });
+    TRACE_BLOCK({ describeState(stderr); });
 #endif
-    switch (Frame.Method) {
-      case RunMethod::Started:
+    switch (Frame.CallMethod) {
+      case Method::Started:
         // If reached, we finished processing the input.
         assert(FrameStack.empty());
-        Frame.Method = RunMethod::Finished;
+        assert(Frame.CallState == State::Enter);
+        Frame.CallMethod = Method::Finished;
         if (ReadPos.atEof() && ReadPos.isQueueGood())
-          Frame.State = RunState::Succeeded;
+          Frame.CallState = State::Succeeded;
         else
           failBadState();
         break;
-      case RunMethod::Finished: {
+      case Method::Finished: {
         assert(FrameStack.empty());
-        switch (Frame.State) {
-          case RunState::Succeeded:
-          case RunState::Failed:
+        switch (Frame.CallState) {
+          case State::Succeeded:
+          case State::Failed:
             break;
           default:
-            TRACE(string, "State", getName(Frame.State));
+            TRACE(string, "State", getName(Frame.CallState));
             TRACE_MESSAGE("Malformed finish state found, Correcting!");
-            Frame.State = RunState::Failed;
+            Frame.CallState = State::Failed;
         }
         return;
       }
-      case RunMethod::Block: {
-        switch (Frame.State) {
-          case RunState::Enter: {
+      case Method::Block: {
+        switch (Frame.CallState) {
+          case State::Enter: {
             size_t Size = Reader->readBlockSize(ReadPos);
             TRACE(size_t, "Block size", Size);
             Reader->pushEobAddress(ReadPos, Size);
-            Frame.State = RunState::Exit;
+            Frame.CallState = State::Exit;
             call(CurBlockApplyFcn);
-            CurBlockApplyFcn = RunMethod::NO_SUCH_METHOD;
+            CurBlockApplyFcn = Method::NO_SUCH_METHOD;
             break;
           }
-          case RunState::Exit:
+          case State::Exit:
             ReadPos.popEobAddress();
-            CurBlockApplyFcn = RunMethod::NO_SUCH_METHOD;
             returnFromCall();
             break;
           default:
@@ -198,9 +194,9 @@ void BinaryReader::resume() {
         }
         break;
       }
-      case RunMethod::File:
-        switch (Frame.State) {
-          case RunState::Enter:
+      case Method::File:
+        switch (Frame.CallState) {
+          case State::Enter:
             CurFile = Symtab->create<FileNode>();
             MagicNumber = Reader->readUint32(ReadPos);
             TRACE(uint32_t, "MagicNumber", MagicNumber);
@@ -210,20 +206,20 @@ void BinaryReader::resume() {
             }
             Version = Reader->readUint32(ReadPos);
             TRACE(uint32_t, "Version", Version);
-            Frame.State = RunState::Loop;
-            call(RunMethod::Section);
+            Frame.CallState = State::Loop;
+            call(Method::Section);
             break;
-          case RunState::Loop:
+          case State::Loop:
             CurFile->append(CurSection);
             TRACE_SEXP("CurSection", CurSection);
             CurSection = nullptr;
             if (ReadPos.atEof()) {
-              Frame.State = RunState::Exit;
+              Frame.CallState = State::Exit;
               break;
             }
-            call(RunMethod::Section);
+            call(Method::Section);
             break;
-          case RunState::Exit:
+          case State::Exit:
             SectionSymtab.install(CurFile);
             returnFromCall();
             break;
@@ -232,25 +228,25 @@ void BinaryReader::resume() {
             break;
         }
         break;
-      case RunMethod::Name: {
-        switch (Frame.State) {
-          case RunState::Enter: {
+      case Method::Name: {
+        switch (Frame.CallState) {
+          case State::Enter: {
             Name.clear();
             CounterStack.push();
             Counter = Reader->readVaruint32(ReadPos);
-            Frame.State = RunState::Loop;
+            Frame.CallState = State::Loop;
             break;
           }
-          case RunState::Loop: {
+          case State::Loop: {
             if (Counter-- == 0) {
               CounterStack.pop();
-              Frame.State = RunState::Exit;
+              Frame.CallState = State::Exit;
               break;
             }
             Name.push_back(char(Reader->readUint8(ReadPos)));
             break;
           }
-          case RunState::Exit:
+          case State::Exit:
             returnFromCall();
             break;
           default:
@@ -259,11 +255,11 @@ void BinaryReader::resume() {
         }
         break;
       }
-      case RunMethod::Node:
-        switch (Frame.State) {
-          case RunState::Enter: {
+      case Method::Node:
+        switch (Frame.CallState) {
+          case State::Enter: {
             NodeType Opcode = (NodeType)Reader->readUint8(ReadPos);
-            Frame.State = RunState::Exit;
+            Frame.CallState = State::Exit;
             switch (Opcode) {
               case OpAnd:
                 readBinary<AndNode>();
@@ -278,8 +274,8 @@ void BinaryReader::resume() {
                 readTernary<ConvertNode>();
                 break;
               case OpDefine: {
-                auto* Symbol =
-                    SectionSymtab.getIndexSymbol(Reader->readVaruint32(ReadPos));
+                auto* Symbol = SectionSymtab.getIndexSymbol(
+                    Reader->readVaruint32(ReadPos));
                 auto* Body = NodeStack.back();
                 NodeStack.pop_back();
                 auto* Params = NodeStack.back();
@@ -294,8 +290,8 @@ void BinaryReader::resume() {
                 break;
               case OpEval: {
                 auto* Node = Symtab->create<EvalNode>();
-                auto *Sym =
-                    SectionSymtab.getIndexSymbol(Reader->readVaruint32(ReadPos));
+                auto* Sym = SectionSymtab.getIndexSymbol(
+                    Reader->readVaruint32(ReadPos));
                 Node->append(Sym);
                 uint32_t NumParams = Reader->readVaruint32(ReadPos);
                 size_t StackSize = NodeStack.size();
@@ -347,7 +343,7 @@ void BinaryReader::resume() {
               case OpRead:
                 readUnary<ReadNode>();
                 break;
-             case OpRename:
+              case OpRename:
                 readBinary<RenameNode>();
                 break;
               case OpSequence:
@@ -375,21 +371,21 @@ void BinaryReader::resume() {
               case OpWrite:
                 readBinary<WriteNode>();
                 break;
-              // The following read integer nodes.
-#define X(tag, format, defval, mergable, NODE_DECLS)                           \
-              case Op##tag: {                                                  \
-                Node* Nd;                                                      \
-                if (Reader->readUint8(ReadPos)) {                              \
-                  Nd = Symtab->get##tag##Definition();                         \
-                } else {                                                       \
-                  Nd = Symtab->get##tag##Definition(                           \
-                      Reader->read##format(ReadPos), ValueFormat::Decimal);    \
-                }                                                              \
-                TRACE_SEXP(nullptr, Nd);                                       \
-                NodeStack.push_back(Nd);                                       \
-                break;                                                         \
-              }
-              AST_INTEGERNODE_TABLE
+// The following read integer nodes.
+#define X(tag, format, defval, mergable, NODE_DECLS)                   \
+  case Op##tag: {                                                      \
+    Node* Nd;                                                          \
+    if (Reader->readUint8(ReadPos)) {                                  \
+      Nd = Symtab->get##tag##Definition();                             \
+    } else {                                                           \
+      Nd = Symtab->get##tag##Definition(Reader->read##format(ReadPos), \
+                                        ValueFormat::Decimal);         \
+    }                                                                  \
+    TRACE_SEXP(nullptr, Nd);                                           \
+    NodeStack.push_back(Nd);                                           \
+    break;                                                             \
+  }
+                AST_INTEGERNODE_TABLE
 #undef X
               case NO_SUCH_NODETYPE:
               case OpFile:
@@ -401,7 +397,7 @@ void BinaryReader::resume() {
             }
             break;
           }
-          case RunState::Exit:
+          case State::Exit:
             returnFromCall();
             break;
           default:
@@ -409,23 +405,23 @@ void BinaryReader::resume() {
             break;
         }
         break;
-      case RunMethod::Section:
-        switch (Frame.State) {
-          case RunState::Enter:
-            Frame.State = RunState::Setup;
-            call(RunMethod::Name);
+      case Method::Section:
+        switch (Frame.CallState) {
+          case State::Enter:
+            Frame.CallState = State::Setup;
+            call(Method::Name);
             break;
-          case RunState::Setup:
+          case State::Setup:
             CurSection = create<SectionNode>();
             CurSection->append(create<SymbolNode>(Name));
             // Save StartStackSize for exit.
             CounterStack.push();
             Counter = NodeStack.size();
-            CurBlockApplyFcn = RunMethod::SectionBody;
-            Frame.State = RunState::Exit;
-            call(RunMethod::Block);
+            CurBlockApplyFcn = Method::SectionBody;
+            Frame.CallState = State::Exit;
+            call(Method::Block);
             break;
-          case RunState::Exit: {
+          case State::Exit: {
             size_t StartStackSize = Counter;
             CounterStack.pop();
             size_t StackSize = NodeStack.size();
@@ -445,27 +441,27 @@ void BinaryReader::resume() {
             break;
         }
         break;
-      case RunMethod::SectionBody:
-        switch (Frame.State) {
-          case RunState::Enter: {
-            SymbolNode *Sym = CurSection->getSymbol();
+      case Method::SectionBody:
+        switch (Frame.CallState) {
+          case State::Enter: {
+            SymbolNode* Sym = CurSection->getSymbol();
             assert(Sym);
             if (Sym->getStringName() != "filter") {
               fail("Handling non-filter sections not implemented!");
               break;
             }
-            Frame.State = RunState::Loop;
-            call(RunMethod::SymbolTable);
+            Frame.CallState = State::Loop;
+            call(Method::SymbolTable);
             break;
           }
-          case RunState::Loop:
+          case State::Loop:
             if (ReadPos.atByteEob()) {
-              Frame.State = RunState::Exit;
+              Frame.CallState = State::Exit;
               break;
             }
-            call(RunMethod::Node);
+            call(Method::Node);
             break;
-          case RunState::Exit:
+          case State::Exit:
             returnFromCall();
             break;
           default:
@@ -473,30 +469,30 @@ void BinaryReader::resume() {
             break;
         }
         break;
-      case RunMethod::SymbolTable:
-        switch (Frame.State) {
-          case RunState::Enter:
+      case Method::SymbolTable:
+        switch (Frame.CallState) {
+          case State::Enter:
             SectionSymtab.clear();
             CounterStack.push();
             Counter = Reader->readVaruint32(ReadPos);
-            Frame.State = RunState::Loop;
+            Frame.CallState = State::Loop;
             break;
-          case RunState::Loop:
+          case State::Loop:
             if (Counter-- == 0) {
               CounterStack.pop();
-              Frame.State = RunState::Exit;
+              Frame.CallState = State::Exit;
               break;
             }
-            Frame.State = RunState::LoopCont;
-            call(RunMethod::Name);
+            Frame.CallState = State::LoopCont;
+            call(Method::Name);
             break;
-          case RunState::LoopCont:
+          case State::LoopCont:
             TRACE(size_t, "index", SectionSymtab.getNumberSymbols());
             TRACE(string, "Symbol", Name);
             SectionSymtab.addSymbol(Name);
-            Frame.State = RunState::Loop;
+            Frame.CallState = State::Loop;
             break;
-          case RunState::Exit:
+          case State::Exit:
             returnFromCall();
             break;
           default:
@@ -504,13 +500,13 @@ void BinaryReader::resume() {
             break;
         }
         break;
-      case RunMethod::NO_SUCH_METHOD:
+      case Method::NO_SUCH_METHOD:
         failBadState();
         break;
     }
   }
 #if LOG_CALLSTACK
-  TRACE_BLOCK({ describeRunState(stderr); });
+  TRACE_BLOCK({ describeState(stderr); });
   TRACE_MESSAGE("exit resume");
 #endif
   return;
@@ -542,10 +538,11 @@ BinaryReader::BinaryReader(std::shared_ptr<decode::Queue> Input,
       SectionSymtab(Symtab),
       Trace(&ReadPos, "BinaryReader"),
       CurFile(nullptr),
-      CurBlockApplyFcn(RunMethod::NO_SUCH_METHOD),
+      CurBlockApplyFcn(Method::NO_SUCH_METHOD),
       FrameStack(Frame),
       Counter(0),
-      CounterStack(Counter) {}
+      CounterStack(Counter) {
+}
 
 template <class T>
 void BinaryReader::readNullary() {
@@ -674,7 +671,7 @@ FileNode* BinaryReader::readFile() {
   TRACE_METHOD("toplevel.readFile");
   startReadingFile();
   readBackFilled();
-  TRACE_BLOCK({ describeRunState(stderr); });
+  TRACE_BLOCK({ describeState(stderr); });
   return getFile();
 }
 
@@ -687,12 +684,12 @@ SectionNode* BinaryReader::readSection() {
 
 void BinaryReader::startReadingSection() {
   Frame.init();
-  call(RunMethod::Section);
+  call(Method::Section);
 }
 
 void BinaryReader::startReadingFile() {
   Frame.init();
-  call(RunMethod::File);
+  call(Method::File);
 }
 
 }  // end of namespace filt
