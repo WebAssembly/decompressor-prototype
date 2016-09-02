@@ -46,7 +46,7 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
 
  public:
   // Internal state for resuming.
-  enum class RunMethod {
+  enum class Method {
 #define X(tag, name) tag,
     BINARY_READER_METHODS_TABLE
 #undef X
@@ -54,9 +54,9 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
     // warning may occur.
     NO_SUCH_METHOD
   };
-  static const char* getName(RunMethod Method);
+  static const char* getName(Method CallMethod);
 
-  enum class RunState {
+  enum class State {
 #define X(tag, name) tag,
     BINARY_READER_STATES_TABLE
     // The following is necessary for some compilers, because otherwise a comma
@@ -64,7 +64,7 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
     NO_SUCH_STATE
 #undef X
   };
-  static const char* getName(RunState State);
+  static const char* getName(State CallState);
 
   // Returns true if it begins with a WASM file magic number.
   static bool isBinary(const char* Filename);
@@ -79,20 +79,16 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
   void resume();
 
   // Returns the parsed file (or nullptr if unsuccessful).
-  FileNode* getFile() {
-    return isSuccessful() ? CurFile : nullptr;
-  }
+  FileNode* getFile() { return isSuccessful() ? CurFile : nullptr; }
 
   // Returns the parsed section (or nullptr if unsuccessful).
-  SectionNode* getSection() {
-    return isSuccessful() ? CurSection : nullptr;
-  }
+  SectionNode* getSection() { return isSuccessful() ? CurSection : nullptr; }
 
-  bool isFinished() const { return Frame.Method == RunMethod::Finished; }
+  bool isFinished() const { return Frame.CallMethod == Method::Finished; }
 
-  bool isSuccessful() const { return Frame.State == RunState::Succeeded; }
+  bool isSuccessful() const { return Frame.CallState == State::Succeeded; }
 
-  bool errorsFound() const { return Frame.State == RunState::Failed; }
+  bool errorsFound() const { return Frame.CallState == State::Failed; }
 
   bool isEofFrozen() const { return ReadPos.isEofFrozen(); }
 
@@ -103,7 +99,7 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
 
   // Returns the input buffer to the caller, so that they can
   // access it.
-  const std::shared_ptr<decode::Queue> &getInput() const { return Input; }
+  const std::shared_ptr<decode::Queue>& getInput() const { return Input; }
 
   FileNode* readFile();
 
@@ -111,26 +107,24 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
 
   TraceClassSexpReader& getTrace() { return Trace; }
 
-  TextWriter* getTextWriter() const {
-    return Trace.getTextWriter();
-  }
+  TextWriter* getTextWriter() const { return Trace.getTextWriter(); }
 
  private:
   struct CallFrame {
     CallFrame() { init(); }
-    CallFrame(RunMethod Method, RunState State)
-        : Method(Method), State(State) {}
+    CallFrame(Method CallMethod, State CallState)
+        : CallMethod(CallMethod), CallState(CallState) {}
     void init() {
       // Optimistically, assume we succeed.
-      Method = RunMethod::Started;
-      State = RunState::Enter;
+      CallMethod = Method::Started;
+      CallState = State::Enter;
     }
     void fail() {
-      Method = RunMethod::Finished;
-      State = RunState::Failed;
+      CallMethod = Method::Finished;
+      CallState = State::Failed;
     }
-    RunMethod Method;
-    RunState State;
+    Method CallMethod;
+    State CallState;
     // For debugging
     void describe(FILE* Out) const;
   };
@@ -147,9 +141,9 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
   uint32_t Version;
   mutable TraceClassSexpReader Trace;
   ExternalName Name;
-  FileNode *CurFile;
-  SectionNode *CurSection;
-  RunMethod CurBlockApplyFcn;
+  FileNode* CurFile;
+  SectionNode* CurSection;
+  Method CurBlockApplyFcn;
   CallFrame Frame;
   utils::ValueStack<CallFrame> FrameStack;
   std::vector<Node*> NodeStack;
@@ -161,19 +155,19 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
     return Symtab->create<T>(std::forward<Args>(args)...);
   }
 
-  // Schedules CallingMethod to be run next (i.e. the call will happen in the
+  // Schedules CallMethod to be run next (i.e. the call will happen in the
   // next iteration of resume()).
-  void call(RunMethod CallingMethod) {
+  void call(Method CallMethod) {
     FrameStack.push();
-    Frame.Method = CallingMethod;
-    Frame.State = RunState::Enter;
-    TRACE_ENTER(getName(CallingMethod));
+    Frame.CallMethod = CallMethod;
+    Frame.CallState = State::Enter;
+    TRACE_ENTER(getName(CallMethod));
   }
 
   // Schedule a return from the current method (i.e the return will happen in
   // the next iteration of resume()).
   void returnFromCall() {
-    TRACE_EXIT_OVERRIDE(getName(Frame.Method));
+    TRACE_EXIT_OVERRIDE(getName(Frame.CallMethod));
     FrameStack.pop();
   }
 
@@ -218,7 +212,7 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
   void describeCounterStack(FILE* Out) const;
   void describeCurBlockApplyFcn(FILE* Out) const;
   void describeNodeStack(FILE* Out, TextWriter* Writer) const;
-  void describeRunState(FILE* Out) const;
+  void describeState(FILE* Out) const;
 };
 
 }  // end of namespace filt
