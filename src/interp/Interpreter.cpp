@@ -272,7 +272,8 @@ void Interpreter::fail(const std::string& Message) {
 }
 
 void Interpreter::failBadState() {
-  fail("Bad internal state for method Eval");
+  fail(std::string("Bad internal decompressor state in method: ") +
+       getName(Frame.CallMethod));
 }
 
 void Interpreter::failNotImplemented() {
