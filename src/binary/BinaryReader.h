@@ -80,25 +80,19 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
 
   // Returns the parsed file (or nullptr if unsuccessful).
   FileNode* getFile() {
-    return (isSuccessful() && Frame.Method == RunMethod::Finished)
-        ? CurFile : nullptr;
+    return isSuccessful() ? CurFile : nullptr;
   }
 
   // Returns the parsed section (or nullptr if unsuccessful).
   SectionNode* getSection() {
-    return (isSuccessful() && Frame.Method == RunMethod::Finished)
-        ? CurSection : nullptr;
+    return isSuccessful() ? CurSection : nullptr;
   }
 
-  bool isFinished() const { return Frame.State == RunState::Succeeded; }
+  bool isFinished() const { return Frame.Method == RunMethod::Finished; }
 
-  bool isSuccessful() const {
-    return Frame.State == RunState::Succeeded;
-  }
+  bool isSuccessful() const { return Frame.State == RunState::Succeeded; }
 
-  bool errorsFound() const {
-    return Frame.State == RunState::Failed;
-  }
+  bool errorsFound() const { return Frame.State == RunState::Failed; }
 
   bool isEofFrozen() const { return ReadPos.isEofFrozen(); }
 
@@ -122,6 +116,25 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
   }
 
  private:
+  struct CallFrame {
+    CallFrame() { init(); }
+    CallFrame(RunMethod Method, RunState State)
+        : Method(Method), State(State) {}
+    void init() {
+      // Optimistically, assume we succeed.
+      Method = RunMethod::Started;
+      State = RunState::Enter;
+    }
+    void fail() {
+      Method = RunMethod::Finished;
+      State = RunState::Failed;
+    }
+    RunMethod Method;
+    RunState State;
+    // For debugging
+    void describe(FILE* Out) const;
+  };
+
   std::shared_ptr<interp::ReadStream> Reader;
   decode::ReadCursor ReadPos;
   decode::WriteCursor FillPos;
@@ -133,22 +146,47 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
   // The version of the input.
   uint32_t Version;
   mutable TraceClassSexpReader Trace;
+  ExternalName Name;
+  FileNode *CurFile;
+  SectionNode *CurSection;
+  RunMethod CurBlockApplyFcn;
+  CallFrame Frame;
+  utils::ValueStack<CallFrame> FrameStack;
+  std::vector<Node*> NodeStack;
+  size_t Counter;
+  utils::ValueStack<size_t> CounterStack;
 
   template <typename T, typename... Args>
   T* create(Args&&... args) {
     return Symtab->create<T>(std::forward<Args>(args)...);
   }
+
+  // Schedules CallingMethod to be run next (i.e. the call will happen in the
+  // next iteration of resume()).
+  void call(RunMethod CallingMethod) {
+    FrameStack.push();
+    Frame.Method = CallingMethod;
+    Frame.State = RunState::Enter;
+    TRACE_ENTER(getName(CallingMethod));
+  }
+
+  // Schedule a return from the current method (i.e the return will happen in
+  // the next iteration of resume()).
+  void returnFromCall() {
+    TRACE_EXIT_OVERRIDE(getName(Frame.Method));
+    FrameStack.pop();
+  }
+
   // Stop processing and fail.
   void fail();
   void fail(const std::string& Message);
+  void failBadState();
 
   // True if resume can continue without needing more input.
   bool hasEnoughHeadroom() const;
 
   // Runs methods will read-fill of input.
   void readBackFilled();
-
-  FileNode* readHeader();
 
   // General ast readers.
   template <class T>
@@ -175,52 +213,6 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
   void readTernary();
   template <class T>
   void readNary();
-
-  // Define state of nested methods.
-  struct CallFrame {
-    CallFrame() { init(); }
-    CallFrame(RunMethod Method, RunState State)
-        : Method(Method), State(State) {}
-    void init() {
-      // Optimistically, assume we succeed.
-      Method = RunMethod::Started;
-      State = RunState::Enter;
-    }
-    void fail() {
-      Method = RunMethod::Finished;
-      State = RunState::Failed;
-    }
-    RunMethod Method;
-    RunState State;
-    // For debugging
-    void describe(FILE* Out) const;
-  };
-
-  ExternalName Name;
-  FileNode *CurFile;
-  SectionNode *CurSection;
-  RunMethod CurBlockApplyFcn;
-  CallFrame Frame;
-  utils::ValueStack<CallFrame> FrameStack;
-  std::vector<Node*> NodeStack;
-  size_t Counter;
-  utils::ValueStack<size_t> CounterStack;
-
-  // Schedules CallingMethod to be run next (i.e. the call will happen in the
-  // next iteration of resume()).
-  void call(RunMethod CallingMethod) {
-    FrameStack.push();
-    Frame.Method = CallingMethod;
-    Frame.State = RunState::Enter;
-    TRACE_ENTER(getName(CallingMethod));
-  }
-
-  // Schedule a return from the current method (i.e the return will happen in
-  // the next iteration of resume()).
-  void returnFromCall() {
-    TRACE_EXIT_OVERRIDE(getName(Frame.Method));
-    FrameStack.pop();
-  }
 
   void describeFrameStack(FILE* Out) const;
   void describeCounterStack(FILE* Out) const;

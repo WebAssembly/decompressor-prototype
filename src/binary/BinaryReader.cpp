@@ -127,6 +127,10 @@ void BinaryReader::fail() {
     returnFromCall();
   }
   Frame.fail();
+  delete CurFile;
+  delete CurSection;
+  CurFile = nullptr;
+  CurSection = nullptr;
 }
 
 void BinaryReader::fail(const std::string& Message) {
@@ -134,6 +138,11 @@ void BinaryReader::fail(const std::string& Message) {
   fprintf(Out, "Error: (method %s) %s\n", getName(Frame.Method),
           Message.c_str());
   fail();
+}
+
+void BinaryReader::failBadState() {
+  fail(std::string("Bad internal filter s-expression state in method: ")
+       + getName(Frame.Method));
 }
 
 void BinaryReader::resume() {
@@ -152,7 +161,7 @@ void BinaryReader::resume() {
         if (ReadPos.atEof() && ReadPos.isQueueGood())
           Frame.State = RunState::Succeeded;
         else
-          fail("Malformed input in decompression algorithms file");
+          failBadState();
         break;
       case RunMethod::Finished: {
         assert(FrameStack.empty());
@@ -184,20 +193,27 @@ void BinaryReader::resume() {
             returnFromCall();
             break;
           default:
-            fatal("resume reading block not implemented");
+            failBadState();
             break;
         }
         break;
       }
       case RunMethod::File:
         switch (Frame.State) {
-          case RunState::Enter: {
-            CurFile = readHeader();
+          case RunState::Enter:
+            CurFile = Symtab->create<FileNode>();
+            MagicNumber = Reader->readUint32(ReadPos);
+            TRACE(uint32_t, "MagicNumber", MagicNumber);
+            if (MagicNumber != WasmBinaryMagic) {
+              fail("Unable to read, did not find WASM binary magic number");
+              break;
+            }
+            Version = Reader->readUint32(ReadPos);
+            TRACE(uint32_t, "Version", Version);
             Frame.State = RunState::Loop;
             call(RunMethod::Section);
             break;
-          }
-          case RunState::Loop: {
+          case RunState::Loop:
             CurFile->append(CurSection);
             TRACE_SEXP("CurSection", CurSection);
             CurSection = nullptr;
@@ -207,14 +223,12 @@ void BinaryReader::resume() {
             }
             call(RunMethod::Section);
             break;
-          }
-          case RunState::Exit: {
+          case RunState::Exit:
             SectionSymtab.install(CurFile);
             returnFromCall();
             break;
-          }
           default:
-            fatal("resume reading file not implemented");
+            failBadState();
             break;
         }
         break;
@@ -240,7 +254,7 @@ void BinaryReader::resume() {
             returnFromCall();
             break;
           default:
-            fatal("resume reading name not implemented");
+            failBadState();
             break;
         }
         break;
@@ -286,7 +300,7 @@ void BinaryReader::resume() {
                 uint32_t NumParams = Reader->readVaruint32(ReadPos);
                 size_t StackSize = NodeStack.size();
                 if (StackSize < NumParams) {
-                  fail("Can't find arguments for eval s-expression");
+                  failBadState();
                   break;
                 }
                 for (size_t i = StackSize - NumParams; i < StackSize; ++i)
@@ -382,7 +396,7 @@ void BinaryReader::resume() {
               case OpSection:
               case OpSymbol:
               case OpUnknownSection:
-                fail("Illegal opcode given to readNode");
+                failBadState();
                 break;
             }
             break;
@@ -391,18 +405,17 @@ void BinaryReader::resume() {
             returnFromCall();
             break;
           default:
-            fatal("resume reading name not implemented");
+            failBadState();
             break;
         }
         break;
       case RunMethod::Section:
         switch (Frame.State) {
-          case RunState::Enter: {
+          case RunState::Enter:
             Frame.State = RunState::Setup;
             call(RunMethod::Name);
             break;
-          }
-          case RunState::Setup: {
+          case RunState::Setup:
             CurSection = create<SectionNode>();
             CurSection->append(create<SymbolNode>(Name));
             // Save StartStackSize for exit.
@@ -412,13 +425,14 @@ void BinaryReader::resume() {
             Frame.State = RunState::Exit;
             call(RunMethod::Block);
             break;
-          }
           case RunState::Exit: {
             size_t StartStackSize = Counter;
             CounterStack.pop();
             size_t StackSize = NodeStack.size();
-            if (StackSize < StartStackSize)
-              fatal("Malformed section: " + Name);
+            if (StackSize < StartStackSize) {
+              failBadState();
+              break;
+            }
             for (size_t i = StartStackSize; i < StackSize; ++i)
               CurSection->append(NodeStack[i]);
             for (size_t i = StartStackSize; i < StackSize; ++i)
@@ -427,7 +441,7 @@ void BinaryReader::resume() {
             break;
           }
           default:
-            fatal("resume reading section not implemented");
+            failBadState();
             break;
         }
         break;
@@ -436,8 +450,10 @@ void BinaryReader::resume() {
           case RunState::Enter: {
             SymbolNode *Sym = CurSection->getSymbol();
             assert(Sym);
-            if (Sym->getStringName() != "filter")
-              fatal("Handling non-filter sections not implemented!");
+            if (Sym->getStringName() != "filter") {
+              fail("Handling non-filter sections not implemented!");
+              break;
+            }
             Frame.State = RunState::Loop;
             call(RunMethod::SymbolTable);
             break;
@@ -453,20 +469,19 @@ void BinaryReader::resume() {
             returnFromCall();
             break;
           default:
-            fatal("resume section body not implemented");
+            failBadState();
             break;
         }
         break;
       case RunMethod::SymbolTable:
         switch (Frame.State) {
-          case RunState::Enter: {
+          case RunState::Enter:
             SectionSymtab.clear();
             CounterStack.push();
             Counter = Reader->readVaruint32(ReadPos);
             Frame.State = RunState::Loop;
             break;
-          }
-          case RunState::Loop: {
+          case RunState::Loop:
             if (Counter-- == 0) {
               CounterStack.pop();
               Frame.State = RunState::Exit;
@@ -475,7 +490,6 @@ void BinaryReader::resume() {
             Frame.State = RunState::LoopCont;
             call(RunMethod::Name);
             break;
-          }
           case RunState::LoopCont:
             TRACE(size_t, "index", SectionSymtab.getNumberSymbols());
             TRACE(string, "Symbol", Name);
@@ -486,12 +500,12 @@ void BinaryReader::resume() {
             returnFromCall();
             break;
           default:
-            fatal("resume reading symbol table not implemented");
+            failBadState();
             break;
         }
         break;
       case RunMethod::NO_SUCH_METHOD:
-        fatal("resume on unknown method!");
+        failBadState();
         break;
     }
   }
@@ -543,7 +557,7 @@ void BinaryReader::readNullary() {
 template <class T>
 void BinaryReader::readUnary() {
   if (NodeStack.size() < 1) {
-    fail("Can't find argument for unary s-expression");
+    failBadState();
     return;
   }
   Node* Arg = NodeStack.back();
@@ -591,7 +605,7 @@ void BinaryReader::readVaruint64() {
 template <class T>
 void BinaryReader::readBinary() {
   if (NodeStack.size() < 2) {
-    fail("Can't find arguments for binary s-expression");
+    failBadState();
     return;
   }
   Node* Arg2 = NodeStack.back();
@@ -616,7 +630,7 @@ void BinaryReader::readBinarySymbol() {
 template <class T>
 void BinaryReader::readTernary() {
   if (NodeStack.size() < 3) {
-    fail("Can't find argument or ternary s-expression");
+    failBadState();
     return;
   }
   Node* Arg3 = NodeStack.back();
@@ -635,7 +649,7 @@ void BinaryReader::readNary() {
   uint32_t NumKids = Reader->readVaruint32(ReadPos);
   size_t StackSize = NodeStack.size();
   if (StackSize < NumKids) {
-    fail("Can't find arguments for n-ary s-expression");
+    failBadState();
     return;
   }
   auto* Node = Symtab->create<T>();
@@ -645,18 +659,6 @@ void BinaryReader::readNary() {
     NodeStack.pop_back();
   TRACE_SEXP(nullptr, Node);
   NodeStack.push_back(Node);
-}
-
-FileNode* BinaryReader::readHeader() {
-  TRACE_METHOD("readHeader");
-  MagicNumber = Reader->readUint32(ReadPos);
-  TRACE(uint32_t, "MagicNumber", MagicNumber);
-  if (MagicNumber != WasmBinaryMagic)
-    fatal("Unable to read, did not find WASM binary magic number");
-  Version = Reader->readUint32(ReadPos);
-  TRACE(uint32_t, "Version", Version);
-  auto *File = Symtab->create<FileNode>();
-  return File;
 }
 
 void BinaryReader::readBackFilled() {
