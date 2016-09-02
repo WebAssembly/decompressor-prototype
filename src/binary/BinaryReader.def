@@ -25,6 +25,7 @@
   X(File,        "readFile")                                                   \
   X(Finished,    "Finished")                                                   \
   X(Name,        "readName")                                                   \
+  X(Node,        "readNode")                                                   \
   X(Section,     "readSection")                                                \
   X(SectionBody, "readSectionBody")                                            \
   X(Started,     "started")                                                    \
