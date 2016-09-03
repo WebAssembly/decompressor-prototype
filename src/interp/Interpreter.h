@@ -242,8 +242,6 @@ class Interpreter {
   }
   void TraceExitFrame() { TRACE_EXIT_OVERRIDE(getName(Frame.CallMethod)); }
 
-  bool hasEnoughHeadroom() const;
-
   void resume();
   void readBackFilled();
 

@@ -131,6 +131,8 @@ class Cursor : public PageCursor {
 
   void freezeEof() { Que->freezeEof(CurAddress); }
 
+  size_t fillSize() { return Que->fillSize(); }
+
   // ------------------------------------------------------------------------
   // The following methods assume that the cursor is accessing a byte stream.
   // ------------------------------------------------------------------------
