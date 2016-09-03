@@ -155,6 +155,10 @@ class Queue : public std::enable_shared_from_this<Queue> {
   // frozen, returns the size of the buffer.
   size_t currentSize() { return EofPtr->getEobAddress().getByteAddress(); }
 
+  size_t fillSize() const {
+    return LastPage->getMaxAddress();
+  }
+
   // Returns the actual size of the buffer (i.e. only those with pages still
   // in memory).
   size_t actualSize() const {

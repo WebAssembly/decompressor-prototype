@@ -61,10 +61,6 @@ static constexpr uint32_t MaxExpectedSectionNameSize = 32;
 
 static constexpr size_t DefaultStackSize = 256;
 
-// Note: Headroom is used to guarantee that we have enough space to
-// read any sexpression node.
-static constexpr size_t kResumeHeadroom = 100;
-
 #define X(tag, name) constexpr const char* Method##tag##Name = name;
 INTERPRETER_METHODS_TABLE
 #undef X
@@ -216,12 +212,6 @@ void Interpreter::describeAllNonemptyStacks(FILE* File) {
     describeOpcodeLocalStack(File);
 }
 
-bool Interpreter::hasEnoughHeadroom() const {
-  return ReadPos.isEofFrozen() ||
-         (ReadPos.getCurByteAddress() + kResumeHeadroom <=
-          ReadPos.getCurByteAddress());
-}
-
 void Interpreter::callTopLevel(Method Method, const filt::Node* Nd) {
   // First verify stacks cleared.
   Frame.reset();
@@ -285,7 +275,15 @@ void Interpreter::resume() {
   TRACE_ENTER("resume");
   TRACE_BLOCK({ describeAllNonemptyStacks(tracE.getFile()); });
 #endif
-  while (hasEnoughHeadroom() && !errorsFound()) {
+  size_t FillPos = ReadPos.fillSize();
+  // Headroom is used to guarantee that several (integer) reads
+  // can be done in a single iteration of the loop.
+  constexpr size_t kResumeHeadroom = 100;
+  if (!ReadPos.isEofFrozen())
+    FillPos -= kResumeHeadroom;
+  while (ReadPos.getCurByteAddress() <= FillPos) {
+    if (errorsFound())
+      break;
 #if LOG_CALLSTACKS
     TRACE_BLOCK({ describeAllNonemptyStacks(tracE.getFile()); });
 #endif
