@@ -336,9 +336,10 @@ void Interpreter::resume() {
           case OpBlockBegin:
           case OpBlockEmpty:
           case OpBlockEnd:
+          case OpConvert:
           case OpLocal:
           case OpLocals:
-          case OpConvert:
+          case OpParams:
           case OpSet:
           case OpFilter:  // Method::Eval
             failNotImplemented();
@@ -724,7 +725,7 @@ void Interpreter::resume() {
                 assert(Sym);
                 auto* Defn = dyn_cast<DefineNode>(Sym->getDefineDefinition());
                 assert(Defn);
-                auto* NumParams = dyn_cast<ParamNode>(Defn->getKid(1));
+                auto* NumParams = dyn_cast<ParamsNode>(Defn->getKid(1));
                 assert(NumParams);
                 int NumCallArgs = Frame.Nd->getNumKids() - 1;
                 if (NumParams->getValue() != IntType(NumCallArgs)) {
@@ -883,34 +884,19 @@ void Interpreter::resume() {
                   "accessor!");
               break;
             }
-            Frame.CallState = State::Failed;  // reset if match found.
             assert(isa<ParamNode>(Frame.Nd));
             auto* Param = cast<ParamNode>(Frame.Nd);
             TRACE_SEXP("Param", Param);
             IntType ParamIndex = Param->getValue() + 1;
-            SymbolNode* DefiningSym = Param->getDefiningSymbol();
-            TRACE_SEXP("DefiningSym", DefiningSym);
-            const EvalFrame* CandidateEval = &CallingEval;
-            while (CandidateEval->isDefined()) {
-              TRACE_SEXP("Caller", CandidateEval->Caller);
-              if (DefiningSym != CandidateEval->Caller->getCallName()) {
-                CandidateEval =
-                    &CallingEvalStack.at(CandidateEval->CallingEvalIndex);
-                continue;
-              }
-              if (ParamIndex >= IntType(CandidateEval->Caller->getNumKids()))
-                // Failing context!
-                break;
-              const Node* Context = CandidateEval->Caller->getKid(ParamIndex);
-              CallingEvalStack.push();
-              CallingEval =
-                  CallingEvalStack.at(CandidateEval->CallingEvalIndex);
-              Frame.CallState = State::Exit;
-              call(DispatchedMethod, Context);
+            if (ParamIndex >= IntType(CallingEval.Caller->getNumKids())) {
+              fail("Parameter reference doesn't match callling context!");
               break;
             }
-            if (Frame.CallState == State::Failed)
-              fail("Parameter reference doesn't match callling context!");
+            const Node* Context = CallingEval.Caller->getKid(ParamIndex);
+            CallingEvalStack.push();
+            CallingEval = CallingEvalStack.at(CallingEval.CallingEvalIndex);
+            Frame.CallState = State::Exit;
+            call(DispatchedMethod, Context);
             break;
           }
           case State::Exit:
@@ -944,6 +930,7 @@ void Interpreter::resume() {
           case OpLocals:
           case OpLoop:
           case OpLoopUnbounded:
+          case OpParams:
           case OpRename:
           case OpSection:
           case OpSequence:
@@ -1340,6 +1327,7 @@ void Interpreter::resume() {
           case OpLocals:
           case OpLoop:
           case OpLoopUnbounded:
+          case OpParams:
           case OpRename:
           case OpSection:
           case OpSequence:

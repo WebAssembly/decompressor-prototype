@@ -239,6 +239,7 @@ id ({letter}|{digit}|[_.])*
 "or"              return Parser::make_OR(Driver.getLoc());
 "out"             return Parser::make_OUT(Driver.getLoc());
 "param"           return Parser::make_PARAM(Driver.getLoc());
+"params"          return Parser::make_PARAMS(Driver.getLoc());
 "peek"            return Parser::make_PEEK(Driver.getLoc());
 "read"            return Parser::make_READ(Driver.getLoc());
 "rename"          return Parser::make_RENAME(Driver.getLoc());

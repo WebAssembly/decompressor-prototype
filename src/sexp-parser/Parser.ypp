@@ -108,6 +108,7 @@ struct IntValue {
 %token OR            "or"
 %token OUT           "out"
 %token PARAM         "param"
+%token PARAMS        "params"
 %token PEEK          "peek"
 %token READ          "read"
 %token RENAME        "rename"
@@ -161,7 +162,7 @@ struct IntValue {
 %type <wasm::filt::Node *> opcode_case_expr
 %type <wasm::filt::Node *> opcode_expression
 %type <wasm::filt::OpcodeNode *> opcode_expr_list
-%type <wasm::filt::Node *> param_expression
+%type <wasm::filt::Node *> params_decl
 %type <wasm::filt::Node *> stream
 %type <wasm::filt::Node *> stream_conv
 %type <wasm::filt::Node *> stream_conv_list
@@ -248,10 +249,10 @@ declaration
         ;
 
 declaration_stmt_list
-        : "define" symbol param_expression statement {
+        : "define" symbol params_decl statement {
             $$ = Driver.create<DefineNode>($2, $3, $4);
           }
-        | "define" symbol param_expression locals_decl {
+        | "define" symbol params_decl locals_decl {
             $$ = Driver.create<DefineNode>($2, $3, $4);
           }
         | declaration_stmt_list statement {
@@ -340,7 +341,9 @@ expression
         | constant_expression { $$ = $1; }
         | bool_expression { $$ = $1; }
         | map_expression { $$ = $1; }
-        | param_expression { $$ = $1; }
+        | "(" "param" INTEGER ")" {
+            $$ = Driver.getParamDefinition($3.Value, $3.Format);
+          }
         | local_var { $$ = $1; }
         | "(" "error" ")" {
             $$ = Driver.create<ErrorNode>();
@@ -493,12 +496,12 @@ opcode_case_expr
         | opcode_expression { $$ = $1; }
         ;
 
-param_expression
-        : "(" "param" INTEGER ")" {
-            $$ = Driver.getParamDefinition($3.Value, $3.Format);
+params_decl
+        : "(" "params" INTEGER ")" {
+            $$ = Driver.getParamsDefinition($3.Value, $3.Format);
           }
-        | "(" "param" ")" {
-            $$ = Driver.getParamDefinition();
+        | "(" "params" ")" {
+            $$ = Driver.getParamsDefinition();
           }
         ;
 
