@@ -743,7 +743,7 @@ void Interpreter::resume() {
               }
               case State::Exit: {
                 const auto* Def = dyn_cast<DefineNode>(Frame.Nd);
-                if (size_t NumLocals = Def->getNumLocals()) {
+                if (Def->getNumLocals()) {
                   while (LocalValues.size() > LocalsBase)
                     LocalValues.pop_back();
                   LocalsBaseStack.pop();
