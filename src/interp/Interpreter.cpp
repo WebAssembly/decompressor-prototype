@@ -60,6 +60,7 @@ namespace {
 static constexpr uint32_t MaxExpectedSectionNameSize = 32;
 
 static constexpr size_t DefaultStackSize = 256;
+static constexpr size_t DefaultExpectedLocals = 3;
 
 #define X(tag, name) constexpr const char* Method##tag##Name = name;
 INTERPRETER_METHODS_TABLE
@@ -108,12 +109,17 @@ Interpreter::Interpreter(std::shared_ptr<Queue> Input,
       BlockStartStack(BlockStart),
       LoopCounter(0),
       LoopCounterStack(LoopCounter),
+      LocalsBase(0),
+      LocalsBaseStack(LocalsBase),
       OpcodeLocalsStack(OpcodeLocals) {
   DefaultFormat = Symtab->getVaruint64Definition();
   CurSectionName.reserve(MaxExpectedSectionNameSize);
   FrameStack.reserve(DefaultStackSize);
   WriteValueStack.reserve(DefaultStackSize);
   CallingEvalStack.reserve(DefaultStackSize);
+  LocalsBaseStack.reserve(DefaultStackSize);
+  LocalValues.reserve(DefaultStackSize * DefaultExpectedLocals);
+  OpcodeLocalsStack.reserve(DefaultStackSize);
 }
 
 void Interpreter::CallFrame::describe(FILE* File, TextWriter* Writer) const {
@@ -182,6 +188,18 @@ void Interpreter::describeLoopCounterStack(FILE* File) {
   fprintf(File, "**************************\n");
 }
 
+void Interpreter::describeLocalsStack(FILE* File) {
+  fprintf(File, "*** Locals Base Stack ***\n");
+  size_t BaseIndex = 0;
+  for (const auto& Index : LocalsBaseStack.iterRange(1)) {
+    fprintf(File, "%" PRIuMAX ":\n", uintmax_t(Index));
+    for (size_t i = BaseIndex; i < Index; ++i) {
+      fprintf(File, "  %" PRIuMAX "\n", LocalValues[i]);
+    }
+  }
+  fprintf(File, "*************************\n");
+}
+
 void Interpreter::describeBlockStartStack(FILE* File) {
   fprintf(File, "*** Block Start Stack ***\n");
   for (const auto& Pos : BlockStartStack.iterRange(1))
@@ -208,6 +226,8 @@ void Interpreter::describeAllNonemptyStacks(FILE* File) {
     describeLoopCounterStack(File);
   if (!BlockStartStack.empty())
     describeBlockStartStack(File);
+  if (!LocalsBaseStack.empty())
+    describeLocalsStack(File);
   if (!OpcodeLocalsStack.empty())
     describeOpcodeLocalStack(File);
 }
@@ -224,6 +244,9 @@ void Interpreter::callTopLevel(Method Method, const filt::Node* Nd) {
   LoopCounterStack.clear();
   BlockStart = WriteCursor();
   BlockStartStack.clear();
+  LocalsBase = 0;
+  LocalsBaseStack.clear();
+  LocalValues.clear();
   OpcodeLocals.reset();
   OpcodeLocalsStack.clear();
   call(Method, Nd);
@@ -337,10 +360,7 @@ void Interpreter::resume() {
           case OpBlockEmpty:
           case OpBlockEnd:
           case OpConvert:
-          case OpLocal:
-          case OpLocals:
           case OpParams:
-          case OpSet:
           case OpFilter:  // Method::Eval
             failNotImplemented();
             break;
@@ -364,6 +384,7 @@ void Interpreter::resume() {
           case OpU32Const:
           case OpU64Const:
           case OpLastRead:
+          case OpLocal:
           case OpPeek:
           case OpRead:  // Method::Eval
             switch (Frame.CallState) {
@@ -404,6 +425,29 @@ void Interpreter::resume() {
                 popAndReturn(Frame.ReturnValue);
                 TraceExitFrame();
                 break;
+              default:
+                failBadState();
+                break;
+            }
+            break;
+          case OpSet:  // Method::Eval
+            switch (Frame.CallState) {
+              case State::Enter:
+                TraceEnterFrame();
+                Frame.CallState = State::Exit;
+                call(Method::Eval, Frame.Nd->getKid(1));
+                break;
+              case State::Exit: {
+                const auto* Local = dyn_cast<LocalNode>(Frame.Nd);
+                size_t Index = Local->getValue();
+                if (LocalsBase + Index >= LocalValues.size()) {
+                  fail("Local variable index out of range, can't set!");
+                  break;
+                }
+                popAndReturn(Frame.ReturnValue);
+                TraceExitFrame();
+                break;
+              }
               default:
                 failBadState();
                 break;
@@ -686,12 +730,20 @@ void Interpreter::resume() {
             break;
           case OpDefine:  // Method::Eval
             switch (Frame.CallState) {
-              case State::Enter:
+              case State::Enter: {
                 TraceEnterFrame();
+                LocalsBaseStack.push(LocalValues.size());
+                const auto* Def = dyn_cast<DefineNode>(Frame.Nd);
+                for (size_t i = 0, size = Def->getNumLocals(); i < size; ++i)
+                  LocalValues.push_back(0);
                 Frame.CallState = State::Exit;
                 call(Method::Eval, Frame.Nd->getKid(2));
                 break;
+              }
               case State::Exit:
+                LocalsBaseStack.pop();
+                while (LocalValues.size() > LocalsBase)
+                  LocalValues.pop_back();
                 popAndReturn();
                 TraceExitFrame();
                 break;
@@ -791,6 +843,7 @@ void Interpreter::resume() {
                 break;
             }
             break;
+          case OpLocals:
           case OpVoid:  // Method::Eval
             TraceEnterFrame();
             popAndReturn();
@@ -926,8 +979,6 @@ void Interpreter::resume() {
           case OpFilter:
           case OpIfThen:
           case OpIfThenElse:
-          case OpLocal:
-          case OpLocals:
           case OpLoop:
           case OpLoopUnbounded:
           case OpParams:
@@ -960,6 +1011,18 @@ void Interpreter::resume() {
             popAndReturnReadValue(dyn_cast<IntegerNode>(Frame.Nd)->getValue());
             TraceExitFrame();
             break;
+          case OpLocal: {  // Method::Read
+            TraceEnterFrame();
+            const auto* Local = dyn_cast<LocalNode>(Frame.Nd);
+            size_t Index = Local->getValue();
+            if (LocalsBase + Index >= LocalValues.size()) {
+              fail("Local variable index out of range!");
+              break;
+            }
+            popAndReturnReadValue(LocalValues[LocalsBase + Index]);
+            TraceExitFrame();
+            break;
+          }
           case OpParam:  // Method::Read
             switch (Frame.CallState) {
               case State::Enter:
@@ -1087,6 +1150,7 @@ void Interpreter::resume() {
             }
             break;
           }
+          case OpLocals:
           case OpVoid:  // Method::Read
             TraceEnterFrame();
             popAndReturnReadValue(0);
@@ -1324,7 +1388,6 @@ void Interpreter::resume() {
           case OpIfThen:
           case OpIfThenElse:
           case OpLocal:
-          case OpLocals:
           case OpLoop:
           case OpLoopUnbounded:
           case OpParams:
@@ -1424,6 +1487,7 @@ void Interpreter::resume() {
           case OpU64Const:
           case OpPeek:
           case OpMap:
+          case OpLocals:
           case OpVoid:  // Method::Write
             TraceEnterFrame();
             popAndReturnWriteValue();

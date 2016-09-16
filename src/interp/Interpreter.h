@@ -168,7 +168,11 @@ class Interpreter {
   // The stack of loop counters.
   size_t LoopCounter;
   utils::ValueStack<size_t> LoopCounterStack;
-  // The stack of opcode Selshift/CaseMasks.
+  // The stack of local values.
+  size_t LocalsBase;
+  utils::ValueStack<size_t> LocalsBaseStack;
+  std::vector<decode::IntType> LocalValues;
+  // The stack of opcode Selshift/CaseMasks for multi-byte opcodes.
   struct OpcodeLocalsFrame {
     uint32_t SelShift;
     decode::IntType CaseMask;
@@ -251,6 +255,7 @@ class Interpreter {
   void describeCallingEvalStack(FILE* Out);
   void describePeekPosStack(FILE* Out);
   void describeLoopCounterStack(FILE* Out);
+  void describeLocalsStack(FILE* Out);
   void describeBlockStartStack(FILE* Out);
   void describeOpcodeLocalStack(FILE* Out);
   void describeAllNonemptyStacks(FILE* Out);
