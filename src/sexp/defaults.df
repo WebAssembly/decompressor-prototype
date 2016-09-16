@@ -19,34 +19,34 @@
 (section 'filter'
   (version)
 
-  (define 'code' (param)
+  (define 'code' (params)
     (loop (varuint32)            # Number of function bodies.
       (eval 'code.function'))
   )
 
-  (define 'code.address' (param)
+  (define 'code.address' (params)
     (varuint32)                  # alignment
     (varuint32)                  # offset
   )
 
-  (define 'code.br_table' (param)
+  (define 'code.br_table' (params)
     (uint8)                      # table arity.
     (loop (varuint32)            # number of targets.
        (uint32))                 # target depth.
     (uint32)                     # default target depth.
   )
 
-  (define 'code.br_target' (param)
+  (define 'code.br_target' (params)
      (uint8)                     # br arity.
      (varuint32)                 # relative depth
   )
 
-  (define 'code.call_args' (param)
+  (define 'code.call_args' (params)
     (varuint32)                  # function arity.
     (varuint32)                  # function index
   )
 
-  (define 'code.function' (param)
+  (define 'code.function' (params)
     (block
       # block implicitly reads   # bytes using (varuint32) on byte stream.
       (loop (varuint32)          # number of locals in function.
@@ -57,12 +57,12 @@
     )
   )
 
-  (define 'code.local' (param)
+  (define 'code.local' (params)
     (varuint32)                  # number of locals with type
     (uint8)                      # type of locals.
   )
 
-  (define 'code.inst' (param)
+  (define 'code.inst' (params)
     (switch (read)
       # TODO(kschimpf) build asts based on arity of opcodes?
       (void)                                      # simple one byte opcode.
@@ -108,86 +108,86 @@
     )
   )
 
-  (define 'code.opcode' (param) (uint8))
+  (define 'code.opcode' (params) (uint8))
 
-  (define 'data' (param)
+  (define 'data' (params)
     (loop (varuint32)          # number of data segments.
       (eval 'data.segment'))
   )
 
-  (define 'data.segment' (param)
+  (define 'data.segment' (params)
     # The offset in linear memory at which to store the data.
      (varuint32)
     # The data
     (loop (varuint32) (uint8))
   )
 
-  (define 'export' (param)
+  (define 'export' (params)
     (loop (varuint32)          # number of exports
       (eval 'export.entry'))
   )
 
-  (define 'export.entry' (param)
+  (define 'export.entry' (params)
     (varuint32)                # function index
     (eval 'export.symbol')     # funtion name
   )
 
-  (define 'export.symbol' (param)
+  (define 'export.symbol' (params)
                                # reads in a function name
     (loop (varuint32) (uint8))
   )
 
-  (define 'function' (param)
+  (define 'function' (params)
     (loop (varuint32)          # Number of type signatures.
        (varuint32))            # type signature index
   )
 
-  (define 'import' (param)
+  (define 'import' (params)
     (loop (varuint32) (eval 'import.entry'))
   )
 
-  (define 'import.entry' (param)
+  (define 'import.entry' (params)
     (varuint32)                # signature index of the import
     (eval 'import.symbol')     # module name
     (eval 'import.symbol')     # function name
   )
 
-  (define 'import.symbol' (param)
+  (define 'import.symbol' (params)
     (loop (varuint32) (uint8))
   )
 
-  (define 'memory' (param)
+  (define 'memory' (params)
     (varuint32)              # Initial memory suze
     (varuint32)              # maximum memory size
     (uint8)                  # 1 if the memory is visible outside the module
   )
 
-  (define 'name' (param)
+  (define 'name' (params)
     (loop (varuint32)        # function name count.
       (eval 'name.function'))
   )
 
-  (define 'name.function' (param)
+  (define 'name.function' (params)
     (eval 'name.symbol')       # function name
     (loop (varuint32)          # number of local names.
       (eval 'name.symbol'))    # local name
   )
 
-  (define 'name.symbol' (param)
+  (define 'name.symbol' (params)
                                # reads in a symbol name
     (loop (varuint32) (uint8))
   )
 
-  (define 'start' (param)
+  (define 'start' (params)
     (varuint32)                # start function index.
   )
 
-  (define 'table' (param)
+  (define 'table' (params)
     (loop (varuint32)         # Number of table entries.
        (varuint32))           # function index.
   )
 
-  (define 'type' (param)
+  (define 'type' (params)
     (loop (varuint32)          # number of signatures.
       (uint8)                  # type form (0x040)
       (loop (varuint32)        # number of parameters parameters

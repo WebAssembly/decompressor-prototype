@@ -383,9 +383,6 @@ bool ParamNode::validateNode(NodeVectorType& Parents) {
       continue;
     }
     TRACE_SEXP("Enclosing define", Nd);
-    // Don't complain about this if specifying number of parameters for define.
-    if (i == Parents.size() && this == Define->getKid(1))
-      return true;
     // Scope found. Check if parameter is legal.
     if (!Define->isValidParam(getValue())) {
       fprintf(getTrace().getFile(),
@@ -393,11 +390,6 @@ bool ParamNode::validateNode(NodeVectorType& Parents) {
               uintmax_t(getValue()), Define->getName().c_str());
       return false;
     }
-    auto* Sym = dyn_cast<SymbolNode>(Define->getKid(0));
-    if (Sym == nullptr)
-      return false;
-    DefiningSymbol = Sym;
-    TRACE_SEXP("DefiningSymbol", DefiningSymbol.get());
     return true;
   }
   return false;
@@ -461,8 +453,8 @@ AST_TERNARYNODE_TABLE
 
 // Returns nullptr if P is illegal, based on the define.
 bool DefineNode::isValidParam(IntType Index) {
-  assert(isa<ParamNode>(getKid(1)));
-  return Index < cast<ParamNode>(getKid(1))->getValue();
+  assert(isa<ParamsNode>(getKid(1)));
+  return Index < cast<ParamsNode>(getKid(1))->getValue();
 }
 
 std::string DefineNode::getName() const {

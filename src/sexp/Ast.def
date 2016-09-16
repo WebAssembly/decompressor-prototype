@@ -76,20 +76,18 @@
   X(BitwiseNegate,     0x37, "bitwise.negate",   nullptr,           1, 0)      \
   X(BlockEmpty,        0x38, "block.empty",      nullptr,           0, 0)      \
                                                                                \
-  X(Map,               0x39, "map",              nullptr,           1, 0)      \
-                                                                               \
-  /* I/O (and tree) operations  */                                             \
+  /* I/O operations  */                                                        \
   X(Peek,              0x40, "peek",             nullptr,           1, 0)      \
   X(Read,              0x41, "read",             nullptr,           1, 0)      \
   X(LastRead,          0x42, "read",             "lastRead",        0, 0)      \
   X(Write,             0x43, "write",            nullptr,           2, 0)      \
                                                                                \
-  /* Other exprressions */                                                     \
+  /* Other */                                                                  \
   X(Convert,           0x50, "convert",          nullptr,           2, 1)      \
   X(Param,             0x51, "param",            nullptr,           1, 0)      \
-  X(Locals,            0x52, "locals",           nullptr,           1, 0)      \
   X(Local,             0x53, "local",            nullptr,           1, 0)      \
   X(Set,               0x54, "set",              nullptr,           2, 0)      \
+  X(Map,               0x55, "map",              nullptr,           1, 0)      \
                                                                                \
   /* Declarations */                                                           \
   X(Define,            0x60, "define",           nullptr,           2, 1)      \
@@ -98,6 +96,8 @@
   X(Undefine,          0x64, "undefine",         nullptr,           1, 0)      \
   X(Version,           0x65, "version",          nullptr,           1, 0)      \
   X(Rename,            0x66, "rename",           nullptr,           2, 0)      \
+  X(Locals,            0x67, "locals",           nullptr,           1, 0)      \
+  X(Params,            0x68, "params",           nullptr,           1, 0)      \
                                                                                \
   /* Internal (not opcodes in compressed file) */                              \
   X(UnknownSection,    0xFF, "unknown.section", nullptr,           1, 0)       \
@@ -124,6 +124,7 @@
   X(Local, Varuint32, 0, true,)                                                \
   X(Locals, Varuint32, 0, true,)                                               \
   X(Param, Varuint32, 0, false, PARAM_DECLS)                                   \
+  X(Params, Varuint32, 0, false,)                                              \
   X(U8Const, Uint8, 0, true,)                                                  \
   X(U32Const, Varuint32, 0, true,)                                             \
   X(U64Const, Varuint64, 0, true,)                                             \
@@ -139,11 +140,6 @@
 #define PARAM_DECLS                                                            \
   public:                                                                      \
     bool validateNode(NodeVectorType &Parents) OVERRIDE;                       \
-    SymbolNode *getDefiningSymbol() const {                                    \
-      return DefiningSymbol.get();                                             \
-    }                                                                          \
-  private:                                                                     \
-    utils::initialized_ptr<SymbolNode> DefiningSymbol;                         \
 
 //#define X(tag, NODE_DECLS)
 #define AST_UNARYNODE_TABLE                                                    \
