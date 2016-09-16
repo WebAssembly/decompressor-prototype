@@ -444,6 +444,7 @@ void Interpreter::resume() {
                   fail("Local variable index out of range, can't set!");
                   break;
                 }
+                LocalValues[LocalsBase + Index] = Frame.ReturnValue;
                 popAndReturn(Frame.ReturnValue);
                 TraceExitFrame();
                 break;
