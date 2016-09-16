@@ -729,10 +729,9 @@ void Interpreter::resume() {
             break;
           case OpDefine:  // Method::Eval
             switch (Frame.CallState) {
-              case State::Enter: {
+              case State::Enter:
                 TraceEnterFrame();
-                const auto* Def = dyn_cast<DefineNode>(Frame.Nd);
-                if (size_t NumLocals = Def->getNumLocals()) {
+                if (size_t NumLocals = cast<DefineNode>(Frame.Nd)->getNumLocals()) {
                   LocalsBaseStack.push(LocalValues.size());
                   for (size_t i = 0; i < NumLocals; ++i)
                     LocalValues.push_back(0);
@@ -740,10 +739,8 @@ void Interpreter::resume() {
                 Frame.CallState = State::Exit;
                 call(Method::Eval, Frame.Nd->getKid(2));
                 break;
-              }
-              case State::Exit: {
-                const auto* Def = dyn_cast<DefineNode>(Frame.Nd);
-                if (Def->getNumLocals()) {
+              case State::Exit:
+                if (cast<DefineNode>(Frame.Nd)->getNumLocals()) {
                   while (LocalValues.size() > LocalsBase)
                     LocalValues.pop_back();
                   LocalsBaseStack.pop();
@@ -751,7 +748,6 @@ void Interpreter::resume() {
                 popAndReturn();
                 TraceExitFrame();
                 break;
-              }
               default:
                 failBadState();
                 break;
