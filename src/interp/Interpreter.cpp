@@ -572,8 +572,7 @@ void Interpreter::resume() {
             switch (Frame.CallState) {
               case State::Enter:
                 TraceEnterFrame();
-                LoopCounterStack.push();
-                LoopCounter = 0;
+                LoopCounterStack.push(0);
                 Frame.CallState = State::Loop;
                 break;
               case State::Loop:
@@ -601,8 +600,7 @@ void Interpreter::resume() {
                 call(Method::Eval, Frame.Nd->getKid(0));
                 break;
               case State::Step2:
-                LoopCounterStack.push();
-                LoopCounter = size_t(Frame.ReturnValue);
+                LoopCounterStack.push(Frame.ReturnValue);
                 Frame.CallState = State::Loop;
                 break;
               case State::Loop:
@@ -733,21 +731,27 @@ void Interpreter::resume() {
             switch (Frame.CallState) {
               case State::Enter: {
                 TraceEnterFrame();
-                LocalsBaseStack.push(LocalValues.size());
                 const auto* Def = dyn_cast<DefineNode>(Frame.Nd);
-                for (size_t i = 0, size = Def->getNumLocals(); i < size; ++i)
-                  LocalValues.push_back(0);
+                if (size_t NumLocals = Def->getNumLocals()) {
+                  LocalsBaseStack.push(LocalValues.size());
+                  for (size_t i = 0; i < NumLocals; ++i)
+                    LocalValues.push_back(0);
+                }
                 Frame.CallState = State::Exit;
                 call(Method::Eval, Frame.Nd->getKid(2));
                 break;
               }
-              case State::Exit:
-                LocalsBaseStack.pop();
-                while (LocalValues.size() > LocalsBase)
-                  LocalValues.pop_back();
+              case State::Exit: {
+                const auto* Def = dyn_cast<DefineNode>(Frame.Nd);
+                if (Def->getNumLocals()) {
+                  while (LocalValues.size() > LocalsBase)
+                    LocalValues.pop_back();
+                  LocalsBaseStack.pop();
+                }
                 popAndReturn();
                 TraceExitFrame();
                 break;
+              }
               default:
                 failBadState();
                 break;
@@ -859,11 +863,9 @@ void Interpreter::resume() {
             const uint32_t OldSize = Reader->readBlockSize(ReadPos);
             TRACE(uint32_t, "block size", OldSize);
             Reader->pushEobAddress(ReadPos, OldSize);
-            BlockStartStack.push();
-            BlockStart = WritePos;
+            BlockStartStack.push(WritePos);
             Writer->writeFixedBlockSize(WritePos, 0);
-            BlockStartStack.push();
-            BlockStart = WritePos;
+            BlockStartStack.push(WritePos);
             Frame.CallState =
                 MinimizeBlockSize ? State::MinBlock : State::Step2;
             call(DispatchedMethod, Frame.Nd);
@@ -947,8 +949,8 @@ void Interpreter::resume() {
               break;
             }
             const Node* Context = CallingEval.Caller->getKid(ParamIndex);
-            CallingEvalStack.push();
-            CallingEval = CallingEvalStack.at(CallingEval.CallingEvalIndex);
+            CallingEvalStack.push(
+                CallingEvalStack.at(CallingEval.CallingEvalIndex));
             Frame.CallState = State::Exit;
             call(DispatchedMethod, Context);
             break;
@@ -1045,8 +1047,7 @@ void Interpreter::resume() {
             switch (Frame.CallState) {
               case State::Enter:
                 TraceEnterFrame();
-                PeekPosStack.push();
-                PeekPos = ReadPos;
+                PeekPosStack.push(ReadPos);
                 Frame.CallState = State::Exit;
                 call(Method::Read, Frame.Nd->getKid(0));
                 break;
@@ -1202,8 +1203,7 @@ void Interpreter::resume() {
           case State::Enter:
             TraceEnterFrame();
             CurSectionName.clear();
-            LoopCounterStack.push();
-            LoopCounter = Reader->readVaruint32(ReadPos);
+            LoopCounterStack.push(Reader->readVaruint32(ReadPos));
             Writer->writeVaruint32(LoopCounter, WritePos);
             Frame.CallState = State::Loop;
             break;
@@ -1502,8 +1502,7 @@ void Interpreter::resume() {
                 OpcodeLocalsStack.push();
                 OpcodeLocals.Case = Sel->getWriteCase(
                     WriteValue, OpcodeLocals.SelShift, OpcodeLocals.CaseMask);
-                WriteValueStack.push();
-                WriteValue >>= OpcodeLocals.SelShift;
+                WriteValueStack.push(WriteValue >> OpcodeLocals.SelShift);
                 Frame.CallState = State::Exit;
                 callWrite(Method::Write, Sel->getKid(0), WriteValue);
                 break;
@@ -1512,8 +1511,7 @@ void Interpreter::resume() {
                 OpcodeLocalsStack.pop();
                 Frame.CallState = State::Exit;
                 if (OpcodeLocals.Case) {
-                  WriteValueStack.push();
-                  WriteValue &= OpcodeLocals.CaseMask;
+                  WriteValueStack.push(WriteValue & OpcodeLocals.CaseMask);
                   callWrite(Method::Write, OpcodeLocals.Case->getKid(1),
                             WriteValue);
                 }

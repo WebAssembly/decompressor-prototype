@@ -174,7 +174,10 @@ class ValueStack {
   }
   void push() { Stack.push_back(Value); }
   // Push Value onto stack
-  void push(const T& Value) { Stack.push_back(Value); }
+  void push(const T& NewValue) {
+    push();
+    Value = NewValue;
+  }
   void pop() {
     assert(!Stack.empty());
     Value = Stack.back();
