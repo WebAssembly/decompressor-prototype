@@ -77,13 +77,17 @@ struct IntValue {
 // Keywords
 %token AND           "and"
 %token AST           "ast"
+%token KEYWORD_BEGIN "begin"
 %token BIT           "bit"
+%token BITWISE       "bitwise"
 %token BLOCK         "block"
 %token BYTE          "byte"
 %token CASE          "case"
 %token CLOSEPAREN    ")"
 %token DEFINE        "define"
 %token DOT           "."
+%token EMPTY         "empty"
+%token KEYWORD_END   "end"
 %token ERROR         "error"
 %token EVAL          "eval"
 %token FILTER        "filter"
@@ -92,9 +96,12 @@ struct IntValue {
 %token INT           "int"
 %token I32_CONST     "i32.const"
 %token I64_CONST     "i64.const"
+%token LOCAL         "local"
+%token LOCALS        "locals"
 %token LOOP          "loop"
 %token LOOP_UNBOUNDED "loop.unbounded"
 %token MAP           "map"
+%token NEGATE        "negate"
 %token NOT           "not"
 %token OPCODE        "opcode"
 %token OPENPAREN     "("
@@ -106,6 +113,7 @@ struct IntValue {
 %token RENAME        "rename"
 %token SECTION       "section"
 %token SEQ           "seq"
+%token SET           "set"
 %token SWITCH        "switch"
 %token UINT8         "uint8"
 %token UINT32        "uint32"
@@ -121,6 +129,7 @@ struct IntValue {
 %token VERSION       "version"
 %token VOID          "void"
 %token WRITE         "write"
+%token XOR           "xor"
 
 // Terminal classes
 %token <wasm::filt::ExternalName> IDENTIFIER
@@ -141,6 +150,8 @@ struct IntValue {
 %type <wasm::filt::Node *> file
 %type <wasm::filt::Node *> fixed_format_directive
 %type <wasm::filt::Node *> format_directive
+%type <wasm::filt::Node *> locals_decl
+%type <wasm::filt::Node *> local_var
 %type <wasm::filt::Node *> loop_body
 %type <wasm::filt::Node *> map_expression
 %type <wasm::filt::Node *> map_case;
@@ -240,6 +251,9 @@ declaration_stmt_list
         : "define" symbol param_expression statement {
             $$ = Driver.create<DefineNode>($2, $3, $4);
           }
+        | "define" symbol param_expression locals_decl {
+            $$ = Driver.create<DefineNode>($2, $3, $4);
+          }
         | declaration_stmt_list statement {
             $$ = $1;
             Node *StmtList = $1->getLastKid();
@@ -293,6 +307,21 @@ bool_expression
         | "(" "or" expression expression ")" {
             $$ = Driver.create<OrNode>($3, $4);
           }
+        | "(" "bitwise" "." "and" expression expression ")" {
+            $$ = Driver.create<BitwiseAndNode>($5, $6);
+          }
+        | "(" "bitwise" "." "or" expression expression ")" {
+            $$ = Driver.create<BitwiseOrNode>($5, $6);
+          }
+        | "(" "bitwise" "." "xor" expression expression ")" {
+            $$ = Driver.create<BitwiseXorNode>($5, $6);
+          }
+        | "(" "bitwise" "." "negate" expression ")" {
+            $$ = Driver.create<BitwiseNegateNode>($5);
+          }
+        | "(" "block" "." "empty" ")" {
+            $$ = Driver.create<BlockEmptyNode>();
+          }
         ;
 
 eval_params
@@ -312,6 +341,7 @@ expression
         | bool_expression { $$ = $1; }
         | map_expression { $$ = $1; }
         | param_expression { $$ = $1; }
+        | local_var { $$ = $1; }
         | "(" "error" ")" {
             $$ = Driver.create<ErrorNode>();
           }
@@ -396,6 +426,18 @@ fixed_format_directive
             if ($3.Value > 64)
               Driver.error("uint64 bitsize > 64");
             $$ = Driver.getUint64Definition($3.Value, $3.Format);
+          }
+        ;
+
+locals_decl
+        : "(" "locals" INTEGER ")" {
+            $$ = Driver.getLocalsDefinition($3.Value, $3.Format);
+          }
+        ;
+
+local_var
+        : "(" "local" INTEGER ")" {
+            $$ = Driver.getLocalDefinition($3.Value, $3.Format);
           }
         ;
 
@@ -518,6 +560,15 @@ statement
         : expression { $$ = $1; }
         | stream_conv { $$ = $1; }
         | "(" block_stmt_list ")"  { $$ = $2; }
+        | "(" "block" "." "begin" ")" {
+            $$ = Driver.create<BlockBeginNode>();
+          }
+        | "(" "block" "." "end" ")" {
+            $$ = Driver.create<BlockEndNode>();
+          }
+        | "(" "set" local_var expression ")" {
+            $$ = Driver.create<SetNode>($3, $4);
+          }
         | "(" "filter" stream_conv_list ")" { $$ = $3; }
         | "(" "if" expression statement ")" {
             $$ = Driver.create<IfThenNode>($3, $4);

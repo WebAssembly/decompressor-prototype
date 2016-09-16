@@ -30,6 +30,10 @@ namespace decode {
 
 enum class ValueFormat { Decimal, SignedDecimal, Hexidecimal };
 
+constexpr ValueFormat getValueFormat(int i) {
+  return static_cast<ValueFormat>(i);
+}
+
 const char* getName(ValueFormat Format);
 
 constexpr char getHexCharForDigit(uint8_t Digit) {

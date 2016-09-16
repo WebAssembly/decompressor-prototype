@@ -267,6 +267,27 @@ void BinaryReader::resume() {
               case OpBlock:
                 readUnary<BlockNode>();
                 break;
+              case OpBlockBegin:
+                readNullary<BlockBeginNode>();
+                break;
+              case OpBlockEmpty:
+                readNullary<BlockEmptyNode>();
+                break;
+              case OpBlockEnd:
+                readNullary<BlockEndNode>();
+                break;
+              case OpBitwiseAnd:
+                readBinary<BitwiseAndNode>();
+                break;
+              case OpBitwiseNegate:
+                readUnary<BitwiseNegateNode>();
+                break;
+              case OpBitwiseOr:
+                readBinary<BitwiseOrNode>();
+                break;
+              case OpBitwiseXor:
+                readBinary<BitwiseXorNode>();
+                break;
               case OpCase:
                 readBinary<CaseNode>();
                 break;
@@ -349,6 +370,9 @@ void BinaryReader::resume() {
               case OpSequence:
                 readNary<SequenceNode>();
                 break;
+              case OpSet:
+                readBinary<SetNode>();
+                break;
               case OpStream: {
                 uint8_t Encoding = Reader->readUint8(ReadPos);
                 StreamKind StrmKind;
@@ -372,18 +396,19 @@ void BinaryReader::resume() {
                 readBinary<WriteNode>();
                 break;
 // The following read integer nodes.
-#define X(tag, format, defval, mergable, NODE_DECLS)                   \
-  case Op##tag: {                                                      \
-    Node* Nd;                                                          \
-    if (Reader->readUint8(ReadPos)) {                                  \
-      Nd = Symtab->get##tag##Definition();                             \
-    } else {                                                           \
-      Nd = Symtab->get##tag##Definition(Reader->read##format(ReadPos), \
-                                        ValueFormat::Decimal);         \
-    }                                                                  \
-    TRACE_SEXP(nullptr, Nd);                                           \
-    NodeStack.push_back(Nd);                                           \
-    break;                                                             \
+#define X(tag, format, defval, mergable, NODE_DECLS)                      \
+  case Op##tag: {                                                         \
+    Node* Nd;                                                             \
+    int FormatIndex = Reader->readUint8(ReadPos);                         \
+    if (FormatIndex == 0) {                                               \
+      Nd = Symtab->get##tag##Definition();                                \
+    } else {                                                              \
+      Nd = Symtab->get##tag##Definition(Reader->read##format(ReadPos),    \
+                                        getValueFormat(FormatIndex - 1)); \
+    }                                                                     \
+    TRACE_SEXP(nullptr, Nd);                                              \
+    NodeStack.push_back(Nd);                                              \
+    break;                                                                \
   }
                 AST_INTEGERNODE_TABLE
 #undef X

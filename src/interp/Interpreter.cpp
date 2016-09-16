@@ -329,7 +329,17 @@ void Interpreter::resume() {
         }
 #endif
         switch (Frame.Nd->getType()) {
+          case OpBitwiseAnd:
+          case OpBitwiseNegate:
+          case OpBitwiseOr:
+          case OpBitwiseXor:
+          case OpBlockBegin:
+          case OpBlockEmpty:
+          case OpBlockEnd:
+          case OpLocal:
+          case OpLocals:
           case OpConvert:
+          case OpSet:
           case OpFilter:  // Method::Eval
             failNotImplemented();
             break;
@@ -915,7 +925,14 @@ void Interpreter::resume() {
         break;
       case Method::Read:
         switch (Frame.Nd->getType()) {
+          case OpBitwiseAnd:
+          case OpBitwiseNegate:
+          case OpBitwiseOr:
+          case OpBitwiseXor:
           case OpBlock:
+          case OpBlockBegin:
+          case OpBlockEmpty:
+          case OpBlockEnd:
           case OpCase:
           case OpConvert:
           case OpDefine:
@@ -923,6 +940,8 @@ void Interpreter::resume() {
           case OpFilter:
           case OpIfThen:
           case OpIfThenElse:
+          case OpLocal:
+          case OpLocals:
           case OpLoop:
           case OpLoopUnbounded:
           case OpRename:
@@ -939,6 +958,7 @@ void Interpreter::resume() {
           case OpNot:
           case OpOr:
           case OpRead:
+          case OpSet:
           case OpStream:
           case OpWrite:
           case NO_SUCH_NODETYPE:  // Method::Read
@@ -1301,7 +1321,14 @@ void Interpreter::resume() {
         break;
       case Method::Write:
         switch (Frame.Nd->getType()) {
+          case OpBitwiseAnd:
+          case OpBitwiseNegate:
+          case OpBitwiseOr:
+          case OpBitwiseXor:
           case OpBlock:
+          case OpBlockBegin:
+          case OpBlockEmpty:
+          case OpBlockEnd:
           case OpCase:
           case OpConvert:
           case OpDefine:
@@ -1309,6 +1336,8 @@ void Interpreter::resume() {
           case OpFilter:
           case OpIfThen:
           case OpIfThenElse:
+          case OpLocal:
+          case OpLocals:
           case OpLoop:
           case OpLoopUnbounded:
           case OpRename:
@@ -1326,6 +1355,7 @@ void Interpreter::resume() {
           case OpNot:
           case OpOr:
           case OpRead:
+          case OpSet:
           case OpStream:
           case OpWrite:
           case NO_SUCH_NODETYPE:  // Method::Write

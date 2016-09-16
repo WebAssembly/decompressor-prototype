@@ -123,10 +123,7 @@ static Parser::symbol_type make_SignedInteger(Driver &Driver,
   IntType UnsignedValue = read_Integer(Name, 1);
   IntValue Value;
   Value.Value = IntType(- SignedIntType(UnsignedValue));
-  Value.Format =
-      Driver.getMaintainIntegerFormatting()
-      ? ValueFormat::SignedDecimal
-      : ValueFormat::Decimal;
+  Value.Format = ValueFormat::SignedDecimal;
   return Parser::make_INTEGER(Value, Driver.getLoc());
 }
 
@@ -173,10 +170,7 @@ static Parser::symbol_type make_HexInteger(Driver &Driver,
   }
   IntValue Value;
   Value.Value = HexValue;
-  Value.Format =
-      Driver.getMaintainIntegerFormatting()
-      ? ValueFormat::Hexidecimal
-      : ValueFormat::Decimal;
+  Value.Format = ValueFormat::Hexidecimal;
   return Parser::make_INTEGER(Value, Driver.getLoc());
 }
 
@@ -217,11 +211,16 @@ id ({letter}|{digit}|[_.])*
 "."               return Parser::make_DOT(Driver.getLoc());
 "and"             return Parser::make_AND(Driver.getLoc());
 "ast"             return Parser::make_AST(Driver.getLoc());
+"begin"           return Parser::make_KEYWORD_BEGIN(Driver.getLoc());
 "block"           return Parser::make_BLOCK(Driver.getLoc());
 "bit"             return Parser::make_BIT(Driver.getLoc());
+"bitwise"         return Parser::make_BITWISE(Driver.getLoc());
 "byte"            return Parser::make_BYTE(Driver.getLoc());
 "case"            return Parser::make_CASE(Driver.getLoc());
 "define"          return Parser::make_DEFINE(Driver.getLoc());
+"empty"           return Parser::make_EMPTY(Driver.getLoc());
+"end"             return Parser::make_KEYWORD_END(Driver.getLoc());
+"error"           return Parser::make_ERROR(Driver.getLoc());
 "eval"            return Parser::make_EVAL(Driver.getLoc());
 "filter"          return Parser::make_FILTER(Driver.getLoc());
 "if"              return Parser::make_IF(Driver.getLoc());
@@ -229,9 +228,12 @@ id ({letter}|{digit}|[_.])*
 "in"              return Parser::make_IN(Driver.getLoc());
 "i32.const"       return Parser::make_I32_CONST(Driver.getLoc());
 "i64.const"       return Parser::make_I64_CONST(Driver.getLoc());
+"local"           return Parser::make_LOCAL(Driver.getLoc());
+"locals"          return Parser::make_LOCALS(Driver.getLoc());
 "loop.unbounded"  return Parser::make_LOOP_UNBOUNDED(Driver.getLoc());
 "loop"            return Parser::make_LOOP(Driver.getLoc());
 "map"             return Parser::make_MAP(Driver.getLoc());
+"negate"          return Parser::make_NEGATE(Driver.getLoc());
 "not"             return Parser::make_NOT(Driver.getLoc());
 "opcode"          return Parser::make_OPCODE(Driver.getLoc());
 "or"              return Parser::make_OR(Driver.getLoc());
@@ -242,6 +244,7 @@ id ({letter}|{digit}|[_.])*
 "rename"          return Parser::make_RENAME(Driver.getLoc());
 "section"         return Parser::make_SECTION(Driver.getLoc());
 "seq"             return Parser::make_SEQ(Driver.getLoc());
+"set"             return Parser::make_SET(Driver.getLoc());
 "switch"          return Parser::make_SWITCH(Driver.getLoc());
 "uint8"           return Parser::make_UINT8(Driver.getLoc());
 "uint32"          return Parser::make_UINT32(Driver.getLoc());
@@ -257,6 +260,7 @@ id ({letter}|{digit}|[_.])*
 "version"         return Parser::make_VERSION(Driver.getLoc());
 "void"            return Parser::make_VOID(Driver.getLoc());
 "write"           return Parser::make_WRITE(Driver.getLoc());
+"xor"             return Parser::make_XOR(Driver.getLoc());
 "0x"{hexdigit}+   return make_HexInteger(Driver, yytext);
 {digit}+          return make_Integer(Driver, yytext);
 -?{digit}+        return make_SignedInteger(Driver, yytext);
