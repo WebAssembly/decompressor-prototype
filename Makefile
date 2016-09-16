@@ -23,7 +23,7 @@ ifdef DEBUG
   ifdef RELEASE
     ifeq ($(DEBUG), 0)
       ifneq ($(RELEASE), 0)
-	RELEASE = 1
+        RELEASE = 1
       else
         $(error Cant specify both DEBUG and RELEASE)
       endif
@@ -53,10 +53,37 @@ endif
 
 CXX := clang++
 
+WASM_INSTALL=$(PWD)/travis_deps/wasm-install
+WASM_BIN=$(WASM_INSTALL)/bin
+WASM_CXX=$(WASM_BIN)/emscripten/em++
+ifdef WASM
+  ifdef WASM_VANILLA
+    EMSCRIPTEN_CONFIG=$(WASM_INSTALL)/../wasm_emscripten_config_vanilla
+    WASM_SUBDIR=/wasm-vanilla
+  else
+    EMSCRIPTEN_CONFIG=$(WASM_INSTALL)/../wasm_emscripten_config
+    WASM_SUBDIR=/wasm
+  endif
+  CXX := $(WASM_CXX)
+  WASM_SYSROOT=$(WASM_INSTALL)/sysroot
+  TARGET_CXXFLAGS := \
+    --em-config $(EMSCRIPTEN_CONFIG) \
+    --target=wasm32-unknown-unknown \
+    -S --sysroot=$(WASM_INSTALL) \
+    -s BINARYEN=1
+  TARGET_CXXFLAGS += -DSTACK_SIZE=1044480 \
+    -w -Wno-implicit-function-declaration
+	EXE=.js
+endif
+
 ifeq ($(CXX),clang++)
   CXX_SUBDIR =
 else
-  CXX_SUBDIR = /$(CXX)
+  ifeq ($(CXX), $(WASM_CXX))
+    CXX_SUBDIR =
+  else
+    CXX_SUBDIR = /$(CXX)
+  endif
 endif
 
 PLATFORM := Default
@@ -77,7 +104,7 @@ endif
 
 SRCDIR = src
 
-BUILDBASEDIR = build$(CXX_SUBDIR)$(PAGE_BUILD_SUFFIX)
+BUILDBASEDIR = build$(WASM_SUBDIR)$(CXX_SUBDIR)$(PAGE_BUILD_SUFFIX)
 ifeq ($(RELEASE), 0)
   BUILDDIR = $(BUILDBASEDIR)/debug
 else
@@ -201,7 +228,7 @@ EXEC_SRCS = \
 	decompsexp-wasm.cpp \
 	decompwasm-sexp.cpp
 
-EXECS = $(patsubst %.cpp, $(BUILD_EXECDIR)/%, $(EXEC_SRCS))
+EXECS = $(patsubst %.cpp, $(BUILD_EXECDIR)/%$(EXE), $(EXEC_SRCS))
 
 ###### Test executables and locations ######
 
@@ -213,7 +240,7 @@ TEST_SRCS = \
 	TestParser.cpp \
 	TestRawStreams.cpp
 
-TEST_EXECS=$(patsubst %.cpp, $(TEST_EXECDIR)/%, $(TEST_SRCS))
+TEST_EXECS=$(patsubst %.cpp, $(TEST_EXECDIR)/%$(EXE), $(TEST_SRCS))
 
 TEST_SRCS_DIR = test/test-sources
 
@@ -228,6 +255,7 @@ $(info Using CXX = $(CXX))
 $(info Using RELEASE = $(RELEASE))
 $(info Using PAGE_SIZE = $(USE_PAGE_SIZE))
 $(info Using CXX_SUBDIR = $(CXX_SUBDIR))
+$(info Using WASM = $(WASM))
 $(info -----------------------------------------------)
 
 CCACHE := `command -v ccache`
@@ -235,7 +263,8 @@ CPP_COMPILER :=  CCACHE_CPP2=yes $(CCACHE) $(CXX)
 
 # Note: On WIN32 replace -fPIC with -D_GNU_SOURCE
 # Note: g++ on Travis doesn't support -std=gnu++11
-CXXFLAGS := $(PLATFORM_CXXFLAGS) -Wall -Wextra -O2 -g -pedantic -MP -MD \
+CXXFLAGS := $(TARGET_CXXFLAGS) $(PLATFORM_CXXFLAGS) \
+	    -Wall -Wextra -O2 -g -pedantic -MP -MD \
 	    -Werror -Wno-unused-parameter -fno-omit-frame-pointer -fPIC \
 	    -Isrc
 
@@ -484,7 +513,7 @@ $(EXECS): | $(BUILD_EXECDIR)
 
 -include $(foreach dep,$(EXEC_SRCS:.cpp=.d),$(BUILD_EXECDIR)/$(dep))
 
-$(EXECS): $(BUILD_EXECDIR)/%: $(EXEC_DIR)/%.cpp $(LIBS)
+$(EXECS): $(BUILD_EXECDIR)/%$(EXE): $(EXEC_DIR)/%.cpp $(LIBS)
 	$(CPP_COMPILER) $(CXXFLAGS) $< $(LIBS) -o $@
 
 ###### Compiling Test Executables #######
@@ -500,13 +529,13 @@ $(TEST_EXECS): | $(TEST_EXECDIR)
 
 -include $(foreach dep,$(TEST_SRCS:.cpp=.d),$(TEST_EXECDIR)/$(dep))
 
-$(TEST_EXECDIR)/TestParser: $(TEST_DIR)/TestParser.cpp $(LIBS)
+$(TEST_EXECDIR)/TestParser$(EXE): $(TEST_DIR)/TestParser.cpp $(LIBS)
 	$(CPP_COMPILER) $(CXXFLAGS) $< $(LIBS) -o $@
 
-$(TEST_EXECDIR)/TestRawStreams: $(TEST_DIR)/TestRawStreams.cpp $(LIBS)
+$(TEST_EXECDIR)/TestRawStreams$(EXE): $(TEST_DIR)/TestRawStreams.cpp $(LIBS)
 	$(CPP_COMPILER) $(CXXFLAGS) $< $(LIBS) -o $@
 
-$(TEST_EXECDIR)/TestByteQueues: $(TEST_DIR)/TestByteQueues.cpp $(LIBS)
+$(TEST_EXECDIR)/TestByteQueues$(EXE): $(TEST_DIR)/TestByteQueues.cpp $(LIBS)
 	$(CPP_COMPILER) $(CXXFLAGS) $< $(LIBS) -o $@
 
 ###### Testing ######
@@ -639,7 +668,7 @@ UNITTEST_EXECDIR = $(BUILDDIR)/unit-tests
 UNITTEST_SRCS = \
 	test-string-reader.cpp
 
-UNITTEST_EXECS = $(patsubst %.cpp, $(UNITTEST_EXECDIR)/%, $(UNITTEST_SRCS))
+UNITTEST_EXECS = $(patsubst %.cpp, $(UNITTEST_EXECDIR)/%$(EXE), $(UNITTEST_SRCS))
 
 UNITTEST_TESTS = $(patsubst %.cpp, $(UNITTEST_EXECDIR)/%.test, $(UNITTEST_SRCS))
 
@@ -650,7 +679,7 @@ $(UNITTEST_EXECDIR):
 
 -include $(foreach dep,$(UNITTEST_SRCS:.cpp=.d),$(UNITTEST_EXECDIR)/$(dep))
 
-$(UNITTEST_EXECS): $(UNITTEST_EXECDIR)/%: $(UNITTEST_DIR)/%.cpp $(LIBS)
+$(UNITTEST_EXECS): $(UNITTEST_EXECDIR)/%$(EXE): $(UNITTEST_DIR)/%.cpp $(LIBS)
 	$(CPP_COMPILER) $(CXXFLAGS) -I$(GTEST_INCLUDE) $< $(LIBS) \
 		$(GTEST_LIB) -lpthread -o $@
 
