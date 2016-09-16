@@ -43,6 +43,8 @@
   X(Sequence,          0x0a, "seq",              nullptr,           0, 0)      \
   X(IfThen,            0x0b, "if",               "IfThen",          1, 0)      \
   X(IfThenElse,        0x0c, "if",               "IfThenElse",      1, 0)      \
+  X(BlockBegin,        0x0d, "block.begin",      nullptr,           0, 0)      \
+  X(BlockEnd,          0x0e, "block.end",        nullptr,           0, 0)      \
                                                                                \
   /* Constants */                                                              \
   X(Void,              0x10, "void",             nullptr,           0, 0)      \
@@ -63,11 +65,16 @@
   X(Varuint64,         0x2d, "varuint64",        "varuint64",       1, 0)      \
   X(Opcode,            0x2e, "opcode",           nullptr,           1, 0)      \
                                                                                \
-  /* Boolean tests */                                                          \
+  /* Boolean Expressions */                                                    \
   X(And,               0x30, "and",              nullptr,           2, 0)      \
   X(Or,                0x31, "or",               nullptr,           2, 0)      \
   X(Not,               0x32, "not",              nullptr,           1, 0)      \
   X(Stream,            0x33, "stream",           nullptr,           0, 0)      \
+  X(BitwiseAnd,        0x34, "bitwise.and",      nullptr,           2, 0)      \
+  X(BitwiseOr,         0x35, "bitwise.or",       nullptr,           2, 0)      \
+  X(BitwiseXor,        0x36, "bitwise.xor",      nullptr,           2, 0)      \
+  X(BitwiseNegate,     0x37, "bitwise.negate",   nullptr,           1, 0)      \
+  X(BlockEmpty,        0x38, "block.empty",      nullptr,           0, 0)      \
                                                                                \
   X(Map,               0x39, "map",              nullptr,           1, 0)      \
                                                                                \
@@ -80,6 +87,9 @@
   /* Other exprressions */                                                     \
   X(Convert,           0x50, "convert",          nullptr,           2, 1)      \
   X(Param,             0x51, "param",            nullptr,           1, 0)      \
+  X(Locals,            0x52, "locals",           nullptr,           1, 0)      \
+  X(Local,             0x53, "local",            nullptr,           1, 0)      \
+  X(Set,               0x54, "set",              nullptr,           2, 0)      \
                                                                                \
   /* Declarations */                                                           \
   X(Define,            0x60, "define",           nullptr,           2, 1)      \
@@ -94,6 +104,9 @@
 
 //#define X(tag, NODE_DECLS)
 #define AST_NULLARYNODE_TABLE                                                  \
+  X(BlockBegin,)                                                               \
+  X(BlockEmpty,)                                                               \
+  X(BlockEnd,)                                                                 \
   X(Error,)                                                                    \
   X(LastRead,)                                                                 \
   X(Void,)                                                                     \
@@ -108,6 +121,8 @@
 #define AST_INTEGERNODE_TABLE                                                  \
   X(I32Const, Varint32, 0, true,)                                              \
   X(I64Const, Varint64, 0, true,)                                              \
+  X(Local, Varuint32, 0, true,)                                                \
+  X(Locals, Varuint32, 0, true,)                                               \
   X(Param, Varuint32, 0, false, PARAM_DECLS)                                   \
   X(U8Const, Uint8, 0, true,)                                                  \
   X(U32Const, Varuint32, 0, true,)                                             \
@@ -133,6 +148,7 @@
 //#define X(tag, NODE_DECLS)
 #define AST_UNARYNODE_TABLE                                                    \
   X(Block,)                                                                    \
+  X(BitwiseNegate,)                                                            \
   X(LoopUnbounded,)                                                            \
   X(Not,)                                                                      \
   X(Peek,)                                                                     \
@@ -143,11 +159,15 @@
 //#define X(tag, NODE_DECLS)
 #define AST_BINARYNODE_TABLE                                                   \
   X(And,)                                                                      \
+  X(BitwiseAnd,)                                                               \
+  X(BitwiseOr,)                                                                \
+  X(BitwiseXor,)                                                               \
   X(Case,)                                                                     \
   X(IfThen,)                                                                   \
   X(Loop,)                                                                     \
   X(Or,)                                                                       \
   X(Rename,)                                                                   \
+  X(Set,)                                                                      \
   X(Write,)                                                                    \
 
 //#define X(tag, NODE_DECLS)

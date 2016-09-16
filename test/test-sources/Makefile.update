@@ -65,11 +65,6 @@ defaults.wasm-w:
 
 .PHONY: defaults.wasm-w
 
-defaults.dff:
-	$(TEST_DIR)/TestParser -w -f $(SEXP_DEFAULTS) > $@
-
-.PHONY: defaults.dff
-
 defaults.df:
 	$(TEST_DIR)/TestParser -w $(SEXP_DEFAULTS) > $@
 

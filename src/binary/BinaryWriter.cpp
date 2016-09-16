@@ -70,22 +70,29 @@ void BinaryWriter::writeNode(const Node* Nd) {
       fatal("Unable to write filter s-expression");
       break;
     }
-#define X(tag, format, defval, mergable, NODE_DECLS)    \
-  case Op##tag: {                                       \
-    Writer->writeUint8(Opcode, WritePos);               \
-    auto* Int = cast<tag##Node>(Nd);                    \
-    if (Int->isDefaultValue()) {                        \
-      Writer->writeUint8(1, WritePos);                  \
-    } else {                                            \
-      Writer->writeUint8(0, WritePos);                  \
-      Writer->write##format(Int->getValue(), WritePos); \
-    }                                                   \
-    break;                                              \
+#define X(tag, format, defval, mergable, NODE_DECLS)           \
+  case Op##tag: {                                              \
+    Writer->writeUint8(Opcode, WritePos);                      \
+    auto* Int = cast<tag##Node>(Nd);                           \
+    if (Int->isDefaultValue()) {                               \
+      Writer->writeUint8(0, WritePos);                         \
+    } else {                                                   \
+      Writer->writeUint8(int(Int->getFormat()) + 1, WritePos); \
+      Writer->write##format(Int->getValue(), WritePos);        \
+    }                                                          \
+    break;                                                     \
   }
       AST_INTEGERNODE_TABLE
 #undef X
     case OpAnd:
     case OpBlock:
+    case OpBlockBegin:
+    case OpBlockEmpty:
+    case OpBlockEnd:
+    case OpBitwiseAnd:
+    case OpBitwiseNegate:
+    case OpBitwiseOr:
+    case OpBitwiseXor:
     case OpCase:
     case OpConvert:
     case OpOr:
@@ -100,6 +107,7 @@ void BinaryWriter::writeNode(const Node* Nd) {
     case OpUndefine:
     case OpLastRead:
     case OpRename:
+    case OpSet:
     case OpVoid:
     case OpWrite: {
       // Operations that are written out in postorder, with a fixed number of

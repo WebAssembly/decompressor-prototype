@@ -40,7 +40,6 @@ class Driver {
       : Table(Table),
         TraceLexing(false),
         TraceParsing(false),
-        MaintainIntegerFormatting(false),
         ParsedAst(nullptr),
         ErrorsReported(false) {}
 
@@ -67,14 +66,6 @@ class Driver {
 
   // The name of the file being parsed.
   std::string& getFilename() { return Filename; }
-
-  bool getMaintainIntegerFormatting() const {
-    return MaintainIntegerFormatting;
-  }
-
-  void setMaintainIntegerFormatting(bool NewValue) {
-    MaintainIntegerFormatting = NewValue;
-  }
 
   void setTraceLexing(bool NewValue) { TraceLexing = NewValue; }
 
