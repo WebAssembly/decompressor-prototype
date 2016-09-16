@@ -214,8 +214,7 @@ class Interpreter {
                  const filt::Node* Nd,
                  decode::IntType WriteValue) {
     call(Method, Nd);
-    WriteValueStack.push();
-    this->WriteValue = WriteValue;
+    WriteValueStack.push(WriteValue);
   }
 
   void popAndReturn(decode::IntType Value = 0) {

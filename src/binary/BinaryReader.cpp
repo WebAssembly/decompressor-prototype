@@ -232,8 +232,7 @@ void BinaryReader::resume() {
         switch (Frame.CallState) {
           case State::Enter: {
             Name.clear();
-            CounterStack.push();
-            Counter = Reader->readVaruint32(ReadPos);
+            CounterStack.push(Reader->readVaruint32(ReadPos));
             Frame.CallState = State::Loop;
             break;
           }
@@ -440,8 +439,7 @@ void BinaryReader::resume() {
             CurSection = create<SectionNode>();
             CurSection->append(create<SymbolNode>(Name));
             // Save StartStackSize for exit.
-            CounterStack.push();
-            Counter = NodeStack.size();
+            CounterStack.push(NodeStack.size());
             CurBlockApplyFcn = Method::SectionBody;
             Frame.CallState = State::Exit;
             call(Method::Block);
@@ -498,8 +496,7 @@ void BinaryReader::resume() {
         switch (Frame.CallState) {
           case State::Enter:
             SectionSymtab.clear();
-            CounterStack.push();
-            Counter = Reader->readVaruint32(ReadPos);
+            CounterStack.push(Reader->readVaruint32(ReadPos));
             Frame.CallState = State::Loop;
             break;
           case State::Loop:
