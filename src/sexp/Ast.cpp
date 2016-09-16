@@ -462,6 +462,13 @@ std::string DefineNode::getName() const {
   return dyn_cast<SymbolNode>(getKid(0))->getStringName();
 }
 
+size_t DefineNode::getNumLocals() const {
+  if (const auto* Locals = dyn_cast<LocalsNode>(getKid(2))) {
+    return Locals->getValue();
+  }
+  return 0;
+}
+
 bool NaryNode::implementsClass(NodeType Type) {
   switch (Type) {
     default:

@@ -19,36 +19,36 @@
 (section 'filter'
   (version)
 
-  (define 'code' (param)
+  (define 'code' (params)
     (loop (varuint32)            # Number of function bodies.
       (eval 'code.function'))
   )
 
-  (define 'code.address' (param)
+  (define 'code.address' (params)
     (varuint32)                  # log2 alignment/flags
     (varuint32)                  # offset
   )
 
-  (define 'code.block.sig' (param) (block.begin) (uint8))
+  (define 'code.block.sig' (params) (block.begin) (uint8))
 
-  (define 'element' (param)
+  (define 'element' (params)
     (loop (varuint32)            # Number of element segments.
       (eval 'element.segment')
     )
   )
 
-  (define 'code.br_table' (param)
+  (define 'code.br_table' (params)
     (loop (varuint32)            # number of targets.
        (varuint32))              # target depth.
     (uint32)                     # default target depth.
   )
 
-  (define 'code.br_target' (param)
+  (define 'code.br_target' (params)
      (uint8)                     # br arity.
      (varuint32)                 # relative depth
   )
 
-  (define 'code.function' (param)
+  (define 'code.function' (params)
     (block  # block implicitly reads bytes using (varuint32) on byte stream.
       (block.begin)
       (loop (varuint32)          # number of locals in function.
@@ -60,7 +60,7 @@
     )
   )
 
-  (define 'code.inst' (param)
+  (define 'code.inst' (params)
     (switch (read)
       # TODO(kschimpf) build asts based on arity of opcodes?
       (void)                                      # simple one byte opcode.
@@ -109,25 +109,25 @@
     )
   )
 
-  (define 'code.local' (param)
+  (define 'code.local' (params)
     (varuint32)                  # number of locals with type
     (uint8)                      # type of locals.
   )
 
-  (define 'code.opcode' (param) (uint8))
+  (define 'code.opcode' (params) (uint8))
 
-  (define 'data' (param)
+  (define 'data' (params)
     (loop (varuint32)          # number of data segments.
       (eval 'data.segment'))
   )
 
-  (define 'data.segment' (param)
+  (define 'data.segment' (params)
     (varuint32)                # The linear memory index.
     (eval 'init_expr')         # an i32 initializer defining offset to place data.
     (loop (varuint32) (uint8)) # The data.
   )
 
-  (define 'element.segment' (param)
+  (define 'element.segment' (params)
     (varuint32)                 # The table index
     (eval 'init_expr')          # An i32 initializer that computess the
                                 # placement offset.
@@ -135,27 +135,27 @@
       (varuint32))              # Function index.
   )
 
-  (define 'export' (param)
+  (define 'export' (params)
     (loop (varuint32)          # number of exports
       (eval 'export.entry'))
   )
 
-  (define 'export.entry' (param)
+  (define 'export.entry' (params)
     (eval 'export.symbol')     # Exported field name.
     (uint8)                    # Kind of definition being exported.
     (varuint32)                # The index to the corresponding index space.
   )
 
-  (define 'export.symbol' (param) # reads in an exported name
+  (define 'export.symbol' (params) # reads in an exported name
     (loop (varuint32) (uint8))
   )
 
-  (define 'function' (param)
+  (define 'function' (params)
     (loop (varuint32)          # Number of type signatures.
        (varuint32))            # type signature index
   )
 
-  (define 'global' (param)
+  (define 'global' (params)
     (loop (varuint32)            # Number of global variables.
       (uint8)                    # Type of global variable
       (uint8)                    # 0 if immutable, 1 if mutable.
@@ -163,11 +163,11 @@
     )
   )
 
-  (define 'import' (param)
+  (define 'import' (params)
     (loop (varuint32) (eval 'import.entry'))
   )
 
-  (define 'import.entry' (param)
+  (define 'import.entry' (params)
     (varuint32)                    # signature index of the import
     (eval 'name.symbol')           # module name
     (eval 'name.symbol')           # field name
@@ -184,7 +184,7 @@
     )
   )
 
-  (define 'init_expr' (param)
+  (define 'init_expr' (params)
     (loop.unbounded
       (eval 'code.opcode')      # Opcode of expression.
       # TODO(karlschimpf) Should we just use code.inst?
@@ -201,28 +201,28 @@
     )
   )
 
-  (define 'memory' (param)
+  (define 'memory' (params)
     (loop (varuint32)            # Number of memory units.
       (eval 'resizable.limits')  # memory unit limits.
     )
   )
 
-  (define 'name' (param)
+  (define 'name' (params)
     (loop (varuint32)        # function name count.
       (eval 'name.function'))
   )
 
-  (define 'name.function' (param)
+  (define 'name.function' (params)
     (eval 'name.symbol')       # function name
     (loop (varuint32)          # number of local names.
       (eval 'name.symbol'))    # local name
   )
 
-  (define 'name.symbol' (param)
+  (define 'name.symbol' (params)
     (loop (varuint32) (uint8))
   )
 
-  (define 'resizable.limits' (param)
+  (define 'resizable.limits' (params)
     (locals 1)
     (set (local 0) (varuint32)) # flags
     (varuint32)                 # initial length.
@@ -231,18 +231,18 @@
     )
   )
 
-  (define 'start' (param)
+  (define 'start' (params)
     (varuint32)                # start function index.
   )
 
-  (define 'table' (param)
+  (define 'table' (params)
     (loop (varuint32)           # Number of table entries.
       (uint8)                   # 0x20, indicating anyfunc.
       (eval 'resizable.limits') # Table entry limits.
     )
   ) 
 
-  (define 'type' (param)
+  (define 'type' (params)
     (loop (varuint32)          # number of signatures.
       (uint8)                  # type form (0x040)
       (loop (varuint32)        # number of parameters parameters

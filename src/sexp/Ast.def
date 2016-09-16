@@ -201,6 +201,7 @@
  public:                                                                       \
   bool isValidParam(decode::IntType Index);                                    \
   std::string getName() const;                                                 \
+  size_t getNumLocals() const;                                                 \
 
 //#define X(tag)
 #define AST_NODE_HAS_HIDDEN_SEQ                                                \
