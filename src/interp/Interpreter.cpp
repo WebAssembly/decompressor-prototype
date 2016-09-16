@@ -731,7 +731,8 @@ void Interpreter::resume() {
             switch (Frame.CallState) {
               case State::Enter:
                 TraceEnterFrame();
-                if (size_t NumLocals = cast<DefineNode>(Frame.Nd)->getNumLocals()) {
+                if (size_t NumLocals =
+                        cast<DefineNode>(Frame.Nd)->getNumLocals()) {
                   LocalsBaseStack.push(LocalValues.size());
                   for (size_t i = 0; i < NumLocals; ++i)
                     LocalValues.push_back(0);
