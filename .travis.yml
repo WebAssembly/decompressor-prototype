@@ -1,6 +1,15 @@
-language: c++
+language: c++ node_js
+
+node_js: "node"
 
 sudo: false
+
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - libstdc++6-4.7-dev
 
 before_script: ./travis/install_dependencies.sh
 
