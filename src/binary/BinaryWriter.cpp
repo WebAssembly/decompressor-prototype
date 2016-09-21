@@ -69,34 +69,31 @@ void BinaryWriter::writeNode(const Node* Nd) {
       fatal("Unable to write filter s-expression");
       break;
     }
-#define X(tag, format, defval, mergable, NODE_DECLS)           \
-  case Op##tag: {                                              \
-    Writer->writeUint8(Opcode, WritePos);                      \
-    auto* Int = cast<tag##Node>(Nd);                           \
-    if (Int->isDefaultValue()) {                               \
-      Writer->writeUint8(0, WritePos);                         \
-    } else {                                                   \
-      Writer->writeUint8(int(Int->getFormat()) + 1, WritePos); \
-      Writer->write##format(Int->getValue(), WritePos);        \
-    }                                                          \
-    break;                                                     \
-  }
-      AST_OTHER_INTEGERNODE_TABLE
+#define X(tag, format, defval, mergable, NODE_DECLS)             \
+    case Op##tag: {                                              \
+      Writer->writeUint8(Opcode, WritePos);                      \
+      auto* Int = cast<tag##Node>(Nd);                           \
+      if (Int->isDefaultValue()) {                               \
+        Writer->writeUint8(0, WritePos);                         \
+      } else {                                                   \
+        Writer->writeUint8(int(Int->getFormat()) + 1, WritePos); \
+        Writer->write##format(Int->getValue(), WritePos);        \
+      }                                                          \
+      break;                                                     \
+    }
+    AST_OTHER_INTEGERNODE_TABLE
 #undef X
-    case OpVersionFile: {
-      auto *V = cast<VersionFileNode>(Nd);
-      if (V->getValue() != CasmBinaryVersion)
-        fatal("Casm version not " + std::to_string(CasmBinaryVersion));
-      Writer->writeUint32(V->getValue(), WritePos);
-      break;
+#define X(tag, format, defval, mergable, NODE_DECLS)                     \
+    case Op##tag: {                                                      \
+      auto *V = cast<tag##Node>(Nd);                                     \
+      if (V->getValue() != V->getExpectedVersion())                      \
+        fatal(std::string(V->getExpectedVersionName()) + " version not " \
+              + std::to_string(V->getExpectedVersion()));                \
+      Writer->writeUint32(V->getValue(), WritePos);                      \
+      break;                                                             \
     }
-    case OpVersionSection: {
-      auto *V = cast<VersionFileNode>(Nd);
-      if (V->getValue() != WasmBinaryVersion)
-        fatal("Wasm version not " + std::to_string(WasmBinaryVersion));
-      Writer->writeUint32(V->getValue(), WritePos);
-      break;
-    }
+    AST_VERSION_INTEGERNODE_TABLE
+#undef X
     case OpAnd:
     case OpBlock:
     case OpBlockBegin:

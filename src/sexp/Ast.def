@@ -120,8 +120,16 @@
 //   mergable: True if instances can be merged.
 //   NODE_DECLS: Other declarations for the node.
 #define AST_VERSION_INTEGERNODE_TABLE                                          \
-  X(VersionFile, Uint32, 0, true,)                                             \
-  X(VersionSection, Uint32, 0, true,)                                          \
+  X(VersionFile, Uint32, 0, true, VERSIONFILE_DECLS)                           \
+  X(VersionSection, Uint32, 0, true, VERSIONSECTION_DECLS)                     \
+
+#define VERSIONFILE_DECLS                                                      \
+  uint32_t getExpectedVersion() const { return CasmBinaryVersion; }            \
+  const char* getExpectedVersionName() const { return "Casm"; }                \
+
+#define VERSIONSECTION_DECLS                                                   \
+  uint32_t getExpectedVersion() const { return WasmBinaryVersion; }            \
+  const char* getExpectedVersionName() const { return "Wasm"; }                \
 
 //#define X(tag, defval, mergable, NODE_DECLS)
 // where:

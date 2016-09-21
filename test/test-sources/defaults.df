@@ -1,4 +1,4 @@
-(version 0)
+(version 0x0)
 (section 'filter'
   (version 0xb)
   (define 'code' (params)
