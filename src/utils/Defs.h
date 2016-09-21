@@ -69,6 +69,9 @@ constexpr T const_maximum(T V, Args... args) {
 static constexpr uint32_t WasmBinaryMagic = 0x6d736100;
 static constexpr uint32_t WasmBinaryVersion = 0x0b;
 
+static constexpr uint32_t CasmBinaryMagic = 0x6d736163;
+static constexpr uint32_t CasmBinaryVersion = 0x0;
+
 enum class Ordering : int {
   LessThan = -1,
   Equal = 0,

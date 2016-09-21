@@ -1,5 +1,6 @@
+(version 0)
 (section 'filter'
-  (version)
+  (version 0xb)
   (define 'code' (params)
     (loop (varuint32) (eval 'code.function'))
   )

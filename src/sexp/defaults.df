@@ -16,8 +16,9 @@
 # This file defines the default algorithms for decompressing a WASM
 # module.
 
+(version 0x0)
 (section 'filter'
-  (version)
+  (version 0xb)
 
   (define 'code' (params)
     (loop (varuint32)            # Number of function bodies.

@@ -200,8 +200,9 @@ void BinaryReader::resume() {
             CurFile = Symtab->create<FileNode>();
             MagicNumber = Reader->readUint32(ReadPos);
             TRACE(uint32_t, "MagicNumber", MagicNumber);
-            if (MagicNumber != WasmBinaryMagic) {
-              fail("Unable to read, did not find WASM binary magic number");
+            if (MagicNumber != CasmBinaryMagic) {
+              fail("Unable to read, did not find compressed"
+                   " WASM binary magic number");
               break;
             }
             Version = Reader->readUint32(ReadPos);
@@ -409,8 +410,22 @@ void BinaryReader::resume() {
     NodeStack.push_back(Nd);                                              \
     break;                                                                \
   }
-                AST_INTEGERNODE_TABLE
+                AST_OTHER_INTEGERNODE_TABLE
 #undef X
+              case OpVersionFile: {
+                auto *V = cast<VersionFileNode>(Nd);
+                if (V->getValue() != CasmBinaryVersion)
+                  fatal("Casm version not " + std::to_string(CasmBinaryVersion));
+                Writer->writeUint32(V->getValue(), WritePos);
+                break;
+              }
+              case OpVersionSection: {
+                auto *V = cast<VersionFileNode>(Nd);
+                if (V->getValue() != WasmBinaryVersion)
+                  fatal("Wasm version not " + std::to_string(WasmBinaryVersion));
+                Writer->writeUint32(V->getValue(), WritePos);
+                break;
+              }
               case NO_SUCH_NODETYPE:
               case OpFile:
               case OpSection:

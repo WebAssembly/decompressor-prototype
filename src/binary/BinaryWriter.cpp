@@ -43,8 +43,7 @@ BinaryWriter::BinaryWriter(std::shared_ptr<decode::Queue> Output,
 }
 
 void BinaryWriter::writePreamble() {
-  Writer->writeUint32(WasmBinaryMagic, WritePos);
-  Writer->writeUint32(WasmBinaryVersion, WritePos);
+  Writer->writeUint32(CasmBinaryMagic, WritePos);
 }
 
 void BinaryWriter::writeFile(const FileNode* File) {
@@ -82,8 +81,22 @@ void BinaryWriter::writeNode(const Node* Nd) {
     }                                                          \
     break;                                                     \
   }
-      AST_INTEGERNODE_TABLE
+      AST_OTHER_INTEGERNODE_TABLE
 #undef X
+    case OpVersionFile: {
+      auto *V = cast<VersionFileNode>(Nd);
+      if (V->getValue() != CasmBinaryVersion)
+        fatal("Casm version not " + std::to_string(CasmBinaryVersion));
+      Writer->writeUint32(V->getValue(), WritePos);
+      break;
+    }
+    case OpVersionSection: {
+      auto *V = cast<VersionFileNode>(Nd);
+      if (V->getValue() != WasmBinaryVersion)
+        fatal("Wasm version not " + std::to_string(WasmBinaryVersion));
+      Writer->writeUint32(V->getValue(), WritePos);
+      break;
+    }
     case OpAnd:
     case OpBlock:
     case OpBlockBegin:
