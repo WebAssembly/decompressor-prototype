@@ -53,8 +53,6 @@ $(info -----------------------------------------------)
 # NOTE: update will have LOTS of error messages, but they can be ignored.
 spec: clean_binaries $(LOCAL_SEXPS_SRCS) $(LOCAL_SEXPS_BINS)
 
-.PHONY: update
-
 defaults.wasm:
 	$(EXEC_DIR)/decompsexp-wasm -m -i $(SEXP_DEFAULTS) -o $@
 

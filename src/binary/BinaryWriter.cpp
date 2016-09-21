@@ -43,8 +43,7 @@ BinaryWriter::BinaryWriter(std::shared_ptr<decode::Queue> Output,
 }
 
 void BinaryWriter::writePreamble() {
-  Writer->writeUint32(WasmBinaryMagic, WritePos);
-  Writer->writeUint32(WasmBinaryVersion, WritePos);
+  Writer->writeUint32(CasmBinaryMagic, WritePos);
 }
 
 void BinaryWriter::writeFile(const FileNode* File) {
@@ -70,19 +69,30 @@ void BinaryWriter::writeNode(const Node* Nd) {
       fatal("Unable to write filter s-expression");
       break;
     }
-#define X(tag, format, defval, mergable, NODE_DECLS)           \
-  case Op##tag: {                                              \
-    Writer->writeUint8(Opcode, WritePos);                      \
-    auto* Int = cast<tag##Node>(Nd);                           \
-    if (Int->isDefaultValue()) {                               \
-      Writer->writeUint8(0, WritePos);                         \
-    } else {                                                   \
-      Writer->writeUint8(int(Int->getFormat()) + 1, WritePos); \
-      Writer->write##format(Int->getValue(), WritePos);        \
-    }                                                          \
-    break;                                                     \
-  }
-      AST_INTEGERNODE_TABLE
+#define X(tag, format, defval, mergable, NODE_DECLS)             \
+    case Op##tag: {                                              \
+      Writer->writeUint8(Opcode, WritePos);                      \
+      auto* Int = cast<tag##Node>(Nd);                           \
+      if (Int->isDefaultValue()) {                               \
+        Writer->writeUint8(0, WritePos);                         \
+      } else {                                                   \
+        Writer->writeUint8(int(Int->getFormat()) + 1, WritePos); \
+        Writer->write##format(Int->getValue(), WritePos);        \
+      }                                                          \
+      break;                                                     \
+    }
+    AST_OTHER_INTEGERNODE_TABLE
+#undef X
+#define X(tag, format, defval, mergable, NODE_DECLS)                     \
+    case Op##tag: {                                                      \
+      auto *V = cast<tag##Node>(Nd);                                     \
+      if (V->getValue() != V->getExpectedVersion())                      \
+        fatal(std::string(V->getExpectedVersionName()) + " version not " \
+              + std::to_string(V->getExpectedVersion()));                \
+      Writer->writeUint32(V->getValue(), WritePos);                      \
+      break;                                                             \
+    }
+    AST_VERSION_INTEGERNODE_TABLE
 #undef X
     case OpAnd:
     case OpBlock:

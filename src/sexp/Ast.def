@@ -94,10 +94,11 @@
   X(File,              0x62, "file",             nullptr,           0, 0)      \
   X(Section,           0x63, "section",          nullptr,           1, 0)      \
   X(Undefine,          0x64, "undefine",         nullptr,           1, 0)      \
-  X(Version,           0x65, "version",          nullptr,           1, 0)      \
-  X(Rename,            0x66, "rename",           nullptr,           2, 0)      \
-  X(Locals,            0x67, "locals",           nullptr,           1, 0)      \
-  X(Params,            0x68, "params",           nullptr,           1, 0)      \
+  X(VersionFile,       0x65, "version",          "versionFile",     1, 0)      \
+  X(VersionSection,    0x66, "version",          "versionSection",  1, 0)      \
+  X(Rename,            0x67, "rename",           nullptr,           2, 0)      \
+  X(Locals,            0x68, "locals",           nullptr,           1, 0)      \
+  X(Params,            0x69, "params",           nullptr,           1, 0)      \
                                                                                \
   /* Internal (not opcodes in compressed file) */                              \
   X(UnknownSection,    0xFF, "unknown.section", nullptr,           1, 0)       \
@@ -118,7 +119,26 @@
 //   defval: Default value assumed if not provided.
 //   mergable: True if instances can be merged.
 //   NODE_DECLS: Other declarations for the node.
-#define AST_INTEGERNODE_TABLE                                                  \
+#define AST_VERSION_INTEGERNODE_TABLE                                          \
+  X(VersionFile, Uint32, 0, true, VERSIONFILE_DECLS)                           \
+  X(VersionSection, Uint32, 0, true, VERSIONSECTION_DECLS)                     \
+
+#define VERSIONFILE_DECLS                                                      \
+  uint32_t getExpectedVersion() const { return CasmBinaryVersion; }            \
+  const char* getExpectedVersionName() const { return "Casm"; }                \
+
+#define VERSIONSECTION_DECLS                                                   \
+  uint32_t getExpectedVersion() const { return WasmBinaryVersion; }            \
+  const char* getExpectedVersionName() const { return "Wasm"; }                \
+
+//#define X(tag, defval, mergable, NODE_DECLS)
+// where:
+//   tag: enumeration name (less Op prefix).
+//   format: Format for printing out value.
+//   defval: Default value assumed if not provided.
+//   mergable: True if instances can be merged.
+//   NODE_DECLS: Other declarations for the node.
+#define AST_OTHER_INTEGERNODE_TABLE                                            \
   X(I32Const, Varint32, 0, true,)                                              \
   X(I64Const, Varint64, 0, true,)                                              \
   X(Local, Varuint32, 0, true,)                                                \
@@ -135,7 +155,17 @@
   X(Varint64, Uint8,  8, true,)                                                \
   X(Varuint32, Uint8, 8, true,)                                                \
   X(Varuint64, Uint8, 8, true,)                                                \
-  X(Version, Varuint32, 0, true,)                                              \
+
+//#define X(tag, defval, mergable, NODE_DECLS)
+// where:
+//   tag: enumeration name (less Op prefix).
+//   format: Format for printing out value.
+//   defval: Default value assumed if not provided.
+//   mergable: True if instances can be merged.
+//   NODE_DECLS: Other declarations for the node.
+#define AST_INTEGERNODE_TABLE                                                  \
+  AST_OTHER_INTEGERNODE_TABLE                                                  \
+  AST_VERSION_INTEGERNODE_TABLE                                                \
 
 #define PARAM_DECLS                                                            \
   public:                                                                      \

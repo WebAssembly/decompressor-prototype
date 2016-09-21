@@ -174,7 +174,8 @@ struct IntValue {
 %type <wasm::filt::Node *> seq_stmt_list
 %type <wasm::filt::Node *> statement
 %type <wasm::filt::Node *> symbol
-%type <wasm::filt::Node *> version
+%type <wasm::filt::Node *> version_file
+%type <wasm::filt::Node *> version_section
 
 %start file
 
@@ -269,7 +270,7 @@ declaration_stmt_list
         ;
 
 declaration_list
-        : symbol version {  // Section name / version.
+        : symbol version_section {  // Section name / wasm version.
             $$ = Driver.create<SectionNode>();
             $$->append($1);
             $$->append($2);
@@ -505,13 +506,27 @@ params_decl
           }
         ;
 
-version : "(" "version" INTEGER ")" {
-            if ($3.Value != 0)
-              Driver.error("Currently, only (version 0) is supported");
-            $$ = Driver.getVersionDefinition($3.Value, $3.Format);
+version_file
+        : "(" "version" INTEGER ")" {
+            $$ = Driver.getVersionFileDefinition($3.Value, $3.Format);
+            if ($3.Format != decode::ValueFormat::Hexidecimal)
+              Driver.error("Casm version # not hexidecimal");
+            if ($3.Value != CasmBinaryVersion)
+              Driver.error("Only casm version "
+                           + std::to_string(CasmBinaryVersion)
+                           + " is supported");
           }
-        | "(" "version" ")" {
-            $$ = Driver.getVersionDefinition();
+        ;
+
+version_section
+        : "(" "version" INTEGER ")" {
+            $$ = Driver.getVersionSectionDefinition($3.Value, $3.Format);
+            if ($3.Format != decode::ValueFormat::Hexidecimal)
+              Driver.error("Wasm version # not hexidecimal");
+            if ($3.Value != WasmBinaryVersion)
+              Driver.error("Only wasm version "
+                           + std::to_string(WasmBinaryVersion)
+                           + " is supported");
           }
         ;
 
@@ -539,9 +554,10 @@ section : "(" "section" declaration_list ")" { $$ = $3; }
         ;
 
 section_list
-        : section { // first section of file.
+        : version_file section { // first section of file.
             $$ = Driver.create<FileNode>();
             $$->append($1);
+            $$->append($2);
           }
         | section_list section { // Remaining sections in file.
             $$ = $1;

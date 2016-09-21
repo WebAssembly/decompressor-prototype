@@ -16,8 +16,9 @@
 # defaults.df except for method 'code.opcode". Rather than reading a (uint8), it
 # uses the code passed as a parameter.
 
+(version 0x0)
 (section 'filter'
-  (version)
+  (version 0xb)
 
   (define 'code' (params)
     (loop (varuint32)            # Number of function bodies.

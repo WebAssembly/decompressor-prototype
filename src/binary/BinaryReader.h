@@ -138,7 +138,8 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
   // The magic number of the input.
   uint32_t MagicNumber;
   // The version of the input.
-  uint32_t Version;
+  uint32_t CasmVersion;
+  uint32_t WasmVersion;
   mutable TraceClassSexpReader Trace;
   ExternalName Name;
   FileNode* CurFile;

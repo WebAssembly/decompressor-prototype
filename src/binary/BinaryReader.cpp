@@ -196,19 +196,27 @@ void BinaryReader::resume() {
       }
       case Method::File:
         switch (Frame.CallState) {
-          case State::Enter:
+          case State::Enter: {
             CurFile = Symtab->create<FileNode>();
             MagicNumber = Reader->readUint32(ReadPos);
             TRACE(uint32_t, "MagicNumber", MagicNumber);
-            if (MagicNumber != WasmBinaryMagic) {
-              fail("Unable to read, did not find WASM binary magic number");
+            if (MagicNumber != CasmBinaryMagic) {
+              fail("Unable to read, did not find compressed"
+                   " WASM binary magic number");
               break;
             }
-            Version = Reader->readUint32(ReadPos);
-            TRACE(uint32_t, "Version", Version);
+            CasmVersion = Reader->readUint32(ReadPos);
+            if (CasmVersion != CasmBinaryVersion)
+              fatal("Casm version not " + std::to_string(CasmBinaryVersion));
+            auto *Version = Symtab->getVersionFileDefinition(
+                CasmVersion, ValueFormat::Hexidecimal);
+            TRACE_SEXP("Casm version", Version);
+            assert(CurFile);
+            CurFile->append(Version);
             Frame.CallState = State::Loop;
             call(Method::Section);
             break;
+          }
           case State::Loop:
             CurFile->append(CurSection);
             TRACE_SEXP("CurSection", CurSection);
@@ -409,7 +417,12 @@ void BinaryReader::resume() {
     NodeStack.push_back(Nd);                                              \
     break;                                                                \
   }
-                AST_INTEGERNODE_TABLE
+                AST_OTHER_INTEGERNODE_TABLE
+#undef X
+// The following read version nodes.
+#define X(tag, format, defval, mergable, NODE_DECLS)                      \
+              case Op##tag:
+                AST_VERSION_INTEGERNODE_TABLE
 #undef X
               case NO_SUCH_NODETYPE:
               case OpFile:
@@ -473,8 +486,20 @@ void BinaryReader::resume() {
               fail("Handling non-filter sections not implemented!");
               break;
             }
-            Frame.CallState = State::Loop;
+            Frame.CallState = State::Setup;
             call(Method::SymbolTable);
+            break;
+          }
+          case State::Setup: {
+            WasmVersion = Reader->readUint32(ReadPos);
+            if (WasmVersion != WasmBinaryVersion)
+              fatal("Wasm version not " + std::to_string(WasmBinaryVersion));
+            auto *Version = Symtab->getVersionSectionDefinition(
+                WasmVersion, ValueFormat::Hexidecimal);
+            TRACE_SEXP("Wasm version", Version);
+            assert(CurSection);
+            CurSection->append(Version);
+            Frame.CallState = State::Loop;
             break;
           }
           case State::Loop:
@@ -547,7 +572,7 @@ bool BinaryReader::isBinary(const char* Filename) {
     Shift += CHAR_BIT;
   }
   fclose(File);
-  return Number == WasmBinaryMagic;
+  return Number == CasmBinaryMagic;
 }
 
 BinaryReader::BinaryReader(std::shared_ptr<decode::Queue> Input,
