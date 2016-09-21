@@ -371,8 +371,8 @@ void Interpreter::resume() {
           case OpSection:
           case OpUndefine:
           case OpUnknownSection:
-          case OpVersionFile:
-          case OpVersionSection:  // Method::Eval
+          case OpCasmVersion:
+          case OpWasmVersion:  // Method::Eval
             fail("Not allowed!");
             break;
           case OpError:  // Method::Eval
@@ -990,8 +990,8 @@ void Interpreter::resume() {
           case OpSymbol:
           case OpUndefine:
           case OpUnknownSection:
-          case OpVersionFile:
-          case OpVersionSection:
+          case OpCasmVersion:
+          case OpWasmVersion:
           case OpAnd:
           case OpError:
           case OpEval:
@@ -1398,8 +1398,8 @@ void Interpreter::resume() {
           case OpSymbol:
           case OpUndefine:
           case OpUnknownSection:
-          case OpVersionFile:
-          case OpVersionSection:
+          case OpCasmVersion:
+          case OpWasmVersion:
           case OpAnd:
           case OpError:
           case OpEval:

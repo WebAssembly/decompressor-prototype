@@ -1,2 +1,2 @@
-(version 0x0)
-(section 'foo' version))
+(casm.version 0x0)
+(section 'foo' (wasm.version 0xb)))
