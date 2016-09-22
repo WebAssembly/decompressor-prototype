@@ -19,11 +19,13 @@
 #include "sexp-parser/Driver.h"
 #include "stream/FileReader.h"
 #include "stream/FileWriter.h"
+#include "stream/ReadCursor.h"
 #include "stream/StreamReader.h"
 #include "stream/StreamWriter.h"
 #include "stream/WriteBackedQueue.h"
 #include "utils/Defs.h"
 
+#include <cctype>
 #include <cstring>
 #include <unistd.h>
 #include <iostream>
@@ -31,6 +33,8 @@
 using namespace wasm;
 using namespace wasm::filt;
 using namespace wasm::decode;
+
+namespace {
 
 bool UseFileStreams = true;
 const char* InputFilename = "-";
@@ -46,6 +50,59 @@ std::shared_ptr<RawStream> getOutput() {
     return std::make_shared<FileWriter>(OutputFilename);
   return std::make_shared<FstreamWriter>(OutputFilename);
 }
+
+#if BOOTSTRAP
+void generateArrayImpl(std::shared_ptr<ReadCursor> ReadPos) {
+  auto Output = getOutput();
+  static const char* Preamble =
+      "// -*- C++ -*- */\n"
+      "\n"
+      "// *** AUTOMATICALLY GENERATED FILE (DO NOT EDIT)! ***\n"
+      "\n"
+      "// Copyright 2016 WebAssembly Community Group participants\n"
+      "//\n"
+      "// Licensed under the Apache License, Version 2.0 (the \"License\");\n"
+      "// you may not use this file except in compliance with the License.\n"
+      "// You may obtain a copy of the License at\n"
+      "//\n"
+      "//     http://www.apache.org/licenses/LICENSE-2.0\n"
+      "//\n"
+      "// Unless required by applicable law or agreed to in writing, software\n"
+      "// distributed under the License is distributed on an \"AS IS\" BASIS,\n"
+      "// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or "
+      "implied.\n"
+      "// See the License for the specific language governing permissions and\n"
+      "// limitations under the License.\n"
+      "\n"
+      "#include \"sexp/defaults.h\"\n"
+      "\n"
+      "static const uint8_t WasmDefaults[] = {\n";
+  for (size_t i = 0, len = strlen(Preamble); i < len; ++i)
+    Output->putc(Preamble[i]);
+  char Buffer[256];
+  while (!ReadPos->atEof()) {
+    uint8_t Byte = ReadPos->readByte();
+    sprintf(Buffer, "   %u", Byte);
+    for (size_t i = 0, len = std::strlen(Buffer); i < len; ++i)
+      Output->putc(Buffer[i]);
+    if (!ReadPos->atEof())
+      Output->putc(',');
+    Output->putc('\n');
+  }
+  static const char* Postamble =
+      "};\n"
+      "\n"
+      "namespace wasm {\n"
+      "namespace decode {\n"
+      "const uint8_t *getWasmDefaultsBuffer() { return WasmDefaults; }\n"
+      "size_t getWasmDefaultsBufferSize() { return size(WasmDefaults); }\n"
+      "} // end of namespace decode\n"
+      "} // end of namespace wasm\n";
+  for (size_t i = 0, len = strlen(Postamble); i < len; ++i)
+    Output->putc(Postamble[i]);
+  Output->freeze();
+}
+#endif
 
 void usage(const char* AppName) {
   fprintf(stderr, "usage: %s [options]\n", AppName);
@@ -69,6 +126,8 @@ void usage(const char* AppName) {
     fprintf(stderr, "\t\t\t-v -v -v : Add tracing of lexing s-expressions.\n");
   }
 }
+
+}  // end of anonymous namespace
 
 int main(int Argc, char* Argv[]) {
   int Verbose = 0;
@@ -129,10 +188,20 @@ int main(int Argc, char* Argv[]) {
     fprintf(stderr, "Unable to parse s-expressions: %s\n", InputFilename);
     return exit_status(EXIT_FAILURE);
   }
+#if BOOTSTRAP
+  auto TmpStream = std::make_shared<Queue>();
+  auto ReadPos = std::make_shared<ReadCursor>(StreamType::Byte, TmpStream);
+  BinaryWriter Writer(TmpStream, Symtab);
+#else
   BinaryWriter Writer(std::make_shared<WriteBackedQueue>(getOutput()), Symtab);
+#endif
   Writer.setTraceProgress(Verbose >= 1);
   Writer.setMinimizeBlockSize(MinimizeBlockSize);
   Writer.writePreamble();
   Writer.writeFile(wasm::dyn_cast<FileNode>(Parser.getParsedAst()));
+  Writer.freezeEof();
+#if BOOTSTRAP
+  generateArrayImpl(ReadPos);
+#endif
   return exit_status(EXIT_SUCCESS);
 }

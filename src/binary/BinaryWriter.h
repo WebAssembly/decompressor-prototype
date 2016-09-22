@@ -48,6 +48,8 @@ class BinaryWriter {
 
   void writePreamble();
 
+  void freezeEof() { WritePos.freezeEof(); }
+
   void writeFile(const FileNode* File);
   void writeSection(const SectionNode* Section);
 

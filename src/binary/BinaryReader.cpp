@@ -201,14 +201,15 @@ void BinaryReader::resume() {
             MagicNumber = Reader->readUint32(ReadPos);
             TRACE(uint32_t, "MagicNumber", MagicNumber);
             if (MagicNumber != CasmBinaryMagic) {
-              fail("Unable to read, did not find compressed"
-                   " WASM binary magic number");
+              fail(
+                  "Unable to read, did not find compressed"
+                  " WASM binary magic number");
               break;
             }
             CasmVersion = Reader->readUint32(ReadPos);
             if (CasmVersion != CasmBinaryVersion)
               fatal("Casm version not " + std::to_string(CasmBinaryVersion));
-            auto *Version = Symtab->getCasmVersionDefinition(
+            auto* Version = Symtab->getCasmVersionDefinition(
                 CasmVersion, ValueFormat::Hexidecimal);
             TRACE_SEXP("Casm version", Version);
             assert(CurFile);
@@ -423,8 +424,7 @@ void BinaryReader::resume() {
                 AST_OTHER_INTEGERNODE_TABLE
 #undef X
 // The following read version nodes.
-#define X(tag, format, defval, mergable, NODE_DECLS)                      \
-              case Op##tag:
+#define X(tag, format, defval, mergable, NODE_DECLS) case Op##tag:
                 AST_VERSION_INTEGERNODE_TABLE
 #undef X
               case NO_SUCH_NODETYPE:
@@ -497,7 +497,7 @@ void BinaryReader::resume() {
             WasmVersion = Reader->readUint32(ReadPos);
             if (WasmVersion != WasmBinaryVersion)
               fatal("Wasm version not " + std::to_string(WasmBinaryVersion));
-            auto *Version = Symtab->getWasmVersionDefinition(
+            auto* Version = Symtab->getWasmVersionDefinition(
                 WasmVersion, ValueFormat::Hexidecimal);
             TRACE_SEXP("Wasm version", Version);
             assert(CurSection);

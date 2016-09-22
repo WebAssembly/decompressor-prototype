@@ -18,6 +18,18 @@
 
 # Note: If using -jN, be sure to run "make gen" first.
 
+# Defines whether we are building bootstrapped subsystem, so that we can
+# generate corresponding source files.
+ifndef BOOT
+   BOOT=0
+endif
+
+ifneq ($(BOOT), 0)
+  BOOT_SUBDIR=/boot
+endif
+
+BOOT_CXXFLAGS = -DBOOTSTRAP=$(BOOT)
+
 # Define if release or debug build
 ifdef DEBUG
   ifdef RELEASE
@@ -35,8 +47,15 @@ ifdef DEBUG
   else
     RELEASE = 0
   endif
-else ifndef RELEASE
-  RELEASE = 0
+else
+  ifndef RELEASE
+    DEBUG = 1
+    RELEASE = 0
+  else ifeq ($(RELEASE), 0)
+    DEBUG = 1
+  else
+    DEBUG = 0
+  endif
 endif
 
 # PAGE_SIZE (if defined) specifies that log2 size (i.e. number of bits) to use
@@ -104,7 +123,7 @@ endif
 
 SRCDIR = src
 
-BUILDBASEDIR = build$(WASM_SUBDIR)$(CXX_SUBDIR)$(PAGE_BUILD_SUFFIX)
+BUILDBASEDIR = build$(BOOT_SUBDIR)$(WASM_SUBDIR)$(CXX_SUBDIR)$(PAGE_BUILD_SUFFIX)
 ifeq ($(RELEASE), 0)
   BUILDDIR = $(BUILDBASEDIR)/debug
 else
@@ -114,6 +133,8 @@ OBJDIR = $(BUILDDIR)/obj
 
 LIBDIR = $(BUILDDIR)/lib
 LIBPREFIX = wasm-decomp-
+
+MAKE_RELEASE = DEBUG=$(DEBUG) RELEASE=$(RELEASE)
 
 ###### Utilities ######
 
@@ -172,7 +193,15 @@ SEXP_SRCS = \
 	TextWriter.cpp \
 	TraceSexp.cpp
 
+ifeq ($(BOOT), 0)
+  SEXP_GENSRCS = \
+	defaults.cpp
+  SEXP_SRCS += $(SEXP_GENSRCS)
+  SEXP_GEN_DEPS=$(patsubst %.cpp, $(SEXP_SRRCDIR)/%.cpp, $(SEXP_GENSRCS))
+endif
+
 SEXP_DEFAULTS = $(SEXP_SRCDIR)/defaults.df
+SEXP_DEFAULTS_CPP = $(SEXP_SRCDIR)/defaults.cpp
 
 SEXP_OBJS=$(patsubst %.cpp, $(SEXP_OBJDIR)/%.o, $(SEXP_SRCS))
 
@@ -233,6 +262,11 @@ EXEC_OBJS=$(patsubst %.cpp, $(EXEC_OBJDIR)/%.o, $(EXEC_SRCS))
 
 EXECS = $(patsubst %.cpp, $(BUILD_EXECDIR)/%$(EXE), $(EXEC_SRCS))
 
+BOOT_EXEC_SRCS = \
+	decompsexp-wasm.cpp
+
+BOOT_EXECS = $(patsubst %.cpp, $(BUILD_EXECDIR)/%$(EXE), $(BOOT_EXEC_SRCS))
+
 ###### Test executables and locations ######
 
 TEST_DIR = $(SRCDIR)/test
@@ -259,9 +293,11 @@ $(info -----------------------------------------------)
 $(info Using PLATFORM = $(PLATFORM))
 $(info Using CXX = $(CXX))
 $(info Using RELEASE = $(RELEASE))
+$(info Using BOOT = $(BOOT))
 $(info Using PAGE_SIZE = $(USE_PAGE_SIZE))
 $(info Using CXX_SUBDIR = $(CXX_SUBDIR))
 $(info Using WASM = $(WASM))
+$(info Using BUILDDIR = $(BUILDDIR))
 $(info -----------------------------------------------)
 
 CCACHE := `command -v ccache`
@@ -269,7 +305,7 @@ CPP_COMPILER :=  CCACHE_CPP2=yes $(CCACHE) $(CXX)
 
 # Note: On WIN32 replace -fPIC with -D_GNU_SOURCE
 # Note: g++ on Travis doesn't support -std=gnu++11
-CXXFLAGS := $(TARGET_CXXFLAGS) $(PLATFORM_CXXFLAGS) \
+CXXFLAGS := $(TARGET_CXXFLAGS) $(PLATFORM_CXXFLAGS) $(BOOT_CXXFLAGS) \
 	    -Wall -Wextra -O2 -g -pedantic -MP -MD \
 	    -Werror -Wno-unused-parameter -fno-omit-frame-pointer -fPIC \
 	    -Isrc
@@ -284,28 +320,55 @@ endif
 
 ###### Default Rule ######
 
-all: libs execs test-execs
+all: gen
+	$(MAKE) $(MAKE_PAGE_SIZE) $(MAKE_RELEASE) all-nogen
 
 .PHONY: all
 
+all-nogen: libs execs test-execs
+
+.PHONY: all-nogen
+
 build-all:
-	$(MAKE) $(MAKE_PAGE_SIZE) DEBUG=0 RELEASE=1 all
-	$(MAKE) $(MAKE_PAGE_SIZE) DEBUG=1 RELEASE=0 all
+	$(MAKE) $(MAKE_PAGE_SIZE) DEBUG=0 RELEASE=1 BOOT=0 all
+	$(MAKE) $(MAKE_PAGE_SIZE) DEBUG=1 RELEASE=0 BOOT=0 all
 	@echo "*** Built both debug and release versions ***"
 
 .PHONY: build-all
 
+###### Build boot executables ######
+
+boot:
+	@echo "-> Building boot tools"
+	$(MAKE) $(MAKE_PAGE_SIZE) $(MAKE_RELEASE) BOOT=1 boot-tools
+	@echo "<- Building boot tools"
+
+.PHONY: boot
+
+ifneq ($(BOOT), 0)
+
+boot-tools: libs $(BOOT_EXECS) $(SEXP_DEFAULTS_CPP)
+
+.PHONY: boot-tools
+
+endif
+
 ###### Cleaning Rules #######
 
-clean: clean-utils-objs clean-parser clean-sexp-objs clean-strm-objs \
-       clean-interp-objs clean-binary-objs clean-execs clean-libs \
-       clean-test-execs clean-unit-tests
+clean:
+	$(MAKE) $(MAKE_PAGE_SIZE) $(MAKE_RELEASE) BOOT=0 clean-objs
+	$(MAKE) $(MAKE_PAGE_SIZE) $(MAKE_RELEASE) BOOT=1 clean-objs
 
 .PHONY: clean
 
+clean-objs: clean-parser clean-sexp
+	rm -rf $(BUILDDIR)
+
+.PHONY: clean-objs
+
 clean-all:
-	$(MAKE) $(MAKE_PAGE_SIZE) DEBUG=0 RELEASE=1 clean
-	$(MAKE) $(MAKE_PAGE_SIZE) DEBUG=1 RELEASE=0 clean
+	$(MAKE) $(MAKE_PAGE_SIZE) DEBUG=0 RELEASE=1 BOOT=0 clean
+	$(MAKE) $(MAKE_PAGE_SIZE) DEBUG=1 RELEASE=0 BOOT=1 clean
 	rm -rf $(BUILDBASEDIR)
 
 .PHONY: clean-all
@@ -335,6 +398,15 @@ clean-parser-objs:
 
 .PHONY: clean-parser-objs
 
+ifeq ($(BOOT), 0)
+clean-sexp: clean-sexp-objs
+	cd $(SEXP_SRCDIR); rm -f $(SEXP_GENSRCS)
+else
+clean-sexp: clean-sexp-objs
+endif
+
+.PHONY: clean-sexp
+
 clean-sexp-objs:
 	rm -f $(SEXP_OBJS)
 
@@ -362,7 +434,7 @@ clean-test-execs:
 
 ###### Source Generation Rules #######
 
-gen: gen-parser gen-lexer
+gen: gen-parser gen-lexer boot
 
 .PHONY: gen
 
@@ -373,6 +445,15 @@ gen-lexer: $(PARSER_DIR)/Lexer.cpp
 gen-parser: $(PARSER_DIR)/Parser.tab.cpp
 
 .PHONY: gen-parser
+
+ifneq ($(BOOT), 0)
+
+$(SEXP_DEFAULTS_CPP): $(BUILD_EXECDIR)/decompsexp-wasm $(SEXP_DEFAULTS)
+	$< -i $(SEXP_DEFAULTS) -o $@
+
+.PHONY: gen-default-wasm
+
+endif
 
 ###### Compiliing binary generation Sources ######
 
@@ -556,16 +637,22 @@ $(TEST_EXECS): $(TEST_EXECDIR)/%$(EXE): $(TEST_OBJDIR)/%.o $(LIBS)
 
 ###### Testing ######
 
-test: all test-parser test-raw-streams test-byte-queues \
-	test-decompsexp-wasm test-decompwasm-sexp test-param-passing \
-        test-decompress
+test: all
+	$(MAKE) $(MAKE_PAGE_SIZE) $(MAKE_RELEASE) run-tests
 	@echo "*** all tests passed ***"
 
 .PHONY: test
 
+run-tests: test-parser test-raw-streams test-byte-queues \
+	test-decompsexp-wasm test-decompwasm-sexp test-param-passing \
+        test-decompress
+	@echo "*** all tests passed ***"
+
+.PHONY: run-tests
+
 test-all:
-	$(MAKE) $(MAKE_PAGE_SIZE) DEBUG=0 RELEASE=1 test
-	$(MAKE) $(MAKE_PAGE_SIZE)  DEBUG=1 RELEASE=0 test
+	$(MAKE) $(MAKE_PAGE_SIZE) DEBUG=0 RELEASE=1 BOOT=0 test
+	$(MAKE) $(MAKE_PAGE_SIZE)  DEBUG=1 RELEASE=0 BOOT=0 test
 	@echo "*** all tests passed on both debug and release builds ***"
 
 .PHONY: test-all
