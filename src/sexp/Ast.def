@@ -45,6 +45,7 @@
   X(IfThenElse,        0x0c, "if",               "IfThenElse",      1, 0)      \
   X(BlockBegin,        0x0d, "block.begin",      nullptr,           0, 0)      \
   X(BlockEnd,          0x0e, "block.end",        nullptr,           0, 0)      \
+  X(Module,            0x0f, "module",           nullptr,           1, 0)      \
                                                                                \
   /* Constants */                                                              \
   X(Void,              0x10, "void",             nullptr,           0, 0)      \
@@ -176,6 +177,7 @@
   X(Block,)                                                                    \
   X(BitwiseNegate,)                                                            \
   X(LoopUnbounded,)                                                            \
+  X(Module,)                                                                   \
   X(Not,)                                                                      \
   X(Peek,)                                                                     \
   X(Read,)                                                                     \

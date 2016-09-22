@@ -356,6 +356,9 @@ void BinaryReader::resume() {
               case OpMap:
                 readNary<MapNode>();
                 break;
+              case OpModule:
+                readUnary<ModuleNode>();
+                break;
               case OpNot:
                 readUnary<NotNode>();
                 break;

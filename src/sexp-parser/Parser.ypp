@@ -144,6 +144,7 @@ struct IntValue {
 %type <wasm::filt::Node *> case
 %type <wasm::filt::SwitchNode *> case_list
 %type <wasm::filt::Node *> case_stmt_list
+%type <wasm::filt::Node *> compressed_module
 %type <wasm::filt::Node *> constant_expression
 %type <wasm::filt::Node *> declaration
 %type <wasm::filt::SectionNode *> declaration_list
@@ -151,6 +152,8 @@ struct IntValue {
 %type <wasm::filt::Node *> eval_params
 %type <wasm::filt::Node *> expression
 %type <wasm::filt::Node *> file
+%type <wasm::filt::Node *> file_filter
+%type <wasm::filt::Node *> file_version
 %type <wasm::filt::Node *> fixed_format_directive
 %type <wasm::filt::Node *> format_directive
 %type <wasm::filt::Node *> locals_decl
@@ -172,7 +175,7 @@ struct IntValue {
 %type <wasm::decode::StreamKind> stream_kind
 %type <wasm::decode::StreamType> stream_type
 %type <wasm::filt::Node *> section
-%type <wasm::filt::Node *> section_list
+/* %type <wasm::filt::Node *> section_list */
 %type <wasm::filt::Node *> seq_stmt_list
 %type <wasm::filt::Node *> statement
 %type <wasm::filt::Node *> symbol
@@ -183,9 +186,40 @@ struct IntValue {
 
 %%
 
-file    : section_list {
+file    : file_filter {
             $$ = $1;
-            Driver.setParsedAst($1);
+            Driver.setParsedAst($$);
+          }
+        | file_filter compressed_module {
+            $$ = $1;
+            $$->append($2);
+            Driver.setParsedAst($$);
+          }
+        ;
+
+file_filter
+        : file_version {
+            $$ = $1;
+            Driver.setParsedAst($$);
+          }
+        | file_version section {
+            $$ = $1;
+            $$->append($2);
+            Driver.setParsedAst($$);
+          }
+        ;
+
+file_version
+        : casm_version {
+            $$ = Driver.create<FileNode>();
+            $$->append($1);
+          }
+        ;
+
+compressed_module
+        // Defines that module follows, and decompressed size.
+        : "(" "module" constant_expression ")" {
+            $$ = Driver.create<ModuleNode>($3);
           }
         ;
 
@@ -555,6 +589,7 @@ loop_body
 section : "(" "section" declaration_list ")" { $$ = $3; }
         ;
 
+/*
 section_list
         : casm_version { // version of the decompressor.
             $$ = Driver.create<FileNode>();
@@ -565,6 +600,7 @@ section_list
             $$->append($2);
           }
         ;
+*/
 
 seq_stmt_list
         : %empty {
