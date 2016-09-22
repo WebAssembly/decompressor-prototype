@@ -217,6 +217,7 @@ id ({letter}|{digit}|[_.])*
 "bitwise"         return Parser::make_BITWISE(Driver.getLoc());
 "byte"            return Parser::make_BYTE(Driver.getLoc());
 "case"            return Parser::make_CASE(Driver.getLoc());
+"casm"            return Parser::make_CASM(Driver.getLoc());
 "define"          return Parser::make_DEFINE(Driver.getLoc());
 "empty"           return Parser::make_EMPTY(Driver.getLoc());
 "end"             return Parser::make_KEYWORD_END(Driver.getLoc());
@@ -260,6 +261,7 @@ id ({letter}|{digit}|[_.])*
 "varuint64"       return Parser::make_VARUINT64(Driver.getLoc());
 "version"         return Parser::make_VERSION(Driver.getLoc());
 "void"            return Parser::make_VOID(Driver.getLoc());
+"wasm"            return Parser::make_WASM(Driver.getLoc());
 "write"           return Parser::make_WRITE(Driver.getLoc());
 "xor"             return Parser::make_XOR(Driver.getLoc());
 "0x"{hexdigit}+   return make_HexInteger(Driver, yytext);

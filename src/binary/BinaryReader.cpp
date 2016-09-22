@@ -208,7 +208,7 @@ void BinaryReader::resume() {
             CasmVersion = Reader->readUint32(ReadPos);
             if (CasmVersion != CasmBinaryVersion)
               fatal("Casm version not " + std::to_string(CasmBinaryVersion));
-            auto *Version = Symtab->getVersionFileDefinition(
+            auto *Version = Symtab->getCasmVersionDefinition(
                 CasmVersion, ValueFormat::Hexidecimal);
             TRACE_SEXP("Casm version", Version);
             assert(CurFile);
@@ -494,7 +494,7 @@ void BinaryReader::resume() {
             WasmVersion = Reader->readUint32(ReadPos);
             if (WasmVersion != WasmBinaryVersion)
               fatal("Wasm version not " + std::to_string(WasmBinaryVersion));
-            auto *Version = Symtab->getVersionSectionDefinition(
+            auto *Version = Symtab->getWasmVersionDefinition(
                 WasmVersion, ValueFormat::Hexidecimal);
             TRACE_SEXP("Wasm version", Version);
             assert(CurSection);
