@@ -360,6 +360,7 @@ void Interpreter::resume() {
           case OpBlockEmpty:
           case OpBlockEnd:
           case OpConvert:
+          case OpModule:
           case OpParams:
           case OpFilter:  // Method::Eval
             failNotImplemented();
@@ -982,6 +983,7 @@ void Interpreter::resume() {
           case OpIfThenElse:
           case OpLoop:
           case OpLoopUnbounded:
+          case OpModule:
           case OpParams:
           case OpRename:
           case OpSection:
@@ -1390,6 +1392,7 @@ void Interpreter::resume() {
           case OpLocal:
           case OpLoop:
           case OpLoopUnbounded:
+          case OpModule:
           case OpParams:
           case OpRename:
           case OpSection:
