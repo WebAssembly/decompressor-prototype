@@ -221,6 +221,7 @@ INTERP_LIB = $(LIBDIR)/$(LIBPREFIX)interp.a
 ###### Executables ######
 
 EXEC_DIR = $(SRCDIR)/exec
+EXEC_OBJDIR = $(OBJDIR)/exec
 BUILD_EXECDIR = $(BUILDDIR)/bin
 
 EXEC_SRCS = \
@@ -228,17 +229,22 @@ EXEC_SRCS = \
 	decompsexp-wasm.cpp \
 	decompwasm-sexp.cpp
 
+EXEC_OBJS=$(patsubst %.cpp, $(EXEC_OBJDIR)/%.o, $(EXEC_SRCS))
+
 EXECS = $(patsubst %.cpp, $(BUILD_EXECDIR)/%$(EXE), $(EXEC_SRCS))
 
 ###### Test executables and locations ######
 
 TEST_DIR = $(SRCDIR)/test
+TEST_OBJDIR = $(OBJDIR)/test
 TEST_EXECDIR = $(BUILDDIR)/test
 
 TEST_SRCS = \
 	TestByteQueues.cpp \
 	TestParser.cpp \
 	TestRawStreams.cpp
+
+TEST_OBJS=$(patsubst %.cpp, $(TEST_OBJDIR)/%.o, $(TEST_SRCS))
 
 TEST_EXECS=$(patsubst %.cpp, $(TEST_EXECDIR)/%$(EXE), $(TEST_SRCS))
 
@@ -506,14 +512,22 @@ execs: $(LIBS) $(EXECS)
 
 .PHONY: execs
 
+$(EXEC_OBJDIR):
+	mkdir -p $@
+
+$(EXEC_OBJS): | $(EXEC_OBJDIR)
+
+-include $(foreach dep,$(EXEC_SRCS:.cpp=.d),$(EXEC_OBJDIR)/$(dep))
+
+$(EXEC_OBJS): $(EXEC_OBJDIR)/%.o: $(EXEC_DIR)/%.cpp
+	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
+
 $(BUILD_EXECDIR):
 	mkdir -p $@
 
 $(EXECS): | $(BUILD_EXECDIR)
 
--include $(foreach dep,$(EXEC_SRCS:.cpp=.d),$(BUILD_EXECDIR)/$(dep))
-
-$(EXECS): $(BUILD_EXECDIR)/%$(EXE): $(EXEC_DIR)/%.cpp $(LIBS)
+$(EXECS): $(BUILD_EXECDIR)/%$(EXE): $(EXEC_OBJDIR)/%.o $(LIBS)
 	$(CPP_COMPILER) $(CXXFLAGS) $< $(LIBS) -o $@
 
 ###### Compiling Test Executables #######
@@ -522,20 +536,22 @@ test-execs: $(TEST_EXECS)
 
 .PHONY: test-execs
 
+$(TEST_OBJDIR):
+	mkdir -p $@
+
+$(TEST_OBJS): | $(TEST_OBJDIR)
+
+-include $(foreach dep,$(TEST_SRCS:.cpp=.d),$(TEST_OBJDIR)/$(dep))
+
+$(TEST_OBJS): $(TEST_OBJDIR)/%.o: $(TEST_DIR)/%.cpp
+	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
+
 $(TEST_EXECDIR):
 	mkdir -p $@
 
 $(TEST_EXECS): | $(TEST_EXECDIR)
 
--include $(foreach dep,$(TEST_SRCS:.cpp=.d),$(TEST_EXECDIR)/$(dep))
-
-$(TEST_EXECDIR)/TestParser$(EXE): $(TEST_DIR)/TestParser.cpp $(LIBS)
-	$(CPP_COMPILER) $(CXXFLAGS) $< $(LIBS) -o $@
-
-$(TEST_EXECDIR)/TestRawStreams$(EXE): $(TEST_DIR)/TestRawStreams.cpp $(LIBS)
-	$(CPP_COMPILER) $(CXXFLAGS) $< $(LIBS) -o $@
-
-$(TEST_EXECDIR)/TestByteQueues$(EXE): $(TEST_DIR)/TestByteQueues.cpp $(LIBS)
+$(TEST_EXECS): $(TEST_EXECDIR)/%$(EXE): $(TEST_OBJDIR)/%.o $(LIBS)
 	$(CPP_COMPILER) $(CXXFLAGS) $< $(LIBS) -o $@
 
 ###### Testing ######
