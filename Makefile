@@ -71,6 +71,8 @@ PARSER_SRCS = \
 	Lexer.cpp \
 	Parser.tab.cpp
 
+PARSER_GENERATED_SRCS=$(patsubst %, $(PARSER_DIR)/%, $(PARSER_GENSRCS))
+
 PARSER_OBJS=$(patsubst %.cpp, $(PARSER_OBJDIR)/%.o, $(PARSER_SRCS))
 PARSER_OBJS_BOOT=$(patsubst %.cpp, $(PARSER_OBJDIR_BOOT)/%.o, $(PARSER_SRCS))
 
@@ -96,6 +98,8 @@ SEXP_DEFAULTS_CPP = $(SEXP_SRCDIR)/defaults.cpp
 SEXP_SRCS = $(SEXP_SRCS_BASE) $(SEXP_GENSRCS)
 
 SEXP_SRCS_BOOT = $(SEXP_SRCS_BASE)
+
+SEXP_GENERATED_SRCS=$(patsubst %, $(SEXP_SRCDIR)/%, $(SEXP_GENSRCS))
 
 SEXP_OBJS = $(patsubst %.cpp, $(SEXP_OBJDIR)/%.o, $(SEXP_SRCS))
 SEXP_OBJS_BOOT = $(patsubst %.cpp, $(SEXP_OBJDIR_BOOT)/%.o, $(SEXP_SRCS_BOOT))
@@ -174,7 +178,7 @@ EXEC_OBJS_BOOT = $(patsubst %.cpp, $(EXEC_OBJDIR_BOOT)/%.o, $(EXEC_SRCS_BOOT))
 
 EXECS = $(patsubst %.cpp, $(BUILD_EXECDIR)/%$(EXE), $(EXEC_SRCS))
 
-EXECS_BOOT = $(patsubst %.cpp, $(BUILD_EXECDIR_BOOT)/%$(EXE), $(EXEC_SRCS_BOOT))
+EXECS_BOOT = $(patsubst %.cpp, $(BUILD_EXECDIR_BOOT)/%$(EXE_BOOT), $(EXEC_SRCS_BOOT))
 
 ###### Test executables and locations ######
 
@@ -252,7 +256,7 @@ clean-all: clean-gen
 .PHONY: clean-all
 
 clean-gen:
-	rm -rf $(PARSER_GENSRCS) $(SEXP_GENSRCS)
+	rm -rf $(PARSER_GENERATED_SRCS) $(SEXP_GENERATED_SRCS)
 
 ###### Source Generation Rules #######
 
@@ -528,7 +532,7 @@ $(EXECS): $(BUILD_EXECDIR)/%$(EXE): $(EXEC_OBJDIR)/%.o $(LIBS)
 
 $(EXECS_BOOT): | $(BUILD_EXECDIR_BOOT)
 
-$(EXECS_BOOT): $(BUILD_EXECDIR_BOOT)/%$(EXE): $(EXEC_OBJDIR_BOOT)/%.o $(LIBS_BOOT)
+$(EXECS_BOOT): $(BUILD_EXECDIR_BOOT)/%$(EXE_BOOT): $(EXEC_OBJDIR_BOOT)/%.o $(LIBS_BOOT)
 	$(CPP_COMPILER_BOOT) $(CXXFLAGS_BOOT) $< $(LIBS_BOOT) -o $@
 
 ###### Compiling Test Executables #######

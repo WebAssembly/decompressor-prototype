@@ -24,7 +24,9 @@
 # generate corresponding source files.
 
 CXX := clang++
+EXE :=
 CXX_BOOT := clang++
+EXE_BOOT :=
 
 # Define if release or debug build
 ifdef DEBUG
@@ -56,9 +58,9 @@ endif
 
 # PAGE_SIZE (if defined) specifies that log2 size (i.e. number of bits) to use
 # for page size.
-ifndef PAGE_SIZE
-  PAGE_SIZE=0
-endif
+
+PAGE_SIZE := 0
+
 ifeq ($(PAGE_SIZE), 0)
   USE_PAGE_SIZE = default
   PAGE_BUILD_SUFFIX=
@@ -72,15 +74,12 @@ endif
 WASM_INSTALL=$(PWD)/travis_deps/wasm-install
 WASM_BIN=$(WASM_INSTALL)/bin
 WASM_CXX=$(WASM_BIN)/emscripten/em++
-ifndef WASM
-  WASM=0
-endif
-ifndef WASM_VANILLA
-  WASM_VANILLA=0
-endif
+
+WASM := 0
+WASM_VANILLA := 1
+
 ifneq ($(WASM), 0)
-  $info(Using WASM=$(WASM))
-  ifneq ($(WASM_VANILLA), 0)
+  ifeq ($(WASM_VANILLA), 0)
     EMSCRIPTEN_CONFIG=$(WASM_INSTALL)/../wasm_emscripten_config
     WASM_SUBDIR=/wasm
   else
@@ -96,7 +95,9 @@ ifneq ($(WASM), 0)
     -s BINARYEN=1
   TARGET_CXXFLAGS += -DSTACK_SIZE=1044480 \
     -w -Wno-implicit-function-declaration
-	EXE=.js
+  EXE = .js
+else
+  $info(Else Using WASM=$(WASM))
 endif
 
 ifeq ($(CXX),clang++)
