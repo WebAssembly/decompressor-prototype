@@ -40,6 +40,8 @@ endif
 
 BOOTSTRAP_CXXFLAGS = -DBOOTSTRAP=$(BOOTSTRAP)
 
+CXX := clang++
+
 # Define if release or debug build
 ifdef DEBUG
   ifdef RELEASE
@@ -83,8 +85,6 @@ else
   MAKE_PAGE_SIZE = "PAGESIZE=$(PAGE_SIZE)"
 endif
 
-CXX := clang++
-
 WASM_INSTALL=$(PWD)/travis_deps/wasm-install
 WASM_BIN=$(WASM_INSTALL)/bin
 WASM_CXX=$(WASM_BIN)/emscripten/em++
@@ -95,6 +95,7 @@ ifndef WASM_VANILLA
   WASM_VANILLA=0
 endif
 ifneq ($(WASM), 0)
+  $info(Using WASM=$(WASM))
   ifneq ($(WASM_VANILLA), 0)
     EMSCRIPTEN_CONFIG=$(WASM_INSTALL)/../wasm_emscripten_config
     WASM_SUBDIR=/wasm
