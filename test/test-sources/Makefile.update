@@ -38,9 +38,9 @@
 
 include Makefile.common
 
-SEXP_WASM_DIR = ../../../sexpr-wasm-prototype
+SEXP_WASM_DIR = $(PARENT_DIR)/../sexpr-wasm-prototype
 
-SPEC_SEXPS_DIR = ../../../spec/ml-proto/test
+SPEC_SEXPS_DIR = $(PARENT_DIR)/../spec/ml-proto/test
 
 SPEC_SEXPS_SRCS=$(patsubst %.wast, $(SPEC_SEXPS_DIR)/%.wast, $(SEXPS))
 LOCAL_SEXPS_SRCS=$(patsubst %.wast, $(LOCAL_SEXPS_DIR)/%.wast, $(SEXPS))
@@ -54,7 +54,7 @@ $(info -----------------------------------------------)
 spec: clean_binaries $(LOCAL_SEXPS_SRCS) $(LOCAL_SEXPS_BINS)
 
 defaults.wasm:
-	$(EXEC_DIR)/decompsexp-wasm -m -i $(SEXP_DEFAULTS) -o $@
+	$(PARENT_DIR)/$(EXEC_DIR)/decompsexp-wasm -m -i $(SEXP_DEFAULTS) -o $@
 
 .PHONY: defaults.wasm
 

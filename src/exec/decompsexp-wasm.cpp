@@ -130,7 +130,6 @@ void usage(const char* AppName) {
 }  // end of anonymous namespace
 
 int main(int Argc, char* Argv[]) {
-  fprintf(stderr, "BOOTSTRAP = %u\n", BOOTSTRAP);
   int Verbose = 0;
   bool MinimizeBlockSize = false;
   bool InputSpecified = false;

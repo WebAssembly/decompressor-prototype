@@ -20,67 +20,43 @@
 
 include Makefile.common
 
-PLATFORM := Default
-
-# Define platform specific stuff.
-ifeq ($(PLATFORM), Travis)
-  # Add flags to handle that Travis g++ uses -std=c++0x with missing c++11 options.
-  ifeq ($(CXX),g++)
-    PLATFORM_CXXFLAGS += -std=c++0x -DOVERRIDE= -DFINAL=
-  else
-    PLATFORM_CXXFLAGS += -std=c++11 -DOVERRIDE=override -DFINAL=final
-  endif
-else ifeq ($(PLATFORM), Default)
-  PLATFORM_CXXFLAGS += --std=c++11 -DOVERRIDE= -DFINAL=
-else
-  $(error Unrecognized platform: $(PLATFORM))
-endif
-
-SRCDIR = src
-
-BUILDBASEDIR = build$(BOOTSTRAP_SUBDIR)$(WASM_SUBDIR)$(CXX_SUBDIR)$(PAGE_BUILD_SUFFIX)
-ifeq ($(RELEASE), 0)
-  BUILDDIR = $(BUILDBASEDIR)/debug
-else
-  BUILDDIR = $(BUILDBASEDIR)/release
-endif
-OBJDIR = $(BUILDDIR)/obj
-
-LIBDIR = $(BUILDDIR)/lib
-LIBPREFIX = wasm-decomp-
-
-MAKE_RELEASE = DEBUG=$(DEBUG) RELEASE=$(RELEASE)
-
 ###### Utilities ######
 
 UTILS_DIR = $(SRCDIR)/utils
 UTILS_OBJDIR = $(OBJDIR)/utils
+UTILS_OBJDIR_BOOT = $(OBJDIR_BOOT)/utils
 UTILS_SRCS = \
 	Allocator.cpp \
 	Defs.cpp \
 	Trace.cpp
 
 UTILS_OBJS=$(patsubst %.cpp, $(UTILS_OBJDIR)/%.o, $(UTILS_SRCS))
+UTILS_OBJS_BOOT=$(patsubst %.cpp, $(UTILS_OBJDIR_BOOT)/%.o, $(UTILS_SRCS))
 
 UTILS_LIB = $(LIBDIR)/$(LIBPREFIX)utis.a
+UTILS_LIB_BOOT = $(LIBDIR_BOOT)/$(LIBPREFIX)utis.a
 
 ###### Binary generation objects and locations ######
 
 BINARY_DIR = $(SRCDIR)/binary
 BINARY_OBJDIR = $(OBJDIR)/binary
+BINARY_OBJDIR_BOOT = $(OBJDIR_BOOT)/binary
 BINARY_SRCS = \
 	BinaryWriter.cpp \
 	BinaryReader.cpp \
 	SectionSymbolTable.cpp
 
 BINARY_OBJS=$(patsubst %.cpp, $(BINARY_OBJDIR)/%.o, $(BINARY_SRCS))
+BINARY_OBJS_BOOT=$(patsubst %.cpp, $(BINARY_OBJDIR_BOOT)/%.o, $(BINARY_SRCS))
 
 BINARY_LIB = $(LIBDIR)/$(LIBPREFIX)binary.a
+BINARY_LIB_BOOT = $(LIBDIR_BOOT)/$(LIBPREFIX)binary.a
 
 ###### Parse objects and locations ######
 
 PARSER_DIR = $(SRCDIR)/sexp-parser
 PARSER_OBJDIR = $(OBJDIR)/sexp-parser
+PARSER_OBJDIR_BOOT = $(OBJDIR_BOOT)/sexp-parser
 PARSER_GENSRCS = \
 	location.hh \
 	Lexer.cpp \
@@ -96,36 +72,43 @@ PARSER_SRCS = \
 	Parser.tab.cpp
 
 PARSER_OBJS=$(patsubst %.cpp, $(PARSER_OBJDIR)/%.o, $(PARSER_SRCS))
+PARSER_OBJS_BOOT=$(patsubst %.cpp, $(PARSER_OBJDIR_BOOT)/%.o, $(PARSER_SRCS))
 
 PARSER_LIB = $(LIBDIR)/$(LIBPREFIX)parser.a
+PARSER_LIB_BOOT = $(LIBDIR_BOOT)/$(LIBPREFIX)parser.a
 
 ###### Filter s-expressions ######
 
 SEXP_SRCDIR = $(SRCDIR)/sexp
 SEXP_OBJDIR = $(OBJDIR)/sexp
-SEXP_SRCS = \
+SEXP_OBJDIR_BOOT = $(OBJDIR_BOOT)/sexp
+SEXP_SRCS_BASE = \
 	Ast.cpp \
 	TextWriter.cpp \
 	TraceSexp.cpp
 
-ifeq ($(BOOTSTRAP), 0)
-  SEXP_GENSRCS = \
+SEXP_GENSRCS = \
 	defaults.cpp
-  SEXP_SRCS += $(SEXP_GENSRCS)
-  SEXP_GEN_DEPS=$(patsubst %.cpp, $(SEXP_SRRCDIR)/%.cpp, $(SEXP_GENSRCS))
-endif
 
 SEXP_DEFAULTS = $(SEXP_SRCDIR)/defaults.df
 SEXP_DEFAULTS_CPP = $(SEXP_SRCDIR)/defaults.cpp
 
-SEXP_OBJS=$(patsubst %.cpp, $(SEXP_OBJDIR)/%.o, $(SEXP_SRCS))
+SEXP_SRCS = $(SEXP_SRCS_BASE) $(SEXP_GENSRCS)
+
+SEXP_SRCS_BOOT = $(SEXP_SRCS_BASE)
+
+SEXP_OBJS = $(patsubst %.cpp, $(SEXP_OBJDIR)/%.o, $(SEXP_SRCS))
+SEXP_OBJS_BOOT = $(patsubst %.cpp, $(SEXP_OBJDIR_BOOT)/%.o, $(SEXP_SRCS_BOOT))
 
 SEXP_LIB = $(LIBDIR)/$(LIBPREFIX)sexp.a
+SEXP_LIB_BOOT = $(LIBDIR_BOOT)/$(LIBPREFIX)sexp.a
 
 ###### Stream handlers ######
 
 STRM_SRCDIR = $(SRCDIR)/stream
 STRM_OBJDIR = $(OBJDIR)/stream
+STRM_OBJDIR_BOOT = $(OBJDIR_BOOT)/stream
+
 STRM_SRCS = \
 	FileReader.cpp \
 	FileWriter.cpp \
@@ -142,14 +125,18 @@ STRM_SRCS = \
 	WriteCursor.cpp \
 	WriteUtils.cpp
 
-STRM_OBJS=$(patsubst %.cpp, $(STRM_OBJDIR)/%.o, $(STRM_SRCS))
+STRM_OBJS = $(patsubst %.cpp, $(STRM_OBJDIR)/%.o, $(STRM_SRCS))
+STRM_OBJS_BOOT = $(patsubst %.cpp, $(STRM_OBJDIR_BOOT)/%.o, $(STRM_SRCS))
 
 STRM_LIB = $(LIBDIR)/$(LIBPREFIX)strm.a
+STRM_LIB_BOOT = $(LIBDIR_BOOT)/$(LIBPREFIX)strm.a
 
 ###### S-expression interpeter ######
 
 INTERP_SRCDIR = $(SRCDIR)/interp
 INTERP_OBJDIR = $(OBJDIR)/interp
+INTERP_OBJDIR_BOOT = $(OBJDIR_BOOT)/interp
+
 INTERP_SRCS = \
 	ByteReadStream.cpp \
 	ByteWriteStream.cpp \
@@ -158,30 +145,36 @@ INTERP_SRCS = \
 	TraceSexpReaderWriter.cpp \
 	TraceSexpWriter.cpp
 
-INTERP_OBJS=$(patsubst %.cpp, $(INTERP_OBJDIR)/%.o, $(INTERP_SRCS))
+INTERP_OBJS = $(patsubst %.cpp, $(INTERP_OBJDIR)/%.o, $(INTERP_SRCS))
+INTERP_OBJS_BOOT = $(patsubst %.cpp, $(INTERP_OBJDIR_BOOT)/%.o, $(INTERP_SRCS))
 
 INTERP_LIB = $(LIBDIR)/$(LIBPREFIX)interp.a
+INTERP_LIB_BOOT = $(LIBDIR_BOOT)/$(LIBPREFIX)interp.a
 
 ###### Executables ######
 
 EXEC_DIR = $(SRCDIR)/exec
 EXEC_OBJDIR = $(OBJDIR)/exec
+EXEC_OBJDIR_BOOT = $(OBJDIR_BOOT)/exec
 BUILD_EXECDIR = $(BUILDDIR)/bin
+BUILD_EXECDIR_BOOT = $(BUILDDIR_BOOT)/bin
 
-EXEC_SRCS = \
+EXEC_SRCS_BASE = \
 	decompress.cpp \
-	decompsexp-wasm.cpp \
 	decompwasm-sexp.cpp
 
-EXEC_OBJS=$(patsubst %.cpp, $(EXEC_OBJDIR)/%.o, $(EXEC_SRCS))
+EXEC_SRCS_BOOT = \
+	decompsexp-wasm.cpp
+
+EXEC_SRCS = $(EXEC_SRCS_BASE)  $(EXEC_SRCS_BOOT)
+
+EXEC_OBJS = $(patsubst %.cpp, $(EXEC_OBJDIR)/%.o, $(EXEC_SRCS))
+
+EXEC_OBJS_BOOT = $(patsubst %.cpp, $(EXEC_OBJDIR_BOOT)/%.o, $(EXEC_SRCS_BOOT))
 
 EXECS = $(patsubst %.cpp, $(BUILD_EXECDIR)/%$(EXE), $(EXEC_SRCS))
 
-BOOTSTRAP_EXEC_SRCS = \
-	decompsexp-wasm.cpp
-
-BOOTSTRAP_EXECS = $(patsubst %.cpp, $(BUILD_EXECDIR)/%$(EXE), \
-                                    $(BOOTSTRAP_EXEC_SRCS))
+EXECS_BOOT = $(patsubst %.cpp, $(BUILD_EXECDIR_BOOT)/%$(EXE), $(EXEC_SRCS_BOOT))
 
 ###### Test executables and locations ######
 
@@ -204,19 +197,25 @@ TEST_SRCS_DIR = test/test-sources
 
 LIBS = $(PARSER_LIB) $(BINARY_LIB) $(INTERP_LIB) $(SEXP_LIB) \
        $(STRM_LIB) $(UTILS_LIB)
- 
-$(info Using BUILDDIR = $(BUILDDIR))
-$(info -----------------------------------------------)
+
+LIBS_BOOT = $(PARSER_LIB_BOOT) $(BINARY_LIB_BOOT) $(INTERP_LIB_BOOT) \
+       $(SEXP_LIB_BOOT) $(STRM_LIB_BOOT) $(UTILS_LIB_BOOT)
+
+##### Track additional important variable definitions not in Makefile.common
 
 CCACHE := `command -v ccache`
-CPP_COMPILER :=  CCACHE_CPP2=yes $(CCACHE) $(CXX)
+CPP_COMPILER := CCACHE_CPP2=yes $(CCACHE) $(CXX)
+CPP_COMPILER_BOOT := CCACHE_CPP2=yes $(CCACHE) $(CXX_BOOT)
 
 # Note: On WIN32 replace -fPIC with -D_GNU_SOURCE
 # Note: g++ on Travis doesn't support -std=gnu++11
-CXXFLAGS := $(TARGET_CXXFLAGS) $(PLATFORM_CXXFLAGS) $(BOOTSTRAP_CXXFLAGS) \
-	    -Wall -Wextra -O2 -g -pedantic -MP -MD \
+CXXFLAGS_BASE := -Wall -Wextra -O2 -g -pedantic -MP -MD \
 	    -Werror -Wno-unused-parameter -fno-omit-frame-pointer -fPIC \
 	    -Isrc
+CXXFLAGS := $(TARGET_CXXFLAGS) $(PLATFORM_CXXFLAGS) -DBOOTSTRAP=0 \
+	    $(CXXFLAGS_BASE)
+
+CXXFLAGS_BOOT := $(PLATFORM_CXXFLAGS_DEFAULT) -DBOOTSTRAP=1 $(CXXFLAGS_BASE)
 
 ifneq ($(RELEASE), 0)
   CXXFLAGS += -DNDEBUG
@@ -228,117 +227,32 @@ endif
 
 ###### Default Rule ######
 
-all: gen
-	$(MAKE) $(MAKE_PAGE_SIZE) $(MAKE_RELEASE) all-nogen
+all: libs execs test-execs
 
 .PHONY: all
 
-all-nogen: libs execs test-execs
-
-.PHONY: all-nogen
-
-build-all:
-	$(MAKE) $(MAKE_PAGE_SIZE) DEBUG=0 RELEASE=1 BOOTSTRAP=0 all
-	$(MAKE) $(MAKE_PAGE_SIZE) DEBUG=1 RELEASE=0 BOOTSTRAP=0 all
-	@echo "*** Built both debug and release versions ***"
-
-.PHONY: build-all
-
 ###### Build boot executables ######
 
-boot:
-	@echo "-> Building boot tools"
-	$(MAKE) BOOTSTRAP=1 boot-tools
-	@echo "<- Building boot tools"
+boot: $(EXECS_BOOT)
 
 .PHONY: boot
 
-ifneq ($(BOOTSTRAP), 0)
-
-boot-tools: libs $(BOOTSTRAP_EXECS) $(SEXP_DEFAULTS_CPP)
-
-.PHONY: boot-tools
-
-endif
-
 ###### Cleaning Rules #######
 
-clean:
-	$(MAKE) $(MAKE_PAGE_SIZE) $(MAKE_RELEASE) BOOTSTRAP=0 clean-objs
-	$(MAKE) BOOTSTRAP=1 clean-objs
+## TODO(karlschimpf): Fix clean to handle sources!
+
+clean: clean-gen
+	rm -rf $(BUILDDIR) $(BUILDDIR_BOOT)
 
 .PHONY: clean
 
-clean-objs: clean-parser clean-sexp
-	rm -rf $(BUILDDIR)
-
-.PHONY: clean-objs
-
-clean-all:
-	$(MAKE) $(MAKE_PAGE_SIZE) DEBUG=0 RELEASE=1 BOOTSTRAP=0 clean
-	$(MAKE) BOOTSTRAP=1 clean
+clean-all: clean-gen
 	rm -rf $(BUILDBASEDIR)
 
 .PHONY: clean-all
 
-clean-libs:
-	rm -f $(LIBS)
-
-.PHONY: clean-libs
-
-clean-binary-objs:
-	rm -f $(BINARY_OBJS)
-
-.PHONY: clean-binary-objs
-
-clean-utils-objs:
-	rm -f $(UTILS_OBJS)
-
-.PHONY: clean-utils-objs
-
-clean-parser: clean-parser-objs
-	cd $(PARSER_DIR); rm -f $(PARSER_GENSRCS)
-
-.PHONY: clean-parser
-
-clean-parser-objs:
-	rm -f $(PARSER_OBJS)
-
-.PHONY: clean-parser-objs
-
-ifeq ($(BOOTSTRAP), 0)
-clean-sexp: clean-sexp-objs
-	cd $(SEXP_SRCDIR); rm -f $(SEXP_GENSRCS)
-else
-clean-sexp: clean-sexp-objs
-endif
-
-.PHONY: clean-sexp
-
-clean-sexp-objs:
-	rm -f $(SEXP_OBJS)
-
-.PNONY: clean-sexp-objs
-
-clean-strm-objs:
-	rm -f $(STRM_OBJS)
-
-.PHONY: clean-strm-objs
-
-clean-interp-objs:
-	rm -f $(INTERP_OBJS)
-
-.PHONY: clean-interp-objs
-
-clean-execs:
-	rm -f $(EXECS)
-
-.PHONY: clean-execs
-
-clean-test-execs:
-	rm -f $(TEST_EXECS)
-
-.PHONY: clean-test-execs
+clean-gen:
+	rm -rf $(PARSER_GENSRCS) $(SEXP_GENSRCS)
 
 ###### Source Generation Rules #######
 
@@ -354,18 +268,12 @@ gen-parser: $(PARSER_DIR)/Parser.tab.cpp
 
 .PHONY: gen-parser
 
-ifneq ($(BOOTSTRAP), 0)
-
-$(SEXP_DEFAULTS_CPP): $(BUILD_EXECDIR)/decompsexp-wasm $(SEXP_DEFAULTS)
+$(SEXP_DEFAULTS_CPP): $(BUILD_EXECDIR_BOOT)/decompsexp-wasm $(SEXP_DEFAULTS)
 	$< -i $(SEXP_DEFAULTS) -o $@
-
-.PHONY: gen-default-wasm
-
-endif
 
 ###### Compiliing binary generation Sources ######
 
-binary-objs: $(BINARY_OBJS)
+binary-objs: $(BINARY_OBJS) $(BINARY_OBJS_BOOT)
 
 .PHONY: binary-objs
 
@@ -374,17 +282,30 @@ $(BINARY_OBJS): | $(BINARY_OBJDIR)
 $(BINARY_OBJDIR):
 	mkdir -p $@
 
+$(BINARY_OBJS_BOOT): | $(BINARY_OBJDIR_BOOT)
+
+$(BINARY_OBJDIR_BOOT):
+	mkdir -p $@
+
 -include $(foreach dep,$(BINARY_SRCS:.cpp=.d),$(BINARY_OBJDIR)/$(dep))
 
 $(BINARY_OBJS): $(BINARY_OBJDIR)/%.o: $(BINARY_DIR)/%.cpp
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
+-include $(foreach dep,$(BINARY_SRCS:.cpp=.d),$(BINARY_OBJDIR_BOOT)/$(dep))
+
+$(BINARY_OBJS_BOOT): $(BINARY_OBJDIR_BOOT)/%.o: $(BINARY_DIR)/%.cpp
+	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
+
 $(BINARY_LIB): $(BINARY_OBJS)
 	ar -rs $@ $(BINARY_OBJS)
 
+$(BINARY_LIB_BOOT): $(BINARY_OBJS_BOOT)
+	ar -rs $@ $(BINARY_OBJS_BOOT)
+
 ###### Compiliing top-level Sources ######
 
-utils-objs: $(UTILS_OBJS)
+utils-objs: $(UTILS_OBJS) $(UTILS_OBJS_BOOT)
 
 .PHONY: utils-objs
 
@@ -393,17 +314,30 @@ $(UTILS_OBJS): | $(UTILS_OBJDIR)
 $(UTILS_OBJDIR):
 	mkdir -p $@
 
+$(UTILS_OBJS_BOOT): | $(UTILS_OBJDIR_BOOT)
+
+$(UTILS_OBJDIR_BOOT):
+	mkdir -p $@
+
 -include $(foreach dep,$(UTILS_SRCS:.cpp=.d),$(OBJDIR)/$(dep))
 
 $(UTILS_OBJS): $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
+-include $(foreach dep,$(UTILS_SRCS:.cpp=.d),$(OBJDIR_BOOT)/$(dep))
+
+$(UTILS_OBJS_BOOT): $(OBJDIR_BOOT)/%.o: $(SRCDIR)/%.cpp
+	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
+
 $(UTILS_LIB): $(UTILS_OBJS)
 	ar -rs $@ $(UTILS_OBJS)
 
+$(UTILS_LIB_BOOT): $(UTILS_OBJS_BOOT)
+	ar -rs $@ $(UTILS_OBJS_BOOT)
+
 ###### Compiling s-expression interpeter sources ######
 
-interp-objs: $(INTERP_OBJS)
+interp-objs: $(INTERP_OBJS) $(INTERP_OBJS_BOOT)
 
 .PHONY: interp-objs
 
@@ -412,17 +346,30 @@ $(INTERP_OBJS): | $(INTERP_OBJDIR)
 $(INTERP_OBJDIR):
 	mkdir -p $@
 
+$(INTERP_OBJS_BOOT): | $(INTERP_OBJDIR_BOOT)
+
+$(INTERP_OBJDIR_BOOT):
+	mkdir -p $@
+
 -include $(foreach dep,$(INTERP_SRCS:.cpp=.d),$(INTERP_OBJDIR)/$(dep))
 
 $(INTERP_OBJS): $(INTERP_OBJDIR)/%.o: $(INTERP_SRCDIR)/%.cpp
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
+-include $(foreach dep,$(INTERP_SRCS:.cpp=.d),$(INTERP_OBJDIR_BOOT)/$(dep))
+
+$(INTERP_OBJS_BOOT): $(INTERP_OBJDIR_BOOT)/%.o: $(INTERP_SRCDIR)/%.cpp
+	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
+
 $(INTERP_LIB): $(INTERP_OBJS)
 	ar -rs $@ $(INTERP_OBJS)
 
+$(INTERP_LIB_BOOT): $(INTERP_OBJS_BOOT)
+	ar -rs $@ $(INTERP_OBJS_BOOT)
+
 ###### Compiliing Sexp Sources ######
 
-sexp-objs: $(SEXP_OBJS)
+sexp-objs: $(SEXP_OBJS) $(SEXP_OBJS_BOOT)
 
 .PHONY: sexp-objs
 
@@ -431,17 +378,30 @@ $(SEXP_OBJS): | $(SEXP_OBJDIR)
 $(SEXP_OBJDIR):
 	mkdir -p $@
 
+$(SEXP_OBJS_BOOT): | $(SEXP_OBJDIR_BOOT)
+
+$(SEXP_OBJDIR_BOOT):
+	mkdir -p $@
+
 -include $(foreach dep,$(SEXP_SRCS:.cpp=.d),$(SEXP_OBJDIR)/$(dep))
 
 $(SEXP_OBJS): $(SEXP_OBJDIR)/%.o: $(SEXP_SRCDIR)/%.cpp
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
+-include $(foreach dep,$(SEXP_SRCS:.cpp=.d),$(SEXP_OBJDIR_BOOT)/$(dep))
+
+$(SEXP_OBJS_BOOT): $(SEXP_OBJDIR_BOOT)/%.o: $(SEXP_SRCDIR)/%.cpp
+	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
+
 $(SEXP_LIB): $(SEXP_OBJS)
 	ar -rs $@ $(SEXP_OBJS)
 
+$(SEXP_LIB_BOOT): $(SEXP_OBJS_BOOT)
+	ar -rs $@ $(SEXP_OBJS_BOOT)
+
 ###### Compiling stream sources ######
 
-strm-objs: $(STRM_OBJS)
+strm-objs: $(STRM_OBJS) $(STRM_OBJS_BOOT)
 
 .PHONY: strm-objs
 
@@ -450,17 +410,31 @@ $(STRM_OBJS): | $(STRM_OBJDIR)
 $(STRM_OBJDIR):
 	mkdir -p $@
 
+$(STRM_OBJS_BOOT): | $(STRM_OBJDIR_BOOT)
+
+$(STRM_OBJDIR_BOOT):
+	mkdir -p $@
+
 -include $(foreach dep,$(STRM_SRCS:.cpp=.d),$(STRM_OBJDIR)/$(dep))
 
 $(STRM_OBJS): $(STRM_OBJDIR)/%.o: $(STRM_SRCDIR)/%.cpp
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
+
+-include $(foreach dep,$(STRM_SRCS:.cpp=.d),$(STRM_OBJDIR_BOOT)/$(dep))
+
+$(STRM_OBJS_BOOT): $(STRM_OBJDIR_BOOT)/%.o: $(STRM_SRCDIR)/%.cpp
+	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
+
 $(STRM_LIB): $(STRM_OBJS)
 	ar -rs $@ $(STRM_OBJS)
 
+$(STRM_LIB_BOOT): $(STRM_OBJS_BOOT)
+	ar -rs $@ $(STRM_OBJS_BOOT)
+
 ###### Compiling Filter Parser #######
 
-parser-objs: $(PARSER_OBJS)
+parser-objs: $(PARSER_OBJS) $(PARSER_OBJS_BOOT)
 
 .PHONY: parser-objs
 
@@ -475,18 +449,33 @@ $(PARSER_OBJS): | $(PARSER_OBJDIR)
 $(PARSER_OBJDIR):
 	mkdir -p $@
 
+$(PARSER_OBJS_BOOT): | $(PARSER_OBJDIR_BOOT)
+
+$(PARSER_OBJDIR_BOOT):
+	mkdir -p $@
+
 -include $(foreach dep,$(PARSER_SRCS:.cpp=.d),$(PARSER_OBJDIR)/$(dep))
 
 $(PARSER_OBJS): $(PARSER_OBJDIR)/%.o: $(PARSER_DIR)/%.cpp \
 	        $(PARSER_DIR)/Lexer.cpp $(PARSER_DIR)/Parser.tab.cpp
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
+
+-include $(foreach dep,$(PARSER_SRCS:.cpp=.d),$(PARSER_OBJDIR)/$(dep))
+
+$(PARSER_OBJS_BOOT): $(PARSER_OBJDIR_BOOT)/%.o: $(PARSER_DIR)/%.cpp \
+	        $(PARSER_DIR)/Lexer.cpp $(PARSER_DIR)/Parser.tab.cpp
+	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
+
 $(PARSER_LIB): $(PARSER_OBJS)
 	ar -rs $@ $(PARSER_OBJS)
 
+$(PARSER_LIB_BOOT): $(PARSER_OBJS_BOOT)
+	ar -rs $@ $(PARSER_OBJS_BOOT)
+
 ###### Building libraries ######
 
-libs: $(LIBS)
+libs: $(LIBS) $(LIBS_BOOT)
 
 .PHONY: libs
 
@@ -495,9 +484,14 @@ $(LIBDIR):
 
 $(LIBS): | $(LIBDIR)
 
+$(LIBDIR_BOOT):
+	mkdir -p $@
+
+$(LIBS_BOOT): | $(LIBDIR_BOOT)
+
 ###### Compiling executables ######
 
-execs: $(LIBS) $(EXECS)
+execs: $(LIBS_BOOT) $(EXECS_BOOT) $(LIBS) $(EXECS)
 
 .PHONY: execs
 
@@ -506,18 +500,36 @@ $(EXEC_OBJDIR):
 
 $(EXEC_OBJS): | $(EXEC_OBJDIR)
 
+$(EXEC_OBJDIR_BOOT):
+	mkdir -p $@
+
+$(EXEC_OBJS_BOOT): | $(EXEC_OBJDIR_BOOT)
+
 -include $(foreach dep,$(EXEC_SRCS:.cpp=.d),$(EXEC_OBJDIR)/$(dep))
 
 $(EXEC_OBJS): $(EXEC_OBJDIR)/%.o: $(EXEC_DIR)/%.cpp
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
+-include $(foreach dep,$(EXEC_SRCS:.cpp=.d),$(EXEC_OBJDIR_BOOT)/$(dep))
+
+$(EXEC_OBJS_BOOT): $(EXEC_OBJDIR_BOOT)/%.o: $(EXEC_DIR)/%.cpp
+	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
+
 $(BUILD_EXECDIR):
+	mkdir -p $@
+
+$(BUILD_EXECDIR_BOOT):
 	mkdir -p $@
 
 $(EXECS): | $(BUILD_EXECDIR)
 
 $(EXECS): $(BUILD_EXECDIR)/%$(EXE): $(EXEC_OBJDIR)/%.o $(LIBS)
 	$(CPP_COMPILER) $(CXXFLAGS) $< $(LIBS) -o $@
+
+$(EXECS_BOOT): | $(BUILD_EXECDIR_BOOT)
+
+$(EXECS_BOOT): $(BUILD_EXECDIR_BOOT)/%$(EXE): $(EXEC_OBJDIR_BOOT)/%.o $(LIBS_BOOT)
+	$(CPP_COMPILER_BOOT) $(CXXFLAGS_BOOT) $< $(LIBS_BOOT) -o $@
 
 ###### Compiling Test Executables #######
 
@@ -545,21 +557,17 @@ $(TEST_EXECS): $(TEST_EXECDIR)/%$(EXE): $(TEST_OBJDIR)/%.o $(LIBS)
 
 ###### Testing ######
 
-test: all
-	$(MAKE) $(MAKE_PAGE_SIZE) $(MAKE_RELEASE) run-tests
-	@echo "*** all tests passed ***"
-
-.PHONY: test
-
-run-tests: test-parser test-raw-streams test-byte-queues \
+test: test-parser test-raw-streams test-byte-queues \
 	test-decompsexp-wasm test-decompwasm-sexp test-param-passing \
         test-decompress
 	@echo "*** all tests passed ***"
 
-.PHONY: run-tests
+.PHONY: test
 
 test-all:
+	@echo "*** testing release version ***"
 	$(MAKE) $(MAKE_PAGE_SIZE) DEBUG=0 RELEASE=1 BOOTSTRAP=0 test
+	@echo "*** testing debug version ***"
 	$(MAKE) $(MAKE_PAGE_SIZE)  DEBUG=1 RELEASE=0 BOOTSTRAP=0 test
 	@echo "*** all tests passed on both debug and release builds ***"
 

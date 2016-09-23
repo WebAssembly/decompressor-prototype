@@ -22,25 +22,9 @@
 
 # Defines whether we are building bootstrapped subsystem, so that we can
 # generate corresponding source files.
-ifndef BOOTSTRAP
-   BOOTSTRAP=0
-endif
-
-ifneq ($(BOOTSTRAP), 0)
-  BOOTSTRAP_SUBDIR=/boot
-  RELEASE=0
-  DEBUG=1
-  PAGE_SIZE=0
-  WASM=0
-  WASM_VANILLA=0
-  ifndef BOOTSTRAP_CXX
-    CXX=clang++
-  endif
-endif
-
-BOOTSTRAP_CXXFLAGS = -DBOOTSTRAP=$(BOOTSTRAP)
 
 CXX := clang++
+CXX_BOOT := clang++
 
 # Define if release or debug build
 ifdef DEBUG
@@ -126,6 +110,7 @@ else
 endif
 
 PLATFORM := Default
+PLATFORM_CXXFLAGS_DEFAULT = --std=c++11 -DOVERRIDE= -DFINAL=
 
 # Define platform specific stuff.
 ifeq ($(PLATFORM), Travis)
@@ -136,16 +121,41 @@ ifeq ($(PLATFORM), Travis)
     PLATFORM_CXXFLAGS += -std=c++11 -DOVERRIDE=override -DFINAL=final
   endif
 else ifeq ($(PLATFORM), Default)
-  PLATFORM_CXXFLAGS += --std=c++11 -DOVERRIDE= -DFINAL=
+  PLATFORM_CXXFLAGS += $(PLATFORM_CXXFLAGS_DEFAULT)
 else
   $(error Unrecognized platform: $(PLATFORM))
 endif
 
+SRCDIR = src
+
+BUILDBASEDIR = build$(WASM_SUBDIR)$(CXX_SUBDIR)$(PAGE_BUILD_SUFFIX)
+ifeq ($(RELEASE), 0)
+  BUILDDIR = $(BUILDBASEDIR)/debug
+else
+  BUILDDIR = $(BUILDBASEDIR)/release
+endif
+
+BUILDDIR_BOOT = build/boot
+
+OBJDIR = $(BUILDDIR)/obj
+OBJDIR_BOOT = $(BUILDDIR_BOOT)/obj
+
+LIBDIR = $(BUILDDIR)/lib
+LIBDIR_BOOT = $(BUILDDIR_BOOT)/lib
+LIBPREFIX = wasm-decomp-
+
+MAKE_RELEASE = DEBUG=$(DEBUG) RELEASE=$(RELEASE)
+
 $(info -----------------------------------------------)
 $(info Using PLATFORM = $(PLATFORM))
 $(info Using CXX = $(CXX))
+$(info Using CXX_BOOT = $(CXX_BOOT))
 $(info Using RELEASE = $(RELEASE))
-$(info Using BOOTSTRAP = $(BOOTSTRAP))
 $(info Using PAGE_SIZE = $(USE_PAGE_SIZE))
 $(info Using CXX_SUBDIR = $(CXX_SUBDIR))
 $(info Using WASM = $(WASM))
+
+$(info Using BUILDDIR = $(BUILDDIR))
+$(info Using BUILDDIR_BOOT = $(BUILDDIR_BOOT))
+$(info -----------------------------------------------)
+
