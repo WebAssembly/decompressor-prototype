@@ -152,7 +152,6 @@ struct IntValue {
 %type <wasm::filt::Node *> eval_params
 %type <wasm::filt::Node *> expression
 %type <wasm::filt::Node *> file
-%type <wasm::filt::Node *> file_filter
 %type <wasm::filt::Node *> file_version
 %type <wasm::filt::Node *> fixed_format_directive
 %type <wasm::filt::Node *> format_directive
@@ -186,25 +185,24 @@ struct IntValue {
 
 %%
 
-file    : file_filter {
-            $$ = $1;
-            Driver.setParsedAst($$);
-          }
-        | file_filter compressed_module {
-            $$ = $1;
-            $$->append($2);
-            Driver.setParsedAst($$);
-          }
-        ;
-
-file_filter
-        : file_version {
+file    : file_version {
             $$ = $1;
             Driver.setParsedAst($$);
           }
         | file_version section {
             $$ = $1;
             $$->append($2);
+            Driver.setParsedAst($$);
+          }
+        | file_version compressed_module {
+            $$ = $1;
+            $$->append($2);
+            Driver.setParsedAst($$);
+          }
+        | file_version section compressed_module {
+            $$ = $1;
+            $$->append($2);
+            $$->append($3);
             Driver.setParsedAst($$);
           }
         ;
