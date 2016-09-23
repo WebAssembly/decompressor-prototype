@@ -442,7 +442,7 @@ parser-objs: $(PARSER_OBJS) $(PARSER_OBJS_BOOT)
 
 .PHONY: parser-objs
 
-$(PARSER_DIR)/Lexer.cpp: $(PARSER_DIR)/Lexer.lex $(PARSER_DIR)/Parser.tab.cpp
+$(PARSER_DIR)/Lexer.cpp: $(PARSER_DIR)/Lexer.lex gen-parser
 	cd $(PARSER_DIR); lex -o Lexer.cpp Lexer.lex
 
 $(PARSER_DIR)/Parser.tab.cpp: $(PARSER_DIR)/Parser.ypp
@@ -460,15 +460,14 @@ $(PARSER_OBJDIR_BOOT):
 
 -include $(foreach dep,$(PARSER_SRCS:.cpp=.d),$(PARSER_OBJDIR)/$(dep))
 
-$(PARSER_OBJS): $(PARSER_OBJDIR)/%.o: $(PARSER_DIR)/%.cpp \
-	        $(PARSER_DIR)/Lexer.cpp $(PARSER_DIR)/Parser.tab.cpp
+$(PARSER_OBJS): $(PARSER_OBJDIR)/%.o: $(PARSER_DIR)/%.cpp gen-lexer gen-parser
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
 
 -include $(foreach dep,$(PARSER_SRCS:.cpp=.d),$(PARSER_OBJDIR)/$(dep))
 
 $(PARSER_OBJS_BOOT): $(PARSER_OBJDIR_BOOT)/%.o: $(PARSER_DIR)/%.cpp \
-	        $(PARSER_DIR)/Lexer.cpp $(PARSER_DIR)/Parser.tab.cpp
+	        gen-lexer gen-parser
 	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
 
 $(PARSER_LIB): $(PARSER_OBJS)
@@ -548,7 +547,7 @@ $(TEST_OBJS): | $(TEST_OBJDIR)
 
 -include $(foreach dep,$(TEST_SRCS:.cpp=.d),$(TEST_OBJDIR)/$(dep))
 
-$(TEST_OBJS): $(TEST_OBJDIR)/%.o: $(TEST_DIR)/%.cpp
+$(TEST_OBJS): $(TEST_OBJDIR)/%.o: $(TEST_DIR)/%.cpp gen
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
 $(TEST_EXECDIR):
