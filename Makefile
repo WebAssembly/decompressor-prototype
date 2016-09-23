@@ -18,17 +18,27 @@
 
 # Note: If using -jN, be sure to run "make gen" first.
 
+include Makefile.common
+
 # Defines whether we are building bootstrapped subsystem, so that we can
 # generate corresponding source files.
-ifndef BOOT
-   BOOT=0
+ifndef BOOTSTRAP
+   BOOTSTRAP=0
 endif
 
-ifneq ($(BOOT), 0)
-  BOOT_SUBDIR=/boot
+ifneq ($(BOOTSTRAP), 0)
+  BOOTSTRAP_SUBDIR=/boot
+  RELEASE=0
+  DEBUG=1
+  PAGE_SIZE=0
+  WASM=0
+  WASM_VANILLA=0
+  ifndef BOOTSTRAP_CXX
+    CXX=clang++
+  endif
 endif
 
-BOOT_CXXFLAGS = -DBOOTSTRAP=$(BOOT)
+BOOTSTRAP_CXXFLAGS = -DBOOTSTRAP=$(BOOTSTRAP)
 
 # Define if release or debug build
 ifdef DEBUG
@@ -60,14 +70,17 @@ endif
 
 # PAGE_SIZE (if defined) specifies that log2 size (i.e. number of bits) to use
 # for page size.
-ifdef PAGE_SIZE
-  PAGE_BUILD_SUFFIX=/p$(PAGE_SIZE)
-  USE_PAGE_SIZE = $(PAGE_SIZE)
-  MAKE_PAGE_SIZE = "PAGESIZE=$(PAGE_SIZE)"
-else
+ifndef PAGE_SIZE
+  PAGE_SIZE=0
+endif
+ifeq ($(PAGE_SIZE), 0)
   USE_PAGE_SIZE = default
   PAGE_BUILD_SUFFIX=
   MAKE_PAGE_SIZE=
+else
+  PAGE_BUILD_SUFFIX=/p$(PAGE_SIZE)
+  USE_PAGE_SIZE = $(PAGE_SIZE)
+  MAKE_PAGE_SIZE = "PAGESIZE=$(PAGE_SIZE)"
 endif
 
 CXX := clang++
@@ -75,8 +88,14 @@ CXX := clang++
 WASM_INSTALL=$(PWD)/travis_deps/wasm-install
 WASM_BIN=$(WASM_INSTALL)/bin
 WASM_CXX=$(WASM_BIN)/emscripten/em++
-ifdef WASM
-  ifdef WASM_VANILLA
+ifndef WASM
+  WASM=
+endif
+ifndef WASM_VANILLA
+  WASM_VANILLA=
+endif
+ifeq ($(WASM),"")
+  ifeq ($(WASM_VANILLA), "")
     EMSCRIPTEN_CONFIG=$(WASM_INSTALL)/../wasm_emscripten_config_vanilla
     WASM_SUBDIR=/wasm-vanilla
   else
@@ -123,7 +142,7 @@ endif
 
 SRCDIR = src
 
-BUILDBASEDIR = build$(BOOT_SUBDIR)$(WASM_SUBDIR)$(CXX_SUBDIR)$(PAGE_BUILD_SUFFIX)
+BUILDBASEDIR = build$(BOOTSTRAP_SUBDIR)$(WASM_SUBDIR)$(CXX_SUBDIR)$(PAGE_BUILD_SUFFIX)
 ifeq ($(RELEASE), 0)
   BUILDDIR = $(BUILDBASEDIR)/debug
 else
@@ -193,7 +212,7 @@ SEXP_SRCS = \
 	TextWriter.cpp \
 	TraceSexp.cpp
 
-ifeq ($(BOOT), 0)
+ifeq ($(BOOTSTRAP), 0)
   SEXP_GENSRCS = \
 	defaults.cpp
   SEXP_SRCS += $(SEXP_GENSRCS)
@@ -262,10 +281,11 @@ EXEC_OBJS=$(patsubst %.cpp, $(EXEC_OBJDIR)/%.o, $(EXEC_SRCS))
 
 EXECS = $(patsubst %.cpp, $(BUILD_EXECDIR)/%$(EXE), $(EXEC_SRCS))
 
-BOOT_EXEC_SRCS = \
+BOOTSTRAP_EXEC_SRCS = \
 	decompsexp-wasm.cpp
 
-BOOT_EXECS = $(patsubst %.cpp, $(BUILD_EXECDIR)/%$(EXE), $(BOOT_EXEC_SRCS))
+BOOTSTRAP_EXECS = $(patsubst %.cpp, $(BUILD_EXECDIR)/%$(EXE), \
+                                    $(BOOTSTRAP_EXEC_SRCS))
 
 ###### Test executables and locations ######
 
@@ -289,14 +309,6 @@ TEST_SRCS_DIR = test/test-sources
 LIBS = $(PARSER_LIB) $(BINARY_LIB) $(INTERP_LIB) $(SEXP_LIB) \
        $(STRM_LIB) $(UTILS_LIB)
  
-$(info -----------------------------------------------)
-$(info Using PLATFORM = $(PLATFORM))
-$(info Using CXX = $(CXX))
-$(info Using RELEASE = $(RELEASE))
-$(info Using BOOT = $(BOOT))
-$(info Using PAGE_SIZE = $(USE_PAGE_SIZE))
-$(info Using CXX_SUBDIR = $(CXX_SUBDIR))
-$(info Using WASM = $(WASM))
 $(info Using BUILDDIR = $(BUILDDIR))
 $(info -----------------------------------------------)
 
@@ -305,7 +317,7 @@ CPP_COMPILER :=  CCACHE_CPP2=yes $(CCACHE) $(CXX)
 
 # Note: On WIN32 replace -fPIC with -D_GNU_SOURCE
 # Note: g++ on Travis doesn't support -std=gnu++11
-CXXFLAGS := $(TARGET_CXXFLAGS) $(PLATFORM_CXXFLAGS) $(BOOT_CXXFLAGS) \
+CXXFLAGS := $(TARGET_CXXFLAGS) $(PLATFORM_CXXFLAGS) $(BOOTSTRAP_CXXFLAGS) \
 	    -Wall -Wextra -O2 -g -pedantic -MP -MD \
 	    -Werror -Wno-unused-parameter -fno-omit-frame-pointer -fPIC \
 	    -Isrc
@@ -330,8 +342,8 @@ all-nogen: libs execs test-execs
 .PHONY: all-nogen
 
 build-all:
-	$(MAKE) $(MAKE_PAGE_SIZE) DEBUG=0 RELEASE=1 BOOT=0 all
-	$(MAKE) $(MAKE_PAGE_SIZE) DEBUG=1 RELEASE=0 BOOT=0 all
+	$(MAKE) $(MAKE_PAGE_SIZE) DEBUG=0 RELEASE=1 BOOTSTRAP=0 all
+	$(MAKE) $(MAKE_PAGE_SIZE) DEBUG=1 RELEASE=0 BOOTSTRAP=0 all
 	@echo "*** Built both debug and release versions ***"
 
 .PHONY: build-all
@@ -340,14 +352,14 @@ build-all:
 
 boot:
 	@echo "-> Building boot tools"
-	$(MAKE) $(MAKE_PAGE_SIZE) $(MAKE_RELEASE) BOOT=1 boot-tools
+	$(MAKE) BOOTSTRAP=1 boot-tools
 	@echo "<- Building boot tools"
 
 .PHONY: boot
 
-ifneq ($(BOOT), 0)
+ifneq ($(BOOTSTRAP), 0)
 
-boot-tools: libs $(BOOT_EXECS) $(SEXP_DEFAULTS_CPP)
+boot-tools: libs $(BOOTSTRAP_EXECS) $(SEXP_DEFAULTS_CPP)
 
 .PHONY: boot-tools
 
@@ -356,8 +368,8 @@ endif
 ###### Cleaning Rules #######
 
 clean:
-	$(MAKE) $(MAKE_PAGE_SIZE) $(MAKE_RELEASE) BOOT=0 clean-objs
-	$(MAKE) $(MAKE_PAGE_SIZE) $(MAKE_RELEASE) BOOT=1 clean-objs
+	$(MAKE) $(MAKE_PAGE_SIZE) $(MAKE_RELEASE) BOOTSTRAP=0 clean-objs
+	$(MAKE) BOOTSTRAP=1 clean-objs
 
 .PHONY: clean
 
@@ -367,8 +379,8 @@ clean-objs: clean-parser clean-sexp
 .PHONY: clean-objs
 
 clean-all:
-	$(MAKE) $(MAKE_PAGE_SIZE) DEBUG=0 RELEASE=1 BOOT=0 clean
-	$(MAKE) $(MAKE_PAGE_SIZE) DEBUG=1 RELEASE=0 BOOT=1 clean
+	$(MAKE) $(MAKE_PAGE_SIZE) DEBUG=0 RELEASE=1 BOOTSTRAP=0 clean
+	$(MAKE) BOOTSTRAP=1 clean
 	rm -rf $(BUILDBASEDIR)
 
 .PHONY: clean-all
@@ -398,7 +410,7 @@ clean-parser-objs:
 
 .PHONY: clean-parser-objs
 
-ifeq ($(BOOT), 0)
+ifeq ($(BOOTSTRAP), 0)
 clean-sexp: clean-sexp-objs
 	cd $(SEXP_SRCDIR); rm -f $(SEXP_GENSRCS)
 else
@@ -446,7 +458,7 @@ gen-parser: $(PARSER_DIR)/Parser.tab.cpp
 
 .PHONY: gen-parser
 
-ifneq ($(BOOT), 0)
+ifneq ($(BOOTSTRAP), 0)
 
 $(SEXP_DEFAULTS_CPP): $(BUILD_EXECDIR)/decompsexp-wasm $(SEXP_DEFAULTS)
 	$< -i $(SEXP_DEFAULTS) -o $@
@@ -651,8 +663,8 @@ run-tests: test-parser test-raw-streams test-byte-queues \
 .PHONY: run-tests
 
 test-all:
-	$(MAKE) $(MAKE_PAGE_SIZE) DEBUG=0 RELEASE=1 BOOT=0 test
-	$(MAKE) $(MAKE_PAGE_SIZE)  DEBUG=1 RELEASE=0 BOOT=0 test
+	$(MAKE) $(MAKE_PAGE_SIZE) DEBUG=0 RELEASE=1 BOOTSTRAP=0 test
+	$(MAKE) $(MAKE_PAGE_SIZE)  DEBUG=1 RELEASE=0 BOOTSTRAP=0 test
 	@echo "*** all tests passed on both debug and release builds ***"
 
 .PHONY: test-all

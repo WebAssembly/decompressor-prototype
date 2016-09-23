@@ -1,0 +1,150 @@
+# Copyright 2016 WebAssembly Community Group participants
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Build debug: make
+#            : make DEBUG=1
+# Build release: make RELEASE=1
+
+# Note: If using -jN, be sure to run "make gen" first.
+
+# Include rules for parameterizing the build.
+
+# Defines whether we are building bootstrapped subsystem, so that we can
+# generate corresponding source files.
+ifndef BOOTSTRAP
+   BOOTSTRAP=0
+endif
+
+ifneq ($(BOOTSTRAP), 0)
+  BOOTSTRAP_SUBDIR=/boot
+  RELEASE=0
+  DEBUG=1
+  PAGE_SIZE=0
+  WASM=0
+  WASM_VANILLA=0
+  ifndef BOOTSTRAP_CXX
+    CXX=clang++
+  endif
+endif
+
+BOOTSTRAP_CXXFLAGS = -DBOOTSTRAP=$(BOOTSTRAP)
+
+# Define if release or debug build
+ifdef DEBUG
+  ifdef RELEASE
+    ifeq ($(DEBUG), 0)
+      ifneq ($(RELEASE), 0)
+        RELEASE = 1
+      else
+        $(error Cant specify both DEBUG and RELEASE)
+      endif
+    else ifneq ($(RELEASE), 0)
+      $(error Cant specify both DEBUG and RELEASE)
+    endif
+  else ifeq ($(DEBUG), 0)
+    RELEASE = 1
+  else
+    RELEASE = 0
+  endif
+else
+  ifndef RELEASE
+    DEBUG = 1
+    RELEASE = 0
+  else ifeq ($(RELEASE), 0)
+    DEBUG = 1
+  else
+    DEBUG = 0
+  endif
+endif
+
+# PAGE_SIZE (if defined) specifies that log2 size (i.e. number of bits) to use
+# for page size.
+ifndef PAGE_SIZE
+  PAGE_SIZE=0
+endif
+ifeq ($(PAGE_SIZE), 0)
+  USE_PAGE_SIZE = default
+  PAGE_BUILD_SUFFIX=
+  MAKE_PAGE_SIZE=
+else
+  PAGE_BUILD_SUFFIX=/p$(PAGE_SIZE)
+  USE_PAGE_SIZE = $(PAGE_SIZE)
+  MAKE_PAGE_SIZE = "PAGESIZE=$(PAGE_SIZE)"
+endif
+
+CXX := clang++
+
+WASM_INSTALL=$(PWD)/travis_deps/wasm-install
+WASM_BIN=$(WASM_INSTALL)/bin
+WASM_CXX=$(WASM_BIN)/emscripten/em++
+ifndef WASM
+  WASM=0
+endif
+ifndef WASM_VANILLA
+  WASM_VANILLA=0
+endif
+ifneq ($(WASM), 0)
+  ifneq ($(WASM_VANILLA), 0)
+    EMSCRIPTEN_CONFIG=$(WASM_INSTALL)/../wasm_emscripten_config
+    WASM_SUBDIR=/wasm
+  else
+    EMSCRIPTEN_CONFIG=$(WASM_INSTALL)/../wasm_emscripten_config_vanilla
+    WASM_SUBDIR=/wasm-vanilla
+  endif
+  CXX := $(WASM_CXX)
+  WASM_SYSROOT=$(WASM_INSTALL)/sysroot
+  TARGET_CXXFLAGS := \
+    --em-config $(EMSCRIPTEN_CONFIG) \
+    --target=wasm32-unknown-unknown \
+    -S --sysroot=$(WASM_INSTALL) \
+    -s BINARYEN=1
+  TARGET_CXXFLAGS += -DSTACK_SIZE=1044480 \
+    -w -Wno-implicit-function-declaration
+	EXE=.js
+endif
+
+ifeq ($(CXX),clang++)
+  CXX_SUBDIR =
+else
+  ifeq ($(CXX), $(WASM_CXX))
+    CXX_SUBDIR =
+  else
+    CXX_SUBDIR = /$(CXX)
+  endif
+endif
+
+PLATFORM := Default
+
+# Define platform specific stuff.
+ifeq ($(PLATFORM), Travis)
+  # Add flags to handle that Travis g++ uses -std=c++0x with missing c++11 options.
+  ifeq ($(CXX),g++)
+    PLATFORM_CXXFLAGS += -std=c++0x -DOVERRIDE= -DFINAL=
+  else
+    PLATFORM_CXXFLAGS += -std=c++11 -DOVERRIDE=override -DFINAL=final
+  endif
+else ifeq ($(PLATFORM), Default)
+  PLATFORM_CXXFLAGS += --std=c++11 -DOVERRIDE= -DFINAL=
+else
+  $(error Unrecognized platform: $(PLATFORM))
+endif
+
+$(info -----------------------------------------------)
+$(info Using PLATFORM = $(PLATFORM))
+$(info Using CXX = $(CXX))
+$(info Using RELEASE = $(RELEASE))
+$(info Using BOOTSTRAP = $(BOOTSTRAP))
+$(info Using PAGE_SIZE = $(USE_PAGE_SIZE))
+$(info Using CXX_SUBDIR = $(CXX_SUBDIR))
+$(info Using WASM = $(WASM))

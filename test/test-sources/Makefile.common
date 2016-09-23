@@ -52,7 +52,9 @@ endif
 
 # PAGE_SIZE (if defined) specifies that log2 size (i.e. number of bits) to use
 # for page size.
-ifdef PAGE_SIZE
+ifndef PAGE_SIZE
+  PAGE_SIZE=
+ifneq ($(PAGE_SIZE), 0)
   PAGE_BUILD_SUFFIX=/p$(PAGE_SIZE)
   USE_PAGE_SIZE = $(PAGE_SIZE)
   MAKE_PAGE_SIZE = "PAGESIZE=$(PAGE_SIZE)"
