@@ -464,7 +464,7 @@ $(PARSER_OBJS): $(PARSER_OBJDIR)/%.o: $(PARSER_DIR)/%.cpp gen-lexer gen-parser
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
 
--include $(foreach dep,$(PARSER_SRCS:.cpp=.d),$(PARSER_OBJDIR)/$(dep))
+-include $(foreach dep,$(PARSER_SRCS:.cpp=.d),$(PARSER_OBJDIR_BOOT)/$(dep))
 
 $(PARSER_OBJS_BOOT): $(PARSER_OBJDIR_BOOT)/%.o: $(PARSER_DIR)/%.cpp \
 	        gen-lexer gen-parser
