@@ -22,59 +22,15 @@
 #
 #    make -f Makefile.update
 
-ifdef DEBUG
-  ifdef RELEASE
-    ifeq ($(DEBUG), 0)
-      ifneq ($(RELEASE), 0)
-	RELEASE = 1
-      else
-        $(error Cant specify both DEBUG and RELEASE)
-      endif
-    else ifneq ($(RELEASE), 0)
-      $(error Cant specify both DEBUG and RELEASE)
-    endif
-  else ifeq ($(DEBUG), 0)
-    RELEASE = 1
-  else
-    RELEASE = 0
-  endif
-else ifndef RELEASE
-  RELEASE = 0
-endif
+include ../../Makefile.common
 
-CXX := clang++
+PARENT_DIR = ../..
 
-ifeq ($(CXX),clang++)
-  CXX_SUBDIR =
-else
-  CXX_SUBDIR = /$(CXX)
-endif
-
-# PAGE_SIZE (if defined) specifies that log2 size (i.e. number of bits) to use
-# for page size.
-ifdef PAGE_SIZE
-  PAGE_BUILD_SUFFIX=/p$(PAGE_SIZE)
-  USE_PAGE_SIZE = $(PAGE_SIZE)
-  MAKE_PAGE_SIZE = "PAGESIZE=$(PAGE_SIZE)"
-else
-  USE_PAGE_SIZE = default
-  PAGE_BUILD_SUFFIX=
-  MAKE_PAGE_SIZE=
-endif
-
-BUILDDIR = ../../build$(CXX_SUBDIR)$(PAGE_BUILD_SUFFIX)
-
-SEXP_SRCDIR = ../../src/sexp
+SEXP_SRCDIR = $(PARENT_DIR)/src/sexp
 SEXP_DEFAULTS = $(SEXP_SRCDIR)/defaults.df
 
-ifeq ($(RELEASE), 0)
-  BUILD_RELEASE_DIR = $(BUILDDIR)/debug
-else
-  BUILD_RELEASE_DIR = $(BUILDDIR)/release
-endif
-
-EXEC_DIR = $(BUILD_RELEASE_DIR)/bin
-TEST_DIR = $(BUILD_RELEASE_DIR)/test
+EXEC_DIR = $(PARENT_DIR)/$(BUILDDIR)/bin
+TEST_DIR = $(PARENT_DIR)/$(BUILDDIR)/test
 
 LOCAL_SEXPS_DIR = spec
 

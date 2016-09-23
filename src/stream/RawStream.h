@@ -21,6 +21,7 @@
 #define DECOMPRESSOR_SRC_STREAM_RAWSTREAM_H
 
 #include "utils/Defs.h"
+#include <cstring>
 #include <memory>
 
 namespace wasm {
@@ -49,6 +50,10 @@ class RawStream : public std::enable_shared_from_this<RawStream> {
   // @param BufSize - The size of the buffer to write from.
   // @result        - True if successful.
   virtual bool write(uint8_t* Buf, size_t Size = 1) = 0;
+
+  bool putc(uint8_t ch) { return write(&ch, 1); }
+
+  bool puts(const char* str) { return write((uint8_t*)str, std::strlen(str)); }
 
   // Communicates that the stream can no longer be modified. Returns
   // false if unable to freeze.
