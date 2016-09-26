@@ -74,10 +74,7 @@ bool FdReader::write(uint8_t* Buf, size_t Size) {
 }
 
 bool FdReader::freeze() {
-  // Assume that file should be truncated at current location.
-  CurSize -= BytesRemaining;
-  AtEof = true;
-  return true;
+  return false;
 }
 
 bool FdReader::atEof() {

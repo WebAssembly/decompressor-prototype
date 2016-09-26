@@ -22,7 +22,9 @@ namespace wasm {
 
 namespace decode {
 
-size_t StringWriter::read(uint8_t*, size_t) { return 0; }
+size_t StringWriter::read(uint8_t*, size_t) {
+  return 0;
+}
 
 bool StringWriter::write(uint8_t* Buf, size_t Size) {
   if (IsFrozen)

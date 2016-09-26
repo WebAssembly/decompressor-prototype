@@ -35,11 +35,11 @@ Decompressor* create_decompressor();
  * buffer is to the next call to get_next_decompressor_buffer() or
  * destroy_decompressor() (which ever comes first).
  */
-uint8_t *get_next_decompressor_input_buffer(Decompressor* D, int32_t Size);
+uint8_t* get_next_decompressor_input_buffer(Decompressor* D, int32_t Size);
 
 int32_t resume_decompression(Decompressor* D);
 
-uint8_t *get_next_decompressor_output_buffer(Decompressor* D, int32_t Size);
+uint8_t* get_next_decompressor_output_buffer(Decompressor* D, int32_t Size);
 
 /* Clean up D and then deallocates. */
 void destroy_decompressor(Decompressor* D);
@@ -48,4 +48,4 @@ void destroy_decompressor(Decompressor* D);
 }
 #endif
 
-#endif // DECOMPRESSOR_SRC_INTERP_DECOMPRESS_H
+#endif  // DECOMPRESSOR_SRC_INTERP_DECOMPRESS_H

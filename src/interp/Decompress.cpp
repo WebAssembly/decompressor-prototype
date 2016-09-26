@@ -28,10 +28,11 @@ extern "C" {
 struct Decompressor {
   Decompressor(const Decompressor& D) = delete;
   Decompressor& operator=(const Decompressor& D) = delete;
+
  public:
-  uint8_t *InputBuffer;
+  uint8_t* InputBuffer;
   int32_t InputSize;
-  uint8_t *OutputBuffer;
+  uint8_t* OutputBuffer;
   int32_t OutputSize;
   Decompressor();
   ~Decompressor();
@@ -39,19 +40,15 @@ struct Decompressor {
   int32_t resumeDecompression();              /* TODO */
   uint8_t* getNextOutputBuffer(int32_t Size); /* TODO */
 };
-
 }
 
-
-
 Decompressor::Decompressor()
-    : InputBuffer(nullptr), InputSize(0),
-      OutputBuffer(nullptr), OutputSize(0)
-{}
+    : InputBuffer(nullptr), InputSize(0), OutputBuffer(nullptr), OutputSize(0) {
+}
 
 Decompressor::~Decompressor() {
-  delete [] InputBuffer;
-  delete [] OutputBuffer;
+  delete[] InputBuffer;
+  delete[] OutputBuffer;
 }
 
 extern "C" {
@@ -60,7 +57,7 @@ Decompressor* create_decompressor() {
   return new Decompressor();
 }
 
-uint8_t *get_next_decompressor_input_buffer(Decompressor* D, int32_t Size) {
+uint8_t* get_next_decompressor_input_buffer(Decompressor* D, int32_t Size) {
   return D->getNextInputBuffer(Size);
 }
 
@@ -75,9 +72,8 @@ uint8_t* get_next_decompressor_output_buffer(Decompressor* D, uint32_t Size) {
 void destroy_decompressor(Decompressor* D) {
   delete D;
 }
-
 }
 
-} // end of namespace interp
+}  // end of namespace interp
 
-} // end of namespace wasm
+}  // end of namespace wasm
