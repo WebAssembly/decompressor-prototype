@@ -35,7 +35,7 @@ using namespace wasm::decode;
 TEST(StreamReaderTest, ReadBlock) {
   std::string Input("this is some text");
   static constexpr size_t OverflowSize = 10;
-  for (size_t i = 0; i < Input.size()+OverflowSize; ++i) {
+  for (size_t i = 0; i < Input.size() + OverflowSize; ++i) {
     StringReader Reader(Input);
     uint8_t Buffer[1024];
     assert(size(Buffer) >= Input.size() + OverflowSize);
@@ -43,7 +43,8 @@ TEST(StreamReaderTest, ReadBlock) {
     if (i <= Input.size()) {
       EXPECT_EQ(i, Count) << "Did not fill reader as expected";
     } else {
-      EXPECT_EQ(Count, Input.size()) << "Did not read entire string as expected";
+      EXPECT_EQ(Count, Input.size())
+          << "Did not read entire string as expected";
     }
     for (size_t j = 0; j < Count; j++) {
       EXPECT_EQ(Buffer[j], uint8_t(Input[j])) << "Buffer filled incorrectly";
@@ -52,7 +53,7 @@ TEST(StreamReaderTest, ReadBlock) {
 }
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

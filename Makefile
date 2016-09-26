@@ -114,6 +114,7 @@ STRM_OBJDIR = $(OBJDIR)/stream
 STRM_OBJDIR_BOOT = $(OBJDIR_BOOT)/stream
 
 STRM_SRCS = \
+	ArrayReader.cpp \
 	FileReader.cpp \
 	FileWriter.cpp \
 	Cursor.cpp \

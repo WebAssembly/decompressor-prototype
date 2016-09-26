@@ -24,7 +24,7 @@ namespace decode {
 
 size_t StringReader::read(uint8_t* Buf, size_t Size) {
   if (Cursor >= Str.size())
-     return 0;
+    return 0;
   size_t Available = Str.size() - Cursor;
   if (Available > Size)
     Available = Size;
@@ -33,13 +33,17 @@ size_t StringReader::read(uint8_t* Buf, size_t Size) {
   return Available;
 }
 
-bool StringReader::write(uint8_t* Buf, size_t Size) { return false; }
+bool StringReader::write(uint8_t* Buf, size_t Size) {
+  return false;
+}
 
 bool StringReader::freeze() {
   return true;
 }
 
-bool StringReader::atEof() { return Cursor >= Str.size(); }
+bool StringReader::atEof() {
+  return Cursor >= Str.size();
+}
 
 }  // end of namespace decode
 

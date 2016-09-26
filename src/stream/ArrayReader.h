@@ -14,40 +14,40 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Defines a string stream for reading.
+// Reads text from an array.
 
-#ifndef DECOMPRESSOR_SRC_STREAM_STRINGWRITER_H
-#define DECOMPRESSOR_SRC_STREAM_STRINGWRITER_H
+#ifndef DECOMPRESSOR_SRC_STREAM_ARRAYREADER_H
+#define DECOMPRESSOR_SRC_STREAM_ARRAYREADER_H
 
 #include "stream/RawStream.h"
-
-#include <string>
 
 namespace wasm {
 
 namespace decode {
 
-class StringWriter : public RawStream {
-  StringWriter() = delete;
-  StringWriter(const StringWriter&) = delete;
-  StringWriter& operator=(const StringWriter&) = delete;
+class ArrayReader : public RawStream {
+  ArrayReader() = delete;
+  ArrayReader(const ArrayReader&) = delete;
+  ArrayReader& operator=(const ArrayReader&) = delete;
 
  public:
-  StringWriter(std::string& Str) : Str(Str), IsFrozen(false) {}
-  ~StringWriter() {}
+  ArrayReader(const uint8_t* Buffer, const size_t BufferSize)
+      : Buffer(Buffer), BufferSize(BufferSize), CurPosition(0) {}
+  ~ArrayReader() OVERRIDE;
 
   size_t read(uint8_t* Buf, size_t Size = 1) OVERRIDE;
   bool write(uint8_t* Buf, size_t Size = 1) OVERRIDE;
   bool freeze() OVERRIDE;
   bool atEof() OVERRIDE;
 
- private:
-  std::string& Str;
-  bool IsFrozen;
+ protected:
+  const uint8_t* Buffer;
+  const size_t BufferSize;
+  size_t CurPosition;
 };
 
 }  // end of namespace decode
 
 }  // end of namespace wasm
 
-#endif  // DECOMPRESSOR_SRC_STREAM_STRINGWRITER_H
+#endif  // DECOMPRESSOR_SRC_STREAM_ARRAYREADER_H

@@ -31,6 +31,7 @@ class StringReader : public RawStream {
   StringReader() = delete;
   StringReader(const StringReader&) = delete;
   StringReader& operator=(const StringReader&) = delete;
+
  public:
   StringReader(std::string& Str) : Str(Str), Cursor(0) {}
   ~StringReader() {}
@@ -49,4 +50,4 @@ class StringReader : public RawStream {
 
 }  // end of namespace wasm
 
-#endif // DECOMPRESSOR_SRC_STREAM_STRINGREADER_H
+#endif  // DECOMPRESSOR_SRC_STREAM_STRINGREADER_H
