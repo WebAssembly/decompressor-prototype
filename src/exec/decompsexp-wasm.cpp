@@ -51,10 +51,12 @@ std::shared_ptr<RawStream> getOutput() {
   return std::make_shared<FstreamWriter>(OutputFilename);
 }
 
-#if BOOTSTRAP
-void generateArrayImpl(std::shared_ptr<ReadCursor> ReadPos) {
-  auto Output = getOutput();
-  static const char* Preamble =
+#define BYTES_PER_LINE_IN_WASM_DEFAULTS 16
+
+void generateArrayImpl(const char* InputFilename,
+                       std::shared_ptr<ReadCursor> ReadPos,
+                       std::shared_ptr<RawStream> Output) {
+  Output->puts(
       "// -*- C++ -*- */\n"
       "\n"
       "// *** AUTOMATICALLY GENERATED FILE (DO NOT EDIT)! ***\n"
@@ -76,20 +78,22 @@ void generateArrayImpl(std::shared_ptr<ReadCursor> ReadPos) {
       "\n"
       "#include \"sexp/defaults.h\"\n"
       "\n"
-      "static const uint8_t WasmDefaults[] = {\n";
-  for (size_t i = 0, len = strlen(Preamble); i < len; ++i)
-    Output->putc(Preamble[i]);
+      "// Geneated from: \"");
+  Output->puts(InputFilename);
+  Output->puts("\"\n"
+      "static const uint8_t WasmDefaults[] = {\n");
   char Buffer[256];
   while (!ReadPos->atEof()) {
     uint8_t Byte = ReadPos->readByte();
-    sprintf(Buffer, "   %u", Byte);
-    for (size_t i = 0, len = std::strlen(Buffer); i < len; ++i)
-      Output->putc(Buffer[i]);
+    size_t Address = ReadPos->getCurByteAddress();
+    if (Address > 0 && Address % BYTES_PER_LINE_IN_WASM_DEFAULTS == 0)
+      Output->putc('\n');
+    sprintf(Buffer, " %u", Byte);
+    Output->puts(Buffer);
     if (!ReadPos->atEof())
       Output->putc(',');
-    Output->putc('\n');
   }
-  static const char* Postamble =
+  Output->puts(
       "};\n"
       "\n"
       "namespace wasm {\n"
@@ -97,12 +101,9 @@ void generateArrayImpl(std::shared_ptr<ReadCursor> ReadPos) {
       "const uint8_t *getWasmDefaultsBuffer() { return WasmDefaults; }\n"
       "size_t getWasmDefaultsBufferSize() { return size(WasmDefaults); }\n"
       "} // end of namespace decode\n"
-      "} // end of namespace wasm\n";
-  for (size_t i = 0, len = strlen(Postamble); i < len; ++i)
-    Output->putc(Postamble[i]);
+      "} // end of namespace wasm\n");
   Output->freeze();
 }
-#endif
 
 void usage(const char* AppName) {
   fprintf(stderr, "usage: %s [options]\n", AppName);
@@ -111,6 +112,7 @@ void usage(const char* AppName) {
   fprintf(stderr, "\n");
   fprintf(stderr, "Options:\n");
   fprintf(stderr, "  --expect-fail\t\tSucceed on failure/fail on success\n");
+  fprintf(stderr, "  -d\t\t\tGenerate defaults C++ source file instead\n");
   fprintf(stderr, "  -h\t\t\tPrint this usage message.\n");
   fprintf(stderr, "  -i File\t\tFile of s-expressions ('-' implies stdin).\n");
   fprintf(stderr, "  -m\t\t\tMinimize block sizes in output stream.\n");
@@ -134,6 +136,7 @@ int main(int Argc, char* Argv[]) {
   bool MinimizeBlockSize = false;
   bool InputSpecified = false;
   bool OutputSpecified = false;
+  bool GenerateCppSource = false;
   for (int i = 1; i < Argc; ++i) {
     if (Argv[i] == std::string("--expect-fail")) {
       ExpectExitFail = true;
@@ -141,6 +144,8 @@ int main(int Argc, char* Argv[]) {
                Argv[i] == std::string("--help")) {
       usage(Argv[0]);
       return exit_status(EXIT_SUCCESS);
+    } else if (Argv[i] == std::string("-d")) {
+      GenerateCppSource = true;
     } else if (Argv[i] == std::string("-i")) {
       if (++i >= Argc) {
         fprintf(stderr, "No file specified after -i option\n");
@@ -188,20 +193,23 @@ int main(int Argc, char* Argv[]) {
     fprintf(stderr, "Unable to parse s-expressions: %s\n", InputFilename);
     return exit_status(EXIT_FAILURE);
   }
-#if BOOTSTRAP
-  auto TmpStream = std::make_shared<Queue>();
-  auto ReadPos = std::make_shared<ReadCursor>(StreamType::Byte, TmpStream);
-  BinaryWriter Writer(TmpStream, Symtab);
-#else
-  BinaryWriter Writer(std::make_shared<WriteBackedQueue>(getOutput()), Symtab);
-#endif
-  Writer.setTraceProgress(Verbose >= 1);
-  Writer.setMinimizeBlockSize(MinimizeBlockSize);
-  Writer.writePreamble();
-  Writer.writeFile(wasm::dyn_cast<FileNode>(Parser.getParsedAst()));
-  Writer.freezeEof();
-#if BOOTSTRAP
-  generateArrayImpl(ReadPos);
-#endif
+  auto Output = getOutput();
+  std::shared_ptr<BinaryWriter> Writer;
+  std::shared_ptr<ReadCursor> ReadPos;
+  if (GenerateCppSource) {
+    auto TmpStream = std::make_shared<Queue>();
+    ReadPos = std::make_shared<ReadCursor>(StreamType::Byte, TmpStream);
+    Writer = std::make_shared<BinaryWriter>(TmpStream, Symtab);
+  } else {
+    Writer = std::make_shared<BinaryWriter>(
+        std::make_shared<WriteBackedQueue>(Output), Symtab);
+  }
+  Writer->setTraceProgress(Verbose >= 1);
+  Writer->setMinimizeBlockSize(MinimizeBlockSize);
+  Writer->writePreamble();
+  Writer->writeFile(wasm::dyn_cast<FileNode>(Parser.getParsedAst()));
+  Writer->freezeEof();
+  if (GenerateCppSource)
+    generateArrayImpl(InputFilename, ReadPos, Output);
   return exit_status(EXIT_SUCCESS);
 }
