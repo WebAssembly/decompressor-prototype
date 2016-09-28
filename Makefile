@@ -218,10 +218,10 @@ CPP_COMPILER_BOOT := CCACHE_CPP2=yes $(CCACHE) $(CXX_BOOT)
 CXXFLAGS_BASE := -Wall -Wextra -O2 -g -pedantic -MP -MD \
 	    -Werror -Wno-unused-parameter -fno-omit-frame-pointer -fPIC \
 	    -Isrc
-CXXFLAGS := $(TARGET_CXXFLAGS) $(PLATFORM_CXXFLAGS) -DBOOTSTRAP=0 \
+CXXFLAGS := $(TARGET_CXXFLAGS) $(PLATFORM_CXXFLAGS) \
 	    $(CXXFLAGS_BASE)
 
-CXXFLAGS_BOOT := $(PLATFORM_CXXFLAGS_DEFAULT) -DBOOTSTRAP=1 $(CXXFLAGS_BASE)
+CXXFLAGS_BOOT := $(PLATFORM_CXXFLAGS_DEFAULT) $(CXXFLAGS_BASE)
 
 ifneq ($(RELEASE), 0)
   CXXFLAGS += -DNDEBUG
@@ -275,7 +275,7 @@ gen-parser: $(PARSER_DIR)/Parser.tab.cpp
 .PHONY: gen-parser
 
 $(SEXP_DEFAULTS_CPP): $(BUILD_EXECDIR_BOOT)/decompsexp-wasm $(SEXP_DEFAULTS)
-	$< -i $(SEXP_DEFAULTS) -o $@
+	$< -d -i $(SEXP_DEFAULTS) -o $@
 
 ###### Compiliing binary generation Sources ######
 
