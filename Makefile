@@ -593,22 +593,35 @@ presubmit:
 .PHONY: presubmit
 
 test-decompress: $(BUILD_EXECDIR)/decompress
-	$< -d $(SEXP_DEFAULTS) -i $(TEST_SRCS_DIR)/toy.wasm -o - \
+	$< -p -d $(SEXP_DEFAULTS) -i $(TEST_SRCS_DIR)/toy.wasm -o - \
 		| diff - $(TEST_SRCS_DIR)/toy.wasm-w
-	$< -d $(TEST_SRCS_DIR)/defaults.wasm \
+	$< -p -d $(SEXP_DEFAULTS) -m -i $(TEST_SRCS_DIR)/toy.wasm -o - \
+		| diff - $(TEST_SRCS_DIR)/toy.wasm
+	$< -p -d $(TEST_SRCS_DIR)/defaults.wasm \
 		-i $(TEST_SRCS_DIR)/toy.wasm -o - \
 		| diff - $(TEST_SRCS_DIR)/toy.wasm-w
-	$< -d $(TEST_SRCS_DIR)/defaults.wasm -m \
+	$< -m -p -d $(TEST_SRCS_DIR)/defaults.wasm \
+		 -i $(TEST_SRCS_DIR)/toy.wasm -o - \
+		| diff - $(TEST_SRCS_DIR)/toy.wasm
+	$< -p -d $(TEST_SRCS_DIR)/defaults.wasm-w \
 		-i $(TEST_SRCS_DIR)/toy.wasm -o - \
-		| diff - $(TEST_SRCS_DIR)/toy.wasm
-	$< -d $(TEST_SRCS_DIR)/defaults.wasm \
-		-i $(TEST_SRCS_DIR)/toy.wasm-w -o - \
 		| diff - $(TEST_SRCS_DIR)/toy.wasm-w
-	$< -d $(TEST_SRCS_DIR)/defaults.wasm -m \
-		-i $(TEST_SRCS_DIR)/toy.wasm-w -o - \
+	$< -m -p -d $(TEST_SRCS_DIR)/defaults.wasm-w \
+		 -i $(TEST_SRCS_DIR)/toy.wasm -o - \
 		| diff - $(TEST_SRCS_DIR)/toy.wasm
-	$< -d $(TEST_SRCS_DIR)/defaults.wasm -m \
-		-i $(TEST_SRCS_DIR)/if-then-br.wasm -o - \
+	$< -i $(TEST_SRCS_DIR)/toy.wasm -o - \
+		| diff - $(TEST_SRCS_DIR)/toy.wasm-w
+	$< -m -i $(TEST_SRCS_DIR)/toy.wasm -o - \
+		| diff - $(TEST_SRCS_DIR)/toy.wasm
+	$< -i $(TEST_SRCS_DIR)/toy.wasm -o - \
+		| diff - $(TEST_SRCS_DIR)/toy.wasm-w
+	$< -m -i $(TEST_SRCS_DIR)/toy.wasm -o - \
+		| diff - $(TEST_SRCS_DIR)/toy.wasm
+	$< -i $(TEST_SRCS_DIR)/toy.wasm-w -o - \
+		| diff - $(TEST_SRCS_DIR)/toy.wasm-w
+	$< -m -i $(TEST_SRCS_DIR)/toy.wasm-w -o - \
+		| diff - $(TEST_SRCS_DIR)/toy.wasm
+	$< -m -i $(TEST_SRCS_DIR)/if-then-br.wasm -o - \
 		| diff - $(TEST_SRCS_DIR)/if-then-br.wasm
 	cd test/test-sources; make test RELEASE=$(RELEASE) CXX=$(CXX)
 	@echo "*** decompress tests passed ***"

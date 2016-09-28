@@ -17,7 +17,9 @@
 
 #include "binary/BinaryReader.h"
 #include "interp/Interpreter.h"
+#include "sexp/defaults.h"
 #include "sexp-parser/Driver.h"
+#include "stream/ArrayReader.h"
 #include "stream/FileReader.h"
 #include "stream/FileWriter.h"
 #include "stream/ReadBackedQueue.h"
@@ -61,6 +63,18 @@ std::shared_ptr<RawStream> getOutput() {
   return std::make_shared<FstreamWriter>(OutputFilename);
 }
 
+bool installPredefinedDefaults(std::shared_ptr<SymbolTable> Symtab,
+                               int Verbose) {
+  if (Verbose)
+    fprintf(stderr, "Loading compiled in default rules\n");
+  auto Stream = std::make_shared<ArrayReader>(
+      getWasmDefaultsBuffer(), getWasmDefaultsBufferSize());
+  BinaryReader Reader(std::make_shared<ReadBackedQueue>(std::move(Stream)),
+                      Symtab);
+  Reader.getTrace().setTraceProgress(Verbose >= 2);
+  return Reader.readFile() != nullptr;
+}
+
 void usage(const char* AppName) {
   fprintf(stderr, "usage: %s [options]\n", AppName);
   fprintf(stderr, "\n");
@@ -74,6 +88,7 @@ void usage(const char* AppName) {
   fprintf(stderr, "  -m\t\t\tMinimize block sizes in output stream.\n");
   fprintf(stderr,
           "  -o File\t\tGenerated Decompressed File ('-' implies stdout).\n");
+  fprintf(stderr, "  -p\t\t\tDon't install predefined decompression rules.\n");
   fprintf(stderr, "  -s\t\t\tUse C++ streams instead of C file descriptors.\n");
   fprintf(stderr,
           "  -t N\t\t\tDecompress N times (used to test performance).\n");
@@ -100,49 +115,52 @@ int main(int Argc, char* Argv[]) {
   auto Symtab = std::make_shared<SymbolTable>();
   int Verbose = 0;
   bool MinimizeBlockSize = false;
+  bool InstallPredefinedRules = true;
   std::vector<int> DefaultIndices;
   size_t NumTries = 1;
   for (int i = 1; i < Argc; ++i) {
-    if (Argv[i] == std::string("-d")) {
+    std::string Arg(Argv[i]);
+    if (Arg == "-d") {
       if (++i >= Argc) {
         fprintf(stderr, "No file specified after -d option\n");
         usage(Argv[0]);
         return exit_status(EXIT_FAILURE);
       }
       DefaultIndices.push_back(i);
-    } else if (Argv[i] == std::string("--expect-fail")) {
+    } else if (Arg == "--expect-fail") {
       ExpectExitFail = true;
-    } else if (Argv[i] == std::string("-h") ||
-               Argv[i] == std::string("--help")) {
+    } else if (Arg == "-h" || Arg == "--help") {
       usage(Argv[0]);
       return exit_status(EXIT_SUCCESS);
-    } else if (Argv[i] == std::string("-i")) {
+    } else if (Arg == "-i") {
       if (++i >= Argc) {
         fprintf(stderr, "No file specified after -i option\n");
         usage(Argv[0]);
         return exit_status(EXIT_FAILURE);
       }
       InputFilename = Argv[i];
-    } else if (Argv[i] == std::string("-m")) {
+    } else if (Arg == "-m") {
       MinimizeBlockSize = true;
-    } else if (Argv[i] == std::string("-o")) {
+    } else if (Arg == "-o") {
       if (++i >= Argc) {
         fprintf(stderr, "No file specified after -o option\n");
         usage(Argv[0]);
         return exit_status(EXIT_FAILURE);
       }
       OutputFilename = Argv[i];
-    } else if (Argv[i] == std::string("-s")) {
+    } else if (Arg == "-p") {
+      InstallPredefinedRules = false;
+    } else if (Arg == "-s") {
       UseFileStreams = true;
-    } else if (Argv[i] == std::string("-t")) {
+    } else if (Arg == "-t") {
       if (++i >= Argc) {
         fprintf(stderr, "No count specified after -t option\n");
         usage(Argv[0]);
         return exit_status(EXIT_FAILURE);
       }
       NumTries += atol(Argv[i]);
-    } else if (isDebug() && (Argv[i] == std::string("-v") ||
-                             Argv[i] == std::string("--verbose"))) {
+    } else if (isDebug() && (Arg == "-v" ||
+                             Arg == "--verbose")) {
       ++Verbose;
     } else {
       fprintf(stderr, "Unrecognized option: %s\n", Argv[i]);
@@ -151,6 +169,10 @@ int main(int Argc, char* Argv[]) {
     }
   }
   Symtab->getTrace().setTraceProgress(Verbose >= 4);
+  if (InstallPredefinedRules && !installPredefinedDefaults(Symtab, Verbose)) {
+    fprintf(stderr, "Unable to load compiled in default rules!\n");
+    return exit_status(EXIT_FAILURE);
+  }
   for (int i : DefaultIndices) {
     if (Verbose)
       fprintf(stderr, "Loading default: %s\n", Argv[i]);
