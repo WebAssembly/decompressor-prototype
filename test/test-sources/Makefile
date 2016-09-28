@@ -22,6 +22,6 @@ test: $(LOCAL_TESTS)
 
 $(LOCAL_TESTS): $(LOCAL_SEXPS_DIR)/%.test: $(LOCAL_SEXPS_DIR)/%.wasm
 	@# Read using no default algorithms
-	$(EXEC_DIR)/decompress -m -i $< | diff - $<
+	$(EXEC_DIR)/decompress -p -m -i $< | diff - $<
 	@# Read using default algorithms
-	$(EXEC_DIR)/decompress -d defaults.wasm -m -i $< | diff - $<
+	$(EXEC_DIR)/decompress -m -i $< | diff - $<
