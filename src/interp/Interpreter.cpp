@@ -303,8 +303,11 @@ void Interpreter::resume() {
   // Headroom is used to guarantee that several (integer) reads
   // can be done in a single iteration of the loop.
   constexpr size_t kResumeHeadroom = 100;
-  if (!ReadPos.isEofFrozen())
+  if (!ReadPos.isEofFrozen()) {
+    if (FillPos < kResumeHeadroom)
+      return;
     FillPos -= kResumeHeadroom;
+  }
   while (ReadPos.getCurByteAddress() <= FillPos) {
     if (errorsFound())
       break;

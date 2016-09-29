@@ -16,6 +16,7 @@
  */
 
 #include "binary/BinaryReader.h"
+#include "interp/Decompress.h"
 #include "interp/Interpreter.h"
 #include "sexp-parser/Driver.h"
 #include "stream/FileReader.h"
@@ -61,12 +62,48 @@ std::shared_ptr<RawStream> getOutput() {
   return std::make_shared<FstreamWriter>(OutputFilename);
 }
 
+int runUsingCApi() {
+  void* Decomp = create_decompressor();
+  auto Input = getInput();
+  auto Output = getOutput();
+  constexpr int32_t MaxBufferSize = 1024;
+  uint8_t Buffer[MaxBufferSize];
+  int32_t BufferSize = 0;
+  int32_t Status = 0;
+  while (Status >= 0) {
+    if (Status > 0) {
+      int32_t ChunkSize = std::min(Status, MaxBufferSize);
+      memcpy(get_next_decompressor_output_buffer(Decomp, ChunkSize),
+             Buffer, ChunkSize);
+      if (!Output->write(Buffer, ChunkSize))
+        Status = DECOMPRESSOR_ERROR;
+      Status -= ChunkSize;
+      break;
+    }
+    while (BufferSize < MaxBufferSize) {
+      size_t Count = Input->read(Buffer, MaxBufferSize - BufferSize);
+      if (Count == 0)
+        break;
+      BufferSize += Count;
+    }
+    if (BufferSize) {
+      memcpy(get_next_decompressor_input_buffer(Decomp, BufferSize),
+             Buffer, BufferSize);
+      Status = resume_decompression(Decomp);
+    } else {
+      Status = finish_decompression(Decomp);
+    }
+  }
+  return Status == DECOMPRESSOR_SUCCESS ? EXIT_SUCCESS : EXIT_FAILURE;
+}
+
 void usage(const char* AppName) {
   fprintf(stderr, "usage: %s [options]\n", AppName);
   fprintf(stderr, "\n");
   fprintf(stderr, "  Decompress WASM binary file.\n");
   fprintf(stderr, "\n");
   fprintf(stderr, "Options:\n");
+  fprintf(stderr, "  --c-api\t\tUse C API to decompress.\n");
   fprintf(stderr, "  -d File\t\tFile containing default algorithms.\n");
   fprintf(stderr, "  --expect-fail\t\tSucceed on failure/fail on success\n");
   fprintf(stderr, "  -h\t\t\tPrint this usage message.\n");
@@ -98,15 +135,18 @@ void usage(const char* AppName) {
 }
 
 int main(int Argc, char* Argv[]) {
-  auto Symtab = std::make_shared<SymbolTable>();
   int Verbose = 0;
   bool MinimizeBlockSize = false;
   bool InstallPredefinedRules = true;
+  bool UseCApi = false;
   std::vector<int> DefaultIndices;
   size_t NumTries = 1;
   for (int i = 1; i < Argc; ++i) {
     std::string Arg(Argv[i]);
-    if (Arg == "-d") {
+    if (Arg == "--c-api") {
+      UseCApi = true;
+    }
+    else if (Arg == "-d") {
       if (++i >= Argc) {
         fprintf(stderr, "No file specified after -d option\n");
         usage(Argv[0]);
@@ -153,6 +193,30 @@ int main(int Argc, char* Argv[]) {
       return exit_status(EXIT_FAILURE);
     }
   }
+
+  if (UseCApi) {
+    if (!InstallPredefinedRules) {
+      fprintf(stderr, "-p and --c-api options not allowed");
+      usage(Argv[0]);
+      return exit_status(EXIT_FAILURE);
+    }
+    if (!DefaultIndices.empty()) {
+      fprintf(stderr, "-d and --c-api options not allowed");
+      usage(Argv[0]);
+      return exit_status(EXIT_FAILURE);
+    }
+    if (NumTries != 1) {
+      fprintf(stderr, "-t and --c-api options not allowed");
+      usage(Argv[0]);
+      return exit_status(EXIT_FAILURE);
+    }
+    if (Verbose)
+      fprintf(stderr, "--c-api ignores -v option\n");
+    if (MinimizeBlockSize)
+      fprintf(stderr, "--c-api ignores -m option\n");
+    return exit_status(runUsingCApi());
+  }
+  auto Symtab = std::make_shared<SymbolTable>();
   Symtab->getTrace().setTraceProgress(Verbose >= 4);
   if (InstallPredefinedRules &&
       !SymbolTable::installPredefinedDefaults(Symtab, Verbose)) {
