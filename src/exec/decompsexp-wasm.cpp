@@ -80,7 +80,8 @@ void generateArrayImpl(const char* InputFilename,
       "\n"
       "// Geneated from: \"");
   Output->puts(InputFilename);
-  Output->puts("\"\n"
+  Output->puts(
+      "\"\n"
       "static const uint8_t WasmDefaults[] = {\n");
   char Buffer[256];
   while (!ReadPos->atEof()) {

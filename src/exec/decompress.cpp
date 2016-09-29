@@ -145,8 +145,7 @@ int main(int Argc, char* Argv[]) {
         return exit_status(EXIT_FAILURE);
       }
       NumTries += atol(Argv[i]);
-    } else if (isDebug() && (Arg == "-v" ||
-                             Arg == "--verbose")) {
+    } else if (isDebug() && (Arg == "-v" || Arg == "--verbose")) {
       ++Verbose;
     } else {
       fprintf(stderr, "Unrecognized option: %s\n", Argv[i]);
