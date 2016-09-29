@@ -48,17 +48,18 @@ struct Decompressor {
   std::shared_ptr<SymbolTable> Symtab;
   Decompressor();
   ~Decompressor();
-  uint8_t* getNextInputBuffer(int32_t Size);  /* TODO */
-  int32_t resumeDecompression();              /* TODO */
-  uint8_t* getNextOutputBuffer(int32_t Size); /* TODO */
+  uint8_t* getNextInputBuffer(int32_t Size);
+  int32_t resumeDecompression();
+  uint8_t* getNextOutputBuffer(int32_t Size);
 };
 }
 
 Decompressor::Decompressor()
-    : InputBuffer(nullptr), InputBufferSize(0),
-      OutputBuffer(nullptr), OutputBufferSize(0),
-      Symtab(std::make_shared<SymbolTable>())
-{
+    : InputBuffer(nullptr),
+      InputBufferSize(0),
+      OutputBuffer(nullptr),
+      OutputBufferSize(0),
+      Symtab(std::make_shared<SymbolTable>()) {
 }
 
 Decompressor::~Decompressor() {
@@ -87,7 +88,7 @@ uint8_t* Decompressor::getNextOutputBuffer(int32_t Size) {
   return nullptr;
 }
 
-} // end of anonymous namespace
+}  // end of anonymous namespace
 
 extern "C" {
 
