@@ -17,9 +17,7 @@
 
 #include "binary/BinaryReader.h"
 #include "interp/Interpreter.h"
-#include "sexp/defaults.h"
 #include "sexp-parser/Driver.h"
-#include "stream/ArrayReader.h"
 #include "stream/FileReader.h"
 #include "stream/FileWriter.h"
 #include "stream/ReadBackedQueue.h"
@@ -61,18 +59,6 @@ std::shared_ptr<RawStream> getOutput() {
   if (UseFileStreams)
     return std::make_shared<FileWriter>(OutputFilename);
   return std::make_shared<FstreamWriter>(OutputFilename);
-}
-
-bool installPredefinedDefaults(std::shared_ptr<SymbolTable> Symtab,
-                               int Verbose) {
-  if (Verbose)
-    fprintf(stderr, "Loading compiled in default rules\n");
-  auto Stream = std::make_shared<ArrayReader>(
-      getWasmDefaultsBuffer(), getWasmDefaultsBufferSize());
-  BinaryReader Reader(std::make_shared<ReadBackedQueue>(std::move(Stream)),
-                      Symtab);
-  Reader.getTrace().setTraceProgress(Verbose >= 2);
-  return Reader.readFile() != nullptr;
 }
 
 void usage(const char* AppName) {
@@ -159,8 +145,7 @@ int main(int Argc, char* Argv[]) {
         return exit_status(EXIT_FAILURE);
       }
       NumTries += atol(Argv[i]);
-    } else if (isDebug() && (Arg == "-v" ||
-                             Arg == "--verbose")) {
+    } else if (isDebug() && (Arg == "-v" || Arg == "--verbose")) {
       ++Verbose;
     } else {
       fprintf(stderr, "Unrecognized option: %s\n", Argv[i]);
@@ -169,7 +154,8 @@ int main(int Argc, char* Argv[]) {
     }
   }
   Symtab->getTrace().setTraceProgress(Verbose >= 4);
-  if (InstallPredefinedRules && !installPredefinedDefaults(Symtab, Verbose)) {
+  if (InstallPredefinedRules &&
+      !SymbolTable::installPredefinedDefaults(Symtab, Verbose)) {
     fprintf(stderr, "Unable to load compiled in default rules!\n");
     return exit_status(EXIT_FAILURE);
   }

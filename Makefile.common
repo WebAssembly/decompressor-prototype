@@ -136,7 +136,7 @@ else
   BUILDDIR = $(BUILDBASEDIR)/release
 endif
 
-BUILDDIR_BOOT = build/boot
+BUILDDIR_BOOT = build/boot$(CXX_SUBDIR)$(PAGE_BUILD_SUFFIX)
 
 OBJDIR = $(BUILDDIR)/obj
 OBJDIR_BOOT = $(BUILDDIR_BOOT)/obj

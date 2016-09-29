@@ -22,12 +22,19 @@
 namespace wasm {
 
 using namespace decode;
+using namespace filt;
 
 namespace interp {
 
 extern "C" {
 
 namespace {
+
+#if 0
+constexpr int32_t kEndOfStream = -1;
+#endif
+
+constexpr int32_t kDecodingError = -2;
 
 struct Decompressor {
   Decompressor(const Decompressor& D) = delete;
@@ -38,17 +45,21 @@ struct Decompressor {
   int32_t InputBufferSize;
   uint8_t* OutputBuffer;
   int32_t OutputBufferSize;
+  std::shared_ptr<SymbolTable> Symtab;
   Decompressor();
   ~Decompressor();
-  uint8_t* getNextInputBuffer(int32_t Size);  /* TODO */
-  int32_t resumeDecompression();              /* TODO */
-  uint8_t* getNextOutputBuffer(int32_t Size); /* TODO */
+  uint8_t* getNextInputBuffer(int32_t Size);
+  int32_t resumeDecompression();
+  uint8_t* getNextOutputBuffer(int32_t Size);
 };
 }
 
 Decompressor::Decompressor()
-    : InputBuffer(nullptr), InputBufferSize(0),
-      OutputBuffer(nullptr), OutputBufferSize(0) {
+    : InputBuffer(nullptr),
+      InputBufferSize(0),
+      OutputBuffer(nullptr),
+      OutputBufferSize(0),
+      Symtab(std::make_shared<SymbolTable>()) {
 }
 
 Decompressor::~Decompressor() {
@@ -77,12 +88,17 @@ uint8_t* Decompressor::getNextOutputBuffer(int32_t Size) {
   return nullptr;
 }
 
-} // end of anonymous namespace
+}  // end of anonymous namespace
 
 extern "C" {
 
 Decompressor* create_decompressor() {
-  return new Decompressor();
+  auto* Decomp = new Decompressor();
+  if (!SymbolTable::installPredefinedDefaults(Decomp->Symtab, false)) {
+    delete Decomp;
+    return nullptr;
+  }
+  return Decomp;
 }
 
 uint8_t* get_next_decompressor_input_buffer(Decompressor* D, int32_t Size) {
@@ -90,6 +106,8 @@ uint8_t* get_next_decompressor_input_buffer(Decompressor* D, int32_t Size) {
 }
 
 int32_t resume_decompression(Decompressor* D) {
+  if (D == nullptr)
+    return kDecodingError;
   return D->resumeDecompression();
 }
 

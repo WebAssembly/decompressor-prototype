@@ -16,9 +16,10 @@
 
 // Implements the interpreter for filter s-expressions.
 
+#include "interp/Interpreter.h"
+
 #include "interp/ByteReadStream.h"
 #include "interp/ByteWriteStream.h"
-#include "interp/Interpreter.h"
 #include "sexp/TextWriter.h"
 #include "utils/backwards_iterator.h"
 
