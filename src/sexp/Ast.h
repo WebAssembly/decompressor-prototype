@@ -159,6 +159,9 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
     return Alloc->create<T>(*this, std::forward<Args>(args)...);
   }
 
+  static bool installPredefinedDefaults(std::shared_ptr<SymbolTable> Symtab,
+                                        bool Verbose = false);
+
   TraceClassSexp& getTrace() { return Trace; }
 
  private:
