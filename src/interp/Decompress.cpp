@@ -21,9 +21,13 @@
 
 namespace wasm {
 
+using namespace decode;
+
 namespace interp {
 
 extern "C" {
+
+namespace {
 
 struct Decompressor {
   Decompressor(const Decompressor& D) = delete;
@@ -31,9 +35,9 @@ struct Decompressor {
 
  public:
   uint8_t* InputBuffer;
-  int32_t InputSize;
+  int32_t InputBufferSize;
   uint8_t* OutputBuffer;
-  int32_t OutputSize;
+  int32_t OutputBufferSize;
   Decompressor();
   ~Decompressor();
   uint8_t* getNextInputBuffer(int32_t Size);  /* TODO */
@@ -43,13 +47,37 @@ struct Decompressor {
 }
 
 Decompressor::Decompressor()
-    : InputBuffer(nullptr), InputSize(0), OutputBuffer(nullptr), OutputSize(0) {
+    : InputBuffer(nullptr), InputBufferSize(0),
+      OutputBuffer(nullptr), OutputBufferSize(0) {
 }
 
 Decompressor::~Decompressor() {
   delete[] InputBuffer;
   delete[] OutputBuffer;
 }
+
+uint8_t* Decompressor::getNextInputBuffer(int32_t Size) {
+  if (Size <= InputBufferSize)
+    return InputBuffer;
+  if (Size > InputBufferSize)
+    delete[] InputBuffer;
+  Size = std::max(Size, 1 >> 14);
+  InputBuffer = new uint8_t[Size];
+  InputBufferSize = Size;
+  return InputBuffer;
+}
+
+int32_t Decompressor::resumeDecompression() {
+  fatal("resumeDecompression not implemented!");
+  return 0;
+}
+
+uint8_t* Decompressor::getNextOutputBuffer(int32_t Size) {
+  fatal("getNextOutputBuffer notimplemented!");
+  return nullptr;
+}
+
+} // end of anonymous namespace
 
 extern "C" {
 
