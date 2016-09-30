@@ -67,34 +67,40 @@ int runUsingCApi() {
   auto Input = getInput();
   auto Output = getOutput();
   constexpr int32_t MaxBufferSize = 1024;
-  uint8_t Buffer[MaxBufferSize];
+  uint8_t* Buffer = get_decompressor_buffer(Decomp, MaxBufferSize);
+  // Note: If Buffer size negative, it holds the final status of
+  // the decompression.
   int32_t BufferSize = 0;
-  int32_t Status = 0;
-  while (Status >= 0) {
-    if (Status > 0) {
-      int32_t ChunkSize = std::min(Status, MaxBufferSize);
-      memcpy(get_next_decompressor_output_buffer(Decomp, ChunkSize),
-             Buffer, ChunkSize);
+  bool MoreInput = true;
+  while (BufferSize >= 0) {
+    fprintf(stderr, "BufferSize = %" PRIdMAX "\n", intmax_t(BufferSize));
+    // Collect output if available.
+    if (BufferSize > 0) {
+      int32_t ChunkSize = std::min(BufferSize, MaxBufferSize);
+      if (!fetch_decompressor_output(Decomp, ChunkSize)) {
+        BufferSize = DECOMPRESSOR_ERROR;
+        break;
+      }
       if (!Output->write(Buffer, ChunkSize))
-        Status = DECOMPRESSOR_ERROR;
-      Status -= ChunkSize;
+        BufferSize = DECOMPRESSOR_ERROR;
+      BufferSize -= ChunkSize;
       break;
     }
-    while (BufferSize < MaxBufferSize) {
+    // Fill the buffer with more input.
+    while (MoreInput && BufferSize < MaxBufferSize) {
       size_t Count = Input->read(Buffer, MaxBufferSize - BufferSize);
-      if (Count == 0)
+      if (Count == 0) {
+        MoreInput = false;
         break;
+      }
       BufferSize += Count;
     }
-    if (BufferSize) {
-      memcpy(get_next_decompressor_input_buffer(Decomp, BufferSize),
-             Buffer, BufferSize);
-      Status = resume_decompression(Decomp);
-    } else {
-      Status = finish_decompression(Decomp);
-    }
+    // Pass in new input and resume decompression.
+    BufferSize = resume_decompression(Decomp, BufferSize);
   }
-  return Status == DECOMPRESSOR_SUCCESS ? EXIT_SUCCESS : EXIT_FAILURE;
+  int Result = BufferSize == DECOMPRESSOR_SUCCESS ? EXIT_SUCCESS : EXIT_FAILURE;
+  fprintf(stderr, "Result = %d\n", Result);
+  return Result;
 }
 
 void usage(const char* AppName) {
@@ -145,8 +151,7 @@ int main(int Argc, char* Argv[]) {
     std::string Arg(Argv[i]);
     if (Arg == "--c-api") {
       UseCApi = true;
-    }
-    else if (Arg == "-d") {
+    } else if (Arg == "-d") {
       if (++i >= Argc) {
         fprintf(stderr, "No file specified after -d option\n");
         usage(Argv[0]);

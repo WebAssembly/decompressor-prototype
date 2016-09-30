@@ -18,6 +18,8 @@
 #include "stream/Queue.h"
 #include "stream/WriteUtils.h"
 
+#include <algorithm>
+
 namespace wasm {
 
 namespace decode {
@@ -119,16 +121,20 @@ bool Queue::readFill(size_t Address) {
   return Address < LastPage->getMaxAddress();
 }
 
-bool Queue::writeFill(size_t Address) {
+bool Queue::writeFill(size_t Address, size_t WantedSize) {
+  Address += WantedSize;
   // Expand till page exists.
-  while (Address >= LastPage->getMaxAddress()) {
+  while (Address > LastPage->getMaxAddress()) {
     if (EofFrozen)
       return false;
-    LastPage->setMaxAddress(LastPage->getMinAddress() + Page::Size);
-    if (Address < LastPage->getMaxAddress())
-      return true;
-    if (!appendPage())
-      return false;
+    size_t MaxLimit = LastPage->getMinAddress() + Page::Size;
+    if (Address >= MaxLimit) {
+      LastPage->setMaxAddress(MaxLimit);
+      if (!appendPage())
+        return false;
+    } else {
+      LastPage->setMaxAddress(Address);
+    }
   }
   return true;
 }
@@ -151,7 +157,7 @@ std::shared_ptr<Page> Queue::readFillToPage(size_t Index, size_t& Address) {
 
 std::shared_ptr<Page> Queue::writeFillToPage(size_t Index, size_t& Address) {
   while (Index > LastPage->Index) {
-    bool WriteFillNextPage = writeFill(LastPage->getMinAddress() + Page::Size);
+    bool WriteFillNextPage = writeFill(LastPage->getMinAddress(), Page::Size);
     if (!WriteFillNextPage && Index > LastPage->Index) {
       // This should only happen if we reach eof. Verify,
       // If so, allow page wrap so that we can have a cursor pointing
@@ -185,7 +191,7 @@ size_t Queue::writeToPage(size_t& Address,
                           size_t WantedSize,
                           PageCursor& Cursor) {
   // Expand till page exists.
-  if (!writeFill(Address))
+  if (!writeFill(Address, WantedSize))
     return 0;
   Cursor.CurPage = getCachedPage(Address);
   Cursor.setCurAddress(Address);

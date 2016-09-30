@@ -40,12 +40,12 @@ bool Cursor::readFillBuffer() {
   return BufferSize > 0;
 }
 
-void Cursor::writeFillBuffer() {
+void Cursor::writeFillBuffer(size_t WantedSize) {
   if (CurAddress >= Que->getEofAddress()) {
     fail();
     return;
   }
-  size_t BufferSize = Que->writeToPage(CurAddress, Page::Size, *this);
+  size_t BufferSize = Que->writeToPage(CurAddress, WantedSize, *this);
   if (BufferSize == 0)
     fail();
 }

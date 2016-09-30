@@ -30,22 +30,26 @@ extern "C" {
 /* Returns an allocated and initialized decompressor. */
 extern void* create_decompressor();
 
-/* Requestes a buffer of Size bytes. Assumes the lifetime of the
- * buffer is to the next call to get_next_decompressor_buffer() or
- * destroy_decompressor() (which ever comes first).
+/* Creates a buffer to pass data in/out. D is the decompressor and Size is the
+ * size of buffer to use.
  */
-extern void* get_next_decompressor_input_buffer(void* D, int32_t Size);
+extern uint8_t* get_decompressor_buffer(void* D, int32_t Size);
 
-extern int32_t resume_decompression(void* D);
+/* Resume decopmression, assuming the buffer contains Size bytes to read.  If
+ * non-negative, returns the number of output bytes available.  If negative,
+ * either DECOMPRESSOR_SUCCESS or DECOMPRESSOR_ERROR. NOTE: If Size == 0, the
+ * code assumes that no more input will be provided (i.e. in all subsequent
+ * calls, Size == 0).
+ */
+extern int32_t resume_decompression(void* D, int32_t Size);
 
-/* Called when no more input to process */
-extern int32_t finish_decompression(void* D);
-
-extern void* get_next_decompressor_output_buffer(void* D, int32_t Size);
+/* Fetch the next Size bytes and put into the decompression buffer.
+ * Returns true if successful.
+ */
+extern bool fetch_decompressor_output(void* D, int32_t Size);
 
 /* Clean up D and then deallocates. */
 extern void destroy_decompressor(void* D);
-
 }
 
 #endif  // DECOMPRESSOR_SRC_INTERP_DECOMPRESS_H

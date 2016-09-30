@@ -117,9 +117,7 @@ class Cursor : public PageCursor {
 
   bool isEofFrozen() const { return Que->isEofFrozen(); }
 
-  bool atEof() const {
-    return isIndexAtEndOfPage() && !const_cast<Cursor*>(this)->readFillBuffer();
-  }
+  bool atEof() const { return CurAddress == Que->getEofAddress(); }
 
   size_t getEofAddress() const { return Que->getEofAddress(); }
 
@@ -198,8 +196,9 @@ class Cursor : public PageCursor {
   // Returns true if able to fill the buffer with at least one byte.
   bool readFillBuffer();
 
-  // Creates new pages in buffer so that writes can occur.
-  void writeFillBuffer();
+  // Creates new pages in buffer so that writes can occur. WantedSize is
+  // a hint of the expecte growth.
+  void writeFillBuffer(size_t WantedSize = Page::Size);
 
   void fail();
 };

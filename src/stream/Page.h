@@ -102,6 +102,8 @@ class Page : public std::enable_shared_from_this<Page> {
 
   size_t getMaxAddress() const { return MaxAddress; }
 
+  size_t getPageSize() const { return MaxAddress - MinAddress; }
+
   void setMaxAddress(size_t NewValue) { MaxAddress = NewValue; }
 
   void incrementMaxAddress(size_t Increment = 1) { MaxAddress += Increment; }

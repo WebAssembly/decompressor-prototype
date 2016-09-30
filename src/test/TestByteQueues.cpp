@@ -128,12 +128,12 @@ int main(int Argc, char* Argv[]) {
       size_t WriteBytesAvailable =
           Output->writeToPage(Address, ReadBytesAvailable, WritePos);
       if (WriteBytesAvailable == 0) {
-        fprintf(stderr, "Unable to write address %d, returned zero bytes",
+        fprintf(stderr, "Unable to write address %d, returned zero bytes\n",
                 int(Address));
         return exit_status(EXIT_FAILURE);
       }
       if (WriteBytesAvailable > ReadBytesAvailable) {
-        fprintf(stderr, "Unable to write address %d, returned %d extra bytes",
+        fprintf(stderr, "Unable to write address %d, returned %d extra bytes\n",
                 int(Address), int(WriteBytesAvailable - ReadBytesAvailable));
         return exit_status(EXIT_FAILURE);
       }

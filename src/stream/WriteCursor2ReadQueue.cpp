@@ -14,15 +14,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "stream/WriteCursor.h"
+#include "stream/WriteCursor2ReadQueue.h"
 
 namespace wasm {
 
 namespace decode {
 
-void WriteCursor::writeFillWriteByte(uint8_t Byte) {
+void WriteCursor2ReadQueue::writeFillWriteByte(uint8_t Byte) {
   if (isIndexAtEndOfPage())
-    writeFillBuffer();
+    writeFillBuffer(1);
   updateGuaranteedBeforeEob();
   writeOneByte(Byte);
 }

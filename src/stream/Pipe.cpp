@@ -1,4 +1,4 @@
-// -*- C++ -*-
+// -*- C++ -*- */
 //
 // Copyright 2016 WebAssembly Community Group participants
 //
@@ -13,20 +13,28 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+//
 
-#include "stream/WriteCursor.h"
+#include "stream/Pipe.h"
 
 namespace wasm {
 
 namespace decode {
 
-void WriteCursor::writeFillWriteByte(uint8_t Byte) {
-  if (isIndexAtEndOfPage())
-    writeFillBuffer();
-  updateGuaranteedBeforeEob();
-  writeOneByte(Byte);
+Pipe::PipeBackedQueue::~PipeBackedQueue() {
+  // NOTE: we must override the base destructor so that calls to dumpFirstPage
+  // is the one local to this class!
+  while (FirstPage)
+    dumpFirstPage();
 }
 
-}  // end of namespace decode
+void Pipe::PipeBackedQueue::dumpFirstPage() {
+  // TODO(karlschimpf) Optimize this!
+  for (size_t i = 0, Size = FirstPage->getPageSize(); i < Size; ++i)
+    MyPipe.WritePos.writeByte(FirstPage->Buffer[i]);
+  Queue::dumpFirstPage();
+}
 
-}  // end of namespace wasm
+}  // end of decode namespace
+
+}  // end of wasm namespace

@@ -1544,8 +1544,7 @@ void Interpreter::resume() {
 }
 
 void Interpreter::decompress() {
-  assert(FrameStack.empty());
-  callTopLevel(Method::GetFile, nullptr);
+  start();
   readBackFilled();
 }
 

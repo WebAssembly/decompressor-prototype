@@ -58,7 +58,10 @@ class Interpreter {
   void decompress();
 
   // Starts up decompression.
-  void start();
+  void start() {
+    assert(FrameStack.empty());
+    callTopLevel(Method::GetFile, nullptr);
+  }
 
   // Resumes decompression where it left off. Assumes that more
   // input has been added since the previous start()/resume() call.
@@ -72,6 +75,11 @@ class Interpreter {
   bool isFinished() const { return Frame.CallMethod == Method::Finished; }
   bool isSuccessful() const { return Frame.CallState == State::Succeeded; }
   bool errorsFound() const { return Frame.CallState == State::Failed; }
+
+  // Force interpretation to fail.
+  void fail(const std::string& Message);
+
+  TraceClassSexpReaderWriter& getTrace() { return Trace; }
 
  private:
   enum class Method {
@@ -138,6 +146,8 @@ class Interpreter {
     size_t CallingEvalIndex;
   };
 
+  void fail();
+
   decode::ReadCursor ReadPos;
   std::shared_ptr<ReadStream> Reader;
   decode::WriteCursor WritePos;
@@ -196,8 +206,6 @@ class Interpreter {
   OpcodeLocalsFrame OpcodeLocals;
   utils::ValueStack<OpcodeLocalsFrame> OpcodeLocalsStack;
 
-  void fail();
-  void fail(const std::string& Message);
   void failBadState();
   void failNotImplemented();
 
@@ -245,7 +253,6 @@ class Interpreter {
     popAndReturn(Value);
   }
 
-  TraceClassSexpReaderWriter& getTrace() { return Trace; }
   void TraceEnterFrame() {
     assert(Frame.CallState == Interpreter::State::Enter);
     TRACE_ENTER(getName(Frame.CallMethod));
