@@ -67,34 +67,38 @@ int runUsingCApi() {
   auto Input = getInput();
   auto Output = getOutput();
   constexpr int32_t MaxBufferSize = 1024;
-  uint8_t Buffer[MaxBufferSize];
+  uint8_t* Buffer = get_decompressor_buffer(Decomp, MaxBufferSize);
+  // Note: If Buffer size negative, it holds the final status of
+  // the decompression.
   int32_t BufferSize = 0;
-  int32_t Status = 0;
-  while (Status >= 0) {
-    if (Status > 0) {
-      int32_t ChunkSize = std::min(Status, MaxBufferSize);
-      memcpy(get_next_decompressor_output_buffer(Decomp, ChunkSize),
-             Buffer, ChunkSize);
+  while (BufferSize >= 0) {
+    // Collect output if available.
+    if (BufferSize > 0) {
+      int32_t ChunkSize = std::min(BufferSize, MaxBufferSize);
+      if (!fetch_decompressor_output(Decomp, ChunkSize)) {
+        BufferSize = DECOMPRESSOR_ERROR;
+        break;
+      }
       if (!Output->write(Buffer, ChunkSize))
-        Status = DECOMPRESSOR_ERROR;
-      Status -= ChunkSize;
+        BufferSize = DECOMPRESSOR_ERROR;
+      BufferSize -= ChunkSize;
       break;
     }
+    // Fill the buffer with more input.
     while (BufferSize < MaxBufferSize) {
       size_t Count = Input->read(Buffer, MaxBufferSize - BufferSize);
       if (Count == 0)
         break;
       BufferSize += Count;
     }
+    // Pass in new input and resume decompression.
     if (BufferSize) {
-      memcpy(get_next_decompressor_input_buffer(Decomp, BufferSize),
-             Buffer, BufferSize);
-      Status = resume_decompression(Decomp);
+      BufferSize = resume_decompression(Decomp, BufferSize);
     } else {
-      Status = finish_decompression(Decomp);
+      BufferSize = finish_decompression(Decomp);
     }
   }
-  return Status == DECOMPRESSOR_SUCCESS ? EXIT_SUCCESS : EXIT_FAILURE;
+  return BufferSize == DECOMPRESSOR_SUCCESS ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 void usage(const char* AppName) {

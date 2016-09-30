@@ -18,6 +18,8 @@
 #include "stream/Queue.h"
 #include "stream/WriteUtils.h"
 
+#include <algorithm>
+
 namespace wasm {
 
 namespace decode {
@@ -124,7 +126,14 @@ bool Queue::writeFill(size_t Address) {
   while (Address >= LastPage->getMaxAddress()) {
     if (EofFrozen)
       return false;
+#if 1
     LastPage->setMaxAddress(LastPage->getMinAddress() + Page::Size);
+#else
+    size_t NewMax = Address + 1;
+    if (NewMax > Page::Size)
+      NewMax = Page::Size;
+    LastPage->setMaxAddress(LastPage->getMinAddress() + NewMax);
+#endif
     if (Address < LastPage->getMaxAddress())
       return true;
     if (!appendPage())
