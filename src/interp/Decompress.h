@@ -22,30 +22,30 @@
 
 #include <stdint.h>
 
-#ifdef _cpluscplus
 extern "C" {
-#endif
 
-struct Decompressor;
+#define DECOMPRESSOR_SUCCESS (-1)
+#define DECOMPRESSOR_ERROR (-2)
 
 /* Returns an allocated and initialized decompressor. */
-Decompressor* create_decompressor();
+extern void* create_decompressor();
 
 /* Requestes a buffer of Size bytes. Assumes the lifetime of the
  * buffer is to the next call to get_next_decompressor_buffer() or
  * destroy_decompressor() (which ever comes first).
  */
-uint8_t* get_next_decompressor_input_buffer(Decompressor* D, int32_t Size);
+extern void* get_next_decompressor_input_buffer(void* D, int32_t Size);
 
-int32_t resume_decompression(Decompressor* D);
+extern int32_t resume_decompression(void* D);
 
-uint8_t* get_next_decompressor_output_buffer(Decompressor* D, int32_t Size);
+/* Called when no more input to process */
+extern int32_t finish_decompression(void* D);
+
+extern void* get_next_decompressor_output_buffer(void* D, int32_t Size);
 
 /* Clean up D and then deallocates. */
-void destroy_decompressor(Decompressor* D);
+extern void destroy_decompressor(void* D);
 
-#ifdef _cpluscplus
 }
-#endif
 
 #endif  // DECOMPRESSOR_SRC_INTERP_DECOMPRESS_H
