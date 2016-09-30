@@ -119,9 +119,8 @@ void* create_decompressor() {
   auto* Decomp = new Decompressor();
   bool InstalledDefaults =
       SymbolTable::installPredefinedDefaults(Decomp->Symtab, false);
-  Decomp->Interp = std::make_shared<Interpreter>(Decomp->Input,
-                                                 Decomp->OutputPipe.getInput(),
-                                                 Decomp->Symtab);
+  Decomp->Interp = std::make_shared<Interpreter>(
+      Decomp->Input, Decomp->OutputPipe.getInput(), Decomp->Symtab);
   Decomp->Interp->setTraceProgress(true);
   Decomp->Interp->start();
   if (!InstalledDefaults)
@@ -149,7 +148,7 @@ void destroy_decompressor(void* Dptr) {
   delete D;
 }
 
-} // end extern "C".
+}  // end extern "C".
 
 }  // end of namespace interp
 

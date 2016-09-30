@@ -117,9 +117,7 @@ class Cursor : public PageCursor {
 
   bool isEofFrozen() const { return Que->isEofFrozen(); }
 
-  bool atEof() const {
-    return CurAddress == Que->getEofAddress();
-  }
+  bool atEof() const { return CurAddress == Que->getEofAddress(); }
 
   size_t getEofAddress() const { return Que->getEofAddress(); }
 

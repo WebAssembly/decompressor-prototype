@@ -50,7 +50,6 @@ extern bool fetch_decompressor_output(void* D, int32_t Size);
 
 /* Clean up D and then deallocates. */
 extern void destroy_decompressor(void* D);
-
 }
 
 #endif  // DECOMPRESSOR_SRC_INTERP_DECOMPRESS_H

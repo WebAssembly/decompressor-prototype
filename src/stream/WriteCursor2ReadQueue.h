@@ -14,10 +14,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Defines a pointer to a byte stream for writing.
+// Defines a pointer to a byte stream for writing, where the byte stream
+// is the input to a later step. Hence, it doesn't advance the byte stream
+// beyond defined results, so that the corresponding read cursors can
+// assume all contents is defined.
 
-#ifndef DECOMPRESSOR_SRC_STREAM_WRITECURSOR_H
-#define DECOMPRESSOR_SRC_STREAM_WRITECURSOR_H
+#ifndef DECOMPRESSOR_SRC_STREAM_WRITECURSOR2READQUEUE_H
+#define DECOMPRESSOR_SRC_STREAM_WRITECURSOR2READQUEUE_H
 
 #include "stream/WriteCursorBase.h"
 
@@ -25,24 +28,25 @@ namespace wasm {
 
 namespace decode {
 
-class WriteCursor FINAL : public WriteCursorBase {
+class WriteCursor2ReadQueue FINAL : public WriteCursorBase {
  public:
   // Note: The nullary write cursor should not be used until it has been
   // assigned a value.
-  WriteCursor() : WriteCursorBase() {}
+  WriteCursor2ReadQueue() : WriteCursorBase() {}
 
-  WriteCursor(std::shared_ptr<Queue> Que)
+  WriteCursor2ReadQueue(std::shared_ptr<Queue> Que)
       : WriteCursorBase(StreamType::Byte, Que) {}
 
-  WriteCursor(StreamType Type, std::shared_ptr<Queue> Que)
+  WriteCursor2ReadQueue(StreamType Type, std::shared_ptr<Queue> Que)
       : WriteCursorBase(Type, Que) {}
 
-  explicit WriteCursor(const WriteCursor& C) : WriteCursorBase(C) {}
+  explicit WriteCursor2ReadQueue(const WriteCursor2ReadQueue& C)
+      : WriteCursorBase(C) {}
 
-  WriteCursor(const Cursor& C, size_t StartAddress)
+  WriteCursor2ReadQueue(const Cursor& C, size_t StartAddress)
       : WriteCursorBase(C, StartAddress) {}
 
-  ~WriteCursor() {}
+  ~WriteCursor2ReadQueue() {}
 
  protected:
   void writeFillWriteByte(uint8_t Byte) OVERRIDE;
@@ -52,4 +56,4 @@ class WriteCursor FINAL : public WriteCursorBase {
 
 }  // end of namespace wasm
 
-#endif  // DECOMPRESSOR_SRC_STREAM_WRITECURSOR_H
+#endif  // DECOMPRESSOR_SRC_STREAM_WRITECURSOR2READQUEUE_H

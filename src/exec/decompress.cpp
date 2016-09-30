@@ -151,8 +151,7 @@ int main(int Argc, char* Argv[]) {
     std::string Arg(Argv[i]);
     if (Arg == "--c-api") {
       UseCApi = true;
-    }
-    else if (Arg == "-d") {
+    } else if (Arg == "-d") {
       if (++i >= Argc) {
         fprintf(stderr, "No file specified after -d option\n");
         usage(Argv[0]);
