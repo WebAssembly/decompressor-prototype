@@ -30,12 +30,6 @@ extern "C" {
 
 namespace {
 
-#if 0
-constexpr int32_t kEndOfStream = -1;
-#endif
-
-constexpr int32_t kDecodingError = -2;
-
 struct Decompressor {
   Decompressor(const Decompressor& D) = delete;
   Decompressor& operator=(const Decompressor& D) = delete;
@@ -43,23 +37,40 @@ struct Decompressor {
  public:
   uint8_t* InputBuffer;
   int32_t InputBufferSize;
+  int32_t InputBufferAllocSize;
   uint8_t* OutputBuffer;
   int32_t OutputBufferSize;
+  int32_t OutputBufferAllocSize;
+  bool Broken;
   std::shared_ptr<SymbolTable> Symtab;
+  std::shared_ptr<Queue> Input;
+  std::shared_ptr<ReadCursor> ReadPos;
+  std::shared_ptr<Queue> Output;
+  std::shared_ptr<WriteCursor> WritePos;
+  std::shared_ptr<Interpreter> Interp;
   Decompressor();
   ~Decompressor();
   uint8_t* getNextInputBuffer(int32_t Size);
   int32_t resumeDecompression();
+  int32_t finishDecompression();
   uint8_t* getNextOutputBuffer(int32_t Size);
+  int32_t currentStatus();
 };
 }
 
 Decompressor::Decompressor()
     : InputBuffer(nullptr),
       InputBufferSize(0),
+      InputBufferAllocSize(0),
       OutputBuffer(nullptr),
       OutputBufferSize(0),
-      Symtab(std::make_shared<SymbolTable>()) {
+      OutputBufferAllocSize(0),
+      Broken(false),
+      Symtab(std::make_shared<SymbolTable>()),
+      Input(std::make_shared<Queue>()),
+      Output(std::make_shared<Queue>()) {
+  ReadPos = std::make_shared<ReadCursor>(Input);
+  WritePos = std::make_shared<WriteCursor>(Output);
 }
 
 Decompressor::~Decompressor() {
@@ -68,18 +79,32 @@ Decompressor::~Decompressor() {
 }
 
 uint8_t* Decompressor::getNextInputBuffer(int32_t Size) {
-  if (Size <= InputBufferSize)
+  if (Size <= InputBufferAllocSize) {
+    InputBufferSize = Size;
     return InputBuffer;
-  if (Size > InputBufferSize)
+  }
+  if (Size > InputBufferAllocSize)
     delete[] InputBuffer;
-  Size = std::max(Size, 1 >> 14);
-  InputBuffer = new uint8_t[Size];
+  InputBufferAllocSize = std::max(Size, 1 >> 14);
+  InputBuffer = new uint8_t[InputBufferAllocSize];
   InputBufferSize = Size;
   return InputBuffer;
 }
 
+int32_t Decompressor::currentStatus() {
+  fatal("currentStatus not implemented");
+  return DECOMPRESSOR_ERROR;
+}
+
 int32_t Decompressor::resumeDecompression() {
-  fatal("resumeDecompression not implemented!");
+  if (Interp->isFinished())
+    return currentStatus();
+  Interp->resume();
+  return currentStatus();
+}
+
+int32_t Decompressor::finishDecompression() {
+  fatal("finishDecompression not implemented!");
   return 0;
 }
 
@@ -92,30 +117,45 @@ uint8_t* Decompressor::getNextOutputBuffer(int32_t Size) {
 
 extern "C" {
 
-Decompressor* create_decompressor() {
+void* create_decompressor() {
   auto* Decomp = new Decompressor();
   if (!SymbolTable::installPredefinedDefaults(Decomp->Symtab, false)) {
-    delete Decomp;
-    return nullptr;
+    Decomp->Broken = true;
+    return Decomp;
   }
+  Decomp->Interp = std::make_shared<Interpreter>(Decomp->Input,
+                                                 Decomp->Output,
+                                                 Decomp->Symtab);
+  Decomp->Interp->setTraceProgress(true);
   return Decomp;
 }
 
-uint8_t* get_next_decompressor_input_buffer(Decompressor* D, int32_t Size) {
+void* get_next_decompressor_input_buffer(void* Dptr, int32_t Size) {
+  Decompressor* D = (Decompressor*)Dptr;
   return D->getNextInputBuffer(Size);
 }
 
-int32_t resume_decompression(Decompressor* D) {
-  if (D == nullptr)
-    return kDecodingError;
+int32_t resume_decompression(void* Dptr) {
+  Decompressor* D = (Decompressor*)Dptr;
+  if (D->Broken)
+    return DECOMPRESSOR_ERROR;
   return D->resumeDecompression();
 }
 
-uint8_t* get_next_decompressor_output_buffer(Decompressor* D, uint32_t Size) {
+int32_t finish_decompression(void* Dptr) {
+  Decompressor* D = (Decompressor*)Dptr;
+  if (D->Broken)
+    return DECOMPRESSOR_ERROR;
+  return D->finishDecompression();
+}
+
+void* get_next_decompressor_output_buffer(void* Dptr, int32_t Size) {
+  Decompressor* D = (Decompressor*)Dptr;
   return D->getNextOutputBuffer(Size);
 }
 
-void destroy_decompressor(Decompressor* D) {
+void destroy_decompressor(void* Dptr) {
+  Decompressor* D = (Decompressor*)Dptr;
   delete D;
 }
 }

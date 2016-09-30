@@ -57,6 +57,14 @@ class Interpreter {
   // to the corresponding output.
   void decompress();
 
+  // Starts up decompression.
+  void start();
+
+  // Resumes decompression where it left off. Assumes that more
+  // input has been added since the previous start()/resume() call.
+  // Resume should be called until isFinished() is true.
+  void resume();
+
   void setTraceProgress(bool NewValue) { Trace.setTraceProgress(NewValue); }
 
   void setMinimizeBlockSize(bool NewValue) { MinimizeBlockSize = NewValue; }
@@ -245,7 +253,6 @@ class Interpreter {
   }
   void TraceExitFrame() { TRACE_EXIT_OVERRIDE(getName(Frame.CallMethod)); }
 
-  void resume();
   void readBackFilled();
 
   // For debugging only.
