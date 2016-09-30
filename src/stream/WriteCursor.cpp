@@ -27,27 +27,6 @@ void WriteCursor::writeFillWriteByte(uint8_t Byte) {
   writeOneByte(Byte);
 }
 
-void WriteCursor::writeBits(uint32_t Value, uint32_t NumBits) {
-  assert(NumBits <= sizeof(uint32_t) * CHAR_BIT);
-  while (NumBits > 0) {
-    const BitsInByteType AvailBits = CurByte.getWriteBitsRemaining();
-    if (AvailBits >= NumBits) {
-      CurByte.writeBits(Value, NumBits);
-      if (AvailBits == NumBits) {
-        writeByte(CurByte.getValue());
-        CurByte.reset();
-      }
-      return;
-    }
-    uint32_t Shift = NumBits - AvailBits;
-    CurByte.writeBits(Value >> Shift, AvailBits);
-    Value &= (uint32_t(1) << Shift) - 1;
-    NumBits -= AvailBits;
-    writeByte(CurByte.getValue());
-    CurByte.reset();
-  }
-}
-
 }  // end of namespace decode
 
 }  // end of namespace wasm

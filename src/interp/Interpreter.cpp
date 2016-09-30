@@ -29,7 +29,7 @@
 // since they are the glue between a push and pull models. Rather, they
 // conceptually mimic the natural call structure. If you want to trace
 // resume() and readBackFilled() as well, change this flag to 1.
-#define LOG_RUNMETHODS 1
+#define LOG_RUNMETHODS 0
 // The following tracks runMetthods() and readBackFilled(), which run
 // interpreter methods with tracing showing equivalent non-push inter
 // The following turn on logging sections, functions in the decompression

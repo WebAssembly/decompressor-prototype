@@ -301,7 +301,7 @@ class Queue : public std::enable_shared_from_this<Queue> {
   // buffer as appropriate.
   virtual bool readFill(size_t Address);
 
-  virtual bool writeFill(size_t Address);
+  virtual bool writeFill(size_t Address, size_t WantedSize);
 };
 
 }  // end of namespace decode

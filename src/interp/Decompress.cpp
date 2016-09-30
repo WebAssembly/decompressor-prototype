@@ -38,38 +38,32 @@ struct Decompressor {
   int32_t BufferSize;
   std::shared_ptr<SymbolTable> Symtab;
   std::shared_ptr<Queue> Input;
-  std::shared_ptr<WriteCursor> InputPos;
+  std::shared_ptr<WriteCursor2ReadQueue> InputPos;
   Pipe OutputPipe;
   std::shared_ptr<ReadCursor> OutputPos;
   std::shared_ptr<Interpreter> Interp;
   Decompressor();
   uint8_t* getBuffer(int32_t Size);
-  int32_t resumeDecompression(int32_t Size);
-  int32_t finishDecompression();
+  int32_t resume(int32_t Size);
+  void closeInput();
   bool fetchOutput(int32_t Size);
-  int32_t currentStatus();
-  int32_t currentOutputSize();
-
-  TraceClassSexpReaderWriter& getTrace() { return Interp->getTrace(); }
-  void describeInputPos() {
-    fprintf(stderr, "InputPage %" PRIuMAX "[%" PRIxMAX ":%" PRIxMAX "]\n",
-            uintmax_t(InputPos->getCurByteAddress()),
-            uintmax_t(InputPos->getMinAddress()),
-            uintmax_t(InputPos->getMaxAddress()));
+  int32_t getOutputSize() {
+    return OutputPipe.getOutput()->fillSize() - OutputPos->getCurByteAddress();
   }
+  TraceClassSexpReaderWriter& getTrace() { return Interp->getTrace(); }
 };
 
 Decompressor::Decompressor()
     : BufferSize(0),
       Symtab(std::make_shared<SymbolTable>()),
       Input(std::make_shared<Queue>()) {
-  InputPos = std::make_shared<WriteCursor>(Input);
+  InputPos = std::make_shared<WriteCursor2ReadQueue>(Input);
   OutputPos = std::make_shared<ReadCursor>(OutputPipe.getOutput());
-  describeInputPos();
 }
 
 uint8_t* Decompressor::getBuffer(int32_t Size) {
   TRACE_METHOD("get_decompressor_buffer");
+  TRACE(bool, "AtEof", InputPos->atEof());
   if (Size <= BufferSize)
     return Buffer.get();
   Buffer.reset(new uint8_t[Size]);
@@ -77,45 +71,44 @@ uint8_t* Decompressor::getBuffer(int32_t Size) {
   return Buffer.get();
 }
 
-int32_t Decompressor::currentStatus() {
-  return (!Interp->isFinished() || Interp->isSuccessful())
-      ? DECOMPRESSOR_SUCCESS : DECOMPRESSOR_ERROR;
-}
-
-int32_t Decompressor::currentOutputSize() {
-  int32_t Status = currentStatus();
-  if (Status == DECOMPRESSOR_SUCCESS)
-    Status = OutputPipe.getOutput()->fillSize() - OutputPos->getCurByteAddress();
-  TRACE(int32_t, "Status", Status);
-  return Status;
-}
-
-int32_t Decompressor::resumeDecompression(int32_t Size) {
+int32_t Decompressor::resume(int32_t Size) {
   TRACE_METHOD("resume_decompression");
   if (Size > BufferSize) {
     Interp->fail("resume_decompression(" + std::to_string(Size) +
                  "): illegal size");
     return DECOMPRESSOR_ERROR;
   }
-  // TODO(karlschimpf) Speed up this copy.
-  describeInputPos();
-  for (int32_t i = 0; i < Size; ++i)
-    InputPos->writeByte(Buffer.get()[i]);
-  describeInputPos();
+  if (InputPos->atEof()) {
+    if (Size > 0) {
+      Interp->fail("resume_decompression(" + std::to_string(Size) +
+                   "): can't add bytes when input closed");
+      return DECOMPRESSOR_ERROR;
+    }
+  } else if (Size == 0) {
+    TRACE_MESSAGE("Closing input");
+    InputPos->freezeEof();
+  } else {
+    // TODO(karlschimpf) Speed up this copy.
+    for (int32_t i = 0; i < Size; ++i)
+      InputPos->writeByte(Buffer.get()[i]);
+  }
   Interp->resume();
-  return currentOutputSize();
-}
-
-int32_t Decompressor::finishDecompression() {
-  TRACE_METHOD("finish_decompression");
-  Interp->fail("finishDecompression not implemented");
-  return currentStatus();
+  if (Interp->errorsFound())
+    return DECOMPRESSOR_ERROR;
+  if (!Interp->isFinished())
+    return getOutputSize();
+  if (!Interp->isSuccessful())
+    return DECOMPRESSOR_ERROR;
+  TRACE(int32_t, "OutputSize", getOutputSize());
+  if (int32_t OutputSize = getOutputSize())
+    return OutputSize;
+  return DECOMPRESSOR_SUCCESS;
 }
 
 bool Decompressor::fetchOutput(int32_t Size) {
   TRACE_METHOD("fetch_decompressor_output");
   Interp->fail("fetchOutput not implemented!");
-  return currentStatus() == DECOMPRESSOR_SUCCESS;
+  return false;
 }
 
 }  // end of anonymous namespace
@@ -143,12 +136,7 @@ uint8_t* get_decompressor_buffer(void* Dptr, int32_t Size) {
 
 int32_t resume_decompression(void* Dptr, int32_t Size) {
   Decompressor* D = (Decompressor*)Dptr;
-  return D->resumeDecompression(Size);
-}
-
-int32_t finish_decompression(void* Dptr) {
-  Decompressor* D = (Decompressor*)Dptr;
-  return D->finishDecompression();
+  return D->resume(Size);
 }
 
 bool fetch_decompressor_output(void* Dptr, int32_t Size) {
