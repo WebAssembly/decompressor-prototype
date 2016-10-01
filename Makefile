@@ -24,17 +24,14 @@ include Makefile.common
 
 UTILS_DIR = $(SRCDIR)/utils
 UTILS_OBJDIR = $(OBJDIR)/utils
-UTILS_OBJDIR_BOOT = $(OBJDIR_BOOT)/utils
 UTILS_SRCS = \
 	Allocator.cpp \
 	Defs.cpp \
 	Trace.cpp
 
 UTILS_OBJS=$(patsubst %.cpp, $(UTILS_OBJDIR)/%.o, $(UTILS_SRCS))
-UTILS_OBJS_BOOT=$(patsubst %.cpp, $(UTILS_OBJDIR_BOOT)/%.o, $(UTILS_SRCS))
 
 UTILS_LIB = $(LIBDIR)/$(LIBPREFIX)utis.a
-UTILS_LIB_BOOT = $(LIBDIR_BOOT)/$(LIBPREFIX)utis.a
 
 ###### Binary generation objects and locations ######
 
@@ -56,7 +53,6 @@ BINARY_LIB_BOOT = $(LIBDIR_BOOT)/$(LIBPREFIX)binary.a
 
 PARSER_DIR = $(SRCDIR)/sexp-parser
 PARSER_OBJDIR = $(OBJDIR)/sexp-parser
-PARSER_OBJDIR_BOOT = $(OBJDIR_BOOT)/sexp-parser
 PARSER_GENSRCS = \
 	location.hh \
 	Lexer.cpp \
@@ -74,10 +70,8 @@ PARSER_SRCS = \
 PARSER_GENERATED_SRCS=$(patsubst %, $(PARSER_DIR)/%, $(PARSER_GENSRCS))
 
 PARSER_OBJS=$(patsubst %.cpp, $(PARSER_OBJDIR)/%.o, $(PARSER_SRCS))
-PARSER_OBJS_BOOT=$(patsubst %.cpp, $(PARSER_OBJDIR_BOOT)/%.o, $(PARSER_SRCS))
 
 PARSER_LIB = $(LIBDIR)/$(LIBPREFIX)parser.a
-PARSER_LIB_BOOT = $(LIBDIR_BOOT)/$(LIBPREFIX)parser.a
 
 ###### Filter s-expressions ######
 
@@ -208,8 +202,11 @@ TEST_SRCS_DIR = test/test-sources
 LIBS = $(PARSER_LIB) $(BINARY_LIB) $(INTERP_LIB) $(SEXP_LIB) \
        $(STRM_LIB) $(UTILS_LIB)
 
-LIBS_BOOT = $(PARSER_LIB_BOOT) $(BINARY_LIB_BOOT) $(INTERP_LIB_BOOT) \
-       $(SEXP_LIB_BOOT) $(STRM_LIB_BOOT) $(UTILS_LIB_BOOT)
+#LIBS_BOOT = $(PARSER_LIB_BOOT) $(BINARY_LIB_BOOT) $(INTERP_LIB_BOOT) \
+#       $(SEXP_LIB_BOOT) $(STRM_LIB_BOOT) $(UTILS_LIB_BOOT)
+
+LIBS_BOOT = $(PARSER_LIB) $(BINARY_LIB_BOOT) $(INTERP_LIB_BOOT) \
+       $(SEXP_LIB_BOOT) $(STRM_LIB_BOOT) $(UTILS_LIB)
 
 ##### Track additional important variable definitions not in Makefile.common
 
@@ -315,7 +312,7 @@ $(BINARY_LIB_BOOT): $(BINARY_OBJS_BOOT)
 
 ###### Compiliing top-level Sources ######
 
-utils-objs: $(UTILS_OBJS) $(UTILS_OBJS_BOOT)
+utils-objs: $(UTILS_OBJS)
 
 .PHONY: utils-objs
 
@@ -324,26 +321,13 @@ $(UTILS_OBJS): | $(UTILS_OBJDIR)
 $(UTILS_OBJDIR):
 	mkdir -p $@
 
-$(UTILS_OBJS_BOOT): | $(UTILS_OBJDIR_BOOT)
-
-$(UTILS_OBJDIR_BOOT):
-	mkdir -p $@
-
 -include $(foreach dep,$(UTILS_SRCS:.cpp=.d),$(OBJDIR)/$(dep))
 
 $(UTILS_OBJS): $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
--include $(foreach dep,$(UTILS_SRCS:.cpp=.d),$(OBJDIR_BOOT)/$(dep))
-
-$(UTILS_OBJS_BOOT): $(OBJDIR_BOOT)/%.o: $(SRCDIR)/%.cpp
-	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
-
 $(UTILS_LIB): $(UTILS_OBJS)
 	ar -rs $@ $(UTILS_OBJS)
-
-$(UTILS_LIB_BOOT): $(UTILS_OBJS_BOOT)
-	ar -rs $@ $(UTILS_OBJS_BOOT)
 
 ###### Compiling s-expression interpeter sources ######
 
@@ -444,7 +428,7 @@ $(STRM_LIB_BOOT): $(STRM_OBJS_BOOT)
 
 ###### Compiling Filter Parser #######
 
-parser-objs: $(PARSER_OBJS) $(PARSER_OBJS_BOOT)
+parser-objs: $(PARSER_OBJS)
 
 .PHONY: parser-objs
 
@@ -459,29 +443,14 @@ $(PARSER_OBJS): | $(PARSER_OBJDIR)
 $(PARSER_OBJDIR):
 	mkdir -p $@
 
-$(PARSER_OBJS_BOOT): | $(PARSER_OBJDIR_BOOT)
-
-$(PARSER_OBJDIR_BOOT):
-	mkdir -p $@
-
 -include $(foreach dep,$(PARSER_SRCS:.cpp=.d),$(PARSER_OBJDIR)/$(dep))
 
 $(PARSER_OBJS): $(PARSER_OBJDIR)/%.o: $(PARSER_DIR)/%.cpp \
 		$(PARSER_DIR)/Lexer.cpp $(PARSER_DIR)/Parser.tab.cpp
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
-
--include $(foreach dep,$(PARSER_SRCS:.cpp=.d),$(PARSER_OBJDIR_BOOT)/$(dep))
-
-$(PARSER_OBJS_BOOT): $(PARSER_OBJDIR_BOOT)/%.o: $(PARSER_DIR)/%.cpp \
-	        $(PARSER_DIR)/Lexer.cpp $(PARSER_DIR)/Parser.tab.cpp
-	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
-
 $(PARSER_LIB): $(PARSER_OBJS)
 	ar -rs $@ $(PARSER_OBJS)
-
-$(PARSER_LIB_BOOT): $(PARSER_OBJS_BOOT)
-	ar -rs $@ $(PARSER_OBJS_BOOT)
 
 ###### Building libraries ######
 
