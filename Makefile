@@ -15,15 +15,17 @@
 # Build debug: make
 #            : make DEBUG=1
 # Build release: make RELEASE=1
+#
+# Note: The build logically consists of the following steps:
+#   boot : Build executables needed to generate other sources
+#   rest : Build all remaining executables.
 
 include Makefile.common
 
-# The list of build rule generated sources for the boot step
+# Generated sources for the boot step
 GEN_BOOT =
-# All additional remaining build rule generated sources.
+# Generated sources for the rest step
 GEN_REST =
-# Generated sources without build rules
-GEN_OTHER =
 
 ###### Utilities ######
 
@@ -55,25 +57,23 @@ BINARY_LIB = $(LIBDIR)/$(LIBPREFIX)binary.a
 
 PARSER_DIR = $(SRCDIR)/sexp-parser
 PARSER_OBJDIR = $(OBJDIR)/sexp-parser
-PARSER_GEN_BOOT_SRCS = Parser.tab.cpp
+PARSER_GEN_BOOT_SRCS = \
+	Parser.tab.cpp \
+	Lexer.cpp
+
 PARSER_GEN_OTHER_SRCS = \
 	location.hh \
-	Lexer.cpp \
 	Parser.output \
-	Parser.tab.cpp \
 	Parser.tab.hpp \
 	position.hh \
 	stack.hh
 
 PARSER_SRCS = $(PARSER_GEN_BOOT_SRCS) \
-	Driver.cpp \
-	Lexer.cpp
+	Driver.cpp
 
 PARSER_GEN_BOOT += $(patsubst %, $(PARSER_DIR)/%, $(PARSER_GEN_BOOT_SRCS))
 PARSER_GEN_OTHER += $(patsubst %, $(PARSER_DIR)/%, $(PARSER_GEN_OTHER_SRCS))
-GEN_BOOT += $(PARSER_GEN_BOOT)
-GEN_OTHER += $(PARSER_GEN_OTHER)
-
+GEN_BOOT += $(PARSER_GEN_BOOT) $(PARSER_GEN_OTHER)
 PARSER_OBJS=$(patsubst %.cpp, $(PARSER_OBJDIR)/%.o, $(PARSER_SRCS))
 
 PARSER_LIB = $(LIBDIR)/$(LIBPREFIX)parser.a
@@ -200,7 +200,7 @@ LIBS = $(LIBS_REST) $(LIBS_BOOT)
 
 ##### Generated sources ######
 
-GEN = $(GEN_BOOT) $(GEN_REST) $(GEN_OTHER)
+GEN = $(GEN_BOOT) $(GEN_REST)
 
 ##### Track additional important variable definitions not in Makefile.common
 
@@ -225,7 +225,7 @@ endif
 
 ###### Default Rule ######
 
-all: $(LIBS) $(EXECS) test-execs
+all: $(LIBS) $(EXECS) $(TEST_EXECS)
 
 .PHONY: all
 
@@ -314,10 +314,6 @@ $(SEXP_LIB_REST): $(SEXP_OBJS_REST)
 
 ###### Compiling stream sources ######
 
-strm-objs: $(STRM_OBJS)
-
-.PHONY: strm-objs
-
 $(STRM_OBJS): | $(STRM_OBJDIR)
 
 $(STRM_OBJDIR):
@@ -333,20 +329,10 @@ $(STRM_LIB): $(STRM_OBJS)
 
 ###### Compiling Filter Parser #######
 
-parser-objs: $(PARSER_OBJS)
-
-.PHONY: parser-objs
-
 $(PARSER_DIR)/Lexer.cpp: $(PARSER_DIR)/Lexer.lex $(PARSER_DIR)/Parser.tab.cpp
 	cd $(PARSER_DIR); lex -o Lexer.cpp Lexer.lex
 
-$(PARSER_DIR)/location.hh:  | $(PARSER_DIR)/Parser.tab.cpp
-
-$(PARSER_DIR)/position.hh:  | $(PARSER_DIR)/Parser.tab.cpp
-
-$(PARSER_DIR)/stack.hh:  | $(PARSER_DIR)/Parser.tab.cpp
-
-$(PARSER_DIR)/Parser.tab.hpp: | $(PARSER_DIR)/Parser.tab.cpp
+$(PARSER_GEN_OTHER): $(PARSERDIR)/%: | $(PARSER_DIR)/Parser.tab.cpp
 
 $(PARSER_DIR)/Parser.tab.cpp: $(PARSER_DIR)/Parser.ypp
 	cd $(PARSER_DIR); bison -d -r all Parser.ypp
@@ -384,8 +370,7 @@ $(EXEC_OBJS): | $(EXEC_OBJDIR)
 $(EXEC_OBJS_BOOT): $(EXEC_OBJDIR)/%.o: $(EXEC_DIR)/%.cpp $(GEN_BOOT)
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
-$(EXEC_OBJS_REST): $(EXEC_OBJDIR)/%.o: $(EXEC_DIR)/%.cpp $(GEN_BOOT) \
-		$(GEN_REST)
+$(EXEC_OBJS_REST): $(EXEC_OBJDIR)/%.o: $(EXEC_DIR)/%.cpp $(GEN)
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
 $(BUILD_EXECDIR):
@@ -400,10 +385,6 @@ $(EXECS_REST): $(BUILD_EXECDIR)/%$(EXE): $(EXEC_OBJDIR)/%.o $(LIBS)
 	$(CPP_COMPILER) $(CXXFLAGS) $< $(LIBS) -o $@
 
 ###### Compiling Test Executables #######
-
-test-execs: $(TEST_EXECS)
-
-.PHONY: test-execs
 
 $(TEST_OBJDIR):
 	mkdir -p $@
