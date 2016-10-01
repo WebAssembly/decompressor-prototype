@@ -16,9 +16,14 @@
 #            : make DEBUG=1
 # Build release: make RELEASE=1
 
-# Note: If using -jN, be sure to run "make gen" first.
-
 include Makefile.common
+
+# The list of build rule generated sources for the boot step
+GEN_BOOT =
+# All additional remaining build rule generated sources.
+GEN_REST =
+# Generated sources without build rules
+GEN_OTHER =
 
 ###### Utilities ######
 
@@ -50,7 +55,8 @@ BINARY_LIB = $(LIBDIR)/$(LIBPREFIX)binary.a
 
 PARSER_DIR = $(SRCDIR)/sexp-parser
 PARSER_OBJDIR = $(OBJDIR)/sexp-parser
-PARSER_GENSRCS = \
+PARSER_GEN_BOOT_SRCS = Parser.tab.cpp
+PARSER_GEN_OTHER_SRCS = \
 	location.hh \
 	Lexer.cpp \
 	Parser.output \
@@ -59,41 +65,44 @@ PARSER_GENSRCS = \
 	position.hh \
 	stack.hh
 
-PARSER_SRCS = \
+PARSER_SRCS = $(PARSER_GEN_BOOT_SRCS) \
 	Driver.cpp \
-	Lexer.cpp \
-	Parser.tab.cpp
+	Lexer.cpp
 
-PARSER_GENERATED_SRCS=$(patsubst %, $(PARSER_DIR)/%, $(PARSER_GENSRCS))
+PARSER_GEN_BOOT += $(patsubst %, $(PARSER_DIR)/%, $(PARSER_GEN_BOOT_SRCS))
+PARSER_GEN_OTHER += $(patsubst %, $(PARSER_DIR)/%, $(PARSER_GEN_OTHER_SRCS))
+GEN_BOOT += $(PARSER_GEN_BOOT)
+GEN_OTHER += $(PARSER_GEN_OTHER)
 
 PARSER_OBJS=$(patsubst %.cpp, $(PARSER_OBJDIR)/%.o, $(PARSER_SRCS))
 
 PARSER_LIB = $(LIBDIR)/$(LIBPREFIX)parser.a
 
-###### Filter s-expressions ######
+###### s-expressions ######
 
 SEXP_SRCDIR = $(SRCDIR)/sexp
 SEXP_OBJDIR = $(OBJDIR)/sexp
+
 SEXP_SRCS_BOOT = \
 	Ast.cpp \
 	TextWriter.cpp \
 	TraceSexp.cpp
-
-SEXP_GENSRCS = \
-	defaults.cpp
-
-SEXP_SRCS = $(SEXP_GENSRCS) Ast-boot.cpp
+SEXP_GEN_REST_SRCS = defaults.cpp
+SEXP_SRCS_REST = $(SEXP_GEN_REST_SRCS) Ast-boot.cpp
+SEXP_SRCS = $(SEXP_SRCS_BOOT) $(SEXP_SRCS_REST)
 
 SEXP_DEFAULTS = $(SEXP_SRCDIR)/defaults.df
 SEXP_DEFAULTS_CPP = $(SEXP_SRCDIR)/defaults.cpp
 
-SEXP_GENERATED_SRCS=$(patsubst %, $(SEXP_SRCDIR)/%, $(SEXP_GENSRCS))
+SEXP_GEN_REST += $(patsubst %, $(SEXP_SRCDIR)/%, $(SEXP_GEN_REST_SRCS))
+GEN_REST += $(SEXP_GEN_REST)
 
-SEXP_OBJS = $(patsubst %.cpp, $(SEXP_OBJDIR)/%.o, $(SEXP_SRCS))
 SEXP_OBJS_BOOT = $(patsubst %.cpp, $(SEXP_OBJDIR)/%.o, $(SEXP_SRCS_BOOT))
+SEXP_OBJS_REST = $(patsubst %.cpp, $(SEXP_OBJDIR)/%.o, $(SEXP_SRCS_REST))
+SEXP_OBJS = $(SEXP_OBJS_BOOT) $(SEXP_OBJS_REST)
 
 SEXP_LIB_BOOT = $(LIBDIR)/$(LIBPREFIX)sexp-boot.a
-SEXP_LIB = $(LIBDIR)/$(LIBPREFIX)sexp.a
+SEXP_LIB_REST = $(LIBDIR)/$(LIBPREFIX)sexp-rest.a
 
 ###### Stream handlers ######
 
@@ -148,20 +157,20 @@ EXEC_DIR = $(SRCDIR)/exec
 EXEC_OBJDIR = $(OBJDIR)/exec
 BUILD_EXECDIR = $(BUILDDIR)/bin
 
-EXEC_SRCS = \
-	decompress.cpp \
-	decompwasm-sexp.cpp
-
 EXEC_SRCS_BOOT = \
 	decompsexp-wasm.cpp
+EXEC_SRCS_REST = \
+	decompress.cpp \
+	decompwasm-sexp.cpp
+EXEC_SRCS = $(EXEC_SRCS_BOOT) $(EXEC_SRCS_REST)
 
-EXEC_OBJS = $(patsubst %.cpp, $(EXEC_OBJDIR)/%.o, $(EXEC_SRCS))
-
+EXEC_OBJS_REST = $(patsubst %.cpp, $(EXEC_OBJDIR)/%.o, $(EXEC_SRCS_REST))
 EXEC_OBJS_BOOT = $(patsubst %.cpp, $(EXEC_OBJDIR)/%.o, $(EXEC_SRCS_BOOT))
-
-EXECS = $(patsubst %.cpp, $(BUILD_EXECDIR)/%$(EXE), $(EXEC_SRCS))
+EXEC_OBJS = $(EXEC_OBJS_BOOT) $(EXEC_OBJS_REST)
 
 EXECS_BOOT = $(patsubst %.cpp, $(BUILD_EXECDIR)/%$(EXE_BOOT), $(EXEC_SRCS_BOOT))
+EXECS_REST = $(patsubst %.cpp, $(BUILD_EXECDIR)/%$(EXE), $(EXEC_SRCS_REST))
+EXECS = $(EXECS_BOOT) $(EXECS_REST)
 
 ###### Test executables and locations ######
 
@@ -182,10 +191,16 @@ TEST_SRCS_DIR = test/test-sources
 
 ###### General compilation definitions ######
 
-LIBS_BOOT = $(PARSER_LIB) $(BINARY_LIB) $(INTERP_LIB) \
-       $(SEXP_LIB_BOOT) $(STRM_LIB) $(UTILS_LIB)
+LIBS_BOOT = $(BINARY_LIB) $(INTERP_LIB) \
+       $(SEXP_LIB_BOOT) $(PARSER_LIB) $(STRM_LIB) $(UTILS_LIB)
 
-LIBS = $(LIBS_BOOT) $(SEXP_LIB) $(STRM_LIB)
+LIBS_REST = $(SEXP_LIB_REST)
+
+LIBS = $(LIBS_REST) $(LIBS_BOOT)
+
+##### Generated sources ######
+
+GEN = $(GEN_BOOT) $(GEN_REST) $(GEN_OTHER)
 
 ##### Track additional important variable definitions not in Makefile.common
 
@@ -210,7 +225,7 @@ endif
 
 ###### Default Rule ######
 
-all: libs execs test-execs
+all: $(LIBS) $(EXECS) test-execs
 
 .PHONY: all
 
@@ -229,30 +244,9 @@ clean-all: clean-gen
 .PHONY: clean-all
 
 clean-gen:
-	rm -rf $(PARSER_GENERATED_SRCS) $(SEXP_GENERATED_SRCS)
-
-###### Source Generation Rules #######
-
-gen: gen-parser gen-lexer $(EXECS_BOOT)
-
-.PHONY: gen
-
-gen-lexer: $(PARSER_DIR)/Lexer.cpp
-
-.PHONY: gen-lexer
-
-gen-parser: $(PARSER_DIR)/Parser.tab.cpp
-
-.PHONY: gen-parser
-
-$(SEXP_DEFAULTS_CPP): $(BUILD_EXECDIR)/decompsexp-wasm $(SEXP_DEFAULTS)
-	$< -d -i $(SEXP_DEFAULTS) -o $@
+	rm -rf $(GEN)
 
 ###### Compiliing binary generation Sources ######
-
-binary-objs: $(BINARY_OBJS)
-
-.PHONY: binary-objs
 
 $(BINARY_OBJS): | $(BINARY_OBJDIR)
 
@@ -269,10 +263,6 @@ $(BINARY_LIB): $(BINARY_OBJS)
 
 ###### Compiliing top-level Sources ######
 
-utils-objs: $(UTILS_OBJS)
-
-.PHONY: utils-objs
-
 $(UTILS_OBJS): | $(UTILS_OBJDIR)
 
 $(UTILS_OBJDIR):
@@ -287,10 +277,6 @@ $(UTILS_LIB): $(UTILS_OBJS)
 	ar -rs $@ $(UTILS_OBJS)
 
 ###### Compiling s-expression interpeter sources ######
-
-interp-objs: $(INTERP_OBJS)
-
-.PHONY: interp-objs
 
 $(INTERP_OBJS): | $(INTERP_OBJDIR)
 
@@ -307,32 +293,24 @@ $(INTERP_LIB): $(INTERP_OBJS)
 
 ###### Compiliing Sexp Sources ######
 
-sexp-objs: $(SEXP_OBJS) $(SEXP_OBJS_BOOT)
-
-.PHONY: sexp-objs
+$(SEXP_DEFAULTS_CPP): $(BUILD_EXECDIR)/decompsexp-wasm $(SEXP_DEFAULTS)
+	$< -d -i $(SEXP_DEFAULTS) -o $@
 
 $(SEXP_OBJS): | $(SEXP_OBJDIR)
 
 $(SEXP_OBJDIR):
 	mkdir -p $@
 
-$(SEXP_OBJS_BOOT): | $(SEXP_OBJDIR)
-
 -include $(foreach dep,$(SEXP_SRCS:.cpp=.d),$(SEXP_OBJDIR)/$(dep))
 
 $(SEXP_OBJS): $(SEXP_OBJDIR)/%.o: $(SEXP_SRCDIR)/%.cpp
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
--include $(foreach dep,$(SEXP_SRCS:.cpp=.d),$(SEXP_OBJDIR)/$(dep))
-
-$(SEXP_OBJS_BOOT): $(SEXP_OBJDIR)/%.o: $(SEXP_SRCDIR)/%.cpp
-	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
-
-$(SEXP_LIB): $(SEXP_OBJS)
-	ar -rs $@ $(SEXP_OBJS)
-
 $(SEXP_LIB_BOOT): $(SEXP_OBJS_BOOT)
 	ar -rs $@ $(SEXP_OBJS_BOOT)
+
+$(SEXP_LIB_REST): $(SEXP_OBJS_REST)
+	ar -rs $@ $(SEXP_OBJS_REST)
 
 ###### Compiling stream sources ######
 
@@ -362,6 +340,14 @@ parser-objs: $(PARSER_OBJS)
 $(PARSER_DIR)/Lexer.cpp: $(PARSER_DIR)/Lexer.lex $(PARSER_DIR)/Parser.tab.cpp
 	cd $(PARSER_DIR); lex -o Lexer.cpp Lexer.lex
 
+$(PARSER_DIR)/location.hh:  | $(PARSER_DIR)/Parser.tab.cpp
+
+$(PARSER_DIR)/position.hh:  | $(PARSER_DIR)/Parser.tab.cpp
+
+$(PARSER_DIR)/stack.hh:  | $(PARSER_DIR)/Parser.tab.cpp
+
+$(PARSER_DIR)/Parser.tab.hpp: | $(PARSER_DIR)/Parser.tab.cpp
+
 $(PARSER_DIR)/Parser.tab.cpp: $(PARSER_DIR)/Parser.ypp
 	cd $(PARSER_DIR); bison -d -r all Parser.ypp
 
@@ -381,41 +367,25 @@ $(PARSER_LIB): $(PARSER_OBJS)
 
 ###### Building libraries ######
 
-libs: $(LIBS) $(LIBS_BOOT)
-
-.PHONY: libs
-
 $(LIBDIR):
 	mkdir -p $@
 
 $(LIBS): | $(LIBDIR)
 
-$(LIBDIR_BOOT):
-	mkdir -p $@
-
-$(LIBS_BOOT): | $(LIBDIR)
-
 ###### Compiling executables ######
-
-execs: $(LIBS_BOOT) $(EXECS_BOOT) $(LIBS) $(EXECS)
-
-.PHONY: execs
 
 $(EXEC_OBJDIR):
 	mkdir -p $@
 
 $(EXEC_OBJS): | $(EXEC_OBJDIR)
 
-$(EXEC_OBJS_BOOT): | $(EXEC_OBJDIR)
-
 -include $(foreach dep,$(EXEC_SRCS:.cpp=.d),$(EXEC_OBJDIR)/$(dep))
 
-$(EXEC_OBJS): $(EXEC_OBJDIR)/%.o: $(EXEC_DIR)/%.cpp
+$(EXEC_OBJS_BOOT): $(EXEC_OBJDIR)/%.o: $(EXEC_DIR)/%.cpp $(GEN_BOOT)
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
--include $(foreach dep,$(EXEC_SRCS:.cpp=.d),$(EXEC_OBJDIR)/$(dep))
-
-$(EXEC_OBJS_BOOT): $(EXEC_OBJDIR)/%.o: $(EXEC_DIR)/%.cpp
+$(EXEC_OBJS_REST): $(EXEC_OBJDIR)/%.o: $(EXEC_DIR)/%.cpp $(GEN_BOOT) \
+		$(GEN_REST)
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
 $(BUILD_EXECDIR):
@@ -423,13 +393,11 @@ $(BUILD_EXECDIR):
 
 $(EXECS): | $(BUILD_EXECDIR)
 
-$(EXECS): $(BUILD_EXECDIR)/%$(EXE): $(EXEC_OBJDIR)/%.o $(LIBS)
-	$(CPP_COMPILER) $(CXXFLAGS) $< $(LIBS) -o $@
-
-$(EXECS_BOOT): | $(BUILD_EXECDIR)
-
 $(EXECS_BOOT): $(BUILD_EXECDIR)/%$(EXE_BOOT): $(EXEC_OBJDIR)/%.o $(LIBS_BOOT)
 	$(CPP_COMPILER) $(CXXFLAGS) $< $(LIBS_BOOT) -o $@
+
+$(EXECS_REST): $(BUILD_EXECDIR)/%$(EXE): $(EXEC_OBJDIR)/%.o $(LIBS)
+	$(CPP_COMPILER) $(CXXFLAGS) $< $(LIBS) -o $@
 
 ###### Compiling Test Executables #######
 

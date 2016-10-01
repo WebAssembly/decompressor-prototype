@@ -20,9 +20,6 @@
 
 # Include rules for parameterizing the build.
 
-# Defines whether we are building bootstrapped subsystem, so that we can
-# generate corresponding source files.
-
 CXX := clang++
 EXE :=
 
@@ -148,7 +145,6 @@ $(info Using RELEASE = $(RELEASE))
 $(info Using PAGE_SIZE = $(USE_PAGE_SIZE))
 $(info Using CXX_SUBDIR = $(CXX_SUBDIR))
 $(info Using WASM = $(WASM))
-
 $(info Using BUILDDIR = $(BUILDDIR))
 $(info -----------------------------------------------)
 
