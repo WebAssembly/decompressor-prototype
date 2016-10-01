@@ -20,13 +20,8 @@
 
 # Include rules for parameterizing the build.
 
-# Defines whether we are building bootstrapped subsystem, so that we can
-# generate corresponding source files.
-
 CXX := clang++
 EXE :=
-CXX_BOOT := clang++
-EXE_BOOT :=
 
 # Define if release or debug build
 ifdef DEBUG
@@ -136,13 +131,9 @@ else
   BUILDDIR = $(BUILDBASEDIR)/release
 endif
 
-BUILDDIR_BOOT = build/boot$(CXX_SUBDIR)$(PAGE_BUILD_SUFFIX)
-
 OBJDIR = $(BUILDDIR)/obj
-OBJDIR_BOOT = $(BUILDDIR_BOOT)/obj
 
 LIBDIR = $(BUILDDIR)/lib
-LIBDIR_BOOT = $(BUILDDIR_BOOT)/lib
 LIBPREFIX = wasm-decomp-
 
 MAKE_RELEASE = DEBUG=$(DEBUG) RELEASE=$(RELEASE)
@@ -150,13 +141,10 @@ MAKE_RELEASE = DEBUG=$(DEBUG) RELEASE=$(RELEASE)
 $(info -----------------------------------------------)
 $(info Using PLATFORM = $(PLATFORM))
 $(info Using CXX = $(CXX))
-$(info Using CXX_BOOT = $(CXX_BOOT))
 $(info Using RELEASE = $(RELEASE))
 $(info Using PAGE_SIZE = $(USE_PAGE_SIZE))
 $(info Using CXX_SUBDIR = $(CXX_SUBDIR))
 $(info Using WASM = $(WASM))
-
 $(info Using BUILDDIR = $(BUILDDIR))
-$(info Using BUILDDIR_BOOT = $(BUILDDIR_BOOT))
 $(info -----------------------------------------------)
 
