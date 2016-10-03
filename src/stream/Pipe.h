@@ -36,12 +36,13 @@ class Pipe FINAL {
 
  public:
   Pipe()
-      : Input(std::make_shared<Queue>()),
-        Output(std::make_shared<PipeBackedQueue>(*this)),
+      : Input(std::make_shared<PipeBackedQueue>(*this)),
+        Output(std::make_shared<Queue>()),
         WritePos(Output) {}
   ~Pipe() {}
   std::shared_ptr<Queue> getInput() const { return Input; }
   std::shared_ptr<Queue> getOutput() const { return Output; }
+ protected:
   class PipeBackedQueue FINAL : public Queue {
     PipeBackedQueue(const PipeBackedQueue&) = delete;
     PipeBackedQueue& operator=(const PipeBackedQueue&) = delete;
@@ -57,8 +58,8 @@ class Pipe FINAL {
   };
 
  private:
-  std::shared_ptr<Queue> Input;
-  std::shared_ptr<PipeBackedQueue> Output;
+  std::shared_ptr<PipeBackedQueue> Input;
+  std::shared_ptr<Queue> Output;
   WriteCursor2ReadQueue WritePos;
 };
 

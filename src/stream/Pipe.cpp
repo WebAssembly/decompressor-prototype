@@ -24,8 +24,7 @@ namespace decode {
 Pipe::PipeBackedQueue::~PipeBackedQueue() {
   // NOTE: we must override the base destructor so that calls to dumpFirstPage
   // is the one local to this class!
-  while (FirstPage)
-    dumpFirstPage();
+  close();
 }
 
 void Pipe::PipeBackedQueue::dumpFirstPage() {
