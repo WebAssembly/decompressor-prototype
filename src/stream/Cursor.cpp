@@ -25,6 +25,12 @@ FILE* WorkingByte::describe(FILE* File) {
   return File;
 }
 
+void Cursor::close() {
+  CurPage = Que->getErrorPage();
+  CurByte.reset();
+  GuaranteedBeforeEob = false;
+}
+
 void Cursor::fail() {
   Que->fail();
   CurPage = Que->getErrorPage();

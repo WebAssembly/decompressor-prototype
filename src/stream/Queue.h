@@ -175,6 +175,9 @@ class Queue : public std::enable_shared_from_this<Queue> {
   // if an error occurs while writing.
   size_t writeToPage(size_t& Address, size_t WantedSize, PageCursor& Cursor);
 
+  // Closes the queue (i.e. assumes all contents have been read/written).
+  void close();
+
   // Reads a contiguous range of bytes into a buffer.
   //
   // Note: A read request may not be fully met. This function only guarantees

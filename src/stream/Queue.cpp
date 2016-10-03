@@ -55,9 +55,17 @@ Queue::Queue()
   PageMap.push_back(LastPage);
 }
 
-Queue::~Queue() {
+void Queue::close() {
+  if (!isEofFrozen()) {
+    size_t EofAddress = LastPage->getMaxAddress();
+    freezeEof(EofAddress);
+  }
   while (FirstPage)
     dumpFirstPage();
+}
+
+Queue::~Queue() {
+  close();
 }
 
 void Queue::describe(FILE* Out) {

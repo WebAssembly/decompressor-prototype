@@ -103,8 +103,6 @@ class Cursor : public PageCursor {
 
   StreamType getType() const { return Type; }
 
-  void reset() {}
-
   bool isQueueGood() const { return Que->isGood(); }
 
   bool isBroken() const { return Que->isBroken(*this); }
@@ -128,6 +126,8 @@ class Cursor : public PageCursor {
   }
 
   void freezeEof() { Que->freezeEof(CurAddress); }
+
+  void close();
 
   size_t fillSize() { return Que->fillSize(); }
 
