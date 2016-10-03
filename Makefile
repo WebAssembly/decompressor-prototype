@@ -617,16 +617,22 @@ test-decompress: $(BUILD_EXECDIR)/decompress
 		| diff - $(TEST_SRCS_DIR)/toy.wasm-w
 	$< -m -i $(TEST_SRCS_DIR)/toy.wasm -o - \
 		| diff - $(TEST_SRCS_DIR)/toy.wasm
+	$< --c-api -i $(TEST_SRCS_DIR)/toy.wasm -o - \
+		| diff - $(TEST_SRCS_DIR)/toy.wasm-w
 	$< -i $(TEST_SRCS_DIR)/toy.wasm -o - \
 		| diff - $(TEST_SRCS_DIR)/toy.wasm-w
 	$< -m -i $(TEST_SRCS_DIR)/toy.wasm -o - \
 		| diff - $(TEST_SRCS_DIR)/toy.wasm
+	$< --c-api -i $(TEST_SRCS_DIR)/toy.wasm -o - \
+		| diff - $(TEST_SRCS_DIR)/toy.wasm-w
 	$< -i $(TEST_SRCS_DIR)/toy.wasm-w -o - \
 		| diff - $(TEST_SRCS_DIR)/toy.wasm-w
 	$< -m -i $(TEST_SRCS_DIR)/toy.wasm-w -o - \
 		| diff - $(TEST_SRCS_DIR)/toy.wasm
 	$< -m -i $(TEST_SRCS_DIR)/if-then-br.wasm -o - \
 		| diff - $(TEST_SRCS_DIR)/if-then-br.wasm
+	$< --c-api -i $(TEST_SRCS_DIR)/toy.wasm-w -o - \
+		| diff - $(TEST_SRCS_DIR)/toy.wasm-w
 	cd test/test-sources; make test RELEASE=$(RELEASE) CXX=$(CXX)
 	@echo "*** decompress tests passed ***"
 

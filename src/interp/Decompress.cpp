@@ -34,7 +34,7 @@ struct Decompressor {
   Decompressor& operator=(const Decompressor& D) = delete;
 
  public:
-  enum class State {NeedsMoreInput, FlushingOutput, Succeeded, Failed};
+  enum class State { NeedsMoreInput, FlushingOutput, Succeeded, Failed };
   std::unique_ptr<uint8_t> Buffer;
   int32_t BufferSize;
   std::shared_ptr<SymbolTable> Symtab;
@@ -53,6 +53,7 @@ struct Decompressor {
     return OutputPipe.getOutput()->fillSize() - OutputPos->getCurByteAddress();
   }
   TraceClassSexpReaderWriter& getTrace() { return Interp->getTrace(); }
+
  private:
   int32_t flushOutput();
   int32_t fail() {
@@ -93,26 +94,28 @@ int32_t Decompressor::resume(int32_t Size) {
   switch (MyState) {
     case State::NeedsMoreInput:
       if (Size == 0) {
-        TRACE_MESSAGE("Closing input");
-        InputPos->freezeEof();
+        if (!InputPos->atEof()) {
+          TRACE_MESSAGE("Closing input");
+          InputPos->freezeEof();
+          InputPos->close();
+        }
       } else {
-        // TODO(karlschimpf) Speed up this copy.
-        for (int32_t i = 0; i < Size; ++i)
-          InputPos->writeByte(Buffer.get()[i]);
-      }
-      Interp->resume();
-      if (Size > BufferSize) {
-        Interp->fail("resume_decompression(" + std::to_string(Size) +
-                     "): illegal size");
-        return fail();
-      }
-      if (InputPos->atEof()) {
-        if (Size > 0) {
+        if (InputPos->atEof()) {
           Interp->fail("resume_decompression(" + std::to_string(Size) +
                        "): can't add bytes when input closed");
           return fail();
         }
+        if (Size > BufferSize) {
+          Interp->fail("resume_decompression(" + std::to_string(Size) +
+                       "): illegal size");
+          return fail();
+        }
+        // TODO(karlschimpf) Speed up this copy.
+        uint8_t* Buf = Buffer.get();
+        for (int32_t i = 0; i < Size; ++i)
+          InputPos->writeByte(Buf[i]);
       }
+      Interp->resume();
       if (Interp->errorsFound())
         return fail();
       if (!Interp->isFinished())
@@ -125,7 +128,11 @@ int32_t Decompressor::resume(int32_t Size) {
     case State::FlushingOutput:
       return flushOutput();
     case State::Succeeded:
-      return DECOMPRESSOR_SUCCESS;
+      if (Size == 0)
+        return DECOMPRESSOR_SUCCESS;
+      Interp->fail("resume_decompression(" + std::to_string(Size) +
+                   "): can't add bytes when input closed");
+      break;
     case State::Failed:
       break;
   }
@@ -134,8 +141,22 @@ int32_t Decompressor::resume(int32_t Size) {
 
 bool Decompressor::fetchOutput(int32_t Size) {
   TRACE_METHOD("fetch_decompressor_output");
-  Interp->fail("fetchOutput not implemented!");
-  return false;
+  switch (MyState) {
+    case State::Succeeded:
+    case State::Failed:
+      return false;
+    default:
+      break;
+  }
+  if (Size > BufferSize || Size > getOutputSize()) {
+    fail();
+    return false;
+  }
+  // TODO(karlschimpf): Do this more efficiently.
+  uint8_t* Buf = Buffer.get();
+  for (int32_t i = 0; i < Size; ++i)
+    Buf[i] = OutputPos->readByte();
+  return Size;
 }
 
 }  // end of anonymous namespace
@@ -148,7 +169,7 @@ void* create_decompressor() {
       SymbolTable::installPredefinedDefaults(Decomp->Symtab, false);
   Decomp->Interp = std::make_shared<Interpreter>(
       Decomp->Input, Decomp->OutputPipe.getInput(), Decomp->Symtab);
-  Decomp->Interp->setTraceProgress(true);
+  // Decomp->Interp->setTraceProgress(true);
   Decomp->Interp->start();
   if (!InstalledDefaults)
     Decomp->Interp->fail("Unable to install decompression rules!");

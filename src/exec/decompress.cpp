@@ -66,16 +66,15 @@ int runUsingCApi() {
   void* Decomp = create_decompressor();
   auto Input = getInput();
   auto Output = getOutput();
-  constexpr int32_t MaxBufferSize = 1024;
+  constexpr int32_t MaxBufferSize = 4096;
   uint8_t* Buffer = get_decompressor_buffer(Decomp, MaxBufferSize);
   // Note: If Buffer size negative, it holds the final status of
   // the decompression.
   int32_t BufferSize = 0;
   bool MoreInput = true;
   while (BufferSize >= 0) {
-    fprintf(stderr, "BufferSize = %" PRIdMAX "\n", intmax_t(BufferSize));
     // Collect output if available.
-    if (BufferSize > 0) {
+    while (BufferSize > 0) {
       int32_t ChunkSize = std::min(BufferSize, MaxBufferSize);
       if (!fetch_decompressor_output(Decomp, ChunkSize)) {
         BufferSize = DECOMPRESSOR_ERROR;
@@ -84,8 +83,9 @@ int runUsingCApi() {
       if (!Output->write(Buffer, ChunkSize))
         BufferSize = DECOMPRESSOR_ERROR;
       BufferSize -= ChunkSize;
-      break;
     }
+    if (BufferSize < 0)
+      break;
     // Fill the buffer with more input.
     while (MoreInput && BufferSize < MaxBufferSize) {
       size_t Count = Input->read(Buffer, MaxBufferSize - BufferSize);
@@ -99,7 +99,6 @@ int runUsingCApi() {
     BufferSize = resume_decompression(Decomp, BufferSize);
   }
   int Result = BufferSize == DECOMPRESSOR_SUCCESS ? EXIT_SUCCESS : EXIT_FAILURE;
-  fprintf(stderr, "Result = %d\n", Result);
   return Result;
 }
 

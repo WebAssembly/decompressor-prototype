@@ -42,6 +42,7 @@ class Pipe FINAL {
   ~Pipe() {}
   std::shared_ptr<Queue> getInput() const { return Input; }
   std::shared_ptr<Queue> getOutput() const { return Output; }
+
  protected:
   class PipeBackedQueue FINAL : public Queue {
     PipeBackedQueue(const PipeBackedQueue&) = delete;
