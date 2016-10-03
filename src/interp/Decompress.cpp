@@ -127,8 +127,9 @@ int32_t Decompressor::resume(int32_t Size) {
     case State::Succeeded:
       return DECOMPRESSOR_SUCCESS;
     case State::Failed:
-      return DECOMPRESSOR_ERROR;
+      break;
   }
+  return DECOMPRESSOR_ERROR;
 }
 
 bool Decompressor::fetchOutput(int32_t Size) {
