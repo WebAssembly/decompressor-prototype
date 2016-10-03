@@ -36,14 +36,14 @@ extern void* create_decompressor();
 extern uint8_t* get_decompressor_buffer(void* D, int32_t Size);
 
 /* Resume decopmression, assuming the buffer contains Size bytes to read.  If
- * non-negative, returns the number of output bytes available.  If negative,
- * either DECOMPRESSOR_SUCCESS or DECOMPRESSOR_ERROR. NOTE: If Size == 0, the
- * code assumes that no more input will be provided (i.e. in all subsequent
- * calls, Size == 0).
+ * non-negative, returns the number of output bytes available to fetch using
+ * fetch_decompressor_output().  If negative, either DECOMPRESSOR_SUCCESS or
+ * DECOMPRESSOR_ERROR. NOTE: If Size == 0, the code assumes that no more input
+ * will be provided (i.e. in all subsequent calls, Size == 0).
  */
 extern int32_t resume_decompression(void* D, int32_t Size);
 
-/* Fetch the next Size bytes and put into the decompression buffer.
+/* Fetch the next Size output bytes and put into the decompression buffer.
  * Returns true if successful.
  */
 extern bool fetch_decompressor_output(void* D, int32_t Size);
