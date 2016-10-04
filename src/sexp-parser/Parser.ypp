@@ -208,9 +208,10 @@ file    : file_version {
         ;
 
 file_version
-        : casm_version {
+        : wasm_version casm_version {
             $$ = Driver.create<FileNode>();
             $$->append($1);
+            $$->append($2);
           }
         ;
 
@@ -304,10 +305,9 @@ declaration_stmt_list
         ;
 
 declaration_list
-        : symbol wasm_version {  // Section name / wasm version.
+        : symbol {  // Section name / wasm version.
             $$ = Driver.create<SectionNode>();
             $$->append($1);
-            $$->append($2);
           }
           | declaration_list declaration { // defines etc.
             $$ = $1;
@@ -557,10 +557,6 @@ wasm_version
             $$ = Driver.getWasmVersionDefinition($5.Value, $5.Format);
             if ($5.Format != decode::ValueFormat::Hexidecimal)
               Driver.error("Wasm version # not hexidecimal");
-            if ($5.Value != WasmBinaryVersion)
-              Driver.error("Only wasm version "
-                           + std::to_string(WasmBinaryVersion)
-                           + " is supported");
           }
         ;
 
@@ -586,19 +582,6 @@ loop_body
 
 section : "(" "section" declaration_list ")" { $$ = $3; }
         ;
-
-/*
-section_list
-        : casm_version { // version of the decompressor.
-            $$ = Driver.create<FileNode>();
-            $$->append($1);
-          }
-        | section_list section { // Sections in file.
-            $$ = $1;
-            $$->append($2);
-          }
-        ;
-*/
 
 seq_stmt_list
         : %empty {

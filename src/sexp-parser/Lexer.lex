@@ -303,6 +303,10 @@ namespace wasm {
 namespace filt {
 
 void Driver::Begin() {
+  // Force reference to overwritten yy_fatal_error, to get rid
+  // of warning message.
+  if (0)
+    yy_fatal_error("");
   LexDriver = this;
   yy_flex_debug = TraceLexing;
   if (Filename.empty() || Filename == "-")
@@ -316,15 +320,6 @@ void Driver::Begin() {
 void Driver::End() {
   if (!Filename.empty() && Filename != "-")
     fclose(yyin);
-}
-
-void Driver::fatal(const std::string &message) {
-  // Force reference to overwritten yy_fatal_error, to get rid
-  // of warning message.
-  if (0)
-    yy_fatal_error(message.c_str());
-  error(message);
-  exit(exit_status(EXIT_FAILURE));
 }
 
 } // end of namespace filt

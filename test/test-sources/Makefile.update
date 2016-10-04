@@ -54,7 +54,7 @@ $(info -----------------------------------------------)
 spec: clean_binaries $(LOCAL_SEXPS_SRCS) $(LOCAL_SEXPS_BINS)
 
 defaults.wasm:
-	$(PARENT_DIR)/$(EXEC_DIR)/decompsexp-wasm -m -i $(SEXP_DEFAULTS) -o $@
+	$(EXEC_DIR)/decompsexp-wasm -m -i $(SEXP_DEFAULTS) -o $@
 
 .PHONY: defaults.wasm
 

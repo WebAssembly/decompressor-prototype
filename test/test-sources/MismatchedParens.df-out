@@ -1,2 +1,2 @@
-2.35: syntax error, unexpected ), expecting $END
+error: 3.16: syntax error, unexpected ), expecting $END
 Errors detected: test/test-sources/MismatchedParens.df
