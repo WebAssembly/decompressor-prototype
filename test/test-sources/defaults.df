@@ -1,6 +1,6 @@
+(wasm.version 0xb)
 (casm.version 0x0)
 (section 'filter'
-  (wasm.version 0xb)
   (define 'code' (params)
     (loop (varuint32) (eval 'code.function'))
   )

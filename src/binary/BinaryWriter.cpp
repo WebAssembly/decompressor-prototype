@@ -63,6 +63,10 @@ void BinaryWriter::writeNode(const Node* Nd) {
   TRACE_SEXP(nullptr, Nd);
   switch (NodeType Opcode = Nd->getType()) {
     case NO_SUCH_NODETYPE:
+#define X(tag, format, defval, mergable, NODE_DECLS) \
+    case Op##tag:
+       AST_VERSION_INTEGERNODE_TABLE
+#undef X
     case OpUnknownSection: {
       // TODO(kschimpf) Fix this list.
       fprintf(stderr, "Misplaced s-expression: %s\n", getNodeTypeName(Opcode));
@@ -82,17 +86,6 @@ void BinaryWriter::writeNode(const Node* Nd) {
     break;                                                     \
   }
       AST_OTHER_INTEGERNODE_TABLE
-#undef X
-#define X(tag, format, defval, mergable, NODE_DECLS)                     \
-  case Op##tag: {                                                        \
-    auto* V = cast<tag##Node>(Nd);                                       \
-    if (V->getValue() != V->getExpectedVersion())                        \
-      fatal(std::string(V->getExpectedVersionName()) + " version not " + \
-            std::to_string(V->getExpectedVersion()));                    \
-    Writer->writeUint32(V->getValue(), WritePos);                        \
-    break;                                                               \
-  }
-      AST_VERSION_INTEGERNODE_TABLE
 #undef X
     case OpAnd:
     case OpBlock:
@@ -129,8 +122,35 @@ void BinaryWriter::writeNode(const Node* Nd) {
       break;
     }
     case OpFile: {
-      for (const auto* Kid : *Nd)
-        writeNode(Kid);
+      int NumKids = Nd->getNumKids();
+      if (NumKids < 2)
+        fatal("File must begin with casm and wasm versions");
+      for (int i = 0, NumKids = Nd->getNumKids(); i < NumKids; ++i) {
+        const Node* Kid = Nd->getKid(i);
+        switch (i) {
+          case 0:
+            if (auto* Version = dyn_cast<WasmVersionNode>(Kid)) {
+              uint32_t Value = Version->getValue();
+              TRACE(hex_uint32_t, "Wasm version", Value);
+              Writer->writeUint32(Value, WritePos);
+            } else {
+              fatal("Wasm version not specified");
+            }
+            break;
+          case 1:
+            if (auto* Version = dyn_cast<CasmVersionNode>(Kid)) {
+              uint32_t Value = Version->getValue();
+              TRACE(hex_uint32_t, "casm version", Value);
+              Writer->writeUint32(Value, WritePos);
+            } else {
+              fatal("Casm version not specified");
+            }
+            break;
+          default:
+            writeNode(Kid);
+            break;
+        }
+      }
       break;
     }
     case OpStream: {

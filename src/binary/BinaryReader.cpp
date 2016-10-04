@@ -206,14 +206,18 @@ void BinaryReader::resume() {
                   " WASM binary magic number");
               break;
             }
+            WasmVersion = Reader->readUint32(ReadPos);
+            auto* Wasm = Symtab->getWasmVersionDefinition(
+                WasmVersion, ValueFormat::Hexidecimal);
+            TRACE_SEXP("Wasm version", Wasm);
+            CurFile->append(Wasm);
             CasmVersion = Reader->readUint32(ReadPos);
             if (CasmVersion != CasmBinaryVersion)
               fatal("Casm version not " + std::to_string(CasmBinaryVersion));
-            auto* Version = Symtab->getCasmVersionDefinition(
+            auto* Casm = Symtab->getCasmVersionDefinition(
                 CasmVersion, ValueFormat::Hexidecimal);
-            TRACE_SEXP("Casm version", Version);
-            assert(CurFile);
-            CurFile->append(Version);
+            TRACE_SEXP("Casm version", Casm);
+            CurFile->append(Casm);
             Frame.CallState = State::Loop;
             call(Method::Section);
             break;
@@ -483,26 +487,15 @@ void BinaryReader::resume() {
       case Method::SectionBody:
         switch (Frame.CallState) {
           case State::Enter: {
+            assert(CurSection);
             SymbolNode* Sym = CurSection->getSymbol();
             assert(Sym);
             if (Sym->getStringName() != "filter") {
               fail("Handling non-filter sections not implemented!");
               break;
             }
-            Frame.CallState = State::Setup;
-            call(Method::SymbolTable);
-            break;
-          }
-          case State::Setup: {
-            WasmVersion = Reader->readUint32(ReadPos);
-            if (WasmVersion != WasmBinaryVersion)
-              fatal("Wasm version not " + std::to_string(WasmBinaryVersion));
-            auto* Version = Symtab->getWasmVersionDefinition(
-                WasmVersion, ValueFormat::Hexidecimal);
-            TRACE_SEXP("Wasm version", Version);
-            assert(CurSection);
-            CurSection->append(Version);
             Frame.CallState = State::Loop;
+            call(Method::SymbolTable);
             break;
           }
           case State::Loop:

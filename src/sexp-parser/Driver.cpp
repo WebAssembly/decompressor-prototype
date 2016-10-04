@@ -19,6 +19,21 @@
 
 using namespace wasm::filt;
 
+namespace {
+const char* ErrorLevelName[] = {
+  "warning",
+  "error",
+  "fatal"
+};
+}
+
+const char* Driver::getName(ErrorLevel Level) {
+  size_t Index = size_t(Level);
+  if (Index < size(ErrorLevelName))
+    return ErrorLevelName[Index];
+  return "???";
+}
+
 bool Driver::parse(const std::string& Filename) {
   this->Filename = Filename;
   ParsedAst = nullptr;
@@ -30,13 +45,19 @@ bool Driver::parse(const std::string& Filename) {
   return Result == 0 && !ErrorsReported;
 }
 
-void Driver::error(const wasm::filt::location& L, const std::string& M) {
-  ErrorsReported = true;
-  std::cerr << L << ": " << M << std::endl;
-}
-
-void Driver::error(const std::string& M) {
-  error(Loc, M);
+void Driver::report(ErrorLevel Level,
+                    const wasm::filt::location& L,
+                    const std::string& M) {
+  std::cerr << getName(Level) << ": " << L << ": " << M << std::endl;
+  switch (Level) {
+    case ErrorLevel::Warn:
+      return;
+    case ErrorLevel::Error:
+      ErrorsReported = true;
+      return;
+    case ErrorLevel::Fatal:
+      return;
+  }
 }
 
 void Driver::tokenError(const std::string& Token) {
