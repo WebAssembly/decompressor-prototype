@@ -104,7 +104,6 @@ void BinaryWriter::writeNode(const Node* Nd) {
     case OpIfThenElse:
     case OpLoop:
     case OpLoopUnbounded:
-    case OpModule:
     case OpPeek:
     case OpRead:
     case OpUndefine:

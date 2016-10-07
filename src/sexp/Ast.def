@@ -43,7 +43,6 @@
   X(Sequence,          0x0a, "seq",              nullptr,           0, 0)      \
   X(IfThen,            0x0b, "if",               "IfThen",          1, 0)      \
   X(IfThenElse,        0x0c, "if",               "IfThenElse",      1, 0)      \
-  X(Module,            0x0d, "module",           nullptr,           1, 0)      \
                                                                                \
   /* Constants */                                                              \
   X(Void,              0x10, "void",             nullptr,           0, 0)      \
@@ -165,7 +164,6 @@
   X(BitwiseNegate,)                                                            \
   X(Callback,)                                                                 \
   X(LoopUnbounded,)                                                            \
-  X(Module,)                                                                   \
   X(Not,)                                                                      \
   X(Peek,)                                                                     \
   X(Read,)                                                                     \
