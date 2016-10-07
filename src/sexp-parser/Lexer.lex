@@ -211,7 +211,6 @@ id ({letter}|{digit}|[_.])*
 "."               return Parser::make_DOT(Driver.getLoc());
 "and"             return Parser::make_AND(Driver.getLoc());
 "ast"             return Parser::make_AST(Driver.getLoc());
-"begin"           return Parser::make_KEYWORD_BEGIN(Driver.getLoc());
 "block"           return Parser::make_BLOCK(Driver.getLoc());
 "bit"             return Parser::make_BIT(Driver.getLoc());
 "bitwise"         return Parser::make_BITWISE(Driver.getLoc());
@@ -219,8 +218,6 @@ id ({letter}|{digit}|[_.])*
 "case"            return Parser::make_CASE(Driver.getLoc());
 "casm"            return Parser::make_CASM(Driver.getLoc());
 "define"          return Parser::make_DEFINE(Driver.getLoc());
-"empty"           return Parser::make_EMPTY(Driver.getLoc());
-"end"             return Parser::make_KEYWORD_END(Driver.getLoc());
 "error"           return Parser::make_ERROR(Driver.getLoc());
 "eval"            return Parser::make_EVAL(Driver.getLoc());
 "filter"          return Parser::make_FILTER(Driver.getLoc());
@@ -264,6 +261,7 @@ id ({letter}|{digit}|[_.])*
 "wasm"            return Parser::make_WASM(Driver.getLoc());
 "write"           return Parser::make_WRITE(Driver.getLoc());
 "xor"             return Parser::make_XOR(Driver.getLoc());
+"=>"              return Parser::make_DOUBLE_ARROW(Driver.getLoc());
 "0x"{hexdigit}+   return make_HexInteger(Driver, yytext);
 {digit}+          return make_Integer(Driver, yytext);
 -?{digit}+        return make_SignedInteger(Driver, yytext);

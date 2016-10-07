@@ -77,7 +77,6 @@ struct IntValue {
 // Keywords
 %token AND           "and"
 %token AST           "ast"
-%token KEYWORD_BEGIN "begin"
 %token BIT           "bit"
 %token BITWISE       "bitwise"
 %token BLOCK         "block"
@@ -87,8 +86,7 @@ struct IntValue {
 %token CLOSEPAREN    ")"
 %token DEFINE        "define"
 %token DOT           "."
-%token EMPTY         "empty"
-%token KEYWORD_END   "end"
+%token DOUBLE_ARROW  "=>"
 %token ERROR         "error"
 %token EVAL          "eval"
 %token FILTER        "filter"
@@ -355,9 +353,6 @@ bool_expression
         | "(" "bitwise" "." "negate" expression ")" {
             $$ = Driver.create<BitwiseNegateNode>($5);
           }
-        | "(" "block" "." "empty" ")" {
-            $$ = Driver.create<BlockEmptyNode>();
-          }
         ;
 
 eval_params
@@ -376,6 +371,9 @@ expression
         | constant_expression { $$ = $1; }
         | bool_expression { $$ = $1; }
         | map_expression { $$ = $1; }
+        | "(" "=>" symbol ")" {
+            $$ = Driver.create<CallbackNode>($3);
+          }
         | "(" "param" INTEGER ")" {
             $$ = Driver.getParamDefinition($3.Value, $3.Format);
           }
@@ -597,12 +595,6 @@ statement
         : expression { $$ = $1; }
         | stream_conv { $$ = $1; }
         | "(" block_stmt_list ")"  { $$ = $2; }
-        | "(" "block" "." "begin" ")" {
-            $$ = Driver.create<BlockBeginNode>();
-          }
-        | "(" "block" "." "end" ")" {
-            $$ = Driver.create<BlockEndNode>();
-          }
         | "(" "set" local_var expression ")" {
             $$ = Driver.create<SetNode>($3, $4);
           }
