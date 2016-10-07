@@ -73,31 +73,30 @@ void BinaryWriter::writeNode(const Node* Nd) {
       fatal("Unable to write filter s-expression");
       break;
     }
-#define X(tag, format, defval, mergable, NODE_DECLS)           \
-  case Op##tag: {                                              \
-    Writer->writeUint8(Opcode, WritePos);                      \
-    auto* Int = cast<tag##Node>(Nd);                           \
-    if (Int->isDefaultValue()) {                               \
-      Writer->writeUint8(0, WritePos);                         \
-    } else {                                                   \
-      Writer->writeUint8(int(Int->getFormat()) + 1, WritePos); \
-      Writer->write##format(Int->getValue(), WritePos);        \
-    }                                                          \
-    break;                                                     \
-  }
-      AST_OTHER_INTEGERNODE_TABLE
+#define X(tag, format, defval, mergable, NODE_DECLS)             \
+    case Op##tag: {                                              \
+      Writer->writeUint8(Opcode, WritePos);                      \
+      auto* Int = cast<tag##Node>(Nd);                           \
+      if (Int->isDefaultValue()) {                               \
+        Writer->writeUint8(0, WritePos);                         \
+      } else {                                                   \
+        Writer->writeUint8(int(Int->getFormat()) + 1, WritePos); \
+        Writer->write##format(Int->getValue(), WritePos);        \
+      }                                                          \
+      break;                                                     \
+    }
+    AST_OTHER_INTEGERNODE_TABLE
 #undef X
     case OpAnd:
     case OpBlock:
-    case OpBlockBegin:
-    case OpBlockEmpty:
-    case OpBlockEnd:
     case OpBitwiseAnd:
     case OpBitwiseNegate:
     case OpBitwiseOr:
     case OpBitwiseXor:
+    case OpCallback:
     case OpCase:
     case OpConvert:
+    case OpDefine:
     case OpOr:
     case OpNot:
     case OpError:
@@ -175,6 +174,7 @@ void BinaryWriter::writeNode(const Node* Nd) {
       SectionSymtab.clear();
       break;
     }
+    case OpEval:
     case OpFilter:
     case OpOpcode:
     case OpMap:
@@ -189,23 +189,11 @@ void BinaryWriter::writeNode(const Node* Nd) {
       break;
     }
     case OpSymbol: {
+      Writer->writeUint8(Opcode, WritePos);
       SymbolNode* Sym = cast<SymbolNode>(const_cast<Node*>(Nd));
       Writer->writeVaruint32(SectionSymtab.getSymbolIndex(Sym), WritePos);
       break;
     }
-    case OpEval: {
-      for (int i = 1; i < Nd->getNumKids(); ++i)
-        writeNode(Nd->getKid(i));
-      Writer->writeUint8(Opcode, WritePos);
-      writeNode(Nd->getKid(0));
-      Writer->writeVaruint32(Nd->getNumKids() - 1, WritePos);
-      break;
-    }
-    case OpDefine:
-      writeNode(Nd->getKid(1));
-      writeNode(Nd->getKid(2));
-      Writer->writeUint8(Opcode, WritePos);
-      writeNode(Nd->getKid(0));
   }
 }
 

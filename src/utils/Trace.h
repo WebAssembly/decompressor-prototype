@@ -182,6 +182,9 @@ class TraceClass : std::enable_shared_from_this<TraceClass> {
   void trace_int32_t(const char* Name, int32_t Value) {
     traceIntInternal(Name, Value);
   }
+  void trace_hex_int32_t(const char* Name, int32_t Value) {
+    traceHexInternal(Name, Value);
+  }
   void trace_uint32_t(const char* Name, uint32_t Value) {
     traceUintInternal(Name, Value);
   }

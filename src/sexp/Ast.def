@@ -43,9 +43,7 @@
   X(Sequence,          0x0a, "seq",              nullptr,           0, 0)      \
   X(IfThen,            0x0b, "if",               "IfThen",          1, 0)      \
   X(IfThenElse,        0x0c, "if",               "IfThenElse",      1, 0)      \
-  X(BlockBegin,        0x0d, "block.begin",      nullptr,           0, 0)      \
-  X(BlockEnd,          0x0e, "block.end",        nullptr,           0, 0)      \
-  X(Module,            0x0f, "module",           nullptr,           1, 0)      \
+  X(Module,            0x0d, "module",           nullptr,           1, 0)      \
                                                                                \
   /* Constants */                                                              \
   X(Void,              0x10, "void",             nullptr,           0, 0)      \
@@ -75,7 +73,6 @@
   X(BitwiseOr,         0x35, "bitwise.or",       nullptr,           2, 0)      \
   X(BitwiseXor,        0x36, "bitwise.xor",      nullptr,           2, 0)      \
   X(BitwiseNegate,     0x37, "bitwise.negate",   nullptr,           1, 0)      \
-  X(BlockEmpty,        0x38, "block.empty",      nullptr,           0, 0)      \
                                                                                \
   /* I/O operations  */                                                        \
   X(Peek,              0x40, "peek",             nullptr,           1, 0)      \
@@ -89,6 +86,7 @@
   X(Local,             0x53, "local",            nullptr,           1, 0)      \
   X(Set,               0x54, "set",              nullptr,           2, 0)      \
   X(Map,               0x55, "map",              nullptr,           1, 0)      \
+  X(Callback,          0x56, "=>",               nullptr,           1, 0)      \
                                                                                \
   /* Declarations */                                                           \
   X(Define,            0x60, "define",           nullptr,           2, 1)      \
@@ -106,9 +104,6 @@
 
 //#define X(tag, NODE_DECLS)
 #define AST_NULLARYNODE_TABLE                                                  \
-  X(BlockBegin,)                                                               \
-  X(BlockEmpty,)                                                               \
-  X(BlockEnd,)                                                                 \
   X(Error,)                                                                    \
   X(LastRead,)                                                                 \
   X(Void,)                                                                     \
@@ -168,6 +163,7 @@
 #define AST_UNARYNODE_TABLE                                                    \
   X(Block,)                                                                    \
   X(BitwiseNegate,)                                                            \
+  X(Callback,)                                                                 \
   X(LoopUnbounded,)                                                            \
   X(Module,)                                                                   \
   X(Not,)                                                                      \

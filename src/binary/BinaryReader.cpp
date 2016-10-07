@@ -271,6 +271,7 @@ void BinaryReader::resume() {
         switch (Frame.CallState) {
           case State::Enter: {
             NodeType Opcode = (NodeType)Reader->readUint8(ReadPos);
+            TRACE(hex_int32_t, "Opcode", int32_t(Opcode));
             Frame.CallState = State::Exit;
             switch (Opcode) {
               case OpAnd:
@@ -278,15 +279,6 @@ void BinaryReader::resume() {
                 break;
               case OpBlock:
                 readUnary<BlockNode>();
-                break;
-              case OpBlockBegin:
-                readNullary<BlockBeginNode>();
-                break;
-              case OpBlockEmpty:
-                readNullary<BlockEmptyNode>();
-                break;
-              case OpBlockEnd:
-                readNullary<BlockEndNode>();
                 break;
               case OpBitwiseAnd:
                 readBinary<BitwiseAndNode>();
@@ -300,46 +292,30 @@ void BinaryReader::resume() {
               case OpBitwiseXor:
                 readBinary<BitwiseXorNode>();
                 break;
+              case OpCallback:
+                readUnary<CallbackNode>();
+                break;
               case OpCase:
                 readBinary<CaseNode>();
                 break;
               case OpConvert:
                 readTernary<ConvertNode>();
                 break;
-              case OpDefine: {
+              case OpDefine:
+                readTernary<DefineNode>();
+                break;
+              case OpSymbol: {
                 auto* Symbol = SectionSymtab.getIndexSymbol(
                     Reader->readVaruint32(ReadPos));
-                auto* Body = NodeStack.back();
-                NodeStack.pop_back();
-                auto* Params = NodeStack.back();
-                NodeStack.pop_back();
-                auto* Node = Symtab->create<DefineNode>(Symbol, Params, Body);
-                TRACE_SEXP(nullptr, Node);
-                NodeStack.push_back(Node);
+                NodeStack.push_back(Symbol);
                 break;
               }
               case OpError:
                 readNullary<ErrorNode>();
                 break;
-              case OpEval: {
-                auto* Node = Symtab->create<EvalNode>();
-                auto* Sym = SectionSymtab.getIndexSymbol(
-                    Reader->readVaruint32(ReadPos));
-                Node->append(Sym);
-                uint32_t NumParams = Reader->readVaruint32(ReadPos);
-                size_t StackSize = NodeStack.size();
-                if (StackSize < NumParams) {
-                  failBadState();
-                  break;
-                }
-                for (size_t i = StackSize - NumParams; i < StackSize; ++i)
-                  Node->append(NodeStack[i]);
-                for (uint32_t i = 0; i < NumParams; ++i)
-                  NodeStack.pop_back();
-                TRACE_SEXP(nullptr, Node);
-                NodeStack.push_back(Node);
+              case OpEval:
+                readNary<EvalNode>();
                 break;
-              }
               case OpFilter:
                 readNary<FilterNode>();
                 break;
@@ -434,7 +410,6 @@ void BinaryReader::resume() {
               case NO_SUCH_NODETYPE:
               case OpFile:
               case OpSection:
-              case OpSymbol:
               case OpUnknownSection:
                 failBadState();
                 break;

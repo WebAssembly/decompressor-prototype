@@ -360,9 +360,6 @@ void Interpreter::resume() {
           case OpBitwiseNegate:
           case OpBitwiseOr:
           case OpBitwiseXor:
-          case OpBlockBegin:
-          case OpBlockEmpty:
-          case OpBlockEnd:
           case OpConvert:
           case OpModule:
           case OpParams:
@@ -383,6 +380,13 @@ void Interpreter::resume() {
           case OpError:  // Method::Eval
             TraceEnterFrame();
             fail("Algorithm error!");
+            break;
+          case OpCallback: // Method::Eval
+            // TODO(karlschimpf): All virtual calls to class so that derived
+            // classes can override.
+            TraceEnterFrame();
+            popAndReturn(Frame.ReturnValue);
+            TraceExitFrame();
             break;
           case OpI32Const:
           case OpI64Const:
@@ -975,9 +979,6 @@ void Interpreter::resume() {
           case OpBitwiseOr:
           case OpBitwiseXor:
           case OpBlock:
-          case OpBlockBegin:
-          case OpBlockEmpty:
-          case OpBlockEnd:
           case OpCase:
           case OpConvert:
           case OpDefine:
@@ -1009,6 +1010,11 @@ void Interpreter::resume() {
           case OpWrite:
           case NO_SUCH_NODETYPE:  // Method::Read
             failNotImplemented();
+            break;
+          case OpCallback:  // Method::Read
+            TraceEnterFrame();
+            popAndReturnReadValue(LastReadValue);
+            TraceExitFrame();
             break;
           case OpI32Const:
           case OpI64Const:
@@ -1383,9 +1389,6 @@ void Interpreter::resume() {
           case OpBitwiseOr:
           case OpBitwiseXor:
           case OpBlock:
-          case OpBlockBegin:
-          case OpBlockEmpty:
-          case OpBlockEnd:
           case OpCase:
           case OpConvert:
           case OpDefine:
@@ -1419,6 +1422,11 @@ void Interpreter::resume() {
           case OpWrite:
           case NO_SUCH_NODETYPE:  // Method::Write
             failNotImplemented();
+            break;
+          case OpCallback:  // Method::Write
+            TraceEnterFrame();
+            popAndReturnWriteValue();
+            TraceExitFrame();
             break;
           case OpParam:  // Method::Write
             switch (Frame.CallState) {
