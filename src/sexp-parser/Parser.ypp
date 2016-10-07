@@ -137,17 +137,17 @@ struct IntValue {
 %token <wasm::filt::IntValue> INTEGER
 
 // Nonterminal classes.
-%type <wasm::filt::Node *> block_stmt_list
+%type <wasm::filt::Node *> block_args
 %type <wasm::filt::Node *> bool_expression
 %type <wasm::filt::Node *> case
-%type <wasm::filt::SwitchNode *> case_list
-%type <wasm::filt::Node *> case_stmt_list
-%type <wasm::filt::Node *> compressed_module
+%type <wasm::filt::Node *> case_args
+%type <wasm::filt::SwitchNode *> switch_args
 %type <wasm::filt::Node *> constant_expression
+%type <wasm::filt::Node *> control_flow
 %type <wasm::filt::Node *> declaration
 %type <wasm::filt::SectionNode *> declaration_list
-%type <wasm::filt::Node *> declaration_stmt_list
-%type <wasm::filt::Node *> eval_params
+%type <wasm::filt::Node *> define_args
+%type <wasm::filt::Node *> eval_args
 %type <wasm::filt::Node *> expression
 %type <wasm::filt::Node *> file
 %type <wasm::filt::Node *> file_version
@@ -156,25 +156,17 @@ struct IntValue {
 %type <wasm::filt::Node *> locals_decl
 %type <wasm::filt::Node *> local_var
 %type <wasm::filt::Node *> loop_body
-%type <wasm::filt::Node *> map_expression
-%type <wasm::filt::Node *> map_case;
-%type <wasm::filt::MapNode *> map_case_list
-%type <wasm::filt::Node *> map_case_expr
-%type <wasm::filt::Node *> opcode_case
-%type <wasm::filt::Node *> opcode_case_expr
-%type <wasm::filt::Node *> opcode_expression
-%type <wasm::filt::OpcodeNode *> opcode_expr_list
+%type <wasm::filt::MapNode *> map_args
+%type <wasm::filt::OpcodeNode *> opcode_args
 %type <wasm::filt::Node *> params_decl
 %type <wasm::filt::Node *> stream
-%type <wasm::filt::Node *> stream_conv
-%type <wasm::filt::Node *> stream_conv_list
-%type <wasm::filt::Node *> stream_conv_stmt_list
+%type <wasm::filt::Node *> convert
+%type <wasm::filt::Node *> filter_args
+%type <wasm::filt::Node *> convert_args
 %type <wasm::decode::StreamKind> stream_kind
 %type <wasm::decode::StreamType> stream_type
 %type <wasm::filt::Node *> section
-/* %type <wasm::filt::Node *> section_list */
-%type <wasm::filt::Node *> seq_stmt_list
-%type <wasm::filt::Node *> statement
+%type <wasm::filt::Node *> sequence_args
 %type <wasm::filt::Node *> symbol
 %type <wasm::filt::Node *> casm_version
 %type <wasm::filt::Node *> wasm_version
@@ -192,17 +184,6 @@ file    : file_version {
             $$->append($2);
             Driver.setParsedAst($$);
           }
-        | file_version compressed_module {
-            $$ = $1;
-            $$->append($2);
-            Driver.setParsedAst($$);
-          }
-        | file_version section compressed_module {
-            $$ = $1;
-            $$->append($2);
-            $$->append($3);
-            Driver.setParsedAst($$);
-          }
         ;
 
 file_version
@@ -213,33 +194,29 @@ file_version
           }
         ;
 
-compressed_module
-        // Defines that module follows, and decompressed size.
-        : "(" "module" constant_expression ")" {
-            $$ = Driver.create<ModuleNode>($3);
-          }
+case    : "(" "case" case_args ")" { $$ = $3; }
         ;
 
-case    : "(" "case" case_stmt_list ")" { $$ = $3; }
-        ;
-
-case_list
-        : expression statement { // selector / default statement.
+switch_args
+        : expression expression {
+            // selector / default expresssions
             $$ = Driver.create<SwitchNode>();
             $$->append($1);
             $$->append($2);
           }
-        | case_list case {
+        | switch_args case {
             $$ = $1;
             $$->append($2);
           }
         ;
 
-case_stmt_list
-        : constant_expression statement { // case index/first statement of case.
+case_args
+        : constant_expression expression {
+            // case index/first expression of case.
             $$ = Driver.create<CaseNode>($1, $2);
           }
-        | case_stmt_list statement { // remaining statements of case.
+        | case_args expression {
+            // remaining expressions of case.
             $$ = $1;
             Node *StmtList = $1->getLastKid();
             auto *Seq = dyn_cast<SequenceNode>(StmtList);
@@ -271,8 +248,8 @@ constant_expression
         ;
 
 declaration
-        : "(" declaration_stmt_list ")" {
-            $$ = $2;
+        : "(" "define" define_args ")" {
+            $$ = $3;
           }
         | "(" "rename" symbol symbol ")" {
             $$ = Driver.create<RenameNode>($3, $4);
@@ -282,14 +259,14 @@ declaration
           }
         ;
 
-declaration_stmt_list
-        : "define" symbol params_decl statement {
-            $$ = Driver.create<DefineNode>($2, $3, $4);
+define_args
+        : symbol params_decl expression {
+            $$ = Driver.create<DefineNode>($1, $2, $3);
           }
-        | "define" symbol params_decl locals_decl {
-            $$ = Driver.create<DefineNode>($2, $3, $4);
+        | symbol params_decl locals_decl {
+            $$ = Driver.create<DefineNode>($1, $2, $3);
           }
-        | declaration_stmt_list statement {
+        | define_args expression {
             $$ = $1;
             Node *StmtList = $1->getLastKid();
             auto *Seq = dyn_cast<SequenceNode>(StmtList);
@@ -313,11 +290,11 @@ declaration_list
           }
         ;
 
-block_stmt_list
-        : "block" statement  {
-            $$ = Driver.create<BlockNode>($2);
+block_args
+        : expression  {
+            $$ = Driver.create<BlockNode>($1);
           }
-        | block_stmt_list statement {
+        | block_args expression {
             $$ = $1;
             Node *StmtList = $1->getLastKid();
             auto *Seq = dyn_cast<SequenceNode>(StmtList);
@@ -355,12 +332,12 @@ bool_expression
           }
         ;
 
-eval_params
+eval_args
         : symbol {
             $$ = Driver.create<EvalNode>();
             $$->append($1);
           }
-        | eval_params statement {
+        | eval_args expression {
             $$ = $1;
             $$->append($2);
         }
@@ -370,7 +347,8 @@ expression
         : format_directive { $$ = $1; }
         | constant_expression { $$ = $1; }
         | bool_expression { $$ = $1; }
-        | map_expression { $$ = $1; }
+        | control_flow { $$ = $1; }
+        | "(" "map" map_args ")" { $$ = $3; }
         | "(" "=>" symbol ")" {
             $$ = Driver.create<CallbackNode>($3);
           }
@@ -381,7 +359,7 @@ expression
         | "(" "error" ")" {
             $$ = Driver.create<ErrorNode>();
           }
-        | "(" "eval" eval_params ")" {
+        | "(" "eval" eval_args ")" {
             $$ = $3;
           }
         | "(" "write" expression expression ")" {
@@ -400,7 +378,9 @@ expression
 
 format_directive
         : fixed_format_directive { $$ = $1; }
-        | opcode_expression { $$ = $1; }
+        | "(" "opcode" opcode_args ")" {
+            $$ = $3;
+          }
         | "(" "varint32" ")" {
             $$ = Driver.getVarint32Definition();
           }
@@ -477,56 +457,25 @@ local_var
           }
         ;
 
-map_expression
-        : "(" "map" map_case_list ")" { $$ = $3; }
-        ;
-
-map_case_list
-        : expression map_case {
+map_args
+        : expression case {
             $$ = Driver.create<MapNode>();
           }
-        | map_case_list map_case {
+        | map_args case {
             $$ = $1;
             $1->append($2);
           }
         ;
 
-map_case
-        : "(" "case" constant_expression map_case_expr ")" {
-            $$ = Driver.create<CaseNode>($3, $4);
-           }
-        ;
-
-map_case_expr
-        : constant_expression { $$ = $1; }
-        | map_expression { $$ = $1; }
-        ;
-
-opcode_expression
-        : "(" "opcode" opcode_expr_list ")" {
-            $$ = $3;
-          }
-        ;
-
-opcode_expr_list
+opcode_args
         : fixed_format_directive {
             $$ = Driver.create<OpcodeNode>();
             $$->append($1);
           }
-        | opcode_expr_list opcode_case {
+        | opcode_args case {
             $$ = $1;
             $$->append($2);
           }
-        ;
-
-opcode_case
-        : "(" "case" constant_expression opcode_case_expr  ")" {
-            $$ = Driver.create<CaseNode>($3, $4);
-          }
-
-opcode_case_expr
-        : fixed_format_directive { $$ = $1; }
-        | opcode_expression { $$ = $1; }
         ;
 
 params_decl
@@ -559,13 +508,13 @@ wasm_version
         ;
 
 loop_body
-        : "loop" expression statement {
+        : "loop" expression expression {
             $$ = Driver.create<LoopNode>($2, $3);
           }
-        | "loop.unbounded" statement {
+        | "loop.unbounded" expression {
             $$ = Driver.create<LoopUnboundedNode>($2);
           }
-        | loop_body statement {
+        | loop_body expression {
             $$ = $1;
             Node *StmtList = $1->getLastKid();
             auto *Seq = dyn_cast<SequenceNode>(StmtList);
@@ -581,35 +530,34 @@ loop_body
 section : "(" "section" declaration_list ")" { $$ = $3; }
         ;
 
-seq_stmt_list
+sequence_args
         : %empty {
             $$ = Driver.create<SequenceNode>();
           }
-        | seq_stmt_list statement {
+        | sequence_args expression {
             $$ = $1;
             $$->append($2);
           }
         ;
 
-statement
-        : expression { $$ = $1; }
-        | stream_conv { $$ = $1; }
-        | "(" block_stmt_list ")"  { $$ = $2; }
+control_flow
+        : convert { $$ = $1; }
+        | "(" "block" block_args ")"  { $$ = $3; }
         | "(" "set" local_var expression ")" {
             $$ = Driver.create<SetNode>($3, $4);
           }
-        | "(" "filter" stream_conv_list ")" { $$ = $3; }
-        | "(" "if" expression statement ")" {
+        | "(" "filter" filter_args ")" { $$ = $3; }
+        | "(" "if" expression expression ")" {
             $$ = Driver.create<IfThenNode>($3, $4);
           }
-        | "(" "if" expression statement statement ")" {
+        | "(" "if" expression expression expression ")" {
             $$ = Driver.create<IfThenElseNode>($3, $4, $5);
           }
         | "(" loop_body ")" { $$ = $2; }
-        | "(" "switch" case_list ")" {
+        | "(" "switch" switch_args ")" {
             $$ = $3;
           }
-        | "(" "seq" seq_stmt_list ")" { $$ = $3; }
+        | "(" "seq" sequence_args ")" { $$ = $3; }
         ;
 
 stream
@@ -630,28 +578,28 @@ stream_type
         | "ast" { $$ = decode::StreamType::Ast; }
         ;
 
-stream_conv
-        : "(" stream_conv_stmt_list ")" {
-            $$ = $2;
+convert
+        : "(" "convert" convert_args ")" {
+            $$ = $3;
           }
         ;
 
-stream_conv_list
-        : stream_conv {
+filter_args
+        : convert {
             $$ = Driver.create<FilterNode>();
             $$->append($1);
           }
-        | stream_conv_list stream_conv {
+        | filter_args convert {
             $$ = $1;
             $$->append($2);
           }
         ;
 
-stream_conv_stmt_list
-       : "convert" stream stream statement {
-            $$ = Driver.create<ConvertNode>($2, $3, $4);
+convert_args
+        : stream stream expression {
+            $$ = Driver.create<ConvertNode>($1, $2, $3);
           }
-        | stream_conv_stmt_list statement {
+        | convert_args expression {
             $$ = $1;
             Node *StmtList = $1->getLastKid();
             auto *Seq = dyn_cast<SequenceNode>(StmtList);
