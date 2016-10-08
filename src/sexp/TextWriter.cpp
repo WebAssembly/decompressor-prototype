@@ -128,7 +128,12 @@ void TextWriter::writeNodeKids(const Node* Nd, bool EmbeddedInParent) {
   bool ForceNewline = false;
   for (auto* Kid : *Nd) {
     if (HasHiddenSeq && Kid == LastKid && isa<SequenceNode>(LastKid)) {
+#if 0
       writeNewline();
+#else
+      if (!LineEmpty)
+        writeNewline();
+#endif
       writeNode(Kid, true, HasHiddenSeq);
       return;
     }
@@ -186,6 +191,7 @@ void TextWriter::writeNode(const Node* Nd,
         writeNodeKids(Nd, true);
       } else {
         Parenthesize _(this, Type, AddNewline);
+        // TODO(kschimpf) Make newline dependent on multi line for kids.
         writeNodeKids(Nd, false);
       }
       return;
