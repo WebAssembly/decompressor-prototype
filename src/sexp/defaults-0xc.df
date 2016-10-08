@@ -51,7 +51,7 @@
       (=> 'code.function.begin')
       (loop
         (seq (varuint32) (=> 'code.function.num.locals'))
-        (eval 'code.funtion.local'))
+        (eval 'code.function.local'))
       (=> 'code.function.bytes')
       (loop.unbounded
         (eval 'code.opcode')     # reads instruction opcode
