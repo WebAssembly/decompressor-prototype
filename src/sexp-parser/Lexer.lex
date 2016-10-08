@@ -186,7 +186,7 @@ digit	[0-9]
 escape  "\\"[fnrtv\\]
 hexdigit [0-9a-fA-F]
 letter	[a-zA-Z]
-id ({letter}|{digit}|[_.])*
+/* id ({letter}|{digit}|[_.])* */
 
 %{
 // Code run each time a pattern is matched.
@@ -270,13 +270,13 @@ id ({letter}|{digit}|[_.])*
                     Buffer.clear();
                     BEGIN(Name);
                   }
-<Name>{id}        buffer_Text(yytext);
 <Name>"\\"        BEGIN(Escape);
 <Name>"'"         {
                     BEGIN(INITIAL);
                     return Parser::make_IDENTIFIER(Buffer, Driver.getLoc());
                   }
-<Name>.           {
+<Name>.           buffer_Text(yytext);
+<Name>\n          {
                     Driver.tokenError(yytext);
                     BEGIN(INITIAL);
                   }

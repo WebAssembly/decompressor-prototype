@@ -268,7 +268,7 @@
       (case (u8.const 0x70) (=> 'code.inst.i64.gt_u'))
       (case (u8.const 0x71) (=> 'code.inst.i64.ge_u'))
       (case (u8.const 0x72) (=> 'code.inst.i64.clz'))
-      (case (u8.cosnt 0x73) (=> 'code.inst.i64.ctx'))
+      (case (u8.const 0x73) (=> 'code.inst.i64.ctx'))
       (case (u8.const 0x74) (=> 'code.inst.i64.popcnt'))
       (case (u8.const 0x75) (=> 'code.inst.f32.add'))
       (case (u8.const 0x76) (=> 'code.inst.f32.sub'))
@@ -278,7 +278,7 @@
       (case (u8.const 0x7a) (=> 'code.inst.f32.max'))
       (case (u8.const 0x7b) (=> 'code.inst.f32.abs'))
       (case (u8.const 0x7c) (=> 'code.inst.f32.neg'))
-      (case (u8.const 0x7d) (=> 'code.inst.f32.copysign))
+      (case (u8.const 0x7d) (=> 'code.inst.f32.copysign'))
       (case (u8.const 0x7e) (=> 'code.inst.f32.ceil'))
       (case (u8.const 0x7f) (=> 'code.inst.f32.floor'))
       (case (u8.const 0x80) (=> 'code.inst.f32.trunc'))
@@ -375,7 +375,7 @@
     (eval '$init_expr')         # An i32 initializer that computess the
                                 # placement offset.
     (loop
-      (seq (varuint32) (=> 'element.segment.num.elements')
+      (seq (varuint32) (=> 'element.segment.num.elements'))
       (varuint32)
       (=> 'element.segment.element')
     )
@@ -463,18 +463,18 @@
         (=> '$init_expr.f64.const'))
       (case (u8.const 0x13)
         (uint32)
-        (=> '$init_expr.f32.const))
+        (=> '$init_expr.f32.const'))
       (case (u8.const 0xbb)
         (varuint32)
         (=> '$init_expr.get_global'))
-      (case (u8.const 0x0f) (=> '$init_expr.end')
+      (case (u8.const 0x0f) (=> '$init_expr.end'))
     )
     (=> '$init_expr.define')
   )
 
   (define 'memory' (params)
     (loop
-      (seq (varuint32) (=> 'memory.num.decls')
+      (seq (varuint32) (=> 'memory.num.decls'))
       (eval '$resizable_limits')  # memory unit limits.
     )
     (=> 'memory.end.section')
@@ -497,7 +497,7 @@
 
   (define 'name.symbol' (params)
     (loop
-      (seq (varuint32) (=> 'name.symbol.length')
+      (seq (varuint32) (=> 'name.symbol.length'))
       (uint8))
     (=> 'name.symbol')
   )
