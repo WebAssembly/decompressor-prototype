@@ -488,7 +488,6 @@ void BinaryReader::resume() {
       case Method::SymbolTable:
         switch (Frame.CallState) {
           case State::Enter:
-            SectionSymtab.clear();
             CounterStack.push(Reader->readVaruint32(ReadPos));
             Frame.CallState = State::Loop;
             break;

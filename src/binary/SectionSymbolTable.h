@@ -43,7 +43,9 @@ class SectionSymbolTable {
   ~SectionSymbolTable() {}
   void installSection(const SectionNode* Section);
   const IndexLookupType& getVector() { return IndexLookup; }
-  void addSymbol(std::string& Name);
+  void addSymbol(std::string& Name) {
+    addSymbol(Symtab->getSymbolDefinition(Name));
+  }
   uint32_t getSymbolIndex(SymbolNode* Symbol);
   IndexType getNumberSymbols() const { return IndexLookup.size(); }
   void clear() {
@@ -61,6 +63,7 @@ class SectionSymbolTable {
   SymbolLookupType SymbolLookup;
   IndexLookupType IndexLookup;
   void installSymbols(const Node* Nd);
+  void addSymbol(SymbolNode* Sym);
 };
 
 }  // end of namespace filt

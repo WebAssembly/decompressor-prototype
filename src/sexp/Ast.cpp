@@ -36,7 +36,7 @@ namespace filt {
 
 namespace {
 
-static const char* PredefinedName[] {
+static const char* PredefinedName[NumPredefinedSymbols] {
   "$PredefinedSymbol::Unknown"
 #define X(tag, name) , name
   PREDEFINED_SYMBOLS_TABLE
@@ -45,19 +45,16 @@ static const char* PredefinedName[] {
 
 } // end of anonymous namespace
 
-PredefinedSymbol getMaxPredefinedSymbol() {
-  return PredefinedSymbol(size(PredefinedName) - 1);
-}
-
-PredefinedSymbol toPredefinedSymbol(unsigned Value) {
-  if (Value <= unsigned(getMaxPredefinedSymbol()))
+PredefinedSymbol toPredefinedSymbol(uint32_t Value) {
+  if (Value < NumPredefinedSymbols)
     return PredefinedSymbol(Value);
   return PredefinedSymbol::Unknown;
 }
 
 const char* getName(PredefinedSymbol Sym) {
-  assert(Sym <= getMaxPredefinedSymbol());
-  return PredefinedName[unsigned(Sym)];
+  uint32_t Index = uint32_t(Sym);
+  assert(Index < NumPredefinedSymbols);
+  return PredefinedName[Index];
 }
 
 AstTraitsType AstTraits[NumNodeTypes] = {
@@ -195,8 +192,10 @@ SymbolTable::SymbolTable()
 }
 
 void SymbolTable::init() {
-  for (size_t i = 1; i < size(PredefinedName); ++i) {
+  Predefined.reserve(NumPredefinedSymbols);
+  for (size_t i = 0; i < NumPredefinedSymbols; ++i) {
     SymbolNode *Nd = getSymbolDefinition(PredefinedName[i]);
+    Predefined.push_back(Nd);
     Nd->setPredefinedSymbol(toPredefinedSymbol(i));
   }
 }
