@@ -256,7 +256,6 @@ class Interpreter {
   void TraceEnterFrame() {
     assert(Frame.CallState == Interpreter::State::Enter);
     TRACE_ENTER(getName(Frame.CallMethod));
-    TRACE_SEXP(nullptr, Frame.Nd);
   }
   void TraceExitFrame() { TRACE_EXIT_OVERRIDE(getName(Frame.CallMethod)); }
 

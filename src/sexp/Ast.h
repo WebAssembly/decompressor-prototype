@@ -32,6 +32,7 @@
 #include "ADT/arena_vector.h"
 #include "sexp/Ast.def"
 #include "sexp/NodeType.h"
+#include "sexp/Strings.def"
 #include "sexp/TraceSexp.h"
 #include "stream/WriteUtils.h"
 #include "utils/Allocator.h"
@@ -140,6 +141,10 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
   // Gets existing symbol if known. Otherwise returns newly created symbol.
   // Used to keep symbols unique within filter s-expressions.
   SymbolNode* getSymbolDefinition(ExternalName& Name);
+  SymbolNode* getSymbolDefinition(const char* NameText) {
+    std::string Name(NameText);
+    return getSymbolDefinition(Name);
+  }
 // Gets integer node (as defined by the arguments) if known. Otherwise
 // returns newly created integer.
 #define X(tag, format, defval, mergable, NODE_DECLS)           \
@@ -173,6 +178,8 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
   std::map<ExternalName, SymbolNode*> SymbolMap;
   // TODO(karlschimpf): Use arena allocator on map.
   std::map<IntegerValue, IntegerNode*> IntMap;
+
+  void init();
 
   void installDefinitions(Node* Root);
   void clearSubtreeCaches(Node* Nd,
@@ -407,10 +414,24 @@ class IntegerNode : public NullaryNode {
 AST_INTEGERNODE_TABLE
 #undef X
 
+// Defines constants for predefined symbols (i.e. instances of SymbolNode
+enum class PredefinedSymbol : unsigned {
+  Unknown
+#define X(tag, name) , tag
+  PREDEFINED_SYMBOLS_TABLE
+#undef X
+};
+
+extern PredefinedSymbol getMaxPredefinedSymbol();
+
+extern PredefinedSymbol toPredefinedSymbol(unsigned Value);
+extern const char* getName(PredefinedSymbol);
+
 class SymbolNode FINAL : public NullaryNode {
   SymbolNode(const SymbolNode&) = delete;
   SymbolNode& operator=(const SymbolNode&) = delete;
   SymbolNode() = delete;
+  friend class SymbolTable;
 
  public:
   SymbolNode(SymbolTable& Symtab, ExternalName& _Name)
@@ -423,19 +444,26 @@ class SymbolNode FINAL : public NullaryNode {
   const Node* getDefineDefinition() const { return DefineDefinition; }
   void setDefineDefinition(Node* Defn) { DefineDefinition = Defn; }
 
+  PredefinedSymbol getPredefinedSymbol() const {
+    return PredefinedValue;
+  }
+
   static bool implementsClass(NodeType Type) { return Type == OpSymbol; }
 
  private:
   InternalName Name;
   Node* DefineDefinition;
+  PredefinedSymbol PredefinedValue;
   void init(ExternalName& _Name) {
     Name.reserve(Name.size());
     for (const auto& V : _Name)
       Name.emplace_back(V);
     DefineDefinition = nullptr;
+    PredefinedValue = PredefinedSymbol::Unknown;
   }
   void clearCaches(NodeVectorType& AdditionalNodes) OVERRIDE;
   void installCaches(NodeVectorType& AdditionalNodes) OVERRIDE;
+  void setPredefinedSymbol(PredefinedSymbol NewValue);
 };
 
 class UnaryNode : public Node {

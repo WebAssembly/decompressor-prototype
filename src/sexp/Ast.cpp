@@ -34,6 +34,32 @@ using namespace utils;
 
 namespace filt {
 
+namespace {
+
+static const char* PredefinedName[] {
+  "$PredefinedSymbol::Unknown"
+#define X(tag, name) , name
+  PREDEFINED_SYMBOLS_TABLE
+#undef X
+      };
+
+} // end of anonymous namespace
+
+PredefinedSymbol getMaxPredefinedSymbol() {
+  return PredefinedSymbol(size(PredefinedName) - 1);
+}
+
+PredefinedSymbol toPredefinedSymbol(unsigned Value) {
+  if (Value <= unsigned(getMaxPredefinedSymbol()))
+    return PredefinedSymbol(Value);
+  return PredefinedSymbol::Unknown;
+}
+
+const char* getName(PredefinedSymbol Sym) {
+  assert(Sym <= getMaxPredefinedSymbol());
+  return PredefinedName[unsigned(Sym)];
+}
+
 AstTraitsType AstTraits[NumNodeTypes] = {
 #define X(tag, opcode, sexp_name, type_name, text_num_args, text_max_args) \
   { Op##tag, sexp_name, type_name, text_num_args, text_max_args }          \
@@ -129,6 +155,14 @@ bool Node::validateNode(NodeVectorType& Scope) {
   return true;
 }
 
+void SymbolNode::setPredefinedSymbol(PredefinedSymbol NewValue) {
+  if (PredefinedValue != PredefinedSymbol::Unknown)
+    fatal(std::string("Can't define \"") + filt::getName(PredefinedValue)
+          + " and " + filt::getName(NewValue));
+  PredefinedValue = NewValue;
+}
+
+
 // Note: we create duumy virtual forceCompilation() to force legal
 // class definitions to be compiled in here. Classes not explicitly
 // instantiated here will not link. This used to force an error if
@@ -157,6 +191,14 @@ SymbolTable::SymbolTable()
       Alloc(std::make_shared<Malloc>()),
       NextCreationIndex(0) {
   Error = Alloc->create<ErrorNode>(*this);
+  init();
+}
+
+void SymbolTable::init() {
+  for (size_t i = 1; i < size(PredefinedName); ++i) {
+    SymbolNode *Nd = getSymbolDefinition(PredefinedName[i]);
+    Nd->setPredefinedSymbol(toPredefinedSymbol(i));
+  }
 }
 
 SymbolNode* SymbolTable::getSymbolDefinition(ExternalName& Name) {
