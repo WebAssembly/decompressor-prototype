@@ -129,6 +129,26 @@ class IntegerValue {
   virtual void describe(FILE* Out) const;
 };
 
+// Defines constants for predefined symbols (i.e. instances of SymbolNode
+enum class PredefinedSymbol : uint32_t {
+  Unknown
+#define X(tag, name) , tag
+  PREDEFINED_SYMBOLS_TABLE
+#undef X
+};
+
+static constexpr uint32_t NumPredefinedSymbols = 1
+#define X(tag, name) + 1
+  PREDEFINED_SYMBOLS_TABLE
+#undef X
+    ;
+
+static constexpr PredefinedSymbol MaxPredefinedSymbol =
+    PredefinedSymbol(NumPredefinedSymbols - 1);
+
+extern PredefinedSymbol toPredefinedSymbol(uint32_t Value);
+extern const char* getName(PredefinedSymbol);
+
 class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
   SymbolTable(const SymbolTable&) = delete;
   SymbolTable& operator=(const SymbolTable&) = delete;
@@ -138,6 +158,9 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
   ~SymbolTable() { clear(); }
   // Gets existing symbol if known. Otherwise returns nullptr.
   SymbolNode* getSymbol(ExternalName& Name) { return SymbolMap[Name]; }
+  SymbolNode* getPredefined(PredefinedSymbol Sym) {
+    return Predefined[uint32_t(Sym)];
+  }
   // Gets existing symbol if known. Otherwise returns newly created symbol.
   // Used to keep symbols unique within filter s-expressions.
   SymbolNode* getSymbolDefinition(ExternalName& Name);
@@ -178,6 +201,7 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
   std::map<ExternalName, SymbolNode*> SymbolMap;
   // TODO(karlschimpf): Use arena allocator on map.
   std::map<IntegerValue, IntegerNode*> IntMap;
+  std::vector<SymbolNode*> Predefined;
 
   void init();
 
@@ -413,19 +437,6 @@ class IntegerNode : public NullaryNode {
   };
 AST_INTEGERNODE_TABLE
 #undef X
-
-// Defines constants for predefined symbols (i.e. instances of SymbolNode
-enum class PredefinedSymbol : unsigned {
-  Unknown
-#define X(tag, name) , tag
-  PREDEFINED_SYMBOLS_TABLE
-#undef X
-};
-
-extern PredefinedSymbol getMaxPredefinedSymbol();
-
-extern PredefinedSymbol toPredefinedSymbol(unsigned Value);
-extern const char* getName(PredefinedSymbol);
 
 class SymbolNode FINAL : public NullaryNode {
   SymbolNode(const SymbolNode&) = delete;

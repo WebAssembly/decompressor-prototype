@@ -26,8 +26,9 @@ namespace wasm {
 
 namespace filt {
 
-void SectionSymbolTable::addSymbol(std::string& Name) {
-  SymbolNode* Sym = Symtab->getSymbolDefinition(Name);
+void SectionSymbolTable::addSymbol(SymbolNode* Sym) {
+  if (Sym->getPredefinedSymbol() != PredefinedSymbol::Unknown)
+    return;
   if (SymbolLookup.count(Sym) == 0) {
     IndexType Index = IndexLookup.size();
     SymbolLookup[Sym] = Index;
@@ -36,6 +37,7 @@ void SectionSymbolTable::addSymbol(std::string& Name) {
 }
 
 void SectionSymbolTable::installSymbols(const Node* Nd) {
+  // TODO(karlschimpf) Make this non-recursive.
   if (const SymbolNode* Symbol = dyn_cast<SymbolNode>(Nd)) {
     std::string SymName = Symbol->getStringName();
     addSymbol(SymName);
@@ -45,22 +47,24 @@ void SectionSymbolTable::installSymbols(const Node* Nd) {
 }
 
 void SectionSymbolTable::installSection(const SectionNode* Section) {
-  // Install all kids but the first (i.e. the section name), since section
-  // names must be explicitly defined.
-  for (size_t i = 1, len = Section->getNumKids(); i < len; ++i)
+  for (size_t i = 0, len = Section->getNumKids(); i < len; ++i)
     installSymbols(Section->getKid(i));
 }
 
 uint32_t SectionSymbolTable::getSymbolIndex(SymbolNode* Symbol) {
-  std::string SymName = Symbol->getStringName();
-  SymbolNode* Sym = Symtab->getSymbolDefinition(SymName);
-  const auto Iter = SymbolLookup.find(Sym);
+  PredefinedSymbol Sym = Symbol->getPredefinedSymbol();
+  if (Sym != PredefinedSymbol::Unknown)
+    return uint32_t(Sym);
+  const auto Iter = SymbolLookup.find(Symbol);
   if (Iter == SymbolLookup.end())
-    fatal("Can't find index for symbol: " + Sym->getStringName());
-  return Iter->second;
+    fatal("Can't find index for symbol: " + Symbol->getStringName());
+  return Iter->second + NumPredefinedSymbols;
 }
 
 SymbolNode* SectionSymbolTable::getIndexSymbol(IndexType Index) {
+  if (Index < NumPredefinedSymbols)
+    return Symtab->getPredefined(PredefinedSymbol(Index));
+  Index -= NumPredefinedSymbols;
   if (Index >= IndexLookup.size())
     fatal("Can't find symbol for index: " + std::to_string(Index));
   return IndexLookup[Index];
