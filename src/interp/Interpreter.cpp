@@ -1252,12 +1252,9 @@ void Interpreter::resume() {
             // TODO(kschimpf) Handle 'filter' sections specially (i.e. install).
             SymbolNode* Sym = Symtab->getSymbol(CurSectionName);
             const Node* Algorithm = nullptr;
-            if (Sym) {
+            if (Sym)
               Algorithm = Sym->getDefineDefinition();
-              DispatchedMethod = Method::Eval;
-            } else {
-              DispatchedMethod = Method::CopyBlock;
-            }
+            DispatchedMethod = Algorithm ? Method::Eval : Method::CopyBlock;
             Frame.CallState = State::Exit;
             call(Method::EvalBlock, Algorithm);
             break;

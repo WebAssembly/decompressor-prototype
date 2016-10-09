@@ -91,7 +91,8 @@ class TextWriter {
   void writeIndent();
 
   void writeNewline() {
-    fputc('\n', File);
+    if (!LineEmpty)
+      fputc('\n', File);
     LineEmpty = true;
   }
 

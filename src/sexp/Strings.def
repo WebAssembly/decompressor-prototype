@@ -16,263 +16,261 @@
 // Defines predefined indices for symbols in decompressor s-expressions
 
 //#define X(tag, name)
-#define DEFAULT_SEXP_STRINGS_TABLE
-X(Code, 'code')
-X(CodeAddress, 'code.address')
-X(CodeBrTable, 'code.br_table')
-X(CodeBrTableSize, 'code.br_table.size')
-X(CodeBrTarget, 'code.br_target')
-X(CodeBrTargetDefaultDepth, 'code.br_target.default_depth')
-x(CodeBrTargetDepth, 'code.br_target.depth')
-X(CodeEndSection, 'code.end.section')
-X(CodeFunction, 'code.function')
-X(CodeFunctionBegin, 'code.function.begin')
-X(CodeFunctionBytes, 'code.function.bytes')
-X(CodeFunctionEnd, 'code.function.end')
-X(codeFunctionLocal, 'code.function.local')
-X(CodeFunctionNumLocals, 'code.function.num.locals')
-X(CodeNumFunctions, 'code.num.functions')
-X(CodeOpcode, 'code.opcode')
-X(CodeInst, 'code.inst')
-X(CodeInstBlock, 'code.inst.block')
-X(CodeInstBr, 'code.inst.br')
-X(CodeInstBrIf, 'code.inst.br_if')
-X(CodeInstBrTable, 'code.inst.br_table')
-X(CodeInstCall, 'code.inst.call')
-X(CodeInstCallIndirect, 'code.inst.call_indirect')
-X(CodeInstCurrentMemory, 'code.inst.current_memory')
-X(CodeInstDrop, 'code.inst.drop')
-X(CodeInstElse, 'code.inst.else')
-X(CodeInstEnd, 'code.inst.end')
-X(CodeInstF32Const, 'code.inst.f32.const')
-X(CodeInstF32Load, 'code.inst.f32.load')
-X(CodeInstF32Store, 'code.inst.f32.store')
-X(CodeInstF64Const, 'code.inst.f64.const')
-X(CodeInstF64Load, 'code.inst.f64.load')
-X(CodeInstF64Store, 'code.inst.f64.store')
-X(CodeInstGetGlobal, 'code.inst.get_global')
-X(CodeInstGetLocal, 'code.inst.get_local')
-X(CodeInstGrowMemory, 'code.inst.grow_memory')
-X(CodeInstIf, 'code.inst.if')
-X(CodeInstI32Add, 'code.inst.i32.add')
-X(CodeInstI32And, 'code.inst.i32.and')
-X(CodeInstI32Clz, 'code.inst.i32.clz')
-X(CodeInstI32Const, 'code.inst.i32.const')
-X(CodeInstF32DemoteF64, 'codeInst.f32.demote/f64')
-X(CodeInstF32Convert_sI32, 'codeInst.f32.convert_s/i32')
-X(CodeInstF32Convert_sI64, 'codeInst.f32.convert_s/i64')
-X(CodeInstF32Convert_uI32, 'codeInst.f32.convert_u/i32')
-X(CodeInstF32Convert_uI64, 'codeInst.f32.convert_u/i64')
-X(CodeInstI32Ctz, 'code.inst.i32.ctz')
-X(CodeInstI32Div_s, 'code.inst.i32.div_s')
-X(CodeInstI32Div_u, 'code.inst.i32.div_u')
-X(CodeInstI32Eq, 'code.inst.i32.eq')
-X(CodeInstI32Eqz, 'code.inst.i32.eqz')
-X(CodeInstI32Ge_s, 'code.inst.i32.ge_s')
-X(CodeInstI32Ge_u, 'code.inst.i32.ge_u')
-X(CodeInstI32Gt_s, 'code.inst.i32.gt_s')
-X(CodeInstI32Gt_u, 'code.inst.i32.gt_u')
-X(CodeInstI32Le_s, 'code.inst.i32.le_s')
-X(CodeInstI32Le_u, 'code.inst.i32.le_u')
-X(CodeInstI32Load, 'code.inst.i32.load')
-X(CodeInstI32Load16_s, 'code.inst.i32.load16_s')
-X(CodeInstI32Load16_u, 'code.inst.i32.load16_u')
-X(CodeInstI32Load8_s, 'code.inst.i32.load8_s')
-X(CodeInstI32Load8_u, 'code.inst.i32.load8_u')
-X(CodeInstI32Lt_s, 'code.inst.i32.lt_s')
-X(CodeInstI32Lt_u, 'code.inst.i32.lt_u')
-X(CodeInstI32Mul, 'code.inst.i32.mul')
-X(CodeInstI32Ne, 'code.inst.i32.ne')
-X(CodeInstI32Or, 'code.inst.i32Or')
-X(CodeInstI32Popcnt, 'code.inst.i32.popcnt')
-X(CodeInstI32ReinterpretF32, 'code.inst.i32.reinterpret/f32')
-X(CodeInstF32ReinterpretI32, 'codeInst.f32.reinterpret/i32')
-X(CodeInstI32Rem_s, 'code.inst.i32.rem_s')
-X(CodeInstI32Rem_u, 'code.inst.i32.rem_u')
-X(CodeInstI32Rotl, 'code.inst.i32.rotl')
-X(CodeInstI32Rotr, 'code.inst.i32.rotr')
-X(CodeInstI32Shl, 'code.inst.i32.shl')
-X(CodeInstI32Shr_s, 'code.inst.i32.shr_s')
-X(CodeInstI32Shr_u, 'code.inst.i32.shr_u')
-X(CodeInstI32Store, 'code.inst.i32.store')
-X(CodeInstI32Store16, 'code.inst.i32.store16')
-X(CodeInstI32Store8, 'code.inst.i32.store8')
-X(CodeInstI32Sub, 'code.inst.i32.sub')
-X(CodeInstI32Trunc_sF32, 'code.inst.i32.trunc_s/f32')
-X(CodeInstI32Trunc_sF64, 'code.inst.i32.trunc_s/f64')
-X(CodeInstI32Trunc_uF32, 'code.inst.i32.trunc_u/f32')
-X(CodeInstI32Trunc_uF64, 'code.inst.i32.trunc_u/f64')
-X(CodeInstI32WrapI64, 'code.inst.i32Wrap/i64')
-X(CodeInstI32Xor, 'code.inst.i32.xor')
-X(CodeInstI64Add, 'code.inst.i64.add')
-X(CodeInstI64And, 'code.inst.i64.and')
-X(CodeInstI64Clz, 'code.inst.i64.clz')
-X(CodeInstI64Const, 'code.inst.i64.const')
-X(CodeInstF64Convert_sI32, 'codeInst.f64.convert_s/i32')
-X(CodeInstF64Convert_sI64, 'codeInst.f64.convert_s/i64')
-X(CodeInstF64Convert_uI32, 'codeInst.f64.convert_u/i32')
-X(CodeInstF64Convert_uI64, 'codeInst.f64.convert_u/i64')
-X(CodeInstI64Ctx, 'code.inst.i64.ctx')
-X(CodeInstI64Div_s, 'code.inst.i64.div_s')
-X(CodeInstI64Div_u, 'code.inst.i64.div_u')
-X(CodeInstI64Eq, 'code.inst.i64.eq')
-X(CodeInstI64Extend_sI32, 'code.inst.i64.extend_s/i32')
-X(CodeInstI64Extend_uI32, 'code.inst.i64.extend_u/i32')
-X(CodeInstI64Ge_s, 'code.inst.i64.ge_s')
-X(CodeInstI64Ge_u, 'code.inst.i64.ge_u')
-X(CodeInstI64Gt_s, 'code.inst.i64.gt_s')
-X(CodeInstI64Gt_u, 'code.inst.i64.gt_u')
-X(CodeInstI64Le_s, 'code.inst.i64.le_s')
-X(CodeInstI64Le_u, 'code.inst.i64.le_u')
-X(CodeInstI64Load, 'code.inst.i64.load')
-X(CodeInstI64Load16_s, 'code.inst.i64.load16_s')
-X(CodeInstI64Load16_u, 'code.inst.i64.load16_u')
-X(CodeInstI64Load32_s, 'code.inst.i64.load32_s')
-X(CodeInstI64Load32_u, 'code.inst.i64.load32_u')
-X(CodeInstI64Load8_s, 'code.inst.i64.load8_s')
-X(CodeInstI64Load8_u, 'code.inst.i64.load8_u')
-X(CodeInstI64Lt_s, 'code.inst.i64.lt_s')
-X(CodeInstI64Lt_u, 'code.inst.i64.lt_u')
-X(CodeInstI64Mul, 'code.inst.i64.mul')
-X(CodeInstI64Ne, 'code.inst.i64.ne')
-X(CodeInstI64Or, 'code.inst.i64Or')
-X(CodeInstI64Popcnt, 'code.inst.i64.popcnt')
-X(CodeInstF64PromoteF32, 'codeInst.f64.promote/f32')
-X(CodeInstI64ReinterpretF64, 'code.inst.i64.reinterpret/f64')
-X(CodeInstF64ReinterpretI64, 'codeInst.f64.reinterpret/i64')
-X(CodeInstI64Rem_s, 'code.inst.i64.rem_s')
-X(CodeInstI64Rem_u, 'code.inst.i64.rem_u')
-X(CodeInstI64Rotr, 'code.inst.i64.rotr')
-X(CodeInstI64Rotl, 'code.inst.i64.rotl')
-X(CodeInstI64Shl, 'code.inst.i64.shl')
-X(CodeInstI64Shr_s, 'code.inst.i64.shr_s')
-X(CodeInstI64Shr_u, 'code.inst.i64.shr_u')
-X(CodeInstI64Store, 'code.inst.i64.store')
-X(CodeInstI64Store16, 'code.inst.i64.store16')
-X(CodeInstI64Store32, 'code.inst.i64.store32')
-X(CodeInstI64Store8, 'code.inst.i64.store8')
-X(CodeInstI64Sub, 'code.inst.i64.sub')
-X(CodeInstI64Trunc_sF32, 'code.inst.i64.trunc_s/f32')
-X(CodeInstI64Trunc_sF64, 'code.inst.i64.trunc_s/f64')
-X(CodeInstI64Trunc_uF32, 'code.inst.i64.trunc_u/f32')
-X(CodeInstI64Trunc_uF64, 'code.inst.i64.trunc_u/f64')
-X(CodeInstI64Xor, 'code.inst.i64.xor')
-X(CodeInstLoop, 'code.inst.loop')
-X(CodeInstNop, 'code.inst.nop')
-X(CodeInstReturn, 'code.inst.return')
-X(CodeInstSelect, 'code.inst.select')
-X(CodeInstSetGlobal, 'code.inst.set_global')
-X(CodeInstSetLocal, 'code.inst.set_local')
-X(CodeInstTeeLocal, 'code.inst.tee_local')
-X(CodeInst.unreachable, 'code.inst.unreachable')
-X(CodeInstF32Abs, 'code.inst.f32.abs')
-X(CodeInstF32Add, 'code.inst.f32.add')
-X(CodeInstF32Ceil, 'code.inst.f32.ceil')
-X(CodeInstF32Copysign, codeInst.f32.copysign)
-X(CodeInstF32Div, 'code.inst.f32.div')
-X(CodeInstF32Eq, 'code.inst.f32.eq')
-X(CodeInstF32Floor, 'code.inst.f32.floor')
-X(CodeInstF32Ge, 'code.inst.f32.ge')
-X(CodeInstF32Gt, 'code.inst.f32.gt')
-X(CodeInstF32Le, 'code.inst.f32.le')
-X(CodeInstF32Lt, 'code.inst.f32.lt')
-X(CodeInstF32Max, 'code.inst.f32.max')
-X(CodeInstF32Min, 'code.inst.f32.min')
-X(CodeInstF32Mul, 'code.inst.f32.mul')
-X(CodeInstF32Ne, 'code.inst.f32.ne')
-X(CodeInstF32Nearest, 'code.inst.f32.nearest')
-X(CodeInstF32Neg, 'code.inst.f32.neg')
-X(CodeInstF32Sqrt, 'code.inst.f32.sqrt')
-X(CodeInstF32Sub, 'code.inst.f32.sub')
-X(CodeInstF32Trunc, 'code.inst.f32.trunc')
-X(CodeInstF64Abs, 'code.inst.f64.abs')
-X(CodeInstF64Add, 'code.inst.f64.add')
-X(CodeInstF64Ceil, 'code.inst.f64.ceil')
-X(CodeInstF64Copysign, 'code.inst.f64.copysign')
-X(CodeInstF64Div, 'code.inst.f64.div')
-X(CodeInstF64Eq, 'code.inst.f64.eq')
-X(CodeInstF64Floor, 'code.inst.f64.floor')
-X(CodeInstF64Ge, 'code.inst.f64.ge')
-X(CodeInstF64Gt, 'code.inst.f64.gt')
-X(CodeInstF64Le, 'code.inst.f64.le')
-X(CodeInstF64Lt, 'code.inst.f64.lt')
-X(CodeInstF64Max, 'code.inst.f64.max')
-X(CodeInstF64Min, 'code.inst.f64.min')
-X(CodeInstF64Mul, 'code.inst.f64.mul')
-X(CodeInstF64Ne, 'code.inst.f64.ne')
-X(CodeInstF64Nearest, 'code.inst.f64.nearest')
-X(CodeInstF64Neg, 'code.inst.f64.neg')
-X(CodeInstF64Sqrt, 'code.inst.f64.sqrt')
-X(CodeInstF64Sub, 'code.inst.f64.sub')
-X(CodeInstF64Trunc, 'code.inst.f64.trunc')
-X(Data, 'data')
-X(DataEndSegment, 'data.end.segment')
-X(DataNumSegmentBytes, 'data.num.segment.bytes')
-X(DataNumSegments, 'data.num.segments')
-X(DataSegment, 'data.segment')
-X(Element, 'element')
-X(ElementEndSection, 'element.end.section')
-X(ElementNumElements, 'element.num.elements')
-X(ElementSegment, 'element.segment')
-X(ElementSegmentElement, 'element.segment.element')
-X(ElementSegmentNumElements, 'element.segment.num.elements')
-X(Export, 'export')
-X(ExportEndSection, 'export.end.section')
-X(ExportEntry, 'export.entry')
-X(ExportNumEntries, 'export.num.entries')
-X(Filter, 'filter')
-X(Function, 'function')
-X(FunctionEndSection, 'function.end.section')
-X(FunctionNumSignatures, 'function.num.signatures')
-X(FunctionSignature, 'function.signature')
-X(Global, 'global')
-X(GlobalEndSection, 'global.end.section')
-X(GlobalNumVariables, 'global.num.variables')
-X(GlobalVariable, 'global.variable')
-X(GlobalVariableHeader, 'global.variable.header')
-X(Import, 'import')
-X(ImportEndSection, 'import.end.section')
-X(ImportEntry, 'import.entry')
-X(ImportEntryFunction, 'import.entry.function')
-X(ImportEntryGlobal, 'import.entry.global')
-X(ImportEntryMemory, 'import.entry.memory')
-X(ImportEntryTable, 'import.entry.table')
-X(ImportNumEntries, 'import.num.entries')
-X(Name, 'name')
-X(NameEndSection, 'name.end.section')
-X(NameFunction, 'name.function')
-X(NameNumFunctions, 'name.num.functions')
-X(NameFunctionNumLocals, 'name.function.num.locals')
-X(NameSymbol, 'name.symbol')
-X(NameSymbolLength, 'name.symbol.length')
-X(Memory, 'memory')
-X(MemoryEndSection, 'memory.end.section')
-X(MemoryNumDecls, 'memory.num.decls')
-X(Start, 'start')
-X(StartEndSection, 'start.end.section')
-X(StartFunction, 'start.function')
-X(Table, 'table')
-X(TableEndSection, 'table.end.section')
-X(TableEntry, 'table.entry')
-X(TableNumEntries, 'table.num.entries')
-X(Type, 'type')
-X(TypeEndSection, 'type.end.section')
-X(TypeParam, 'type.param')
-X(TypeNumParams, 'type.num.params')
-X(TypeNumReturns, 'type.num.returns')
-X(TypeNumSignatures, 'type.num.signatures')
-X(TypeReturn, 'type.return')
-X(InitExpr, '$init_expr')
-X(InitExpr, '$init_expr')
-X(InitExprDefine, '$init_expr.define')
-X(InitExprEnd, '$init_expr.end')
-X(InitExprF32Const, $init_expr.f32.const)
-X(InitExprF64Const, '$init_expr.f64.const')
-X(InitExprGetGlobal, '$init_expr.get_global')
-X(InitExprI32Const, '$init_exprI32.const')
-X(InitExprI64Const, '$init_exprI64.const')
-X(InitExprOpcode, '$init.exprOpcode')
-X(ResizableLimits, '$resizable_limits')
-X(ResizableLimitsInitialLength, '$resizable_limitsInitial.length')
-X(ResizableLimitsMaximumLength, '$resizable_limits.maximum.length')
-X(ResizableLimits, '$resizable_limits')
+#define PREDEFINED_SYMBOLS_TABLE                                               \
+X(Code, "code")                                                                \
+X(CodeAddress, "code.address")                                                 \
+X(CodeBrTable, "code.br_table")                                                \
+X(CodeBrTableSize, "code.br_table.size")                                       \
+X(CodeBrTarget, "code.br_target")                                              \
+X(CodeBrTargetDefaultDepth, "code.br_target.default_depth")                    \
+X(CodeBrTargetDepth, "code.br_target.depth")                                   \
+X(CodeEndSection, "code.end.section")                                          \
+X(CodeFunction, "code.function")                                               \
+X(CodeFunctionBegin, "code.function.begin")                                    \
+X(CodeFunctionBytes, "code.function.bytes")                                    \
+X(CodeFunctionEnd, "code.function.end")                                        \
+X(codeFunctionLocal, "code.function.local")                                    \
+X(CodeFunctionNumLocals, "code.function.num.locals")                           \
+X(CodeNumFunctions, "code.num.functions")                                      \
+X(CodeOpcode, "code.opcode")                                                   \
+X(CodeInst, "code.inst")                                                       \
+X(CodeInstBlock, "code.inst.block")                                            \
+X(CodeInstBr, "code.inst.br")                                                  \
+X(CodeInstBrIf, "code.inst.br_if")                                             \
+X(CodeInstBrTable, "code.inst.br_table")                                       \
+X(CodeInstCall, "code.inst.call")                                              \
+X(CodeInstCallIndirect, "code.inst.call_indirect")                             \
+X(CodeInstCurrentMemory, "code.inst.current_memory")                           \
+X(CodeInstDrop, "code.inst.drop")                                              \
+X(CodeInstElse, "code.inst.else")                                              \
+X(CodeInstEnd, "code.inst.end")                                                \
+X(CodeInstF32Const, "code.inst.f32.const")                                     \
+X(CodeInstF32Load, "code.inst.f32.load")                                       \
+X(CodeInstF32Store, "code.inst.f32.store")                                     \
+X(CodeInstF64Const, "code.inst.f64.const")                                     \
+X(CodeInstF64Load, "code.inst.f64.load")                                       \
+X(CodeInstF64Store, "code.inst.f64.store")                                     \
+X(CodeInstGetGlobal, "code.inst.get_global")                                   \
+X(CodeInstGetLocal, "code.inst.get_local")                                     \
+X(CodeInstGrowMemory, "code.inst.grow_memory")                                 \
+X(CodeInstIf, "code.inst.if")                                                  \
+X(CodeInstI32Add, "code.inst.i32.add")                                         \
+X(CodeInstI32And, "code.inst.i32.and")                                         \
+X(CodeInstI32Clz, "code.inst.i32.clz")                                         \
+X(CodeInstI32Const, "code.inst.i32.const")                                     \
+X(CodeInstF32DemoteF64, "codeInst.f32.demote/f64")                             \
+X(CodeInstF32Convert_sI32, "codeInst.f32.convert_s/i32")                       \
+X(CodeInstF32Convert_sI64, "codeInst.f32.convert_s/i64")                       \
+X(CodeInstF32Convert_uI32, "codeInst.f32.convert_u/i32")                       \
+X(CodeInstF32Convert_uI64, "codeInst.f32.convert_u/i64")                       \
+X(CodeInstI32Ctz, "code.inst.i32.ctz")                                         \
+X(CodeInstI32Div_s, "code.inst.i32.div_s")                                     \
+X(CodeInstI32Div_u, "code.inst.i32.div_u")                                     \
+X(CodeInstI32Eq, "code.inst.i32.eq")                                           \
+X(CodeInstI32Eqz, "code.inst.i32.eqz")                                         \
+X(CodeInstI32Ge_s, "code.inst.i32.ge_s")                                       \
+X(CodeInstI32Ge_u, "code.inst.i32.ge_u")                                       \
+X(CodeInstI32Gt_s, "code.inst.i32.gt_s")                                       \
+X(CodeInstI32Gt_u, "code.inst.i32.gt_u")                                       \
+X(CodeInstI32Le_s, "code.inst.i32.le_s")                                       \
+X(CodeInstI32Le_u, "code.inst.i32.le_u")                                       \
+X(CodeInstI32Load, "code.inst.i32.load")                                       \
+X(CodeInstI32Load16_s, "code.inst.i32.load16_s")                               \
+X(CodeInstI32Load16_u, "code.inst.i32.load16_u")                               \
+X(CodeInstI32Load8_s, "code.inst.i32.load8_s")                                 \
+X(CodeInstI32Load8_u, "code.inst.i32.load8_u")                                 \
+X(CodeInstI32Lt_s, "code.inst.i32.lt_s")                                       \
+X(CodeInstI32Lt_u, "code.inst.i32.lt_u")                                       \
+X(CodeInstI32Mul, "code.inst.i32.mul")                                         \
+X(CodeInstI32Ne, "code.inst.i32.ne")                                           \
+X(CodeInstI32Or, "code.inst.i32Or")                                            \
+X(CodeInstI32Popcnt, "code.inst.i32.popcnt")                                   \
+X(CodeInstI32ReinterpretF32, "code.inst.i32.reinterpret/f32")                  \
+X(CodeInstF32ReinterpretI32, "codeInst.f32.reinterpret/i32")                   \
+X(CodeInstI32Rem_s, "code.inst.i32.rem_s")                                     \
+X(CodeInstI32Rem_u, "code.inst.i32.rem_u")                                     \
+X(CodeInstI32Rotl, "code.inst.i32.rotl")                                       \
+X(CodeInstI32Rotr, "code.inst.i32.rotr")                                       \
+X(CodeInstI32Shl, "code.inst.i32.shl")                                         \
+X(CodeInstI32Shr_s, "code.inst.i32.shr_s")                                     \
+X(CodeInstI32Shr_u, "code.inst.i32.shr_u")                                     \
+X(CodeInstI32Store, "code.inst.i32.store")                                     \
+X(CodeInstI32Store16, "code.inst.i32.store16")                                 \
+X(CodeInstI32Store8, "code.inst.i32.store8")                                   \
+X(CodeInstI32Sub, "code.inst.i32.sub")                                         \
+X(CodeInstI32Trunc_sF32, "code.inst.i32.trunc_s/f32")                          \
+X(CodeInstI32Trunc_sF64, "code.inst.i32.trunc_s/f64")                          \
+X(CodeInstI32Trunc_uF32, "code.inst.i32.trunc_u/f32")                          \
+X(CodeInstI32Trunc_uF64, "code.inst.i32.trunc_u/f64")                          \
+X(CodeInstI32WrapI64, "code.inst.i32Wrap/i64")                                 \
+X(CodeInstI32Xor, "code.inst.i32.xor")                                         \
+X(CodeInstI64Add, "code.inst.i64.add")                                         \
+X(CodeInstI64And, "code.inst.i64.and")                                         \
+X(CodeInstI64Clz, "code.inst.i64.clz")                                         \
+X(CodeInstI64Const, "code.inst.i64.const")                                     \
+X(CodeInstF64Convert_sI32, "codeInst.f64.convert_s/i32")                       \
+X(CodeInstF64Convert_sI64, "codeInst.f64.convert_s/i64")                       \
+X(CodeInstF64Convert_uI32, "codeInst.f64.convert_u/i32")                       \
+X(CodeInstF64Convert_uI64, "codeInst.f64.convert_u/i64")                       \
+X(CodeInstI64Ctx, "code.inst.i64.ctx")                                         \
+X(CodeInstI64Div_s, "code.inst.i64.div_s")                                     \
+X(CodeInstI64Div_u, "code.inst.i64.div_u")                                     \
+X(CodeInstI64Eq, "code.inst.i64.eq")                                           \
+X(CodeInstI64Extend_sI32, "code.inst.i64.extend_s/i32")                        \
+X(CodeInstI64Extend_uI32, "code.inst.i64.extend_u/i32")                        \
+X(CodeInstI64Ge_s, "code.inst.i64.ge_s")                                       \
+X(CodeInstI64Ge_u, "code.inst.i64.ge_u")                                       \
+X(CodeInstI64Gt_s, "code.inst.i64.gt_s")                                       \
+X(CodeInstI64Gt_u, "code.inst.i64.gt_u")                                       \
+X(CodeInstI64Le_s, "code.inst.i64.le_s")                                       \
+X(CodeInstI64Le_u, "code.inst.i64.le_u")                                       \
+X(CodeInstI64Load, "code.inst.i64.load")                                       \
+X(CodeInstI64Load16_s, "code.inst.i64.load16_s")                               \
+X(CodeInstI64Load16_u, "code.inst.i64.load16_u")                               \
+X(CodeInstI64Load32_s, "code.inst.i64.load32_s")                               \
+X(CodeInstI64Load32_u, "code.inst.i64.load32_u")                               \
+X(CodeInstI64Load8_s, "code.inst.i64.load8_s")                                 \
+X(CodeInstI64Load8_u, "code.inst.i64.load8_u")                                 \
+X(CodeInstI64Lt_s, "code.inst.i64.lt_s")                                       \
+X(CodeInstI64Lt_u, "code.inst.i64.lt_u")                                       \
+X(CodeInstI64Mul, "code.inst.i64.mul")                                         \
+X(CodeInstI64Ne, "code.inst.i64.ne")                                           \
+X(CodeInstI64Or, "code.inst.i64Or")                                            \
+X(CodeInstI64Popcnt, "code.inst.i64.popcnt")                                   \
+X(CodeInstF64PromoteF32, "codeInst.f64.promote/f32")                           \
+X(CodeInstI64ReinterpretF64, "code.inst.i64.reinterpret/f64")                  \
+X(CodeInstF64ReinterpretI64, "codeInst.f64.reinterpret/i64")                   \
+X(CodeInstI64Rem_s, "code.inst.i64.rem_s")                                     \
+X(CodeInstI64Rem_u, "code.inst.i64.rem_u")                                     \
+X(CodeInstI64Rotr, "code.inst.i64.rotr")                                       \
+X(CodeInstI64Rotl, "code.inst.i64.rotl")                                       \
+X(CodeInstI64Shl, "code.inst.i64.shl")                                         \
+X(CodeInstI64Shr_s, "code.inst.i64.shr_s")                                     \
+X(CodeInstI64Shr_u, "code.inst.i64.shr_u")                                     \
+X(CodeInstI64Store, "code.inst.i64.store")                                     \
+X(CodeInstI64Store16, "code.inst.i64.store16")                                 \
+X(CodeInstI64Store32, "code.inst.i64.store32")                                 \
+X(CodeInstI64Store8, "code.inst.i64.store8")                                   \
+X(CodeInstI64Sub, "code.inst.i64.sub")                                         \
+X(CodeInstI64Trunc_sF32, "code.inst.i64.trunc_s/f32")                          \
+X(CodeInstI64Trunc_sF64, "code.inst.i64.trunc_s/f64")                          \
+X(CodeInstI64Trunc_uF32, "code.inst.i64.trunc_u/f32")                          \
+X(CodeInstI64Trunc_uF64, "code.inst.i64.trunc_u/f64")                          \
+X(CodeInstI64Xor, "code.inst.i64.xor")                                         \
+X(CodeInstLoop, "code.inst.loop")                                              \
+X(CodeInstNop, "code.inst.nop")                                                \
+X(CodeInstReturn, "code.inst.return")                                          \
+X(CodeInstSelect, "code.inst.select")                                          \
+X(CodeInstSetGlobal, "code.inst.set_global")                                   \
+X(CodeInstSetLocal, "code.inst.set_local")                                     \
+X(CodeInstTeeLocal, "code.inst.tee_local")                                     \
+X(CodeInstUnreachable, "code.inst.unreachable")                                \
+X(CodeInstF32Abs, "code.inst.f32.abs")                                         \
+X(CodeInstF32Add, "code.inst.f32.add")                                         \
+X(CodeInstF32Ceil, "code.inst.f32.ceil")                                       \
+X(CodeInstF32Copysign, "codeInst.f32.copysign")                                \
+X(CodeInstF32Div, "code.inst.f32.div")                                         \
+X(CodeInstF32Eq, "code.inst.f32.eq")                                           \
+X(CodeInstF32Floor, "code.inst.f32.floor")                                     \
+X(CodeInstF32Ge, "code.inst.f32.ge")                                           \
+X(CodeInstF32Gt, "code.inst.f32.gt")                                           \
+X(CodeInstF32Le, "code.inst.f32.le")                                           \
+X(CodeInstF32Lt, "code.inst.f32.lt")                                           \
+X(CodeInstF32Max, "code.inst.f32.max")                                         \
+X(CodeInstF32Min, "code.inst.f32.min")                                         \
+X(CodeInstF32Mul, "code.inst.f32.mul")                                         \
+X(CodeInstF32Ne, "code.inst.f32.ne")                                           \
+X(CodeInstF32Nearest, "code.inst.f32.nearest")                                 \
+X(CodeInstF32Neg, "code.inst.f32.neg")                                         \
+X(CodeInstF32Sqrt, "code.inst.f32.sqrt")                                       \
+X(CodeInstF32Sub, "code.inst.f32.sub")                                         \
+X(CodeInstF32Trunc, "code.inst.f32.trunc")                                     \
+X(CodeInstF64Abs, "code.inst.f64.abs")                                         \
+X(CodeInstF64Add, "code.inst.f64.add")                                         \
+X(CodeInstF64Ceil, "code.inst.f64.ceil")                                       \
+X(CodeInstF64Copysign, "code.inst.f64.copysign")                               \
+X(CodeInstF64Div, "code.inst.f64.div")                                         \
+X(CodeInstF64Eq, "code.inst.f64.eq")                                           \
+X(CodeInstF64Floor, "code.inst.f64.floor")                                     \
+X(CodeInstF64Ge, "code.inst.f64.ge")                                           \
+X(CodeInstF64Gt, "code.inst.f64.gt")                                           \
+X(CodeInstF64Le, "code.inst.f64.le")                                           \
+X(CodeInstF64Lt, "code.inst.f64.lt")                                           \
+X(CodeInstF64Max, "code.inst.f64.max")                                         \
+X(CodeInstF64Min, "code.inst.f64.min")                                         \
+X(CodeInstF64Mul, "code.inst.f64.mul")                                         \
+X(CodeInstF64Ne, "code.inst.f64.ne")                                           \
+X(CodeInstF64Nearest, "code.inst.f64.nearest")                                 \
+X(CodeInstF64Neg, "code.inst.f64.neg")                                         \
+X(CodeInstF64Sqrt, "code.inst.f64.sqrt")                                       \
+X(CodeInstF64Sub, "code.inst.f64.sub")                                         \
+X(CodeInstF64Trunc, "code.inst.f64.trunc")                                     \
+X(Data, "data")                                                                \
+X(DataEndSegment, "data.end.segment")                                          \
+X(DataNumSegmentBytes, "data.num.segment.bytes")                               \
+X(DataNumSegments, "data.num.segments")                                        \
+X(DataSegment, "data.segment")                                                 \
+X(Element, "element")                                                          \
+X(ElementEndSection, "element.end.section")                                    \
+X(ElementNumElements, "element.num.elements")                                  \
+X(ElementSegment, "element.segment")                                           \
+X(ElementSegmentElement, "element.segment.element")                            \
+X(ElementSegmentNumElements, "element.segment.num.elements")                   \
+X(Export, "export")                                                            \
+X(ExportEndSection, "export.end.section")                                      \
+X(ExportEntry, "export.entry")                                                 \
+X(ExportNumEntries, "export.num.entries")                                      \
+X(Filter, "filter")                                                            \
+X(Function, "function")                                                        \
+X(FunctionEndSection, "function.end.section")                                  \
+X(FunctionNumSignatures, "function.num.signatures")                            \
+X(FunctionSignature, "function.signature")                                     \
+X(Global, "global")                                                            \
+X(GlobalEndSection, "global.end.section")                                      \
+X(GlobalNumVariables, "global.num.variables")                                  \
+X(GlobalVariable, "global.variable")                                           \
+X(GlobalVariableHeader, "global.variable.header")                              \
+X(Import, "import")                                                            \
+X(ImportEndSection, "import.end.section")                                      \
+X(ImportEntry, "import.entry")                                                 \
+X(ImportEntryFunction, "import.entry.function")                                \
+X(ImportEntryGlobal, "import.entry.global")                                    \
+X(ImportEntryMemory, "import.entry.memory")                                    \
+X(ImportEntryTable, "import.entry.table")                                      \
+X(ImportNumEntries, "import.num.entries")                                      \
+X(Name, "name")                                                                \
+X(NameEndSection, "name.end.section")                                          \
+X(NameFunction, "name.function")                                               \
+X(NameNumFunctions, "name.num.functions")                                      \
+X(NameFunctionNumLocals, "name.function.num.locals")                           \
+X(NameSymbol, "name.symbol")                                                   \
+X(NameSymbolLength, "name.symbol.length")                                      \
+X(Memory, "memory")                                                            \
+X(MemoryEndSection, "memory.end.section")                                      \
+X(MemoryNumDecls, "memory.num.decls")                                          \
+X(Start, "start")                                                              \
+X(StartEndSection, "start.end.section")                                        \
+X(StartFunction, "start.function")                                             \
+X(Table, "table")                                                              \
+X(TableEndSection, "table.end.section")                                        \
+X(TableEntry, "table.entry")                                                   \
+X(TableNumEntries, "table.num.entries")                                        \
+X(Type, "type")                                                                \
+X(TypeEndSection, "type.end.section")                                          \
+X(TypeParam, "type.param")                                                     \
+X(TypeNumParams, "type.num.params")                                            \
+X(TypeNumReturns, "type.num.returns")                                          \
+X(TypeNumSignatures, "type.num.signatures")                                    \
+X(TypeReturn, "type.return")                                                   \
+X(InitExpr, "$init_expr")                                                      \
+X(InitExprDefine, "$init_expr.define")                                         \
+X(InitExprEnd, "$init_expr.end")                                               \
+X(InitExprF32Const, "$init_expr.f32.const")                                    \
+X(InitExprF64Const, "$init_expr.f64.const")                                    \
+X(InitExprGetGlobal, "$init_expr.get_global")                                  \
+X(InitExprI32Const, "$init_exprI32.const")                                     \
+X(InitExprI64Const, "$init_exprI64.const")                                     \
+X(InitExprOpcode, "$init.exprOpcode")                                          \
+X(ResizableLimits, "$resizable_limits")                                        \
+X(ResizableLimitsInitialLength, "$resizable_limitsInitial.length")             \
+X(ResizableLimitsMaximumLength, "$resizable_limits.maximum.length")
