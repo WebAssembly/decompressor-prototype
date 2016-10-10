@@ -280,9 +280,13 @@ void Interpreter::callTopLevel(Method Method, const filt::Node* Nd) {
 }
 
 void Interpreter::traceEnterFrameInternal() {
-  TRACE_ENTER(getName(Frame.CallMethod));
-  if (Frame.CallModifier != MethodModifier::ReadAndWrite)
-    TRACE_MESSAGE(std::string("(") + getName(Frame.CallModifier) + ")");
+  // Note: Enclosed in TRACE_BLOCK so that g++ will not complain when
+  // compiled in release mode.
+  TRACE_BLOCK({
+    TRACE_ENTER(getName(Frame.CallMethod));
+    if (Frame.CallModifier != MethodModifier::ReadAndWrite)
+      TRACE_MESSAGE(std::string("(") + getName(Frame.CallModifier) + ")");
+  });
 }
 
 void Interpreter::readBackFilled() {
