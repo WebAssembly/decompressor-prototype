@@ -20,11 +20,7 @@
 using namespace wasm::filt;
 
 namespace {
-const char* ErrorLevelName[] = {
-  "warning",
-  "error",
-  "fatal"
-};
+const char* ErrorLevelName[] = {"warning", "error", "fatal"};
 }
 
 const char* Driver::getName(ErrorLevel Level) {

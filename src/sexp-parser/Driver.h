@@ -91,31 +91,26 @@ class Driver {
   }
 
   // Error handling.
-  enum class ErrorLevel {Warn, Error, Fatal};
+  enum class ErrorLevel { Warn, Error, Fatal };
   static const char* getName(ErrorLevel Level);
-  void report(ErrorLevel Level, const wasm::filt::location& Loc,
-               const std::string& Message);
+  void report(ErrorLevel Level,
+              const wasm::filt::location& Loc,
+              const std::string& Message);
   void report(ErrorLevel Level, const std::string& Message) {
     report(Level, Loc, Message);
   }
   void warn(const wasm::filt::location& Loc, const std::string& Message) {
     report(ErrorLevel::Warn, Loc, Message);
   }
-  void warn(const std::string& Message) {
-    report(ErrorLevel::Warn, Message);
-  }
+  void warn(const std::string& Message) { report(ErrorLevel::Warn, Message); }
   void error(const wasm::filt::location& Loc, const std::string& Message) {
     report(ErrorLevel::Error, Loc, Message);
   }
-  void error(const std::string& Message) {
-    report(ErrorLevel::Error, Message);
-  }
+  void error(const std::string& Message) { report(ErrorLevel::Error, Message); }
   void fatal(const wasm::filt::location& Loc, const std::string& Message) {
     report(ErrorLevel::Fatal, Loc, Message);
   }
-  void fatal(const std::string& Message) {
-    report(ErrorLevel::Fatal, Message);
-  }
+  void fatal(const std::string& Message) { report(ErrorLevel::Fatal, Message); }
   void tokenError(const std::string& Token);
 
  private:
