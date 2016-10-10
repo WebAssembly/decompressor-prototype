@@ -85,7 +85,7 @@ class Interpreter {
 #define X(code, value) code = value,
     SECTION_CODES_TABLE
 #undef X
-    NO_SUCH_SECTION_CODE
+        NO_SUCH_SECTION_CODE
   };
 
   static const char* getName(SectionCode Code);
@@ -103,14 +103,15 @@ class Interpreter {
 #define X(tag, flags) tag = flags,
     INTERPRETER_METHOD_MODIFIERS_TABLE
 #undef X
-    NO_SUCH_METHOD_MODIFIER
+        NO_SUCH_METHOD_MODIFIER
   };
   static const char* getName(MethodModifier Modifier);
   bool isReadModifier(MethodModifier Modifier) {
     return uint32_t(Modifier) & 0x1;
   }
   bool isWriteModifier(MethodModifier Modifier) {
-    return uint32_t(Modifier) & 0x2; }
+    return uint32_t(Modifier) & 0x2;
+  }
 
   enum class State {
 #define X(tag) tag,

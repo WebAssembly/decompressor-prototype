@@ -65,7 +65,7 @@ static constexpr size_t DefaultExpectedLocals = 3;
 
 const char* SectionCodeName[] = {
 #define X(code, value) #code
-  SECTION_CODES_TABLE
+    SECTION_CODES_TABLE
 #undef X
 };
 
@@ -77,16 +77,15 @@ const char* MethodName[] = {
 
 const char* StateName[] = {
 #define X(tag) #tag,
-  INTERPRETER_STATES_TABLE
+    INTERPRETER_STATES_TABLE
 #undef X
     "NO_SUCH_STATE"};
 
 const char* MethodModifierName[] = {
 #define X(tag, flags) #tag,
-  INTERPRETER_METHOD_MODIFIERS_TABLE
+    INTERPRETER_METHOD_MODIFIERS_TABLE
 #undef X
-  "NO_SUCH_METHOD_MODIFIER"
-};
+    "NO_SUCH_METHOD_MODIFIER"};
 
 }  // end of anonymous namespace
 
@@ -420,12 +419,12 @@ void Interpreter::resume() {
             popAndReturn(Frame.ReturnValue);
             traceExitFrame();
             break;
-            /* here */
+          /* here */
           case OpI32Const:
           case OpI64Const:
           case OpU8Const:
           case OpU32Const:
-          case OpU64Const: // Method::Eval
+          case OpU64Const:  // Method::Eval
             traceEnterFrame();
             switch (Frame.CallModifier) {
               case MethodModifier::NoReadOrWrite:
@@ -434,7 +433,8 @@ void Interpreter::resume() {
                 break;
               case MethodModifier::ReadOnly:
               case MethodModifier::ReadAndWrite:
-                popAndReturnReadValue(dyn_cast<IntegerNode>(Frame.Nd)->getValue());
+                popAndReturnReadValue(
+                    dyn_cast<IntegerNode>(Frame.Nd)->getValue());
                 break;
               case MethodModifier::WriteOnly:
                 popAndReturnWriteValue();
@@ -442,6 +442,7 @@ void Interpreter::resume() {
             }
             traceExitFrame();
             break;
+          /* here */
           case OpLastRead:
           case OpLocal:
           case OpPeek:
