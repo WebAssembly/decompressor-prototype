@@ -58,6 +58,7 @@ X(Failed)                                                     \
 X(MinBlock)                                                   \
 X(Step2)                                                      \
 X(Step3)                                                      \
+X(Step4)                                                      \
 X(Succeeded)                                                  \
 
 //#define X(tag, flags)
