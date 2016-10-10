@@ -81,17 +81,39 @@ class Interpreter {
 
   TraceClassSexpReaderWriter& getTrace() { return Trace; }
 
+  enum class SectionCode : uint32_t {
+#define X(code, value) code = value,
+    SECTION_CODES_TABLE
+#undef X
+    NO_SUCH_SECTION_CODE
+  };
+
+  static const char* getName(SectionCode Code);
+
  private:
   enum class Method {
-#define X(tag, name) tag,
+#define X(tag) tag,
     INTERPRETER_METHODS_TABLE
 #undef X
         NO_SUCH_METHOD
   };
   static const char* getName(Method M);
 
+  enum class MethodModifier {
+#define X(tag, flags) tag = flags,
+    INTERPRETER_METHOD_MODIFIERS_TABLE
+#undef X
+    NO_SUCH_METHOD_MODIFIER
+  };
+  static const char* getName(MethodModifier Modifier);
+  bool isReadModifier(MethodModifier Modifier) {
+    return uint32_t(Modifier) & 0x1;
+  }
+  bool isWriteModifier(MethodModifier Modifier) {
+    return uint32_t(Modifier) & 0x2; }
+
   enum class State {
-#define X(tag, name) tag,
+#define X(tag) tag,
     INTERPRETER_STATES_TABLE
 #undef X
         NO_SUCH_STATE
@@ -102,24 +124,33 @@ class Interpreter {
   struct CallFrame {
     CallFrame() { reset(); }
     CallFrame(Method CallMethod, const filt::Node* Nd)
-        : CallMethod(CallMethod), CallState(State::Enter), Nd(Nd) {}
+        : CallMethod(CallMethod),
+          CallState(State::Enter),
+          CallModifier(MethodModifier::ReadAndWrite),
+          Nd(Nd) {}
     CallFrame(const CallFrame& M)
-        : CallMethod(M.CallMethod), CallState(M.CallState), Nd(M.Nd) {}
+        : CallMethod(M.CallMethod),
+          CallState(M.CallState),
+          CallModifier(M.CallModifier),
+          Nd(M.Nd) {}
     void reset() {
       CallMethod = Method::Started;
       CallState = State::Enter;
+      CallModifier = MethodModifier::ReadAndWrite;
       Nd = nullptr;
       ReturnValue = 0;
     }
     void fail() {
       CallMethod = Method::Finished;
       CallState = State::Failed;
+      CallModifier = MethodModifier::ReadAndWrite;
       Nd = nullptr;
       ReturnValue = 0;
     }
     void describe(FILE* File, filt::TextWriter* Writer) const;
     Method CallMethod;
     State CallState;
+    MethodModifier CallModifier;
     const filt::Node* Nd;
     // Holds return value from last called routine, except when
     // exiting.  Note: For method write, this corresponds to the value
@@ -213,14 +244,19 @@ class Interpreter {
   // argument Nd.
   void callTopLevel(Method Method, const filt::Node* Nd);
 
-  // Sets up code to call Method with argument Nd.
-  void call(Method Method, const filt::Node* Nd) {
+  void call(Method Method, MethodModifier Modifier, const filt::Node* Nd) {
     Frame.ReturnValue = 0;
     FrameStack.push();
     Frame.CallMethod = Method;
     Frame.CallState = State::Enter;
+    Frame.CallModifier = Modifier;
     Frame.Nd = Nd;
     Frame.ReturnValue = 0;
+  }
+
+  // Sets up code to call Method with argument Nd.
+  void call(Method Method, const filt::Node* Nd) {
+    call(Method, MethodModifier::ReadAndWrite, Nd);
   }
 
   // Sets up code to call write method Method with arguments Nd and WriteValue.
@@ -253,11 +289,12 @@ class Interpreter {
     popAndReturn(Value);
   }
 
-  void TraceEnterFrame() {
+  void traceEnterFrame() {
     assert(Frame.CallState == Interpreter::State::Enter);
-    TRACE_ENTER(getName(Frame.CallMethod));
+    TRACE_BLOCK(traceEnterFrameInternal(););
   }
-  void TraceExitFrame() { TRACE_EXIT_OVERRIDE(getName(Frame.CallMethod)); }
+  void traceEnterFrameInternal();
+  void traceExitFrame() { TRACE_EXIT_OVERRIDE(getName(Frame.CallMethod)); }
 
   void readBackFilled();
 

@@ -223,7 +223,7 @@ int main(int Argc, char* Argv[]) {
   auto Symtab = std::make_shared<SymbolTable>();
   Symtab->getTrace().setTraceProgress(Verbose >= 4);
   if (InstallPredefinedRules &&
-      !SymbolTable::installPredefinedDefaults(Symtab, Verbose)) {
+      !SymbolTable::installPredefinedDefaults(Symtab, Verbose >= 2)) {
     fprintf(stderr, "Unable to load compiled in default rules!\n");
     return exit_status(EXIT_FAILURE);
   }
