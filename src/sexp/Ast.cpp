@@ -36,14 +36,14 @@ namespace filt {
 
 namespace {
 
-static const char* PredefinedName[NumPredefinedSymbols] {
-  "$PredefinedSymbol::Unknown"
+static const char* PredefinedName[NumPredefinedSymbols]{
+    "$PredefinedSymbol::Unknown"
 #define X(tag, name) , name
-  PREDEFINED_SYMBOLS_TABLE
+    PREDEFINED_SYMBOLS_TABLE
 #undef X
-      };
+};
 
-} // end of anonymous namespace
+}  // end of anonymous namespace
 
 PredefinedSymbol toPredefinedSymbol(uint32_t Value) {
   if (Value < NumPredefinedSymbols)
@@ -154,11 +154,10 @@ bool Node::validateNode(NodeVectorType& Scope) {
 
 void SymbolNode::setPredefinedSymbol(PredefinedSymbol NewValue) {
   if (PredefinedValue != PredefinedSymbol::Unknown)
-    fatal(std::string("Can't define \"") + filt::getName(PredefinedValue)
-          + " and " + filt::getName(NewValue));
+    fatal(std::string("Can't define \"") + filt::getName(PredefinedValue) +
+          " and " + filt::getName(NewValue));
   PredefinedValue = NewValue;
 }
-
 
 // Note: we create duumy virtual forceCompilation() to force legal
 // class definitions to be compiled in here. Classes not explicitly
@@ -194,7 +193,7 @@ SymbolTable::SymbolTable()
 void SymbolTable::init() {
   Predefined.reserve(NumPredefinedSymbols);
   for (size_t i = 0; i < NumPredefinedSymbols; ++i) {
-    SymbolNode *Nd = getSymbolDefinition(PredefinedName[i]);
+    SymbolNode* Nd = getSymbolDefinition(PredefinedName[i]);
     Predefined.push_back(Nd);
     Nd->setPredefinedSymbol(toPredefinedSymbol(i));
   }

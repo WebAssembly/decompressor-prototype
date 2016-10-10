@@ -380,7 +380,7 @@ void Interpreter::resume() {
             TraceEnterFrame();
             fail("Algorithm error!");
             break;
-          case OpCallback: // Method::Eval
+          case OpCallback:  // Method::Eval
             // TODO(karlschimpf): All virtual calls to class so that derived
             // classes can override.
             TraceEnterFrame();

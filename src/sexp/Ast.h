@@ -133,13 +133,13 @@ class IntegerValue {
 enum class PredefinedSymbol : uint32_t {
   Unknown
 #define X(tag, name) , tag
-  PREDEFINED_SYMBOLS_TABLE
+      PREDEFINED_SYMBOLS_TABLE
 #undef X
 };
 
 static constexpr uint32_t NumPredefinedSymbols = 1
-#define X(tag, name) + 1
-  PREDEFINED_SYMBOLS_TABLE
+#define X(tag, name) +1
+    PREDEFINED_SYMBOLS_TABLE
 #undef X
     ;
 
@@ -455,9 +455,7 @@ class SymbolNode FINAL : public NullaryNode {
   const Node* getDefineDefinition() const { return DefineDefinition; }
   void setDefineDefinition(Node* Defn) { DefineDefinition = Defn; }
 
-  PredefinedSymbol getPredefinedSymbol() const {
-    return PredefinedValue;
-  }
+  PredefinedSymbol getPredefinedSymbol() const { return PredefinedValue; }
 
   static bool implementsClass(NodeType Type) { return Type == OpSymbol; }
 

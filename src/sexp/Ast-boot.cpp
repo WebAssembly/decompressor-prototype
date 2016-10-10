@@ -29,10 +29,10 @@ using namespace decode;
 
 namespace filt {
 
-bool SymbolTable::installPredefinedDefaults(
-    std::shared_ptr<SymbolTable> Symtab, bool Verbose) {
-  auto Stream = std::make_shared<ArrayReader>(
-      getWasmDefaultsBuffer(), getWasmDefaultsBufferSize());
+bool SymbolTable::installPredefinedDefaults(std::shared_ptr<SymbolTable> Symtab,
+                                            bool Verbose) {
+  auto Stream = std::make_shared<ArrayReader>(getWasmDefaultsBuffer(),
+                                              getWasmDefaultsBufferSize());
   BinaryReader Reader(std::make_shared<ReadBackedQueue>(std::move(Stream)),
                       Symtab);
   if (Verbose) {
