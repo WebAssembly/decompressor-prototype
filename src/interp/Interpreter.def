@@ -62,8 +62,7 @@ X(Succeeded)                                                  \
 
 //#define X(tag, flags)
 // flags: bit(0)==1 => Read, bit(1)==1 => Write
-#define INTERPRETER_METHOD_MODIFIERS_TABLE                     \
-X(NoReadOrWrite, 0x0)                                         \
+#define INTERPRETER_METHOD_MODIFIERS_TABLE                    \
 X(ReadOnly,      0x1)                                         \
 X(WriteOnly,     0x2)                                         \
 X(ReadAndWrite,  0x3)                                         \
