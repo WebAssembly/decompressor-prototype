@@ -513,13 +513,13 @@ void Interpreter::resume() {
             }
             traceExitFrame();
             break;
-          /* here */
           case OpRead:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
                 traceEnterFrame();
                 Frame.CallState = State::Exit;
-                call(Method::Read, Frame.Nd);
+                call(Method::Eval, MethodModifier::ReadOnly,
+                     Frame.Nd->getKid(0));
                 break;
               case State::Exit:
                 popAndReturn(Frame.ReturnValue);
@@ -530,14 +530,113 @@ void Interpreter::resume() {
                 break;
             }
             break;
-          case OpUint8:
           case OpUint32:
+            traceEnterFrame();
+            if (hasReadMode())
+              LastReadValue = Reader->readUint32Bits(
+                  ReadPos, cast<Uint32Node>(Frame.Nd)->getValue());
+            if (hasWriteMode())
+              Writer->writeUint32Bits(LastReadValue, WritePos,
+                                      cast<Uint32Node>(Frame.Nd)->getValue());
+            popAndReturnReadValue(LastReadValue);
+            traceExitFrame();
+            break;
           case OpUint64:
+            traceEnterFrame();
+            if (hasReadMode())
+              LastReadValue = Reader->readUint64Bits(
+                  ReadPos, cast<Uint64Node>(Frame.Nd)->getValue());
+            if (hasWriteMode())
+              Writer->writeUint64Bits(LastReadValue, WritePos,
+                                      cast<Uint64Node>(Frame.Nd)->getValue());
+            popAndReturnReadValue(LastReadValue);
+            traceExitFrame();
+            break;
+          case OpUint8:
+            traceEnterFrame();
+            if (hasReadMode())
+              LastReadValue = Reader->readUint8Bits(
+                  ReadPos, cast<Uint8Node>(Frame.Nd)->getValue());
+            if (hasWriteMode())
+              Writer->writeUint8Bits(LastReadValue, WritePos,
+                                     cast<Uint8Node>(Frame.Nd)->getValue());
+            popAndReturnReadValue(LastReadValue);
+            traceExitFrame();
+            break;
           case OpVarint32:
+            traceEnterFrame();
+            if (hasReadMode())
+              LastReadValue = Reader->readVarint32Bits(
+                  ReadPos, cast<Varint32Node>(Frame.Nd)->getValue());
+            if (hasWriteMode())
+              Writer->writeVarint32Bits(LastReadValue, WritePos,
+                                        cast<Varint32Node>(Frame.Nd)->getValue());
+            popAndReturnReadValue(LastReadValue);
+            traceExitFrame();
+            break;
           case OpVarint64:
+            traceEnterFrame();
+            if (hasReadMode())
+              LastReadValue = Reader->readVarint64Bits(
+                  ReadPos, cast<Varint64Node>(Frame.Nd)->getValue());
+            if (hasWriteMode())
+              Writer->writeVarint64Bits(LastReadValue, WritePos,
+                                        cast<Varint64Node>(Frame.Nd)->getValue());
+            popAndReturnReadValue(LastReadValue);
+            traceExitFrame();
+            break;
           case OpVaruint32:
+            traceEnterFrame();
+            if (hasReadMode())
+              LastReadValue = Reader->readVaruint32Bits(
+                  ReadPos, cast<Varuint32Node>(Frame.Nd)->getValue());
+            if (hasWriteMode())
+              Writer->writeVaruint32Bits(
+                  LastReadValue, WritePos,
+                  cast<Varuint32Node>(Frame.Nd)->getValue());
+            popAndReturnReadValue(LastReadValue);
+            traceExitFrame();
+            break;
           case OpVaruint64:
+            traceEnterFrame();
+            if (hasReadMode())
+              LastReadValue = Reader->readVaruint64Bits(
+                  ReadPos, cast<Varuint64Node>(Frame.Nd)->getValue());
+            if (hasWriteMode())
+              Writer->writeVaruint64Bits(
+                  LastReadValue, WritePos,
+                  cast<Varuint64Node>(Frame.Nd)->getValue());
+            popAndReturnReadValue(LastReadValue);
+            traceExitFrame();
+            break;
           case OpMap:
+            switch (Frame.CallState) {
+              case State::Enter:
+                traceEnterFrame();
+                Frame.CallState = State::Step2;
+                if (hasReadMode())
+                  call(Method::Read, MethodModifier::ReadOnly, Frame.Nd);
+                break;
+              case State::Step2:
+                Frame.CallState = State::Exit;
+                if (hasReadMode()) {
+                  LastReadValue = Frame.ReturnValue;
+                  call(Method::Read, MethodModifier::ReadOnly,
+                       cast<MapNode>(Frame.Nd)->getCase(LastReadValue));
+                }
+                break;
+              case State::Exit:
+                if (hasReadMode())
+                  LastReadValue = Frame.ReturnValue;
+                popAndReturn(LastReadValue);
+                traceExitFrame();
+                break;
+              default:
+                failBadState();
+                break;
+            }
+            break;
+          /* here */
           case OpOpcode:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
@@ -1128,6 +1227,7 @@ void Interpreter::resume() {
           case OpU64Const:
           case OpLocal:
           case OpLastRead:
+          case OpMap:
           case OpParams:
           case OpPeek:
           case OpRead:
@@ -1136,8 +1236,14 @@ void Interpreter::resume() {
           case OpSymbol:
           case OpUndefine:
           case OpUnknownSection:
-          case OpWasmVersion:
-            // Method::Read
+          case OpUint32:
+          case OpUint64:
+          case OpUint8:
+          case OpVarint32:
+          case OpVarint64:
+          case OpVaruint32:
+          case OpVaruint64:
+          case OpWasmVersion: // Method::Read
             traceEnterFrame();
             call(Method::Eval, MethodModifier::ReadOnly, Frame.Nd);
             popAndReturnReadValue(LastReadValue);
@@ -1160,48 +1266,6 @@ void Interpreter::resume() {
                 break;
             }
             break;
-          case OpUint8:  // Method::Read
-            traceEnterFrame();
-            popAndReturnReadValue(Reader->readUint8Bits(
-                ReadPos, cast<Uint8Node>(Frame.Nd)->getValue()));
-            traceExitFrame();
-            break;
-          case OpUint32:  // Method::Read
-            traceEnterFrame();
-            popAndReturnReadValue(Reader->readUint32Bits(
-                ReadPos, cast<Uint32Node>(Frame.Nd)->getValue()));
-            traceExitFrame();
-            break;
-          case OpUint64:  // Method::Read
-            traceEnterFrame();
-            popAndReturnReadValue(Reader->readUint64Bits(
-                ReadPos, cast<Uint64Node>(Frame.Nd)->getValue()));
-            traceExitFrame();
-            break;
-          case OpVarint32:  // Method::Read
-            traceEnterFrame();
-            popAndReturnReadValue(Reader->readVarint32Bits(
-                ReadPos, cast<Varint32Node>(Frame.Nd)->getValue()));
-            traceExitFrame();
-            break;
-          case OpVarint64:  // Method::Read
-            traceEnterFrame();
-            popAndReturnReadValue(Reader->readVarint64Bits(
-                ReadPos, cast<Varint64Node>(Frame.Nd)->getValue()));
-            traceExitFrame();
-            break;
-          case OpVaruint32:  // Method::Read
-            traceEnterFrame();
-            popAndReturnReadValue(Reader->readVaruint32Bits(
-                ReadPos, cast<Varuint32Node>(Frame.Nd)->getValue()));
-            traceExitFrame();
-            break;
-          case OpVaruint64:  // Method::Read
-            traceEnterFrame();
-            popAndReturnReadValue(Reader->readVaruint64Bits(
-                ReadPos, cast<Varuint64Node>(Frame.Nd)->getValue()));
-            traceExitFrame();
-            break;
           case OpOpcode:  // Method::Read
             switch (Frame.CallState) {
               case State::Enter:
@@ -1222,28 +1286,6 @@ void Interpreter::resume() {
                 break;
             }
             break;
-          case OpMap: {  // Method::Read
-            switch (Frame.CallState) {
-              case State::Enter:
-                traceEnterFrame();
-                Frame.CallState = State::Step2;
-                call(Method::Read, Frame.Nd);
-                break;
-              case State::Step2:
-                Frame.CallState = State::Exit;
-                call(Method::Read,
-                     cast<MapNode>(Frame.Nd)->getCase(Frame.ReturnValue));
-                break;
-              case State::Exit:
-                popAndReturn(Frame.ReturnValue);
-                traceExitFrame();
-                break;
-              default:
-                failBadState();
-                break;
-            }
-            break;
-          }
           case OpLocals:
           case OpVoid:  // Method::Read
             traceEnterFrame();
@@ -1477,7 +1519,6 @@ void Interpreter::resume() {
           case OpEval:
           case OpNot:
           case OpOr:
-          case OpRead:
           case OpSet:
           case OpStream:
           case OpWrite:
@@ -1496,15 +1537,24 @@ void Interpreter::resume() {
           case OpI32Const:
           case OpI64Const:
           case OpLastRead:
-          case OpU8Const:
-          case OpU32Const:
-          case OpU64Const:
+          case OpMap:
           case OpParams:
           case OpPeek:
+          case OpRead:
           case OpSection:
           case OpSymbol:
           case OpUndefine:
           case OpUnknownSection:
+          case OpUint32:
+          case OpUint64:
+          case OpUint8:
+          case OpU8Const:
+          case OpU32Const:
+          case OpU64Const:
+          case OpVarint32:
+          case OpVarint64:
+          case OpVaruint32:
+          case OpVaruint64:
           case OpWasmVersion:
           case NO_SUCH_NODETYPE:  // Method::Write
             // TODO(karlschimpf) Remove these once folded into Eval.
@@ -1530,58 +1580,6 @@ void Interpreter::resume() {
                 break;
             }
             break;
-          case OpUint8:  // Method::Write
-            traceEnterFrame();
-            Writer->writeUint8Bits(WriteValue, WritePos,
-                                   cast<Uint8Node>(Frame.Nd)->getValue());
-            popAndReturnWriteValue();
-            traceExitFrame();
-            break;
-          case OpUint32:  // Method::Write
-            traceEnterFrame();
-            Writer->writeUint32Bits(WriteValue, WritePos,
-                                    cast<Uint32Node>(Frame.Nd)->getValue());
-            popAndReturnWriteValue();
-            traceExitFrame();
-            break;
-          case OpUint64:  // Method::Write
-            traceEnterFrame();
-            Writer->writeUint64Bits(WriteValue, WritePos,
-                                    cast<Uint64Node>(Frame.Nd)->getValue());
-            popAndReturnWriteValue();
-            traceExitFrame();
-            break;
-          case OpVarint32:  // Method::Write
-            traceEnterFrame();
-            Writer->writeVarint32Bits(WriteValue, WritePos,
-                                      cast<Varint32Node>(Frame.Nd)->getValue());
-            popAndReturnWriteValue();
-            traceExitFrame();
-            break;
-          case OpVarint64:  // Method::Write
-            traceEnterFrame();
-            Writer->writeVarint64Bits(WriteValue, WritePos,
-                                      cast<Varint64Node>(Frame.Nd)->getValue());
-            popAndReturnWriteValue();
-            traceExitFrame();
-            break;
-          case OpVaruint32:  // Method::Write
-            traceEnterFrame();
-            Writer->writeVaruint32Bits(
-                WriteValue, WritePos,
-                cast<Varuint32Node>(Frame.Nd)->getValue());
-            popAndReturnWriteValue();
-            traceExitFrame();
-            break;
-          case OpVaruint64:  // Method::Write
-            traceEnterFrame();
-            Writer->writeVaruint64Bits(
-                WriteValue, WritePos,
-                cast<Varuint64Node>(Frame.Nd)->getValue());
-            popAndReturnWriteValue();
-            traceExitFrame();
-            break;
-          case OpMap:
           case OpLocals:
           case OpVoid:  // Method::Write
             traceEnterFrame();
