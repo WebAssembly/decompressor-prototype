@@ -19,32 +19,53 @@
 #ifndef DECOMPRESSOR_SRC_INTERP_INTERPRETER_DEF
 #define DECOMPRESSOR_SRC_INTERP_INTERPRETER_DEF
 
-//#define X(tag, name)
-#define INTERPRETER_METHODS_TABLE                                              \
-  /* enum name , text name */                                                  \
-  X(CopyBlock,   "copyBlock")                                                  \
-  X(Eval,        "eval")                                                       \
-  X(EvalBlock,   "evalBlock")                                                  \
-  X(EvalParam,   "evalParam")                                                  \
-  X(Finished,    "finished")                                                   \
-  X(GetFile,     "getFile")                                                    \
-  X(GetSecName,  "getSecName")                                                 \
-  X(GetSection,  "getSection")                                                 \
-  X(Read,        "read")                                                       \
-  X(ReadOpcode,  "readOpcode")                                                 \
-  X(Started,     "started")                                                    \
-  X(Write,       "write")                                                      \
+//#define X(code, value)
+#define SECTION_CODES_TABLE \
+X(Unknown, 0)               \
+X(Type, 1)                  \
+X(Import, 2)                \
+X(Function, 3)              \
+X(Table, 4)                 \
+X(Memory, 5)                \
+X(Global, 6)                \
+X(Export, 7)                \
+X(Start, 8)                 \
+X(Elem, 9)                  \
+X(Code, 10)                 \
+X(Data, 11)
 
-//#define X(tag, name)
-#define INTERPRETER_STATES_TABLE                                               \
-  /* enum name, text name */                                                   \
-  X(Enter,     "enter")                                                        \
-  X(Exit,      "exit")                                                         \
-  X(Loop,      "loop")                                                         \
-  X(Failed,    "failed")                                                       \
-  X(MinBlock,  "minimize block")                                               \
-  X(Step2,     "Step2")                                                        \
-  X(Step3,     "Step3")                                                        \
-  X(Succeeded, "Succeeded")                                                    \
+//#define X(tag)
+#define INTERPRETER_METHODS_TABLE                             \
+X(CopyBlock)                                                  \
+X(Eval)                                                       \
+X(EvalBlock)                                                  \
+X(EvalParam)                                                  \
+X(Finished)                                                   \
+X(GetFile)                                                    \
+X(GetSecName)                                                 \
+X(GetSection)                                                 \
+X(Read)                                                       \
+X(ReadOpcode)                                                 \
+X(Started)                                                    \
+X(Write)                                                      \
+
+//#define X(tag)
+#define INTERPRETER_STATES_TABLE                              \
+X(Enter)                                                      \
+X(Exit)                                                       \
+X(Loop)                                                       \
+X(Failed)                                                     \
+X(MinBlock)                                                   \
+X(Step2)                                                      \
+X(Step3)                                                      \
+X(Succeeded)                                                  \
+
+//#define X(tag, flags)
+// flags: bit(0)==1 => Read, bit(1)==1 => Write
+#define INTERPRETER_METHOD_MODIFIERS_TABLE                     \
+X(NoReadOrWrite, 0x0)                                         \
+X(ReadOnly,      0x1)                                         \
+X(WriteOnly,     0x2)                                         \
+X(ReadAndWrite,  0x3)                                         \
 
 #endif // DECOMPRESSOR_SRC_INTERP_INTERPRETER_DEF

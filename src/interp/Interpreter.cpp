@@ -63,32 +63,58 @@ static constexpr uint32_t MaxExpectedSectionNameSize = 32;
 static constexpr size_t DefaultStackSize = 256;
 static constexpr size_t DefaultExpectedLocals = 3;
 
-#define X(tag, name) constexpr const char* Method##tag##Name = name;
-INTERPRETER_METHODS_TABLE
+const char* SectionCodeName[] = {
+#define X(code, value) #code
+    SECTION_CODES_TABLE
 #undef X
+};
 
 const char* MethodName[] = {
-#define X(tag, name) Method##tag##Name,
+#define X(tag) #tag,
     INTERPRETER_METHODS_TABLE
 #undef X
     "NO_SUCH_METHOD"};
 
 const char* StateName[] = {
-#define X(tag, name) name,
+#define X(tag) #tag,
     INTERPRETER_STATES_TABLE
 #undef X
     "NO_SUCH_STATE"};
+
+const char* MethodModifierName[] = {
+#define X(tag, flags) #tag,
+    INTERPRETER_METHOD_MODIFIERS_TABLE
+#undef X
+    "NO_SUCH_METHOD_MODIFIER"};
 
 }  // end of anonymous namespace
 
 const char* Interpreter::getName(Method M) {
   size_t Index = size_t(M);
-  return Index < size(MethodName) ? MethodName[Index] : "NO_SUCH_METHOD";
+  if (Index >= size(MethodName))
+    Index = size_t(Method::NO_SUCH_METHOD);
+  return MethodName[Index];
+}
+
+const char* Interpreter::getName(MethodModifier Modifier) {
+  size_t Index = size_t(Modifier);
+  if (Index >= size(MethodModifierName))
+    Index = size_t(MethodModifier::NO_SUCH_METHOD_MODIFIER);
+  return MethodModifierName[Index];
 }
 
 const char* Interpreter::getName(State S) {
   size_t Index = size_t(S);
-  return Index < size(StateName) ? StateName[Index] : "NO_SUCH_STATE";
+  if (Index >= size(StateName))
+    Index = size_t(State::NO_SUCH_STATE);
+  return StateName[Index];
+}
+
+const char* Interpreter::getName(SectionCode Code) {
+  size_t Index = size_t(Code);
+  if (Index >= size(SectionCodeName))
+    Index = size_t(SectionCode::NO_SUCH_SECTION_CODE);
+  return SectionCodeName[Index];
 }
 
 Interpreter::Interpreter(std::shared_ptr<Queue> Input,
@@ -124,8 +150,8 @@ Interpreter::Interpreter(std::shared_ptr<Queue> Input,
 }
 
 void Interpreter::CallFrame::describe(FILE* File, TextWriter* Writer) const {
-  fprintf(File, "%s.%s = %" PRIuMAX ": ", getName(CallMethod),
-          getName(CallState), uintmax_t(ReturnValue));
+  fprintf(File, "%s.%s (%s) = %" PRIuMAX ": ", getName(CallMethod),
+          getName(CallState), getName(CallModifier), uintmax_t(ReturnValue));
   if (Nd)
     Writer->writeAbbrev(File, Nd);
   else
@@ -253,6 +279,16 @@ void Interpreter::callTopLevel(Method Method, const filt::Node* Nd) {
   call(Method, Nd);
 }
 
+void Interpreter::traceEnterFrameInternal() {
+  // Note: Enclosed in TRACE_BLOCK so that g++ will not complain when
+  // compiled in release mode.
+  TRACE_BLOCK({
+    TRACE_ENTER(getName(Frame.CallMethod));
+    if (Frame.CallModifier != MethodModifier::ReadAndWrite)
+      TRACE_MESSAGE(std::string("(") + getName(Frame.CallModifier) + ")");
+  });
+}
+
 void Interpreter::readBackFilled() {
 #if LOG_RUNMETHODS
   TRACE_METHOD("readBackFilled");
@@ -268,7 +304,7 @@ void Interpreter::readBackFilled() {
 void Interpreter::fail() {
   TRACE_MESSAGE("method failed");
   while (!FrameStack.empty()) {
-    TraceExitFrame();
+    traceExitFrame();
     popAndReturn();
   }
   Frame.fail();
@@ -321,7 +357,7 @@ void Interpreter::resume() {
       case Method::CopyBlock:
         switch (Frame.CallState) {
           case State::Enter:
-            TraceEnterFrame();
+            traceEnterFrame();
             Frame.CallState = State::Loop;
             break;
           case State::Loop:
@@ -333,7 +369,7 @@ void Interpreter::resume() {
             break;
           case State::Exit:
             popAndReturn();
-            TraceExitFrame();
+            traceExitFrame();
             break;
           default:
             failBadState();
@@ -374,37 +410,56 @@ void Interpreter::resume() {
           case OpUnknownSection:
           case OpCasmVersion:
           case OpWasmVersion:  // Method::Eval
-            fail("Not allowed!");
+            failNotImplemented();
             break;
           case OpError:  // Method::Eval
-            TraceEnterFrame();
+            traceEnterFrame();
             fail("Algorithm error!");
             break;
           case OpCallback:  // Method::Eval
             // TODO(karlschimpf): All virtual calls to class so that derived
             // classes can override.
-            TraceEnterFrame();
+            traceEnterFrame();
             popAndReturn(Frame.ReturnValue);
-            TraceExitFrame();
+            traceExitFrame();
             break;
+          /* here */
           case OpI32Const:
           case OpI64Const:
           case OpU8Const:
           case OpU32Const:
-          case OpU64Const:
+          case OpU64Const:  // Method::Eval
+            traceEnterFrame();
+            switch (Frame.CallModifier) {
+              case MethodModifier::NoReadOrWrite:
+              case MethodModifier::NO_SUCH_METHOD_MODIFIER:
+                fail("Bad method modifier on integer constant");
+                break;
+              case MethodModifier::ReadOnly:
+              case MethodModifier::ReadAndWrite:
+                popAndReturnReadValue(
+                    dyn_cast<IntegerNode>(Frame.Nd)->getValue());
+                break;
+              case MethodModifier::WriteOnly:
+                popAndReturnWriteValue();
+                break;
+            }
+            traceExitFrame();
+            break;
+          /* here */
           case OpLastRead:
           case OpLocal:
           case OpPeek:
           case OpRead:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
-                TraceEnterFrame();
+                traceEnterFrame();
                 Frame.CallState = State::Exit;
                 call(Method::Read, Frame.Nd);
                 break;
               case State::Exit:
                 popAndReturn(Frame.ReturnValue);
-                TraceExitFrame();
+                traceExitFrame();
                 break;
               default:
                 failBadState();
@@ -422,7 +477,7 @@ void Interpreter::resume() {
           case OpOpcode:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
-                TraceEnterFrame();
+                traceEnterFrame();
                 Frame.CallState = State::Step2;
                 call(Method::Read, Frame.Nd);
                 break;
@@ -432,7 +487,7 @@ void Interpreter::resume() {
                 break;
               case State::Exit:
                 popAndReturn(Frame.ReturnValue);
-                TraceExitFrame();
+                traceExitFrame();
                 break;
               default:
                 failBadState();
@@ -442,7 +497,7 @@ void Interpreter::resume() {
           case OpSet:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
-                TraceEnterFrame();
+                traceEnterFrame();
                 Frame.CallState = State::Exit;
                 call(Method::Eval, Frame.Nd->getKid(1));
                 break;
@@ -455,7 +510,7 @@ void Interpreter::resume() {
                 }
                 LocalValues[LocalsBase + Index] = Frame.ReturnValue;
                 popAndReturn(Frame.ReturnValue);
-                TraceExitFrame();
+                traceExitFrame();
                 break;
               }
               default:
@@ -466,7 +521,7 @@ void Interpreter::resume() {
           case OpWrite:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
-                TraceEnterFrame();
+                traceEnterFrame();
                 Frame.CallState = State::Step2;
                 call(Method::Read, Frame.Nd->getKid(0));
                 break;
@@ -477,7 +532,7 @@ void Interpreter::resume() {
                 break;
               case State::Exit:
                 popAndReturn(Frame.ReturnValue);
-                TraceExitFrame();
+                traceExitFrame();
                 break;
               default:
                 failBadState();
@@ -485,14 +540,14 @@ void Interpreter::resume() {
             }
             break;
           case OpStream: {  // Method::Eval
-            TraceEnterFrame();
+            traceEnterFrame();
             const auto* Stream = cast<StreamNode>(Frame.Nd);
             switch (Stream->getStreamKind()) {
               case StreamKind::Input:
                 switch (Stream->getStreamType()) {
                   case StreamType::Byte:
                     popAndReturn(int(isa<ByteReadStream>(Reader.get())));
-                    TraceExitFrame();
+                    traceExitFrame();
                     break;
                   case StreamType::Bit:
                   case StreamType::Int:
@@ -506,7 +561,7 @@ void Interpreter::resume() {
                 switch (Stream->getStreamType()) {
                   case StreamType::Byte:
                     popAndReturn(int(isa<ByteReadStream>(Writer.get())));
-                    TraceExitFrame();
+                    traceExitFrame();
                     break;
                   case StreamType::Bit:
                   case StreamType::Int:
@@ -522,13 +577,13 @@ void Interpreter::resume() {
           case OpNot:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
-                TraceEnterFrame();
+                traceEnterFrame();
                 Frame.CallState = State::Exit;
                 call(Method::Eval, Frame.Nd->getKid(0));
                 break;
               case State::Exit:
                 popAndReturn(Frame.ReturnValue != 0);
-                TraceExitFrame();
+                traceExitFrame();
                 break;
               default:
                 failBadState();
@@ -538,7 +593,7 @@ void Interpreter::resume() {
           case OpAnd:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
-                TraceEnterFrame();
+                traceEnterFrame();
                 Frame.CallState = State::Step2;
                 call(Method::Eval, Frame.Nd->getKid(0));
                 break;
@@ -549,7 +604,7 @@ void Interpreter::resume() {
                 break;
               case State::Exit:
                 popAndReturn(Frame.ReturnValue);
-                TraceExitFrame();
+                traceExitFrame();
                 break;
               default:
                 failBadState();
@@ -559,7 +614,7 @@ void Interpreter::resume() {
           case OpOr:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
-                TraceEnterFrame();
+                traceEnterFrame();
                 Frame.CallState = State::Step2;
                 call(Method::Eval, Frame.Nd->getKid(0));
                 break;
@@ -570,7 +625,7 @@ void Interpreter::resume() {
                 break;
               case State::Exit:
                 popAndReturn(Frame.ReturnValue);
-                TraceExitFrame();
+                traceExitFrame();
                 break;
               default:
                 failBadState();
@@ -580,7 +635,7 @@ void Interpreter::resume() {
           case OpSequence:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
-                TraceEnterFrame();
+                traceEnterFrame();
                 LoopCounterStack.push(0);
                 Frame.CallState = State::Loop;
                 break;
@@ -594,7 +649,7 @@ void Interpreter::resume() {
               case State::Exit:
                 LoopCounterStack.pop();
                 popAndReturn();
-                TraceExitFrame();
+                traceExitFrame();
                 break;
               default:
                 failBadState();
@@ -604,7 +659,7 @@ void Interpreter::resume() {
           case OpLoop:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
-                TraceEnterFrame();
+                traceEnterFrame();
                 Frame.CallState = State::Step2;
                 call(Method::Eval, Frame.Nd->getKid(0));
                 break;
@@ -622,7 +677,7 @@ void Interpreter::resume() {
               case State::Exit:
                 LoopCounterStack.pop();
                 popAndReturn();
-                TraceExitFrame();
+                traceExitFrame();
                 break;
               default:
                 failBadState();
@@ -632,7 +687,7 @@ void Interpreter::resume() {
           case OpLoopUnbounded:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
-                TraceEnterFrame();
+                traceEnterFrame();
                 Frame.CallState = State::Loop;
                 break;
               case State::Loop:
@@ -644,7 +699,7 @@ void Interpreter::resume() {
                 break;
               case State::Exit:
                 popAndReturn();
-                TraceExitFrame();
+                traceExitFrame();
                 break;
               default:
                 failBadState();
@@ -654,7 +709,7 @@ void Interpreter::resume() {
           case OpIfThen:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
-                TraceEnterFrame();
+                traceEnterFrame();
                 Frame.CallState = State::Step2;
                 call(Method::Eval, Frame.Nd->getKid(0));
                 break;
@@ -665,7 +720,7 @@ void Interpreter::resume() {
                 break;
               case State::Exit:
                 popAndReturn();
-                TraceExitFrame();
+                traceExitFrame();
                 break;
               default:
                 failBadState();
@@ -675,7 +730,7 @@ void Interpreter::resume() {
           case OpIfThenElse:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
-                TraceEnterFrame();
+                traceEnterFrame();
                 Frame.CallState = State::Step2;
                 call(Method::Eval, Frame.Nd->getKid(0));
                 break;
@@ -688,7 +743,7 @@ void Interpreter::resume() {
                 break;
               case State::Exit:
                 popAndReturn();
-                TraceExitFrame();
+                traceExitFrame();
                 break;
               default:
                 failBadState();
@@ -698,7 +753,7 @@ void Interpreter::resume() {
           case OpSwitch:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
-                TraceEnterFrame();
+                traceEnterFrame();
                 Frame.CallState = State::Step2;
                 call(Method::Eval, Frame.Nd->getKid(0));
                 break;
@@ -713,7 +768,7 @@ void Interpreter::resume() {
               }
               case State::Exit:
                 popAndReturn();
-                TraceExitFrame();
+                traceExitFrame();
                 break;
               default:
                 failBadState();
@@ -723,13 +778,13 @@ void Interpreter::resume() {
           case OpCase:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
-                TraceEnterFrame();
+                traceEnterFrame();
                 Frame.CallState = State::Exit;
                 call(Method::Eval, Frame.Nd->getKid(1));
                 break;
               case State::Exit:
                 popAndReturn();
-                TraceExitFrame();
+                traceExitFrame();
                 break;
               default:
                 failBadState();
@@ -739,7 +794,7 @@ void Interpreter::resume() {
           case OpDefine:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
-                TraceEnterFrame();
+                traceEnterFrame();
                 if (size_t NumLocals =
                         cast<DefineNode>(Frame.Nd)->getNumLocals()) {
                   LocalsBaseStack.push(LocalValues.size());
@@ -756,7 +811,7 @@ void Interpreter::resume() {
                   LocalsBaseStack.pop();
                 }
                 popAndReturn();
-                TraceExitFrame();
+                traceExitFrame();
                 break;
               default:
                 failBadState();
@@ -766,14 +821,14 @@ void Interpreter::resume() {
           case OpParam:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
-                TraceEnterFrame();
+                traceEnterFrame();
                 Frame.CallState = State::Exit;
                 DispatchedMethod = Method::Eval;
                 call(Method::EvalParam, Frame.Nd);
                 break;
               case State::Exit:
                 popAndReturn();
-                TraceExitFrame();
+                traceExitFrame();
                 break;
               default:
                 failBadState();
@@ -783,7 +838,7 @@ void Interpreter::resume() {
           case OpEval:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter: {
-                TraceEnterFrame();
+                traceEnterFrame();
                 auto* Sym = dyn_cast<SymbolNode>(Frame.Nd->getKid(0));
                 assert(Sym);
                 auto* Defn = dyn_cast<DefineNode>(Sym->getDefineDefinition());
@@ -810,7 +865,7 @@ void Interpreter::resume() {
               case State::Exit:
                 CallingEvalStack.pop();
                 popAndReturn(Frame.ReturnValue);
-                TraceExitFrame();
+                traceExitFrame();
                 break;
               default:
                 failBadState();
@@ -820,7 +875,7 @@ void Interpreter::resume() {
           case OpBlock:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
-                TraceEnterFrame();
+                traceEnterFrame();
 #if LOG_FUNCTIONS || LOG_NUMBERED_BLOCK
                 // NOTE: This assumes that blocks (outside of sections) are only
                 // used to define functions.
@@ -847,7 +902,7 @@ void Interpreter::resume() {
                 ++LogBlockCount;
 #endif
                 popAndReturn();
-                TraceExitFrame();
+                traceExitFrame();
                 break;
               default:
                 failBadState();
@@ -856,16 +911,16 @@ void Interpreter::resume() {
             break;
           case OpLocals:
           case OpVoid:  // Method::Eval
-            TraceEnterFrame();
+            traceEnterFrame();
             popAndReturn();
-            TraceExitFrame();
+            traceExitFrame();
             break;
         }
         break;
       case Method::EvalBlock:
         switch (Frame.CallState) {
           case State::Enter: {
-            TraceEnterFrame();
+            traceEnterFrame();
             const uint32_t OldSize = Reader->readBlockSize(ReadPos);
             TRACE(uint32_t, "block size", OldSize);
             Reader->pushEobAddress(ReadPos, OldSize);
@@ -913,7 +968,7 @@ void Interpreter::resume() {
             BlockStartStack.pop();
             ReadPos.popEobAddress();
             popAndReturn();
-            TraceExitFrame();
+            traceExitFrame();
             break;
           default:
             failBadState();
@@ -939,7 +994,7 @@ void Interpreter::resume() {
       case Method::EvalParam:
         switch (Frame.CallState) {
           case State::Enter: {
-            TraceEnterFrame();
+            traceEnterFrame();
             if (CallingEvalStack.empty()) {
               fail(
                   "Not inside a call frame, can't evaluate parameter "
@@ -964,7 +1019,7 @@ void Interpreter::resume() {
           case State::Exit:
             CallingEvalStack.pop();
             popAndReturn(Frame.ReturnValue);
-            TraceExitFrame();
+            traceExitFrame();
             break;
           default:
             failBadState();
@@ -1010,21 +1065,32 @@ void Interpreter::resume() {
             failNotImplemented();
             break;
           case OpCallback:  // Method::Read
-            TraceEnterFrame();
+#if 0
+#endif
+            traceEnterFrame();
+            call(Method::Eval, MethodModifier::ReadOnly, Frame.Nd);
             popAndReturnReadValue(LastReadValue);
-            TraceExitFrame();
+            traceExitFrame();
             break;
           case OpI32Const:
           case OpI64Const:
           case OpU8Const:
           case OpU32Const:
           case OpU64Const:  // Method::Read
-            TraceEnterFrame();
-            popAndReturnReadValue(dyn_cast<IntegerNode>(Frame.Nd)->getValue());
-            TraceExitFrame();
+#if 1
+            traceEnterFrame();
+            call(Method::Eval, MethodModifier::ReadOnly, Frame.Nd);
+            popAndReturnReadValue(LastReadValue);
+            traceExitFrame();
             break;
+#else
+            traceEnterFrame();
+            popAndReturnReadValue(dyn_cast<IntegerNode>(Frame.Nd)->getValue());
+            traceExitFrame();
+            break;
+#endif
           case OpLocal: {  // Method::Read
-            TraceEnterFrame();
+            traceEnterFrame();
             const auto* Local = dyn_cast<LocalNode>(Frame.Nd);
             size_t Index = Local->getValue();
             if (LocalsBase + Index >= LocalValues.size()) {
@@ -1032,20 +1098,20 @@ void Interpreter::resume() {
               break;
             }
             popAndReturnReadValue(LocalValues[LocalsBase + Index]);
-            TraceExitFrame();
+            traceExitFrame();
             break;
           }
           case OpParam:  // Method::Read
             switch (Frame.CallState) {
               case State::Enter:
-                TraceEnterFrame();
+                traceEnterFrame();
                 Frame.CallState = State::Exit;
                 DispatchedMethod = Method::Read;
                 call(Method::EvalParam, Frame.Nd);
                 break;
               case State::Exit:
                 popAndReturnReadValue(LastReadValue);
-                TraceExitFrame();
+                traceExitFrame();
                 break;
               default:
                 failBadState();
@@ -1055,7 +1121,7 @@ void Interpreter::resume() {
           case OpPeek: {  // Method::Read
             switch (Frame.CallState) {
               case State::Enter:
-                TraceEnterFrame();
+                traceEnterFrame();
                 PeekPosStack.push(ReadPos);
                 Frame.CallState = State::Exit;
                 call(Method::Read, Frame.Nd->getKid(0));
@@ -1064,7 +1130,7 @@ void Interpreter::resume() {
                 ReadPos = PeekPos;
                 PeekPosStack.pop();
                 popAndReturnReadValue(LastReadValue);
-                TraceExitFrame();
+                traceExitFrame();
                 break;
               default:
                 failBadState();
@@ -1073,56 +1139,56 @@ void Interpreter::resume() {
             break;
           }
           case OpLastRead:  // Method::Read
-            TraceEnterFrame();
+            traceEnterFrame();
             popAndReturnReadValue(LastReadValue);
-            TraceExitFrame();
+            traceExitFrame();
             break;
           case OpUint8:  // Method::Read
-            TraceEnterFrame();
+            traceEnterFrame();
             popAndReturnReadValue(Reader->readUint8Bits(
                 ReadPos, cast<Uint8Node>(Frame.Nd)->getValue()));
-            TraceExitFrame();
+            traceExitFrame();
             break;
           case OpUint32:  // Method::Read
-            TraceEnterFrame();
+            traceEnterFrame();
             popAndReturnReadValue(Reader->readUint32Bits(
                 ReadPos, cast<Uint32Node>(Frame.Nd)->getValue()));
-            TraceExitFrame();
+            traceExitFrame();
             break;
           case OpUint64:  // Method::Read
-            TraceEnterFrame();
+            traceEnterFrame();
             popAndReturnReadValue(Reader->readUint64Bits(
                 ReadPos, cast<Uint64Node>(Frame.Nd)->getValue()));
-            TraceExitFrame();
+            traceExitFrame();
             break;
           case OpVarint32:  // Method::Read
-            TraceEnterFrame();
+            traceEnterFrame();
             popAndReturnReadValue(Reader->readVarint32Bits(
                 ReadPos, cast<Varint32Node>(Frame.Nd)->getValue()));
-            TraceExitFrame();
+            traceExitFrame();
             break;
           case OpVarint64:  // Method::Read
-            TraceEnterFrame();
+            traceEnterFrame();
             popAndReturnReadValue(Reader->readVarint64Bits(
                 ReadPos, cast<Varint64Node>(Frame.Nd)->getValue()));
-            TraceExitFrame();
+            traceExitFrame();
             break;
           case OpVaruint32:  // Method::Read
-            TraceEnterFrame();
+            traceEnterFrame();
             popAndReturnReadValue(Reader->readVaruint32Bits(
                 ReadPos, cast<Varuint32Node>(Frame.Nd)->getValue()));
-            TraceExitFrame();
+            traceExitFrame();
             break;
           case OpVaruint64:  // Method::Read
-            TraceEnterFrame();
+            traceEnterFrame();
             popAndReturnReadValue(Reader->readVaruint64Bits(
                 ReadPos, cast<Varuint64Node>(Frame.Nd)->getValue()));
-            TraceExitFrame();
+            traceExitFrame();
             break;
           case OpOpcode:  // Method::Read
             switch (Frame.CallState) {
               case State::Enter:
-                TraceEnterFrame();
+                traceEnterFrame();
                 OpcodeLocalsStack.push();
                 OpcodeLocals.reset();
                 Frame.CallState = State::Exit;
@@ -1132,7 +1198,7 @@ void Interpreter::resume() {
                 LastReadValue = OpcodeLocals.CaseMask;
                 OpcodeLocalsStack.pop();
                 popAndReturn(LastReadValue);
-                TraceExitFrame();
+                traceExitFrame();
                 break;
               default:
                 failBadState();
@@ -1142,7 +1208,7 @@ void Interpreter::resume() {
           case OpMap: {  // Method::Read
             switch (Frame.CallState) {
               case State::Enter:
-                TraceEnterFrame();
+                traceEnterFrame();
                 Frame.CallState = State::Step2;
                 call(Method::Read, Frame.Nd);
                 break;
@@ -1153,7 +1219,7 @@ void Interpreter::resume() {
                 break;
               case State::Exit:
                 popAndReturn(Frame.ReturnValue);
-                TraceExitFrame();
+                traceExitFrame();
                 break;
               default:
                 failBadState();
@@ -1163,16 +1229,16 @@ void Interpreter::resume() {
           }
           case OpLocals:
           case OpVoid:  // Method::Read
-            TraceEnterFrame();
+            traceEnterFrame();
             popAndReturnReadValue(0);
-            TraceExitFrame();
+            traceExitFrame();
             break;
         }
         break;
       case Method::GetFile:
         switch (Frame.CallState) {
           case State::Enter:
-            TraceEnterFrame();
+            traceEnterFrame();
             MagicNumber = Reader->readUint32(ReadPos);
             TRACE(hex_uint32_t, "magic number", MagicNumber);
             if (MagicNumber != WasmBinaryMagic) {
@@ -1200,7 +1266,7 @@ void Interpreter::resume() {
           case State::Exit:
             WritePos.freezeEof();
             popAndReturn();
-            TraceExitFrame();
+            traceExitFrame();
             break;
           default:
             failBadState();
@@ -1210,7 +1276,7 @@ void Interpreter::resume() {
       case Method::GetSecName:
         switch (Frame.CallState) {
           case State::Enter:
-            TraceEnterFrame();
+            traceEnterFrame();
             CurSectionName.clear();
             LoopCounterStack.push(Reader->readVaruint32(ReadPos));
             Writer->writeVaruint32(LoopCounter, WritePos);
@@ -1229,7 +1295,7 @@ void Interpreter::resume() {
           }
           case State::Exit:
             popAndReturn();
-            TraceExitFrame();
+            traceExitFrame();
             break;
           default:
             failBadState();
@@ -1239,7 +1305,7 @@ void Interpreter::resume() {
       case Method::GetSection:
         switch (Frame.CallState) {
           case State::Enter:
-            TraceEnterFrame();
+            traceEnterFrame();
             assert(isa<ByteReadStream>(Reader.get()));
 #if LOG_SECTIONS
             TRACE(hex_size_t, "SectionAddress", ReadPos.getCurByteAddress());
@@ -1263,7 +1329,7 @@ void Interpreter::resume() {
             Reader->alignToByte(ReadPos);
             Writer->alignToByte(WritePos);
             popAndReturn();
-            TraceExitFrame();
+            traceExitFrame();
             break;
           default:
             failBadState();
@@ -1279,7 +1345,7 @@ void Interpreter::resume() {
           case OpOpcode:  // Method::ReadOpcode
             switch (Frame.CallState) {
               case State::Enter:
-                TraceEnterFrame();
+                traceEnterFrame();
                 Frame.CallState = State::Step2;
                 call(Method::ReadOpcode, Frame.Nd->getKid(0));
                 break;
@@ -1307,7 +1373,7 @@ void Interpreter::resume() {
               }
               case State::Exit:
                 popAndReturn();
-                TraceExitFrame();
+                traceExitFrame();
                 break;
               default:
                 failBadState();
@@ -1316,7 +1382,7 @@ void Interpreter::resume() {
           case OpUint8:  // Method::ReadOpcode
             switch (Frame.CallState) {
               case State::Enter:
-                TraceEnterFrame();
+                traceEnterFrame();
                 Frame.CallState = State::Exit;
                 call(Method::Read, Frame.Nd);
                 break;
@@ -1324,7 +1390,7 @@ void Interpreter::resume() {
                 OpcodeLocals.CaseMask = Frame.ReturnValue;
                 OpcodeLocals.SelShift = cast<Uint8Node>(Frame.Nd)->getValue();
                 popAndReturn();
-                TraceExitFrame();
+                traceExitFrame();
                 break;
               default:
                 failBadState();
@@ -1333,7 +1399,7 @@ void Interpreter::resume() {
           case OpUint32:  // Method::ReadOpcode
             switch (Frame.CallState) {
               case State::Enter:
-                TraceEnterFrame();
+                traceEnterFrame();
                 Frame.CallState = State::Exit;
                 call(Method::Read, Frame.Nd);
                 break;
@@ -1341,7 +1407,7 @@ void Interpreter::resume() {
                 OpcodeLocals.CaseMask = Frame.ReturnValue;
                 OpcodeLocals.SelShift = cast<Uint32Node>(Frame.Nd)->getValue();
                 popAndReturn();
-                TraceExitFrame();
+                traceExitFrame();
                 break;
               default:
                 failBadState();
@@ -1351,7 +1417,7 @@ void Interpreter::resume() {
           case OpUint64:  // Method::ReadOpcode
             switch (Frame.CallState) {
               case State::Enter:
-                TraceEnterFrame();
+                traceEnterFrame();
                 Frame.CallState = State::Exit;
                 call(Method::Read, Frame.Nd);
                 break;
@@ -1359,7 +1425,7 @@ void Interpreter::resume() {
                 OpcodeLocals.CaseMask = Frame.ReturnValue;
                 OpcodeLocals.SelShift = cast<Uint64Node>(Frame.Nd)->getValue();
                 popAndReturn();
-                TraceExitFrame();
+                traceExitFrame();
                 break;
               default:
                 failBadState();
@@ -1418,21 +1484,22 @@ void Interpreter::resume() {
             failNotImplemented();
             break;
           case OpCallback:  // Method::Write
-            TraceEnterFrame();
+            traceEnterFrame();
+            call(Method::Eval, MethodModifier::WriteOnly, Frame.Nd);
             popAndReturnWriteValue();
-            TraceExitFrame();
+            traceExitFrame();
             break;
           case OpParam:  // Method::Write
             switch (Frame.CallState) {
               case State::Enter:
-                TraceEnterFrame();
+                traceEnterFrame();
                 Frame.CallState = State::Exit;
                 DispatchedMethod = Method::Write;
                 callWrite(Method::EvalParam, Frame.Nd, WriteValue);
                 break;
               case State::Exit:
                 popAndReturnWriteValue();
-                TraceExitFrame();
+                traceExitFrame();
                 break;
               default:
                 failBadState();
@@ -1440,73 +1507,85 @@ void Interpreter::resume() {
             }
             break;
           case OpUint8:  // Method::Write
-            TraceEnterFrame();
+            traceEnterFrame();
             Writer->writeUint8Bits(WriteValue, WritePos,
                                    cast<Uint8Node>(Frame.Nd)->getValue());
             popAndReturnWriteValue();
-            TraceExitFrame();
+            traceExitFrame();
             break;
           case OpUint32:  // Method::Write
-            TraceEnterFrame();
+            traceEnterFrame();
             Writer->writeUint32Bits(WriteValue, WritePos,
                                     cast<Uint32Node>(Frame.Nd)->getValue());
             popAndReturnWriteValue();
-            TraceExitFrame();
+            traceExitFrame();
             break;
           case OpUint64:  // Method::Write
-            TraceEnterFrame();
+            traceEnterFrame();
             Writer->writeUint64Bits(WriteValue, WritePos,
                                     cast<Uint64Node>(Frame.Nd)->getValue());
             popAndReturnWriteValue();
-            TraceExitFrame();
+            traceExitFrame();
             break;
           case OpVarint32:  // Method::Write
-            TraceEnterFrame();
+            traceEnterFrame();
             Writer->writeVarint32Bits(WriteValue, WritePos,
                                       cast<Varint32Node>(Frame.Nd)->getValue());
             popAndReturnWriteValue();
-            TraceExitFrame();
+            traceExitFrame();
             break;
           case OpVarint64:  // Method::Write
-            TraceEnterFrame();
+            traceEnterFrame();
             Writer->writeVarint64Bits(WriteValue, WritePos,
                                       cast<Varint64Node>(Frame.Nd)->getValue());
             popAndReturnWriteValue();
-            TraceExitFrame();
+            traceExitFrame();
             break;
           case OpVaruint32:  // Method::Write
-            TraceEnterFrame();
+            traceEnterFrame();
             Writer->writeVaruint32Bits(
                 WriteValue, WritePos,
                 cast<Varuint32Node>(Frame.Nd)->getValue());
             popAndReturnWriteValue();
-            TraceExitFrame();
+            traceExitFrame();
             break;
           case OpVaruint64:  // Method::Write
-            TraceEnterFrame();
+            traceEnterFrame();
             Writer->writeVaruint64Bits(
                 WriteValue, WritePos,
                 cast<Varuint64Node>(Frame.Nd)->getValue());
             popAndReturnWriteValue();
-            TraceExitFrame();
+            traceExitFrame();
             break;
           case OpI32Const:
           case OpI64Const:
           case OpU8Const:
           case OpU32Const:
           case OpU64Const:
+#if 1
+            traceEnterFrame();
+            call(Method::Eval, MethodModifier::WriteOnly, Frame.Nd);
+            popAndReturn(Frame.ReturnValue);
+            traceExitFrame();
+            break;
+#else
+            traceEnterFrame();
+            popAndReturnWriteValue();
+            traceExitFrame();
+            break;
+#endif
           case OpPeek:
           case OpMap:
           case OpLocals:
           case OpVoid:  // Method::Write
-            TraceEnterFrame();
+            traceEnterFrame();
             popAndReturnWriteValue();
-            TraceExitFrame();
+            traceExitFrame();
             break;
           case OpOpcode: {  // Method::Write
             switch (Frame.CallState) {
               case State::Enter: {
-                TraceEnterFrame();
+                traceEnterFrame();
                 const auto* Sel = cast<OpcodeNode>(Frame.Nd);
                 OpcodeLocalsStack.push();
                 OpcodeLocals.Case = Sel->getWriteCase(
@@ -1527,7 +1606,7 @@ void Interpreter::resume() {
                 break;
               case State::Exit:
                 popAndReturnWriteValue();
-                TraceExitFrame();
+                traceExitFrame();
                 break;
               default:
                 failBadState();
