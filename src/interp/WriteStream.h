@@ -36,55 +36,13 @@ class WriteStream : public std::enable_shared_from_this<WriteStream> {
   WriteStream& operator=(const WriteStream&) = delete;
 
  public:
-  void writeUint8(uint8_t Value, decode::WriteCursor& Pos) {
-    writeUint8Bits(Value, Pos, 8);
-  }
-  virtual void writeUint8Bits(uint8_t,
-                              decode::WriteCursor& Pos,
-                              uint32_t NumBits) = 0;
-
-  void writeUint32(uint32_t Value, decode::WriteCursor& Pos) {
-    writeUint32Bits(Value, Pos, 8);
-  }
-  virtual void writeUint32Bits(uint32_t Value,
-                               decode::WriteCursor& Pos,
-                               uint32_t NumBits) = 0;
-
-  void writeUint64(uint64_t Value, decode::WriteCursor& Pos) {
-    writeUint64Bits(Value, Pos, 8);
-  }
-  virtual void writeUint64Bits(uint64_t Value,
-                               decode::WriteCursor& Pos,
-                               uint32_t NumBits) = 0;
-
-  void writeVarint32(int32_t Value, decode::WriteCursor& Pos) {
-    writeVarint32Bits(Value, Pos, 8);
-  }
-  virtual void writeVarint32Bits(int32_t Value,
-                                 decode::WriteCursor& Pos,
-                                 uint32_t NumBits) = 0;
-
-  void writeVarint64(int64_t Value, decode::WriteCursor& Pos) {
-    return writeVarint64Bits(Value, Pos, 8);
-  }
-  virtual void writeVarint64Bits(int64_t Value,
-                                 decode::WriteCursor& Pos,
-                                 uint32_t NumBits) = 0;
-
-  void writeVaruint32(uint32_t Value, decode::WriteCursor& Pos) {
-    writeVaruint32Bits(Value, Pos, 8);
-  }
-  virtual void writeVaruint32Bits(uint32_t Value,
-                                  decode::WriteCursor& Pos,
-                                  uint32_t NumBits) = 0;
-
-  void writeVaruint64(uint64_t Value, decode::WriteCursor& Pos) {
-    writeVaruint64Bits(Value, Pos, 8);
-  }
-
-  virtual void writeVaruint64Bits(uint64_t Value,
-                                  decode::WriteCursor& Pos,
-                                  uint32_t NumBits) = 0;
+  virtual void writeUint8(uint8_t Value, decode::WriteCursor& Pos) = 0;
+  virtual void writeUint32(uint32_t Value, decode::WriteCursor& Pos) = 0;
+  virtual void writeUint64(uint64_t Value, decode::WriteCursor& Pos) = 0;
+  virtual void writeVarint32(int32_t Value, decode::WriteCursor& Pos) = 0;
+  virtual void writeVarint64(int64_t Value, decode::WriteCursor& Pos) = 0;
+  virtual void writeVaruint32(uint32_t Value, decode::WriteCursor& Pos) = 0;
+  virtual void writeVaruint64(uint64_t Value, decode::WriteCursor& Pos) = 0;
 
   virtual bool writeValue(decode::IntType Value,
                           decode::WriteCursor& Pos,
