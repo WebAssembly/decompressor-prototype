@@ -106,10 +106,10 @@ class Interpreter {
         NO_SUCH_METHOD_MODIFIER
   };
   static const char* getName(MethodModifier Modifier);
-  bool isReadModifier(MethodModifier Modifier) {
+  static bool isReadModifier(MethodModifier Modifier) {
     return uint32_t(Modifier) & 0x1;
   }
-  bool isWriteModifier(MethodModifier Modifier) {
+  static bool isWriteModifier(MethodModifier Modifier) {
     return uint32_t(Modifier) & 0x2;
   }
 
@@ -253,6 +253,13 @@ class Interpreter {
     Frame.CallModifier = Modifier;
     Frame.Nd = Nd;
     Frame.ReturnValue = 0;
+  }
+
+  bool hasReadMode() const {
+    return isReadModifier(Frame.CallModifier);
+  }
+  bool hasWriteMode() const {
+    return isWriteModifier(Frame.CallModifier);
   }
 
   // Sets up code to call Method with argument Nd.
