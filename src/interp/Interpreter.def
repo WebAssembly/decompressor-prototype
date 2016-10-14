@@ -44,10 +44,8 @@ X(Finished)                                                   \
 X(GetFile)                                                    \
 X(GetSecName)                                                 \
 X(GetSection)                                                 \
-X(Read)                                                       \
 X(ReadOpcode)                                                 \
 X(Started)                                                    \
-X(Write)                                                      \
 
 //#define X(tag)
 #define INTERPRETER_STATES_TABLE                              \

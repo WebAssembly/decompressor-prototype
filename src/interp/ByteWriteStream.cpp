@@ -25,6 +25,7 @@
 namespace wasm {
 
 using namespace decode;
+using namespace filt;
 
 namespace interp {
 
@@ -134,7 +135,41 @@ void ByteWriteStream::writeVaruint64Bits(uint64_t Value,
   writeLEB128<uint64_t>(Value, Pos);
 }
 
-void ByteWriteStream::alignToByte(decode::WriteCursor& Pos) {
+bool ByteWriteStream::writeValue(IntType Value,
+                                 WriteCursor &Pos,
+                                 const Node* Format) {
+  switch (Format->getType()) {
+    case OpUint8:
+      writeUint8(Value, Pos);
+      return true;
+    case OpUint32:
+      writeUint32(Value, Pos);
+      return true;
+    case OpUint64:
+      writeUint64(Value, Pos);
+      return true;
+    case OpVarint32:
+      writeVarint32(Value, Pos);
+      return true;
+    case OpVarint64:
+      writeVarint64(Value, Pos);
+      return true;
+    case OpVaruint32:
+      writeVaruint32(Value, Pos);
+      return true;
+    case OpVaruint64:
+      writeVaruint64(Value, Pos);
+    default:
+      return false;
+  }
+}
+
+bool ByteWriteStream::writeAction(WriteCursor& Pos,
+                                  const CallbackNode* Action) {
+  return true;
+}
+
+void  ByteWriteStream::alignToByte(decode::WriteCursor& Pos) {
 }
 
 size_t ByteWriteStream::getStreamAddress(WriteCursor& Pos) {

@@ -58,6 +58,11 @@ class ByteWriteStream FINAL : public WriteStream {
   void writeVaruint64Bits(uint64_t Value,
                           decode::WriteCursor& Pos,
                           uint32_t NumBits) OVERRIDE;
+  bool writeValue(decode::IntType Value,
+                  decode::WriteCursor& Pos,
+                  const filt::Node* Format) OVERRIDE;
+  bool writeAction(decode::WriteCursor& Pos,
+                   const filt::CallbackNode* Action) OVERRIDE;
   void alignToByte(decode::WriteCursor& Pos) OVERRIDE;
   size_t getStreamAddress(decode::WriteCursor& Pos) OVERRIDE;
   void writeFixedBlockSize(decode::WriteCursor& Pos, size_t BlockSize) OVERRIDE;
