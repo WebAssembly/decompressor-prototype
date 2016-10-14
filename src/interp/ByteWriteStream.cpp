@@ -87,51 +87,37 @@ void writeFixed(Type Value, WriteCursor& Pos) {
 
 }  // end of anonymous namespace
 
-void ByteWriteStream::writeUint8Bits(uint8_t Value,
-                                     WriteCursor& Pos,
-                                     uint32_t /*NumBits*/) {
+void ByteWriteStream::writeUint8(uint8_t Value, WriteCursor& Pos) {
   Pos.writeByte(uint8_t(Value));
 }
 
-void ByteWriteStream::writeUint32Bits(uint32_t Value,
-                                      WriteCursor& Pos,
-                                      uint32_t /*NumBits*/) {
+void ByteWriteStream::writeUint32(uint32_t Value, WriteCursor& Pos) {
   writeFixed<uint32_t>(Value, Pos);
 }
 
-void ByteWriteStream::writeUint64Bits(uint64_t Value,
-                                      WriteCursor& Pos,
-                                      uint32_t /*NumBits*/) {
+void ByteWriteStream::writeUint64(uint64_t Value, WriteCursor& Pos) {
   writeFixed<uint64_t>(Value, Pos);
 }
 
-void ByteWriteStream::writeVarint32Bits(int32_t Value,
-                                        WriteCursor& Pos,
-                                        uint32_t /*NumBits*/) {
+void ByteWriteStream::writeVarint32(int32_t Value, WriteCursor& Pos) {
   if (Value < 0)
     writeNegativeLEB128<int32_t>(Value, Pos);
   else
     writePositiveLEB128<int32_t>(Value, Pos);
 }
 
-void ByteWriteStream::writeVarint64Bits(int64_t Value,
-                                        WriteCursor& Pos,
-                                        uint32_t /*NumBits*/) {
+void ByteWriteStream::writeVarint64(int64_t Value, WriteCursor& Pos) {
   if (Value < 0)
     writeNegativeLEB128<int64_t>(Value, Pos);
   else
     writePositiveLEB128<int64_t>(Value, Pos);
 }
 
-void ByteWriteStream::writeVaruint32Bits(uint32_t Value,
-                                         WriteCursor& Pos,
-                                         uint32_t /*NumBits*/) {
+void ByteWriteStream::writeVaruint32(uint32_t Value, WriteCursor& Pos) {
   writeLEB128<uint32_t>(Value, Pos);
 }
 
-void ByteWriteStream::writeVaruint64Bits(uint64_t Value,
-                                         WriteCursor& Pos,
-                                         uint32_t /*NumBits*/) {
+void ByteWriteStream::writeVaruint64(uint64_t Value, WriteCursor& Pos) {
   writeLEB128<uint64_t>(Value, Pos);
 }
 

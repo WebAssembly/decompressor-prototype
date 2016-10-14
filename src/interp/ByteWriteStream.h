@@ -37,27 +37,13 @@ class ByteWriteStream FINAL : public WriteStream {
   static constexpr uint32_t ChunksInWord =
       (BitsInWord + ChunkSize - 1) / ChunkSize;
   ByteWriteStream() : WriteStream(decode::StreamType::Byte) {}
-  void writeUint8Bits(uint8_t Value,
-                      decode::WriteCursor& Pos,
-                      uint32_t NumBits) OVERRIDE;
-  void writeUint32Bits(uint32_t Value,
-                       decode::WriteCursor& Pos,
-                       uint32_t NumBits) OVERRIDE;
-  void writeUint64Bits(uint64_t Value,
-                       decode::WriteCursor& Pos,
-                       uint32_t NumBits) OVERRIDE;
-  void writeVarint32Bits(int32_t Value,
-                         decode::WriteCursor& Pos,
-                         uint32_t NumBits) OVERRIDE;
-  void writeVarint64Bits(int64_t Value,
-                         decode::WriteCursor& Pos,
-                         uint32_t NumBits) OVERRIDE;
-  void writeVaruint32Bits(uint32_t Value,
-                          decode::WriteCursor& Pos,
-                          uint32_t NumBits) OVERRIDE;
-  void writeVaruint64Bits(uint64_t Value,
-                          decode::WriteCursor& Pos,
-                          uint32_t NumBits) OVERRIDE;
+  void writeUint8(uint8_t Value, decode::WriteCursor& Pos) OVERRIDE;
+  void writeUint32(uint32_t Value, decode::WriteCursor& Pos) OVERRIDE;
+  void writeUint64(uint64_t Value, decode::WriteCursor& Pos) OVERRIDE;
+  void writeVarint32(int32_t Value, decode::WriteCursor& Pos) OVERRIDE;
+  void writeVarint64(int64_t Value, decode::WriteCursor& Pos) OVERRIDE;
+  void writeVaruint32(uint32_t Value, decode::WriteCursor& Pos) OVERRIDE;
+  void writeVaruint64(uint64_t Value, decode::WriteCursor& Pos) OVERRIDE;
   bool writeValue(decode::IntType Value,
                   decode::WriteCursor& Pos,
                   const filt::Node* Format) OVERRIDE;
