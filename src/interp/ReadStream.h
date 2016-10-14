@@ -75,6 +75,9 @@ class ReadStream : public std::enable_shared_from_this<ReadStream> {
   virtual uint64_t readVaruint64Bits(decode::ReadCursor& Pos,
                                      uint32_t NumBits) = 0;
 
+  virtual decode::IntType readValue(decode::ReadCursor& Pos,
+                                    const filt::Node* Format) = 0;
+
   // Align to nearest (next) byte boundary.
   virtual void alignToByte(decode::ReadCursor& Pos) = 0;
 

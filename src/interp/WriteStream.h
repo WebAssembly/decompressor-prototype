@@ -86,6 +86,13 @@ class WriteStream : public std::enable_shared_from_this<WriteStream> {
                                   decode::WriteCursor& Pos,
                                   uint32_t NumBits) = 0;
 
+  virtual bool writeValue(decode::IntType Value,
+                          decode::WriteCursor& Pos,
+                          const filt::Node* Format) = 0;
+
+  virtual bool writeAction(decode::WriteCursor& Pos,
+                           const filt::CallbackNode* Action) = 0;
+
   virtual void alignToByte(decode::WriteCursor& Pos) = 0;
 
   // The following virtuals are used to implement blocks.

@@ -240,6 +240,7 @@ class Interpreter {
 
   void failBadState();
   void failNotImplemented();
+  void failCantWrite();
 
   // Initializes all internal stacks, for an initial call to Method with
   // argument Nd.
@@ -262,18 +263,13 @@ class Interpreter {
     return isWriteModifier(Frame.CallModifier);
   }
 
-  // Sets up code to call Method with argument Nd.
-  void call(Method Method, const filt::Node* Nd) {
-    call(Method, MethodModifier::ReadAndWrite, Nd);
-  }
-
   // Sets up code to call write method Method with arguments Nd and WriteValue.
   // Note: Method may not be Method::Write. Rather, it may be some intermediate
   // method that sets up a call to Method::Write using field DispatchesMethod.
   void callWrite(Method Method,
                  const filt::Node* Nd,
                  decode::IntType WriteValue) {
-    call(Method, Nd);
+    call(Method, MethodModifier::ReadAndWrite, Nd);
     WriteValueStack.push(WriteValue);
   }
 
@@ -281,20 +277,6 @@ class Interpreter {
     FrameStack.pop();
     Frame.ReturnValue = Value;
     TRACE(IntType, "returns", Value);
-  }
-
-  // Sets up code to return from method Write to the calling method.
-  void popAndReturnWriteValue() {
-    assert(Frame.CallMethod == Method::Write);
-    popAndReturn(WriteValue);
-    WriteValueStack.pop();
-  }
-
-  // Sets up code to return from method Read to the calling method, returning
-  // Value.
-  void popAndReturnReadValue(decode::IntType Value) {
-    LastReadValue = Value;
-    popAndReturn(Value);
   }
 
   void traceEnterFrame() {

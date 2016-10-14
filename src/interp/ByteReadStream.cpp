@@ -21,6 +21,7 @@
 namespace {
 
 using namespace wasm::decode;
+using namespace wasm::filt;
 
 template <class Type>
 Type readFixed(ReadCursor& Pos) {
@@ -101,6 +102,29 @@ uint32_t ByteReadStream::readVaruint32Bits(ReadCursor& Pos,
 uint64_t ByteReadStream::readVaruint64Bits(ReadCursor& Pos,
                                            uint32_t /*NumBits*/) {
   return readLEB128<uint64_t>(Pos);
+}
+
+IntType ByteReadStream::readValue(decode::ReadCursor& Pos,
+                                  const filt::Node* Format) {
+  switch (Format->getType()) {
+    case OpUint32:
+      return readUint32(Pos);
+    case OpUint64:
+      return readUint64(Pos);
+    case OpUint8:
+      return readUint8(Pos);
+    case OpVarint32:
+      return readVarint32(Pos);
+    case OpVarint64:
+      return readVarint64(Pos);
+    case OpVaruint32:
+      return readVaruint32(Pos);
+    case OpVaruint64:
+      return readVaruint64(Pos);
+    default:
+      fatal("readValue not defined for format!");
+      return 0;
+  }
 }
 
 void ByteReadStream::alignToByte(ReadCursor& /*Pos*/) {
