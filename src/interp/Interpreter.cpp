@@ -58,119 +58,23 @@ namespace interp {
 
 namespace {
 
-static constexpr uint32_t MaxExpectedSectionNameSize = 32;
-
 static constexpr size_t DefaultStackSize = 256;
-static constexpr size_t DefaultExpectedLocals = 3;
-
-const char* SectionCodeName[] = {
-#define X(code, value) #code
-    SECTION_CODES_TABLE
-#undef X
-};
-
-const char* MethodName[] = {
-#define X(tag) #tag,
-    INTERPRETER_METHODS_TABLE
-#undef X
-    "NO_SUCH_METHOD"};
-
-const char* StateName[] = {
-#define X(tag) #tag,
-    INTERPRETER_STATES_TABLE
-#undef X
-    "NO_SUCH_STATE"};
-
-const char* MethodModifierName[] = {
-#define X(tag, flags) #tag,
-    INTERPRETER_METHOD_MODIFIERS_TABLE
-#undef X
-    "NO_SUCH_METHOD_MODIFIER"};
 
 }  // end of anonymous namespace
-
-const char* Interpreter::getName(Method M) {
-  size_t Index = size_t(M);
-  if (Index >= size(MethodName))
-    Index = size_t(Method::NO_SUCH_METHOD);
-  return MethodName[Index];
-}
-
-const char* Interpreter::getName(MethodModifier Modifier) {
-  size_t Index = size_t(Modifier);
-  if (Index >= size(MethodModifierName))
-    Index = size_t(MethodModifier::NO_SUCH_METHOD_MODIFIER);
-  return MethodModifierName[Index];
-}
-
-const char* Interpreter::getName(State S) {
-  size_t Index = size_t(S);
-  if (Index >= size(StateName))
-    Index = size_t(State::NO_SUCH_STATE);
-  return StateName[Index];
-}
-
-const char* Interpreter::getName(SectionCode Code) {
-  size_t Index = size_t(Code);
-  if (Index >= size(SectionCodeName))
-    Index = size_t(SectionCode::NO_SUCH_SECTION_CODE);
-  return SectionCodeName[Index];
-}
 
 Interpreter::Interpreter(std::shared_ptr<Queue> Input,
                          std::shared_ptr<Queue> Output,
                          std::shared_ptr<SymbolTable> Symtab)
-    : ReadPos(StreamType::Byte, Input),
-      Reader(std::make_shared<ByteReadStream>()),
+    : Reader(Input, Symtab, Trace),
+      Symtab(Symtab),
       WritePos(StreamType::Byte, Output),
       Writer(std::make_shared<ByteWriteStream>()),
-      Symtab(Symtab),
-      LastReadValue(0),
-      DispatchedMethod(Method::NO_SUCH_METHOD),
       MinimizeBlockSize(false),
       Trace(ReadPos, WritePos, "InterpSexp"),
-      FrameStack(Frame),
-      CallingEvalStack(CallingEval),
       WriteValueStack(WriteValue),
-      PeekPosStack(PeekPos),
-      BlockStartStack(BlockStart),
-      LoopCounter(0),
-      LoopCounterStack(LoopCounter),
-      LocalsBase(0),
-      LocalsBaseStack(LocalsBase),
-      OpcodeLocalsStack(OpcodeLocals) {
+      BlockStartStack(BlockStart) {
   DefaultFormat = Symtab->getVaruint64Definition();
-  CurSectionName.reserve(MaxExpectedSectionNameSize);
-  FrameStack.reserve(DefaultStackSize);
   WriteValueStack.reserve(DefaultStackSize);
-  CallingEvalStack.reserve(DefaultStackSize);
-  LocalsBaseStack.reserve(DefaultStackSize);
-  LocalValues.reserve(DefaultStackSize * DefaultExpectedLocals);
-  OpcodeLocalsStack.reserve(DefaultStackSize);
-}
-
-void Interpreter::CallFrame::describe(FILE* File, TextWriter* Writer) const {
-  fprintf(File, "%s.%s (%s) = %" PRIuMAX ": ", getName(CallMethod),
-          getName(CallState), getName(CallModifier), uintmax_t(ReturnValue));
-  if (Nd)
-    Writer->writeAbbrev(File, Nd);
-  else
-    fprintf(File, "nullptr\n");
-}
-
-void Interpreter::EvalFrame::describe(FILE* File, TextWriter* Writer) const {
-  fprintf(File, "cc = %" PRIuMAX ": ", uintmax_t(CallingEvalIndex));
-  Writer->writeAbbrev(File, Caller);
-}
-
-void Interpreter::OpcodeLocalsFrame::describe(FILE* File,
-                                              TextWriter* Writer) const {
-  fprintf(File, "OpcodeFrame <%" PRIuMAX ",%" PRIuMAX "> ", uintmax_t(SelShift),
-          uintmax_t(CaseMask));
-  if (Writer && Case != nullptr)
-    Writer->writeAbbrev(File, Case);
-  else
-    fprintf(File, "%p\n", (void*)Case);
 }
 
 #if LOG_FUNCTIONS || LOG_NUMBERED_BLOCK
@@ -179,52 +83,11 @@ uint32_t LogBlockCount = 0;
 }  // end of anonymous namespace
 #endif
 
-void Interpreter::describeFrameStack(FILE* File) {
-  fprintf(File, "*** Frame Stack ***\n");
-  for (auto& Frame : FrameStack)
-    Frame.describe(File, getTrace().getTextWriter());
-  fprintf(File, "*******************\n");
-}
-
 void Interpreter::describeWriteValueStack(FILE* File) {
   fprintf(File, "*** WriteValue Stack ***\n");
   for (auto& Value : WriteValueStack.iterRange(1))
     fprintf(File, "%" PRIuMAX "\n", uintmax_t(Value));
   fprintf(File, "************************\n");
-}
-
-void Interpreter::describeCallingEvalStack(FILE* File) {
-  fprintf(File, "*** Eval Call Stack ****\n");
-  for (const auto& Frame : CallingEvalStack.iterRange(1))
-    Frame.describe(File, getTrace().getTextWriter());
-  fprintf(File, "************************\n");
-}
-
-void Interpreter::describePeekPosStack(FILE* File) {
-  fprintf(File, "*** Peek Pos Stack ***\n");
-  fprintf(File, "**********************\n");
-  for (const auto& Pos : PeekPosStack.iterRange(1))
-    fprintf(File, "@%" PRIxMAX "\n", uintmax_t(Pos.getCurAddress()));
-  fprintf(File, "**********************\n");
-}
-
-void Interpreter::describeLoopCounterStack(FILE* File) {
-  fprintf(File, "*** Loop Counter Stack ***\n");
-  for (const auto& Count : LoopCounterStack.iterRange(1))
-    fprintf(File, "%" PRIxMAX "\n", uintmax_t(Count));
-  fprintf(File, "**************************\n");
-}
-
-void Interpreter::describeLocalsStack(FILE* File) {
-  fprintf(File, "*** Locals Base Stack ***\n");
-  size_t BaseIndex = 0;
-  for (const auto& Index : LocalsBaseStack.iterRange(1)) {
-    fprintf(File, "%" PRIuMAX ":\n", uintmax_t(Index));
-    for (size_t i = BaseIndex; i < Index; ++i) {
-      fprintf(File, "  %" PRIuMAX "\n", LocalValues[i]);
-    }
-  }
-  fprintf(File, "*************************\n");
 }
 
 void Interpreter::describeBlockStartStack(FILE* File) {
@@ -234,60 +97,19 @@ void Interpreter::describeBlockStartStack(FILE* File) {
   fprintf(File, "*************************\n");
 }
 
-void Interpreter::describeOpcodeLocalStack(FILE* File) {
-  fprintf(File, "*** Opcode Stack ***\n");
-  for (auto& Frame : OpcodeLocalsStack.iterRange(1))
-    Frame.describe(File, getTrace().getTextWriter());
-  fprintf(File, "********************\n");
-}
-
 void Interpreter::describeAllNonemptyStacks(FILE* File) {
-  describeFrameStack(File);
+  Reader::describeAllNonemptyStacks(File);
   if (!WriteValueStack.empty())
     describeWriteValueStack(File);
-  if (!CallingEvalStack.empty())
-    describeCallingEvalStack(File);
-  if (!PeekPosStack.empty())
-    describePeekPosStack(File);
-  if (!LoopCounterStack.empty())
-    describeLoopCounterStack(File);
   if (!BlockStartStack.empty())
     describeBlockStartStack(File);
-  if (!LocalsBaseStack.empty())
-    describeLocalsStack(File);
-  if (!OpcodeLocalsStack.empty())
-    describeOpcodeLocalStack(File);
 }
 
-void Interpreter::callTopLevel(Method Method, const filt::Node* Nd) {
-  // First verify stacks cleared.
-  Frame.reset();
-  FrameStack.clear();
+void Interpreter::clearStacksExceptFrame() {
   WriteValue = 0;
   WriteValueStack.clear();
-  PeekPos = ReadCursor();
-  PeekPosStack.clear();
-  LoopCounter = 0;
-  LoopCounterStack.clear();
   BlockStart = WriteCursor();
   BlockStartStack.clear();
-  LocalsBase = 0;
-  LocalsBaseStack.clear();
-  LocalValues.clear();
-  OpcodeLocals.reset();
-  OpcodeLocalsStack.clear();
-  call(Method, MethodModifier::ReadAndWrite, Nd);
-}
-
-void Interpreter::traceEnterFrameInternal() {
-  // Note: Enclosed in TRACE_BLOCK so that g++ will not complain when
-  // compiled in release mode.
-  TRACE_BLOCK({
-    TRACE_ENTER(getName(Frame.CallMethod));
-    TRACE_SEXP("Nd", Frame.Nd);
-    if (Frame.CallModifier != MethodModifier::ReadAndWrite)
-      TRACE_MESSAGE(std::string("(") + getName(Frame.CallModifier) + ")");
-  });
 }
 
 void Interpreter::readBackFilled() {
@@ -300,39 +122,6 @@ void Interpreter::readBackFilled() {
       FillPos.advance(Page::Size);
     resume();
   }
-}
-
-void Interpreter::fail() {
-  TRACE_MESSAGE("method failed");
-  while (!FrameStack.empty()) {
-    traceExitFrame();
-    popAndReturn();
-  }
-  Frame.fail();
-}
-
-void Interpreter::fail(const std::string& Message) {
-  FILE* Out = getTrace().getFile();
-  if (Frame.Nd) {
-    fprintf(Out, "Error: ");
-    getTrace().getTextWriter()->writeAbbrev(Out, Frame.Nd);
-  }
-  fprintf(Out, "Error: (method %s) %s\n", getName(Frame.CallMethod),
-          Message.c_str());
-  fail();
-}
-
-void Interpreter::failBadState() {
-  fail(std::string("Bad internal decompressor state in method: ") +
-       getName(Frame.CallMethod));
-}
-
-void Interpreter::failNotImplemented() {
-  fail("Method not implemented!");
-}
-
-void Interpreter::failCantWrite() {
-  fail("Unable to write value");
 }
 
 void Interpreter::resume() {
@@ -370,7 +159,7 @@ void Interpreter::resume() {
               Frame.CallState = State::Exit;
               break;
             }
-            Writer->writeUint8(Reader->readUint8(ReadPos), WritePos);
+            Writer->writeUint8(InputReader->readUint8(ReadPos), WritePos);
             break;
           case State::Exit:
             popAndReturn();
@@ -465,7 +254,8 @@ void Interpreter::resume() {
               case State::Enter:
                 PeekPosStack.push(ReadPos);
                 Frame.CallState = State::Exit;
-                call(Method::Eval, MethodModifier::ReadOnly, Frame.Nd->getKid(0));
+                call(Method::Eval, MethodModifier::ReadOnly,
+                     Frame.Nd->getKid(0));
                 break;
               case State::Exit:
                 ReadPos = PeekPos;
@@ -502,10 +292,9 @@ void Interpreter::resume() {
           case OpVarint32:
           case OpVarint64:
           case OpVaruint32:
-          case OpVaruint64:
-            {
+          case OpVaruint64: {
             traceEnterFrame();
-            IntType Value = Reader->readValue(ReadPos, Frame.Nd);
+            IntType Value = InputReader->readValue(ReadPos, Frame.Nd);
             if (hasReadMode())
               LastReadValue = Value;
             if (hasWriteMode()) {
@@ -573,7 +362,8 @@ void Interpreter::resume() {
             }
             break;
           case OpWrite:  // Method::Eval
-            // TODO(karlschimpf) Generalize this to accept arbitrary expressions.
+            // TODO(karlschimpf) Generalize this to accept arbitrary
+            // expressions.
             switch (Frame.CallState) {
               case State::Enter:
                 traceEnterFrame();
@@ -603,7 +393,7 @@ void Interpreter::resume() {
               case StreamKind::Input:
                 switch (Stream->getStreamType()) {
                   case StreamType::Byte:
-                    Result = isa<ByteReadStream>(Reader.get());
+                    Result = isa<ByteReadStream>(InputReader.get());
                     break;
                   case StreamType::Bit:
                   case StreamType::Int:
@@ -652,12 +442,14 @@ void Interpreter::resume() {
               case State::Enter:
                 traceEnterFrame();
                 Frame.CallState = State::Step2;
-                call(Method::Eval, MethodModifier::ReadOnly, Frame.Nd->getKid(0));
+                call(Method::Eval, MethodModifier::ReadOnly,
+                     Frame.Nd->getKid(0));
                 break;
               case State::Step2:
                 Frame.CallState = State::Exit;
                 if (Frame.ReturnValue != 0)
-                  call(Method::Eval, MethodModifier::ReadOnly, Frame.Nd->getKid(1));
+                  call(Method::Eval, MethodModifier::ReadOnly,
+                       Frame.Nd->getKid(1));
                 break;
               case State::Exit: {
                 popAndReturn(Frame.ReturnValue);
@@ -674,12 +466,14 @@ void Interpreter::resume() {
               case State::Enter:
                 traceEnterFrame();
                 Frame.CallState = State::Step2;
-                call(Method::Eval, MethodModifier::ReadOnly, Frame.Nd->getKid(0));
+                call(Method::Eval, MethodModifier::ReadOnly,
+                     Frame.Nd->getKid(0));
                 break;
               case State::Step2:
                 Frame.CallState = State::Exit;
                 if (Frame.ReturnValue == 0)
-                  call(Method::Eval, MethodModifier::ReadOnly, Frame.Nd->getKid(1));
+                  call(Method::Eval, MethodModifier::ReadOnly,
+                       Frame.Nd->getKid(1));
                 break;
               case State::Exit: {
                 popAndReturn(Frame.ReturnValue);
@@ -771,7 +565,8 @@ void Interpreter::resume() {
               case State::Enter:
                 traceEnterFrame();
                 Frame.CallState = State::Step2;
-                call(Method::Eval, MethodModifier::ReadOnly, Frame.Nd->getKid(0));
+                call(Method::Eval, MethodModifier::ReadOnly,
+                     Frame.Nd->getKid(0));
                 break;
               case State::Step2:
                 Frame.CallState = State::Exit;
@@ -792,7 +587,8 @@ void Interpreter::resume() {
               case State::Enter:
                 traceEnterFrame();
                 Frame.CallState = State::Step2;
-                call(Method::Eval, MethodModifier::ReadOnly, Frame.Nd->getKid(0));
+                call(Method::Eval, MethodModifier::ReadOnly,
+                     Frame.Nd->getKid(0));
                 break;
               case State::Step2:
                 Frame.CallState = State::Exit;
@@ -815,7 +611,8 @@ void Interpreter::resume() {
               case State::Enter:
                 traceEnterFrame();
                 Frame.CallState = State::Step2;
-                call(Method::Eval, MethodModifier::ReadOnly, Frame.Nd->getKid(0));
+                call(Method::Eval, MethodModifier::ReadOnly,
+                     Frame.Nd->getKid(0));
                 break;
               case State::Step2: {
                 Frame.CallState = State::Exit;
@@ -949,7 +746,8 @@ void Interpreter::resume() {
 #endif
                 Frame.CallState = State::Exit;
                 DispatchedMethod = Method::Eval;
-                call(Method::EvalBlock, Frame.CallModifier, Frame.Nd->getKid(0));
+                call(Method::EvalBlock, Frame.CallModifier,
+                     Frame.Nd->getKid(0));
                 break;
               case State::Exit:
 #if LOG_FUNCTIONS || LOG_NUMBERED_BLOCKS
@@ -980,9 +778,9 @@ void Interpreter::resume() {
         switch (Frame.CallState) {
           case State::Enter: {
             traceEnterFrame();
-            const uint32_t OldSize = Reader->readBlockSize(ReadPos);
+            const uint32_t OldSize = InputReader->readBlockSize(ReadPos);
             TRACE(uint32_t, "block size", OldSize);
-            Reader->pushEobAddress(ReadPos, OldSize);
+            InputReader->pushEobAddress(ReadPos, OldSize);
             BlockStartStack.push(WritePos);
             Writer->writeFixedBlockSize(WritePos, 0);
             BlockStartStack.push(WritePos);
@@ -1088,7 +886,7 @@ void Interpreter::resume() {
         switch (Frame.CallState) {
           case State::Enter:
             traceEnterFrame();
-            MagicNumber = Reader->readUint32(ReadPos);
+            MagicNumber = InputReader->readUint32(ReadPos);
             TRACE(hex_uint32_t, "magic number", MagicNumber);
             if (MagicNumber != WasmBinaryMagic) {
               fail(
@@ -1096,7 +894,7 @@ void Interpreter::resume() {
               break;
             }
             Writer->writeUint32(MagicNumber, WritePos);
-            Version = Reader->readUint32(ReadPos);
+            Version = InputReader->readUint32(ReadPos);
             TRACE(hex_uint32_t, "version", Version);
             if (Version != WasmBinaryVersion) {
               fail("Unable to compress. WASM version not known");
@@ -1127,7 +925,7 @@ void Interpreter::resume() {
           case State::Enter:
             traceEnterFrame();
             CurSectionName.clear();
-            LoopCounterStack.push(Reader->readVaruint32(ReadPos));
+            LoopCounterStack.push(InputReader->readVaruint32(ReadPos));
             Writer->writeVaruint32(LoopCounter, WritePos);
             Frame.CallState = State::Loop;
             break;
@@ -1137,7 +935,7 @@ void Interpreter::resume() {
               break;
             }
             --LoopCounter;
-            uint8_t Byte = Reader->readUint8(ReadPos);
+            uint8_t Byte = InputReader->readUint8(ReadPos);
             Writer->writeUint8(Byte, WritePos);
             CurSectionName.push_back(char(Byte));
             break;
@@ -1155,7 +953,7 @@ void Interpreter::resume() {
         switch (Frame.CallState) {
           case State::Enter:
             traceEnterFrame();
-            assert(isa<ByteReadStream>(Reader.get()));
+            assert(isa<ByteReadStream>(InputReader.get()));
 #if LOG_SECTIONS
             TRACE(hex_size_t, "SectionAddress", ReadPos.getCurByteAddress());
 #endif
@@ -1175,7 +973,7 @@ void Interpreter::resume() {
             break;
           }
           case State::Exit:
-            Reader->alignToByte(ReadPos);
+            InputReader->alignToByte(ReadPos);
             Writer->alignToByte(WritePos);
             popAndReturn();
             traceExitFrame();
@@ -1196,7 +994,8 @@ void Interpreter::resume() {
               case State::Enter:
                 traceEnterFrame();
                 Frame.CallState = State::Step2;
-                call(Method::ReadOpcode, Frame.CallModifier, Frame.Nd->getKid(0));
+                call(Method::ReadOpcode, Frame.CallModifier,
+                     Frame.Nd->getKid(0));
                 break;
               case State::Step2: {
                 const auto* Sel = cast<OpcodeNode>(Frame.Nd);

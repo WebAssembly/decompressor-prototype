@@ -122,7 +122,7 @@ void ByteWriteStream::writeVaruint64(uint64_t Value, WriteCursor& Pos) {
 }
 
 bool ByteWriteStream::writeValue(IntType Value,
-                                 WriteCursor &Pos,
+                                 WriteCursor& Pos,
                                  const Node* Format) {
   switch (Format->getType()) {
     case OpUint8:
@@ -155,7 +155,7 @@ bool ByteWriteStream::writeAction(WriteCursor& Pos,
   return true;
 }
 
-void  ByteWriteStream::alignToByte(decode::WriteCursor& Pos) {
+void ByteWriteStream::alignToByte(decode::WriteCursor& Pos) {
 }
 
 size_t ByteWriteStream::getStreamAddress(WriteCursor& Pos) {
