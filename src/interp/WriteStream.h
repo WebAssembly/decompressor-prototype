@@ -51,8 +51,6 @@ class WriteStream : public std::enable_shared_from_this<WriteStream> {
   virtual bool writeAction(decode::WriteCursor& Pos,
                            const filt::CallbackNode* Action) = 0;
 
-  virtual void alignToByte(decode::WriteCursor& Pos) = 0;
-
   // The following virtuals are used to implement blocks.
 
   // Returns stream specific address (i.e. bit address for bit streams, byte

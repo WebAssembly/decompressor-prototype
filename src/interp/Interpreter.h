@@ -20,8 +20,9 @@
 #define DECOMPRESSOR_SRC_INTERP_INTERPRETER_H
 
 #include "interp/Reader.h"
-#include "stream/WriteCursor.h"
+#include "interp/TraceSexpReaderWriter.h"
 #include "interp/WriteStream.h"
+#include "stream/WriteCursor.h"
 
 namespace wasm {
 
@@ -51,11 +52,6 @@ class Interpreter FINAL : public Reader {
   // to the corresponding output.
   void decompress();
 
-  // Resumes decompression where it left off. Assumes that more
-  // input has been added since the previous start()/resume() call.
-  // Resume should be called until isFinished() is true.
-  void resume();
-
   void setTraceProgress(bool NewValue) { Trace.setTraceProgress(NewValue); }
 
   void setMinimizeBlockSize(bool NewValue) { MinimizeBlockSize = NewValue; }
@@ -78,6 +74,17 @@ class Interpreter FINAL : public Reader {
   utils::ValueStack<decode::WriteCursor> BlockStartStack;
 
   void clearStacksExceptFrame() OVERRIDE;
+  bool writeUint8(uint8_t Value) OVERRIDE;
+  bool writeUint32(uint32_t Value) OVERRIDE;
+  bool writeUint64(uint64_t Value) OVERRIDE;
+  bool writeVarint32(int32_t Value) OVERRIDE;
+  bool writeVarint64(int64_t Value) OVERRIDE;
+  bool writeVaruint32(uint32_t Value) OVERRIDE;
+  bool writeVaruint64(uint64_t Value) OVERRIDE;
+  bool writeFreezeEof() OVERRIDE;
+  bool writeValue(decode::IntType Value, const filt::Node* Format) OVERRIDE;
+  bool writeAction(const filt::CallbackNode* Action) OVERRIDE;
+  bool isWriteToByteStream() const OVERRIDE;
 
   // Sets up code to call write method Method with arguments Nd and WriteValue.
   // Note: Method may not be Method::Write. Rather, it may be some intermediate
@@ -88,8 +95,6 @@ class Interpreter FINAL : public Reader {
     call(Method, MethodModifier::ReadAndWrite, Nd);
     WriteValueStack.push(WriteValue);
   }
-
-  void readBackFilled();
 
   // For debugging only.
   void describeWriteValueStack(FILE* Out);

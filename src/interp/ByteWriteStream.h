@@ -49,7 +49,6 @@ class ByteWriteStream FINAL : public WriteStream {
                   const filt::Node* Format) OVERRIDE;
   bool writeAction(decode::WriteCursor& Pos,
                    const filt::CallbackNode* Action) OVERRIDE;
-  void alignToByte(decode::WriteCursor& Pos) OVERRIDE;
   size_t getStreamAddress(decode::WriteCursor& Pos) OVERRIDE;
   void writeFixedBlockSize(decode::WriteCursor& Pos, size_t BlockSize) OVERRIDE;
   void writeVarintBlockSize(decode::WriteCursor& Pos,
