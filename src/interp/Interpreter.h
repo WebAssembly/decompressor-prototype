@@ -20,8 +20,9 @@
 #define DECOMPRESSOR_SRC_INTERP_INTERPRETER_H
 
 #include "interp/Reader.h"
-#include "stream/WriteCursor.h"
+#include "interp/TraceSexpReaderWriter.h"
 #include "interp/WriteStream.h"
+#include "stream/WriteCursor.h"
 
 namespace wasm {
 
@@ -78,6 +79,15 @@ class Interpreter FINAL : public Reader {
   utils::ValueStack<decode::WriteCursor> BlockStartStack;
 
   void clearStacksExceptFrame() OVERRIDE;
+  bool writeUint8(uint8_t Value) OVERRIDE;
+  bool writeUint32(uint32_t Value) OVERRIDE;
+  bool writeUint64(uint64_t Value) OVERRIDE;
+  bool writeVarint32(int32_t Value) OVERRIDE;
+  bool writeVarint64(int64_t Value) OVERRIDE;
+  bool writeVaruint32(uint32_t Value) OVERRIDE;
+  bool writeVaruint64(uint64_t Value) OVERRIDE;
+  bool writeValue(decode::IntType Value, const filt::Node* Format) OVERRIDE;
+  bool writeAction(const filt::CallbackNode* Action) OVERRIDE;
 
   // Sets up code to call write method Method with arguments Nd and WriteValue.
   // Note: Method may not be Method::Write. Rather, it may be some intermediate

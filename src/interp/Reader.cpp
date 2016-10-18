@@ -91,7 +91,7 @@ const char* Reader::getName(SectionCode Code) {
 
 Reader::Reader(std::shared_ptr<decode::Queue> Input,
                std::shared_ptr<filt::SymbolTable> Symtab,
-               TraceClassSexpReaderWriter& Trace)
+               TraceClassSexp& Trace)
     : ReadPos(StreamType::Byte, Input),
       InputReader(std::make_shared<ByteReadStream>()),
       Symtab(Symtab),
@@ -225,6 +225,42 @@ void Reader::clearStacksExceptFrame() {
   LocalValues.clear();
   OpcodeLocals.reset();
   OpcodeLocalsStack.clear();
+}
+
+bool Reader::writeUint8(uint8_t) {
+  return true;
+}
+
+bool Reader::writeUint32(uint32_t) {
+  return true;
+}
+
+bool Reader::writeUint64(uint64_t) {
+  return true;
+}
+
+bool Reader::writeVarint32(int32_t) {
+  return true;
+}
+
+bool Reader::writeVarint64(int64_t) {
+  return true;
+}
+
+bool Reader::writeVaruint32(uint32_t) {
+  return true;
+}
+
+bool Reader::writeVaruint64(uint64_t) {
+  return true;
+}
+
+bool Reader::writeValue(IntType Value, const Node* Format) {
+  return true;
+}
+
+bool Reader::writeAction(const CallbackNode* Action) {
+  return true;
 }
 
 void Reader::callTopLevel(Method Method, const filt::Node* Nd) {

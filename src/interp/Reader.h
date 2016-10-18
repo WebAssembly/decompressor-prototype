@@ -23,7 +23,7 @@
 #include "stream/ReadCursor.h"
 #include "interp/Interpreter.def"
 #include "interp/ReadStream.h"
-#include "interp/TraceSexpReaderWriter.h"
+#include "sexp/TraceSexp.h"
 #include "utils/ValueStack.h"
 
 namespace wasm {
@@ -38,7 +38,7 @@ class Reader {
  public:
   Reader(std::shared_ptr<decode::Queue> Input,
          std::shared_ptr<filt::SymbolTable> Symtab,
-         TraceClassSexpReaderWriter& Trace);
+         filt::TraceClassSexp& Trace);
   ~Reader() {}
 
   // Starts up decompression.
@@ -57,7 +57,7 @@ class Reader {
   // Force interpretation to fail.
   void fail(const std::string& Message);
 
-  TraceClassSexpReaderWriter& getTrace() { return Trace; }
+  filt::TraceClassSexp& getTrace() { return Trace; }
 
   enum class SectionCode : uint32_t {
 #define X(code, value) code = value,
@@ -170,7 +170,7 @@ class Reader {
   // Holds the method to call (i.e. dispatch) if code expects a method to be
   // provided by the caller.
   Method DispatchedMethod;
-  TraceClassSexpReaderWriter& Trace;
+  filt::TraceClassSexp& Trace;
 
   // The stack of called methods.
   CallFrame Frame;
@@ -206,6 +206,18 @@ class Reader {
 
   void clearFrameStack();
   virtual void clearStacksExceptFrame();
+
+  // Override the following as needed. These methods return false if the writes
+  // failed. Default actions are to do nothing and return true.
+  virtual bool writeUint8(uint8_t Value);
+  virtual bool writeUint32(uint32_t Value);
+  virtual bool writeUint64(uint64_t Value);
+  virtual bool writeVarint32(int32_t Value);
+  virtual bool writeVarint64(int64_t Value);
+  virtual bool writeVaruint32(uint32_t Value);
+  virtual bool writeVaruint64(uint64_t Value);
+  virtual bool writeValue(decode::IntType Value, const filt::Node* Format);
+  virtual bool writeAction(const filt::CallbackNode* Action);
 
   // Initializes all internal stacks, for an initial call to Method with
   // argument Nd.

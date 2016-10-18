@@ -123,9 +123,6 @@ IntType ByteReadStream::readValue(decode::ReadCursor& Pos,
   }
 }
 
-void ByteReadStream::alignToByte(ReadCursor& /*Pos*/) {
-}
-
 size_t ByteReadStream::readBlockSize(decode::ReadCursor& Pos) {
   return readVaruint32(Pos);
 }

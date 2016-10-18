@@ -57,6 +57,7 @@ class IntegerNode;
 class Node;
 class SymbolNode;
 class SymbolTable;
+class CallbackNode;
 
 #define X(tag, format, defval, mergable, NODE_DECLS) class tag##Node;
 AST_INTEGERNODE_TABLE
@@ -176,6 +177,9 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
   tag##Node* get##tag##Definition();
   AST_INTEGERNODE_TABLE
 #undef X
+  // Gets actions corresponding to enter/exit block.
+  const CallbackNode* getBlockEnterCallback() const { return BlockEnterCallback; }
+  const CallbackNode* getBlockExitCallback() const { return BlockExitCallback; }
   // Install definitions in tree defined by root.
   void install(Node* Root);
   std::shared_ptr<alloc::Allocator> getAllocator() const { return Alloc; }
@@ -202,6 +206,8 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
   // TODO(karlschimpf): Use arena allocator on map.
   std::map<IntegerValue, IntegerNode*> IntMap;
   std::vector<SymbolNode*> Predefined;
+  CallbackNode* BlockEnterCallback;
+  CallbackNode* BlockExitCallback;
 
   void init();
 

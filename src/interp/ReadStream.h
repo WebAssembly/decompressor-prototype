@@ -56,9 +56,6 @@ class ReadStream : public std::enable_shared_from_this<ReadStream> {
   virtual decode::IntType readValue(decode::ReadCursor& Pos,
                                     const filt::Node* Format) = 0;
 
-  // Align to nearest (next) byte boundary.
-  virtual void alignToByte(decode::ReadCursor& Pos) = 0;
-
   // The following virtuals are used to implement blocks.
 
   // Reads in the stream specific block size.

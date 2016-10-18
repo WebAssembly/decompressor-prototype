@@ -155,9 +155,6 @@ bool ByteWriteStream::writeAction(WriteCursor& Pos,
   return true;
 }
 
-void ByteWriteStream::alignToByte(decode::WriteCursor& Pos) {
-}
-
 size_t ByteWriteStream::getStreamAddress(WriteCursor& Pos) {
   return Pos.getCurByteAddress();
 }

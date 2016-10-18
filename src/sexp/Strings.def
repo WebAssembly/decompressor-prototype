@@ -17,6 +17,8 @@
 
 //#define X(tag, name)
 #define PREDEFINED_SYMBOLS_TABLE                                               \
+X(BlockEnter, "block.enter")                                                   \
+X(BlockExit, "block.exit")                                                     \
 X(Code, "code")                                                                \
 X(CodeAddress, "code.address")                                                 \
 X(CodeBrTable, "code.br_table")                                                \

@@ -112,6 +112,97 @@ void Interpreter::clearStacksExceptFrame() {
   BlockStartStack.clear();
 }
 
+bool Interpreter::writeUint8(uint8_t Value) {
+  Writer->writeUint8(Value, WritePos);
+  return true;
+}
+
+bool Interpreter::writeUint32(uint32_t Value) {
+  Writer->writeUint32(Value, WritePos);
+  return true;
+}
+
+bool Interpreter::writeUint64(uint64_t Value) {
+  Writer->writeUint64(Value, WritePos);
+  return true;
+}
+
+bool Interpreter::writeVarint32(int32_t Value) {
+  Writer->writeVarint32(Value, WritePos);
+  return true;
+}
+
+bool Interpreter::writeVarint64(int64_t Value) {
+  Writer->writeVarint64(Value, WritePos);
+  return true;
+}
+
+bool Interpreter::writeVaruint32(uint32_t Value) {
+  Writer->writeVaruint32(Value, WritePos);
+  return true;
+}
+
+bool Interpreter::writeVaruint64(uint64_t Value) {
+  Writer->writeVaruint64(Value, WritePos);
+  return true;
+}
+
+bool Interpreter::writeValue(IntType Value, const Node* Format) {
+  if (Writer->writeValue(LastReadValue, WritePos, Frame.Nd))
+    return true;
+  failCantWrite();
+  return false;
+}
+
+bool Interpreter::writeAction(const filt::CallbackNode* Action) {
+  const auto* Sym = dyn_cast<SymbolNode>(Action->getKid(0));
+  if (Sym == nullptr) {
+    failNotImplemented();
+    return false;
+  }
+  switch (Sym->getPredefinedSymbol()) {
+    case PredefinedSymbol::BlockEnter:
+      BlockStartStack.push(WritePos);
+      Writer->writeFixedBlockSize(WritePos, 0);
+      BlockStartStack.push(WritePos);
+      return true;
+    case PredefinedSymbol::BlockExit:
+      if (MinimizeBlockSize) {
+        // Mimimized block. Backpatch new size of block. If needed, move
+        // block to fill gap between fixed and variable widths for block
+        // size.
+        WriteCursor WritePosAfterSizeWrite(BlockStart);
+        BlockStartStack.pop();
+        const size_t NewSize = Writer->getBlockSize(BlockStart, WritePos);
+        TRACE(uint32_t, "New block size", NewSize);
+        Writer->writeVarintBlockSize(BlockStart, NewSize);
+        size_t SizeAfterBackPatch = Writer->getStreamAddress(BlockStart);
+        size_t SizeAfterSizeWrite =
+            Writer->getStreamAddress(WritePosAfterSizeWrite);
+        size_t Diff = SizeAfterSizeWrite - SizeAfterBackPatch;
+        if (Diff) {
+          size_t CurAddress = Writer->getStreamAddress(WritePos);
+          Writer->moveBlock(BlockStart, SizeAfterSizeWrite,
+                            (CurAddress - Diff) - SizeAfterBackPatch);
+          WritePos.swap(BlockStart);
+        }
+      } else {
+        // Non-minimized block. Just backpatch in new size.
+        WriteCursor WritePosAfterSizeWrite(BlockStart);
+        BlockStartStack.pop();
+        const size_t NewSize = Writer->getBlockSize(BlockStart, WritePos);
+        TRACE(uint32_t, "New block size", NewSize);
+        Writer->writeFixedBlockSize(BlockStart, NewSize);
+      }
+      BlockStartStack.pop();
+      return true;
+    default:
+      break;
+  }
+  failCantWrite();
+  return false;
+}
+
 void Interpreter::readBackFilled() {
 #if LOG_RUNMETHODS
   TRACE_METHOD("readBackFilled");
@@ -159,7 +250,8 @@ void Interpreter::resume() {
               Frame.CallState = State::Exit;
               break;
             }
-            Writer->writeUint8(InputReader->readUint8(ReadPos), WritePos);
+            LastReadValue = InputReader->readUint8(ReadPos);
+            writeUint8(LastReadValue);
             break;
           case State::Exit:
             popAndReturn();
@@ -298,10 +390,8 @@ void Interpreter::resume() {
             if (hasReadMode())
               LastReadValue = Value;
             if (hasWriteMode()) {
-              if (!Writer->writeValue(LastReadValue, WritePos, Frame.Nd)) {
-                failCantWrite();
+              if (!writeValue(LastReadValue, Frame.Nd))
                 break;
-              }
             }
             popAndReturn(Value);
             traceExitFrame();
@@ -781,48 +871,15 @@ void Interpreter::resume() {
             const uint32_t OldSize = InputReader->readBlockSize(ReadPos);
             TRACE(uint32_t, "block size", OldSize);
             InputReader->pushEobAddress(ReadPos, OldSize);
-            BlockStartStack.push(WritePos);
-            Writer->writeFixedBlockSize(WritePos, 0);
-            BlockStartStack.push(WritePos);
-            Frame.CallState =
-                MinimizeBlockSize ? State::MinBlock : State::Step2;
+            if (!writeAction(Symtab->getBlockEnterCallback()))
+              break;
+            Frame.CallState = State::Exit;
             call(DispatchedMethod, Frame.CallModifier, Frame.Nd);
             break;
           }
-          case State::Step2: {
-            // Non-minimized block. Just backpatch in new size.
-            WriteCursor WritePosAfterSizeWrite(BlockStart);
-            BlockStartStack.pop();
-            const size_t NewSize = Writer->getBlockSize(BlockStart, WritePos);
-            TRACE(uint32_t, "New block size", NewSize);
-            Writer->writeFixedBlockSize(BlockStart, NewSize);
-            Frame.CallState = State::Exit;
-            break;
-          }
-          case State::MinBlock: {
-            // Mimimized block. Backpatch new size of block. If needed, move
-            // block to fill gap between fixed and variable widths for block
-            // size.
-            WriteCursor WritePosAfterSizeWrite(BlockStart);
-            BlockStartStack.pop();
-            const size_t NewSize = Writer->getBlockSize(BlockStart, WritePos);
-            TRACE(uint32_t, "New block size", NewSize);
-            Writer->writeVarintBlockSize(BlockStart, NewSize);
-            size_t SizeAfterBackPatch = Writer->getStreamAddress(BlockStart);
-            size_t SizeAfterSizeWrite =
-                Writer->getStreamAddress(WritePosAfterSizeWrite);
-            size_t Diff = SizeAfterSizeWrite - SizeAfterBackPatch;
-            if (Diff) {
-              size_t CurAddress = Writer->getStreamAddress(WritePos);
-              Writer->moveBlock(BlockStart, SizeAfterSizeWrite,
-                                (CurAddress - Diff) - SizeAfterBackPatch);
-              WritePos.swap(BlockStart);
-            }
-            Frame.CallState = State::Exit;
-            break;
-          }
           case State::Exit:
-            BlockStartStack.pop();
+            if (!writeAction(Symtab->getBlockExitCallback()))
+                break;
             ReadPos.popEobAddress();
             popAndReturn();
             traceExitFrame();
@@ -893,14 +950,16 @@ void Interpreter::resume() {
                   "Unable to compress. Did not find WASM binary magic number!");
               break;
             }
-            Writer->writeUint32(MagicNumber, WritePos);
+            if (!writeUint32(MagicNumber))
+              break;
             Version = InputReader->readUint32(ReadPos);
             TRACE(hex_uint32_t, "version", Version);
             if (Version != WasmBinaryVersion) {
               fail("Unable to compress. WASM version not known");
               break;
             }
-            Writer->writeUint32(Version, WritePos);
+            if (!writeUint32(Version))
+              break;
             Frame.CallState = State::Loop;
             break;
           case State::Loop:
@@ -926,7 +985,7 @@ void Interpreter::resume() {
             traceEnterFrame();
             CurSectionName.clear();
             LoopCounterStack.push(InputReader->readVaruint32(ReadPos));
-            Writer->writeVaruint32(LoopCounter, WritePos);
+            writeVaruint32(LoopCounter);
             Frame.CallState = State::Loop;
             break;
           case State::Loop: {
@@ -936,7 +995,7 @@ void Interpreter::resume() {
             }
             --LoopCounter;
             uint8_t Byte = InputReader->readUint8(ReadPos);
-            Writer->writeUint8(Byte, WritePos);
+            writeUint8(Byte);
             CurSectionName.push_back(char(Byte));
             break;
           }
@@ -973,8 +1032,6 @@ void Interpreter::resume() {
             break;
           }
           case State::Exit:
-            InputReader->alignToByte(ReadPos);
-            Writer->alignToByte(WritePos);
             popAndReturn();
             traceExitFrame();
             break;

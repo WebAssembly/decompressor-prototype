@@ -40,7 +40,6 @@ class ByteReadStream FINAL : public ReadStream {
   uint64_t readVaruint64(decode::ReadCursor& Pos) OVERRIDE;
   decode::IntType readValue(decode::ReadCursor& Pos,
                             const filt::Node* Format) OVERRIDE;
-  void alignToByte(decode::ReadCursor& Pos) OVERRIDE;
   size_t readBlockSize(decode::ReadCursor& Pos) OVERRIDE;
   void pushEobAddress(decode::ReadCursor& Pos, size_t BlockSize) OVERRIDE;
   static bool implementsClass(decode::StreamType RtClassID) {
