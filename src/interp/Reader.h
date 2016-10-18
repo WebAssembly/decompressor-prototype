@@ -47,6 +47,15 @@ class Reader {
     callTopLevel(Method::GetFile, nullptr);
   }
 
+  // Resumes decompression where it left off. Assumes that more
+  // input has been added since the previous start()/resume() call.
+  // Resume should be called until isFinished() is true.
+  void resume();
+
+
+  // Reads from backfilled input stream.
+  void readBackFilled();
+
   // Check status of read.
   bool isFinished() const { return Frame.CallMethod == Method::Finished; }
   bool isSuccessful() const { return Frame.CallState == State::Succeeded; }
@@ -216,8 +225,11 @@ class Reader {
   virtual bool writeVarint64(int64_t Value);
   virtual bool writeVaruint32(uint32_t Value);
   virtual bool writeVaruint64(uint64_t Value);
+  virtual bool writeFreezeEof();
   virtual bool writeValue(decode::IntType Value, const filt::Node* Format);
   virtual bool writeAction(const filt::CallbackNode* Action);
+
+  virtual bool isWriteToByteStream() const;
 
   // Initializes all internal stacks, for an initial call to Method with
   // argument Nd.
