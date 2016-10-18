@@ -129,7 +129,7 @@ bool Interpreter::isWriteToByteStream() const {
 }
 
 bool Interpreter::writeValue(IntType Value, const Node* Format) {
-  if (Writer->writeValue(LastReadValue, WritePos, Frame.Nd))
+  if (Writer->writeValue(LastReadValue, WritePos, Format))
     return true;
   failCantWrite();
   return false;
@@ -180,8 +180,8 @@ bool Interpreter::writeAction(const filt::CallbackNode* Action) {
     default:
       break;
   }
-  failCantWrite();
-  return false;
+  // Ignore other actions.
+  return true;
 }
 
 void Interpreter::decompress() {

@@ -14,91 +14,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Implements defaults for stream readers.
+// Implements a byte stream reader.
 
 #include "interp/ByteReadStream.h"
 
-namespace {
-
-using namespace wasm::decode;
-using namespace wasm::filt;
-
-template <class Type>
-Type readFixed(ReadCursor& Pos) {
-  Type Value = 0;
-  constexpr uint32_t WordSize = sizeof(Type);
-  uint32_t Shift = 0;
-  for (uint32_t i = 0; i < WordSize; ++i) {
-    Value |= Type(Pos.readByte()) << Shift;
-    Shift += CHAR_BIT;
-  }
-  return Value;
-}
-
-template <class Type>
-Type readLEB128Loop(ReadCursor& Pos, uint32_t& Shift, uint8_t& Chunk) {
-  Type Value = 0;
-  Shift = 0;
-  while (true) {
-    Chunk = Pos.readByte();
-    Type Data = Chunk & ~(uint8_t(1) << 7);
-    Value |= Data << Shift;
-    Shift += 7;
-    if ((Chunk >> 7) == 0)
-      return Value;
-  }
-}
-
-template <class Type>
-Type readLEB128(ReadCursor& Pos) {
-  uint32_t Shift;
-  uint8_t Chunk;
-  return readLEB128Loop<Type>(Pos, Shift, Chunk);
-}
-
-template <class Type>
-Type readSignedLEB128(ReadCursor& Pos) {
-  uint32_t Shift;
-  uint8_t Chunk;
-  Type Value = readLEB128Loop<Type>(Pos, Shift, Chunk);
-  if ((Chunk & 0x40) && (Shift < sizeof(Type) * CHAR_BIT))
-    Value |= ~Type(0) << Shift;
-  return Value;
-}
-
-}  // end of anonymous namespace
-
 namespace wasm {
 
+using namespace decode;
+using namespace filt;
+
 namespace interp {
-
-uint8_t ByteReadStream::readUint8(ReadCursor& Pos) {
-  return Pos.readByte();
-}
-
-uint32_t ByteReadStream::readUint32(ReadCursor& Pos) {
-  return readFixed<uint32_t>(Pos);
-}
-
-uint64_t ByteReadStream::readUint64(ReadCursor& Pos) {
-  return readFixed<uint64_t>(Pos);
-}
-
-int32_t ByteReadStream::readVarint32(ReadCursor& Pos) {
-  return readSignedLEB128<uint32_t>(Pos);
-}
-
-int64_t ByteReadStream::readVarint64(ReadCursor& Pos) {
-  return readSignedLEB128<uint64_t>(Pos);
-}
-
-uint32_t ByteReadStream::readVaruint32(ReadCursor& Pos) {
-  return readLEB128<uint32_t>(Pos);
-}
-
-uint64_t ByteReadStream::readVaruint64(ReadCursor& Pos) {
-  return readLEB128<uint64_t>(Pos);
-}
 
 IntType ByteReadStream::readValue(decode::ReadCursor& Pos,
                                   const filt::Node* Format) {
