@@ -424,13 +424,7 @@ void BinaryReader::resume() {
       case Method::Section:
         switch (Frame.CallState) {
           case State::Enter:
-            Frame.CallState = State::Setup;
-            call(Method::Name);
-            break;
-          case State::Setup:
             CurSection = create<SectionNode>();
-            CurSection->append(create<SymbolNode>(Name));
-            // Save StartStackSize for exit.
             CounterStack.push(NodeStack.size());
             CurBlockApplyFcn = Method::SectionBody;
             Frame.CallState = State::Exit;
@@ -460,12 +454,6 @@ void BinaryReader::resume() {
         switch (Frame.CallState) {
           case State::Enter: {
             assert(CurSection);
-            SymbolNode* Sym = CurSection->getSymbol();
-            assert(Sym);
-            if (Sym->getStringName() != "filter") {
-              fail("Handling non-filter sections not implemented!");
-              break;
-            }
             Frame.CallState = State::Loop;
             call(Method::SymbolTable);
             break;

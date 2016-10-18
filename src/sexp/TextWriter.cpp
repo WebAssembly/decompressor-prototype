@@ -205,6 +205,10 @@ void TextWriter::writeNode(const Node* Nd,
       LineEmpty = false;
       return;
     }
+    case OpSection:
+      for (auto* Kid : *Nd)
+        writeNode(Kid, true, false);
+      break;
     case OpSymbol: {
       Indent _(this, AddNewline);
       const auto* Sym = cast<SymbolNode>(Nd);

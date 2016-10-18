@@ -111,7 +111,6 @@ struct IntValue {
 %token PEEK          "peek"
 %token READ          "read"
 %token RENAME        "rename"
-%token SECTION       "section"
 %token SEQ           "seq"
 %token SET           "set"
 %token SWITCH        "switch"
@@ -145,7 +144,6 @@ struct IntValue {
 %type <wasm::filt::Node *> constant_expression
 %type <wasm::filt::Node *> control_flow
 %type <wasm::filt::Node *> declaration
-%type <wasm::filt::SectionNode *> declaration_list
 %type <wasm::filt::Node *> define_args
 %type <wasm::filt::Node *> eval_args
 %type <wasm::filt::Node *> expression
@@ -276,17 +274,6 @@ define_args
               $1->setLastKid(Seq);
             }
             Seq->append($2);
-          }
-        ;
-
-declaration_list
-        : symbol {  // Section name / wasm version.
-            $$ = Driver.create<SectionNode>();
-            $$->append($1);
-          }
-          | declaration_list declaration { // defines etc.
-            $$ = $1;
-            $$->append($2);
           }
         ;
 
@@ -527,7 +514,14 @@ loop_body
           }
         ;
 
-section : "(" "section" declaration_list ")" { $$ = $3; }
+section
+        : %empty {
+            $$ = Driver.create<SectionNode>();
+          }
+          | section declaration { // defines etc.
+            $$ = $1;
+            $$->append($2);
+          }
         ;
 
 sequence_args

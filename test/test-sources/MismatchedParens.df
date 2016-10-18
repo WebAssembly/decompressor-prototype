@@ -1,3 +1,3 @@
 (wasm.version 0xb)
 (casm.version 0x0)
-(section 'foo'))
+(define 'foo' (params) (void)))
