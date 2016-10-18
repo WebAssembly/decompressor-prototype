@@ -157,7 +157,6 @@ void BinaryWriter::writeNode(const Node* Nd) {
       break;
     }
     case OpSection: {
-      writeSymbol(Nd->getKid(0));  // name of section
       writeBlock([&]() {
         const auto* Section = cast<SectionNode>(Nd);
         SectionSymtab.installSection(Section);
@@ -166,7 +165,7 @@ void BinaryWriter::writeNode(const Node* Nd) {
         Writer->writeVaruint32(Vector.size(), WritePos);
         for (const SymbolNode* Symbol : Vector)
           writeSymbol(Symbol);
-        for (int i = 1, len = Nd->getNumKids(); i < len; ++i)
+        for (int i = 0, len = Nd->getNumKids(); i < len; ++i)
           writeNode(Nd->getKid(i));
       });
       SectionSymtab.clear();

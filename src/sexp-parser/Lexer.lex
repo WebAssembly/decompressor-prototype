@@ -241,7 +241,6 @@ letter	[a-zA-Z]
 "peek"            return Parser::make_PEEK(Driver.getLoc());
 "read"            return Parser::make_READ(Driver.getLoc());
 "rename"          return Parser::make_RENAME(Driver.getLoc());
-"section"         return Parser::make_SECTION(Driver.getLoc());
 "seq"             return Parser::make_SEQ(Driver.getLoc());
 "set"             return Parser::make_SET(Driver.getLoc());
 "switch"          return Parser::make_SWITCH(Driver.getLoc());
