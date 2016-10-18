@@ -36,23 +36,16 @@ class ReadStream : public std::enable_shared_from_this<ReadStream> {
   ReadStream& operator=(const ReadStream&) = delete;
 
  public:
-  virtual uint8_t readUint8(decode::ReadCursor& Pos) = 0;
-  virtual uint32_t readUint32(decode::ReadCursor& Pos) = 0;
-  virtual uint64_t readUint64(decode::ReadCursor& Pos) = 0;
-  virtual int32_t readVarint32(decode::ReadCursor& Pos) = 0;
-  virtual int64_t readVarint64(decode::ReadCursor& Pos) = 0;
-  virtual uint32_t readVaruint32(decode::ReadCursor& Pos) = 0;
+  // Hard coded reads.
+  uint8_t readUint8(decode::ReadCursor& Pos);
+  uint32_t readUint32(decode::ReadCursor& Pos);
+  uint64_t readUint64(decode::ReadCursor& Pos);
+  int32_t readVarint32(decode::ReadCursor& Pos);
+  int64_t readVarint64(decode::ReadCursor& Pos);
+  uint32_t readVaruint32(decode::ReadCursor& Pos);
+  uint64_t readVaruint64(decode::ReadCursor& Pos);
 
-#if 0
-  uint64_t readVaruint64(decode::ReadCursor& Pos) {
-    return readVaruint64Bits(Pos, 8);
-  }
-  virtual uint64_t readVaruint64Bits(decode::ReadCursor& Pos,
-                                     uint32_t NumBits) = 0;
-#else
-  virtual uint64_t readVaruint64(decode::ReadCursor& Pos) = 0;
-#endif
-
+  // Formatted reads
   virtual decode::IntType readValue(decode::ReadCursor& Pos,
                                     const filt::Node* Format) = 0;
 

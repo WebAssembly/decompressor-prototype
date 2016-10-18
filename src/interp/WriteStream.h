@@ -36,6 +36,7 @@ class WriteStream : public std::enable_shared_from_this<WriteStream> {
   WriteStream& operator=(const WriteStream&) = delete;
 
  public:
+#if 0
   virtual void writeUint8(uint8_t Value, decode::WriteCursor& Pos) = 0;
   virtual void writeUint32(uint32_t Value, decode::WriteCursor& Pos) = 0;
   virtual void writeUint64(uint64_t Value, decode::WriteCursor& Pos) = 0;
@@ -43,6 +44,16 @@ class WriteStream : public std::enable_shared_from_this<WriteStream> {
   virtual void writeVarint64(int64_t Value, decode::WriteCursor& Pos) = 0;
   virtual void writeVaruint32(uint32_t Value, decode::WriteCursor& Pos) = 0;
   virtual void writeVaruint64(uint64_t Value, decode::WriteCursor& Pos) = 0;
+#else
+  void writeUint8(uint8_t Value, decode::WriteCursor& Pos);
+  void writeUint32(uint32_t Value, decode::WriteCursor& Pos);
+  void writeUint64(uint64_t Value, decode::WriteCursor& Pos);
+  void writeVarint32(int32_t Value, decode::WriteCursor& Pos);
+  void writeVarint64(int64_t Value, decode::WriteCursor& Pos);
+  void writeVaruint32(uint32_t Value, decode::WriteCursor& Pos);
+  void writeVaruint64(uint64_t Value, decode::WriteCursor& Pos);
+  void writeFixedVaruint32(uint32_t Value, decode::WriteCursor& Pos);
+#endif
 
   virtual bool writeValue(decode::IntType Value,
                           decode::WriteCursor& Pos,
@@ -82,6 +93,7 @@ class WriteStream : public std::enable_shared_from_this<WriteStream> {
  protected:
   WriteStream(decode::StreamType Type) : Type(Type) {}
   decode::StreamType Type;
+
 };
 
 }  // end of namespace decode

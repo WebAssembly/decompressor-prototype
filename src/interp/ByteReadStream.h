@@ -31,13 +31,7 @@ class ByteReadStream FINAL : public ReadStream {
 
  public:
   ByteReadStream() : ReadStream(decode::StreamType::Byte) {}
-  uint8_t readUint8(decode::ReadCursor& Pos) OVERRIDE;
-  uint32_t readUint32(decode::ReadCursor& Pos) OVERRIDE;
-  uint64_t readUint64(decode::ReadCursor& Pos) OVERRIDE;
-  int32_t readVarint32(decode::ReadCursor& Pos) OVERRIDE;
-  int64_t readVarint64(decode::ReadCursor& Poss) OVERRIDE;
-  uint32_t readVaruint32(decode::ReadCursor& Pos) OVERRIDE;
-  uint64_t readVaruint64(decode::ReadCursor& Pos) OVERRIDE;
+
   decode::IntType readValue(decode::ReadCursor& Pos,
                             const filt::Node* Format) OVERRIDE;
   size_t readBlockSize(decode::ReadCursor& Pos) OVERRIDE;

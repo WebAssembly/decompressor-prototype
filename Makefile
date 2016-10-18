@@ -152,6 +152,8 @@ INTERP_SRCS = \
 	Decompress.cpp \
 	Interpreter.cpp \
 	Reader.cpp \
+	ReadStream.cpp \
+	WriteStream.cpp \
 	TraceSexpReader.cpp \
 	TraceSexpReaderWriter.cpp \
 	TraceSexpWriter.cpp
