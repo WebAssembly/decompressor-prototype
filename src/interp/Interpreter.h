@@ -66,9 +66,6 @@ class Interpreter FINAL : public Reader {
   bool MinimizeBlockSize;
   TraceClassSexpReaderWriter Trace;
 
-  // The stack of passed write Values.
-  decode::IntType WriteValue;
-  utils::ValueStack<decode::IntType> WriteValueStack;
   // The stack of block patch locations.
   decode::WriteCursor BlockStart;
   utils::ValueStack<decode::WriteCursor> BlockStartStack;
@@ -85,16 +82,6 @@ class Interpreter FINAL : public Reader {
   bool writeValue(decode::IntType Value, const filt::Node* Format) OVERRIDE;
   bool writeAction(const filt::CallbackNode* Action) OVERRIDE;
   bool isWriteToByteStream() const OVERRIDE;
-
-  // Sets up code to call write method Method with arguments Nd and WriteValue.
-  // Note: Method may not be Method::Write. Rather, it may be some intermediate
-  // method that sets up a call to Method::Write using field DispatchesMethod.
-  void callWrite(Method Method,
-                 const filt::Node* Nd,
-                 decode::IntType WriteValue) {
-    call(Method, MethodModifier::ReadAndWrite, Nd);
-    WriteValueStack.push(WriteValue);
-  }
 
   // For debugging only.
   void describeWriteValueStack(FILE* Out);

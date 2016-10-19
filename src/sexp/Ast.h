@@ -178,7 +178,9 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
   AST_INTEGERNODE_TABLE
 #undef X
   // Gets actions corresponding to enter/exit block.
-  const CallbackNode* getBlockEnterCallback() const { return BlockEnterCallback; }
+  const CallbackNode* getBlockEnterCallback() const {
+    return BlockEnterCallback;
+  }
   const CallbackNode* getBlockExitCallback() const { return BlockExitCallback; }
   // Install definitions in tree defined by root.
   void install(Node* Root);
