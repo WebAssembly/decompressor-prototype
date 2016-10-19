@@ -1002,7 +1002,7 @@ void Reader::resume() {
           }
           case State::Exit:
             if (!writeAction(Symtab->getBlockExitCallback()))
-                break;
+              break;
             ReadPos.popEobAddress();
             popAndReturn();
             traceExitFrame();

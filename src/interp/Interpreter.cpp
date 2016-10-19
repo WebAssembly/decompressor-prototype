@@ -34,12 +34,6 @@ using namespace utils;
 
 namespace interp {
 
-namespace {
-
-static constexpr size_t DefaultStackSize = 256;
-
-}  // end of anonymous namespace
-
 Interpreter::Interpreter(std::shared_ptr<Queue> Input,
                          std::shared_ptr<Queue> Output,
                          std::shared_ptr<SymbolTable> Symtab)
@@ -49,17 +43,8 @@ Interpreter::Interpreter(std::shared_ptr<Queue> Input,
       Writer(std::make_shared<ByteWriteStream>()),
       MinimizeBlockSize(false),
       Trace(ReadPos, WritePos, "InterpSexp"),
-      WriteValueStack(WriteValue),
       BlockStartStack(BlockStart) {
   DefaultFormat = Symtab->getVaruint64Definition();
-  WriteValueStack.reserve(DefaultStackSize);
-}
-
-void Interpreter::describeWriteValueStack(FILE* File) {
-  fprintf(File, "*** WriteValue Stack ***\n");
-  for (auto& Value : WriteValueStack.iterRange(1))
-    fprintf(File, "%" PRIuMAX "\n", uintmax_t(Value));
-  fprintf(File, "************************\n");
 }
 
 void Interpreter::describeBlockStartStack(FILE* File) {
@@ -71,15 +56,11 @@ void Interpreter::describeBlockStartStack(FILE* File) {
 
 void Interpreter::describeAllNonemptyStacks(FILE* File) {
   Reader::describeAllNonemptyStacks(File);
-  if (!WriteValueStack.empty())
-    describeWriteValueStack(File);
   if (!BlockStartStack.empty())
     describeBlockStartStack(File);
 }
 
 void Interpreter::clearStacksExceptFrame() {
-  WriteValue = 0;
-  WriteValueStack.clear();
   BlockStart = WriteCursor();
   BlockStartStack.clear();
 }

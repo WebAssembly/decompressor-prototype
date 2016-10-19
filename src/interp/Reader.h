@@ -52,7 +52,6 @@ class Reader {
   // Resume should be called until isFinished() is true.
   void resume();
 
-
   // Reads from backfilled input stream.
   void readBackFilled();
 

@@ -93,7 +93,6 @@ class WriteStream : public std::enable_shared_from_this<WriteStream> {
  protected:
   WriteStream(decode::StreamType Type) : Type(Type) {}
   decode::StreamType Type;
-
 };
 
 }  // end of namespace decode
