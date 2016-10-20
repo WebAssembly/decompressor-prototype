@@ -153,6 +153,7 @@ INTERP_SRCS = \
 	Interpreter.cpp \
 	Reader.cpp \
 	ReadStream.cpp \
+	Writer.cpp \
 	WriteStream.cpp \
 	TraceSexpReader.cpp \
 	TraceSexpReaderWriter.cpp \

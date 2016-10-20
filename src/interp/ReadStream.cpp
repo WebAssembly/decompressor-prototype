@@ -73,6 +73,8 @@ Type readSignedLEB128(ReadCursor& Pos) {
 
 } // end of anonymous namespace
 
+ReadStream::~ReadStream() {}
+
 uint8_t ReadStream::readUint8(ReadCursor& Pos) {
   return Pos.readByte();
 }

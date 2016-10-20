@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Defines a reader for wasm/casm files.
+// Defines a (stream) reader for wasm/casm files.
 
 #ifndef DECOMPRESSOR_SRC_INTERP_READER_H
 #define DECOMPRESSOR_SRC_INTERP_READER_H
@@ -43,7 +43,6 @@ class Reader {
 
   // Starts up decompression.
   void start() {
-    assert(FrameStack.empty());
     callTopLevel(Method::GetFile, nullptr);
   }
 

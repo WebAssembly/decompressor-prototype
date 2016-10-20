@@ -608,9 +608,7 @@ void Reader::resume() {
                   case StreamType::Byte:
                     Result = isa<ByteReadStream>(InputReader.get());
                     break;
-                  case StreamType::Bit:
                   case StreamType::Int:
-                  case StreamType::Ast:
                     Trace.errorSexp("Stream check: ", Frame.Nd);
                     fail("Stream check not implemented!");
                     break;
@@ -621,9 +619,7 @@ void Reader::resume() {
                   case StreamType::Byte:
                     Result = isWriteToByteStream();
                     break;
-                  case StreamType::Bit:
                   case StreamType::Int:
-                  case StreamType::Ast:
                     Trace.errorSexp("Stream check: ", Frame.Nd);
                     fail("Stream check not implemented!");
                     break;

@@ -35,7 +35,9 @@ class ReadStream : public std::enable_shared_from_this<ReadStream> {
   ReadStream(const ReadStream&) = delete;
   ReadStream& operator=(const ReadStream&) = delete;
 
- public:
+public:
+  ~ReadStream() OVERRIDE;
+
   // Hard coded reads.
   uint8_t readUint8(decode::ReadCursor& Pos);
   uint32_t readUint32(decode::ReadCursor& Pos);

@@ -39,12 +39,10 @@ Interpreter::Interpreter(std::shared_ptr<Queue> Input,
                          std::shared_ptr<SymbolTable> Symtab)
     : Reader(Input, Symtab, Trace),
       Symtab(Symtab),
-      WritePos(StreamType::Byte, Output),
-      Writer(std::make_shared<ByteWriteStream>()),
+      Writer(Output),
       MinimizeBlockSize(false),
-      Trace(ReadPos, WritePos, "InterpSexp"),
+      Trace(ReadPos, Writer.Pos, "InterpSexp"),
       BlockStartStack(BlockStart) {
-  DefaultFormat = Symtab->getVaruint64Definition();
 }
 
 void Interpreter::describeBlockStartStack(FILE* File) {
@@ -66,51 +64,51 @@ void Interpreter::clearStacksExceptFrame() {
 }
 
 bool Interpreter::writeUint8(uint8_t Value) {
-  Writer->writeUint8(Value, WritePos);
+  Writer.Stream->writeUint8(Value, Writer.Pos);
   return true;
 }
 
 bool Interpreter::writeUint32(uint32_t Value) {
-  Writer->writeUint32(Value, WritePos);
+  Writer.Stream->writeUint32(Value, Writer.Pos);
   return true;
 }
 
 bool Interpreter::writeUint64(uint64_t Value) {
-  Writer->writeUint64(Value, WritePos);
+  Writer.Stream->writeUint64(Value, Writer.Pos);
   return true;
 }
 
 bool Interpreter::writeVarint32(int32_t Value) {
-  Writer->writeVarint32(Value, WritePos);
+  Writer.Stream->writeVarint32(Value, Writer.Pos);
   return true;
 }
 
 bool Interpreter::writeVarint64(int64_t Value) {
-  Writer->writeVarint64(Value, WritePos);
+  Writer.Stream->writeVarint64(Value, Writer.Pos);
   return true;
 }
 
 bool Interpreter::writeVaruint32(uint32_t Value) {
-  Writer->writeVaruint32(Value, WritePos);
+  Writer.Stream->writeVaruint32(Value, Writer.Pos);
   return true;
 }
 
 bool Interpreter::writeVaruint64(uint64_t Value) {
-  Writer->writeVaruint64(Value, WritePos);
+  Writer.Stream->writeVaruint64(Value, Writer.Pos);
   return true;
 }
 
 bool Interpreter::writeFreezeEof() {
-  WritePos.freezeEof();
+  Writer.Pos.freezeEof();
   return true;
 }
 
 bool Interpreter::isWriteToByteStream() const {
-  return isa<ByteWriteStream>(Writer.get());
+  return isa<ByteWriteStream>(Writer.Stream.get());
 }
 
 bool Interpreter::writeValue(IntType Value, const Node* Format) {
-  if (Writer->writeValue(LastReadValue, WritePos, Format))
+  if (Writer.Stream->writeValue(LastReadValue, Writer.Pos, Format))
     return true;
   failCantWrite();
   return false;
@@ -124,37 +122,37 @@ bool Interpreter::writeAction(const filt::CallbackNode* Action) {
   }
   switch (Sym->getPredefinedSymbol()) {
     case PredefinedSymbol::BlockEnter:
-      BlockStartStack.push(WritePos);
-      Writer->writeFixedBlockSize(WritePos, 0);
-      BlockStartStack.push(WritePos);
+      BlockStartStack.push(Writer.Pos);
+      Writer.Stream->writeFixedBlockSize(Writer.Pos, 0);
+      BlockStartStack.push(Writer.Pos);
       return true;
     case PredefinedSymbol::BlockExit:
       if (MinimizeBlockSize) {
         // Mimimized block. Backpatch new size of block. If needed, move
         // block to fill gap between fixed and variable widths for block
         // size.
-        WriteCursor WritePosAfterSizeWrite(BlockStart);
+        WriteCursor WriteAfterSizeWrite(BlockStart);
         BlockStartStack.pop();
-        const size_t NewSize = Writer->getBlockSize(BlockStart, WritePos);
+        const size_t NewSize = Writer.Stream->getBlockSize(BlockStart, Writer.Pos);
         TRACE(uint32_t, "New block size", NewSize);
-        Writer->writeVarintBlockSize(BlockStart, NewSize);
-        size_t SizeAfterBackPatch = Writer->getStreamAddress(BlockStart);
+        Writer.Stream->writeVarintBlockSize(BlockStart, NewSize);
+        size_t SizeAfterBackPatch = Writer.Stream->getStreamAddress(BlockStart);
         size_t SizeAfterSizeWrite =
-            Writer->getStreamAddress(WritePosAfterSizeWrite);
+            Writer.Stream->getStreamAddress(WriteAfterSizeWrite);
         size_t Diff = SizeAfterSizeWrite - SizeAfterBackPatch;
         if (Diff) {
-          size_t CurAddress = Writer->getStreamAddress(WritePos);
-          Writer->moveBlock(BlockStart, SizeAfterSizeWrite,
-                            (CurAddress - Diff) - SizeAfterBackPatch);
-          WritePos.swap(BlockStart);
+          size_t CurAddress = Writer.Stream->getStreamAddress(Writer.Pos);
+          Writer.Stream->moveBlock(BlockStart, SizeAfterSizeWrite,
+                                   (CurAddress - Diff) - SizeAfterBackPatch);
+          Writer.Pos.swap(BlockStart);
         }
       } else {
         // Non-minimized block. Just backpatch in new size.
-        WriteCursor WritePosAfterSizeWrite(BlockStart);
+        WriteCursor WriteAfterSizeWrite(BlockStart);
         BlockStartStack.pop();
-        const size_t NewSize = Writer->getBlockSize(BlockStart, WritePos);
+        const size_t NewSize = Writer.Stream->getBlockSize(BlockStart, Writer.Pos);
         TRACE(uint32_t, "New block size", NewSize);
-        Writer->writeFixedBlockSize(BlockStart, NewSize);
+        Writer.Stream->writeFixedBlockSize(BlockStart, NewSize);
       }
       BlockStartStack.pop();
       return true;

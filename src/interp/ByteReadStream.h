@@ -31,6 +31,7 @@ class ByteReadStream FINAL : public ReadStream {
 
  public:
   ByteReadStream() : ReadStream(decode::StreamType::Byte) {}
+  ~ByteReadStream() OVERRIDE;
 
   decode::IntType readValue(decode::ReadCursor& Pos,
                             const filt::Node* Format) OVERRIDE;

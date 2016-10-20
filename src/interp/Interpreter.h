@@ -21,8 +21,7 @@
 
 #include "interp/Reader.h"
 #include "interp/TraceSexpReaderWriter.h"
-#include "interp/WriteStream.h"
-#include "stream/WriteCursor.h"
+#include "interp/Writer.h"
 
 namespace wasm {
 
@@ -60,9 +59,12 @@ class Interpreter FINAL : public Reader {
 
  private:
   std::shared_ptr<filt::SymbolTable> Symtab;
+#if 0
   decode::WriteCursor WritePos;
   std::shared_ptr<WriteStream> Writer;
-  filt::Node* DefaultFormat;
+#else
+  Writer Writer;
+#endif
   bool MinimizeBlockSize;
   TraceClassSexpReaderWriter Trace;
 

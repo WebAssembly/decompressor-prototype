@@ -25,6 +25,8 @@ using namespace filt;
 
 namespace interp {
 
+ByteReadStream::~ByteReadStream() {}
+
 IntType ByteReadStream::readValue(decode::ReadCursor& Pos,
                                   const filt::Node* Format) {
   switch (Format->getType()) {
