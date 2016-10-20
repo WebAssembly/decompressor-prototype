@@ -53,37 +53,17 @@ class Interpreter FINAL : public Reader {
 
   void setTraceProgress(bool NewValue) { Trace.setTraceProgress(NewValue); }
 
-  void setMinimizeBlockSize(bool NewValue) { MinimizeBlockSize = NewValue; }
+  void setMinimizeBlockSize(bool NewValue) {
+    Output.setMinimizeBlockSize(NewValue);
+  }
 
   TraceClassSexpReaderWriter& getTrace() { return Trace; }
 
  private:
   std::shared_ptr<filt::SymbolTable> Symtab;
-#if 0
-  decode::WriteCursor WritePos;
-  std::shared_ptr<WriteStream> Writer;
-#else
-  Writer Writer;
-#endif
+  Writer Output;
   bool MinimizeBlockSize;
   TraceClassSexpReaderWriter Trace;
-
-  // The stack of block patch locations.
-  decode::WriteCursor BlockStart;
-  utils::ValueStack<decode::WriteCursor> BlockStartStack;
-
-  void clearStacksExceptFrame() OVERRIDE;
-  bool writeUint8(uint8_t Value) OVERRIDE;
-  bool writeUint32(uint32_t Value) OVERRIDE;
-  bool writeUint64(uint64_t Value) OVERRIDE;
-  bool writeVarint32(int32_t Value) OVERRIDE;
-  bool writeVarint64(int64_t Value) OVERRIDE;
-  bool writeVaruint32(uint32_t Value) OVERRIDE;
-  bool writeVaruint64(uint64_t Value) OVERRIDE;
-  bool writeFreezeEof() OVERRIDE;
-  bool writeValue(decode::IntType Value, const filt::Node* Format) OVERRIDE;
-  bool writeAction(const filt::CallbackNode* Action) OVERRIDE;
-  bool isWriteToByteStream() const OVERRIDE;
 
   // For debugging only.
   void describeWriteValueStack(FILE* Out);

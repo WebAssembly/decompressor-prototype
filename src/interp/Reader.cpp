@@ -117,11 +117,13 @@ const char* Reader::getName(SectionCode Code) {
   return SectionCodeName[Index];
 }
 
-Reader::Reader(std::shared_ptr<decode::Queue> Input,
+Reader::Reader(std::shared_ptr<decode::Queue> StrmInput,
+               Writer& StrmOutput,
                std::shared_ptr<filt::SymbolTable> Symtab,
                TraceClassSexp& Trace)
-    : ReadPos(StreamType::Byte, Input),
-      InputReader(std::make_shared<ByteReadStream>()),
+    : ReadPos(StreamType::Byte, StrmInput),
+      Input(std::make_shared<ByteReadStream>()),
+      Output(StrmOutput),
       Symtab(Symtab),
       LastReadValue(0),
       DispatchedMethod(Method::NO_SUCH_METHOD),
@@ -238,12 +240,9 @@ void Reader::describeAllNonemptyStacks(FILE* File) {
     describeOpcodeLocalStack(File);
 }
 
-void Reader::clearFrameStack() {
+void Reader::reset() {
   Frame.reset();
   FrameStack.clear();
-}
-
-void Reader::clearStacksExceptFrame() {
   PeekPos = ReadCursor();
   PeekPosStack.clear();
   LoopCounter = 0;
@@ -253,56 +252,13 @@ void Reader::clearStacksExceptFrame() {
   LocalValues.clear();
   OpcodeLocals.reset();
   OpcodeLocalsStack.clear();
-}
-
-bool Reader::writeUint8(uint8_t) {
-  return true;
-}
-
-bool Reader::writeUint32(uint32_t) {
-  return true;
-}
-
-bool Reader::writeUint64(uint64_t) {
-  return true;
-}
-
-bool Reader::writeVarint32(int32_t) {
-  return true;
-}
-
-bool Reader::writeVarint64(int64_t) {
-  return true;
-}
-
-bool Reader::writeVaruint32(uint32_t) {
-  return true;
-}
-
-bool Reader::writeVaruint64(uint64_t) {
-  return true;
-}
-
-bool Reader::writeFreezeEof() {
-  return true;
-}
-
-bool Reader::writeValue(IntType Value, const Node* Format) {
-  return true;
-}
-
-bool Reader::writeAction(const CallbackNode* Action) {
-  return true;
+  Output.reset();
 }
 
 void Reader::callTopLevel(Method Method, const filt::Node* Nd) {
-  clearFrameStack();
-  clearStacksExceptFrame();
+  reset();
+  Frame.reset();
   call(Method, MethodModifier::ReadAndWrite, Nd);
-}
-
-bool Reader::isWriteToByteStream() const {
-  return false;
 }
 
 void Reader::fail() {
@@ -311,7 +267,7 @@ void Reader::fail() {
     traceExitFrame();
     popAndReturn();
   }
-  clearStacksExceptFrame();
+  reset();
   Frame.fail();
 }
 
@@ -338,6 +294,12 @@ void Reader::failNotImplemented() {
 void Reader::failCantWrite() {
   fail("Unable to write value");
 }
+
+void Reader::failFreezingEof() {
+  fail("Unable to set eof on output");
+}
+
+
 void Reader::resume() {
 #if LOG_RUNMETHODS
   TRACE_ENTER("resume");
@@ -360,8 +322,7 @@ void Reader::resume() {
 #endif
     switch (Frame.CallMethod) {
       case Method::NO_SUCH_METHOD:
-        failNotImplemented();
-        break;
+        return failNotImplemented();
       case Method::CopyBlock:
         switch (Frame.CallState) {
           case State::Enter:
@@ -373,16 +334,15 @@ void Reader::resume() {
               Frame.CallState = State::Exit;
               break;
             }
-            LastReadValue = InputReader->readUint8(ReadPos);
-            writeUint8(LastReadValue);
+            LastReadValue = Input->readUint8(ReadPos);
+            Output.writeUint8(LastReadValue);
             break;
           case State::Exit:
             popAndReturn();
             traceExitFrame();
             break;
           default:
-            failBadState();
-            break;
+            return failBadState();
         }
         break;
       case Method::Eval:
@@ -408,8 +368,7 @@ void Reader::resume() {
           case OpConvert:
           case OpParams:
           case OpFilter:  // Method::Eval
-            failNotImplemented();
-            break;
+            return failNotImplemented();
           case NO_SUCH_NODETYPE:
           case OpFile:
           case OpLocals:
@@ -420,12 +379,10 @@ void Reader::resume() {
           case OpUnknownSection:
           case OpCasmVersion:
           case OpWasmVersion:  // Method::Eval
-            failNotImplemented();
-            break;
+            return failNotImplemented();
           case OpError:  // Method::Eval
             traceEnterFrame();
-            fail("Algorithm error!");
-            break;
+            return fail("Algorithm error!");
           case OpCallback:  // Method::Eval
             // TODO(karlschimpf): All virtual calls to class so that derived
             // classes can override.
@@ -456,8 +413,7 @@ void Reader::resume() {
             const auto* Local = dyn_cast<LocalNode>(Frame.Nd);
             size_t Index = Local->getValue();
             if (LocalsBase + Index >= LocalValues.size()) {
-              fail("Local variable index out of range!");
-              break;
+              return fail("Local variable index out of range!");
             }
             popAndReturn(LocalValues[LocalsBase + Index]);
             traceExitFrame();
@@ -479,8 +435,7 @@ void Reader::resume() {
                 traceExitFrame();
                 break;
               default:
-                failBadState();
-                break;
+                return failBadState();
             }
             traceExitFrame();
             break;
@@ -497,8 +452,7 @@ void Reader::resume() {
                 traceExitFrame();
                 break;
               default:
-                failBadState();
-                break;
+                return failBadState();
             }
             break;
           case OpUint32:
@@ -509,11 +463,11 @@ void Reader::resume() {
           case OpVaruint32:
           case OpVaruint64: {
             traceEnterFrame();
-            IntType Value = InputReader->readValue(ReadPos, Frame.Nd);
+            IntType Value = Input->readValue(ReadPos, Frame.Nd);
             if (hasReadMode())
               LastReadValue = Value;
             if (hasWriteMode()) {
-              if (!writeValue(LastReadValue, Frame.Nd))
+              if (!Output.writeValue(LastReadValue, Frame.Nd))
                 break;
             }
             popAndReturn(Value);
@@ -543,13 +497,11 @@ void Reader::resume() {
                 traceExitFrame();
                 break;
               default:
-                failBadState();
-                break;
+                return failBadState();
             }
             break;
           case OpOpcode:  // Method::Eval
-            fail("Multibyte opcodes broken!");
-            break;
+            return fail("Multibyte opcodes broken!");
           case OpSet:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
@@ -561,8 +513,7 @@ void Reader::resume() {
                 const auto* Local = dyn_cast<LocalNode>(Frame.Nd);
                 size_t Index = Local->getValue();
                 if (LocalsBase + Index >= LocalValues.size()) {
-                  fail("Local variable index out of range, can't set!");
-                  break;
+                  return fail("Local variable index out of range, can't set!");
                 }
                 LocalValues[LocalsBase + Index] = Frame.ReturnValue;
                 popAndReturn(LastReadValue);
@@ -570,8 +521,7 @@ void Reader::resume() {
                 break;
               }
               default:
-                failBadState();
-                break;
+                return failBadState();
             }
             break;
           case OpWrite:  // Method::Eval
@@ -594,8 +544,7 @@ void Reader::resume() {
                 traceExitFrame();
                 break;
               default:
-                failBadState();
-                break;
+                return failBadState();
             }
             break;
           case OpStream: {  // Method::Eval
@@ -606,23 +555,21 @@ void Reader::resume() {
               case StreamKind::Input:
                 switch (Stream->getStreamType()) {
                   case StreamType::Byte:
-                    Result = isa<ByteReadStream>(InputReader.get());
+                    Result = isa<ByteReadStream>(Input.get());
                     break;
                   case StreamType::Int:
                     Trace.errorSexp("Stream check: ", Frame.Nd);
-                    fail("Stream check not implemented!");
-                    break;
+                    return fail("Stream check not implemented!");
                 }
                 break;
               case StreamKind::Output:
                 switch (Stream->getStreamType()) {
                   case StreamType::Byte:
-                    Result = isWriteToByteStream();
+                    Result = Output.getStreamType() == StreamType::Byte;
                     break;
                   case StreamType::Int:
                     Trace.errorSexp("Stream check: ", Frame.Nd);
-                    fail("Stream check not implemented!");
-                    break;
+                    return fail("Stream check not implemented!");
                 }
                 break;
             }
@@ -642,8 +589,7 @@ void Reader::resume() {
                 break;
               }
               default:
-                failBadState();
-                break;
+                return failBadState();
             }
             break;
           case OpAnd:  // Method::Eval
@@ -666,8 +612,7 @@ void Reader::resume() {
                 break;
               }
               default:
-                failBadState();
-                break;
+                return failBadState();
             }
             break;
           case OpOr:  // Method::Eval
@@ -690,8 +635,7 @@ void Reader::resume() {
                 break;
               }
               default:
-                failBadState();
-                break;
+                return failBadState();
             }
             break;
           case OpSequence:  // Method::Eval
@@ -715,8 +659,7 @@ void Reader::resume() {
                 traceExitFrame();
                 break;
               default:
-                failBadState();
-                break;
+                return failBadState();
             }
             break;
           case OpLoop:  // Method::Eval
@@ -743,8 +686,7 @@ void Reader::resume() {
                 traceExitFrame();
                 break;
               default:
-                failBadState();
-                break;
+                return failBadState();
             }
             break;
           case OpLoopUnbounded:  // Method::Eval
@@ -765,8 +707,7 @@ void Reader::resume() {
                 traceExitFrame();
                 break;
               default:
-                failBadState();
-                break;
+                return failBadState();
             }
             break;
           case OpIfThen:  // Method::Eval
@@ -787,8 +728,7 @@ void Reader::resume() {
                 traceExitFrame();
                 break;
               default:
-                failBadState();
-                break;
+                return failBadState();
             }
             break;
           case OpIfThenElse:  // Method::Eval
@@ -811,8 +751,7 @@ void Reader::resume() {
                 traceExitFrame();
                 break;
               default:
-                failBadState();
-                break;
+                return failBadState();
             }
             break;
           case OpSwitch:  // Method::Eval
@@ -837,8 +776,7 @@ void Reader::resume() {
                 traceExitFrame();
                 break;
               default:
-                failBadState();
-                break;
+                return failBadState();
             }
             break;
           case OpCase:  // Method::Eval
@@ -853,8 +791,7 @@ void Reader::resume() {
                 traceExitFrame();
                 break;
               default:
-                failBadState();
-                break;
+                return failBadState();
             }
             break;
           case OpDefine:  // Method::Eval
@@ -880,8 +817,7 @@ void Reader::resume() {
                 traceExitFrame();
                 break;
               default:
-                failBadState();
-                break;
+                return failBadState();
             }
             break;
           case OpParam:  // Method::Eval
@@ -897,8 +833,7 @@ void Reader::resume() {
                 traceExitFrame();
                 break;
               default:
-                failBadState();
-                break;
+                return failBadState();
             }
             break;
           case OpEval:  // Method::Eval
@@ -918,7 +853,7 @@ void Reader::resume() {
                           Sym->getStringName().c_str(),
                           uintmax_t(NumParams->getValue()),
                           uintmax_t(NumCallArgs));
-                  fail("Unable to evaluate call");
+                  return fail("Unable to evaluate call");
                 }
                 size_t CallingEvalIndex = CallingEvalStack.size();
                 CallingEvalStack.push();
@@ -934,8 +869,7 @@ void Reader::resume() {
                 traceExitFrame();
                 break;
               default:
-                failBadState();
-                break;
+                return failBadState();
             }
             break;
           case OpBlock:  // Method::Eval
@@ -972,8 +906,7 @@ void Reader::resume() {
                 traceExitFrame();
                 break;
               default:
-                failBadState();
-                break;
+                return failBadState();
             }
             break;
           case OpVoid:  // Method::Eval
@@ -987,25 +920,24 @@ void Reader::resume() {
         switch (Frame.CallState) {
           case State::Enter: {
             traceEnterFrame();
-            const uint32_t OldSize = InputReader->readBlockSize(ReadPos);
+            const uint32_t OldSize = Input->readBlockSize(ReadPos);
             TRACE(uint32_t, "block size", OldSize);
-            InputReader->pushEobAddress(ReadPos, OldSize);
-            if (!writeAction(Symtab->getBlockEnterCallback()))
+            Input->pushEobAddress(ReadPos, OldSize);
+            if (!Output.writeAction(Symtab->getBlockEnterCallback()))
               break;
             Frame.CallState = State::Exit;
             call(DispatchedMethod, Frame.CallModifier, Frame.Nd);
             break;
           }
           case State::Exit:
-            if (!writeAction(Symtab->getBlockExitCallback()))
+            if (!Output.writeAction(Symtab->getBlockExitCallback()))
               break;
             ReadPos.popEobAddress();
             popAndReturn();
             traceExitFrame();
             break;
           default:
-            failBadState();
-            break;
+            return failBadState();
         }
         break;
       case Method::Finished:
@@ -1028,19 +960,15 @@ void Reader::resume() {
         switch (Frame.CallState) {
           case State::Enter: {
             traceEnterFrame();
-            if (CallingEvalStack.empty()) {
-              fail(
+            if (CallingEvalStack.empty())
+              return fail(
                   "Not inside a call frame, can't evaluate parameter "
                   "accessor!");
-              break;
-            }
             assert(isa<ParamNode>(Frame.Nd));
             auto* Param = cast<ParamNode>(Frame.Nd);
             IntType ParamIndex = Param->getValue() + 1;
-            if (ParamIndex >= IntType(CallingEval.Caller->getNumKids())) {
-              fail("Parameter reference doesn't match callling context!");
-              break;
-            }
+            if (ParamIndex >= IntType(CallingEval.Caller->getNumKids()))
+              return fail("Parameter reference doesn't match callling context!");
             const Node* Context = CallingEval.Caller->getKid(ParamIndex);
             CallingEvalStack.push(
                 CallingEvalStack.at(CallingEval.CallingEvalIndex));
@@ -1054,30 +982,25 @@ void Reader::resume() {
             traceExitFrame();
             break;
           default:
-            failBadState();
-            break;
+            return failBadState();
         }
         break;
       case Method::GetFile:
         switch (Frame.CallState) {
           case State::Enter:
             traceEnterFrame();
-            MagicNumber = InputReader->readUint32(ReadPos);
+            MagicNumber = Input->readUint32(ReadPos);
             TRACE(hex_uint32_t, "magic number", MagicNumber);
-            if (MagicNumber != WasmBinaryMagic) {
-              fail(
+            if (MagicNumber != WasmBinaryMagic)
+              return fail(
                   "Unable to compress. Did not find WASM binary magic number!");
+            if (!Output.writeUint32(MagicNumber))
               break;
-            }
-            if (!writeUint32(MagicNumber))
-              break;
-            Version = InputReader->readUint32(ReadPos);
+            Version = Input->readUint32(ReadPos);
             TRACE(hex_uint32_t, "version", Version);
-            if (Version != WasmBinaryVersion) {
-              fail("Unable to compress. WASM version not known");
-              break;
-            }
-            if (!writeUint32(Version))
+            if (Version != WasmBinaryVersion)
+              return fail("Unable to compress. WASM version not known");
+            if (!Output.writeUint32(Version))
               break;
             Frame.CallState = State::Loop;
             break;
@@ -1089,13 +1012,13 @@ void Reader::resume() {
             call(Method::GetSection, Frame.CallModifier, nullptr);
             break;
           case State::Exit:
-            writeFreezeEof();
+            if (!Output.writeFreezeEof())
+              return failFreezingEof();
             popAndReturn();
             traceExitFrame();
             break;
           default:
-            failBadState();
-            break;
+            return failBadState();
         }
         break;
       case Method::GetSecName:
@@ -1103,8 +1026,8 @@ void Reader::resume() {
           case State::Enter:
             traceEnterFrame();
             CurSectionName.clear();
-            LoopCounterStack.push(InputReader->readVaruint32(ReadPos));
-            writeVaruint32(LoopCounter);
+            LoopCounterStack.push(Input->readVaruint32(ReadPos));
+            Output.writeVaruint32(LoopCounter);
             Frame.CallState = State::Loop;
             break;
           case State::Loop: {
@@ -1113,8 +1036,8 @@ void Reader::resume() {
               break;
             }
             --LoopCounter;
-            uint8_t Byte = InputReader->readUint8(ReadPos);
-            writeUint8(Byte);
+            uint8_t Byte = Input->readUint8(ReadPos);
+            Output.writeUint8(Byte);
             CurSectionName.push_back(char(Byte));
             break;
           }
@@ -1123,15 +1046,14 @@ void Reader::resume() {
             traceExitFrame();
             break;
           default:
-            failBadState();
-            break;
+            return failBadState();
         }
         break;
       case Method::GetSection:
         switch (Frame.CallState) {
           case State::Enter:
             traceEnterFrame();
-            assert(isa<ByteReadStream>(InputReader.get()));
+            assert(isa<ByteReadStream>(Input.get()));
 #if LOG_SECTIONS
             TRACE(hex_size_t, "SectionAddress", ReadPos.getCurByteAddress());
 #endif
@@ -1155,16 +1077,14 @@ void Reader::resume() {
             traceExitFrame();
             break;
           default:
-            failBadState();
-            break;
+            return failBadState();
         }
         break;
       case Method::ReadOpcode:
         // Note: Assumes that caller pushes OpcodeLocals;
         switch (Frame.Nd->getType()) {
           default:
-            failNotImplemented();
-            break;
+            return failNotImplemented();
           case OpOpcode:  // Method::ReadOpcode
             switch (Frame.CallState) {
               case State::Enter:
@@ -1200,8 +1120,7 @@ void Reader::resume() {
                 traceExitFrame();
                 break;
               default:
-                failBadState();
-                break;
+                return failBadState();
             }
           case OpUint8:  // Method::ReadOpcode
             switch (Frame.CallState) {
@@ -1217,8 +1136,7 @@ void Reader::resume() {
                 traceExitFrame();
                 break;
               default:
-                failBadState();
-                break;
+                return failBadState();
             }
           case OpUint32:  // Method::ReadOpcode
             switch (Frame.CallState) {
@@ -1234,8 +1152,7 @@ void Reader::resume() {
                 traceExitFrame();
                 break;
               default:
-                failBadState();
-                break;
+                return failBadState();
             }
             break;
           case OpUint64:  // Method::ReadOpcode
@@ -1252,8 +1169,7 @@ void Reader::resume() {
                 traceExitFrame();
                 break;
               default:
-                failBadState();
-                break;
+                return failBadState();
             }
             break;
         }
@@ -1265,7 +1181,7 @@ void Reader::resume() {
         if (ReadPos.atEof() && ReadPos.isQueueGood())
           Frame.CallState = State::Succeeded;
         else
-          fail("Malformed input in compressed file");
+          return fail("Malformed input in compressed file");
         break;
     }
   }
