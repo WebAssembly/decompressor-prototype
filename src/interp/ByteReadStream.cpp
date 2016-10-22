@@ -28,8 +28,7 @@ namespace interp {
 ByteReadStream::~ByteReadStream() {
 }
 
-IntType ByteReadStream::readValue(ReadCursor& Pos,
-                                  const filt::Node* Format) {
+IntType ByteReadStream::readValue(ReadCursor& Pos, const filt::Node* Format) {
   switch (Format->getType()) {
     case OpUint32:
       return readUint32(Pos);

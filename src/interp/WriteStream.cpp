@@ -83,6 +83,9 @@ void writeFixed(Type Value, WriteCursor& Pos) {
 
 }  // end of anonymous namespace
 
+WriteStream::~WriteStream() {
+}
+
 void WriteStream::writeUint8(uint8_t Value, WriteCursor& Pos) {
   Pos.writeByte(uint8_t(Value));
 }

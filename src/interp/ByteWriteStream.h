@@ -32,6 +32,7 @@ class ByteWriteStream FINAL : public WriteStream {
   ByteWriteStream& operator=(const ByteWriteStream&) = delete;
 
  public:
+  ~ByteWriteStream() OVERRIDE;
   static constexpr uint32_t BitsInWord = sizeof(uint32_t) * CHAR_BIT;
   static constexpr uint32_t ChunkSize = CHAR_BIT - 1;
   static constexpr uint32_t ChunksInWord =
