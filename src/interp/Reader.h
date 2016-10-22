@@ -44,9 +44,7 @@ class Reader {
   ~Reader() {}
 
   // Starts up decompression.
-  void start() {
-    callTopLevel(Method::GetFile, nullptr);
-  }
+  void start() { callTopLevel(Method::GetFile, nullptr); }
 
   // Resumes decompression where it left off. Assumes that more
   // input has been added since the previous start()/resume() call.
@@ -65,6 +63,8 @@ class Reader {
 
   // Force interpretation to fail.
   void fail(const std::string& Message);
+
+  virtual decode::ReadCursor& getPos();
 
   filt::TraceClassSexp& getTrace() { return Trace; }
 
@@ -257,8 +257,7 @@ class Reader {
   void describeLoopCounterStack(FILE* Out);
   void describeLocalsStack(FILE* Out);
   void describeOpcodeLocalStack(FILE* Out);
-  virtual void describeAllNonemptyStacks(FILE* Out);
-
+  virtual void describeState(FILE* Out);
 };
 
 }  // end of namespace interp

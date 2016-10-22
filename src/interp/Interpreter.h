@@ -35,7 +35,7 @@ namespace interp {
 // corresponding state associated with the interpreter.
 //
 // TODO(karlschimpf) Rename this to a better name.
-class Interpreter FINAL : public Reader {
+class Interpreter FINAL {
   Interpreter() = delete;
   Interpreter(const Interpreter&) = delete;
   Interpreter& operator=(const Interpreter&) = delete;
@@ -46,6 +46,13 @@ class Interpreter FINAL : public Reader {
               std::shared_ptr<filt::SymbolTable> Symtab);
 
   ~Interpreter() {}
+
+  void start() { Input.start(); }
+  void resume() { Input.resume(); }
+  void fail(const std::string& Message) { Input.fail(Message); }
+  bool isFinished() const { return Input.isFinished(); }
+  bool isSuccessful() const { return Input.isSuccessful(); }
+  bool errorsFound() const { return Input.errorsFound(); }
 
   // Processes each section in input, and decompresses it (if applicable)
   // to the corresponding output.
@@ -61,14 +68,9 @@ class Interpreter FINAL : public Reader {
 
  private:
   std::shared_ptr<filt::SymbolTable> Symtab;
+  Reader Input;
   Writer Output;
-  bool MinimizeBlockSize;
   TraceClassSexpReaderWriter Trace;
-
-  // For debugging only.
-  void describeWriteValueStack(FILE* Out);
-  void describeBlockStartStack(FILE* Out);
-  void describeAllNonemptyStacks(FILE* Out) OVERRIDE;
 };
 
 }  // end of namespace interp.

@@ -41,6 +41,11 @@ void WriteCursorBase::writeBits(uint32_t Value, uint32_t NumBits) {
   }
 }
 
+void WriteCursorBase::writeOneByte(uint8_t Byte) {
+  *getBufferPtr() = Byte;
+  ++CurAddress;
+}
+
 }  // end of namespace decode
 
 }  // end of namespace wasm

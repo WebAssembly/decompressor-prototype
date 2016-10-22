@@ -25,9 +25,10 @@ using namespace filt;
 
 namespace interp {
 
-ByteReadStream::~ByteReadStream() {}
+ByteReadStream::~ByteReadStream() {
+}
 
-IntType ByteReadStream::readValue(decode::ReadCursor& Pos,
+IntType ByteReadStream::readValue(ReadCursor& Pos,
                                   const filt::Node* Format) {
   switch (Format->getType()) {
     case OpUint32:
@@ -50,7 +51,14 @@ IntType ByteReadStream::readValue(decode::ReadCursor& Pos,
   }
 }
 
-size_t ByteReadStream::readBlockSize(decode::ReadCursor& Pos) {
+size_t ByteReadStream::readBlockSize(ReadCursor& Pos) {
+  ReadCursor Peek(Pos);
+  fprintf(stderr, "read block size @%" PRIxMAX ":", uintmax_t(Peek.getCurAddress()));
+  for (int i = 0; i < 5; ++i) {
+    uint8_t Byte = Peek.readByte();
+    fprintf(stderr, " %u = 0x%x\n", Byte, Byte);
+  }
+  fprintf(stderr, "\n");
   return readVaruint32(Pos);
 }
 

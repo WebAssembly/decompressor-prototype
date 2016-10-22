@@ -35,7 +35,7 @@ class ReadStream : public std::enable_shared_from_this<ReadStream> {
   ReadStream(const ReadStream&) = delete;
   ReadStream& operator=(const ReadStream&) = delete;
 
-public:
+ public:
   ~ReadStream() OVERRIDE;
 
   // Hard coded reads.

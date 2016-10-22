@@ -37,25 +37,15 @@ namespace interp {
 Interpreter::Interpreter(std::shared_ptr<Queue> MyInput,
                          std::shared_ptr<Queue> MyOutput,
                          std::shared_ptr<SymbolTable> Symtab)
-    : Reader(MyInput, Output, Symtab, Trace),
-      Symtab(Symtab),
+    : Symtab(Symtab),
+      Input(MyInput, Output, Symtab, Trace),
       Output(MyOutput, Trace),
-      MinimizeBlockSize(false),
-      Trace(ReadPos, Output.getPos(), "InterpSexp")
-{}
-
-void Interpreter::describeBlockStartStack(FILE* File) {
-  Output.describeBlockStartStack(File);
-}
-
-void Interpreter::describeAllNonemptyStacks(FILE* File) {
-  Reader::describeAllNonemptyStacks(File);
-  describeBlockStartStack(File);
+      Trace(Input.getPos(), Output.getPos(), "InterpSexp") {
 }
 
 void Interpreter::decompress() {
   start();
-  readBackFilled();
+  Input.readBackFilled();
 }
 
 }  // end of namespace interp.

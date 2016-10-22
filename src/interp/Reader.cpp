@@ -144,6 +144,10 @@ Reader::Reader(std::shared_ptr<decode::Queue> StrmInput,
   OpcodeLocalsStack.reserve(DefaultStackSize);
 }
 
+ReadCursor& Reader::getPos() {
+  return ReadPos;
+}
+
 void Reader::traceEnterFrameInternal() {
   // Note: Enclosed in TRACE_BLOCK so that g++ will not complain when
   // compiled in release mode.
@@ -226,7 +230,7 @@ void Reader::describeOpcodeLocalStack(FILE* File) {
   fprintf(File, "********************\n");
 }
 
-void Reader::describeAllNonemptyStacks(FILE* File) {
+void Reader::describeState(FILE* File) {
   describeFrameStack(File);
   if (!CallingEvalStack.empty())
     describeCallingEvalStack(File);
@@ -238,6 +242,7 @@ void Reader::describeAllNonemptyStacks(FILE* File) {
     describeLocalsStack(File);
   if (!OpcodeLocalsStack.empty())
     describeOpcodeLocalStack(File);
+  Output.describeState(File);
 }
 
 void Reader::reset() {
@@ -299,11 +304,10 @@ void Reader::failFreezingEof() {
   fail("Unable to set eof on output");
 }
 
-
 void Reader::resume() {
 #if LOG_RUNMETHODS
   TRACE_ENTER("resume");
-  TRACE_BLOCK({ describeAllNonemptyStacks(tracE.getFile()); });
+  TRACE_BLOCK({ describeState(tracE.getFile()); });
 #endif
   size_t FillPos = ReadPos.fillSize();
   // Headroom is used to guarantee that several (integer) reads
@@ -318,7 +322,7 @@ void Reader::resume() {
     if (errorsFound())
       break;
 #if LOG_CALLSTACKS
-    TRACE_BLOCK({ describeAllNonemptyStacks(tracE.getFile()); });
+    TRACE_BLOCK({ describeState(tracE.getFile()); });
 #endif
     switch (Frame.CallMethod) {
       case Method::NO_SUCH_METHOD:
@@ -952,7 +956,7 @@ void Reader::resume() {
             Frame.CallState = State::Failed;
         }
 #if LOG_RUNMETHODS
-        TRACE_BLOCK({ describeAllNonemptyStacks(tracE.getFile()); });
+        TRACE_BLOCK({ describeState(tracE.getFile()); });
         TRACE_EXIT_OVERRIDE("resume");
 #endif
         return;
@@ -968,7 +972,8 @@ void Reader::resume() {
             auto* Param = cast<ParamNode>(Frame.Nd);
             IntType ParamIndex = Param->getValue() + 1;
             if (ParamIndex >= IntType(CallingEval.Caller->getNumKids()))
-              return fail("Parameter reference doesn't match callling context!");
+              return fail(
+                  "Parameter reference doesn't match callling context!");
             const Node* Context = CallingEval.Caller->getKid(ParamIndex);
             CallingEvalStack.push(
                 CallingEvalStack.at(CallingEval.CallingEvalIndex));
@@ -1042,6 +1047,7 @@ void Reader::resume() {
             break;
           }
           case State::Exit:
+            LoopCounterStack.pop();
             popAndReturn();
             traceExitFrame();
             break;
@@ -1186,7 +1192,7 @@ void Reader::resume() {
     }
   }
 #if LOG_RUNMETHODS
-  TRACE_BLOCK({ describeAllNonemptyStacks(tracE.getFile()); });
+  TRACE_BLOCK({ describeState(tracE.getFile()); });
   TRACE_EXIT_OVERRIDE("resume");
 #endif
 }
