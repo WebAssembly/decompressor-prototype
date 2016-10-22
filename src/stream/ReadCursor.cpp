@@ -60,6 +60,13 @@ size_t ReadCursor::advance(size_t Distance) {
   return DistanceMoved;
 }
 
+uint8_t ReadCursor::readOneByte() {
+  assert(CurPage);
+  uint8_t Byte = *getBufferPtr();
+  ++CurAddress;
+  return Byte;
+}
+
 }  // end of namespace decode
 
 }  // end of namespace wasm
