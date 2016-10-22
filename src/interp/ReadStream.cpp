@@ -23,7 +23,6 @@ namespace wasm {
 using namespace decode;
 using namespace filt;
 
-
 namespace interp {
 
 namespace {
@@ -71,7 +70,10 @@ Type readSignedLEB128(ReadCursor& Pos) {
   return Value;
 }
 
-} // end of anonymous namespace
+}  // end of anonymous namespace
+
+ReadStream::~ReadStream() {
+}
 
 uint8_t ReadStream::readUint8(ReadCursor& Pos) {
   return Pos.readByte();

@@ -97,12 +97,7 @@ class ReadCursor FINAL : public Cursor {
   size_t advance(size_t Distance);
 
  protected:
-  uint8_t readOneByte() {
-    assert(CurPage);
-    uint8_t Byte = *getBufferPtr();
-    ++CurAddress;
-    return Byte;
-  }
+  uint8_t readOneByte();
 
   uint8_t readByteAfterReadFill();
 };

@@ -87,7 +87,7 @@ typedef int64_t SignedIntType;
 #define PRI_IntType PRIu64
 static constexpr size_t kBitsInIntType = 64;
 
-enum class StreamType : uint8_t { Bit, Byte, Int, Ast };
+enum class StreamType : uint8_t { Byte, Int };
 const char* getName(StreamType Type);
 Ordering compare(StreamType S1, StreamType S2);
 

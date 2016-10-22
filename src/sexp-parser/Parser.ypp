@@ -76,8 +76,6 @@ struct IntValue {
 
 // Keywords
 %token AND           "and"
-%token AST           "ast"
-%token BIT           "bit"
 %token BITWISE       "bitwise"
 %token BLOCK         "block"
 %token BYTE          "byte"
@@ -566,10 +564,8 @@ stream_kind
         ;
 
 stream_type
-        : "bit" { $$ = decode::StreamType::Bit; }
-        | "byte" { $$ = decode::StreamType::Byte; }
+        : "byte" { $$ = decode::StreamType::Byte; }
         | "int" { $$ = decode::StreamType::Int; }
-        | "ast" { $$ = decode::StreamType::Ast; }
         ;
 
 convert

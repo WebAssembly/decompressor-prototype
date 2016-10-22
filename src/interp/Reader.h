@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Defines a reader for wasm/casm files.
+// Defines a (stream) reader for wasm/casm files.
 
 #ifndef DECOMPRESSOR_SRC_INTERP_READER_H
 #define DECOMPRESSOR_SRC_INTERP_READER_H
@@ -23,6 +23,7 @@
 #include "stream/ReadCursor.h"
 #include "interp/Interpreter.def"
 #include "interp/ReadStream.h"
+#include "interp/Writer.h"
 #include "sexp/TraceSexp.h"
 #include "utils/ValueStack.h"
 
@@ -37,15 +38,13 @@ class Reader {
 
  public:
   Reader(std::shared_ptr<decode::Queue> Input,
+         Writer& Output,
          std::shared_ptr<filt::SymbolTable> Symtab,
          filt::TraceClassSexp& Trace);
   ~Reader() {}
 
   // Starts up decompression.
-  void start() {
-    assert(FrameStack.empty());
-    callTopLevel(Method::GetFile, nullptr);
-  }
+  void start() { callTopLevel(Method::GetFile, nullptr); }
 
   // Resumes decompression where it left off. Assumes that more
   // input has been added since the previous start()/resume() call.
@@ -64,6 +63,8 @@ class Reader {
 
   // Force interpretation to fail.
   void fail(const std::string& Message);
+
+  virtual decode::ReadCursor& getPos();
 
   filt::TraceClassSexp& getTrace() { return Trace; }
 
@@ -165,7 +166,8 @@ class Reader {
   };
 
   decode::ReadCursor ReadPos;
-  std::shared_ptr<ReadStream> InputReader;
+  std::shared_ptr<ReadStream> Input;
+  Writer& Output;
   std::shared_ptr<filt::SymbolTable> Symtab;
   // The magic number of the input.
   uint32_t MagicNumber;
@@ -212,23 +214,7 @@ class Reader {
   OpcodeLocalsFrame OpcodeLocals;
   utils::ValueStack<OpcodeLocalsFrame> OpcodeLocalsStack;
 
-  void clearFrameStack();
-  virtual void clearStacksExceptFrame();
-
-  // Override the following as needed. These methods return false if the writes
-  // failed. Default actions are to do nothing and return true.
-  virtual bool writeUint8(uint8_t Value);
-  virtual bool writeUint32(uint32_t Value);
-  virtual bool writeUint64(uint64_t Value);
-  virtual bool writeVarint32(int32_t Value);
-  virtual bool writeVarint64(int64_t Value);
-  virtual bool writeVaruint32(uint32_t Value);
-  virtual bool writeVaruint64(uint64_t Value);
-  virtual bool writeFreezeEof();
-  virtual bool writeValue(decode::IntType Value, const filt::Node* Format);
-  virtual bool writeAction(const filt::CallbackNode* Action);
-
-  virtual bool isWriteToByteStream() const;
+  virtual void reset();
 
   // Initializes all internal stacks, for an initial call to Method with
   // argument Nd.
@@ -254,6 +240,7 @@ class Reader {
   void failBadState();
   void failNotImplemented();
   void failCantWrite();
+  void failFreezingEof();
 
   // For debugging only.
 
@@ -270,7 +257,7 @@ class Reader {
   void describeLoopCounterStack(FILE* Out);
   void describeLocalsStack(FILE* Out);
   void describeOpcodeLocalStack(FILE* Out);
-  virtual void describeAllNonemptyStacks(FILE* Out);
+  virtual void describeState(FILE* Out);
 };
 
 }  // end of namespace interp

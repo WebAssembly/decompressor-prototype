@@ -25,8 +25,10 @@ using namespace filt;
 
 namespace interp {
 
-IntType ByteReadStream::readValue(decode::ReadCursor& Pos,
-                                  const filt::Node* Format) {
+ByteReadStream::~ByteReadStream() {
+}
+
+IntType ByteReadStream::readValue(ReadCursor& Pos, const filt::Node* Format) {
   switch (Format->getType()) {
     case OpUint32:
       return readUint32(Pos);
@@ -48,7 +50,8 @@ IntType ByteReadStream::readValue(decode::ReadCursor& Pos,
   }
 }
 
-size_t ByteReadStream::readBlockSize(decode::ReadCursor& Pos) {
+size_t ByteReadStream::readBlockSize(ReadCursor& Pos) {
+  ReadCursor Peek(Pos);
   return readVaruint32(Pos);
 }
 

@@ -40,7 +40,7 @@ class WriteCursorBase : public Cursor {
   WriteCursorBase(const Cursor& C, size_t StartAddress)
       : Cursor(C, StartAddress, false) {}
 
-  ~WriteCursorBase() {}
+  virtual ~WriteCursorBase();
 
   WriteCursorBase& operator=(const WriteCursorBase& C) {
     assign(C);
@@ -57,19 +57,16 @@ class WriteCursorBase : public Cursor {
   void writeByte(uint8_t Byte) {
     assert(isByteAligned());
     if (CurAddress < GuaranteedBeforeEob)
-      return writeOneByte(Byte);
-    writeFillWriteByte(Byte);
+      writeOneByte(Byte);
+    else
+      writeFillWriteByte(Byte);
   }
 
   // Writes up to 32 bits to the output.
   void writeBits(uint32_t Value, uint32_t NumBits);
 
  protected:
-  void writeOneByte(uint8_t Byte) {
-    assert(CurPage);
-    *getBufferPtr() = Byte;
-    ++CurAddress;
-  }
+  void writeOneByte(uint8_t Byte);
 
   virtual void writeFillWriteByte(uint8_t Byte) = 0;
 };

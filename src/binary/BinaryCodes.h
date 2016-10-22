@@ -32,4 +32,4 @@ enum class SectionCode : uint32_t {
 
 }  // end of namespace wasm
 
-#endif // DECOMPRESSOR_SRC_BINARY_BINARYCODES_H
+#endif  // DECOMPRESSOR_SRC_BINARY_BINARYCODES_H

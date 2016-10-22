@@ -21,6 +21,7 @@
 
 #include "binary/BinaryReader.def"
 #include "binary/SectionSymbolTable.h"
+#include "interp/ByteReadStream.h"
 #include "interp/ReadStream.h"
 #include "interp/TraceSexpReader.h"
 #include "sexp/Ast.h"
@@ -129,7 +130,7 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
     void describe(FILE* Out) const;
   };
 
-  std::shared_ptr<interp::ReadStream> Reader;
+  std::shared_ptr<interp::ByteReadStream> Reader;
   decode::ReadCursor ReadPos;
   decode::WriteCursor FillPos;
   std::shared_ptr<decode::Queue> Input;

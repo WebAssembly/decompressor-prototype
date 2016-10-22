@@ -408,6 +408,7 @@ void BinaryReader::resume() {
               case OpFile:
               case OpSection:
               case OpUnknownSection:
+                fprintf(stderr, "Opcode = %u\n", unsigned(Opcode));
                 failBadState();
                 break;
             }

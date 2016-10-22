@@ -28,6 +28,9 @@ using namespace filt;
 
 namespace interp {
 
+ByteWriteStream::~ByteWriteStream() {
+}
+
 bool ByteWriteStream::writeValue(IntType Value,
                                  WriteCursor& Pos,
                                  const Node* Format) {

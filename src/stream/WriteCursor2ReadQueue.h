@@ -46,7 +46,7 @@ class WriteCursor2ReadQueue FINAL : public WriteCursorBase {
   WriteCursor2ReadQueue(const Cursor& C, size_t StartAddress)
       : WriteCursorBase(C, StartAddress) {}
 
-  ~WriteCursor2ReadQueue() {}
+  ~WriteCursor2ReadQueue() OVERRIDE;
 
  protected:
   void writeFillWriteByte(uint8_t Byte) OVERRIDE;

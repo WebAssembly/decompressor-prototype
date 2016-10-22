@@ -20,6 +20,8 @@ namespace wasm {
 
 namespace decode {
 
+WriteCursorBase::~WriteCursorBase() {}
+
 void WriteCursorBase::writeBits(uint32_t Value, uint32_t NumBits) {
   assert(NumBits <= sizeof(uint32_t) * CHAR_BIT);
   while (NumBits > 0) {
@@ -39,6 +41,11 @@ void WriteCursorBase::writeBits(uint32_t Value, uint32_t NumBits) {
     writeByte(CurByte.getValue());
     CurByte.reset();
   }
+}
+
+void WriteCursorBase::writeOneByte(uint8_t Byte) {
+  *getBufferPtr() = Byte;
+  ++CurAddress;
 }
 
 }  // end of namespace decode
