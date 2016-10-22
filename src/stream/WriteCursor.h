@@ -42,7 +42,7 @@ class WriteCursor FINAL : public WriteCursorBase {
   WriteCursor(const Cursor& C, size_t StartAddress)
       : WriteCursorBase(C, StartAddress) {}
 
-  ~WriteCursor() {}
+  ~WriteCursor() OVERRIDE;
 
  protected:
   void writeFillWriteByte(uint8_t Byte) OVERRIDE;

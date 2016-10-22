@@ -40,7 +40,7 @@ class WriteCursorBase : public Cursor {
   WriteCursorBase(const Cursor& C, size_t StartAddress)
       : Cursor(C, StartAddress, false) {}
 
-  ~WriteCursorBase() {}
+  virtual ~WriteCursorBase();
 
   WriteCursorBase& operator=(const WriteCursorBase& C) {
     assign(C);

@@ -20,6 +20,8 @@ namespace wasm {
 
 namespace decode {
 
+WriteCursor::~WriteCursor() {}
+
 void WriteCursor::writeFillWriteByte(uint8_t Byte) {
   if (isIndexAtEndOfPage())
     writeFillBuffer();
