@@ -313,9 +313,11 @@ $(BINARY_OBJS_BOOT): $(BINARY_OBJDIR_BOOT)/%.o: $(BINARY_DIR)/%.cpp
 
 $(BINARY_LIB): $(BINARY_OBJS)
 	ar -rs $@ $(BINARY_OBJS)
+	ranlib $@
 
 $(BINARY_LIB_BOOT): $(BINARY_OBJS_BOOT)
 	ar -rs $@ $(BINARY_OBJS_BOOT)
+	ranlib $@
 
 ###### Compiliing top-level Sources ######
 
@@ -345,9 +347,11 @@ $(UTILS_OBJS_BOOT): $(OBJDIR_BOOT)/%.o: $(SRCDIR)/%.cpp
 
 $(UTILS_LIB): $(UTILS_OBJS)
 	ar -rs $@ $(UTILS_OBJS)
+	ranlib $@
 
 $(UTILS_LIB_BOOT): $(UTILS_OBJS_BOOT)
 	ar -rs $@ $(UTILS_OBJS_BOOT)
+	ranlib $@
 
 ###### Compiling s-expression interpeter sources ######
 
@@ -377,9 +381,11 @@ $(INTERP_OBJS_BOOT): $(INTERP_OBJDIR_BOOT)/%.o: $(INTERP_SRCDIR)/%.cpp
 
 $(INTERP_LIB): $(INTERP_OBJS)
 	ar -rs $@ $(INTERP_OBJS)
+	ranlib $@
 
 $(INTERP_LIB_BOOT): $(INTERP_OBJS_BOOT)
 	ar -rs $@ $(INTERP_OBJS_BOOT)
+	ranlib $@
 
 ###### Compiliing Sexp Sources ######
 
@@ -409,9 +415,11 @@ $(SEXP_OBJS_BOOT): $(SEXP_OBJDIR_BOOT)/%.o: $(SEXP_SRCDIR)/%.cpp
 
 $(SEXP_LIB): $(SEXP_OBJS)
 	ar -rs $@ $(SEXP_OBJS)
+	ranlib $@
 
 $(SEXP_LIB_BOOT): $(SEXP_OBJS_BOOT)
 	ar -rs $@ $(SEXP_OBJS_BOOT)
+	ranlib $@
 
 ###### Compiling stream sources ######
 
@@ -442,9 +450,11 @@ $(STRM_OBJS_BOOT): $(STRM_OBJDIR_BOOT)/%.o: $(STRM_SRCDIR)/%.cpp
 
 $(STRM_LIB): $(STRM_OBJS)
 	ar -rs $@ $(STRM_OBJS)
+	ranlib $@
 
 $(STRM_LIB_BOOT): $(STRM_OBJS_BOOT)
 	ar -rs $@ $(STRM_OBJS_BOOT)
+	ranlib $@
 
 ###### Compiling Filter Parser #######
 
@@ -483,9 +493,11 @@ $(PARSER_OBJS_BOOT): $(PARSER_OBJDIR_BOOT)/%.o: $(PARSER_DIR)/%.cpp \
 
 $(PARSER_LIB): $(PARSER_OBJS)
 	ar -rs $@ $(PARSER_OBJS)
+	ranlib $@
 
 $(PARSER_LIB_BOOT): $(PARSER_OBJS_BOOT)
 	ar -rs $@ $(PARSER_OBJS_BOOT)
+	ranlib $@
 
 ###### Building libraries ######
 
