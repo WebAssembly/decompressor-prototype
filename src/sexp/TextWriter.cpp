@@ -329,9 +329,10 @@ void TextWriter::writeNodeAbbrev(const Node* Nd,
       }
       return;
     }
+    case OpSection:
     case OpFile: {
       // Treat like hidden node. That is, visually just a list of s-expressions.
-      fprintf(File, "(file ...)\n");
+      fprintf(File, "(%s ...)\n", Nd->getNodeName());
       return;
     }
     case OpStream:

@@ -20,7 +20,8 @@ namespace wasm {
 
 namespace decode {
 
-WriteCursor2ReadQueue::~WriteCursor2ReadQueue() {}
+WriteCursor2ReadQueue::~WriteCursor2ReadQueue() {
+}
 
 void WriteCursor2ReadQueue::writeFillWriteByte(uint8_t Byte) {
   if (isIndexAtEndOfPage())

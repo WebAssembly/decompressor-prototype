@@ -1,0 +1,16 @@
+(wasm.version 0xb)
+(casm.version 0x0)
+(define 'code' (params)
+  (read)
+  (peek (uint8))
+  (read (uint8))
+  (write (i32.const 8) (uint8))
+  (peek
+    (uint8)
+    (uint8)
+  )
+  (read
+    (uint8)
+    (uint8)
+  )
+)

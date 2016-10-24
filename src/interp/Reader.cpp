@@ -544,7 +544,7 @@ void Reader::resume() {
                      Frame.Nd->getKid(1));
                 break;
               case State::Exit:
-                popAndReturn(LastReadValue);
+                popAndReturn(Frame.ReturnValue);
                 traceExitFrame();
                 break;
               default:
