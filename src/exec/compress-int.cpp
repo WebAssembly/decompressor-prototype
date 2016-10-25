@@ -149,16 +149,16 @@ int main(int Argc, char* Argv[]) {
       fprintf(stderr, "Unable to parse default algorithms: %s\n", Argv[i]);
       return exit_status(EXIT_FAILURE);
     }
-    IntCompressor Compressor(std::make_shared<ReadBackedQueue>(getInput()),
-                             std::make_shared<WriteBackedQueue>(getOutput()),
-                             Symtab);
-    Compressor.setTraceProgress(Verbose >= 1);
-    Compressor.setMinimizeBlockSize(MinimizeBlockSize);
-    Compressor.compress();
-    if (Compressor.errorsFound()) {
-      fatal("Failed to compress due to errors!");
-      exit_status(EXIT_FAILURE);
-    }
+  }
+  IntCompressor Compressor(std::make_shared<ReadBackedQueue>(getInput()),
+                           std::make_shared<WriteBackedQueue>(getOutput()),
+                           Symtab);
+  Compressor.setTraceProgress(Verbose >= 1);
+  Compressor.setMinimizeBlockSize(MinimizeBlockSize);
+  Compressor.compress();
+  if (Compressor.errorsFound()) {
+    fatal("Failed to compress due to errors!");
+    exit_status(EXIT_FAILURE);
   }
   return exit_status(EXIT_SUCCESS);
 }

@@ -41,7 +41,7 @@ class Reader {
          Writer& Output,
          std::shared_ptr<filt::SymbolTable> Symtab,
          filt::TraceClassSexp& Trace);
-  ~Reader() {}
+  virtual ~Reader();
 
   // Starts up decompression.
   void start() { callTopLevel(Method::GetFile, nullptr); }

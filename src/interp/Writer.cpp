@@ -31,6 +31,18 @@ Writer::~Writer() {
 void Writer::reset() {
 }
 
+bool Writer::writeMagicNumber(uint32_t MagicNumber) {
+  return writeUint32(MagicNumber);
+}
+
+bool Writer::writeVersionNumber(uint32_t VersionNumber) {
+  return writeUint32(VersionNumber);
+}
+
+bool Writer::writeFreezeEof() {
+  return true;
+}
+
 void Writer::describeState(FILE* File) {
 }
 

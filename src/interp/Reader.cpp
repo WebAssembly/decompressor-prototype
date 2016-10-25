@@ -144,6 +144,8 @@ Reader::Reader(std::shared_ptr<decode::Queue> StrmInput,
   OpcodeLocalsStack.reserve(DefaultStackSize);
 }
 
+Reader::~Reader() {}
+
 ReadCursor& Reader::getPos() {
   return ReadPos;
 }
@@ -999,14 +1001,14 @@ void Reader::resume() {
             if (MagicNumber != WasmBinaryMagic)
               return fail(
                   "Unable to compress. Did not find WASM binary magic number!");
-            if (!Output.writeUint32(MagicNumber))
-              break;
+            if (!Output.writeMagicNumber(MagicNumber))
+              return failCantWrite();
             Version = Input->readUint32(ReadPos);
             TRACE(hex_uint32_t, "version", Version);
             if (Version != WasmBinaryVersion)
               return fail("Unable to compress. WASM version not known");
-            if (!Output.writeUint32(Version))
-              break;
+            if (!Output.writeVersionNumber(Version))
+              return failCantWrite();
             Frame.CallState = State::Loop;
             break;
           case State::Loop:

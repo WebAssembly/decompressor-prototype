@@ -27,6 +27,35 @@ namespace intcomp {
 IntCountNode::IntCountNode(IntType Value)
     : Count(0), Value(Value) {}
 
+IntCountNode::~IntCountNode() {}
+
+void IntCountNode::describe(FILE* Out, size_t NestLevel) const {
+  for (size_t i = 0; i < NestLevel; ++i)
+    fputs("  ", Out);
+  fputs("Value", Out);
+  if (pathLength() > 1)
+    fputc('s', Out);
+  fputc(':', Out);
+  describePath(Out);
+  fprintf(Out, " Count: %" PRIuMAX "\n", uintmax_t(Count));
+}
+
+void IntCountNode::describePath(FILE* Out, size_t MaxPath) const {
+  if (MaxPath == 0)
+    return;
+  if (std::shared_ptr<IntCountNode> Parent = MyParent.lock())
+    Parent->describePath(Out, MaxPath - 1);
+  fprintf(Out, " %" PRIuMAX "", uintmax_t(Value));
+}
+
+size_t IntCountNode::pathLength(size_t MaxPath) const {
+  if  (MaxPath == 0)
+    return 1;
+  if (std::shared_ptr<IntCountNode> Parent = MyParent.lock())
+    return Parent->pathLength(MaxPath - 1);
+  return 1;
+}
+
 void addUsage(IntCountUsageMap& UsageMap, IntType Value) {
   if (UsageMap.count(Value) == 0)
     UsageMap[Value] = std::make_shared<IntCountNode>(Value);
