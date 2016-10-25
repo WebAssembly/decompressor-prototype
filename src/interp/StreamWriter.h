@@ -37,9 +37,9 @@ class StreamWriter : public Writer {
   StreamWriter(std::shared_ptr<decode::Queue> Output,
                filt::TraceClassSexp& Trace);
   ~StreamWriter() OVERRIDE;
+  decode::WriteCursor& getPos();
 
   void reset() OVERRIDE;
-  decode::WriteCursor& getPos() OVERRIDE;
   decode::StreamType getStreamType() const OVERRIDE;
   bool writeUint8(uint8_t Value) OVERRIDE;
   bool writeUint32(uint32_t Value) OVERRIDE;

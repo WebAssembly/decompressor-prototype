@@ -34,7 +34,6 @@ class Writer {
   virtual ~Writer();
 
   virtual void reset();
-  virtual decode::WriteCursor& getPos() = 0;
   virtual decode::StreamType getStreamType() const = 0;
   // Override the following as needed. These methods return false if the writes
   // failed. Default actions are to do nothing and return true.
@@ -45,7 +44,9 @@ class Writer {
   virtual bool writeVarint64(int64_t Value) = 0;
   virtual bool writeVaruint32(uint32_t Value) = 0;
   virtual bool writeVaruint64(uint64_t Value) = 0;
-  virtual bool writeFreezeEof() = 0;
+  virtual bool writeFreezeEof();
+  virtual bool writeMagicNumber(uint32_t MagicNumber);
+  virtual bool writeVersionNumber(uint32_t VersionNumber);
   virtual bool writeValue(decode::IntType Value, const filt::Node* Format) = 0;
   virtual bool writeAction(const filt::CallbackNode* Action) = 0;
 

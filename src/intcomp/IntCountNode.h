@@ -40,12 +40,17 @@ class IntCountNode : public std::enable_shared_from_this<IntCountNode> {
  public:
   explicit IntCountNode(decode::IntType Value);
   ~IntCountNode();
+  size_t getCount() const { return Count; }
+  size_t getValue() const { return Value; }
   void increment() { ++Count; }
+  void describe(FILE* Out, size_t NestLevel=0) const;
+  void describePath(FILE* Out, size_t MaxPath=10) const;
+  size_t pathLength(size_t MaxPath=10) const;
  private:
   size_t Count;
   decode::IntType Value;
   std::unique_ptr<IntCountUsageMap> NextUsageMap;
-  std::weak_ptr<IntCountNode> parent;
+  std::weak_ptr<IntCountNode> MyParent;
 };
 
 void addUsage(IntCountUsageMap& UsageMap, decode::IntType Value);

@@ -19,8 +19,9 @@
 #ifndef DECOMPRESSOR_SRC_INTCOMP_INTCOMPRESS_H
 #define DECOMPRESSOR_SRC_INTCOMP_INTCOMPRESS_H
 
+#include "intcomp/IntCountNode.h"
 #include "interp/Reader.h"
-#include "interp/TraceSexpReaderWriter.h"
+#include "interp/TraceSexpReader.h"
 #include "interp/StreamWriter.h"
 
 namespace wasm {
@@ -37,25 +38,31 @@ class IntCompressor FINAL {
                 std::shared_ptr<decode::Queue> OutputStream,
                 std::shared_ptr<filt::SymbolTable> Symtab);
 
-  ~IntCompressor() {}
+  ~IntCompressor();
 
-  bool errorsFound() const { return Input.errorsFound(); }
+  bool errorsFound() const {
+    return Input == nullptr && Input->errorsFound();
+  }
 
   void compress();
 
-  void setTraceProgress(bool NewValue) { Trace.setTraceProgress(NewValue); }
-
-  void setMinimizeBlockSize(bool NewValue) {
-    Output.setMinimizeBlockSize(NewValue);
+  void setTraceProgress(bool NewValue) {
+    if (Trace)
+      Trace->setTraceProgress(NewValue);
   }
 
-  interp::TraceClassSexpReaderWriter& getTrace() { return Trace; }
+  void setMinimizeBlockSize(bool NewValue) { (void)NewValue; }
+
+  interp::TraceClassSexpReader& getTrace() { return *Trace; }
 
  private:
   std::shared_ptr<filt::SymbolTable> Symtab;
-  interp::Reader Input;
-  interp::StreamWriter Output;
-  interp::TraceClassSexpReaderWriter Trace;
+  interp::Reader *Input;
+  interp::Writer *Output;
+  IntCountUsageMap UsageMap;
+  interp::TraceClassSexpReader* Trace;
+
+  void describe(FILE* Out);
 };
 
 }  // end of namespace intcomp

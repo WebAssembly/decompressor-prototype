@@ -223,7 +223,7 @@ TEST_SRCS_DIR = test/test-sources
 ###### General compilation definitions ######
 
 LIBS = $(PARSER_LIB) $(BINARY_LIB) $(INTERP_LIB) $(SEXP_LIB) \
-       $(STRM_LIB) $(UTILS_LIB) $(INTERP_LIB) $(INTCOMP_LIB)
+       $(STRM_LIB) $(UTILS_LIB) $(INTCOMP_LIB) $(INTERP_LIB)
 
 LIBS_BOOT = $(PARSER_LIB_BOOT) $(BINARY_LIB_BOOT) $(INTERP_LIB_BOOT) \
        $(SEXP_LIB_BOOT) $(STRM_LIB_BOOT) $(UTILS_LIB_BOOT)
