@@ -26,6 +26,7 @@
 
 using namespace wasm;
 using namespace wasm::decode;
+using namespace wasm::filt;
 
 const char* InputFilename = "-";
 const char* OutputFilename = "-";
