@@ -21,7 +21,7 @@
 
 #include "interp/Reader.h"
 #include "interp/TraceSexpReaderWriter.h"
-#include "interp/Writer.h"
+#include "interp/StreamWriter.h"
 
 namespace wasm {
 
@@ -76,7 +76,7 @@ class Interpreter FINAL {
  private:
   std::shared_ptr<filt::SymbolTable> Symtab;
   Reader Input;
-  Writer Output;
+  StreamWriter Output;
   TraceClassSexpReaderWriter Trace;
 };
 

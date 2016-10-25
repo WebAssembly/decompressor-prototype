@@ -14,60 +14,46 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Defines a (stream) writer for wasm/casm files.
+// Defines a writer for wasm/casm files.
 
 #ifndef DECOMPRESSOR_SRC_INTERP_WRITER_H
 #define DECOMPRESSOR_SRC_INTERP_WRITER_H
 
-#include "interp/WriteStream.h"
-#include "stream/WriteCursor.h"
-#include "utils/ValueStack.h"
+#include "sexp/Ast.h"
 
 namespace wasm {
 
 namespace interp {
 
 class Writer {
-  Writer() = delete;
   Writer(const Writer&) = delete;
   Writer& operator=(const Writer&) = delete;
 
  public:
-  Writer(std::shared_ptr<decode::Queue> Output, filt::TraceClassSexp& Trace);
-  ~Writer() {}
-
-  virtual decode::WriteCursor& getPos();
-  virtual decode::StreamType getStreamType() const;
+  explicit Writer() : MinimizeBlockSize(false) {}
+  virtual ~Writer();
 
   virtual void reset();
-  void setMinimizeBlockSize(bool NewValue) { MinimizeBlockSize = NewValue; }
-
+  virtual decode::WriteCursor& getPos() = 0;
+  virtual decode::StreamType getStreamType() const = 0;
   // Override the following as needed. These methods return false if the writes
   // failed. Default actions are to do nothing and return true.
-  virtual bool writeUint8(uint8_t Value);
-  virtual bool writeUint32(uint32_t Value);
-  virtual bool writeUint64(uint64_t Value);
-  virtual bool writeVarint32(int32_t Value);
-  virtual bool writeVarint64(int64_t Value);
-  virtual bool writeVaruint32(uint32_t Value);
-  virtual bool writeVaruint64(uint64_t Value);
-  virtual bool writeFreezeEof();
-  virtual bool writeValue(decode::IntType Value, const filt::Node* Format);
-  virtual bool writeAction(const filt::CallbackNode* Action);
+  virtual bool writeUint8(uint8_t Value) = 0;
+  virtual bool writeUint32(uint32_t Value) = 0;
+  virtual bool writeUint64(uint64_t Value) = 0;
+  virtual bool writeVarint32(int32_t Value) = 0;
+  virtual bool writeVarint64(int64_t Value) = 0;
+  virtual bool writeVaruint32(uint32_t Value) = 0;
+  virtual bool writeVaruint64(uint64_t Value) = 0;
+  virtual bool writeFreezeEof() = 0;
+  virtual bool writeValue(decode::IntType Value, const filt::Node* Format) = 0;
+  virtual bool writeAction(const filt::CallbackNode* Action) = 0;
 
+  void setMinimizeBlockSize(bool NewValue) { MinimizeBlockSize = NewValue; }
   virtual void describeState(FILE* File);
-  filt::TraceClassSexp& getTrace() { return Trace; }
 
- private:
-  decode::WriteCursor Pos;
-  std::shared_ptr<WriteStream> Stream;
-  filt::TraceClassSexp& Trace;
+ protected:
   bool MinimizeBlockSize;
-
-  // The stack of block patch locations.
-  decode::WriteCursor BlockStart;
-  utils::ValueStack<decode::WriteCursor> BlockStartStack;
-  void describeBlockStartStack(FILE* File);
 };
 
 }  // end of namespace interp

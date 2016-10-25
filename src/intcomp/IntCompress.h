@@ -21,7 +21,7 @@
 
 #include "interp/Reader.h"
 #include "interp/TraceSexpReaderWriter.h"
-#include "interp/Writer.h"
+#include "interp/StreamWriter.h"
 
 namespace wasm {
 
@@ -54,7 +54,7 @@ class IntCompressor FINAL {
  private:
   std::shared_ptr<filt::SymbolTable> Symtab;
   interp::Reader Input;
-  interp::Writer Output;
+  interp::StreamWriter Output;
   interp::TraceClassSexpReaderWriter Trace;
 };
 
