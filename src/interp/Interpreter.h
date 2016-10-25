@@ -41,9 +41,13 @@ class Interpreter FINAL {
   Interpreter& operator=(const Interpreter&) = delete;
 
  public:
-  Interpreter(std::shared_ptr<decode::Queue> Input,
-              std::shared_ptr<decode::Queue> Output,
-              std::shared_ptr<filt::SymbolTable> Symtab);
+  Interpreter(std::shared_ptr<decode::Queue> InputStream,
+              std::shared_ptr<decode::Queue> OutputStream,
+              std::shared_ptr<filt::SymbolTable> Symtab)
+      : Symtab(Symtab),
+        Input(InputStream, Output, Symtab, Trace),
+        Output(OutputStream, Trace),
+        Trace(Input.getPos(), Output.getPos(), "InterpSexp") {}
 
   ~Interpreter() {}
 
@@ -56,7 +60,10 @@ class Interpreter FINAL {
 
   // Processes each section in input, and decompresses it (if applicable)
   // to the corresponding output.
-  void decompress();
+  void decompress() {
+    start();
+    Input.readBackFilled();
+  }
 
   void setTraceProgress(bool NewValue) { Trace.setTraceProgress(NewValue); }
 
