@@ -55,7 +55,7 @@ std::shared_ptr<RawStream> getOutput() {
   if (OutputFilename == std::string("-")) {
     if (UseFileStreams)
       return std::make_shared<FdWriter>(STDOUT_FILENO, false);
-    return std::make_shared<StreamWriter>(std::cout);
+    return std::make_shared<decode::StreamWriter>(std::cout);
   }
   if (UseFileStreams)
     return std::make_shared<FileWriter>(OutputFilename);
