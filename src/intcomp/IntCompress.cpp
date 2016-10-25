@@ -38,6 +38,6 @@ void IntCompressor::compress() {
   Input.readBackFilled();
 }
 
-} // end of namespace intcomp
+}  // end of namespace intcomp
 
-} // end of namespace wasm
+}  // end of namespace wasm

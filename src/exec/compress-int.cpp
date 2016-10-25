@@ -24,10 +24,8 @@
 #include <cstring>
 #include <unistd.h>
 
-
 using namespace wasm;
 using namespace wasm::decode;
-
 
 const char* InputFilename = "-";
 const char* OutputFilename = "-";
@@ -75,7 +73,6 @@ void usage(const char* AppName) {
             "Add progress of lexing default files.\n");
   }
 }
-
 
 int main(int Argc, char* Argv[]) {
   int Verbose = 0;

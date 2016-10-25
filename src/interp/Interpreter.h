@@ -47,9 +47,7 @@ class Interpreter FINAL {
       : Symtab(Symtab),
         Input(InputStream, Output, Symtab, Trace),
         Output(OutputStream, Trace),
-        Trace(Input.getPos(), Output.getPos(), "InterpSexp") {
-  }
-
+        Trace(Input.getPos(), Output.getPos(), "InterpSexp") {}
 
   ~Interpreter() {}
 

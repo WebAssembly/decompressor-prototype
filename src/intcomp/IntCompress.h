@@ -32,7 +32,7 @@ class IntCompressor FINAL {
   IntCompressor(const IntCompressor&) = delete;
   IntCompressor& operator=(const IntCompressor&) = delete;
 
-public:
+ public:
   IntCompressor(std::shared_ptr<decode::Queue> InputStream,
                 std::shared_ptr<decode::Queue> OutputStream,
                 std::shared_ptr<filt::SymbolTable> Symtab);
@@ -51,15 +51,15 @@ public:
 
   interp::TraceClassSexpReaderWriter& getTrace() { return Trace; }
 
-private:
+ private:
   std::shared_ptr<filt::SymbolTable> Symtab;
   interp::Reader Input;
   interp::Writer Output;
   interp::TraceClassSexpReaderWriter Trace;
 };
 
-} // end of namespace intcomp
+}  // end of namespace intcomp
 
-} // end of namespace wasm
+}  // end of namespace wasm
 
-#endif // DECOMPRESSOR_SRC_INTCOMP_INTCOMPRESS_H
+#endif  // DECOMPRESSOR_SRC_INTCOMP_INTCOMPRESS_H
