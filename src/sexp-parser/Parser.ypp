@@ -145,6 +145,7 @@ struct IntValue {
 %type <wasm::filt::Node *> define_args
 %type <wasm::filt::Node *> eval_args
 %type <wasm::filt::Node *> expression
+%type <wasm::filt::Node *> expression_redirect
 %type <wasm::filt::Node *> file
 %type <wasm::filt::Node *> file_version
 %type <wasm::filt::Node *> fixed_format_directive
@@ -208,7 +209,7 @@ switch_args
 
 case_args
         : constant_expression expression {
-            // case index/first expression of case.
+           // case index/first expression of case.
             $$ = Driver.create<CaseNode>($1, $2);
           }
         | case_args expression {
@@ -281,8 +282,8 @@ block_args
           }
         | block_args expression {
             $$ = $1;
-            Node *StmtList = $1->getLastKid();
-            auto *Seq = dyn_cast<SequenceNode>(StmtList);
+            Node* StmtList = $1->getLastKid();
+            auto* Seq = dyn_cast<SequenceNode>(StmtList);
             if (Seq == nullptr) {
               Seq = Driver.create<SequenceNode>();
               Seq->append(StmtList);
@@ -347,17 +348,34 @@ expression
         | "(" "eval" eval_args ")" {
             $$ = $3;
           }
-        | "(" "write" expression expression ")" {
-            $$ = Driver.create<WriteNode>($3, $4);
-          }
-        | "(" "peek" expression ")" {
-            $$ = Driver.create<PeekNode>($3);
-          }
         | "(" "read" ")" {
             $$ = Driver.create<LastReadNode>();
           }
-        | "(" "read" expression ")" {
-            $$ = Driver.create<ReadNode>($3);
+        | "(" "write" expression expression ")" {
+            $$ = Driver.create<WriteNode>($3, $4);
+          }
+        | "(" expression_redirect ")" {
+            $$ = $2;
+          }
+        ;
+
+expression_redirect
+        : "peek" expression {
+            $$ = Driver.create<PeekNode>($2);
+          }
+        | "read" expression {
+            $$ = Driver.create<ReadNode>($2);
+          }
+        | expression_redirect expression {
+            $$ = $1;
+            Node* ExpList = $1->getLastKid();
+            auto* Seq = dyn_cast<SequenceNode>(ExpList);
+            if (Seq == nullptr) {
+              Seq = Driver.create<SequenceNode>();
+              Seq->append(ExpList);
+              $$->setLastKid(Seq);
+            }
+            Seq->append($2);
           }
         ;
 

@@ -586,7 +586,7 @@ $(TEST_EXECS): $(TEST_EXECDIR)/%$(EXE): $(TEST_OBJDIR)/%.o $(LIBS)
 
 test: test-parser test-raw-streams test-byte-queues \
 	test-decompsexp-wasm test-decompwasm-sexp test-param-passing \
-        test-decompress
+	test-decompress
 	@echo "*** all tests passed ***"
 
 .PHONY: test
@@ -692,6 +692,8 @@ test-parser: $(TEST_EXECDIR)/TestParser
 		diff - $(TEST_SRCS_DIR)/MismatchedParens.df-out
 	$< -w $(TEST_SRCS_DIR)/defaults.df | \
 		diff - $(TEST_SRCS_DIR)/defaults.df
+	$< -w $(TEST_SRCS_DIR)/ExprRedirects.df | \
+		diff - $(TEST_SRCS_DIR)/ExprRedirects.df-out
 	@echo "*** parser tests passed ***"
 
 .PHONY: test-parser

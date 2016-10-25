@@ -68,6 +68,11 @@ defaults.df:
 
 .PHONY: defaults.df
 
+ExprRedirects.df-out:
+	$(TEST_DIR)/TestParser -w ExprRedirects.df > ExprRedirects.df-out
+
+.PHONY: ExprRedirects.df-out
+
 clean: clean_binaries
 	rm -rf $(LOCAL_SEXPS_DIR)
 

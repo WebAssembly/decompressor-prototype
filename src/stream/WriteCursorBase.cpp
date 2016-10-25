@@ -20,7 +20,8 @@ namespace wasm {
 
 namespace decode {
 
-WriteCursorBase::~WriteCursorBase() {}
+WriteCursorBase::~WriteCursorBase() {
+}
 
 void WriteCursorBase::writeBits(uint32_t Value, uint32_t NumBits) {
   assert(NumBits <= sizeof(uint32_t) * CHAR_BIT);
