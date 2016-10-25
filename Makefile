@@ -150,7 +150,6 @@ INTERP_SRCS = \
 	ByteReadStream.cpp \
 	ByteWriteStream.cpp \
 	Decompress.cpp \
-	Interpreter.cpp \
 	Reader.cpp \
 	ReadStream.cpp \
 	Writer.cpp \
@@ -165,6 +164,17 @@ INTERP_OBJS_BOOT = $(patsubst %.cpp, $(INTERP_OBJDIR_BOOT)/%.o, $(INTERP_SRCS))
 INTERP_LIB = $(LIBDIR)/$(LIBPREFIX)interp.a
 INTERP_LIB_BOOT = $(LIBDIR_BOOT)/$(LIBPREFIX)interp.a
 
+###### Integer Compressor ######
+
+INTCOMP_SRCDIR = $(SRCDIR)/intcomp
+INTCOMP_OBJDIR = $(OBJDIR)/intcomp
+
+INTCOMP_SRCS = \
+	IntCompress.cpp
+
+INTCOMP_OBJS = $(patsubst %.cpp, $(INTCOMP_OBJDIR)/%.o, $(INTCOMP_SRCS))
+INTCOMP_LIB = $(LIBDIR)/$(LIBPREFIX)intcomp.a
+
 ###### Executables ######
 
 EXEC_DIR = $(SRCDIR)/exec
@@ -174,6 +184,7 @@ BUILD_EXECDIR = $(BUILDDIR)/bin
 BUILD_EXECDIR_BOOT = $(BUILDDIR_BOOT)/bin
 
 EXEC_SRCS_BASE = \
+	compress-int.cpp \
 	decompress.cpp \
 	decompwasm-sexp.cpp
 
@@ -210,7 +221,7 @@ TEST_SRCS_DIR = test/test-sources
 ###### General compilation definitions ######
 
 LIBS = $(PARSER_LIB) $(BINARY_LIB) $(INTERP_LIB) $(SEXP_LIB) \
-       $(STRM_LIB) $(UTILS_LIB) $(INTERP_LIB)
+       $(STRM_LIB) $(UTILS_LIB) $(INTERP_LIB) $(INTCOMP_LIB)
 
 LIBS_BOOT = $(PARSER_LIB_BOOT) $(BINARY_LIB_BOOT) $(INTERP_LIB_BOOT) \
        $(SEXP_LIB_BOOT) $(STRM_LIB_BOOT) $(UTILS_LIB_BOOT)
@@ -385,6 +396,23 @@ $(INTERP_LIB): $(INTERP_OBJS)
 
 $(INTERP_LIB_BOOT): $(INTERP_OBJS_BOOT)
 	ar -rs $@ $(INTERP_OBJS_BOOT)
+	ranlib $@
+
+###### Compiling the integer compressor sources ######
+
+$(INTCOMP_OBJS): | $(INTCOMP_OBJDIR)
+
+$(INTCOMP_OBJDIR):
+	mkdir -p $@
+
+-include $(foreach dep,$(INTCOMP_SRCS:.cpp=.d),$(INTCOMP_OBJDIR)/$(dep))
+
+$(INTCOMP_OBJS): $(INTCOMP_OBJDIR)/%.o: $(INTCOMP_SRCDIR)/%.cpp
+	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
+
+
+$(INTCOMP_LIB): $(INTCOMP_OBJS)
+	ar -rs $@ $(INTCOMP_OBJS)
 	ranlib $@
 
 ###### Compiliing Sexp Sources ######

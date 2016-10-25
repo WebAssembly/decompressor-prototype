@@ -48,7 +48,7 @@ std::shared_ptr<RawStream> getInput() {
   }
   if (UseFileStreams)
     return std::make_shared<FileReader>(InputFilename);
-  return std::make_shared<FstreamReader>(OutputFilename);
+  return std::make_shared<FstreamReader>(InputFilename);
 }
 
 std::shared_ptr<RawStream> getOutput() {
