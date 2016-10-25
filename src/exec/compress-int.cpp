@@ -16,9 +16,12 @@
 
 #include "binary/BinaryReader.h"
 #include "intcomp/IntCompress.h"
-#include "stream/RawStream.h"
+#include "sexp-parser/Driver.h"
 #include "stream/FileReader.h"
 #include "stream/FileWriter.h"
+#include "stream/RawStream.h"
+#include "stream/ReadBackedQueue.h"
+#include "stream/WriteBackedQueue.h"
 #include "utils/Defs.h"
 
 #include <cstring>
@@ -27,6 +30,7 @@
 using namespace wasm;
 using namespace wasm::decode;
 using namespace wasm::filt;
+using namespace wasm::intcomp;
 
 const char* InputFilename = "-";
 const char* OutputFilename = "-";
@@ -151,7 +155,7 @@ int main(int Argc, char* Argv[]) {
     Compressor.setTraceProgress(Verbose >= 1);
     Compressor.setMinimizeBlockSize(MinimizeBlockSize);
     Compressor.compress();
-    if (Decompressor.errorsFound()) {
+    if (Compressor.errorsFound()) {
       fatal("Failed to compress due to errors!");
       exit_status(EXIT_FAILURE);
     }
