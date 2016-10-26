@@ -56,10 +56,21 @@ size_t IntCountNode::pathLength(size_t MaxPath) const {
   return 1;
 }
 
-void addUsage(IntCountUsageMap& UsageMap, IntType Value) {
+IntCountNode* IntCountNode::add(IntCountUsageMap& UsageMap, IntType Value) {
   if (UsageMap.count(Value) == 0)
     UsageMap[Value] = std::make_shared<IntCountNode>(Value);
-  UsageMap[Value]->increment();
+  IntCountNode* Nd = UsageMap[Value].get();
+  Nd->increment();
+  return Nd;
+}
+
+IntCountUsageMap* IntCountNode::getNextUsageMap() {
+  IntCountUsageMap* Map = NextUsageMap.get();
+  if (Map)
+    return Map;
+  Map = new IntCountUsageMap();
+  NextUsageMap.reset(Map);
+  return Map;
 }
 
 } // end of namespace intcomp

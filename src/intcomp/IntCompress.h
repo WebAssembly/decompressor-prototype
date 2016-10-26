@@ -55,6 +55,8 @@ class IntCompressor FINAL {
 
   interp::TraceClassSexpReader& getTrace() { return *Trace; }
 
+  void describe(FILE* Out);
+
  private:
   std::shared_ptr<filt::SymbolTable> Symtab;
   interp::Reader *Input;
@@ -62,7 +64,6 @@ class IntCompressor FINAL {
   IntCountUsageMap UsageMap;
   interp::TraceClassSexpReader* Trace;
 
-  void describe(FILE* Out);
 };
 
 }  // end of namespace intcomp

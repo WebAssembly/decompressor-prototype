@@ -46,6 +46,8 @@ class IntCountNode : public std::enable_shared_from_this<IntCountNode> {
   void describe(FILE* Out, size_t NestLevel=0) const;
   void describePath(FILE* Out, size_t MaxPath=10) const;
   size_t pathLength(size_t MaxPath=10) const;
+  static IntCountNode* add(IntCountUsageMap& UsageMap, decode::IntType Value);
+  IntCountUsageMap* getNextUsageMap();
  private:
   size_t Count;
   decode::IntType Value;
@@ -53,7 +55,6 @@ class IntCountNode : public std::enable_shared_from_this<IntCountNode> {
   std::weak_ptr<IntCountNode> MyParent;
 };
 
-void addUsage(IntCountUsageMap& UsageMap, decode::IntType Value);
 
 } // end of namespace intcomp
 
