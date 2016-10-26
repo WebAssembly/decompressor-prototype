@@ -29,11 +29,12 @@ namespace utils {
 
 // WARNING: May not destroy popped elements during the pop. However,
 // the elements will eventually get destroyed (no later than destruction).
-template<class T, class Alloc = std::allocator<T>>
+// ToDO(karlschimpf): Emscriptem doen't appear to like the allocator arguments,
+// hence they have been removed.
+template<class T>
 class circular_vector {
  public:
   typedef T value_type;
-  typedef std::allocator<T> allocator_type;
   typedef value_type& reference;
   typedef const value_type& const_reference;
   typedef value_type* pointer;
@@ -117,9 +118,8 @@ class circular_vector {
 
 
   explicit circular_vector(size_type vector_max_size,
-                           const value_type& value = value_type(),
-                           allocator_type alloc = allocator_type())
-      : contents(value, alloc),
+                           const value_type& value = value_type())
+      : contents(value),
         vector_max_size(vector_max_size),
         start_index(0),
         vector_size(0) {
@@ -128,7 +128,7 @@ class circular_vector {
   }
 
   explicit circular_vector(const circular_vector& cv)
-      : contents(cv.get_allocator()), vector_max_size(cv.vector_max_size) {
+      : vector_max_size(cv.vector_max_size) {
     for (const auto v : cv)
       contents.push_back(v);
   }
@@ -253,10 +253,9 @@ class circular_vector {
         pop_front();
   }
 
-  allocator_type get_allocator() const { return contents.get_allocator(); }
 
  private:
-  std::vector<T, Alloc> contents;
+  std::vector<T> contents;
   size_type vector_max_size;
   size_type start_index;
   size_type vector_size;
