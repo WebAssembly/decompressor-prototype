@@ -35,12 +35,15 @@ class CounterWriter : public Writer {
   CounterWriter& operator=(const CounterWriter&) = delete;
 
  public:
-  CounterWriter(IntCountUsageMap& UsageMap, size_t Cutoff)
-      : UsageMap(UsageMap), input_seq(1), Cutoff(Cutoff) {}
+  CounterWriter(IntCountUsageMap& UsageMap)
+      : UsageMap(UsageMap), input_seq(1), CountCutoff(1),
+        WeightCutoff(1) {}
 
   ~CounterWriter() OVERRIDE;
 
   void setSequenceSize(size_t Size);
+  void setCountCutoff(uint64_t NewValue) { CountCutoff = NewValue; }
+  void setWeightCutoff(uint64_t NewValue) { WeightCutoff = NewValue; }
 
   void addToUsageMap(IntType Value);
 
@@ -58,7 +61,8 @@ class CounterWriter : public Writer {
  private:
   IntCountUsageMap& UsageMap;
   circular_vector<IntType> input_seq;
-  size_t Cutoff;
+  uint64_t CountCutoff;
+  uint64_t WeightCutoff;
 };
 
 CounterWriter::~CounterWriter() {
@@ -82,8 +86,12 @@ void CounterWriter::addToUsageMap(IntType Value) {
   size_t InputSize = input_seq.size();
   for (size_t i = 0, e = InputSize; i < e; ++i) {
     IntType Val = input_seq[i];
-    if (InputSize > 1 && UsageMap[Val]->getCount() < Cutoff)
-      continue;
+    if (InputSize > 1) {
+      if (UsageMap[Val]->getCount() < CountCutoff)
+        continue;
+      if (UsageMap[Val]->getWeight() < WeightCutoff)
+        continue;
+    }
     Nd = IntCountNode::lookup(*Map, Val, Nd);
     if (i + 1 == e)
       Nd->increment();
@@ -140,7 +148,7 @@ IntCompressor::IntCompressor(std::shared_ptr<decode::Queue> InputStream,
                              std::shared_ptr<decode::Queue> OutputStream,
                              std::shared_ptr<filt::SymbolTable> Symtab)
     : Symtab(Symtab), CountCutoff(0), WeightCutoff(0), LengthLimit(1) {
-  Counter = new CounterWriter(UsageMap, WeightCutoff);
+  Counter = new CounterWriter(UsageMap);
   Trace = new TraceClassSexpReader(nullptr, "IntCompress");
   Input = new Reader(InputStream, *Counter, Symtab, *Trace);
   StartPos = Input->getPos();
@@ -156,6 +164,8 @@ IntCompressor::~IntCompressor() {
 
 void IntCompressor::compress() {
   TRACE_METHOD("compress");
+  Counter->setCountCutoff(CountCutoff);
+  Counter->setWeightCutoff(WeightCutoff);
   for (size_t i = 1; i <= LengthLimit; ++i) {
     fprintf(stderr, "Collecting integer sequences of length: %" PRIuMAX "\n",
             uintmax_t(i));
@@ -170,15 +180,15 @@ namespace {
 
 struct IntSeqCollector {
   IntCountUsageMap& UsageMap;
-  typedef std::vector<std::pair<size_t, IntCountNode*>> WeightedVector;
+  typedef std::vector<std::pair<uint64_t, IntCountNode*>> WeightedVector;
   WeightedVector Values;
-  size_t WeightTotal;
-  size_t CountTotal;
-  size_t WeightReported;
-  size_t CountReported;
-  size_t NumNodesReported;
-  size_t CountCutoff;
-  size_t WeightCutoff;
+  uint64_t WeightTotal;
+  uint64_t CountTotal;
+  uint64_t WeightReported;
+  uint64_t CountReported;
+  uint64_t NumNodesReported;
+  uint64_t CountCutoff;
+  uint64_t WeightCutoff;
 
   IntSeqCollector(IntCountUsageMap& UsageMap)
       : UsageMap(UsageMap),
@@ -204,8 +214,8 @@ void IntSeqCollector::collect() {
 }
 
 void IntSeqCollector::collectNode(IntCountNode* Nd) {
-  size_t Weight = Nd->getWeight();
-  size_t Count = Nd->getCount();
+  uint64_t Weight = Nd->getWeight();
+  uint64_t Count = Nd->getCount();
   CountTotal += Count;
   WeightTotal += Weight;
   if (Count < CountCutoff)

@@ -51,8 +51,8 @@ class IntCompressor FINAL {
       Trace->setTraceProgress(NewValue);
   }
 
-  void setCountCutoff(size_t NewCutoff) { CountCutoff = NewCutoff; }
-  void setWeightCutoff(size_t NewCutoff) { WeightCutoff = NewCutoff; }
+  void setCountCutoff(uint64_t NewCutoff) { CountCutoff = NewCutoff; }
+  void setWeightCutoff(uint64_t NewCutoff) { WeightCutoff = NewCutoff; }
   void setLengthLimit(size_t NewLimit) { LengthLimit = NewLimit; }
 
   void setMinimizeBlockSize(bool NewValue) { (void)NewValue; }
@@ -68,8 +68,8 @@ class IntCompressor FINAL {
   decode::ReadCursor StartPos;
   IntCountUsageMap UsageMap;
   interp::TraceClassSexpReader* Trace;
-  size_t CountCutoff;
-  size_t WeightCutoff;
+  uint64_t CountCutoff;
+  uint64_t WeightCutoff;
   size_t LengthLimit;
 };
 
