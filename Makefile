@@ -614,7 +614,7 @@ $(TEST_EXECS): $(TEST_EXECDIR)/%$(EXE): $(TEST_OBJDIR)/%.o $(LIBS)
 
 ###### Testing ######
 
-test: test-parser test-raw-streams test-byte-queues \
+test: all test-parser test-raw-streams test-byte-queues \
 	test-decompsexp-wasm test-decompwasm-sexp test-param-passing \
 	test-decompress
 	@echo "*** all tests passed ***"
