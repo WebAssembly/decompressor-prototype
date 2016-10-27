@@ -23,8 +23,8 @@
 #include "stream/ReadCursor.h"
 #include "interp/Interpreter.def"
 #include "interp/ReadStream.h"
+#include "interp/TraceSexpReader.h"
 #include "interp/Writer.h"
-#include "sexp/TraceSexp.h"
 #include "utils/ValueStack.h"
 
 namespace wasm {
@@ -40,11 +40,12 @@ class Reader {
   Reader(std::shared_ptr<decode::Queue> Input,
          Writer& Output,
          std::shared_ptr<filt::SymbolTable> Symtab,
-         filt::TraceClassSexp& Trace);
+         TraceClassSexpReader& Trace);
   virtual ~Reader();
 
   // Starts up decompression.
   void start() { callTopLevel(Method::GetFile, nullptr); }
+  void start(const decode::ReadCursor& ReadPos);
 
   // Resumes decompression where it left off. Assumes that more
   // input has been added since the previous start()/resume() call.
@@ -66,7 +67,7 @@ class Reader {
 
   virtual decode::ReadCursor& getPos();
 
-  filt::TraceClassSexp& getTrace() { return Trace; }
+  TraceClassSexpReader& getTrace() { return Trace; }
 
   enum class SectionCode : uint32_t {
 #define X(code, value) code = value,
@@ -180,7 +181,7 @@ class Reader {
   // Holds the method to call (i.e. dispatch) if code expects a method to be
   // provided by the caller.
   Method DispatchedMethod;
-  filt::TraceClassSexp& Trace;
+  TraceClassSexpReader& Trace;
 
   // The stack of called methods.
   CallFrame Frame;

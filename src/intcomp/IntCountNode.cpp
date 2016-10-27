@@ -24,10 +24,23 @@ using namespace decode;
 
 namespace intcomp {
 
-IntCountNode::IntCountNode(IntType Value)
-    : Count(0), Value(Value) {}
+IntCountNode::IntCountNode(IntType Value, IntCountNode* Parent)
+    : Count(0), Value(Value), Parent(Parent) {}
 
 IntCountNode::~IntCountNode() {}
+
+size_t IntCountNode::getWeight() const {
+  size_t Len = pathLength();
+  switch (Len) {
+    case 0:
+    case 1:
+      return getCount() * Len;
+    default:
+      // Increment length, since single integers (typically) can't
+      // compress much.
+      return getCount() * (Len + 1);
+  }
+}
 
 void IntCountNode::describe(FILE* Out, size_t NestLevel) const {
   for (size_t i = 0; i < NestLevel; ++i)
@@ -37,36 +50,38 @@ void IntCountNode::describe(FILE* Out, size_t NestLevel) const {
     fputc('s', Out);
   fputc(':', Out);
   describePath(Out);
-  fprintf(Out, " Count: %" PRIuMAX "\n", uintmax_t(Count));
+  fprintf(Out, "\n\tWeight: %-12" PRIuMAX "\tCount: %-12" PRIuMAX "\n",
+          uintmax_t(getWeight()), uintmax_t(getCount()));
 }
 
 void IntCountNode::describePath(FILE* Out, size_t MaxPath) const {
   if (MaxPath == 0)
     return;
-  if (std::shared_ptr<IntCountNode> Parent = MyParent.lock())
+  if (Parent)
     Parent->describePath(Out, MaxPath - 1);
   fprintf(Out, " %" PRIuMAX "", uintmax_t(Value));
 }
 
 size_t IntCountNode::pathLength(size_t MaxPath) const {
-  if  (MaxPath == 0)
-    return 1;
-  if (std::shared_ptr<IntCountNode> Parent = MyParent.lock())
-    return Parent->pathLength(MaxPath - 1);
-  return 1;
+  size_t len = 0;
+  IntCountNode* Nd = const_cast<IntCountNode*>(this);
+  while (Nd && MaxPath > 0) {
+    ++len;
+    Nd = Nd->Parent;
+  }
+  return len;
 }
 
-IntCountNode* IntCountNode::add(IntCountUsageMap& UsageMap, IntType Value) {
+IntCountNode* IntCountNode::lookup(IntCountUsageMap& UsageMap,
+                                   IntType Value, IntCountNode* Parent) {
   if (UsageMap.count(Value) == 0)
-    UsageMap[Value] = std::make_shared<IntCountNode>(Value);
-  IntCountNode* Nd = UsageMap[Value].get();
-  Nd->increment();
-  return Nd;
+    UsageMap[Value].reset(new IntCountNode(Value, Parent));
+  return UsageMap[Value].get();
 }
 
-IntCountUsageMap* IntCountNode::getNextUsageMap() {
+IntCountUsageMap* IntCountNode::getNextUsageMap(bool CreateIfNull) {
   IntCountUsageMap* Map = NextUsageMap.get();
-  if (Map)
+  if (Map || !CreateIfNull)
     return Map;
   Map = new IntCountUsageMap();
   NextUsageMap.reset(Map);

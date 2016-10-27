@@ -31,28 +31,31 @@ namespace intcomp {
 class IntCountNode;
 
 typedef std::map<decode::IntType,
-                 std::shared_ptr<IntCountNode>> IntCountUsageMap;
+                 std::unique_ptr<IntCountNode>> IntCountUsageMap;
 
 // Implements a notion of a trie on value usage counts.
 class IntCountNode : public std::enable_shared_from_this<IntCountNode> {
   IntCountNode(const IntCountNode&) = delete;
   IntCountNode& operator=(const IntCountNode&) = delete;
  public:
-  explicit IntCountNode(decode::IntType Value);
+  explicit IntCountNode(decode::IntType Value, IntCountNode* Parent = nullptr);
   ~IntCountNode();
   size_t getCount() const { return Count; }
   size_t getValue() const { return Value; }
+  size_t getWeight() const;
   void increment() { ++Count; }
   void describe(FILE* Out, size_t NestLevel=0) const;
   void describePath(FILE* Out, size_t MaxPath=10) const;
   size_t pathLength(size_t MaxPath=10) const;
-  static IntCountNode* add(IntCountUsageMap& UsageMap, decode::IntType Value);
-  IntCountUsageMap* getNextUsageMap();
+  static IntCountNode* lookup(IntCountUsageMap& UsageMap,
+                              decode::IntType Value,
+                              IntCountNode* Parent = nullptr);
+  IntCountUsageMap* getNextUsageMap(bool CreateIfNull=false);
  private:
   size_t Count;
   decode::IntType Value;
   std::unique_ptr<IntCountUsageMap> NextUsageMap;
-  std::weak_ptr<IntCountNode> MyParent;
+  IntCountNode* Parent;
 };
 
 

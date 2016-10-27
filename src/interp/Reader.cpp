@@ -120,7 +120,7 @@ const char* Reader::getName(SectionCode Code) {
 Reader::Reader(std::shared_ptr<decode::Queue> StrmInput,
                Writer& StrmOutput,
                std::shared_ptr<filt::SymbolTable> Symtab,
-               TraceClassSexp& Trace)
+               TraceClassSexpReader& Trace)
     : ReadPos(StreamType::Byte, StrmInput),
       Input(std::make_shared<ByteReadStream>()),
       Output(StrmOutput),
@@ -136,6 +136,7 @@ Reader::Reader(std::shared_ptr<decode::Queue> StrmInput,
       LocalsBase(0),
       LocalsBaseStack(LocalsBase),
       OpcodeLocalsStack(OpcodeLocals) {
+  Trace.setReadPos(&ReadPos);
   CurSectionName.reserve(MaxExpectedSectionNameSize);
   FrameStack.reserve(DefaultStackSize);
   CallingEvalStack.reserve(DefaultStackSize);
@@ -148,6 +149,11 @@ Reader::~Reader() {}
 
 ReadCursor& Reader::getPos() {
   return ReadPos;
+}
+
+void Reader::start(const ReadCursor& NewCursor) {
+  ReadPos = NewCursor;
+  start();
 }
 
 void Reader::traceEnterFrameInternal() {
