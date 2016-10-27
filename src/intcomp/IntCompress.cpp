@@ -138,17 +138,23 @@ void IntCompressor::describe(FILE* Out) {
   std::vector<std::pair<size_t , IntCountNode*>> Values;
   size_t Total = 0;
   // Sort by number of occurrences for paths.
+  size_t Reported = 0;
+  size_t NumReported = 0;
   for (const auto& pair : UsageMap) {
-    if (pair.second->getCount() < 100)
-      continue;
     Total += pair.second->getCount();
+    if (pair.second->getCount() < 25)
+      continue;
+    Reported += pair.second->getCount();
+    ++NumReported;
     Values.push_back(std::make_pair(pair.second->pathLength()
                                     * pair.second->getCount(),
                                     pair.second.get()));
   }
   std::sort(Values.begin(), Values.end());
   std::reverse(Values.begin(), Values.end());
-  fprintf(Out, "Total count: %" PRIuMAX "\n", uintmax_t(Total));
+  fprintf(Out, "Total count: %" PRIuMAX " Reported count %" PRIuMAX
+          " Number reported: %" PRIuMAX "\n",
+          uintmax_t(Total), uintmax_t(Reported), uintmax_t(NumReported));
   for (const auto& pair : Values)
     pair.second->describe(Out);
 }
