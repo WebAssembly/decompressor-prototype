@@ -17,6 +17,7 @@
 // Implements the compressor of WASM fiels base on integer usage.
 
 #include "intcomp/IntCompress.h"
+#include "utils/circular-vector.h"
 #include <vector>
 #include <algorithm>
 
@@ -24,6 +25,7 @@ namespace wasm {
 
 using namespace decode;
 using namespace interp;
+using namespace utils;
 
 namespace intcomp {
 
@@ -33,8 +35,12 @@ class CounterWriter : public Writer {
   CounterWriter& operator=(const CounterWriter&) = delete;
 
  public:
-  CounterWriter(IntCountUsageMap& UsageMap) : UsageMap(UsageMap) {}
+  CounterWriter(IntCountUsageMap& UsageMap)
+      : UsageMap(UsageMap), input_seq(1) {}
+
   ~CounterWriter() OVERRIDE;
+
+  void addToUsageMap(IntType Value);
 
   StreamType getStreamType() const OVERRIDE;
   bool writeUint8(uint8_t Value) OVERRIDE;
@@ -50,50 +56,64 @@ class CounterWriter : public Writer {
 
  private:
   IntCountUsageMap& UsageMap;
+  circular_vector<IntType> input_seq;
 };
 
 CounterWriter::~CounterWriter() {}
 
 StreamType CounterWriter::getStreamType() const { return StreamType::Int; }
 
+void CounterWriter::addToUsageMap(IntType Value) {
+  input_seq.push_back(Value);
+  if (!input_seq.full())
+    return;
+  IntCountUsageMap* Map = &UsageMap;
+  for (size_t i = 0, e = input_seq.size(); i < e; ++i) {
+    IntType Val = input_seq[i];
+    IntCountNode* Nd = IntCountNode::add(*Map, Val);
+    if (i + 1 < e)
+      Map = Nd->getNextUsageMap();
+  }
+}
+
 bool CounterWriter::writeUint8(uint8_t Value) {
-  addUsage(UsageMap, Value);
+  addToUsageMap(Value);
   return true;
 }
 
 bool CounterWriter::writeUint32(uint32_t Value) {
-  addUsage(UsageMap, Value);
+  addToUsageMap(Value);
   return true;
 }
 
 bool CounterWriter::writeUint64(uint64_t Value) {
-  addUsage(UsageMap, Value);
+  addToUsageMap(Value);
   return true;
 }
 
 bool CounterWriter::writeVarint32(int32_t Value) {
-  addUsage(UsageMap, Value);
+  addToUsageMap(Value);
   return true;
 }
 
 bool CounterWriter::writeVarint64(int64_t Value) {
-  addUsage(UsageMap, Value);
+  addToUsageMap(Value);
   return true;
 }
 
 bool CounterWriter::writeVaruint32(uint32_t Value) {
-  addUsage(UsageMap, Value);
+  addToUsageMap(Value);
   return true;
 }
 
 bool CounterWriter::writeVaruint64(uint64_t Value) {
-  addUsage(UsageMap, Value);
+  addToUsageMap(Value);
   return true;
 }
 
 bool CounterWriter::writeValue(decode::IntType Value,
                                const filt::Node*) {
-  addUsage(UsageMap, Value);
+  addToUsageMap(Value);
   return true;
 }
 
@@ -105,13 +125,6 @@ IntCompressor::IntCompressor(std::shared_ptr<decode::Queue> InputStream,
                              std::shared_ptr<decode::Queue> OutputStream,
                              std::shared_ptr<filt::SymbolTable> Symtab)
     : Symtab(Symtab)
-#if 0
-      // Input(InputStream, Output, Symtab, Trace),
-      Input(nullptr),
-      Output(nullptr),
-      // Trace(Input.getPos(), Output.getPos(), "IntCompress")
-      Trace(nullptr)
-#endif
 {
   Output = new CounterWriter(UsageMap);
   ReadCursor ReadPos;
