@@ -28,6 +28,8 @@ namespace wasm {
 
 namespace intcomp {
 
+class CounterWriter;
+
 class IntCompressor FINAL {
   IntCompressor() = delete;
   IntCompressor(const IntCompressor&) = delete;
@@ -40,9 +42,7 @@ class IntCompressor FINAL {
 
   ~IntCompressor();
 
-  bool errorsFound() const {
-    return Input == nullptr && Input->errorsFound();
-  }
+  bool errorsFound() const { return Input == nullptr && Input->errorsFound(); }
 
   void compress();
 
@@ -50,6 +50,10 @@ class IntCompressor FINAL {
     if (Trace)
       Trace->setTraceProgress(NewValue);
   }
+
+  void setCountCutoff(size_t NewCutoff) { CountCutoff = NewCutoff; }
+  void setWeightCutoff(size_t NewCutoff) { WeightCutoff = NewCutoff; }
+  void setLengthLimit(size_t NewLimit) { LengthLimit = NewLimit; }
 
   void setMinimizeBlockSize(bool NewValue) { (void)NewValue; }
 
@@ -59,11 +63,14 @@ class IntCompressor FINAL {
 
  private:
   std::shared_ptr<filt::SymbolTable> Symtab;
-  interp::Reader *Input;
-  interp::Writer *Output;
+  interp::Reader* Input;
+  CounterWriter* Counter;
+  decode::ReadCursor StartPos;
   IntCountUsageMap UsageMap;
   interp::TraceClassSexpReader* Trace;
-
+  size_t CountCutoff;
+  size_t WeightCutoff;
+  size_t LengthLimit;
 };
 
 }  // end of namespace intcomp

@@ -55,14 +55,19 @@ void usage(const char* AppName) {
   fprintf(stderr, "  Compress integer sequences in a WASM binary file.\n");
   fprintf(stderr, "\n");
   fprintf(stderr, "Options:\n");
+  fprintf(stderr,
+          "  -c N\t\t\tOnly compress sequences with count usage >= N.\n");
   fprintf(stderr, "  -d File\t\tFile containing default algorithms.\n");
   fprintf(stderr, "  --expect-fail\t\tSucceed on failure/fail on success\n");
   fprintf(stderr, "  -h\t\t\tPrint this usage message.\n");
   fprintf(stderr, "  -i File\t\tFile to decompress ('-' implies stdin).\n");
+  fprintf(stderr, "  -l N\t\t\tOnly compress integer sequences <= N.\n");
   fprintf(stderr, "  -m\t\t\tMinimize block sizes in output stream.\n");
   fprintf(stderr,
           "  -o File\t\tGenerated Decompressed File ('-' implies stdout).\n");
   fprintf(stderr, "  -p\t\t\tDon't install predefined decompression rules.\n");
+  fprintf(stderr,
+          "  -w N\t\t\tOnly compress integer with weight usage >= N.\n");
   if (isDebug()) {
     fprintf(stderr,
             "  -v | --verbose\t"
@@ -84,9 +89,33 @@ int main(int Argc, char* Argv[]) {
   bool MinimizeBlockSize = false;
   bool InstallPredefinedRules = true;
   std::vector<int> DefaultIndices;
+  size_t CountCutoff = 0;
+  size_t WeightCutoff = 0;
+  size_t LengthLimit = 5;
   for (int i = 1; i < Argc; ++i) {
     std::string Arg(Argv[i]);
-    if (Arg == "-d") {
+    if (Arg == "-c") {
+      if (++i >= Argc) {
+        fprintf(stderr, "No count N specified after -c option\n");
+        usage(Argv[0]);
+        return exit_status(EXIT_FAILURE);
+      }
+      CountCutoff = atol(Argv[i]);
+    } else if (Arg == "-w") {
+      if (++i >= Argc) {
+        fprintf(stderr, "No count N specified after -w option\n");
+        usage(Argv[0]);
+        return exit_status(EXIT_FAILURE);
+      }
+      WeightCutoff = atol(Argv[i]);
+    } else if (Arg == "-l") {
+      if (++i >= Argc) {
+        fprintf(stderr, "No count N specified after -l option\n");
+        usage(Argv[0]);
+        return exit_status(EXIT_FAILURE);
+      }
+      LengthLimit = atol(Argv[i]);
+    } else if (Arg == "-d") {
       if (++i >= Argc) {
         fprintf(stderr, "No file specified after -d option\n");
         usage(Argv[0]);
@@ -124,6 +153,11 @@ int main(int Argc, char* Argv[]) {
       return exit_status(EXIT_FAILURE);
     }
   }
+  // Define defaults if only one cutoff provided.
+  if (WeightCutoff == 0)
+    WeightCutoff = CountCutoff;
+  if (CountCutoff == 0)
+    CountCutoff = WeightCutoff;
   auto Symtab = std::make_shared<SymbolTable>();
   if (InstallPredefinedRules &&
       !SymbolTable::installPredefinedDefaults(Symtab, Verbose >= 2)) {
@@ -153,6 +187,9 @@ int main(int Argc, char* Argv[]) {
   IntCompressor Compressor(std::make_shared<ReadBackedQueue>(getInput()),
                            std::make_shared<WriteBackedQueue>(getOutput()),
                            Symtab);
+  Compressor.setLengthLimit(LengthLimit);
+  Compressor.setCountCutoff(CountCutoff);
+  Compressor.setWeightCutoff(WeightCutoff);
   Compressor.setTraceProgress(Verbose >= 1);
   Compressor.setMinimizeBlockSize(MinimizeBlockSize);
   Compressor.compress();

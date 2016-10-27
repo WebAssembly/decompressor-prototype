@@ -43,15 +43,16 @@ class circular_vector {
 
   class circ_iterator : public std::bidirectional_iterator_tag {
 
+   public:
     circ_iterator() : circ_vector(nullptr), index(0) {}
 
-    explicit circ_iterator(circ_iterator& i)
+    circ_iterator(const circ_iterator& i)
         : circ_vector(i.circ_vector), index(i.index) {}
 
-    explicit circ_iterator(circular_vector& v, size_t index)
-        : circ_vector(&v), index(index) {}
+    circ_iterator(circular_vector* v, size_t index)
+        : circ_vector(v), index(index) {}
 
-    ~circ_iterator();
+    ~circ_iterator() {}
 
     circ_iterator& operator=(const circ_iterator& i) {
       circ_vector = i.circ_vector;
@@ -127,9 +128,9 @@ class circular_vector {
     contents.reserve(vector_max_size);
   }
 
-  explicit circular_vector(const circular_vector& cv)
+  circular_vector(const circular_vector& cv)
       : vector_max_size(cv.vector_max_size) {
-    for (const auto v : cv)
+    for (const value_type& v : cv)
       contents.push_back(v);
   }
 
@@ -150,31 +151,31 @@ class circular_vector {
   }
 
   const_iterator begin() const {
-    return circ_iterator(*this, 0);
+    return circ_iterator(const_cast<circular_vector*>(this), 0);
   }
 
   iterator end() {
-    return circ_iterator(*this, size());
+    return circ_iterator(this, size());
   }
 
   const_iterator end() const {
-    return circ_iterator(*this, size());
+    return circ_iterator(const_cast<circular_vector*>(this), size());
   }
 
   reverse_iterator rbegin() {
-    return circ_iterator(*this, size() - 1);
+    return circ_iterator(this, size() - 1);
   }
 
   const_reverse_iterator rbegin() const {
-    return circ_iterator(*this, size() - 1);
+    return circ_iterator(const_cast<circular_vector*>(this), size() - 1);
   }
 
   reverse_iterator rend() {
-    return circ_iterator(*this, size_type(-1));
+    return circ_iterator(this, size_type(-1));
   }
 
   const_reverse_iterator rend() const {
-    return circ_iterator(*this, size_type(-1));
+    return circ_iterator(const_cast<circular_vector*>(this), size_type(-1));
   }
 
   reference operator[](size_type n) {
@@ -244,13 +245,8 @@ class circular_vector {
   }
 
   void resize(size_type new_size) {
-    assert(new_size <= contents.max_size());
-    rotate_start_to_zero();
-    if (new_size >= vector_max_size)
-      vector_max_size = new_size;
-    else
-      for (size_t i = new_size, e = vector_max_size; i < e; ++i)
-        pop_front();
+    assert(contents.size() == 0);
+    vector_max_size = new_size;
   }
 
 
@@ -270,12 +266,6 @@ class circular_vector {
       start_index = vector_max_size - 1;
     else
       --start_index;
-  }
-  void rotate_start_to_zero() {
-    circular_vector tmp(*this);
-    clear();
-    for (size_type i = 0, e = tmp.size(); i < e; ++i)
-      push_back(tmp[i]);
   }
 };
 

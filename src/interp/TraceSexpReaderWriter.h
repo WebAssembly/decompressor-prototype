@@ -18,7 +18,7 @@
 #ifndef DECOMPRESSOR_SRC_INTERP_TRACESEXPREADERWRITER_H
 #define DECOMPRESSOR_SRC_INTERP_TRACESEXPREADERWRITER_H
 
-#include "sexp/TraceSexp.h"
+#include "interp/TraceSexpReader.h"
 #include "stream/Cursor.h"
 
 namespace wasm {
@@ -26,22 +26,22 @@ namespace wasm {
 namespace interp {
 
 // Extends the sexpression trace class to add a read cursor context.
-class TraceClassSexpReaderWriter : public filt::TraceClassSexp {
+class TraceClassSexpReaderWriter : public TraceClassSexpReader {
   TraceClassSexpReaderWriter(const TraceClassSexpReaderWriter&) = delete;
   TraceClassSexpReaderWriter& operator=(const TraceClassSexpReaderWriter&) =
       delete;
 
  public:
-  explicit TraceClassSexpReaderWriter(decode::Cursor& ReadPos,
-                                      decode::Cursor& WritePos);
-  TraceClassSexpReaderWriter(decode::Cursor& ReadPos,
-                             decode::Cursor& WritePos,
+  explicit TraceClassSexpReaderWriter(decode::Cursor* ReadPos,
+                                      decode::Cursor* WritePos);
+  TraceClassSexpReaderWriter(decode::Cursor* ReadPos,
+                             decode::Cursor* WritePos,
                              const char* Label);
-  TraceClassSexpReaderWriter(decode::Cursor& ReadPos,
-                             decode::Cursor& WritePos,
+  TraceClassSexpReaderWriter(decode::Cursor* ReadPos,
+                             decode::Cursor* WritePos,
                              FILE* File);
-  TraceClassSexpReaderWriter(decode::Cursor& ReadPos,
-                             decode::Cursor& WritePos,
+  TraceClassSexpReaderWriter(decode::Cursor* ReadPos,
+                             decode::Cursor* WritePos,
                              const char* Label,
                              FILE* File);
   ~TraceClassSexpReaderWriter();
@@ -49,8 +49,7 @@ class TraceClassSexpReaderWriter : public filt::TraceClassSexp {
   void traceContext() const OVERRIDE;
 
  protected:
-  decode::Cursor& ReadPos;
-  decode::Cursor& WritePos;
+  decode::Cursor* WritePos;
 };
 
 }  // end of namespace interp

@@ -184,7 +184,7 @@ int main(int Argc, char* Argv[]) {
       UseFileStreams = true;
     } else if (Arg == "-t") {
       if (++i >= Argc) {
-        fprintf(stderr, "No count specified after -t option\n");
+        fprintf(stderr, "No count N specified after -t option\n");
         usage(Argv[0]);
         return exit_status(EXIT_FAILURE);
       }
