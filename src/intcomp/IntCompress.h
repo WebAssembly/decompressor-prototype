@@ -42,9 +42,7 @@ class IntCompressor FINAL {
 
   ~IntCompressor();
 
-  bool errorsFound() const {
-    return Input == nullptr && Input->errorsFound();
-  }
+  bool errorsFound() const { return Input == nullptr && Input->errorsFound(); }
 
   void compress();
 
@@ -65,8 +63,8 @@ class IntCompressor FINAL {
 
  private:
   std::shared_ptr<filt::SymbolTable> Symtab;
-  interp::Reader *Input;
-  CounterWriter *Counter;
+  interp::Reader* Input;
+  CounterWriter* Counter;
   decode::ReadCursor StartPos;
   IntCountUsageMap UsageMap;
   interp::TraceClassSexpReader* Trace;

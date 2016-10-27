@@ -55,16 +55,18 @@ class CounterWriter : public Writer {
   bool writeValue(decode::IntType Value, const filt::Node* Format) OVERRIDE;
   bool writeAction(const filt::CallbackNode* Action) OVERRIDE;
 
-
  private:
   IntCountUsageMap& UsageMap;
   circular_vector<IntType> input_seq;
   size_t Cutoff;
 };
 
-CounterWriter::~CounterWriter() {}
+CounterWriter::~CounterWriter() {
+}
 
-StreamType CounterWriter::getStreamType() const { return StreamType::Int; }
+StreamType CounterWriter::getStreamType() const {
+  return StreamType::Int;
+}
 
 void CounterWriter::setSequenceSize(size_t Size) {
   input_seq.clear();
@@ -125,8 +127,7 @@ bool CounterWriter::writeVaruint64(uint64_t Value) {
   return true;
 }
 
-bool CounterWriter::writeValue(decode::IntType Value,
-                               const filt::Node*) {
+bool CounterWriter::writeValue(decode::IntType Value, const filt::Node*) {
   addToUsageMap(Value);
   return true;
 }
@@ -138,8 +139,7 @@ bool CounterWriter::writeAction(const filt::CallbackNode* Action) {
 IntCompressor::IntCompressor(std::shared_ptr<decode::Queue> InputStream,
                              std::shared_ptr<decode::Queue> OutputStream,
                              std::shared_ptr<filt::SymbolTable> Symtab)
-    : Symtab(Symtab), CountCutoff(0), WeightCutoff(0), LengthLimit(1)
-{
+    : Symtab(Symtab), CountCutoff(0), WeightCutoff(0), LengthLimit(1) {
   Counter = new CounterWriter(UsageMap, WeightCutoff);
   Trace = new TraceClassSexpReader(nullptr, "IntCompress");
   Input = new Reader(InputStream, *Counter, Symtab, *Trace);
@@ -172,15 +172,23 @@ struct IntSeqCollector {
   IntCountUsageMap& UsageMap;
   typedef std::vector<std::pair<size_t, IntCountNode*>> WeightedVector;
   WeightedVector Values;
-  size_t WeightTotal = 0;
-  size_t CountTotal = 0;
-  size_t WeightReported = 0;
-  size_t CountReported = 0;
-  size_t NumNodesReported = 0;
-  size_t CountCutoff = 1;
-  size_t WeightCutoff = 1;
+  size_t WeightTotal;
+  size_t CountTotal;
+  size_t WeightReported;
+  size_t CountReported;
+  size_t NumNodesReported;
+  size_t CountCutoff;
+  size_t WeightCutoff;
 
-  IntSeqCollector(IntCountUsageMap& UsageMap) : UsageMap(UsageMap) {}
+  IntSeqCollector(IntCountUsageMap& UsageMap)
+      : UsageMap(UsageMap),
+        WeightTotal(0),
+        CountTotal(0),
+        WeightReported(0),
+        CountReported(0),
+        NumNodesReported(0),
+        CountCutoff(1),
+        WeightCutoff(1) {}
   ~IntSeqCollector() {}
 
   void collect();
@@ -215,18 +223,16 @@ void IntSeqCollector::collectNode(IntCountNode* Nd) {
 
 void IntSeqCollector::describe(FILE* Out) {
   fprintf(Out, "Total weight: %" PRIuMAX " Reported Weight %" PRIuMAX
-          " Number nodes reported: %" PRIuMAX "\n",
-          uintmax_t(WeightTotal),
-          uintmax_t(WeightReported),
+               " Number nodes reported: %" PRIuMAX "\n",
+          uintmax_t(WeightTotal), uintmax_t(WeightReported),
           uintmax_t(NumNodesReported));
   fprintf(Out, "Total count: %" PRIuMAX " Reported count %" PRIuMAX "\n",
-          uintmax_t(CountTotal),
-          uintmax_t(CountReported));
+          uintmax_t(CountTotal), uintmax_t(CountReported));
   for (const auto& pair : Values)
     pair.second->describe(Out);
 }
 
-} // end of anonymous namespace
+}  // end of anonymous namespace
 
 void IntCompressor::describe(FILE* Out) {
   IntSeqCollector Collector(UsageMap);

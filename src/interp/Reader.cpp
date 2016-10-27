@@ -145,7 +145,8 @@ Reader::Reader(std::shared_ptr<decode::Queue> StrmInput,
   OpcodeLocalsStack.reserve(DefaultStackSize);
 }
 
-Reader::~Reader() {}
+Reader::~Reader() {
+}
 
 ReadCursor& Reader::getPos() {
   return ReadPos;
