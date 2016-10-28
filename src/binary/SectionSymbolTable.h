@@ -43,7 +43,7 @@ class SectionSymbolTable {
   ~SectionSymbolTable() {}
   void installSection(const SectionNode* Section);
   const IndexLookupType& getVector() { return IndexLookup; }
-  void addSymbol(std::string& Name) {
+  void addSymbol(const std::string& Name) {
     addSymbol(Symtab->getSymbolDefinition(Name));
   }
   uint32_t getSymbolIndex(SymbolNode* Symbol);

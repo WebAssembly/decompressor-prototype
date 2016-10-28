@@ -863,7 +863,7 @@ void Reader::resume() {
                 if (NumParams->getValue() != IntType(NumCallArgs)) {
                   fprintf(Trace.getFile(), "Definition %s expects %" PRIuMAX
                                            "parameters, found: %" PRIuMAX "\n",
-                          Sym->getStringName().c_str(),
+                          Sym->getName().c_str(),
                           uintmax_t(NumParams->getValue()),
                           uintmax_t(NumCallArgs));
                   return fail("Unable to evaluate call");

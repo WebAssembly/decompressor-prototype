@@ -130,7 +130,7 @@ struct IntValue {
 %token XOR           "xor"
 
 // Terminal classes
-%token <wasm::filt::ExternalName> IDENTIFIER
+%token <std::string> IDENTIFIER
 %token <wasm::filt::IntValue> INTEGER
 
 // Nonterminal classes.

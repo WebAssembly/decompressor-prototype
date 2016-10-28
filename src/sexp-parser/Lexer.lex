@@ -36,7 +36,7 @@ using namespace wasm::filt;
 #define YY_FATAL_ERROR(msg) LexDriver->fatal(msg)
 
 static Driver *LexDriver = nullptr;
-static ExternalName Buffer;
+static std::string Buffer;
 
 static void buffer_Text(const std::string Text) {
   Buffer.append(Text);

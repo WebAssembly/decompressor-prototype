@@ -39,8 +39,7 @@ void SectionSymbolTable::addSymbol(SymbolNode* Sym) {
 void SectionSymbolTable::installSymbols(const Node* Nd) {
   // TODO(karlschimpf) Make this non-recursive.
   if (const SymbolNode* Symbol = dyn_cast<SymbolNode>(Nd)) {
-    std::string SymName = Symbol->getStringName();
-    addSymbol(SymName);
+    addSymbol(Symbol->getName());
   }
   for (const auto* Kid : *Nd)
     installSymbols(Kid);
@@ -57,7 +56,7 @@ uint32_t SectionSymbolTable::getSymbolIndex(SymbolNode* Symbol) {
     return uint32_t(Sym);
   const auto Iter = SymbolLookup.find(Symbol);
   if (Iter == SymbolLookup.end())
-    fatal("Can't find index for symbol: " + Symbol->getStringName());
+    fatal("Can't find index for symbol: " + Symbol->getName());
   return Iter->second + NumPredefinedSymbols;
 }
 

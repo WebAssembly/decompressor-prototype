@@ -221,7 +221,7 @@ void BinaryWriter::writeSymbol(const Node* Symbol) {
   assert(isa<SymbolNode>(Symbol) &&
          "BinaryWriter::writeSymbol called on non-symbol");
   const auto* Sym = cast<SymbolNode>(Symbol);
-  InternalName SymName = Sym->getName();
+  const std::string& SymName = Sym->getName();
   Writer->writeVaruint32(SymName.size(), WritePos);
   for (size_t i = 0, len = SymName.size(); i < len; ++i)
     Writer->writeUint8(SymName[i], WritePos);

@@ -174,20 +174,18 @@ void SymbolNode::installCaches(NodeVectorType& AdditionalNodes) {
     AdditionalNodes.push_back(DefineDefinition);
 }
 
-std::string SymbolNode::getStringName() const {
-  std::string Str(Name.size(), '\0');
-  for (size_t i = 0; i < Name.size(); ++i)
-    Str[i] = char(Name[i]);
-  return Str;
-}
-
 SymbolTable::SymbolTable()
     // TODO(karlschimpf) Switch Alloc to an ArenaAllocator once working.
-    : Trace("sexp st"),
-      Alloc(std::make_shared<Malloc>()),
+    : Trace("sexp_st"),
       NextCreationIndex(0) {
-  Error = Alloc->create<ErrorNode>(*this);
+  Error = create<ErrorNode>();
   init();
+}
+
+SymbolTable::~SymbolTable() {
+  clear();
+  for (Node* Nd : Allocated)
+    delete Nd;
 }
 
 void SymbolTable::init() {
@@ -203,7 +201,7 @@ void SymbolTable::init() {
       create<CallbackNode>(Predefined[uint32_t(PredefinedSymbol::BlockExit)]);
 }
 
-SymbolNode* SymbolTable::getSymbolDefinition(ExternalName& Name) {
+SymbolNode* SymbolTable::getSymbolDefinition(const std::string& Name) {
   SymbolNode* Node = SymbolMap[Name];
   if (Node == nullptr) {
     Node = create<SymbolNode>(Name);
@@ -501,9 +499,9 @@ bool DefineNode::isValidParam(IntType Index) {
   return Index < cast<ParamsNode>(getKid(1))->getValue();
 }
 
-std::string DefineNode::getName() const {
+const std::string DefineNode::getName() const {
   assert(isa<SymbolNode>(getKid(0)));
-  return dyn_cast<SymbolNode>(getKid(0))->getStringName();
+  return cast<SymbolNode>(getKid(0))->getName();
 }
 
 size_t DefineNode::getNumLocals() const {

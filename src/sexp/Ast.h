@@ -29,7 +29,6 @@
 #ifndef DECOMPRESSOR_SRC_SEXP_AST_H
 #define DECOMPRESSOR_SRC_SEXP_AST_H
 
-#include "ADT/arena_vector.h"
 #include "sexp/Ast.def"
 #include "sexp/NodeType.h"
 #include "sexp/Strings.def"
@@ -63,8 +62,6 @@ class CallbackNode;
 AST_INTEGERNODE_TABLE
 #undef X
 
-typedef std::string ExternalName;
-typedef ARENA_VECTOR(uint8_t) InternalName;
 typedef std::unordered_set<Node*> VisitedNodesType;
 typedef std::vector<Node*> NodeVectorType;
 typedef std::vector<const Node*> ConstNodeVectorType;
@@ -150,27 +147,25 @@ static constexpr PredefinedSymbol MaxPredefinedSymbol =
 extern PredefinedSymbol toPredefinedSymbol(uint32_t Value);
 extern const char* getName(PredefinedSymbol);
 
+// TODO(karlschimpf): Code no longer uses allocator. Remove from API.
 class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
   SymbolTable(const SymbolTable&) = delete;
   SymbolTable& operator=(const SymbolTable&) = delete;
 
  public:
   explicit SymbolTable();
-  ~SymbolTable() { clear(); }
+  ~SymbolTable();
   // Gets existing symbol if known. Otherwise returns nullptr.
-  SymbolNode* getSymbol(ExternalName& Name) { return SymbolMap[Name]; }
+  SymbolNode* getSymbol(const std::string& Name) { return SymbolMap[Name]; }
   SymbolNode* getPredefined(PredefinedSymbol Sym) {
     return Predefined[uint32_t(Sym)];
   }
   // Gets existing symbol if known. Otherwise returns newly created symbol.
   // Used to keep symbols unique within filter s-expressions.
-  SymbolNode* getSymbolDefinition(ExternalName& Name);
-  SymbolNode* getSymbolDefinition(const char* NameText) {
-    std::string Name(NameText);
-    return getSymbolDefinition(Name);
-  }
-// Gets integer node (as defined by the arguments) if known. Otherwise
-// returns newly created integer.
+  SymbolNode* getSymbolDefinition(const std::string& Name);
+
+  // Gets integer node (as defined by the arguments) if known. Otherwise
+  // returns newly created integer.
 #define X(tag, format, defval, mergable, NODE_DECLS)           \
   tag##Node* get##tag##Definition(decode::IntType Value,       \
                                   decode::ValueFormat Format); \
@@ -184,13 +179,14 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
   const CallbackNode* getBlockExitCallback() const { return BlockExitCallback; }
   // Install definitions in tree defined by root.
   void install(Node* Root);
-  std::shared_ptr<alloc::Allocator> getAllocator() const { return Alloc; }
   void clear() { SymbolMap.clear(); }
   int getNextCreationIndex() { return ++NextCreationIndex; }
 
   template <typename T, typename... Args>
   T* create(Args&&... args) {
-    return Alloc->create<T>(*this, std::forward<Args>(args)...);
+    T* Nd = new T(*this, std::forward<Args>(args)...);
+    Allocated.push_back(Nd);
+    return Nd;
   }
 
   static bool installPredefinedDefaults(std::shared_ptr<SymbolTable> Symtab,
@@ -199,13 +195,11 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
   TraceClassSexp& getTrace() { return Trace; }
 
  private:
+  std::vector<Node*> Allocated;
   TraceClassSexp Trace;
-  std::shared_ptr<alloc::Allocator> Alloc;
   Node* Error;
   int NextCreationIndex;
-  // TODO(KarlSchimpf): Use arena allocator on map.
-  std::map<ExternalName, SymbolNode*> SymbolMap;
-  // TODO(karlschimpf): Use arena allocator on map.
+  std::map<std::string, SymbolNode*> SymbolMap;
   std::map<IntegerValue, IntegerNode*> IntMap;
   std::vector<SymbolNode*> Predefined;
   CallbackNode* BlockEnterCallback;
@@ -453,13 +447,12 @@ class SymbolNode FINAL : public NullaryNode {
   friend class SymbolTable;
 
  public:
-  SymbolNode(SymbolTable& Symtab, ExternalName& _Name)
-      : NullaryNode(Symtab, OpSymbol), Name(Symtab.getAllocator().get()) {
-    init(_Name);
+  SymbolNode(SymbolTable& Symtab, const std::string& Name)
+      : NullaryNode(Symtab, OpSymbol), Name(Name) {
+    init();
   }
   ~SymbolNode() OVERRIDE {}
-  const InternalName& getName() const { return Name; }
-  std::string getStringName() const;
+  const std::string& getName() const { return Name; }
   const Node* getDefineDefinition() const { return DefineDefinition; }
   void setDefineDefinition(Node* Defn) { DefineDefinition = Defn; }
 
@@ -468,13 +461,10 @@ class SymbolNode FINAL : public NullaryNode {
   static bool implementsClass(NodeType Type) { return Type == OpSymbol; }
 
  private:
-  InternalName Name;
+  std::string Name;
   Node* DefineDefinition;
   PredefinedSymbol PredefinedValue;
-  void init(ExternalName& _Name) {
-    Name.reserve(Name.size());
-    for (const auto& V : _Name)
-      Name.emplace_back(V);
+  void init() {
     DefineDefinition = nullptr;
     PredefinedValue = PredefinedSymbol::Unknown;
   }
@@ -624,10 +614,9 @@ class NaryNode : public Node {
   static bool implementsClass(NodeType Type);
 
  protected:
-  ARENA_VECTOR(Node*) Kids;
+  std::vector<Node*> Kids;
   NaryNode(SymbolTable& Symtab, NodeType Type)
-      : Node(Symtab, Type),
-        Kids(alloc::TemplateAllocator<Node*>(Symtab.getAllocator().get())) {}
+      : Node(Symtab, Type) {}
 };
 
 #define X(tag, NODE_DECLS)                                                 \
