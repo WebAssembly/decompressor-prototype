@@ -531,8 +531,9 @@ loop_body
         ;
 
 section
-        : %empty {
+        : declaration {
             $$ = Driver.create<SectionNode>();
+            $$->append($1);
           }
           | section declaration { // defines etc.
             $$ = $1;
