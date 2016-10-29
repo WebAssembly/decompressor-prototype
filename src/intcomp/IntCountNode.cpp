@@ -27,7 +27,9 @@ namespace intcomp {
 IntCountNode::IntCountNode(IntType Value, IntCountNode* Parent)
     : Count(0), Value(Value), Parent(Parent) {}
 
-IntCountNode::~IntCountNode() {}
+IntCountNode::~IntCountNode() {
+  destroy(NextUsageMap);
+}
 
 size_t IntCountNode::getWeight() const {
   size_t Len = pathLength();
@@ -75,17 +77,13 @@ size_t IntCountNode::pathLength(size_t MaxPath) const {
 IntCountNode* IntCountNode::lookup(IntCountUsageMap& UsageMap,
                                    IntType Value, IntCountNode* Parent) {
   if (UsageMap.count(Value) == 0)
-    UsageMap[Value].reset(new IntCountNode(Value, Parent));
-  return UsageMap[Value].get();
+    UsageMap[Value] = new IntCountNode(Value, Parent);
+  return UsageMap[Value];
 }
 
-IntCountUsageMap* IntCountNode::getNextUsageMap(bool CreateIfNull) {
-  IntCountUsageMap* Map = NextUsageMap.get();
-  if (Map || !CreateIfNull)
-    return Map;
-  Map = new IntCountUsageMap();
-  NextUsageMap.reset(Map);
-  return Map;
+void IntCountNode::destroy(IntCountUsageMap& UsageMap) {
+  for (auto& pair : UsageMap)
+    delete pair.second;
 }
 
 } // end of namespace intcomp

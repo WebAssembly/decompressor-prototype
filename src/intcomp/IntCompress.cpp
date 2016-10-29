@@ -36,7 +36,7 @@ class CounterWriter : public Writer {
 
  public:
   CounterWriter(IntCountUsageMap& UsageMap)
-      : UsageMap(UsageMap), input_seq(1), CountCutoff(1),
+      : UsageMap(UsageMap), input_seq(new circular_vector<IntType>(1, 0)), CountCutoff(1),
         WeightCutoff(1) {}
 
   ~CounterWriter() OVERRIDE;
@@ -60,12 +60,14 @@ class CounterWriter : public Writer {
 
  private:
   IntCountUsageMap& UsageMap;
-  circular_vector<IntType> input_seq;
+  circular_vector<IntType>* input_seq;
   uint64_t CountCutoff;
   uint64_t WeightCutoff;
 };
 
 CounterWriter::~CounterWriter() {
+  // TODO(karlschimpf): Recover memory of input_seq. Not done now due to
+  // (optimized) of destruction of circular_vector<IntType>
 }
 
 StreamType CounterWriter::getStreamType() const {
@@ -73,19 +75,19 @@ StreamType CounterWriter::getStreamType() const {
 }
 
 void CounterWriter::setSequenceSize(size_t Size) {
-  input_seq.clear();
-  input_seq.resize(Size);
+  input_seq->clear();
+  input_seq->resize(Size);
 }
 
 void CounterWriter::addToUsageMap(IntType Value) {
-  input_seq.push_back(Value);
-  if (!input_seq.full())
+  input_seq->push_back(Value);
+  if (!input_seq->full())
     return;
   IntCountUsageMap* Map = &UsageMap;
   IntCountNode* Nd = nullptr;
-  size_t InputSize = input_seq.size();
+  size_t InputSize = input_seq->size();
   for (size_t i = 0, e = InputSize; i < e; ++i) {
-    IntType Val = input_seq[i];
+    IntType Val = (*input_seq)[i];
     if (InputSize > 1) {
       if (UsageMap[Val]->getCount() < CountCutoff)
         continue;
@@ -96,7 +98,7 @@ void CounterWriter::addToUsageMap(IntType Value) {
     if (i + 1 == e)
       Nd->increment();
     else
-      Map = Nd->getNextUsageMap(true);
+      Map = Nd->getNextUsageMap();
   }
 }
 
@@ -156,10 +158,10 @@ IntCompressor::IntCompressor(std::shared_ptr<decode::Queue> InputStream,
 }
 
 IntCompressor::~IntCompressor() {
-  TRACE_METHOD("~IntCompressor");
   delete Input;
   delete Counter;
   delete Trace;
+  IntCountNode::destroy(UsageMap);
 }
 
 void IntCompressor::compress() {
@@ -208,7 +210,7 @@ struct IntSeqCollector {
 
 void IntSeqCollector::collect() {
   for (const auto& pair : UsageMap)
-    collectNode(pair.second.get());
+    collectNode(pair.second);
   std::sort(Values.begin(), Values.end());
   std::reverse(Values.begin(), Values.end());
 }
@@ -228,7 +230,7 @@ void IntSeqCollector::collectNode(IntCountNode* Nd) {
   ++NumNodesReported;
   if (IntCountUsageMap* NdUsageMap = Nd->getNextUsageMap())
     for (const auto& pair : *NdUsageMap)
-      collectNode(pair.second.get());
+      collectNode(pair.second);
 }
 
 void IntSeqCollector::describe(FILE* Out) {

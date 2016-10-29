@@ -34,7 +34,6 @@
 #include "sexp/Strings.def"
 #include "sexp/TraceSexp.h"
 #include "stream/WriteUtils.h"
-#include "utils/Allocator.h"
 #include "utils/Casting.h"
 #include "utils/Defs.h"
 #include "utils/initialized_ptr.h"
@@ -644,7 +643,7 @@ class SelectBaseNode : public NaryNode {
   const CaseNode* getCase(decode::IntType Key) const;
 
  protected:
-  // TODO(karlschimpf) Hook this up to allocator.
+  // TODO(karlschimpf) Hook this up to an allocator?
   std::unordered_map<decode::IntType, const CaseNode*> LookupMap;
 
   SelectBaseNode(SymbolTable& Symtab, NodeType Type) : NaryNode(Symtab, Type) {}

@@ -28,7 +28,6 @@
 
 namespace wasm {
 
-using namespace alloc;
 using namespace decode;
 using namespace utils;
 

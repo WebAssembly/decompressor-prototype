@@ -30,8 +30,7 @@ namespace intcomp {
 
 class IntCountNode;
 
-typedef std::map<decode::IntType,
-                 std::unique_ptr<IntCountNode>> IntCountUsageMap;
+typedef std::map<decode::IntType, IntCountNode*> IntCountUsageMap;
 
 // Implements a notion of a trie on value usage counts.
 class IntCountNode : public std::enable_shared_from_this<IntCountNode> {
@@ -50,11 +49,12 @@ class IntCountNode : public std::enable_shared_from_this<IntCountNode> {
   static IntCountNode* lookup(IntCountUsageMap& UsageMap,
                               decode::IntType Value,
                               IntCountNode* Parent = nullptr);
-  IntCountUsageMap* getNextUsageMap(bool CreateIfNull=false);
+  IntCountUsageMap* getNextUsageMap() { return &NextUsageMap; }
+  static void destroy(IntCountUsageMap& UsageMap);
  private:
   size_t Count;
   decode::IntType Value;
-  std::unique_ptr<IntCountUsageMap> NextUsageMap;
+  IntCountUsageMap NextUsageMap;
   IntCountNode* Parent;
 };
 
