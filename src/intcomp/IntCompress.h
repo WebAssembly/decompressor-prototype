@@ -71,6 +71,7 @@ class IntCompressor FINAL {
   uint64_t CountCutoff;
   uint64_t WeightCutoff;
   size_t LengthLimit;
+  void compressUpToSize(size_t Size);
 };
 
 }  // end of namespace intcomp
