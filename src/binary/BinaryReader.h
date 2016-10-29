@@ -142,7 +142,7 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
   uint32_t CasmVersion;
   uint32_t WasmVersion;
   mutable TraceClassSexpReader Trace;
-  ExternalName Name;
+  std::string Name;
   FileNode* CurFile;
   SectionNode* CurSection;
   Method CurBlockApplyFcn;

@@ -218,7 +218,7 @@
 #define DEFINE_DECLS                                                           \
  public:                                                                       \
   bool isValidParam(decode::IntType Index);                                    \
-  std::string getName() const;                                                 \
+  const std::string getName() const;                                           \
   size_t getNumLocals() const;                                                 \
 
 //#define X(tag)

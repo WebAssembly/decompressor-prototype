@@ -60,7 +60,7 @@ class Driver {
   AST_INTEGERNODE_TABLE
 #undef X
 
-  SymbolNode* getSymbolDefinition(ExternalName& Name) {
+  SymbolNode* getSymbolDefinition(std::string& Name) {
     return Table->getSymbolDefinition(Name);
   }
 
