@@ -37,7 +37,7 @@ class CounterWriter : public Writer {
 
  public:
   CounterWriter(IntCountUsageMap& UsageMap)
-      : UsageMap(UsageMap), input_seq(new circular_vector<IntType>(1, 0)), CountCutoff(1),
+      : UsageMap(UsageMap), input_seq(new circular_vector<IntType>(1)), CountCutoff(1),
         WeightCutoff(1), UpToSize(0) {}
 
   ~CounterWriter() OVERRIDE;
@@ -64,6 +64,11 @@ class CounterWriter : public Writer {
   bool writeValue(decode::IntType Value, const filt::Node* Format) OVERRIDE;
   bool writeAction(const filt::CallbackNode* Action) OVERRIDE;
 
+  // For debugging
+#if 0
+  void describeInput();
+#endif
+
  private:
   IntCountUsageMap& UsageMap;
   circular_vector<IntType>* input_seq;
@@ -72,6 +77,15 @@ class CounterWriter : public Writer {
   size_t UpToSize;
   void popValuesFromInputSeq(size_t Size);
 };
+
+#if 0
+void CounterWriter::describeInput() {
+  fprintf(stderr, "input seq:");
+  for (size_t i = 0; i < input_seq->size(); ++i)
+    fprintf(stderr, " %" PRIuMAX , uintmax_t((*input_seq).at(i)));
+  fprintf(stderr, "\n");
+}
+#endif
 
 CounterWriter::~CounterWriter() {
   // TODO(karlschimpf): Recover memory of input_seq. Not done now due to
@@ -101,6 +115,7 @@ void CounterWriter::addInputSeqToUsageMap() {
   for (size_t i = 0, e = input_seq->size(); i < e; ++i) {
     IntType Val = (*input_seq)[i];
     Nd = IntCountNode::lookup(*Map, Val, Nd);
+
     if (UpToSize == 1 || i > 0)
       Nd->increment();
     if (e > 1) {

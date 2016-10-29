@@ -118,24 +118,21 @@ class circular_vector {
   typedef const circ_iterator const_reverse_iterator;
 
 
-  explicit circular_vector(size_type vector_max_size,
-                           const value_type& value = value_type())
-      : contents(value),
-        vector_max_size(vector_max_size),
+  explicit circular_vector(size_type vector_max_size)
+      : vector_max_size(vector_max_size),
         start_index(0),
         vector_size(0) {
-    assert(vector_max_size <= contents.max_size());
-    contents.reserve(vector_max_size);
+    prefill();
   }
 
   circular_vector(const circular_vector& cv)
-      : vector_max_size(cv.vector_max_size) {
-    for (const value_type& v : cv)
-      contents.push_back(v);
+      : contents(cv.contents),
+        vector_max_size(cv.vector_max_size),
+        start_index(cv.start_index),
+        vector_size(cv.vector_size) {
   }
 
-  ~circular_vector() {
-  }
+  ~circular_vector() {}
 
   size_type size() const { return vector_size; }
 
@@ -180,11 +177,11 @@ class circular_vector {
   }
 
   reference operator[](size_type n) {
-    return contents[get_index(n)];
+    return contents.at(get_index(n));
   }
 
   const_reference operator[](size_type n) const {
-    return contents[get_index(n)];
+    return contents.at(get_index(n));
   }
 
   reference at(size_type n) { return contents.at(get_index(n)); }
@@ -193,32 +190,34 @@ class circular_vector {
     return contents.at(get_index(n));
   }
 
-  reference front() { return contents[get_index(0)]; }
+  reference front() { return at(0); }
 
   const_reference front() const {
-    return contents[get_index(0)];
+    return at(0);
   }
 
-  reference back() { return contents[get_index(vector_size - 1)]; }
+  reference back() { return at(vector_size - 1); }
 
   const_reference back() const {
-    return contents[get_index(vector_size - 1)];
+    return at(vector_size - 1);
   }
 
   void push_front(const value_type& v) {
     if (vector_size < vector_max_size)
       ++vector_size;
     dec_start_index();
-    contents[start_index] = v;
+    at(0) = v;
+    return;
   }
 
   void push_back(const value_type& v) {
-    if (vector_size == vector_max_size) {
-      contents[start_index] = v;
-      inc_start_index();
+    if (vector_size < vector_max_size) {
+      at(vector_size++) = v;
       return;
     }
-    contents[get_index(vector_size++)] = v;
+    at(0) = v;
+    inc_start_index();
+    return;
   }
 
   void pop_front() {
@@ -247,9 +246,10 @@ class circular_vector {
 
   void resize(size_type new_size) {
     assert(contents.size() == 0);
+    clear();
     vector_max_size = new_size;
+    prefill();
   }
-
 
  private:
   std::vector<T> contents;
@@ -267,6 +267,11 @@ class circular_vector {
       start_index = vector_max_size - 1;
     else
       --start_index;
+  }
+  void prefill() {
+    contents.clear();
+    for (size_t i = 0; i < vector_max_size; ++i)
+      contents.push_back(0);
   }
 };
 
