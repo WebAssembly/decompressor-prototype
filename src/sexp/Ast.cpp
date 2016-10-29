@@ -175,29 +175,35 @@ void SymbolNode::installCaches(NodeVectorType& AdditionalNodes) {
 
 SymbolTable::SymbolTable()
     // TODO(karlschimpf) Switch Alloc to an ArenaAllocator once working.
-    : Trace("sexp_st"),
-      NextCreationIndex(0) {
+    // TODO(karlschimpf) Figure out why we can't deallocate Allocated!
+    : Allocated(new std::vector<Node*>()), Trace("sexp_st"),
+      NextCreationIndex(0),
+      Predefined(new std::vector<SymbolNode*>()) {
   Error = create<ErrorNode>();
   init();
 }
 
 SymbolTable::~SymbolTable() {
   clear();
-  for (Node* Nd : Allocated)
+  deallocateNodes();
+}
+
+void SymbolTable::deallocateNodes() {
+  for (Node* Nd : *Allocated)
     delete Nd;
 }
 
 void SymbolTable::init() {
-  Predefined.reserve(NumPredefinedSymbols);
+  Predefined->reserve(NumPredefinedSymbols);
   for (size_t i = 0; i < NumPredefinedSymbols; ++i) {
     SymbolNode* Nd = getSymbolDefinition(PredefinedName[i]);
-    Predefined.push_back(Nd);
+    Predefined->push_back(Nd);
     Nd->setPredefinedSymbol(toPredefinedSymbol(i));
   }
   BlockEnterCallback =
-      create<CallbackNode>(Predefined[uint32_t(PredefinedSymbol::BlockEnter)]);
+      create<CallbackNode>((*Predefined)[uint32_t(PredefinedSymbol::BlockEnter)]);
   BlockExitCallback =
-      create<CallbackNode>(Predefined[uint32_t(PredefinedSymbol::BlockExit)]);
+      create<CallbackNode>((*Predefined)[uint32_t(PredefinedSymbol::BlockExit)]);
 }
 
 SymbolNode* SymbolTable::getSymbolDefinition(const std::string& Name) {

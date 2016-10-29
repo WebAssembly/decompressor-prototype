@@ -157,7 +157,7 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
   // Gets existing symbol if known. Otherwise returns nullptr.
   SymbolNode* getSymbol(const std::string& Name) { return SymbolMap[Name]; }
   SymbolNode* getPredefined(PredefinedSymbol Sym) {
-    return Predefined[uint32_t(Sym)];
+    return (*Predefined)[uint32_t(Sym)];
   }
   // Gets existing symbol if known. Otherwise returns newly created symbol.
   // Used to keep symbols unique within filter s-expressions.
@@ -184,7 +184,7 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
   template <typename T, typename... Args>
   T* create(Args&&... args) {
     T* Nd = new T(*this, std::forward<Args>(args)...);
-    Allocated.push_back(Nd);
+    Allocated->push_back(Nd);
     return Nd;
   }
 
@@ -194,17 +194,19 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
   TraceClassSexp& getTrace() { return Trace; }
 
  private:
-  std::vector<Node*> Allocated;
+  std::vector<Node*>* Allocated;
   TraceClassSexp Trace;
   Node* Error;
   int NextCreationIndex;
   std::map<std::string, SymbolNode*> SymbolMap;
   std::map<IntegerValue, IntegerNode*> IntMap;
-  std::vector<SymbolNode*> Predefined;
+  // TODO(karlschimpf) Figure out why vector destroy not working.
+  std::vector<SymbolNode*>* Predefined;
   CallbackNode* BlockEnterCallback;
   CallbackNode* BlockExitCallback;
 
   void init();
+  void deallocateNodes();
 
   void installDefinitions(Node* Root);
   void clearSubtreeCaches(Node* Nd,
