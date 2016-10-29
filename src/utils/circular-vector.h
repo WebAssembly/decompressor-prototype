@@ -134,7 +134,8 @@ class circular_vector {
       contents.push_back(v);
   }
 
-  ~circular_vector() {}
+  ~circular_vector() {
+  }
 
   size_type size() const { return vector_size; }
 

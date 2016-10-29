@@ -40,8 +40,7 @@ TraceClassSexpReader::TraceClassSexpReader(decode::Cursor* ReadPos,
     : TraceClassSexp(Label, File), ReadPos(ReadPos) {
 }
 
-TraceClassSexpReader::~TraceClassSexpReader() {
-}
+TraceClassSexpReader::~TraceClassSexpReader() {}
 
 void TraceClassSexpReader::traceContext() const {
   if (ReadPos == nullptr)
