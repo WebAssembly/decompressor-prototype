@@ -76,14 +76,18 @@ size_t IntCountNode::pathLength(size_t MaxPath) const {
 
 IntCountNode* IntCountNode::lookup(IntCountUsageMap& UsageMap,
                                    IntType Value, IntCountNode* Parent) {
-  if (UsageMap.count(Value) == 0)
-    UsageMap[Value] = new IntCountNode(Value, Parent);
-  return UsageMap[Value];
+  IntCountNode* Nd = UsageMap[Value];
+  if (Nd == nullptr) {
+    Nd = new IntCountNode(Value, Parent);
+    UsageMap[Value] = Nd;
+  }
+  return Nd;
 }
 
 void IntCountNode::destroy(IntCountUsageMap& UsageMap) {
   for (auto& pair : UsageMap)
     delete pair.second;
+  UsageMap.clear();
 }
 
 } // end of namespace intcomp

@@ -24,6 +24,7 @@
 namespace wasm {
 
 using namespace decode;
+using namespace filt;
 using namespace interp;
 using namespace utils;
 
@@ -37,15 +38,20 @@ class CounterWriter : public Writer {
  public:
   CounterWriter(IntCountUsageMap& UsageMap)
       : UsageMap(UsageMap), input_seq(new circular_vector<IntType>(1, 0)), CountCutoff(1),
-        WeightCutoff(1) {}
+        WeightCutoff(1), UpToSize(0) {}
 
   ~CounterWriter() OVERRIDE;
 
   void setSequenceSize(size_t Size);
   void setCountCutoff(uint64_t NewValue) { CountCutoff = NewValue; }
   void setWeightCutoff(uint64_t NewValue) { WeightCutoff = NewValue; }
+  void setUpToSize(size_t NewSize) { UpToSize = NewSize; }
+  void resetUpToSize() { UpToSize = 0; }
+  size_t geUpToSize() const { return UpToSize; }
 
   void addToUsageMap(IntType Value);
+  void addInputSeqToUsageMap();
+  void addAllInputSeqsToUsageMap();
 
   StreamType getStreamType() const OVERRIDE;
   bool writeUint8(uint8_t Value) OVERRIDE;
@@ -63,6 +69,8 @@ class CounterWriter : public Writer {
   circular_vector<IntType>* input_seq;
   uint64_t CountCutoff;
   uint64_t WeightCutoff;
+  size_t UpToSize;
+  void popValuesFromInputSeq(size_t Size);
 };
 
 CounterWriter::~CounterWriter() {
@@ -79,27 +87,53 @@ void CounterWriter::setSequenceSize(size_t Size) {
   input_seq->resize(Size);
 }
 
+void CounterWriter::popValuesFromInputSeq(size_t Size) {
+  for (size_t i = 0; i < Size; ++i) {
+    if (input_seq->empty())
+      return;
+    input_seq->pop_front();
+  }
+}
+
+void CounterWriter::addInputSeqToUsageMap() {
+  IntCountUsageMap* Map = &UsageMap;
+  IntCountNode* Nd = nullptr;
+  for (size_t i = 0, e = input_seq->size(); i < e; ++i) {
+    IntType Val = (*input_seq)[i];
+    Nd = IntCountNode::lookup(*Map, Val, Nd);
+    if (UpToSize == 1 || i > 0)
+      Nd->increment();
+    if (e > 1) {
+      // TODO(karlschimpf) We probably want to make this cutoff aware of
+      // the path length, so that long sequences are more likely to be
+      // found.
+      if (Nd->getCount() < CountCutoff ||
+          Nd->getWeight() < WeightCutoff) {
+        popValuesFromInputSeq(i == 0 ? 1 : i);
+        return;
+      }
+    }
+    if (i + 1 == e) {
+      popValuesFromInputSeq(e);
+      return;
+    }
+    Map = Nd->getNextUsageMap();
+  }
+  // If reached, no values added. Pop one value so that this
+  // metod guarantees to shrink the input sequence.
+  popValuesFromInputSeq(1);
+}
+
+void CounterWriter::addAllInputSeqsToUsageMap() {
+  while (!input_seq->empty())
+    addInputSeqToUsageMap();
+}
+
 void CounterWriter::addToUsageMap(IntType Value) {
   input_seq->push_back(Value);
   if (!input_seq->full())
     return;
-  IntCountUsageMap* Map = &UsageMap;
-  IntCountNode* Nd = nullptr;
-  size_t InputSize = input_seq->size();
-  for (size_t i = 0, e = InputSize; i < e; ++i) {
-    IntType Val = (*input_seq)[i];
-    if (InputSize > 1) {
-      if (UsageMap[Val]->getCount() < CountCutoff)
-        continue;
-      if (UsageMap[Val]->getWeight() < WeightCutoff)
-        continue;
-    }
-    Nd = IntCountNode::lookup(*Map, Val, Nd);
-    if (i + 1 == e)
-      Nd->increment();
-    else
-      Map = Nd->getNextUsageMap();
-  }
+  addInputSeqToUsageMap();
 }
 
 bool CounterWriter::writeUint8(uint8_t Value) {
@@ -143,7 +177,19 @@ bool CounterWriter::writeValue(decode::IntType Value, const filt::Node*) {
 }
 
 bool CounterWriter::writeAction(const filt::CallbackNode* Action) {
-  return true;
+  const auto* Sym = dyn_cast<SymbolNode>(Action->getKid(0));
+  if (Sym == nullptr)
+    return false;
+  switch (Sym->getPredefinedSymbol()) {
+    case PredefinedSymbol::BlockEnter:
+      addAllInputSeqsToUsageMap();
+      return true;
+    case PredefinedSymbol::BlockExit:
+      addAllInputSeqsToUsageMap();
+      return true;
+    default:
+      return true;
+  }
 }
 
 IntCompressor::IntCompressor(std::shared_ptr<decode::Queue> InputStream,
@@ -164,17 +210,28 @@ IntCompressor::~IntCompressor() {
   IntCountNode::destroy(UsageMap);
 }
 
+void IntCompressor::compressUpToSize(size_t Size) {
+  fprintf(stderr, "Collecting integer sequences of (up to) length: %" PRIuMAX "\n",
+          uintmax_t(Size));
+  Counter->setUpToSize(Size);
+  Counter->setSequenceSize(Size);
+  Input->start(StartPos);
+  Input->readBackFilled();
+  // Flush any remaining values in input sequece.
+  Counter->addAllInputSeqsToUsageMap();
+  Counter->resetUpToSize();
+}
+
 void IntCompressor::compress() {
   TRACE_METHOD("compress");
   Counter->setCountCutoff(CountCutoff);
   Counter->setWeightCutoff(WeightCutoff);
-  for (size_t i = 1; i <= LengthLimit; ++i) {
-    fprintf(stderr, "Collecting integer sequences of length: %" PRIuMAX "\n",
-            uintmax_t(i));
-    Counter->setSequenceSize(i);
-    Input->start(StartPos);
-    Input->readBackFilled();
-  }
+  // Start by collecting number of occurrences of each integer, so
+  // that we can use as a filter on integer sequence inclusion into the
+  // IntCountNode trie.
+  compressUpToSize(1);
+  if (LengthLimit > 1)
+    compressUpToSize(LengthLimit);
   describe(stderr);
 }
 
@@ -224,7 +281,7 @@ void IntSeqCollector::collectNode(IntCountNode* Nd) {
     return;
   if (Weight < WeightCutoff)
     return;
-  Values.push_back(std::make_pair(Count, Nd));
+  Values.push_back(std::make_pair(Weight, Nd));
   CountReported += Count;
   WeightReported += Weight;
   ++NumNodesReported;
@@ -240,13 +297,18 @@ void IntSeqCollector::describe(FILE* Out) {
           uintmax_t(NumNodesReported));
   fprintf(Out, "Total count: %" PRIuMAX " Reported count %" PRIuMAX "\n",
           uintmax_t(CountTotal), uintmax_t(CountReported));
-  for (const auto& pair : Values)
+  size_t Count = 0;
+  for (const auto& pair : Values) {
+    ++Count;
+    fprintf(Out, "[%" PRIuMAX "] ", uintmax_t(Count));
     pair.second->describe(Out);
+  }
 }
 
 }  // end of anonymous namespace
 
 void IntCompressor::describe(FILE* Out) {
+  fprintf(stderr, "Collecting results...\n");
   IntSeqCollector Collector(UsageMap);
   Collector.CountCutoff = CountCutoff;
   Collector.WeightCutoff = WeightCutoff;
