@@ -59,7 +59,7 @@ class IntCompressor FINAL {
 
   interp::TraceClassSexpReader& getTrace() { return *Trace; }
 
-  void describe(FILE* Out);
+  void describe(FILE* Out, size_t MinPathLength);
 
  private:
   std::shared_ptr<filt::SymbolTable> Symtab;

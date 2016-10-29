@@ -245,9 +245,10 @@ void IntCompressor::compress() {
   // that we can use as a filter on integer sequence inclusion into the
   // IntCountNode trie.
   compressUpToSize(1);
+  describe(stderr, 1);
   if (LengthLimit > 1)
     compressUpToSize(LengthLimit);
-  describe(stderr);
+  describe(stderr, 2);
 }
 
 namespace {
@@ -263,6 +264,7 @@ struct IntSeqCollector {
   uint64_t NumNodesReported;
   uint64_t CountCutoff;
   uint64_t WeightCutoff;
+  size_t MinPathLength;
 
   IntSeqCollector(IntCountUsageMap& UsageMap)
       : UsageMap(UsageMap),
@@ -272,7 +274,8 @@ struct IntSeqCollector {
         CountReported(0),
         NumNodesReported(0),
         CountCutoff(1),
-        WeightCutoff(1) {}
+        WeightCutoff(1),
+        MinPathLength(1) {}
   ~IntSeqCollector() {}
 
   void collect();
@@ -296,7 +299,8 @@ void IntSeqCollector::collectNode(IntCountNode* Nd) {
     return;
   if (Weight < WeightCutoff)
     return;
-  Values.push_back(std::make_pair(Weight, Nd));
+  if (Nd->pathLength() >= MinPathLength)
+    Values.push_back(std::make_pair(Weight, Nd));
   CountReported += Count;
   WeightReported += Weight;
   ++NumNodesReported;
@@ -322,11 +326,12 @@ void IntSeqCollector::describe(FILE* Out) {
 
 }  // end of anonymous namespace
 
-void IntCompressor::describe(FILE* Out) {
+void IntCompressor::describe(FILE* Out, size_t MinPathLength) {
   fprintf(stderr, "Collecting results...\n");
   IntSeqCollector Collector(UsageMap);
   Collector.CountCutoff = CountCutoff;
   Collector.WeightCutoff = WeightCutoff;
+  Collector.MinPathLength = MinPathLength;
   Collector.collect();
   Collector.describe(Out);
 }
