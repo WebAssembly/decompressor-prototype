@@ -33,15 +33,9 @@ IntCountNode::~IntCountNode() {
 
 size_t IntCountNode::getWeight() const {
   size_t Len = pathLength();
-  switch (Len) {
-    case 0:
-    case 1:
-      return getCount() * Len;
-    default:
-      // Increment length, since single integers (typically) can't
-      // compress much.
-      return getCount() * (Len + 1);
-  }
+  if (Len == 0)
+    Len = 1;
+  return getCount() * Len;
 }
 
 void IntCountNode::describe(FILE* Out, size_t NestLevel) const {
