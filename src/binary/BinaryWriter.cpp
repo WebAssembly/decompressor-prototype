@@ -94,7 +94,6 @@ void BinaryWriter::writeNode(const Node* Nd) {
     case OpCallback:
     case OpCase:
     case OpConvert:
-    case OpDefine:
     case OpOr:
     case OpNot:
     case OpError:
@@ -173,6 +172,7 @@ void BinaryWriter::writeNode(const Node* Nd) {
       SectionSymtab.clear();
       break;
     }
+    case OpDefine:
     case OpEval:
     case OpFilter:
     case OpOpcode:

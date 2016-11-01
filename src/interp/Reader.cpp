@@ -532,7 +532,7 @@ void Reader::resume() {
                 call(Method::Eval, Frame.CallModifier, Frame.Nd->getKid(1));
                 break;
               case State::Exit: {
-                const auto* Local = dyn_cast<LocalNode>(Frame.Nd);
+                const auto* Local = dyn_cast<LocalNode>(Frame.Nd->getKid(0));
                 size_t Index = Local->getValue();
                 if (LocalsBase + Index >= LocalValues.size()) {
                   return fail("Local variable index out of range, can't set!");
@@ -781,8 +781,7 @@ void Reader::resume() {
               case State::Enter:
                 traceEnterFrame();
                 Frame.CallState = State::Step2;
-                call(Method::Eval, MethodModifier::ReadOnly,
-                     Frame.Nd->getKid(0));
+                call(Method::Eval, Frame.CallModifier, Frame.Nd->getKid(0));
                 break;
               case State::Step2: {
                 Frame.CallState = State::Exit;
@@ -818,19 +817,21 @@ void Reader::resume() {
             break;
           case OpDefine:  // Method::Eval
             switch (Frame.CallState) {
-              case State::Enter:
+              case State::Enter: {
+                const DefineNode* Define = cast<DefineNode>(Frame.Nd);
                 traceEnterFrame();
-                if (size_t NumLocals =
-                        cast<DefineNode>(Frame.Nd)->getNumLocals()) {
+                if (size_t NumLocals = Define->getNumLocals()) {
                   LocalsBaseStack.push(LocalValues.size());
                   for (size_t i = 0; i < NumLocals; ++i)
                     LocalValues.push_back(0);
                 }
                 Frame.CallState = State::Exit;
-                call(Method::Eval, Frame.CallModifier, Frame.Nd->getKid(2));
+                call(Method::Eval, Frame.CallModifier, Define->getBody());
                 break;
-              case State::Exit:
-                if (cast<DefineNode>(Frame.Nd)->getNumLocals()) {
+              }
+              case State::Exit: {
+                const DefineNode* Define = cast<DefineNode>(Frame.Nd);
+                if (Define->getNumLocals()) {
                   while (LocalValues.size() > LocalsBase)
                     LocalValues.pop_back();
                   LocalsBaseStack.pop();
@@ -838,6 +839,7 @@ void Reader::resume() {
                 popAndReturn();
                 traceExitFrame();
                 break;
+              }
               default:
                 return failBadState();
             }
@@ -1015,14 +1017,15 @@ void Reader::resume() {
             MagicNumber = Input->readUint32(ReadPos);
             TRACE(hex_uint32_t, "magic number", MagicNumber);
             if (MagicNumber != WasmBinaryMagic)
-              return fail(
-                  "Unable to compress. Did not find WASM binary magic number!");
+              return fail("Unable to decompress. Did not find WASM binary "
+                          "magic number!");
             if (!Output.writeMagicNumber(MagicNumber))
               return failCantWrite();
             Version = Input->readUint32(ReadPos);
             TRACE(hex_uint32_t, "version", Version);
-            if (Version != WasmBinaryVersion)
-              return fail("Unable to compress. WASM version not known");
+            if (Version != WasmBinaryVersionB
+                && Version != WasmBinaryVersionD)
+              return fail("Unable to decompress. WASM version not known");
             if (!Output.writeVersionNumber(Version))
               return failCantWrite();
             Frame.CallState = State::Loop;
@@ -1032,7 +1035,23 @@ void Reader::resume() {
               Frame.CallState = State::Exit;
               break;
             }
-            call(Method::GetSection, Frame.CallModifier, nullptr);
+            switch (Version) {
+              case 0xb:
+                call(Method::GetSection, Frame.CallModifier, nullptr);
+                break;
+              case 0xd: {
+                SymbolNode* Sections = Symtab->getSymbol("section");
+                if (Sections == nullptr)
+                  fail("Can't find sexpression to process sections");
+                const Node* SectionsDef = Sections->getDefineDefinition();
+                if (SectionsDef == nullptr)
+                  fail("Can't find sexpression to process sections");
+                call (Method::Eval, Frame.CallModifier, SectionsDef);
+                break;
+              }
+              default:
+                return fail("Version not understood, can't find sections");
+            }
             break;
           case State::Exit:
             if (!Output.writeFreezeEof())

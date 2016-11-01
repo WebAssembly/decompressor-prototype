@@ -505,15 +505,26 @@ bool DefineNode::isValidParam(IntType Index) {
 }
 
 const std::string DefineNode::getName() const {
+  assert(getNumKids() >= 3);
   assert(isa<SymbolNode>(getKid(0)));
   return cast<SymbolNode>(getKid(0))->getName();
 }
 
 size_t DefineNode::getNumLocals() const {
-  if (const auto* Locals = dyn_cast<LocalsNode>(getKid(2))) {
+  assert(getNumKids() >= 3);
+  if (auto* Locals = dyn_cast<LocalsNode>(getKid(2)))
     return Locals->getValue();
-  }
   return 0;
+}
+
+Node* DefineNode::getBody() const {
+  assert(getNumKids() >= 3);
+  Node* Nd = getKid(2);
+  if (auto* Locals = dyn_cast<LocalsNode>(Nd)) {
+    assert(getNumKids() >= 4);
+    return getKid(3);
+  }
+  return Nd;
 }
 
 bool NaryNode::implementsClass(NodeType Type) {
@@ -544,13 +555,30 @@ void SelectBaseNode::clearCaches(NodeVectorType& AdditionalNodes) {
 }
 
 void SelectBaseNode::installCaches(NodeVectorType& AdditionalNodes) {
+  fprintf(stderr, "-> Select\n");
+  TextWriter Writer;
   for (auto* Kid : *this) {
     if (const auto* Case = dyn_cast<CaseNode>(Kid)) {
-      if (const auto* Key = dyn_cast<IntegerNode>(Case->getKid(0))) {
+      Writer.writeAbbrev(stderr, Case);
+      const auto* CaseExp = Case->getKid(0);
+      fprintf(stderr, "CaseExp: ");
+      Writer.writeAbbrev(stderr, CaseExp);
+      if (const auto* LitExp = dyn_cast<LiteralUseNode>(CaseExp)) {
+        SymbolNode* Sym = dyn_cast<SymbolNode>(LitExp->getKid(0));
+        fprintf(stderr, "Sym: ");
+        Writer.writeAbbrev(stderr, Sym);
+
+      }
+      if (const auto* Key = dyn_cast<IntegerNode>(CaseExp)) {
+#if 1
+        fprintf(stderr, "Adding key: %" PRIuMAX "\n",
+                uintmax_t(Key->getValue()));
+#endif
         LookupMap[Key->getValue()] = Case;
       }
     }
   }
+  fprintf(stderr, "<- Select\n");
 }
 
 int OpcodeNode::WriteRange::compare(const WriteRange& R) const {
