@@ -155,6 +155,8 @@ void TextWriter::writeNodeKids(const Node* Nd, bool EmbeddedInParent) {
       writeNode(Kid, ForceNewline);
       continue;
     }
+    if (Count > KidsSameLine)
+      writeNewline();
     ForceNewline = true;
     writeNode(Kid, true);
   }
@@ -197,6 +199,9 @@ void TextWriter::writeNode(const Node* Nd,
         writeNode(Kid, true);
       return;
     }
+    case OpLiteralUse:
+      writeNode(Nd->getKid(0), AddNewline, EmbedInParent);
+      break;
     case OpStream: {
       Indent _(this, AddNewline);
       const auto* Stream = cast<StreamNode>(Nd);

@@ -222,8 +222,11 @@ letter	[a-zA-Z]
 "if"              return Parser::make_IF(Driver.getLoc());
 "int"             return Parser::make_INT(Driver.getLoc());
 "in"              return Parser::make_IN(Driver.getLoc());
+"is"              return Parser::make_IS(Driver.getLoc());
 "i32.const"       return Parser::make_I32_CONST(Driver.getLoc());
 "i64.const"       return Parser::make_I64_CONST(Driver.getLoc());
+"literal"         return Parser::make_LITERAL(Driver.getLoc());
+"last"            return Parser::make_LAST(Driver.getLoc());
 "local"           return Parser::make_LOCAL(Driver.getLoc());
 "locals"          return Parser::make_LOCALS(Driver.getLoc());
 "loop.unbounded"  return Parser::make_LOOP_UNBOUNDED(Driver.getLoc());
@@ -242,6 +245,7 @@ letter	[a-zA-Z]
 "seq"             return Parser::make_SEQ(Driver.getLoc());
 "set"             return Parser::make_SET(Driver.getLoc());
 "switch"          return Parser::make_SWITCH(Driver.getLoc());
+"symbol"          return Parser::make_SYMBOL(Driver.getLoc());
 "uint8"           return Parser::make_UINT8(Driver.getLoc());
 "uint32"          return Parser::make_UINT32(Driver.getLoc());
 "uint64"          return Parser::make_UINT64(Driver.getLoc());

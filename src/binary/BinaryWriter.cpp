@@ -100,6 +100,7 @@ void BinaryWriter::writeNode(const Node* Nd) {
     case OpError:
     case OpIfThen:
     case OpIfThenElse:
+    case OpLastSymbolIs:
     case OpLoop:
     case OpLoopUnbounded:
     case OpPeek:
@@ -108,6 +109,8 @@ void BinaryWriter::writeNode(const Node* Nd) {
     case OpLastRead:
     case OpRename:
     case OpSet:
+    case OpLiteralDef:
+    case OpLiteralUse:
     case OpVoid:
     case OpWrite: {
       // Operations that are written out in postorder, with a fixed number of

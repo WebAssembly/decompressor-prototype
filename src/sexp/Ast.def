@@ -72,6 +72,7 @@
   X(BitwiseOr,         0x35, "bitwise.or",       nullptr,           2, 0)      \
   X(BitwiseXor,        0x36, "bitwise.xor",      nullptr,           2, 0)      \
   X(BitwiseNegate,     0x37, "bitwise.negate",   nullptr,           1, 0)      \
+  X(LastSymbolIs,      0x38, "last.symbol.is",   nullptr,           1, 0)      \
                                                                                \
   /* I/O operations  */                                                        \
   X(Peek,              0x40, "peek",             nullptr,           1, 0)      \
@@ -92,11 +93,13 @@
   X(File,              0x62, "file",             nullptr,           0, 0)      \
   X(Section,           0x63, "section",          nullptr,           1, 0)      \
   X(Undefine,          0x64, "undefine",         nullptr,           1, 0)      \
-  X(CasmVersion,       0x65, "casm.version",     nullptr,           1, 0)      \
-  X(WasmVersion,       0x66, "wasm.version",     nullptr,           1, 0)      \
-  X(Rename,            0x67, "rename",           nullptr,           2, 0)      \
-  X(Locals,            0x68, "locals",           nullptr,           1, 0)      \
-  X(Params,            0x69, "params",           nullptr,           1, 0)      \
+  X(LiteralDef,        0x65, "literal",          nullptr,           2, 0)      \
+  X(CasmVersion,       0x66, "casm.version",     nullptr,           1, 0)      \
+  X(WasmVersion,       0x67, "wasm.version",     nullptr,           1, 0)      \
+  X(Rename,            0x68, "rename",           nullptr,           2, 0)      \
+  X(Locals,            0x69, "locals",           nullptr,           1, 0)      \
+  X(Params,            0x70, "params",           nullptr,           1, 0)      \
+  X(LiteralUse,        0x71, "literal_use",      nullptr,           1, 0)      \
                                                                                \
   /* Internal (not opcodes in compressed file) */                              \
   X(UnknownSection,    0xFF, "unknown.section", nullptr,           1, 0)       \
@@ -163,10 +166,12 @@
   X(Block,)                                                                    \
   X(BitwiseNegate,)                                                            \
   X(Callback,)                                                                 \
+  X(LastSymbolIs,)                                                             \
   X(LoopUnbounded,)                                                            \
   X(Not,)                                                                      \
   X(Peek,)                                                                     \
   X(Read,)                                                                     \
+  X(LiteralUse,)                                                               \
   X(Undefine,)                                                                 \
   X(UnknownSection,)                                                           \
 
@@ -182,6 +187,7 @@
   X(Or,)                                                                       \
   X(Rename,)                                                                   \
   X(Set,)                                                                      \
+  X(LiteralDef,)                                                               \
   X(Write,)                                                                    \
 
 //#define X(tag, NODE_DECLS)
