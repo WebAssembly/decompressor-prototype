@@ -302,7 +302,7 @@ void BinaryReader::resume() {
                 readTernary<ConvertNode>();
                 break;
               case OpDefine:
-                readTernary<DefineNode>();
+                readNary<DefineNode>();
                 break;
               case OpSymbol: {
                 auto* Symbol = SectionSymtab.getIndexSymbol(

@@ -175,6 +175,8 @@
   X(Undefine,)                                                                 \
   X(UnknownSection,)                                                           \
 
+
+
 //#define X(tag, NODE_DECLS)
 #define AST_BINARYNODE_TABLE                                                   \
   X(And,)                                                                      \
@@ -197,11 +199,18 @@
 
 //#define X(tag, NODE_DECLS)
 #define AST_NARYNODE_TABLE                                                     \
+  X(Define, DEFINE_DECLS)                                                      \
   X(File,)                                                                     \
   X(Filter,)                                                                   \
   X(Eval, EVAL_DECLS)                                                          \
   X(Section, SECTION_DECLS)                                                    \
   X(Sequence,)                                                                 \
+
+#define DEFINE_DECLS                                                           \
+  bool isValidParam(decode::IntType Index);                                    \
+  const std::string getName() const;                                           \
+  size_t getNumLocals() const;                                                 \
+  Node* getBody() const;                                                       \
 
 #define EVAL_DECLS                                                             \
  public:                                                                       \
@@ -218,14 +227,7 @@
 //#define X(tag, NODE_DECLS)
 #define AST_TERNARYNODE_TABLE                                                  \
   X(Convert,)                                                                  \
-  X(Define, DEFINE_DECLS)                                                      \
   X(IfThenElse,)                                                               \
-
-#define DEFINE_DECLS                                                           \
- public:                                                                       \
-  bool isValidParam(decode::IntType Index);                                    \
-  const std::string getName() const;                                           \
-  size_t getNumLocals() const;                                                 \
 
 //#define X(tag)
 #define AST_NODE_HAS_HIDDEN_SEQ                                                \
