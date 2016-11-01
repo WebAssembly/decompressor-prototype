@@ -328,6 +328,9 @@ void BinaryReader::resume() {
               case OpLastRead:
                 readNullary<LastReadNode>();
                 break;
+              case OpLastSymbolIs:
+                readUnary<LastSymbolIsNode>();
+                break;
               case OpLoop:
                 readBinary<LoopNode>();
                 break;
@@ -373,6 +376,12 @@ void BinaryReader::resume() {
               }
               case OpSwitch:
                 readNary<SwitchNode>();
+                break;
+              case OpLiteralDef:
+                readBinary<LiteralDefNode>();
+                break;
+              case OpLiteralUse:
+                readUnary<LiteralUseNode>();
                 break;
               case OpUndefine:
                 readUnary<UndefineNode>();

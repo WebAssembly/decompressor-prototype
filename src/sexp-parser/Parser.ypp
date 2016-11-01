@@ -91,8 +91,11 @@ struct IntValue {
 %token IF            "if"
 %token IN            "in"
 %token INT           "int"
+%token IS            "is"
 %token I32_CONST     "i32.const"
 %token I64_CONST     "i64.const"
+%token LAST          "last"
+%token LITERAL       "literal"
 %token LOCAL         "local"
 %token LOCALS        "locals"
 %token LOOP          "loop"
@@ -112,6 +115,7 @@ struct IntValue {
 %token SEQ           "seq"
 %token SET           "set"
 %token SWITCH        "switch"
+%token SYMBOL        "symbol"
 %token UINT8         "uint8"
 %token UINT32        "uint32"
 %token UINT64        "uint64"
@@ -150,6 +154,7 @@ struct IntValue {
 %type <wasm::filt::Node *> file_version
 %type <wasm::filt::Node *> fixed_format_directive
 %type <wasm::filt::Node *> format_directive
+%type <wasm::filt::Node *> literal_expression
 %type <wasm::filt::Node *> locals_decl
 %type <wasm::filt::Node *> local_var
 %type <wasm::filt::Node *> loop_body
@@ -227,6 +232,15 @@ case_args
         ;
 
 constant_expression
+        : literal_expression {
+            $$ = $1;
+          }
+        | symbol {
+            $$ = Driver.create<LiteralUseNode>($1);
+          }
+        ;
+
+literal_expression
         : "(" "i32.const" INTEGER ")" {
             $$ = Driver.getI32ConstDefinition($3.Value, $3.Format);
           }
@@ -253,6 +267,9 @@ declaration
           }
         | "(" "undefine" symbol ")" {
             $$ = Driver.create<UndefineNode>($3);
+          }
+        | "(" "literal" symbol literal_expression ")" {
+            $$ = Driver.create<LiteralDefNode>($3, $4);
           }
         ;
 
@@ -315,6 +332,9 @@ bool_expression
           }
         | "(" "bitwise" "." "negate" expression ")" {
             $$ = Driver.create<BitwiseNegateNode>($5);
+          }
+        | "(" "last" "." "symbol" "." "is" symbol ")" {
+            $$ = Driver.create<LastSymbolIsNode>($7);
           }
         ;
 

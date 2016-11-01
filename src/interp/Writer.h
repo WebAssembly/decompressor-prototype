@@ -25,6 +25,8 @@ namespace wasm {
 
 namespace interp {
 
+class Reader;
+
 class Writer {
   Writer(const Writer&) = delete;
   Writer& operator=(const Writer&) = delete;

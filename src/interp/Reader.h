@@ -237,6 +237,10 @@ class Reader {
     TRACE(IntType, "returns", Value);
   }
 
+  // Dispatches writeAction to Output. Captures special cases if needed by the
+  // reader.
+  bool writeAction(const filt::CallbackNode* Action);
+
   void fail();
   void failBadState();
   void failNotImplemented();

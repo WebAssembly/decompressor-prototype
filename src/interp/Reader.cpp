@@ -275,6 +275,12 @@ void Reader::callTopLevel(Method Method, const filt::Node* Nd) {
   call(Method, MethodModifier::ReadAndWrite, Nd);
 }
 
+bool Reader::writeAction(const filt::CallbackNode* Action) {
+  // TODO(karlschimpf) Capture symbol_name's so that we can
+  // dispatch on it.
+  return Output.writeAction(Action);
+}
+
 void Reader::fail() {
   TRACE_MESSAGE("method failed");
   while (!FrameStack.empty()) {
@@ -374,6 +380,7 @@ void Reader::resume() {
         }
 #endif
         switch (Frame.Nd->getType()) {
+          case NO_SUCH_NODETYPE:
           case OpBitwiseAnd:
           case OpBitwiseNegate:
           case OpBitwiseOr:
@@ -381,8 +388,9 @@ void Reader::resume() {
           case OpConvert:
           case OpParams:
           case OpFilter:  // Method::Eval
-            return failNotImplemented();
-          case NO_SUCH_NODETYPE:
+          case OpLastSymbolIs:
+          case OpLiteralDef:
+          case OpLiteralUse:
           case OpFile:
           case OpLocals:
           case OpRename:
@@ -400,7 +408,8 @@ void Reader::resume() {
             // TODO(karlschimpf): All virtual calls to class so that derived
             // classes can override.
             traceEnterFrame();
-            popAndReturn(Frame.ReturnValue);
+            writeAction(cast<CallbackNode>(Frame.Nd));
+            popAndReturn(LastReadValue);
             traceExitFrame();
             break;
           case OpI32Const:
@@ -924,7 +933,7 @@ void Reader::resume() {
             break;
           case OpVoid:  // Method::Eval
             traceEnterFrame();
-            popAndReturn();
+            popAndReturn(LastReadValue);
             traceExitFrame();
             break;
         }
