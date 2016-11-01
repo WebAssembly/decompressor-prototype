@@ -166,11 +166,15 @@ void SymbolNode::setPredefinedSymbol(PredefinedSymbol NewValue) {
 void SymbolNode::clearCaches(NodeVectorType& AdditionalNodes) {
   if (DefineDefinition)
     AdditionalNodes.push_back(DefineDefinition);
+  if (LiteralDefinition)
+    AdditionalNodes.push_back(LiteralDefinition);
 }
 
 void SymbolNode::installCaches(NodeVectorType& AdditionalNodes) {
   if (DefineDefinition)
     AdditionalNodes.push_back(DefineDefinition);
+  if (LiteralDefinition)
+    AdditionalNodes.push_back(LiteralDefinition);
 }
 
 SymbolTable::SymbolTable()
@@ -324,6 +328,15 @@ void SymbolTable::installDefinitions(Node* Root) {
       }
       Trace.printSexp("Malformed", Root);
       fatal("Malformed define s-expression found!");
+      return;
+    }
+    case OpLiteralDef: {
+      if (auto* LiteralSymbol = dyn_cast<SymbolNode>(Root->getKid(0))) {
+        LiteralSymbol->setLiteralDefinition(Root);
+        return;
+      }
+      Trace.printSexp("Malformed", Root);
+      fatal("Malformed literal s-expression found!");
       return;
     }
     case OpRename: {
@@ -555,30 +568,20 @@ void SelectBaseNode::clearCaches(NodeVectorType& AdditionalNodes) {
 }
 
 void SelectBaseNode::installCaches(NodeVectorType& AdditionalNodes) {
-  fprintf(stderr, "-> Select\n");
-  TextWriter Writer;
   for (auto* Kid : *this) {
     if (const auto* Case = dyn_cast<CaseNode>(Kid)) {
-      Writer.writeAbbrev(stderr, Case);
       const auto* CaseExp = Case->getKid(0);
-      fprintf(stderr, "CaseExp: ");
-      Writer.writeAbbrev(stderr, CaseExp);
-      if (const auto* LitExp = dyn_cast<LiteralUseNode>(CaseExp)) {
-        SymbolNode* Sym = dyn_cast<SymbolNode>(LitExp->getKid(0));
-        fprintf(stderr, "Sym: ");
-        Writer.writeAbbrev(stderr, Sym);
-
+      if (const auto* LitUse = dyn_cast<LiteralUseNode>(CaseExp)) {
+        SymbolNode* Sym = dyn_cast<SymbolNode>(LitUse->getKid(0));
+        if (const auto* LitDef = Sym->getLiteralDefinition()) {
+          CaseExp = LitDef->getKid(1);
+        }
       }
       if (const auto* Key = dyn_cast<IntegerNode>(CaseExp)) {
-#if 1
-        fprintf(stderr, "Adding key: %" PRIuMAX "\n",
-                uintmax_t(Key->getValue()));
-#endif
         LookupMap[Key->getValue()] = Case;
       }
     }
   }
-  fprintf(stderr, "<- Select\n");
 }
 
 int OpcodeNode::WriteRange::compare(const WriteRange& R) const {

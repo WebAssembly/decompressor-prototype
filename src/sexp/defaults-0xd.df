@@ -793,7 +793,7 @@
   (=> 'section.begin')
   (set (local 0) (varuint32))
   (=> 'section.code')
-  (block (varuint32)
+  (block
     (switch (local 0)
       (error)
       (case 'unknown.section' (eval 'unknown.section'))

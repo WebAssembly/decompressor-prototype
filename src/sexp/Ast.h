@@ -456,6 +456,8 @@ class SymbolNode FINAL : public NullaryNode {
   const std::string& getName() const { return Name; }
   const Node* getDefineDefinition() const { return DefineDefinition; }
   void setDefineDefinition(Node* Defn) { DefineDefinition = Defn; }
+  const Node* getLiteralDefinition() const { return LiteralDefinition; }
+  void setLiteralDefinition(Node* Defn) { LiteralDefinition = Defn; }
 
   PredefinedSymbol getPredefinedSymbol() const { return PredefinedValue; }
 
@@ -464,9 +466,11 @@ class SymbolNode FINAL : public NullaryNode {
  private:
   std::string Name;
   Node* DefineDefinition;
+  Node* LiteralDefinition;
   PredefinedSymbol PredefinedValue;
   void init() {
     DefineDefinition = nullptr;
+    LiteralDefinition = nullptr;
     PredefinedValue = PredefinedSymbol::Unknown;
   }
   void clearCaches(NodeVectorType& AdditionalNodes) OVERRIDE;
