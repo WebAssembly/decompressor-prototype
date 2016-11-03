@@ -275,18 +275,25 @@ declaration
 
 define_args
         : symbol params_decl expression {
-            $$ = Driver.create<DefineNode>($1, $2, $3);
+            $$ = Driver.create<DefineNode>();
+            $$->append($1);
+            $$->append($2);
+            $$->append($3);
           }
-        | symbol params_decl locals_decl {
-            $$ = Driver.create<DefineNode>($1, $2, $3);
+        | symbol params_decl locals_decl expression {
+            $$ = Driver.create<DefineNode>();
+            $$->append($1);
+            $$->append($2);
+            $$->append($3);
+            $$->append($4);
           }
         | define_args expression {
             $$ = $1;
-            Node *StmtList = $1->getLastKid();
-            auto *Seq = dyn_cast<SequenceNode>(StmtList);
+            Node *LastKid = $1->getLastKid();
+            auto *Seq = dyn_cast<SequenceNode>(LastKid);
             if (Seq == nullptr) {
               Seq = Driver.create<SequenceNode>();
-              Seq->append(StmtList);
+              Seq->append(LastKid);
               $1->setLastKid(Seq);
             }
             Seq->append($2);

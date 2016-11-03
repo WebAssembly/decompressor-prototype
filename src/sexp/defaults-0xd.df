@@ -311,6 +311,18 @@
   (=> 'function.section.end')
 )
 
+(define 'function_names' (params)
+  (=> 'function_names.begin')
+  (eval 'symbol_name')       # function name
+  (=> 'function_names.fcn_name')
+  (loop
+    (seq (varuint32) (=> 'function_names.local_count'))
+    (eval 'symbol_name')
+    (=> 'function_names.local_name')
+  )
+  (=> 'function_names.end')
+)
+
 (define 'function_type' (params)
   (=> 'function_type.begin')
   (varint32)  # type form
@@ -746,6 +758,14 @@
   (=> 'memory_immediate.end')
 )
 
+(define 'name.section' (params) # todo: fix.
+  (=> 'name.section.begin')
+  (loop
+    (seq (varuint32) (=> 'name.section.count'))
+    (eval 'function_names'))
+  (=> 'name.section.end')
+)
+
 (define 'memory_type' (params)
   (=> 'memory_type.begin')
   (eval 'resizable_limits')
@@ -773,7 +793,7 @@
   (=> 'section.begin')
   (set (local 0) (varuint32))
   (=> 'section.code')
-  (block (varuint32)
+  (block
     (switch (local 0)
       (error)
       (case 'unknown.section' (eval 'unknown.section'))
@@ -791,6 +811,12 @@
     )
   )
   (=> 'section.end')
+)
+
+(define 'skip_section' (params)
+  (=> 'skip_section.begin')
+  (loop.unbounded (uint8))
+  (=> 'skip_section.end')
 )
 
 (define 'start.section' (params)
@@ -839,10 +865,6 @@
   (=> 'type.value.end')
 )
 
-#here
-
-#---------------------------
-
 (define 'unknown.section' (params)
   (=> 'unknown.section.begin')
   (eval 'symbol_name')
@@ -855,26 +877,4 @@
     (eval 'name.section')
     (eval 'skip_section')
   )
-)
-
-(define 'skip_section (params)
-  (=> 'skip_section.begin')
-  (loop.unbounded (uint8))
-  (=> 'skip_section.end')
-)
-
-(define 'name.section' (params) # todo: fix.
-  (=> 'name.begin')
-  (loop
-    (seq (varuint32) (=> 'name.num.functions'))
-    (eval 'name.function'))
-  (=> 'name.section.end')
-)
-
-(define 'name.function' (params)
-  (eval 'symbol_name')       # function name
-  (loop
-    (seq (varuint32) (=> 'name.function.num.locals'))
-    (eval 'symbol_name'))    # local name
-  (=> 'name.function')
 )

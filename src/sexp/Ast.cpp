@@ -166,11 +166,15 @@ void SymbolNode::setPredefinedSymbol(PredefinedSymbol NewValue) {
 void SymbolNode::clearCaches(NodeVectorType& AdditionalNodes) {
   if (DefineDefinition)
     AdditionalNodes.push_back(DefineDefinition);
+  if (LiteralDefinition)
+    AdditionalNodes.push_back(LiteralDefinition);
 }
 
 void SymbolNode::installCaches(NodeVectorType& AdditionalNodes) {
   if (DefineDefinition)
     AdditionalNodes.push_back(DefineDefinition);
+  if (LiteralDefinition)
+    AdditionalNodes.push_back(LiteralDefinition);
 }
 
 SymbolTable::SymbolTable()
@@ -324,6 +328,15 @@ void SymbolTable::installDefinitions(Node* Root) {
       }
       Trace.printSexp("Malformed", Root);
       fatal("Malformed define s-expression found!");
+      return;
+    }
+    case OpLiteralDef: {
+      if (auto* LiteralSymbol = dyn_cast<SymbolNode>(Root->getKid(0))) {
+        LiteralSymbol->setLiteralDefinition(Root);
+        return;
+      }
+      Trace.printSexp("Malformed", Root);
+      fatal("Malformed literal s-expression found!");
       return;
     }
     case OpRename: {
@@ -505,15 +518,26 @@ bool DefineNode::isValidParam(IntType Index) {
 }
 
 const std::string DefineNode::getName() const {
+  assert(getNumKids() >= 3);
   assert(isa<SymbolNode>(getKid(0)));
   return cast<SymbolNode>(getKid(0))->getName();
 }
 
 size_t DefineNode::getNumLocals() const {
-  if (const auto* Locals = dyn_cast<LocalsNode>(getKid(2))) {
+  assert(getNumKids() >= 3);
+  if (auto* Locals = dyn_cast<LocalsNode>(getKid(2)))
     return Locals->getValue();
-  }
   return 0;
+}
+
+Node* DefineNode::getBody() const {
+  assert(getNumKids() >= 3);
+  Node* Nd = getKid(2);
+  if (isa<LocalsNode>(Nd)) {
+    assert(getNumKids() >= 4);
+    return getKid(3);
+  }
+  return Nd;
 }
 
 bool NaryNode::implementsClass(NodeType Type) {
@@ -546,7 +570,14 @@ void SelectBaseNode::clearCaches(NodeVectorType& AdditionalNodes) {
 void SelectBaseNode::installCaches(NodeVectorType& AdditionalNodes) {
   for (auto* Kid : *this) {
     if (const auto* Case = dyn_cast<CaseNode>(Kid)) {
-      if (const auto* Key = dyn_cast<IntegerNode>(Case->getKid(0))) {
+      const auto* CaseExp = Case->getKid(0);
+      if (const auto* LitUse = dyn_cast<LiteralUseNode>(CaseExp)) {
+        SymbolNode* Sym = dyn_cast<SymbolNode>(LitUse->getKid(0));
+        if (const auto* LitDef = Sym->getLiteralDefinition()) {
+          CaseExp = LitDef->getKid(1);
+        }
+      }
+      if (const auto* Key = dyn_cast<IntegerNode>(CaseExp)) {
         LookupMap[Key->getValue()] = Case;
       }
     }
