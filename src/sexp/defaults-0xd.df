@@ -467,7 +467,7 @@
     (case 'inst.br_if'
       (eval 'br_target')
       (=> 'inst.br_if'))
-    (case (u8.const 0x08)
+    (case 'inst.br_table'
       (eval 'br_table')
       (=> 'inst.br_table'))
     (case 'inst.return'
@@ -592,9 +592,9 @@
     (case 'inst.f32.const'
       (uint32)
       (=> 'inst.f32.const'))
-    (case 'inst.f32.const'
+    (case 'inst.f64.const'
       (uint64)
-      (=> 'inst.f32.const'))
+      (=> 'inst.f64.const'))
 
     # Comparison operators
     (case 'inst.i32.eqz'  (=> 'inst.i32.eqz'))

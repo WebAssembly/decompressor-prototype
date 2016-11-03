@@ -243,9 +243,10 @@ class Reader {
 
   void fail();
   void failBadState();
-  void failNotImplemented();
   void failCantWrite();
   void failFreezingEof();
+  void failInWriteOnlyMode();
+  void failNotImplemented();
 
   // For debugging only.
 
