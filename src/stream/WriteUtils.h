@@ -40,6 +40,9 @@ constexpr char getHexCharForDigit(uint8_t Digit) {
   return Digit < 10 ? '0' + Digit : 'a' + (Digit - 10);
 }
 
+typedef char WriteIntBufferType[256];
+void writeInt(WriteIntBufferType, IntType Value, ValueFormat Format);
+
 void writeInt(FILE* File, IntType Value, ValueFormat Format);
 
 }  // end of namespace decode

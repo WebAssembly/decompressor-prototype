@@ -35,6 +35,9 @@ extern void* create_decompressor();
  */
 extern uint8_t* get_decompressor_buffer(void* D, int32_t Size);
 
+/* Turns on verbose tracing. */
+extern void set_trace_decompression(void* D, bool NewValue);
+
 /* Resume decopmression, assuming the buffer contains Size bytes to read.  If
  * non-negative, returns the number of output bytes available to fetch using
  * fetch_decompressor_output().  If negative, either DECOMPRESSOR_SUCCESS or

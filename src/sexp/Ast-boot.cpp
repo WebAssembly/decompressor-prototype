@@ -29,10 +29,32 @@ using namespace decode;
 
 namespace filt {
 
+namespace {
+
+std::shared_ptr<ArrayReader> getReader(uint32_t Version) {
+  std::shared_ptr<ArrayReader> Ptr;
+  switch (Version) {
+    case WasmBinaryVersionB:
+      Ptr =  std::make_shared<ArrayReader>(getWasm0xbDefaultsBuffer(),
+                                           getWasm0xbDefaultsBufferSize());
+      break;
+    case WasmBinaryVersionD:
+    default:
+      Ptr =  std::make_shared<ArrayReader>(getWasm0xdDefaultsBuffer(),
+                                           getWasm0xdDefaultsBufferSize());
+      break;
+  }
+  return Ptr;
+}
+
+} // end of anonyoums namespace
+
 bool SymbolTable::installPredefinedDefaults(std::shared_ptr<SymbolTable> Symtab,
+                                            uint32_t Version,
                                             bool Verbose) {
-  auto Stream = std::make_shared<ArrayReader>(getWasmDefaultsBuffer(),
-                                              getWasmDefaultsBufferSize());
+  std::shared_ptr<ArrayReader> Stream = getReader(Version);
+  if (!Stream)
+    return false;
   BinaryReader Reader(std::make_shared<ReadBackedQueue>(std::move(Stream)),
                       Symtab);
   if (Verbose) {
