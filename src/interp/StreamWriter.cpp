@@ -102,12 +102,12 @@ bool StreamWriter::writeAction(const filt::CallbackNode* Action) {
   if (Sym == nullptr)
     return false;
   switch (Sym->getPredefinedSymbol()) {
-    case PredefinedSymbol::BlockEnter:
+    case PredefinedSymbol::Block_enter:
       BlockStartStack.push(Pos);
       Stream->writeFixedBlockSize(Pos, 0);
       BlockStartStack.push(Pos);
       return true;
-    case PredefinedSymbol::BlockExit:
+    case PredefinedSymbol::Block_exit:
       if (MinimizeBlockSize) {
         // Mimimized block. Backpatch new size of block. If needed, move
         // block to fill gap between fixed and variable widths for block

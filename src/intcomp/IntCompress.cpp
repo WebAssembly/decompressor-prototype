@@ -196,10 +196,10 @@ bool CounterWriter::writeAction(const filt::CallbackNode* Action) {
   if (Sym == nullptr)
     return false;
   switch (Sym->getPredefinedSymbol()) {
-    case PredefinedSymbol::BlockEnter:
+    case PredefinedSymbol::Block_enter:
       addAllInputSeqsToUsageMap();
       return true;
-    case PredefinedSymbol::BlockExit:
+    case PredefinedSymbol::Block_exit:
       addAllInputSeqsToUsageMap();
       return true;
     default:
