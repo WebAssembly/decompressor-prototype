@@ -205,9 +205,9 @@ void SymbolTable::init() {
     Nd->setPredefinedSymbol(toPredefinedSymbol(i));
   }
   BlockEnterCallback =
-      create<CallbackNode>((*Predefined)[uint32_t(PredefinedSymbol::BlockEnter)]);
+      create<CallbackNode>((*Predefined)[uint32_t(PredefinedSymbol::Block_enter)]);
   BlockExitCallback =
-      create<CallbackNode>((*Predefined)[uint32_t(PredefinedSymbol::BlockExit)]);
+      create<CallbackNode>((*Predefined)[uint32_t(PredefinedSymbol::Block_exit)]);
 }
 
 SymbolNode* SymbolTable::getSymbolDefinition(const std::string& Name) {
