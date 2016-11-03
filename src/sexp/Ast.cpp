@@ -533,7 +533,7 @@ size_t DefineNode::getNumLocals() const {
 Node* DefineNode::getBody() const {
   assert(getNumKids() >= 3);
   Node* Nd = getKid(2);
-  if (auto* Locals = dyn_cast<LocalsNode>(Nd)) {
+  if (isa<LocalsNode>(Nd)) {
     assert(getNumKids() >= 4);
     return getKid(3);
   }
