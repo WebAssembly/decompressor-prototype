@@ -53,6 +53,7 @@ struct Decompressor {
     return OutputPipe.getOutput()->fillSize() - OutputPos->getCurByteAddress();
   }
   TraceClassSexpReaderWriter& getTrace() { return Interp->getTrace(); }
+  void setTraceProgress(bool NewValue) { Interp->setTraceProgress(NewValue); }
 
  private:
   int32_t flushOutput();
@@ -166,7 +167,7 @@ extern "C" {
 void* create_decompressor() {
   auto* Decomp = new Decompressor();
   bool InstalledDefaults =
-      SymbolTable::installPredefinedDefaults(Decomp->Symtab, false);
+      SymbolTable::installPredefinedDefaults(Decomp->Symtab, WasmBinaryVersionB, false);
   Decomp->Interp = std::make_shared<Interpreter>(
       Decomp->Input, Decomp->OutputPipe.getInput(), Decomp->Symtab);
   // Decomp->Interp->setTraceProgress(true);
@@ -174,6 +175,11 @@ void* create_decompressor() {
   if (!InstalledDefaults)
     Decomp->Interp->fail("Unable to install decompression rules!");
   return Decomp;
+}
+
+void set_trace_decompression(void* Dptr, bool NewValue) {
+  Decompressor* D = (Decompressor*)Dptr;
+  D->setTraceProgress(NewValue);
 }
 
 uint8_t* get_decompressor_buffer(void* Dptr, int32_t Size) {

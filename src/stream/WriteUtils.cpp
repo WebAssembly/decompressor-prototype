@@ -64,12 +64,14 @@ const char* getName(ValueFormat Format) {
                                        : "unknown format";
 }
 
-void writeInt(FILE* File, IntType Value, ValueFormat Format) {
+
+void writeInt(WriteIntBufferType Buffer, IntType Value, ValueFormat Format) {
+  size_t BufferSize = 0;
   switch (Format) {
     case ValueFormat::SignedDecimal: {
       decode::SignedIntType SignedValue = decode::SignedIntType(Value);
       if (SignedValue < 0) {
-        fputc('-', File);
+        Buffer[BufferSize++] = '-';
         Value = decode::IntType(-SignedValue);
       }
     }
@@ -82,36 +84,43 @@ void writeInt(FILE* File, IntType Value, ValueFormat Format) {
         if (StartPrinting || Digit) {
           if (StartPrinting || Digit != 0) {
             StartPrinting = true;
-            fputc('0' + Digit, File);
+            Buffer[BufferSize++] = '0' + Digit;
           }
         }
         Value = moduloByPower10(Value, Power10);
         Power10 /= 10;
       }
       if (!StartPrinting)
-        fputc('0', File);
+        Buffer[BufferSize++] = '0';
       break;
     }
     case ValueFormat::Hexidecimal: {
       constexpr decode::IntType BitsInHex = 4;
       decode::IntType Shift = sizeof(decode::IntType) * CHAR_BIT;
       bool StartPrinting = false;
-      fputc('0', File);
-      fputc('x', File);
+      Buffer[BufferSize++] = '0';
+      Buffer[BufferSize++] = 'x';
       while (Shift > 0) {
         Shift -= BitsInHex;
         decode::IntType Digit = (Value >> Shift);
         if (StartPrinting || Digit != 0) {
           StartPrinting = true;
-          fputc(getHexCharForDigit(Digit), File);
+          Buffer[BufferSize++] = getHexCharForDigit(Digit);
           Value &= (1 << Shift) - 1;
         }
       }
       if (!StartPrinting)
-        fputc(getHexCharForDigit(0), File);
+        Buffer[BufferSize++] = getHexCharForDigit(0);
       break;
     }
   }
+  Buffer[BufferSize++] = '\0';
+}
+
+void writeInt(FILE* File, IntType Value, ValueFormat Format) {
+  WriteIntBufferType Buffer;
+  writeInt(Buffer, Value, Format);
+  fprintf(File, "%s", Buffer);
 }
 
 }  // end of namespace decode

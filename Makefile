@@ -309,9 +309,14 @@ $(SEXP_DEFAULT_GENSRCS): $(SEXP_GENDIR)/%.df: $(SEXP_SRCDIR)/%.df
 
 $(SEXP_DEFAULT_GENSRCS): | $(SEXP_GENDIR)
 
-$(SEXP_DEFAULT_SRCS): $(SEXP_GENDIR)/%.cpp: $(SEXP_GENDIR)/%.df \
+$(SEXP_GENDIR)/defaults-0xb.cpp: $(SEXP_GENDIR)/defaults-0xb.df \
 		 $(BUILD_EXECDIR_BOOT)/decompsexp-wasm
 	$(BUILD_EXECDIR_BOOT)/decompsexp-wasm -d -i $< -o $@
+
+$(SEXP_GENDIR)/defaults-0xd.cpp: $(SEXP_GENDIR)/defaults-0xd.df \
+		 $(BUILD_EXECDIR_BOOT)/decompsexp-wasm
+	$(BUILD_EXECDIR_BOOT)/decompsexp-wasm -d -D -i $< -o $@
+
 
 ###### Compiliing binary generation Sources ######
 
