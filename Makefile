@@ -82,6 +82,7 @@ PARSER_LIB_BOOT = $(LIBDIR_BOOT)/$(LIBPREFIX)parser.a
 ###### Filter s-expressions ######
 
 SEXP_SRCDIR = $(SRCDIR)/sexp
+SEXP_GENDIR = $(GENDIR)/sexp
 SEXP_OBJDIR = $(OBJDIR)/sexp
 SEXP_OBJDIR_BOOT = $(OBJDIR_BOOT)/sexp
 SEXP_SRCS_BASE = \
@@ -89,24 +90,27 @@ SEXP_SRCS_BASE = \
 	TextWriter.cpp \
 	TraceSexp.cpp
 
-SEXP_GENSRCS = \
-	defaults.cpp
-
-SEXP_DEFAULTS = $(SEXP_SRCDIR)/defaults.df
-SEXP_DEFAULTS_CPP = $(SEXP_SRCDIR)/defaults.cpp
-
-SEXP_SRCS = $(SEXP_SRCS_BASE) $(SEXP_GENSRCS) \
-	Ast-boot.cpp
-
+SEXP_SRCS = $(SEXP_SRCS_BASE) Ast-boot.cpp
 SEXP_SRCS_BOOT = $(SEXP_SRCS_BASE)
-
-SEXP_GENERATED_SRCS=$(patsubst %, $(SEXP_SRCDIR)/%, $(SEXP_GENSRCS))
 
 SEXP_OBJS = $(patsubst %.cpp, $(SEXP_OBJDIR)/%.o, $(SEXP_SRCS))
 SEXP_OBJS_BOOT = $(patsubst %.cpp, $(SEXP_OBJDIR_BOOT)/%.o, $(SEXP_SRCS_BOOT))
 
+SEXP_DEFAULT_DFS = defaults-0xb.df defaults-0xd.df
+
+SEXP_DEFAULT_ORIGSRCS = $(patsubst %.df, $(SEXP_SRCDIR)/%.df, $(SEXP_DEFAULT_DFS))
+SEXP_DEFAULT_GENSRCS = $(patsubst %.df, $(SEXP_GENDIR)/%.df, $(SEXP_DEFAULT_DFS))
+SEXP_DEFAULT_SRCS = $(patsubst %.df, $(SEXP_GENDIR)/%.cpp, $(SEXP_DEFAULT_DFS))
+SEXP_DEFAULT_OBJS = $(patsubst %.df, $(SEXP_OBJDIR)/%.o, $(SEXP_DEFAULT_DFS))
+
 SEXP_LIB = $(LIBDIR)/$(LIBPREFIX)sexp.a
 SEXP_LIB_BOOT = $(LIBDIR_BOOT)/$(LIBPREFIX)sexp.a
+
+# This is the default file used by tests.
+
+SEXP_DEFAULT_DF = $(TEST_SRCS_DIR)/defaults-0xb.df
+SEXP_DEFAULT_WASM = $(TEST_SRCS_DIR)/defaults-0xb.wasm
+SEXP_DEFAULT_WASM_W = $(TEST_SRCS_DIR)/defaults-0xb.wasm-w
 
 ###### Stream handlers ######
 
@@ -295,8 +299,19 @@ gen-parser: $(PARSER_DIR)/Parser.tab.cpp
 
 .PHONY: gen-parser
 
-$(SEXP_DEFAULTS_CPP): $(BUILD_EXECDIR_BOOT)/decompsexp-wasm $(SEXP_DEFAULTS)
-	$< -d -i $(SEXP_DEFAULTS) -o $@
+$(SEXP_DEFAULT_SRCS): | $(SEXP_GENDIR)
+
+$(SEXP_GENDIR):
+	mkdir -p $@
+
+$(SEXP_DEFAULT_GENSRCS): $(SEXP_GENDIR)/%.df: $(SEXP_SRCDIR)/%.df
+	cp $< $@
+
+$(SEXP_DEFAULT_GENSRCS): | $(SEXP_GENDIR)
+
+$(SEXP_DEFAULT_SRCS): $(SEXP_GENDIR)/%.cpp: $(SEXP_GENDIR)/%.df \
+		 $(BUILD_EXECDIR_BOOT)/decompsexp-wasm
+	$(BUILD_EXECDIR_BOOT)/decompsexp-wasm -d -i $< -o $@
 
 ###### Compiliing binary generation Sources ######
 
@@ -419,10 +434,6 @@ $(INTCOMP_LIB): $(INTCOMP_OBJS)
 
 ###### Compiliing Sexp Sources ######
 
-sexp-objs: $(SEXP_OBJS) $(SEXP_OBJS_BOOT)
-
-.PHONY: sexp-objs
-
 $(SEXP_OBJS): | $(SEXP_OBJDIR)
 
 $(SEXP_OBJDIR):
@@ -443,8 +454,13 @@ $(SEXP_OBJS): $(SEXP_OBJDIR)/%.o: $(SEXP_SRCDIR)/%.cpp
 $(SEXP_OBJS_BOOT): $(SEXP_OBJDIR_BOOT)/%.o: $(SEXP_SRCDIR)/%.cpp
 	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
 
-$(SEXP_LIB): $(SEXP_OBJS)
-	ar -rs $@ $(SEXP_OBJS)
+-include $(foreach dep,$(SEXP_DEFAULT_SRCS:.cpp=.d),$(SEXP_OBJDIR)/$(dep))
+
+$(SEXP_DEFAULT_OBJS): $(SEXP_OBJDIR)/%.o: $(SEXP_GENDIR)/%.cpp
+	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
+
+$(SEXP_LIB): $(SEXP_OBJS) $(SEXP_DEFAULT_OBJS)
+	ar -rs $@ $(SEXP_OBJS) $(SEXP_DEFAULT_OBJS)
 	ranlib $@
 
 $(SEXP_LIB_BOOT): $(SEXP_OBJS_BOOT)
@@ -643,20 +659,20 @@ presubmit:
 .PHONY: presubmit
 
 test-decompress: $(BUILD_EXECDIR)/decompress
-	$< -p -d $(SEXP_DEFAULTS) -i $(TEST_SRCS_DIR)/toy.wasm -o - \
+	$< -p -d $(SEXP_DEFAULT_DF) -i $(TEST_SRCS_DIR)/toy.wasm -o - \
 		| diff - $(TEST_SRCS_DIR)/toy.wasm-w
-	$< -p -d $(SEXP_DEFAULTS) -m -i $(TEST_SRCS_DIR)/toy.wasm -o - \
+	$< -p -d $(SEXP_DEFAULT_DF) -m -i $(TEST_SRCS_DIR)/toy.wasm -o - \
 		| diff - $(TEST_SRCS_DIR)/toy.wasm
-	$< -p -d $(TEST_SRCS_DIR)/defaults.wasm \
+	$< -p -d $(SEXP_DEFAULT_WASM) \
 		-i $(TEST_SRCS_DIR)/toy.wasm -o - \
 		| diff - $(TEST_SRCS_DIR)/toy.wasm-w
-	$< -m -p -d $(TEST_SRCS_DIR)/defaults.wasm \
+	$< -m -p -d $(SEXP_DEFAULT_WASM) \
 		 -i $(TEST_SRCS_DIR)/toy.wasm -o - \
 		| diff - $(TEST_SRCS_DIR)/toy.wasm
-	$< -p -d $(TEST_SRCS_DIR)/defaults.wasm-w \
+	$< -p -d $(SEXP_DEFAULT_WASM_W) \
 		-i $(TEST_SRCS_DIR)/toy.wasm -o - \
 		| diff - $(TEST_SRCS_DIR)/toy.wasm-w
-	$< -m -p -d $(TEST_SRCS_DIR)/defaults.wasm-w \
+	$< -m -p -d $(SEXP_DEFAULT_WASM_W) \
 		 -i $(TEST_SRCS_DIR)/toy.wasm -o - \
 		| diff - $(TEST_SRCS_DIR)/toy.wasm
 	$< -i $(TEST_SRCS_DIR)/toy.wasm -o - \
@@ -696,32 +712,32 @@ test-param-passing: $(BUILD_EXECDIR)/decompress
 .PHONY: test-param-passing
 
 test-decompsexp-wasm: $(BUILD_EXECDIR)/decompsexp-wasm
-	$< -m -i $(SEXP_DEFAULTS) | diff - $(TEST_SRCS_DIR)/defaults.wasm
-	$< -i $(SEXP_DEFAULTS) | diff - $(TEST_SRCS_DIR)/defaults.wasm-w
+	$< -m -i $(SEXP_DEFAULT_DF) | diff - $(SEXP_DEFAULT_WASM)
+	$< -i $(SEXP_DEFAULT_DF) | diff - $(SEXP_DEFAULT_WASM_W)
 	@echo "*** sexp2wasm tests passed ***"
 
 .PHONY: test-decompsexp-wasm
 
 test-decompwasm-sexp: $(BUILD_EXECDIR)/decompwasm-sexp
-	$< -i test/test-sources/defaults.wasm \
-		| diff - $(TEST_SRCS_DIR)/defaults.df
-	$< -i test/test-sources/defaults.wasm-w \
-		| diff - $(TEST_SRCS_DIR)/defaults.df
-	$< -r 5 -i test/test-sources/defaults.wasm \
-		| diff - $(TEST_SRCS_DIR)/defaults.df
-	$< -r 5 -i test/test-sources/defaults.wasm-w \
-		| diff - $(TEST_SRCS_DIR)/defaults.df
+	$< -i $(SEXP_DEFAULT_WASM) \
+		| diff - $(TEST_SRCS_DIR)/defaults-0xb.df
+	$< -i $(SEXP_DEFAULT_WASM_W) \
+		| diff - $(TEST_SRCS_DIR)/defaults-0xb.df
+	$< -r 5 -i $(SEXP_DEFAULT_WASM) \
+		| diff - $(TEST_SRCS_DIR)/defaults-0xb.df
+	$< -r 5 -i $(SEXP_DEFAULT_WASM_W) \
+		| diff - $(TEST_SRCS_DIR)/defaults-0xb.df
 	@echo "*** wasm2sexp tests passed ***"
 
 .PHONY: test-decompwasm-sexp
 
 test-parser: $(TEST_EXECDIR)/TestParser
-	$< -w $(SEXP_DEFAULTS) | diff - $(TEST_SRCS_DIR)/defaults.df
-	$< -w $(SEXP_DEFAULTS) | diff - $(TEST_SRCS_DIR)/defaults.df
+	$< -w $(SEXP_DEFAULT_DF) | diff - $(TEST_SRCS_DIR)/defaults-0xb.df
+	$< -w $(SEXP_DEFAULT_DF) | diff - $(TEST_SRCS_DIR)/defaults-0xb.df
 	$< --expect-fail $(TEST_SRCS_DIR)/MismatchedParens.df 2>&1 | \
 		diff - $(TEST_SRCS_DIR)/MismatchedParens.df-out
-	$< -w $(TEST_SRCS_DIR)/defaults.df | \
-		diff - $(TEST_SRCS_DIR)/defaults.df
+	$< -w $(TEST_SRCS_DIR)/defaults-0xb.df | \
+		diff - $(TEST_SRCS_DIR)/defaults-0xb.df
 	$< -w $(TEST_SRCS_DIR)/ExprRedirects.df | \
 		diff - $(TEST_SRCS_DIR)/ExprRedirects.df-out
 	@echo "*** parser tests passed ***"
@@ -729,24 +745,24 @@ test-parser: $(TEST_EXECDIR)/TestParser
 .PHONY: test-parser
 
 test-raw-streams: $(TEST_EXECDIR)/TestRawStreams
-	$< -i $(SEXP_DEFAULTS) | diff - $(SEXP_DEFAULTS)
-	$< -i $(SEXP_DEFAULTS) -s | diff - $(SEXP_DEFAULTS)
+	$< -i $(SEXP_DEFAULT_DF) | diff - $(SEXP_DEFAULT_DF)
+	$< -i $(SEXP_DEFAULT_DF) -s | diff - $(SEXP_DEFAULT_DF)
 	@echo "*** test raw streams passed ***"
 
 .PHONY: test-raw-streams
 
 test-byte-queues: $(TEST_EXECDIR)/TestByteQueues
-	$< -i $(SEXP_DEFAULTS) | diff - $(SEXP_DEFAULTS)
-	$< -c 2 -i $(SEXP_DEFAULTS) | diff - $(SEXP_DEFAULTS)
-	$< -c 3 -i $(SEXP_DEFAULTS) | diff - $(SEXP_DEFAULTS)
-	$< -c 4 -i $(SEXP_DEFAULTS) | diff - $(SEXP_DEFAULTS)
-	$< -c 5 -i $(SEXP_DEFAULTS) | diff - $(SEXP_DEFAULTS)
-	$< -c 6 -i $(SEXP_DEFAULTS) | diff - $(SEXP_DEFAULTS)
-	$< -c 7 -i $(SEXP_DEFAULTS) | diff - $(SEXP_DEFAULTS)
-	$< -c 13 -i $(SEXP_DEFAULTS) | diff - $(SEXP_DEFAULTS)
-	$< -c 119 -i $(SEXP_DEFAULTS) | diff - $(SEXP_DEFAULTS)
-	$< -c 2323 -i $(SEXP_DEFAULTS) | diff - $(SEXP_DEFAULTS)
-	$< -c 3231 -i $(SEXP_DEFAULTS) | diff - $(SEXP_DEFAULTS)
+	$< -i $(SEXP_DEFAULT_DF) | diff - $(SEXP_DEFAULT_DF)
+	$< -c 2 -i $(SEXP_DEFAULT_DF) | diff - $(SEXP_DEFAULT_DF)
+	$< -c 3 -i $(SEXP_DEFAULT_DF) | diff - $(SEXP_DEFAULT_DF)
+	$< -c 4 -i $(SEXP_DEFAULT_DF) | diff - $(SEXP_DEFAULT_DF)
+	$< -c 5 -i $(SEXP_DEFAULT_DF) | diff - $(SEXP_DEFAULT_DF)
+	$< -c 6 -i $(SEXP_DEFAULT_DF) | diff - $(SEXP_DEFAULT_DF)
+	$< -c 7 -i $(SEXP_DEFAULT_DF) | diff - $(SEXP_DEFAULT_DF)
+	$< -c 13 -i $(SEXP_DEFAULT_DF) | diff - $(SEXP_DEFAULT_DF)
+	$< -c 119 -i $(SEXP_DEFAULT_DF) | diff - $(SEXP_DEFAULT_DF)
+	$< -c 2323 -i $(SEXP_DEFAULT_DF) | diff - $(SEXP_DEFAULT_DF)
+	$< -c 3231 -i $(SEXP_DEFAULT_DF) | diff - $(SEXP_DEFAULT_DF)
 	@echo "*** test byte queues passed ***"
 
 .PHONY: test-byte-queues

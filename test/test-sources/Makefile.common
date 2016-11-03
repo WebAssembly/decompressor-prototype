@@ -26,6 +26,8 @@ include ../../Makefile.common
 
 PARENT_DIR = ../..
 
+TEST_SRCS_DIR = ./
+
 SEXP_SRCDIR = $(PARENT_DIR)/src/sexp
 SEXP_DEFAULTS = $(SEXP_SRCDIR)/defaults.df
 
@@ -33,6 +35,8 @@ EXEC_DIR = $(PARENT_DIR)/$(BUILDDIR)/bin
 TEST_DIR = $(PARENT_DIR)/$(BUILDDIR)/test
 
 LOCAL_SEXPS_DIR = spec
+
+SEXP_DEFAULT_DFS = defaults-0xb.df defaults-0xd.df
 
 # Note: the following spec test are not included because they do not generate a
 # valid wasm file.
