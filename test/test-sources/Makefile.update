@@ -46,6 +46,13 @@ SPEC_SEXPS_SRCS=$(patsubst %.wast, $(SPEC_SEXPS_DIR)/%.wast, $(SEXPS))
 LOCAL_SEXPS_SRCS=$(patsubst %.wast, $(LOCAL_SEXPS_DIR)/%.wast, $(SEXPS))
 LOCAL_SEXPS_BINS=$(patsubst %.wast, $(LOCAL_SEXPS_DIR)/%.wasm, $(SEXPS))
 
+SEXP_DEFAULT_TEST_SRCS = $(patsubst %.df, $(TEST_SRCS_DIR)/%.df, $(SEXP_DEFAULT_DFS))
+SEXP_DEFAULT_WASMS = $(patsubst %.df, $(TEST_SRCS_DIR)/%.wasm, $(SEXP_DEFAULT_DFS))
+SEXP_DEFAULT_WASMS_W = $(patsubst %.df, $(TEST_SRCS_DIR)/%.wasm-w, $(SEXP_DEFAULT_DFS))
+
+$(info TEST_SRCS_DIR = $(TEST_SRCS_DIR))
+$(info SEXP_DEFAULT_WASMS = $(SEXP_DEFAULT_WASMS))
+
 $(info -----------------------------------------------)
 $(info ***NOTE*** Expect error messages while generating wasm files.)
 $(info -----------------------------------------------)
@@ -53,20 +60,15 @@ $(info -----------------------------------------------)
 # NOTE: update will have LOTS of error messages, but they can be ignored.
 spec: clean_binaries $(LOCAL_SEXPS_SRCS) $(LOCAL_SEXPS_BINS)
 
-defaults.wasm:
-	$(EXEC_DIR)/decompsexp-wasm -m -i $(SEXP_DEFAULTS) -o $@
+$(SEXP_DEFAULT_WASMS): %.wasm: $(TEST_SRCS_DIR)/%.df
+	$(EXEC_DIR)/decompsexp-wasm -m -i $< -o $@
 
-.PHONY: defaults.wasm
+$(SEXP_DEFAULT_WASMS_W): %.wasm-w: $(TEST_SRCS_DIR)/%.df
+	$(EXEC_DIR)/decompsexp-wasm -i $< -o $@
 
-defaults.wasm-w:
-	$(EXEC_DIR)/decompsexp-wasm -i $(SEXP_DEFAULTS) -o $@
+$(SEXP_DEFAULT_TEST_SRCS): $(TEST_SRCS_DIR)/%.df: $(SEXP_SRCDIR)/%.df
+	$(TEST_DIR)/TestParser -w $< > $@
 
-.PHONY: defaults.wasm-w
-
-defaults.df:
-	$(TEST_DIR)/TestParser -w $(SEXP_DEFAULTS) > $@
-
-.PHONY: defaults.df
 
 ExprRedirects.df-out:
 	$(TEST_DIR)/TestParser -w ExprRedirects.df > ExprRedirects.df-out
