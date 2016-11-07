@@ -344,6 +344,9 @@ void TextWriter::writeNodeAbbrev(const Node* Nd,
     case OpSymbol:
       writeNode(Nd, AddNewline, EmbedInParent);
       return;
+    case OpLiteralUse:
+      writeNodeAbbrev(Nd->getKid(0), AddNewline, EmbedInParent);
+      break;
   }
 }
 

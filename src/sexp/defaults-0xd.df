@@ -448,7 +448,7 @@
   (switch (seq (read) (=> 'instruction.opcode'))
     (error)
     # control flow operators.
-    (case 'inst.uunreachable' (=> 'inst.unreachable'))
+    (case 'inst.unreachable' (=> 'inst.unreachable'))
     (case 'inst.nop' (=> 'inst.nop'))
     (case 'inst.block'
       (eval 'type.value')
@@ -807,7 +807,7 @@
       (case 'start.section' (eval 'start.section'))
       (case 'element.section' (eval 'element.section'))
       (case 'code.section' (eval 'code.section'))
-      (case 'data.section' (error))
+      (case 'data.section' (eval 'data.section'))
     )
   )
   (=> 'section.end')
