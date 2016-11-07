@@ -170,7 +170,7 @@
 (literal 'inst.i32.trunc_s/f32'     (u8.const 0xa8))
 (literal 'inst.i32.trunc_u/f32'     (u8.const 0xa9))
 (literal 'inst.i32.trunc_s/f64'     (u8.const 0xaa))
-(literal 'inst.i32.trunc_s/f64'     (u8.const 0xab))
+(literal 'inst.i32.trunc_u/f64'     (u8.const 0xab))
 (literal 'inst.i64.extend_s/i32'    (u8.const 0xac))
 (literal 'inst.i64.extend_u/i32'    (u8.const 0xad))
 (literal 'inst.i64.trunc_s/f32'     (u8.const 0xae))
@@ -190,7 +190,7 @@
 (literal 'inst.i32.reinterpret/f32' (u8.const 0xbc))
 (literal 'inst.i64.reinterpret/f64' (u8.const 0xbd))
 (literal 'inst.f32.reinterpret/i32' (u8.const 0xbe))
-(literal 'inst.ft4.reinterpret/i64' (u8.const 0xbf))
+(literal 'inst.f64.reinterpret/i64' (u8.const 0xbf))
 
 (literal 'unknown.section'  (u32.const 0))
 (literal 'type.section'     (u32.const 1))
@@ -701,7 +701,7 @@
     # Conversions
     (case 'inst.i32.wrap/i64'      (=> 'inst.i32.wrap/i64'))
     (case 'inst.i32.trunc_s/f32'   (=> 'inst.i32.trunc_s/f32'))
-    (case 'inst.i32.trunc_s/f32'   (=> 'inst.i32.trunc_u/f32'))
+    (case 'inst.i32.trunc_u/f32'   (=> 'inst.i32.trunc_u/f32'))
     (case 'inst.i32.trunc_s/f64'   (=> 'inst.i32.trunc_s/f64'))
     (case 'inst.i32.trunc_u/f64'   (=> 'inst.i32.trunc_u/f64'))
     (case 'inst.i64.extend_s/i32'  (=> 'inst.i64.extend_s/i32'))
@@ -720,7 +720,6 @@
     (case 'inst.f64.convert_s/i64' (=> 'inst.f64.convert_s/i64'))
     (case 'inst.f64.convert_u/i64' (=> 'inst.f64.convert_u/i64'))
     (case 'inst.f64.promote/f32'   (=> 'inst.f64.promote/f32'))
-
 
     # Reinterpretations
     (case 'inst.i32.reinterpret/f32' (=> 'inst.i32.reinterpret/f32'))

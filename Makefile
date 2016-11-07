@@ -233,7 +233,26 @@ TEST_WASM_SRCS = \
 	address.wasm \
 	binary.wasm \
 	block.wasm \
-	br.wasm
+	br.wasm \
+	break-drop.wasm \
+	br_if.wasm \
+	br_table.wasm \
+	call_indirect.wasm \
+	call.wasm \
+	comments.wasm \
+	conversions.wasm \
+	endianness.wasm \
+	exports.wasm \
+	f32_cmp.wasm \
+	f32.wasm \
+	f64_cmp.wasm \
+	f64.wasm \
+	fac.wasm \
+	float_exprs.wasm \
+	float_literals.wasm \
+	float_memory.wasm \
+	float_misc.wasm \
+	forward.wasm
 
 TEST_WASM_SRC_FILES = $(patsubst %.wasm, $(TEST_0XD_SRCDIR)/%.wasm, \
                         $(TEST_WASM_SRCS))
@@ -736,8 +755,6 @@ $(TEST_WASM_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm: $(TEST_0XD_SRCDIR)/%.wasm \
 		$(BUILD_EXECDIR)/decompress
 	$(BUILD_EXECDIR)/decompress -m -D -i $< -o $@
 	cmp $< $@
-
-.PHONY: $(TEST_WASM_GEN_FILES)
 
 test-param-passing: $(BUILD_EXECDIR)/decompress
 	$< -d test/test-sources/defaults-param-test.df \
