@@ -222,7 +222,24 @@ TEST_OBJS=$(patsubst %.cpp, $(TEST_OBJDIR)/%.o, $(TEST_SRCS))
 
 TEST_EXECS=$(patsubst %.cpp, $(TEST_EXECDIR)/%$(EXE), $(TEST_SRCS))
 
+###### Test sources and generated tests ######
+
 TEST_SRCS_DIR = test/test-sources
+
+TEST_0XD_SRCDIR = $(TEST_SRCS_DIR)/0xD
+TEST_0XD_GENDIR = $(TESTGENDIR)/0xD
+
+TEST_WASM_SRCS = \
+	address.wasm \
+	binary.wasm \
+	block.wasm \
+	br.wasm
+
+TEST_WASM_SRC_FILES = $(patsubst %.wasm, $(TEST_0XD_SRCDIR)/%.wasm, \
+                        $(TEST_WASM_SRCS))
+
+TEST_WASM_GEN_FILES = $(patsubst %.wasm, $(TEST_0XD_GENDIR)/%.wasm, \
+                       $(TEST_WASM_SRCS))
 
 ###### General compilation definitions ######
 
@@ -663,7 +680,7 @@ presubmit:
 
 .PHONY: presubmit
 
-test-decompress: $(BUILD_EXECDIR)/decompress
+test-decompress: $(BUILD_EXECDIR)/decompress test-decompress-0xd
 	$< -p -d $(SEXP_DEFAULT_DF) -i $(TEST_SRCS_DIR)/toy.wasm -o - \
 		| diff - $(TEST_SRCS_DIR)/toy.wasm-w
 	$< -p -d $(SEXP_DEFAULT_DF) -m -i $(TEST_SRCS_DIR)/toy.wasm -o - \
@@ -704,6 +721,23 @@ test-decompress: $(BUILD_EXECDIR)/decompress
 	@echo "*** decompress tests passed ***"
 
 .PHONY: test-decompress
+
+test-decompress-0xd: $(TEST_WASM_GEN_FILES)
+	@echo "*** decompress 0xD tests passed ***"
+
+.PHONY: test-decompress-0xd
+
+$(TEST_WASM_GEN_FILES): $(TEST_0XD_GENDIR)
+
+$(TEST_0XD_GENDIR):
+	mkdir -p $@
+
+$(TEST_WASM_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm: $(TEST_0XD_SRCDIR)/%.wasm \
+		$(BUILD_EXECDIR)/decompress
+	$(BUILD_EXECDIR)/decompress -m -D -i $< -o $@
+	cmp $< $@
+
+.PHONY: $(TEST_WASM_GEN_FILES)
 
 test-param-passing: $(BUILD_EXECDIR)/decompress
 	$< -d test/test-sources/defaults-param-test.df \
