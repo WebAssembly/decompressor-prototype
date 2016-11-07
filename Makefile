@@ -252,7 +252,38 @@ TEST_WASM_SRCS = \
 	float_literals.wasm \
 	float_memory.wasm \
 	float_misc.wasm \
-	forward.wasm
+	forward.wasm \
+	func_ptrs.wasm \
+	func.wasm \
+	get_local.wasm \
+	globals.wasm \
+	i32.wasm \
+	i64.wasm \
+	imports.wasm \
+	int_exprs.wasm \
+	int_literals.wasm \
+	labels.wasm \
+	left-to-right.wasm \
+	linking.wasm \
+	loop.wasm \
+	memory_redundancy.wasm \
+	memory_trap.wasm \
+	memory.wasm \
+	names.wasm \
+	nop.wasm \
+	resizing.wasm \
+	return.wasm \
+	select.wasm \
+	set_local.wasm \
+	skip-stack-guard-page.wasm \
+	stack.wasm \
+	store_retval.wasm \
+	switch.wasm \
+	tee_local.wasm \
+	traps.wasm \
+	typecheck.wasm \
+	unreachable.wasm \
+	unwind.wasm
 
 TEST_WASM_SRC_FILES = $(patsubst %.wasm, $(TEST_0XD_SRCDIR)/%.wasm, \
                         $(TEST_WASM_SRCS))

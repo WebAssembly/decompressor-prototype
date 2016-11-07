@@ -182,7 +182,6 @@ X(Inst_f64_sqrt, "inst.f64.sqrt") \
 X(Inst_f64_store, "inst.f64.store") \
 X(Inst_f64_sub, "inst.f64.sub") \
 X(Inst_f64_trunc, "inst.f64.trunc") \
-X(Inst_ft4_reinterpret_i64, "inst.ft4.reinterpret/i64") \
 X(Inst_get_global, "inst.get_global") \
 X(Inst_get_local, "inst.get_local") \
 X(Inst_grow_memory, "inst.grow_memory") \
@@ -292,7 +291,6 @@ X(Inst_set_global, "inst.set_global") \
 X(Inst_set_local, "inst.set_local") \
 X(Inst_tee_local, "inst.tee_local") \
 X(Inst_unreachable, "inst.unreachable") \
-X(Inst_uunreachable, "inst.uunreachable") \
 X(Local_entry, "local_entry") \
 X(Local_entry_begin, "local_entry.begin") \
 X(Local_entry_count, "local_entry.count") \
