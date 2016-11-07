@@ -319,6 +319,10 @@ void Reader::failFreezingEof() {
   fail("Unable to set eof on output");
 }
 
+void Reader::failInWriteOnlyMode() {
+  fail("Method can only be processed in read mode");
+}
+
 void Reader::resume() {
 #if LOG_RUNMETHODS
   TRACE_ENTER("resume");
@@ -599,6 +603,8 @@ void Reader::resume() {
             break;
           }
           case OpNot:  // Method::Eval
+            if (Frame.CallModifier == MethodModifier::WriteOnly)
+              return failInWriteOnlyMode();
             switch (Frame.CallState) {
               case State::Enter:
                 traceEnterFrame();
@@ -615,6 +621,8 @@ void Reader::resume() {
             }
             break;
           case OpAnd:  // Method::Eval
+            if (Frame.CallModifier == MethodModifier::WriteOnly)
+              return failInWriteOnlyMode();
             switch (Frame.CallState) {
               case State::Enter:
                 traceEnterFrame();
@@ -638,6 +646,8 @@ void Reader::resume() {
             }
             break;
           case OpOr:  // Method::Eval
+            if (Frame.CallModifier == MethodModifier::WriteOnly)
+              return failInWriteOnlyMode();
             switch (Frame.CallState) {
               case State::Enter:
                 traceEnterFrame();
