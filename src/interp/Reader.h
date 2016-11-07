@@ -195,10 +195,12 @@ class Reader {
   // The stack of loop counters.
   size_t LoopCounter;
   utils::ValueStack<size_t> LoopCounterStack;
-  // The stack of local values.
+  // The stack of local values. Also includes expression arguments
+  // (appearing after user-defined locals).
   size_t LocalsBase;
   utils::ValueStack<size_t> LocalsBaseStack;
   std::vector<decode::IntType> LocalValues;
+
   // The stack of opcode Selshift/CaseMasks for multi-byte opcodes.
   struct OpcodeLocalsFrame {
     uint32_t SelShift;
