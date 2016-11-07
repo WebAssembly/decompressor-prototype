@@ -81,11 +81,14 @@ const char* StateName[] = {
 #undef X
     "NO_SUCH_STATE"};
 
-const char* MethodModifierName[] = {
-#define X(tag, flags) #tag,
+struct {
+  const char* Name;
+  size_t Index;
+} MethodModifierName[] = {
+#define X(tag, flags) { #tag, flags },
     INTERPRETER_METHOD_MODIFIERS_TABLE
 #undef X
-    "NO_SUCH_METHOD_MODIFIER"};
+    { "NO_SUCH_METHOD_MODIFIER", 0 }};
 
 }  // end of anonymous namespace
 
@@ -97,10 +100,13 @@ const char* Reader::getName(Method M) {
 }
 
 const char* Reader::getName(MethodModifier Modifier) {
-  size_t Index = size_t(Modifier);
-  if (Index >= size(MethodModifierName))
-    Index = size_t(MethodModifier::NO_SUCH_METHOD_MODIFIER);
-  return MethodModifierName[Index];
+  fprintf(stderr, "[mm=%u]", unsigned(Modifier));
+  uint32_t Index = uint32_t(Modifier);
+  for (size_t i = 0; i < size(MethodModifierName); ++i) {
+    if (Index == MethodModifierName[i].Index)
+      return MethodModifierName[i].Name;
+  }
+  return MethodModifierName[size(MethodModifierName) - 1].Name;
 }
 
 const char* Reader::getName(State S) {
@@ -385,10 +391,6 @@ void Reader::resume() {
 #endif
         switch (Frame.Nd->getType()) {
           case NO_SUCH_NODETYPE:
-          case OpBitwiseAnd:
-          case OpBitwiseNegate:
-          case OpBitwiseOr:
-          case OpBitwiseXor:
           case OpConvert:
           case OpParams:
           case OpFilter:  // Method::Eval
@@ -408,6 +410,104 @@ void Reader::resume() {
           case OpError:  // Method::Eval
             traceEnterFrame();
             return fail("Algorithm error!");
+          case OpBitwiseAnd:
+            switch (Frame.CallState) {
+              case State::Enter:
+                traceEnterFrame();
+                if (!hasReadMode())
+                  return failInWriteOnlyMode();
+                Frame.CallState = State::Step2;
+                call(Method::Eval, Frame.CallModifier, Frame.Nd->getKid(0));
+                break;
+              case State::Step2:
+                LocalValues.push_back(Frame.ReturnValue);
+                Frame.CallState = State::Exit;
+                call(Method::Eval, Frame.CallModifier, Frame.Nd->getKid(1));
+                break;
+              case State::Exit: {
+                IntType Arg2 = Frame.ReturnValue;
+                IntType Arg1 = LocalValues.back();
+                LocalValues.pop_back();
+                popAndReturn(Arg1 & Arg2);
+                traceExitFrame();
+                break;
+              }
+              default:
+                return failBadState();
+            }
+            break;
+          case OpBitwiseOr:
+            switch (Frame.CallState) {
+              case State::Enter:
+                traceEnterFrame();
+                if (!hasReadMode())
+                  return failInWriteOnlyMode();
+                Frame.CallState = State::Step2;
+                call(Method::Eval, Frame.CallModifier, Frame.Nd->getKid(0));
+                break;
+              case State::Step2:
+                LocalValues.push_back(Frame.ReturnValue);
+                Frame.CallState = State::Exit;
+                call(Method::Eval, Frame.CallModifier, Frame.Nd->getKid(1));
+                break;
+              case State::Exit: {
+                IntType Arg2 = Frame.ReturnValue;
+                IntType Arg1 = LocalValues.back();
+                LocalValues.pop_back();
+                popAndReturn(Arg1 | Arg2);
+                traceExitFrame();
+                break;
+              }
+              default:
+                return failBadState();
+            }
+            break;
+          case OpBitwiseXor:
+            switch (Frame.CallState) {
+              case State::Enter:
+                traceEnterFrame();
+                if (!hasReadMode())
+                  return failInWriteOnlyMode();
+                Frame.CallState = State::Step2;
+                call(Method::Eval, Frame.CallModifier, Frame.Nd->getKid(0));
+                break;
+              case State::Step2:
+                LocalValues.push_back(Frame.ReturnValue);
+                Frame.CallState = State::Exit;
+                call(Method::Eval, Frame.CallModifier, Frame.Nd->getKid(1));
+                break;
+              case State::Exit: {
+                IntType Arg2 = Frame.ReturnValue;
+                IntType Arg1 = LocalValues.back();
+                LocalValues.pop_back();
+                popAndReturn(Arg1 ^ Arg2);
+                traceExitFrame();
+                break;
+              }
+              default:
+                return failBadState();
+            }
+            break;
+          case OpBitwiseNegate:
+            switch (Frame.CallState) {
+              case State::Enter:
+                traceEnterFrame();
+                if (!hasReadMode())
+                  return failInWriteOnlyMode();
+                Frame.CallState = State::Exit;
+                call(Method::Eval, Frame.CallModifier, Frame.Nd->getKid(0));
+                break;
+              case State::Exit: {
+                IntType Arg = Frame.ReturnValue;
+                LocalValues.pop_back();
+                popAndReturn(~Arg);
+                traceExitFrame();
+                break;
+              }
+              default:
+                return failBadState();
+            }
+            break;
           case OpCallback:  // Method::Eval
             // TODO(karlschimpf): All virtual calls to class so that derived
             // classes can override.
@@ -446,9 +546,9 @@ void Reader::resume() {
             break;
           }
           case OpPeek:
-            traceEnterFrame();
             switch (Frame.CallState) {
               case State::Enter:
+                traceEnterFrame();
                 PeekPosStack.push(ReadPos);
                 Frame.CallState = State::Exit;
                 call(Method::Eval, MethodModifier::ReadOnly,
@@ -463,7 +563,6 @@ void Reader::resume() {
               default:
                 return failBadState();
             }
-            traceExitFrame();
             break;
           case OpRead:  // Method::Eval
             switch (Frame.CallState) {
@@ -603,7 +702,7 @@ void Reader::resume() {
             break;
           }
           case OpNot:  // Method::Eval
-            if (Frame.CallModifier == MethodModifier::WriteOnly)
+            if (!hasReadMode())
               return failInWriteOnlyMode();
             switch (Frame.CallState) {
               case State::Enter:
@@ -621,20 +720,18 @@ void Reader::resume() {
             }
             break;
           case OpAnd:  // Method::Eval
-            if (Frame.CallModifier == MethodModifier::WriteOnly)
+            if (!hasReadMode())
               return failInWriteOnlyMode();
             switch (Frame.CallState) {
               case State::Enter:
                 traceEnterFrame();
                 Frame.CallState = State::Step2;
-                call(Method::Eval, MethodModifier::ReadOnly,
-                     Frame.Nd->getKid(0));
+                call(Method::Eval, Frame.CallModifier, Frame.Nd->getKid(0));
                 break;
               case State::Step2:
                 Frame.CallState = State::Exit;
                 if (Frame.ReturnValue != 0)
-                  call(Method::Eval, MethodModifier::ReadOnly,
-                       Frame.Nd->getKid(1));
+                  call(Method::Eval, Frame.CallModifier, Frame.Nd->getKid(1));
                 break;
               case State::Exit: {
                 popAndReturn(Frame.ReturnValue);
@@ -646,20 +743,18 @@ void Reader::resume() {
             }
             break;
           case OpOr:  // Method::Eval
-            if (Frame.CallModifier == MethodModifier::WriteOnly)
+            if (!hasReadMode())
               return failInWriteOnlyMode();
             switch (Frame.CallState) {
               case State::Enter:
                 traceEnterFrame();
                 Frame.CallState = State::Step2;
-                call(Method::Eval, MethodModifier::ReadOnly,
-                     Frame.Nd->getKid(0));
+                call(Method::Eval, Frame.CallModifier, Frame.Nd->getKid(0));
                 break;
               case State::Step2:
                 Frame.CallState = State::Exit;
                 if (Frame.ReturnValue == 0)
-                  call(Method::Eval, MethodModifier::ReadOnly,
-                       Frame.Nd->getKid(1));
+                  call(Method::Eval, Frame.CallModifier, Frame.Nd->getKid(1));
                 break;
               case State::Exit: {
                 popAndReturn(Frame.ReturnValue);
@@ -747,8 +842,7 @@ void Reader::resume() {
               case State::Enter:
                 traceEnterFrame();
                 Frame.CallState = State::Step2;
-                call(Method::Eval, MethodModifier::ReadOnly,
-                     Frame.Nd->getKid(0));
+                call(Method::Eval, Frame.CallModifier, Frame.Nd->getKid(0));
                 break;
               case State::Step2:
                 Frame.CallState = State::Exit;
@@ -768,8 +862,7 @@ void Reader::resume() {
               case State::Enter:
                 traceEnterFrame();
                 Frame.CallState = State::Step2;
-                call(Method::Eval, MethodModifier::ReadOnly,
-                     Frame.Nd->getKid(0));
+                call(Method::Eval, Frame.CallModifier, Frame.Nd->getKid(0));
                 break;
               case State::Step2:
                 Frame.CallState = State::Exit;
