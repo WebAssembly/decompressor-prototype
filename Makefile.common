@@ -28,6 +28,11 @@ EXE :=
 CXX_BOOT := clang++
 EXE_BOOT :=
 
+# Define if updating tests
+#ifndef UPDATE
+  UPDATE=0
+#endif
+
 # Define if release or debug build
 ifdef DEBUG
   ifdef RELEASE
@@ -126,6 +131,8 @@ else ifeq ($(PLATFORM), Default)
 else
   $(error Unrecognized platform: $(PLATFORM))
 endif
+
+WABT_DIR = third_party/wabt
 
 SRCDIR = src
 

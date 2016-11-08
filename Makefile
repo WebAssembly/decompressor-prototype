@@ -230,65 +230,70 @@ TEST_0XD_SRCDIR = $(TEST_SRCS_DIR)/0xD
 TEST_0XD_GENDIR = $(TESTGENDIR)/0xD
 
 TEST_WASM_SRCS = \
-	address.wasm \
-	binary.wasm \
-	block.wasm \
-	br.wasm \
-	break-drop.wasm \
-	br_if.wasm \
-	br_table.wasm \
-	call_indirect.wasm \
-	call.wasm \
-	comments.wasm \
-	conversions.wasm \
-	endianness.wasm \
-	exports.wasm \
-	f32_cmp.wasm \
-	f32.wasm \
-	f64_cmp.wasm \
-	f64.wasm \
-	fac.wasm \
-	float_exprs.wasm \
-	float_literals.wasm \
-	float_memory.wasm \
-	float_misc.wasm \
-	forward.wasm \
-	func_ptrs.wasm \
-	func.wasm \
-	get_local.wasm \
-	globals.wasm \
-	i32.wasm \
-	i64.wasm \
-	imports.wasm \
-	int_exprs.wasm \
-	int_literals.wasm \
-	labels.wasm \
-	left-to-right.wasm \
-	linking.wasm \
-	loop.wasm \
-	memory_redundancy.wasm \
-	memory_trap.wasm \
-	memory.wasm \
-	names.wasm \
-	nop.wasm \
-	resizing.wasm \
-	return.wasm \
-	select.wasm \
-	set_local.wasm \
-	skip-stack-guard-page.wasm \
-	stack.wasm \
-	store_retval.wasm \
-	switch.wasm \
-	tee_local.wasm \
-	traps.wasm \
-	typecheck.wasm \
-	unreachable.wasm \
-	unwind.wasm
+	address.wast \
+	binary.wast \
+	block.wast \
+	br.wast \
+	break-drop.wast \
+	br_if.wast \
+	br_table.wast \
+	call_indirect.wast \
+	call.wast \
+	comments.wast \
+	conversions.wast \
+	endianness.wast \
+	exports.wast \
+	f32_cmp.wast \
+	f32.wast \
+	f64_cmp.wast \
+	f64.wast \
+	fac.wast \
+	float_exprs.wast \
+	float_literals.wast \
+	float_memory.wast \
+	float_misc.wast \
+	forward.wast \
+	func_ptrs.wast \
+	func.wast \
+	get_local.wast \
+	globals.wast \
+	i32.wast \
+	i64.wast \
+	imports.wast \
+	int_exprs.wast \
+	int_literals.wast \
+	labels.wast \
+	left-to-right.wast \
+	linking.wast \
+	loop.wast \
+	memory_redundancy.wast \
+	memory_trap.wast \
+	memory.wast \
+	names.wast \
+	nop.wast \
+	resizing.wast \
+	return.wast \
+	select.wast \
+	set_local.wast \
+	skip-stack-guard-page.wast \
+	stack.wast \
+	store_retval.wast \
+	switch.wast \
+	tee_local.wast \
+	traps.wast \
+	typecheck.wast \
+	unreachable.wast \
+	unwind.wast
 
-TEST_WASM_SRC_FILES = $(patsubst %.wasm, $(TEST_0XD_SRCDIR)/%.wasm, \
+WABT_WAST_DIR = $(WABT_DIR)/third_party/testsuite
+
+TEST_WAST_SRC_FILES = $(patsubst %.wast, $(WABT_WAST_DIR)/%.wast, \
                         $(TEST_WASM_SRCS))
 
-TEST_WASM_GEN_FILES = $(patsubst %.wasm, $(TEST_0XD_GENDIR)/%.wasm, \
+TEST_WASM_SRC_FILES = $(patsubst %.wast, $(TEST_0XD_SRCDIR)/%.wasm, \
+                        $(TEST_WASM_SRCS))
+
+TEST_WASM_GEN_FILES = $(patsubst %.wast, $(TEST_0XD_GENDIR)/%.wasm, \
                        $(TEST_WASM_SRCS))
 
 ###### General compilation definitions ######
@@ -325,9 +330,22 @@ endif
 
 ###### Default Rule ######
 
-all: libs execs test-execs
+ifeq ($(UPDATE), 0)
+  all: build-all
+else
+  all: update-all
+endif
 
 .PHONY: all
+
+build-all: libs execs test-execs
+
+###### Build submodules ######
+
+wabt-submodule:
+	cd $(WABT_DIR); git submodule update --init; make
+
+.PHONY: wabt-submodule
 
 ###### Build boot executables ######
 
@@ -339,7 +357,7 @@ boot: $(EXECS_BOOT)
 
 ## TODO(karlschimpf): Fix clean to handle sources!
 
-clean: clean-gen
+clean: clean-gen clean-wabt
 	rm -rf $(BUILDDIR) $(BUILDDIR_BOOT)
 
 .PHONY: clean
@@ -351,6 +369,11 @@ clean-all: clean-gen
 
 clean-gen:
 	rm -rf $(PARSER_GENERATED_SRCS) $(SEXP_GENERATED_SRCS)
+
+clean-wabt:
+	cd $(WABT_DIR); make clean
+
+.PHONY: clean-wabt
 
 ###### Source Generation Rules #######
 
@@ -702,7 +725,7 @@ $(TEST_EXECS): $(TEST_EXECDIR)/%$(EXE): $(TEST_OBJDIR)/%.o $(LIBS)
 
 ###### Testing ######
 
-test: all test-parser test-raw-streams test-byte-queues \
+test: build-all test-parser test-raw-streams test-byte-queues \
 	test-decompsexp-wasm test-decompwasm-sexp test-param-passing \
 	test-decompress
 	@echo "*** all tests passed ***"
@@ -854,7 +877,6 @@ test-byte-queues: $(TEST_EXECDIR)/TestByteQueues
 
 .PHONY: test-byte-queues
 
-
 ###### Unit tests ######
 
 GTEST_DIR = third_party/googletest/googletest
@@ -892,3 +914,14 @@ unit-tests: $(UNITTEST_TESTS)
 
 clean-unit-tests:
 	rm -rf $(UNITTEST_EXECDIR)/*
+
+###### Updating tests sources ######
+
+ifneq ($(UPDATE), 0)
+
+update-all: wabt-submodule $(TEST_WASM_SRC_FILES)
+
+$(TEST_WASM_SRC_FILES): $(TEST_0XD_SRCDIR)/%.wasm: $(WABT_WAST_DIR)/%.wast wabt-submodule
+	$(WABT_DIR)/out/wast2wasm -o $@ $<
+
+endif
