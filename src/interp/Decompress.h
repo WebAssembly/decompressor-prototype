@@ -28,7 +28,7 @@ extern "C" {
 #define DECOMPRESSOR_ERROR (-2)
 
 /* Returns an allocated and initialized decompressor. */
-extern void* create_decompressor();
+extern void* create_decompressor(uint32_t VersionNumber);
 
 /* Creates a buffer to pass data in/out. D is the decompressor and Size is the
  * size of buffer to use.
