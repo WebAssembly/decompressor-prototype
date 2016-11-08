@@ -3,4 +3,4 @@
 	url = https://github.com/google/googletest
 [submodule "third_party/wabt"]
 	path = third_party/wabt
-	url = git@github.com:WebAssembly/wabt.git
+	url = https://github.com/WebAssembly/wabt.git
