@@ -922,7 +922,12 @@ clean-unit-tests:
 
 ifneq ($(UPDATE), 0)
 
-update-all: wabt-submodule $(TEST_WASM_SRC_FILES) $(TEST_WASM_W_SRC_FILES)
+update-all: wabt-submodule \
+	$(TEST_WASM_SRC_FILES) \
+	$(TEST_WASM_W_SRC_FILES) \
+	$(TEST_DEFAULT_DF) \
+	$(TEST_DEFAULT_WASM) \
+	$(TEST_DEFAULT_WASM_W)
 
 $(TEST_WASM_SRC_FILES): $(TEST_0XD_SRCDIR)/%.wasm: $(WABT_WAST_DIR)/%.wast \
 		wabt-submodule
