@@ -85,10 +85,12 @@ struct {
   const char* Name;
   size_t Index;
 } MethodModifierName[] = {
-#define X(tag, flags) { #tag, flags },
+#define X(tag, flags) \
+  { #tag, flags }     \
+  ,
     INTERPRETER_METHOD_MODIFIERS_TABLE
 #undef X
-    { "NO_SUCH_METHOD_MODIFIER", 0 }};
+    {"NO_SUCH_METHOD_MODIFIER", 0}};
 
 }  // end of anonymous namespace
 
@@ -1120,14 +1122,14 @@ void Reader::resume() {
             MagicNumber = Input->readUint32(ReadPos);
             TRACE(hex_uint32_t, "magic number", MagicNumber);
             if (MagicNumber != WasmBinaryMagic)
-              return fail("Unable to decompress. Did not find WASM binary "
-                          "magic number!");
+              return fail(
+                  "Unable to decompress. Did not find WASM binary "
+                  "magic number!");
             if (!Output.writeMagicNumber(MagicNumber))
               return failCantWrite();
             Version = Input->readUint32(ReadPos);
             TRACE(hex_uint32_t, "version", Version);
-            if (Version != WasmBinaryVersionB
-                && Version != WasmBinaryVersionD)
+            if (Version != WasmBinaryVersionB && Version != WasmBinaryVersionD)
               return fail("Unable to decompress. WASM version not known");
             if (!Output.writeVersionNumber(Version))
               return failCantWrite();
@@ -1149,7 +1151,7 @@ void Reader::resume() {
                 const Node* SectionsDef = Sections->getDefineDefinition();
                 if (SectionsDef == nullptr)
                   fail("Can't find sexpression to process sections");
-                call (Method::Eval, Frame.CallModifier, SectionsDef);
+                call(Method::Eval, Frame.CallModifier, SectionsDef);
                 break;
               }
               default:

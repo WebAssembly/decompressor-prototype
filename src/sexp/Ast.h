@@ -163,8 +163,8 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
   // Used to keep symbols unique within filter s-expressions.
   SymbolNode* getSymbolDefinition(const std::string& Name);
 
-  // Gets integer node (as defined by the arguments) if known. Otherwise
-  // returns newly created integer.
+// Gets integer node (as defined by the arguments) if known. Otherwise
+// returns newly created integer.
 #define X(tag, format, defval, mergable, NODE_DECLS)           \
   tag##Node* get##tag##Definition(decode::IntType Value,       \
                                   decode::ValueFormat Format); \
@@ -621,8 +621,7 @@ class NaryNode : public Node {
 
  protected:
   std::vector<Node*> Kids;
-  NaryNode(SymbolTable& Symtab, NodeType Type)
-      : Node(Symtab, Type) {}
+  NaryNode(SymbolTable& Symtab, NodeType Type) : Node(Symtab, Type) {}
 };
 
 #define X(tag, NODE_DECLS)                                                 \

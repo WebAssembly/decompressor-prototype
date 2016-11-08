@@ -287,9 +287,6 @@ TEST_WASM_SRCS = \
 
 WABT_WAST_DIR = $(WABT_DIR)/third_party/testsuite
 
-TEST_WAST_SRC_FILES = $(patsubst %.wast, $(WABT_WAST_DIR)/%.wast, \
-                        $(TEST_WASM_SRCS))
-
 TEST_WASM_SRC_FILES = $(patsubst %.wast, $(TEST_0XD_SRCDIR)/%.wasm, \
                         $(TEST_WASM_SRCS))
 

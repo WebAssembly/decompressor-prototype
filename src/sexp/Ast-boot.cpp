@@ -35,19 +35,19 @@ std::shared_ptr<ArrayReader> getReader(uint32_t Version) {
   std::shared_ptr<ArrayReader> Ptr;
   switch (Version) {
     case WasmBinaryVersionB:
-      Ptr =  std::make_shared<ArrayReader>(getWasm0xbDefaultsBuffer(),
-                                           getWasm0xbDefaultsBufferSize());
+      Ptr = std::make_shared<ArrayReader>(getWasm0xbDefaultsBuffer(),
+                                          getWasm0xbDefaultsBufferSize());
       break;
     case WasmBinaryVersionD:
     default:
-      Ptr =  std::make_shared<ArrayReader>(getWasm0xdDefaultsBuffer(),
-                                           getWasm0xdDefaultsBufferSize());
+      Ptr = std::make_shared<ArrayReader>(getWasm0xdDefaultsBuffer(),
+                                          getWasm0xdDefaultsBufferSize());
       break;
   }
   return Ptr;
 }
 
-} // end of anonyoums namespace
+}  // end of anonyoums namespace
 
 bool SymbolTable::installPredefinedDefaults(std::shared_ptr<SymbolTable> Symtab,
                                             uint32_t Version,

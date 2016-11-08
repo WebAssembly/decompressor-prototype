@@ -180,7 +180,8 @@ void SymbolNode::installCaches(NodeVectorType& AdditionalNodes) {
 SymbolTable::SymbolTable()
     // TODO(karlschimpf) Switch Alloc to an ArenaAllocator once working.
     // TODO(karlschimpf) Figure out why we can't deallocate Allocated!
-    : Allocated(new std::vector<Node*>()), Trace("sexp_st"),
+    : Allocated(new std::vector<Node*>()),
+      Trace("sexp_st"),
       NextCreationIndex(0),
       Predefined(new std::vector<SymbolNode*>()) {
   Error = create<ErrorNode>();
@@ -204,10 +205,10 @@ void SymbolTable::init() {
     Predefined->push_back(Nd);
     Nd->setPredefinedSymbol(toPredefinedSymbol(i));
   }
-  BlockEnterCallback =
-      create<CallbackNode>((*Predefined)[uint32_t(PredefinedSymbol::Block_enter)]);
-  BlockExitCallback =
-      create<CallbackNode>((*Predefined)[uint32_t(PredefinedSymbol::Block_exit)]);
+  BlockEnterCallback = create<CallbackNode>(
+      (*Predefined)[uint32_t(PredefinedSymbol::Block_enter)]);
+  BlockExitCallback = create<CallbackNode>(
+      (*Predefined)[uint32_t(PredefinedSymbol::Block_exit)]);
 }
 
 SymbolNode* SymbolTable::getSymbolDefinition(const std::string& Name) {

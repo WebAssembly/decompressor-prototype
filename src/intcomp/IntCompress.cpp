@@ -37,8 +37,11 @@ class CounterWriter : public Writer {
 
  public:
   CounterWriter(IntCountUsageMap& UsageMap)
-      : UsageMap(UsageMap), input_seq(new circular_vector<IntType>(1)), CountCutoff(1),
-        WeightCutoff(1), UpToSize(0) {}
+      : UsageMap(UsageMap),
+        input_seq(new circular_vector<IntType>(1)),
+        CountCutoff(1),
+        WeightCutoff(1),
+        UpToSize(0) {}
 
   ~CounterWriter() OVERRIDE;
 
@@ -64,7 +67,7 @@ class CounterWriter : public Writer {
   bool writeValue(decode::IntType Value, const filt::Node* Format) OVERRIDE;
   bool writeAction(const filt::CallbackNode* Action) OVERRIDE;
 
-  // For debugging
+// For debugging
 #if 0
   void describeInput();
 #endif
@@ -122,8 +125,7 @@ void CounterWriter::addInputSeqToUsageMap() {
       // TODO(karlschimpf) We probably want to make this cutoff aware of
       // the path length, so that long sequences are more likely to be
       // found.
-      if (Nd->getCount() < CountCutoff ||
-          Nd->getWeight() < WeightCutoff) {
+      if (Nd->getCount() < CountCutoff || Nd->getWeight() < WeightCutoff) {
         popValuesFromInputSeq(i == 0 ? 1 : i);
         return;
       }
@@ -226,7 +228,8 @@ IntCompressor::~IntCompressor() {
 }
 
 void IntCompressor::compressUpToSize(size_t Size) {
-  fprintf(stderr, "Collecting integer sequences of (up to) length: %" PRIuMAX "\n",
+  fprintf(stderr,
+          "Collecting integer sequences of (up to) length: %" PRIuMAX "\n",
           uintmax_t(Size));
   Counter->setUpToSize(Size);
   Counter->setSequenceSize(Size);
