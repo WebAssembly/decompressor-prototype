@@ -22,9 +22,6 @@
 namespace wasm {
 namespace decode {
 
-const uint8_t* getWasm0xbDefaultsBuffer();
-size_t getWasm0xbDefaultsBufferSize();
-
 const uint8_t* getWasm0xdDefaultsBuffer();
 size_t getWasm0xdDefaultsBufferSize();
 

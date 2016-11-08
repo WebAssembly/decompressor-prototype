@@ -58,7 +58,6 @@ void usage(const char* AppName) {
   fprintf(stderr,
           "  -c N\t\t\tOnly compress sequences with count usage >= N.\n");
   fprintf(stderr, "  -d File\t\tFile containing default algorithms.\n");
-  fprintf(stderr, "  -D\t\t\tAssume version 0xd (instead of version 0xb)\n");
   fprintf(stderr, "  --expect-fail\t\tSucceed on failure/fail on success\n");
   fprintf(stderr, "  -h\t\t\tPrint this usage message.\n");
   fprintf(stderr, "  -i File\t\tFile to decompress ('-' implies stdin).\n");
@@ -89,7 +88,6 @@ int main(int Argc, char* Argv[]) {
   int Verbose = 0;
   bool MinimizeBlockSize = false;
   bool InstallPredefinedRules = true;
-  uint32_t WasmVersion = WasmBinaryVersionB;
   std::vector<int> DefaultIndices;
   size_t CountCutoff = 0;
   size_t WeightCutoff = 0;
@@ -124,8 +122,6 @@ int main(int Argc, char* Argv[]) {
         return exit_status(EXIT_FAILURE);
       }
       DefaultIndices.push_back(i);
-    } else if (Argv[i] == std::string("-D")) {
-      WasmVersion = WasmBinaryVersionD;
     } else if (Arg == "--expect-fail") {
       ExpectExitFail = true;
     } else if (Arg == "-h" || Arg == "--help") {
@@ -164,8 +160,7 @@ int main(int Argc, char* Argv[]) {
     CountCutoff = WeightCutoff;
   auto Symtab = std::make_shared<SymbolTable>();
   if (InstallPredefinedRules &&
-      !SymbolTable::installPredefinedDefaults(Symtab, WasmVersion,
-                                              Verbose >= 2)) {
+      !SymbolTable::installPredefinedDefaults(Symtab, Verbose >= 2)) {
     fprintf(stderr, "Unable to load compiled in default rules!\n");
     return exit_status(EXIT_FAILURE);
   }

@@ -1129,7 +1129,7 @@ void Reader::resume() {
               return failCantWrite();
             Version = Input->readUint32(ReadPos);
             TRACE(hex_uint32_t, "version", Version);
-            if (Version != WasmBinaryVersionB && Version != WasmBinaryVersionD)
+            if (Version != WasmBinaryVersionD)
               return fail("Unable to decompress. WASM version not known");
             if (!Output.writeVersionNumber(Version))
               return failCantWrite();

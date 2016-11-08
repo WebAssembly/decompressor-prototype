@@ -189,7 +189,6 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
   }
 
   static bool installPredefinedDefaults(std::shared_ptr<SymbolTable> Symtab,
-                                        uint32_t Version,
                                         bool Verbose);
 
   TraceClassSexp& getTrace() { return Trace; }

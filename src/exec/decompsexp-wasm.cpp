@@ -124,7 +124,6 @@ void usage(const char* AppName) {
   fprintf(stderr, "Options:\n");
   fprintf(stderr, "  --expect-fail\t\tSucceed on failure/fail on success\n");
   fprintf(stderr, "  -d\t\t\tGenerate defaults C++ source file instead\n");
-  fprintf(stderr, "  -D\t\t\tAssume version 0xd (instead of version 0xb)\n");
   fprintf(stderr, "  -h\t\t\tPrint this usage message.\n");
   fprintf(stderr, "  -i File\t\tFile of s-expressions ('-' implies stdin).\n");
   fprintf(stderr, "  -m\t\t\tMinimize block sizes in output stream.\n");
@@ -149,7 +148,6 @@ int main(int Argc, char* Argv[]) {
   bool InputSpecified = false;
   bool OutputSpecified = false;
   bool GenerateCppSource = false;
-  uint32_t WasmVersion = WasmBinaryVersionB;
   for (int i = 1; i < Argc; ++i) {
     if (Argv[i] == std::string("--expect-fail")) {
       ExpectExitFail = true;
@@ -159,8 +157,6 @@ int main(int Argc, char* Argv[]) {
       return exit_status(EXIT_SUCCESS);
     } else if (Argv[i] == std::string("-d")) {
       GenerateCppSource = true;
-    } else if (Argv[i] == std::string("-D")) {
-      WasmVersion = WasmBinaryVersionD;
     } else if (Argv[i] == std::string("-i")) {
       if (++i >= Argc) {
         fprintf(stderr, "No file specified after -i option\n");
@@ -225,6 +221,6 @@ int main(int Argc, char* Argv[]) {
   Writer->writeFile(wasm::dyn_cast<FileNode>(Parser.getParsedAst()));
   Writer->freezeEof();
   if (GenerateCppSource)
-    generateArrayImpl(InputFilename, ReadPos, Output, WasmVersion);
+    generateArrayImpl(InputFilename, ReadPos, Output, WasmBinaryVersionD);
   return exit_status(EXIT_SUCCESS);
 }

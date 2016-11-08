@@ -96,7 +96,7 @@ SEXP_SRCS_BOOT = $(SEXP_SRCS_BASE)
 SEXP_OBJS = $(patsubst %.cpp, $(SEXP_OBJDIR)/%.o, $(SEXP_SRCS))
 SEXP_OBJS_BOOT = $(patsubst %.cpp, $(SEXP_OBJDIR_BOOT)/%.o, $(SEXP_SRCS_BOOT))
 
-SEXP_DEFAULT_DFS = defaults-0xb.df defaults-0xd.df
+SEXP_DEFAULT_DFS = defaults-0xd.df
 
 SEXP_DEFAULT_ORIGSRCS = $(patsubst %.df, $(SEXP_SRCDIR)/%.df, $(SEXP_DEFAULT_DFS))
 SEXP_DEFAULT_GENSRCS = $(patsubst %.df, $(SEXP_GENDIR)/%.df, $(SEXP_DEFAULT_DFS))
@@ -108,9 +108,10 @@ SEXP_LIB_BOOT = $(LIBDIR_BOOT)/$(LIBPREFIX)sexp.a
 
 # This is the default file used by tests.
 
-SEXP_DEFAULT_DF = $(TEST_SRCS_DIR)/defaults-0xb.df
-SEXP_DEFAULT_WASM = $(TEST_SRCS_DIR)/defaults-0xb.wasm
-SEXP_DEFAULT_WASM_W = $(TEST_SRCS_DIR)/defaults-0xb.wasm-w
+SEXP_DEFAULT_DF = $(SEXP_SRCDIR)/defaults-0xd.df
+TEST_DEFAULT_DF = $(TEST_SRCS_DIR)/defaults-0xd.df
+TEST_DEFAULT_WASM = $(TEST_SRCS_DIR)/defaults-0xd.wasm
+TEST_DEFAULT_WASM_W = $(TEST_SRCS_DIR)/defaults-0xd.wasm-w
 
 ###### Stream handlers ######
 
@@ -387,7 +388,7 @@ clean-all: clean-gen clean-wabt
 .PHONY: clean-all
 
 clean-gen:
-	rm -rf $(PARSER_GENERATED_SRCS) $(SEXP_GENERATED_SRCS)
+	rm -rf $(PARSER_GENERATED_SRCS)
 
 clean-wabt:
 	cd $(WABT_DIR); make clean
@@ -418,13 +419,9 @@ $(SEXP_DEFAULT_GENSRCS): $(SEXP_GENDIR)/%.df: $(SEXP_SRCDIR)/%.df
 
 $(SEXP_DEFAULT_GENSRCS): | $(SEXP_GENDIR)
 
-$(SEXP_GENDIR)/defaults-0xb.cpp: $(SEXP_GENDIR)/defaults-0xb.df \
-		 $(BUILD_EXECDIR_BOOT)/decompsexp-wasm
-	$(BUILD_EXECDIR_BOOT)/decompsexp-wasm -d -i $< -o $@
-
 $(SEXP_GENDIR)/defaults-0xd.cpp: $(SEXP_GENDIR)/defaults-0xd.df \
 		 $(BUILD_EXECDIR_BOOT)/decompsexp-wasm
-	$(BUILD_EXECDIR_BOOT)/decompsexp-wasm -d -D -i $< -o $@
+	$(BUILD_EXECDIR_BOOT)/decompsexp-wasm -d -i $< -o $@
 
 
 ###### Compiliing binary generation Sources ######
@@ -745,8 +742,7 @@ $(TEST_EXECS): $(TEST_EXECDIR)/%$(EXE): $(TEST_OBJDIR)/%.o $(LIBS)
 ###### Testing ######
 
 test: build-all test-parser test-raw-streams test-byte-queues \
-	test-decompsexp-wasm test-decompwasm-sexp test-param-passing \
-	test-decompress
+	test-decompsexp-wasm test-decompwasm-sexp test-decompress
 	@echo "*** all tests passed ***"
 
 .PHONY: test
@@ -772,53 +768,7 @@ presubmit:
 
 .PHONY: presubmit
 
-test-decompress: test-decompress-0xb test-decompress-0xd
-
-.PHONY: test-decompress
-
-test-decompress-0xb: $(BUILD_EXECDIR)/decompress
-	$< -p -d $(SEXP_DEFAULT_DF) -i $(TEST_SRCS_DIR)/toy.wasm -o - \
-		| diff - $(TEST_SRCS_DIR)/toy.wasm-w
-	$< -p -d $(SEXP_DEFAULT_DF) -m -i $(TEST_SRCS_DIR)/toy.wasm -o - \
-		| diff - $(TEST_SRCS_DIR)/toy.wasm
-	$< -p -d $(SEXP_DEFAULT_WASM) \
-		-i $(TEST_SRCS_DIR)/toy.wasm -o - \
-		| diff - $(TEST_SRCS_DIR)/toy.wasm-w
-	$< -m -p -d $(SEXP_DEFAULT_WASM) \
-		 -i $(TEST_SRCS_DIR)/toy.wasm -o - \
-		| diff - $(TEST_SRCS_DIR)/toy.wasm
-	$< -p -d $(SEXP_DEFAULT_WASM_W) \
-		-i $(TEST_SRCS_DIR)/toy.wasm -o - \
-		| diff - $(TEST_SRCS_DIR)/toy.wasm-w
-	$< -m -p -d $(SEXP_DEFAULT_WASM_W) \
-		 -i $(TEST_SRCS_DIR)/toy.wasm -o - \
-		| diff - $(TEST_SRCS_DIR)/toy.wasm
-	$< -i $(TEST_SRCS_DIR)/toy.wasm -o - \
-		| diff - $(TEST_SRCS_DIR)/toy.wasm-w
-	$< -m -i $(TEST_SRCS_DIR)/toy.wasm -o - \
-		| diff - $(TEST_SRCS_DIR)/toy.wasm
-	$< --c-api -i $(TEST_SRCS_DIR)/toy.wasm -o - \
-		| diff - $(TEST_SRCS_DIR)/toy.wasm-w
-	$< -i $(TEST_SRCS_DIR)/toy.wasm -o - \
-		| diff - $(TEST_SRCS_DIR)/toy.wasm-w
-	$< -m -i $(TEST_SRCS_DIR)/toy.wasm -o - \
-		| diff - $(TEST_SRCS_DIR)/toy.wasm
-	$< --c-api -i $(TEST_SRCS_DIR)/toy.wasm -o - \
-		| diff - $(TEST_SRCS_DIR)/toy.wasm-w
-	$< -i $(TEST_SRCS_DIR)/toy.wasm-w -o - \
-		| diff - $(TEST_SRCS_DIR)/toy.wasm-w
-	$< -m -i $(TEST_SRCS_DIR)/toy.wasm-w -o - \
-		| diff - $(TEST_SRCS_DIR)/toy.wasm
-	$< -m -i $(TEST_SRCS_DIR)/if-then-br.wasm -o - \
-		| diff - $(TEST_SRCS_DIR)/if-then-br.wasm
-	$< --c-api -i $(TEST_SRCS_DIR)/toy.wasm-w -o - \
-		| diff - $(TEST_SRCS_DIR)/toy.wasm-w
-	cd test/test-sources; make test RELEASE=$(RELEASE) CXX=$(CXX)
-	@echo "*** decompress 0xB tests passed ***"
-
-.PHONY: test-decompress-0xb
-
-test-decompress-0xd: \
+test-decompress: \
 	$(TEST_WASM_GEN_FILES) \
 	$(TEST_WASM_W_GEN_FILES) \
 	$(TEST_WASM_PD_GEN_FILES) \
@@ -828,36 +778,36 @@ test-decompress-0xd: \
 	$(TEST_WASM_SW_GEN_FILES)
 	@echo "*** decompress 0xD tests passed ***"
 
-.PHONY: test-decompress-0xd
+.PHONY: test-decompress
 
 $(TEST_WASM_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm: $(TEST_0XD_SRCDIR)/%.wasm \
 		$(BUILD_EXECDIR)/decompress
-	$(BUILD_EXECDIR)/decompress -m -D -i $< | cmp - $<
+	$(BUILD_EXECDIR)/decompress -m -i $< | cmp - $<
 
 $(TEST_WASM_W_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm-w: \
 		$(TEST_0XD_SRCDIR)/%.wasm-w $(BUILD_EXECDIR)/decompress
-	$(BUILD_EXECDIR)/decompress -D -i $< | cmp - $<
+	$(BUILD_EXECDIR)/decompress -i $< | cmp - $<
 
 .PHONY: $(TEST_WASM_W_GEN_FILES)
 
 
 $(TEST_WASM_WS_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm-ws: \
 		$(TEST_0XD_SRCDIR)/%.wasm $(BUILD_EXECDIR)/decompress
-	$(BUILD_EXECDIR)/decompress -m -D -i $<-w | cmp - $<
+	$(BUILD_EXECDIR)/decompress -m -i $<-w | cmp - $<
 
 .PHONY: $(TEST_WASM_WS_GEN_FILES)
 
 
 $(TEST_WASM_SW_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm-sw: \
 		$(TEST_0XD_SRCDIR)/%.wasm $(BUILD_EXECDIR)/decompress
-	$(BUILD_EXECDIR)/decompress -D -i $< | cmp - $<-w
+	$(BUILD_EXECDIR)/decompress -i $< | cmp - $<-w
 
 .PHONY: $(TEST_WASM_WS_GEN_FILES)
 
 $(TEST_WASM_PD_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm-pd: $(TEST_0XD_SRCDIR)/%.wasm \
 		$(BUILD_EXECDIR)/decompress $(SEXP_DEFAULT_GENSRCS)
 	$(BUILD_EXECDIR)/decompress -m -p -d $(SEXP_GENDIR)/defaults-0xd.df \
-		 -D -i $< | cmp - $<
+		 -i $< | cmp - $<
 
 .PHOHY: $(TEST_WASM_PD_GEN_FILES)
 
@@ -865,55 +815,42 @@ $(TEST_WASM_WPD_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm-wpd: \
 		$(TEST_0XD_SRCDIR)/%.wasm-w \
 		$(BUILD_EXECDIR)/decompress $(SEXP_DEFAULT_GENSRCS)
 	$(BUILD_EXECDIR)/decompress -p -d $(SEXP_GENDIR)/defaults-0xd.df \
-		 -D -i $< | cmp - $<
+		 -i $< | cmp - $<
 
 .PHOHY: $(TEST_WASM_WPD_GEN_FILES)
 
 
 $(TEST_WASM_CAPI_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm-capi: \
 		$(TEST_0XD_SRCDIR)/%.wasm-w $(BUILD_EXECDIR)/decompress
-	$(BUILD_EXECDIR)/decompress --c-api -D -i $< | cmp - $<
+	$(BUILD_EXECDIR)/decompress --c-api -i $< | cmp - $<
 
 .PHOHY: $(TEST_WASM_WPD_GEN_FILES)
 
-test-param-passing: $(BUILD_EXECDIR)/decompress
-	$< -d test/test-sources/defaults-param-test.df \
-		-i $(TEST_SRCS_DIR)/toy.wasm -o - \
-		| diff - $(TEST_SRCS_DIR)/toy.wasm-w
-	$< -d test/test-sources/defaults-param-test.df \
-		-i $(TEST_SRCS_DIR)/toy.wasm -o - \
-		| diff - $(TEST_SRCS_DIR)/toy.wasm-w
-	@echo "*** test-param-passing passed ***"
-
-.PHONY: test-param-passing
-
 test-decompsexp-wasm: $(BUILD_EXECDIR)/decompsexp-wasm
-	$< -m -i $(SEXP_DEFAULT_DF) | diff - $(SEXP_DEFAULT_WASM)
-	$< -i $(SEXP_DEFAULT_DF) | diff - $(SEXP_DEFAULT_WASM_W)
+	$< -m -i $(TEST_DEFAULT_DF) | diff - $(TEST_DEFAULT_WASM)
+	$< -i $(TEST_DEFAULT_DF) | diff - $(TEST_DEFAULT_WASM_W)
 	@echo "*** sexp2wasm tests passed ***"
 
 .PHONY: test-decompsexp-wasm
 
 test-decompwasm-sexp: $(BUILD_EXECDIR)/decompwasm-sexp
-	$< -i $(SEXP_DEFAULT_WASM) \
-		| diff - $(TEST_SRCS_DIR)/defaults-0xb.df
-	$< -i $(SEXP_DEFAULT_WASM_W) \
-		| diff - $(TEST_SRCS_DIR)/defaults-0xb.df
-	$< -r 5 -i $(SEXP_DEFAULT_WASM) \
-		| diff - $(TEST_SRCS_DIR)/defaults-0xb.df
-	$< -r 5 -i $(SEXP_DEFAULT_WASM_W) \
-		| diff - $(TEST_SRCS_DIR)/defaults-0xb.df
+	$< -i $(TEST_DEFAULT_WASM) \
+		| diff - $(TEST_DEFAULT_DF)
+	$< -i $(TEST_DEFAULT_WASM_W) \
+		| diff - $(TEST_DEFAULT_DF)
+	$< -r 5 -i $(TEST_DEFAULT_WASM) \
+		| diff - $(TEST_DEFAULT_DF)
+	$< -r 5 -i $(TEST_DEFAULT_WASM_W) \
+		| diff - $(TEST_DEFAULT_DF)
 	@echo "*** wasm2sexp tests passed ***"
 
 .PHONY: test-decompwasm-sexp
 
 test-parser: $(TEST_EXECDIR)/TestParser
-	$< -w $(SEXP_DEFAULT_DF) | diff - $(TEST_SRCS_DIR)/defaults-0xb.df
-	$< -w $(SEXP_DEFAULT_DF) | diff - $(TEST_SRCS_DIR)/defaults-0xb.df
+	$< -w $(SEXP_DEFAULT_DF) | diff - $(TEST_DEFAULT_DF)
+	$< -w $(TEST_DEFAULT_DF) | diff - $(TEST_DEFAULT_DF)
 	$< --expect-fail $(TEST_SRCS_DIR)/MismatchedParens.df 2>&1 | \
 		diff - $(TEST_SRCS_DIR)/MismatchedParens.df-out
-	$< -w $(TEST_SRCS_DIR)/defaults-0xb.df | \
-		diff - $(TEST_SRCS_DIR)/defaults-0xb.df
 	$< -w $(TEST_SRCS_DIR)/ExprRedirects.df | \
 		diff - $(TEST_SRCS_DIR)/ExprRedirects.df-out
 	@echo "*** parser tests passed ***"
@@ -921,24 +858,24 @@ test-parser: $(TEST_EXECDIR)/TestParser
 .PHONY: test-parser
 
 test-raw-streams: $(TEST_EXECDIR)/TestRawStreams
-	$< -i $(SEXP_DEFAULT_DF) | diff - $(SEXP_DEFAULT_DF)
-	$< -i $(SEXP_DEFAULT_DF) -s | diff - $(SEXP_DEFAULT_DF)
+	$< -i $(TEST_DEFAULT_DF) | diff - $(TEST_DEFAULT_DF)
+	$< -i $(TEST_DEFAULT_DF) -s | diff - $(TEST_DEFAULT_DF)
 	@echo "*** test raw streams passed ***"
 
 .PHONY: test-raw-streams
 
 test-byte-queues: $(TEST_EXECDIR)/TestByteQueues
-	$< -i $(SEXP_DEFAULT_DF) | diff - $(SEXP_DEFAULT_DF)
-	$< -c 2 -i $(SEXP_DEFAULT_DF) | diff - $(SEXP_DEFAULT_DF)
-	$< -c 3 -i $(SEXP_DEFAULT_DF) | diff - $(SEXP_DEFAULT_DF)
-	$< -c 4 -i $(SEXP_DEFAULT_DF) | diff - $(SEXP_DEFAULT_DF)
-	$< -c 5 -i $(SEXP_DEFAULT_DF) | diff - $(SEXP_DEFAULT_DF)
-	$< -c 6 -i $(SEXP_DEFAULT_DF) | diff - $(SEXP_DEFAULT_DF)
-	$< -c 7 -i $(SEXP_DEFAULT_DF) | diff - $(SEXP_DEFAULT_DF)
-	$< -c 13 -i $(SEXP_DEFAULT_DF) | diff - $(SEXP_DEFAULT_DF)
-	$< -c 119 -i $(SEXP_DEFAULT_DF) | diff - $(SEXP_DEFAULT_DF)
-	$< -c 2323 -i $(SEXP_DEFAULT_DF) | diff - $(SEXP_DEFAULT_DF)
-	$< -c 3231 -i $(SEXP_DEFAULT_DF) | diff - $(SEXP_DEFAULT_DF)
+	$< -i $(TEST_DEFAULT_DF) | diff - $(TEST_DEFAULT_DF)
+	$< -c 2 -i $(TEST_DEFAULT_DF) | diff - $(TEST_DEFAULT_DF)
+	$< -c 3 -i $(TEST_DEFAULT_DF) | diff - $(TEST_DEFAULT_DF)
+	$< -c 4 -i $(TEST_DEFAULT_DF) | diff - $(TEST_DEFAULT_DF)
+	$< -c 5 -i $(TEST_DEFAULT_DF) | diff - $(TEST_DEFAULT_DF)
+	$< -c 6 -i $(TEST_DEFAULT_DF) | diff - $(TEST_DEFAULT_DF)
+	$< -c 7 -i $(TEST_DEFAULT_DF) | diff - $(TEST_DEFAULT_DF)
+	$< -c 13 -i $(TEST_DEFAULT_DF) | diff - $(TEST_DEFAULT_DF)
+	$< -c 119 -i $(TEST_DEFAULT_DF) | diff - $(TEST_DEFAULT_DF)
+	$< -c 2323 -i $(TEST_DEFAULT_DF) | diff - $(TEST_DEFAULT_DF)
+	$< -c 3231 -i $(TEST_DEFAULT_DF) | diff - $(TEST_DEFAULT_DF)
 	@echo "*** test byte queues passed ***"
 
 .PHONY: test-byte-queues
@@ -994,5 +931,17 @@ $(TEST_WASM_SRC_FILES): $(TEST_0XD_SRCDIR)/%.wasm: $(WABT_WAST_DIR)/%.wast \
 $(TEST_WASM_W_SRC_FILES): $(TEST_0XD_SRCDIR)/%.wasm-w: $(WABT_WAST_DIR)/%.wast \
 		wabt-submodule
 	$(WABT_DIR)/out/wast2wasm --no-canonicalize-leb128s -o $@ $<
+
+$(TEST_DEFAULT_DF): $(TEST_SRCS_DIR)/%.df: $(SEXP_SRCDIR)/%.df \
+		 $(TEST_EXECDIR)/TestParser
+	rm -rf $@; $(TEST_EXECDIR)/TestParser -w $< > $@
+
+$(TEST_DEFAULT_WASM): $(TEST_SRCS_DIR)/%.wasm: $(SEXP_SRCDIR)/%.df \
+		$(BUILD_EXECDIR)/decompsexp-wasm
+	rm -rf $@; $(BUILD_EXECDIR)/decompsexp-wasm -m -i $< -o $@
+
+$(TEST_DEFAULT_WASM_W): $(TEST_SRCS_DIR)/%.wasm-w: $(SEXP_SRCDIR)/%.df \
+		$(BUILD_EXECDIR)/decompsexp-wasm
+	rm -rf $@; $(BUILD_EXECDIR)/decompsexp-wasm -i $< -o $@
 
 endif
