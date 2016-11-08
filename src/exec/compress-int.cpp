@@ -164,7 +164,8 @@ int main(int Argc, char* Argv[]) {
     CountCutoff = WeightCutoff;
   auto Symtab = std::make_shared<SymbolTable>();
   if (InstallPredefinedRules &&
-      !SymbolTable::installPredefinedDefaults(Symtab, WasmVersion, Verbose >= 2)) {
+      !SymbolTable::installPredefinedDefaults(Symtab, WasmVersion,
+                                              Verbose >= 2)) {
     fprintf(stderr, "Unable to load compiled in default rules!\n");
     return exit_status(EXIT_FAILURE);
   }

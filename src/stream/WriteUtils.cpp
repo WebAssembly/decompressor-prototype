@@ -64,7 +64,6 @@ const char* getName(ValueFormat Format) {
                                        : "unknown format";
 }
 
-
 void writeInt(WriteIntBufferType Buffer, IntType Value, ValueFormat Format) {
   size_t BufferSize = 0;
   switch (Format) {
