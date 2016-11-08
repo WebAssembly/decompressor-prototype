@@ -290,8 +290,30 @@ WABT_WAST_DIR = $(WABT_DIR)/third_party/testsuite
 TEST_WASM_SRC_FILES = $(patsubst %.wast, $(TEST_0XD_SRCDIR)/%.wasm, \
                         $(TEST_WASM_SRCS))
 
+TEST_WASM_W_SRC_FILES = $(patsubst %.wast, $(TEST_0XD_SRCDIR)/%.wasm-w, \
+                        $(TEST_WASM_SRCS))
+
+# The following groups are for different types of tests on decompress.
 TEST_WASM_GEN_FILES = $(patsubst %.wast, $(TEST_0XD_GENDIR)/%.wasm, \
                        $(TEST_WASM_SRCS))
+
+TEST_WASM_W_GEN_FILES = $(patsubst %.wast, $(TEST_0XD_GENDIR)/%.wasm-w, \
+                       $(TEST_WASM_SRCS))
+
+TEST_WASM_WS_GEN_FILES = $(patsubst %.wast, $(TEST_0XD_GENDIR)/%.wasm-ws, \
+                       $(TEST_WASM_SRCS))
+
+TEST_WASM_SW_GEN_FILES = $(patsubst %.wast, $(TEST_0XD_GENDIR)/%.wasm-sw, \
+                       $(TEST_WASM_SRCS))
+
+TEST_WASM_PD_GEN_FILES = $(patsubst %.wast, $(TEST_0XD_GENDIR)/%.wasm-pd, \
+                       $(TEST_WASM_SRCS))
+
+TEST_WASM_WPD_GEN_FILES = $(patsubst %.wast, $(TEST_0XD_GENDIR)/%.wasm-wpd, \
+                        $(TEST_WASM_SRCS))
+
+TEST_WASM_CAPI_GEN_FILES = $(patsubst %.wast, $(TEST_0XD_GENDIR)/%.wasm-capi, \
+                        $(TEST_WASM_SRCS))
 
 ###### General compilation definitions ######
 
@@ -359,7 +381,7 @@ clean: clean-gen clean-wabt
 
 .PHONY: clean
 
-clean-all: clean-gen
+clean-all: clean-gen clean-wabt
 	rm -rf $(BUILDBASEDIR)
 
 .PHONY: clean-all
@@ -750,7 +772,11 @@ presubmit:
 
 .PHONY: presubmit
 
-test-decompress: $(BUILD_EXECDIR)/decompress test-decompress-0xd
+test-decompress: test-decompress-0xb test-decompress-0xd
+
+.PHONY: test-decompress
+
+test-decompress-0xb: $(BUILD_EXECDIR)/decompress
 	$< -p -d $(SEXP_DEFAULT_DF) -i $(TEST_SRCS_DIR)/toy.wasm -o - \
 		| diff - $(TEST_SRCS_DIR)/toy.wasm-w
 	$< -p -d $(SEXP_DEFAULT_DF) -m -i $(TEST_SRCS_DIR)/toy.wasm -o - \
@@ -788,24 +814,67 @@ test-decompress: $(BUILD_EXECDIR)/decompress test-decompress-0xd
 	$< --c-api -i $(TEST_SRCS_DIR)/toy.wasm-w -o - \
 		| diff - $(TEST_SRCS_DIR)/toy.wasm-w
 	cd test/test-sources; make test RELEASE=$(RELEASE) CXX=$(CXX)
-	@echo "*** decompress tests passed ***"
+	@echo "*** decompress 0xB tests passed ***"
 
-.PHONY: test-decompress
+.PHONY: test-decompress-0xb
 
-test-decompress-0xd: $(TEST_WASM_GEN_FILES)
+test-decompress-0xd: \
+	$(TEST_WASM_GEN_FILES) \
+	$(TEST_WASM_W_GEN_FILES) \
+	$(TEST_WASM_PD_GEN_FILES) \
+	$(TEST_WASM_WPD_GEN_FILES) \
+	$(TEST_WASM_CAPI_GEN_FILES) \
+	$(TEST_WASM_WS_GEN_FILES) \
+	$(TEST_WASM_SW_GEN_FILES)
 	@echo "*** decompress 0xD tests passed ***"
 
 .PHONY: test-decompress-0xd
 
-$(TEST_WASM_GEN_FILES): $(TEST_0XD_GENDIR)
-
-$(TEST_0XD_GENDIR):
-	mkdir -p $@
-
 $(TEST_WASM_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm: $(TEST_0XD_SRCDIR)/%.wasm \
 		$(BUILD_EXECDIR)/decompress
-	$(BUILD_EXECDIR)/decompress -m -D -i $< -o $@
-	cmp $< $@
+	$(BUILD_EXECDIR)/decompress -m -D -i $< | cmp - $<
+
+$(TEST_WASM_W_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm-w: \
+		$(TEST_0XD_SRCDIR)/%.wasm-w $(BUILD_EXECDIR)/decompress
+	$(BUILD_EXECDIR)/decompress -D -i $< | cmp - $<
+
+.PHONY: $(TEST_WASM_W_GEN_FILES)
+
+
+$(TEST_WASM_WS_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm-ws: \
+		$(TEST_0XD_SRCDIR)/%.wasm $(BUILD_EXECDIR)/decompress
+	$(BUILD_EXECDIR)/decompress -m -D -i $<-w | cmp - $<
+
+.PHONY: $(TEST_WASM_WS_GEN_FILES)
+
+
+$(TEST_WASM_SW_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm-sw: \
+		$(TEST_0XD_SRCDIR)/%.wasm $(BUILD_EXECDIR)/decompress
+	$(BUILD_EXECDIR)/decompress -D -i $< | cmp - $<-w
+
+.PHONY: $(TEST_WASM_WS_GEN_FILES)
+
+$(TEST_WASM_PD_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm-pd: $(TEST_0XD_SRCDIR)/%.wasm \
+		$(BUILD_EXECDIR)/decompress $(SEXP_DEFAULT_GENSRCS)
+	$(BUILD_EXECDIR)/decompress -m -p -d $(SEXP_GENDIR)/defaults-0xd.df \
+		 -D -i $< | cmp - $<
+
+.PHOHY: $(TEST_WASM_PD_GEN_FILES)
+
+$(TEST_WASM_WPD_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm-wpd: \
+		$(TEST_0XD_SRCDIR)/%.wasm-w \
+		$(BUILD_EXECDIR)/decompress $(SEXP_DEFAULT_GENSRCS)
+	$(BUILD_EXECDIR)/decompress -p -d $(SEXP_GENDIR)/defaults-0xd.df \
+		 -D -i $< | cmp - $<
+
+.PHOHY: $(TEST_WASM_WPD_GEN_FILES)
+
+
+$(TEST_WASM_CAPI_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm-capi: \
+		$(TEST_0XD_SRCDIR)/%.wasm-w $(BUILD_EXECDIR)/decompress
+	$(BUILD_EXECDIR)/decompress --c-api -D -i $< | cmp - $<
+
+.PHOHY: $(TEST_WASM_WPD_GEN_FILES)
 
 test-param-passing: $(BUILD_EXECDIR)/decompress
 	$< -d test/test-sources/defaults-param-test.df \
@@ -916,9 +985,14 @@ clean-unit-tests:
 
 ifneq ($(UPDATE), 0)
 
-update-all: wabt-submodule $(TEST_WASM_SRC_FILES)
+update-all: wabt-submodule $(TEST_WASM_SRC_FILES) $(TEST_WASM_W_SRC_FILES)
 
-$(TEST_WASM_SRC_FILES): $(TEST_0XD_SRCDIR)/%.wasm: $(WABT_WAST_DIR)/%.wast wabt-submodule
+$(TEST_WASM_SRC_FILES): $(TEST_0XD_SRCDIR)/%.wasm: $(WABT_WAST_DIR)/%.wast \
+		wabt-submodule
 	$(WABT_DIR)/out/wast2wasm -o $@ $<
+
+$(TEST_WASM_W_SRC_FILES): $(TEST_0XD_SRCDIR)/%.wasm-w: $(WABT_WAST_DIR)/%.wast \
+		wabt-submodule
+	$(WABT_DIR)/out/wast2wasm --no-canonicalize-leb128s -o $@ $<
 
 endif

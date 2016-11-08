@@ -62,8 +62,8 @@ std::shared_ptr<RawStream> getOutput() {
   return std::make_shared<FstreamWriter>(OutputFilename);
 }
 
-int runUsingCApi(bool TraceProgress) {
-  void* Decomp = create_decompressor();
+int runUsingCApi(uint32_t WasmVersion, bool TraceProgress) {
+  void* Decomp = create_decompressor(WasmVersion);
   if (TraceProgress)
     set_trace_decompression(Decomp, TraceProgress);
   auto Input = getInput();
@@ -220,14 +220,9 @@ int main(int Argc, char* Argv[]) {
       usage(Argv[0]);
       return exit_status(EXIT_FAILURE);
     }
-    if (WasmVersion != WasmBinaryVersionB) {
-      fprintf(stderr, "-D and --c-api options not allowed");
-      usage(Argv[0]);
-      return exit_status(EXIT_FAILURE);
-    }
     if (MinimizeBlockSize)
       fprintf(stderr, "--c-api ignores -m option\n");
-    return exit_status(runUsingCApi(Verbose >= 1));
+    return exit_status(runUsingCApi(WasmVersion, Verbose >= 1));
   }
   auto Symtab = std::make_shared<SymbolTable>();
   Symtab->getTrace().setTraceProgress(Verbose >= 4);

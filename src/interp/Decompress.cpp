@@ -164,10 +164,10 @@ bool Decompressor::fetchOutput(int32_t Size) {
 
 extern "C" {
 
-void* create_decompressor() {
+void* create_decompressor(uint32_t VersionNumber) {
   auto* Decomp = new Decompressor();
   bool InstalledDefaults = SymbolTable::installPredefinedDefaults(
-      Decomp->Symtab, WasmBinaryVersionB, false);
+      Decomp->Symtab, VersionNumber, false);
   Decomp->Interp = std::make_shared<Interpreter>(
       Decomp->Input, Decomp->OutputPipe.getInput(), Decomp->Symtab);
   // Decomp->Interp->setTraceProgress(true);
