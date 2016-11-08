@@ -62,8 +62,8 @@ std::shared_ptr<RawStream> getOutput() {
   return std::make_shared<FstreamWriter>(OutputFilename);
 }
 
-int runUsingCApi(uint32_t WasmVersion, bool TraceProgress) {
-  void* Decomp = create_decompressor(WasmVersion);
+int runUsingCApi(bool TraceProgress) {
+  void* Decomp = create_decompressor();
   if (TraceProgress)
     set_trace_decompression(Decomp, TraceProgress);
   auto Input = getInput();
@@ -112,7 +112,6 @@ void usage(const char* AppName) {
   fprintf(stderr, "Options:\n");
   fprintf(stderr, "  --c-api\t\tUse C API to decompress.\n");
   fprintf(stderr, "  -d File\t\tFile containing default algorithms.\n");
-  fprintf(stderr, "  -D\t\t\tAssume version 0xd (instead of version 0xb)\n");
   fprintf(stderr, "  --expect-fail\t\tSucceed on failure/fail on success\n");
   fprintf(stderr, "  -h\t\t\tPrint this usage message.\n");
   fprintf(stderr, "  -i File\t\tFile to decompress ('-' implies stdin).\n");
@@ -148,7 +147,6 @@ int main(int Argc, char* Argv[]) {
   bool InstallPredefinedRules = true;
   bool UseCApi = false;
   std::vector<int> DefaultIndices;
-  uint32_t WasmVersion = WasmBinaryVersionB;
   size_t NumTries = 1;
   for (int i = 1; i < Argc; ++i) {
     std::string Arg(Argv[i]);
@@ -161,8 +159,6 @@ int main(int Argc, char* Argv[]) {
         return exit_status(EXIT_FAILURE);
       }
       DefaultIndices.push_back(i);
-    } else if (Argv[i] == std::string("-D")) {
-      WasmVersion = WasmBinaryVersionD;
     } else if (Arg == "--expect-fail") {
       ExpectExitFail = true;
     } else if (Arg == "-h" || Arg == "--help") {
@@ -222,13 +218,12 @@ int main(int Argc, char* Argv[]) {
     }
     if (MinimizeBlockSize)
       fprintf(stderr, "--c-api ignores -m option\n");
-    return exit_status(runUsingCApi(WasmVersion, Verbose >= 1));
+    return exit_status(runUsingCApi(Verbose >= 1));
   }
   auto Symtab = std::make_shared<SymbolTable>();
   Symtab->getTrace().setTraceProgress(Verbose >= 4);
   if (InstallPredefinedRules &&
-      !SymbolTable::installPredefinedDefaults(Symtab, WasmVersion,
-                                              Verbose >= 2)) {
+      !SymbolTable::installPredefinedDefaults(Symtab, Verbose >= 2)) {
     fprintf(stderr, "Unable to load compiled in default rules!\n");
     return exit_status(EXIT_FAILURE);
   }

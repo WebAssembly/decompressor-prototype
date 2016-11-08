@@ -68,7 +68,9 @@ constexpr T const_maximum(T V, Args... args) {
 
 static constexpr uint32_t WasmBinaryMagic = 0x6d736100;
 static constexpr uint32_t WasmBinaryVersionD = 0x0d;
+#if 0
 static constexpr uint32_t WasmBinaryVersionB = 0x0b;
+#endif
 
 static constexpr uint32_t CasmBinaryMagic = 0x6d736163;
 static constexpr uint32_t CasmBinaryVersion = 0x0;
