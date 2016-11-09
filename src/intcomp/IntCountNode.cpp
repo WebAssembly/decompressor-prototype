@@ -24,8 +24,36 @@ using namespace decode;
 
 namespace intcomp {
 
+CountNode::~CountNode() {}
+
+size_t CountNode::getWeight() const { return Count; }
+
+int CountNode::compare(const CountNode& Nd) const {
+  size_t MyWeight = getWeight();
+  size_t NdWeight = Nd.getWeight();
+  if (MyWeight < NdWeight)
+    return -1;
+  if (MyWeight > NdWeight)
+    return 1;
+  // Note: If tie on weight, choose one with smaller count, assuming that
+  // implies more data.
+  if (Count < Nd.Count)
+    return 1;
+  if (Count > Nd.Count)
+    return -1;
+  if (int(NodeKind) < int(Nd.NodeKind))
+    return -1;
+  if (int(NodeKind) > int(Nd.NodeKind))
+    return 1;
+  return compareLocal(Nd);
+}
+
+int CountNode::compareLocal(const CountNode& Nd) const {
+  return 0;
+}
+
 IntCountNode::IntCountNode(IntType Value, IntCountNode* Parent)
-    : Count(0), Value(Value), Parent(Parent) {}
+    : CountNode(Kind::IntSequence), Count(0), Value(Value), Parent(Parent) {}
 
 IntCountNode::~IntCountNode() {
   clear(NextUsageMap);
@@ -45,14 +73,17 @@ void IntCountNode::describe(FILE* Out, size_t NestLevel) const {
   if (pathLength() > 1)
     fputc('s', Out);
   fputc(':', Out);
-  describePath(Out);
+  // TODO(karlschimpf): Make this a programmable parameter.
+  describePath(Out, 10);
   fprintf(Out, "\n\tWeight: %-12" PRIuMAX "\tCount: %-12" PRIuMAX "\n",
           uintmax_t(getWeight()), uintmax_t(getCount()));
 }
 
 void IntCountNode::describePath(FILE* Out, size_t MaxPath) const {
-  if (MaxPath == 0)
+  if (MaxPath == 0) {
+    fprintf(Out, " ...[%" PRIuMAX "]", uintmax_t(pathLength()));
     return;
+  }
   if (Parent)
     Parent->describePath(Out, MaxPath - 1);
   fprintf(Out, " %" PRIuMAX "", uintmax_t(Value));

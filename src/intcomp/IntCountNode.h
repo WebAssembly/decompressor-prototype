@@ -19,6 +19,7 @@
 #ifndef DEcOMPRESSOR_SRC_INTCOMP_INTCOUNTNODE_H
 #define DEcOMPRESSOR_SRC_INTCOMP_INTCOUNTNODE_H
 
+#include "utils/Casting.h"
 #include "utils/Defs.h"
 
 #include <map>
@@ -28,12 +29,83 @@ namespace wasm {
 
 namespace intcomp {
 
+// Generic base class for counting the number of times an input artifact
+// appears in a WASM file.
+class CountNode {
+  CountNode(const CountNode&) = delete;
+  CountNode() = delete;
+  CountNode& operator=(const CountNode&) = delete;
+ public:
+  virtual ~CountNode();
+  enum class Kind {
+    IntSequence,
+    Block,
+    FormatUsingI64,
+    FormatUsingU64,
+    FormatUsingUint8,
+  };
+  size_t getCount() const { return Count; }
+  virtual size_t getWeight() const;
+  void increment(size_t Cnt=1) { Count += Cnt; }
+  virtual void describe(FILE* out, size_t NestLevel=0) const = 0;
+  // The following define casting operations isa<>, dyn_cast<>, and cast<>.
+  Kind getRtClassId() const {
+    return NodeKind;
+  }
+  static bool implementsClass(Kind NdKind) { return true; }
+  int compare(const CountNode& Nd) const;
+  bool operator<(const CountNode& Nd) const {
+    return compare(Nd) < 0;
+  }
+  bool operator<=(const CountNode& Nd) const {
+    return compare(Nd) <= 0;
+  }
+  bool operator==(const CountNode& Nd) const {
+    return compare(Nd) == 0;
+  }
+  bool operator!=(const CountNode& Nd) const {
+    return compare(Nd) != 0;
+  }
+  bool operator>=(const CountNode& Nd) const {
+    return compare(Nd) >= 0;
+  }
+  bool operator>(const CountNode& Nd) const {
+    return compare(Nd) > 0;
+  }
+ protected:
+  Kind NodeKind;
+  size_t Count;
+
+  CountNode(Kind NodeKind) : NodeKind(NodeKind), Count(0) {}
+  virtual int compareLocal(const CountNode& Nd) const;
+};
+
+// Intentionally encapsulated pointer, so that we can define comparison.
+class CountNodePtr {
+ public:
+  CountNode* Ptr;
+  CountNodePtr() : Ptr(nullptr) {}
+  explicit CountNodePtr(const CountNodePtr& Nd) : Ptr(Nd.Ptr) {}
+  explicit CountNodePtr(CountNode* Ptr) : Ptr(Ptr) {}
+  CountNodePtr& operator=(const CountNodePtr& Nd) {
+    Ptr = Nd.Ptr;
+    return *this;
+  }
+  int compare(const CountNodePtr& Nd) const;
+  bool operator<(const CountNodePtr& Nd) const { return compare(Nd) < 0; }
+  bool operator<=(const CountNodePtr& Nd) const { return compare(Nd) <= 0; }
+  bool operator==(const CountNodePtr& Nd) const { return compare(Nd) == 0; }
+  bool operator!=(const CountNodePtr& Nd) const { return compare(Nd) != 0; }
+  bool operator>=(const CountNodePtr& Nd) const { return compare(Nd) >= 0; }
+  bool operator>(const CountNodePtr& Nd) const { return compare(Nd) > 0; }
+};
+
 class IntCountNode;
 
 typedef std::map<decode::IntType, IntCountNode*> IntCountUsageMap;
 
 // Implements a notion of a trie on value usage counts.
-class IntCountNode : public std::enable_shared_from_this<IntCountNode> {
+class IntCountNode : public CountNode {
   IntCountNode(const IntCountNode&) = delete;
   IntCountNode& operator=(const IntCountNode&) = delete;
  public:
@@ -44,12 +116,13 @@ class IntCountNode : public std::enable_shared_from_this<IntCountNode> {
   size_t getWeight() const;
   void increment() { ++Count; }
   void describe(FILE* Out, size_t NestLevel=0) const;
-  void describePath(FILE* Out, size_t MaxPath=10) const;
   size_t pathLength() const;
   bool isSingletonPath() const { return Parent == nullptr; }
+  // Lookup (or create if necessary), the entry for Value in UsageMap. Uses
+  // Parent value to define parent.
   static IntCountNode* lookup(IntCountUsageMap& UsageMap,
                               decode::IntType Value,
-                              IntCountNode* Parent = nullptr);
+                              IntCountNode* Parent);
   IntCountUsageMap& getNextUsageMap() { return NextUsageMap; }
   // Removes all entries in usage map, deleting unreachable count nodes.
   static void clear(IntCountUsageMap& UsageMap);
@@ -63,6 +136,7 @@ class IntCountNode : public std::enable_shared_from_this<IntCountNode> {
   decode::IntType Value;
   IntCountUsageMap NextUsageMap;
   IntCountNode* Parent;
+  void describePath(FILE* Out, size_t MaxPath) const;
 };
 
 
