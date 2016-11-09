@@ -28,7 +28,7 @@ IntCountNode::IntCountNode(IntType Value, IntCountNode* Parent)
     : Count(0), Value(Value), Parent(Parent) {}
 
 IntCountNode::~IntCountNode() {
-  destroy(NextUsageMap);
+  clear(NextUsageMap);
 }
 
 size_t IntCountNode::getWeight() const {
@@ -58,10 +58,10 @@ void IntCountNode::describePath(FILE* Out, size_t MaxPath) const {
   fprintf(Out, " %" PRIuMAX "", uintmax_t(Value));
 }
 
-size_t IntCountNode::pathLength(size_t MaxPath) const {
+size_t IntCountNode::pathLength() const {
   size_t len = 0;
   IntCountNode* Nd = const_cast<IntCountNode*>(this);
-  while (Nd && MaxPath > 0) {
+  while (Nd) {
     ++len;
     Nd = Nd->Parent;
   }
@@ -78,7 +78,7 @@ IntCountNode* IntCountNode::lookup(IntCountUsageMap& UsageMap,
   return Nd;
 }
 
-void IntCountNode::destroy(IntCountUsageMap& UsageMap) {
+void IntCountNode::clear(IntCountUsageMap& UsageMap) {
   for (auto& pair : UsageMap)
     delete pair.second;
   UsageMap.clear();

@@ -45,12 +45,19 @@ class IntCountNode : public std::enable_shared_from_this<IntCountNode> {
   void increment() { ++Count; }
   void describe(FILE* Out, size_t NestLevel=0) const;
   void describePath(FILE* Out, size_t MaxPath=10) const;
-  size_t pathLength(size_t MaxPath=10) const;
+  size_t pathLength() const;
+  bool isSingletonPath() const { return Parent == nullptr; }
   static IntCountNode* lookup(IntCountUsageMap& UsageMap,
                               decode::IntType Value,
                               IntCountNode* Parent = nullptr);
   IntCountUsageMap& getNextUsageMap() { return NextUsageMap; }
-  static void destroy(IntCountUsageMap& UsageMap);
+  // Removes all entries in usage map, deleting unreachable count nodes.
+  static void clear(IntCountUsageMap& UsageMap);
+  // Removes the given key from the usage map, deleting unreachable count nodes.
+  static void erase(IntCountUsageMap& UsageMap, decode::IntType Key) {
+    delete UsageMap[Key];
+    UsageMap.erase(Key);
+  }
  private:
   size_t Count;
   decode::IntType Value;
