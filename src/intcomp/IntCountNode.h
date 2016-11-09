@@ -19,6 +19,7 @@
 #ifndef DEcOMPRESSOR_SRC_INTCOMP_INTCOUNTNODE_H
 #define DEcOMPRESSOR_SRC_INTCOMP_INTCOUNTNODE_H
 
+#include "utils/Casting.h"
 #include "utils/Defs.h"
 
 #include <map>
@@ -28,28 +29,105 @@ namespace wasm {
 
 namespace intcomp {
 
-class IntCountNode;
+// Generic base class for counting the number of times an input artifact
+// appears in a WASM file.
+class CountNode {
+  CountNode(const CountNode&) = delete;
+  CountNode() = delete;
+  CountNode& operator=(const CountNode&) = delete;
+ public:
+  virtual ~CountNode();
+  enum class Kind {
+    IntSequence,
+    Block,
+    FormatUsingI64,
+    FormatUsingU64,
+    FormatUsingUint8
+  };
+  size_t getCount() const { return Count; }
+  virtual size_t getWeight() const;
+  void increment(size_t Cnt=1) { Count += Cnt; }
 
-typedef std::map<decode::IntType, IntCountNode*> IntCountUsageMap;
+  int compare(const CountNode& Nd) const;
+  bool operator<(const CountNode& Nd) const {
+    return compare(Nd) < 0;
+  }
+  bool operator<=(const CountNode& Nd) const {
+    return compare(Nd) <= 0;
+  }
+  bool operator==(const CountNode& Nd) const {
+    return compare(Nd) == 0;
+  }
+  bool operator!=(const CountNode& Nd) const {
+    return compare(Nd) != 0;
+  }
+  bool operator>=(const CountNode& Nd) const {
+    return compare(Nd) >= 0;
+  }
+  bool operator>(const CountNode& Nd) const {
+    return compare(Nd) > 0;
+  }
+
+  virtual void describe(FILE* out, size_t NestLevel=0) const = 0;
+
+  // The following define casting operations isa<>, dyn_cast<>, and cast<>.
+  Kind getRtClassId() const {
+    return NodeKind;
+  }
+  static bool implementsClass(Kind NdKind) { return true; }
+ protected:
+  Kind NodeKind;
+  size_t Count;
+
+  CountNode(Kind NodeKind) : NodeKind(NodeKind), Count(0) {}
+  virtual int compareLocal(const CountNode& Nd) const;
+};
+
+// Intentionally encapsulated pointer, so that we can define comparison.
+class CountNodePtr {
+ public:
+  CountNode* Ptr;
+  CountNodePtr() : Ptr(nullptr) {}
+  CountNodePtr(const CountNodePtr& Nd) : Ptr(Nd.Ptr) {}
+  CountNodePtr(CountNode* Ptr) : Ptr(Ptr) {}
+  CountNodePtr& operator=(const CountNodePtr& Nd) {
+    Ptr = Nd.Ptr;
+    return *this;
+  }
+  int compare(const CountNodePtr& Nd) const;
+  CountNode* get() { return Ptr; }
+  const CountNode* get() const { return Ptr; }
+  CountNode& operator*() { return *get(); }
+  const CountNode& operator*() const { return *get(); }
+  CountNode* operator->() { return get(); }
+  const CountNode* operator->() const { return get(); }
+  bool operator<(const CountNodePtr& Nd) const { return compare(Nd) < 0; }
+  bool operator<=(const CountNodePtr& Nd) const { return compare(Nd) <= 0; }
+  bool operator==(const CountNodePtr& Nd) const { return compare(Nd) == 0; }
+  bool operator!=(const CountNodePtr& Nd) const { return compare(Nd) != 0; }
+  bool operator>=(const CountNodePtr& Nd) const { return compare(Nd) >= 0; }
+  bool operator>(const CountNodePtr& Nd) const { return compare(Nd) > 0; }
+};
+
+typedef std::map<decode::IntType, CountNode*> IntCountUsageMap;
 
 // Implements a notion of a trie on value usage counts.
-class IntCountNode : public std::enable_shared_from_this<IntCountNode> {
+class IntCountNode : public CountNode {
   IntCountNode(const IntCountNode&) = delete;
   IntCountNode& operator=(const IntCountNode&) = delete;
  public:
   explicit IntCountNode(decode::IntType Value, IntCountNode* Parent = nullptr);
   ~IntCountNode();
-  size_t getCount() const { return Count; }
   size_t getValue() const { return Value; }
-  size_t getWeight() const;
-  void increment() { ++Count; }
-  void describe(FILE* Out, size_t NestLevel=0) const;
-  void describePath(FILE* Out, size_t MaxPath=10) const;
+  size_t getWeight() const OVERRIDE;
+  void describe(FILE* Out, size_t NestLevel=0) const OVERRIDE;
   size_t pathLength() const;
   bool isSingletonPath() const { return Parent == nullptr; }
+  // Lookup (or create if necessary), the entry for Value in UsageMap. Uses
+  // Parent value to define parent.
   static IntCountNode* lookup(IntCountUsageMap& UsageMap,
                               decode::IntType Value,
-                              IntCountNode* Parent = nullptr);
+                              IntCountNode* Parent);
   IntCountUsageMap& getNextUsageMap() { return NextUsageMap; }
   // Removes all entries in usage map, deleting unreachable count nodes.
   static void clear(IntCountUsageMap& UsageMap);
@@ -58,13 +136,15 @@ class IntCountNode : public std::enable_shared_from_this<IntCountNode> {
     delete UsageMap[Key];
     UsageMap.erase(Key);
   }
+
+  static bool implementsClass(Kind NdKind) { return NdKind == Kind::IntSequence; }
  private:
-  size_t Count;
   decode::IntType Value;
   IntCountUsageMap NextUsageMap;
   IntCountNode* Parent;
+  void describePath(FILE* Out, size_t MaxPath) const;
+  int compareLocal(const CountNode& Nd) const OVERRIDE;
 };
-
 
 } // end of namespace intcomp
 

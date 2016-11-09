@@ -21,6 +21,8 @@
 #include <vector>
 #include <algorithm>
 
+#define DESCRIBE_INPUT 0
+
 namespace wasm {
 
 using namespace decode;
@@ -74,7 +76,7 @@ class CounterWriter : public Writer {
   bool writeAction(const filt::CallbackNode* Action) OVERRIDE;
 
 // For debugging
-#if 0
+#if DESCRIBE_INPUT
   void describeInput();
 #endif
 
@@ -87,11 +89,11 @@ class CounterWriter : public Writer {
   void popValuesFromInputSeq(size_t Size);
 };
 
-#if 0
+#if DESCRIBE_INPUT
 void CounterWriter::describeInput() {
   fprintf(stderr, "input seq:");
   for (size_t i = 0; i < input_seq->size(); ++i)
-    fprintf(stderr, " %" PRIuMAX , uintmax_t((*input_seq).at(i)));
+    fprintf(stderr, " %" PRIuMAX, uintmax_t((*input_seq).at(i)));
   fprintf(stderr, "\n");
 }
 #endif
@@ -120,6 +122,9 @@ void CounterWriter::popValuesFromInputSeq(size_t Size) {
 }
 
 void CounterWriter::addInputSeqToUsageMap() {
+#if DESCRIBE_INPUT
+  describeInput();
+#endif
   IntCountUsageMap* Map = &UsageMap;
   IntCountNode* Nd = nullptr;
   for (size_t i = 0, e = input_seq->size(); i < e; ++i) {
@@ -129,9 +134,6 @@ void CounterWriter::addInputSeqToUsageMap() {
     if (UpToSize == 1 || i > 0)
       Nd->increment();
     if (e > 1) {
-      // TODO(karlschimpf) We probably want to make this cutoff aware of
-      // the path length, so that long sequences are more likely to be
-      // found.
       if (Nd->getCount() < CountCutoff || Nd->getWeight() < WeightCutoff) {
         popValuesFromInputSeq(i == 0 ? 1 : i);
         return;
@@ -256,7 +258,7 @@ void IntCompressor::removeSmallUsageCounts(IntCountUsageMap& UsageMap) {
     IntCountNode::erase(UsageMap, Key);
 }
 
-bool IntCompressor::removeSmallUsageCounts(IntCountNode* Nd) {
+bool IntCompressor::removeSmallUsageCounts(CountNode* Nd) {
   if (Nd == nullptr)
     return true;
   {
@@ -268,9 +270,12 @@ bool IntCompressor::removeSmallUsageCounts(IntCountNode* Nd) {
     if (!RemoveNode)
       return false;
   }
-  IntCountUsageMap& NdUsageMap = Nd->getNextUsageMap();
-  removeSmallUsageCounts(NdUsageMap);
-  return NdUsageMap.empty();
+  if (auto* IntNd = dyn_cast<IntCountNode>(Nd)) {
+    IntCountUsageMap& NdUsageMap = IntNd->getNextUsageMap();
+    removeSmallUsageCounts(NdUsageMap);
+    return NdUsageMap.empty();
+  }
+  return false;
 }
 
 void IntCompressor::compress() {
@@ -294,7 +299,7 @@ namespace {
 
 struct IntSeqCollector {
   IntCountUsageMap& UsageMap;
-  typedef std::vector<std::pair<uint64_t, IntCountNode*>> WeightedVector;
+  typedef std::vector<CountNodePtr> WeightedVector;
   WeightedVector Values;
   uint64_t WeightTotal;
   uint64_t CountTotal;
@@ -318,53 +323,59 @@ struct IntSeqCollector {
   ~IntSeqCollector() {}
 
   void collect();
-  void collectNode(IntCountNode* Nd);
+  void collectNode(CountNode* Nd);
   void describe(FILE* Out);
 };
 
 void IntSeqCollector::collect() {
   for (const auto& pair : UsageMap)
     collectNode(pair.second);
-  std::sort(Values.begin(), Values.end());
-  std::reverse(Values.begin(), Values.end());
+  std::sort(Values.begin(), Values.end(), std::greater<CountNodePtr>());
 }
 
-void IntSeqCollector::collectNode(IntCountNode* Nd) {
+void IntSeqCollector::collectNode(CountNode* Nd) {
   uint64_t Weight = Nd->getWeight();
   uint64_t Count = Nd->getCount();
-  size_t PathLength = Nd->pathLength();
-  if (PathLength >= MinPathLength) {
-    CountTotal += Count;
-    WeightTotal += Weight;
+  size_t PathLength = MinPathLength;  // until proven otherwise
+  auto* IntNd = dyn_cast<IntCountNode>(Nd);
+  if (IntNd) {
+    PathLength = IntNd->pathLength();
+    if (PathLength >= MinPathLength) {
+      CountTotal += Count;
+      WeightTotal += Weight;
+    }
   }
   if (Count < CountCutoff)
     return;
   if (Weight < WeightCutoff)
     return;
   if (PathLength >= MinPathLength) {
-    Values.push_back(std::make_pair(Weight, Nd));
+    Values.push_back(CountNodePtr(Nd));
     CountReported += Count;
     WeightReported += Weight;
     ++NumNodesReported;
   }
-  IntCountUsageMap& NdUsageMap = Nd->getNextUsageMap();
-  for (const auto& pair : NdUsageMap)
-    collectNode(pair.second);
+  if (IntNd) {
+    IntCountUsageMap& NdUsageMap = IntNd->getNextUsageMap();
+    for (const auto& pair : NdUsageMap)
+      collectNode(pair.second);
+  }
 }
 
 void IntSeqCollector::describe(FILE* Out) {
-  fprintf(Out,
-          "Number nodes reported: %" PRIuMAX "\n"
-          "Total weight: %" PRIuMAX " Reported Weight %" PRIuMAX "\n"
-          "Total count: %" PRIuMAX " Reported count %" PRIuMAX "\n",
-          uintmax_t(NumNodesReported),
-          uintmax_t(WeightTotal), uintmax_t(WeightReported),
-          uintmax_t(CountTotal), uintmax_t(CountReported));
+  fprintf(Out, "Number nodes reported: %" PRIuMAX
+               "\n"
+               "Total weight: %" PRIuMAX " Reported Weight %" PRIuMAX
+               "\n"
+               "Total count: %" PRIuMAX " Reported count %" PRIuMAX "\n",
+          uintmax_t(NumNodesReported), uintmax_t(WeightTotal),
+          uintmax_t(WeightReported), uintmax_t(CountTotal),
+          uintmax_t(CountReported));
   size_t Count = 0;
-  for (const auto& pair : Values) {
+  for (const auto& v : Values) {
     ++Count;
     fprintf(Out, "[%" PRIuMAX "] ", uintmax_t(Count));
-    pair.second->describe(Out);
+    v->describe(Out);
   }
 }
 

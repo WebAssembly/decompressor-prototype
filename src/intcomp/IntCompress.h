@@ -74,7 +74,7 @@ class IntCompressor FINAL {
   void compressUpToSize(size_t Size);
   void removeSmallUsageCounts() { removeSmallUsageCounts(UsageMap); }
   void removeSmallUsageCounts(IntCountUsageMap& UsageMap);
-  bool removeSmallUsageCounts(IntCountNode* Nd);
+  bool removeSmallUsageCounts(CountNode* Nd);
 };
 
 }  // end of namespace intcomp
