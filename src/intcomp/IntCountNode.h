@@ -49,7 +49,7 @@ class IntCountNode : public std::enable_shared_from_this<IntCountNode> {
   static IntCountNode* lookup(IntCountUsageMap& UsageMap,
                               decode::IntType Value,
                               IntCountNode* Parent = nullptr);
-  IntCountUsageMap* getNextUsageMap() { return &NextUsageMap; }
+  IntCountUsageMap& getNextUsageMap() { return NextUsageMap; }
   static void destroy(IntCountUsageMap& UsageMap);
  private:
   size_t Count;

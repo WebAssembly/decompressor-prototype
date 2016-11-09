@@ -134,7 +134,7 @@ void CounterWriter::addInputSeqToUsageMap() {
       popValuesFromInputSeq(e);
       return;
     }
-    Map = Nd->getNextUsageMap();
+    Map = &Nd->getNextUsageMap();
   }
   // If reached, no values added. Pop one value so that this
   // metod guarantees to shrink the input sequence.
@@ -240,6 +240,33 @@ void IntCompressor::compressUpToSize(size_t Size) {
   Counter->resetUpToSize();
 }
 
+void IntCompressor::removeSmallUsageCounts(IntCountUsageMap &UsageMap) {
+  std::vector<IntType> KeysToRemove;
+  for (const auto& pair : UsageMap) {
+    if (removeSmallUsageCounts(pair.second))
+      KeysToRemove.push_back(pair.first);
+  }
+  for (const auto key : KeysToRemove) {
+    delete UsageMap[key];
+    UsageMap.erase(key);
+  }
+}
+
+bool IntCompressor::removeSmallUsageCounts(IntCountNode* Nd) {
+  if (Nd == nullptr)
+    return true;
+  bool RemoveNode = false;
+  if (Nd->getCount() < CountCutoff)
+    RemoveNode = true;
+  else if (Nd->getWeight() < WeightCutoff)
+    RemoveNode = true;
+  if (!RemoveNode)
+    return false;
+  IntCountUsageMap& NdUsageMap = Nd->getNextUsageMap();
+  removeSmallUsageCounts(NdUsageMap);
+  return !NdUsageMap.empty();
+}
+
 void IntCompressor::compress() {
   TRACE_METHOD("compress");
   Counter->setCountCutoff(CountCutoff);
@@ -307,9 +334,9 @@ void IntSeqCollector::collectNode(IntCountNode* Nd) {
   CountReported += Count;
   WeightReported += Weight;
   ++NumNodesReported;
-  if (IntCountUsageMap* NdUsageMap = Nd->getNextUsageMap())
-    for (const auto& pair : *NdUsageMap)
-      collectNode(pair.second);
+  IntCountUsageMap& NdUsageMap = Nd->getNextUsageMap();
+  for (const auto& pair : NdUsageMap)
+    collectNode(pair.second);
 }
 
 void IntSeqCollector::describe(FILE* Out) {
