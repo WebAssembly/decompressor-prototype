@@ -383,7 +383,7 @@ void IntSeqCollector::collectNode(CountNode* Nd) {
   if (Weight < WeightCutoff)
     return;
   if (PathLength >= MinPathLength) {
-    Values.push_back(CountNodePtr(Nd));
+    Values.push_back(CountNode::Ptr(Nd));
     CountReported += Count;
     WeightReported += Weight;
     ++NumNodesReported;

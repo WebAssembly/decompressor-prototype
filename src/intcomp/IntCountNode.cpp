@@ -53,12 +53,12 @@ int CountNode::compareLocal(const CountNode& Nd) const {
   return 0;
 }
 
-int CountNodePtr::compare(const CountNodePtr& NdPtr) const {
-  if (Ptr == nullptr)
-    return NdPtr.Ptr == nullptr ? 0 : -1;
-  if (NdPtr.Ptr == nullptr)
+int CountNode::Ptr::compare(const CountNode::Ptr& P) const {
+  if (NdPtr == nullptr)
+    return P.NdPtr == nullptr ? 0 : -1;
+  if (P.NdPtr == nullptr)
     return 1;
-  return Ptr->compare(*NdPtr.Ptr);
+  return NdPtr->compare(*P.NdPtr);
 }
 
 IntCountNode::IntCountNode(IntType Value, IntCountNode* Parent)

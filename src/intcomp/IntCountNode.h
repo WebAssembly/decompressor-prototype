@@ -32,31 +32,6 @@ namespace intcomp {
 
 class CountNode;
 
-// Intentionally encapsulated pointer, so that we can define comparison.
-class CountNodePtr {
- public:
-  CountNode* Ptr;
-  CountNodePtr() : Ptr(nullptr) {}
-  CountNodePtr(const CountNodePtr& Nd) : Ptr(Nd.Ptr) {}
-  CountNodePtr(CountNode* Ptr) : Ptr(Ptr) {}
-  CountNodePtr& operator=(const CountNodePtr& Nd) {
-    Ptr = Nd.Ptr;
-    return *this;
-  }
-  int compare(const CountNodePtr& Nd) const;
-  CountNode* get() { return Ptr; }
-  const CountNode* get() const { return Ptr; }
-  CountNode& operator*() { return *get(); }
-  const CountNode& operator*() const { return *get(); }
-  CountNode* operator->() { return get(); }
-  const CountNode* operator->() const { return get(); }
-  bool operator<(const CountNodePtr& Nd) const { return compare(Nd) < 0; }
-  bool operator<=(const CountNodePtr& Nd) const { return compare(Nd) <= 0; }
-  bool operator==(const CountNodePtr& Nd) const { return compare(Nd) == 0; }
-  bool operator!=(const CountNodePtr& Nd) const { return compare(Nd) != 0; }
-  bool operator>=(const CountNodePtr& Nd) const { return compare(Nd) >= 0; }
-  bool operator>(const CountNodePtr& Nd) const { return compare(Nd) > 0; }
-};
 
 // Generic base class for counting the number of times an input artifact
 // appears in a WASM file.
@@ -65,7 +40,33 @@ class CountNode {
   CountNode() = delete;
   CountNode& operator=(const CountNode&) = delete;
  public:
-  typedef CountNodePtr HeapValueType;
+  // Intentionally encapsulate a pointer, so that we can define comparison
+  // for use in a heap.
+  class Ptr {
+   public:
+    CountNode* NdPtr;
+    Ptr() : NdPtr(nullptr) {}
+    Ptr(const Ptr& P) : NdPtr(P.NdPtr) {}
+    Ptr(CountNode* NdPtr) : NdPtr(NdPtr) {}
+    Ptr& operator=(const Ptr& P) {
+      NdPtr = P.NdPtr;
+      return *this;
+    }
+    int compare(const Ptr& Nd) const;
+    CountNode* get() { return NdPtr; }
+    const CountNode* get() const { return NdPtr; }
+    CountNode& operator*() { return *get(); }
+    const CountNode& operator*() const { return *get(); }
+    CountNode* operator->() { return get(); }
+    const CountNode* operator->() const { return get(); }
+    bool operator<(const Ptr& Nd) const { return compare(Nd) < 0; }
+    bool operator<=(const Ptr& Nd) const { return compare(Nd) <= 0; }
+    bool operator==(const Ptr& Nd) const { return compare(Nd) == 0; }
+    bool operator!=(const Ptr& Nd) const { return compare(Nd) != 0; }
+    bool operator>=(const Ptr& Nd) const { return compare(Nd) >= 0; }
+    bool operator>(const Ptr& Nd) const { return compare(Nd) > 0; }
+  };
+  typedef Ptr HeapValueType;
   typedef utils::heap<HeapValueType> HeapType;
   typedef std::shared_ptr<HeapType::entry> HeapEntryType;
   virtual ~CountNode();
