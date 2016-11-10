@@ -66,7 +66,7 @@ class CountNode {
   CountNode& operator=(const CountNode&) = delete;
  public:
   typedef CountNodePtr HeapValueType;
-  typedef utils::heap<HeapValueType, size_t> HeapType;
+  typedef utils::heap<HeapValueType> HeapType;
   typedef std::shared_ptr<HeapType::entry> HeapEntryType;
   virtual ~CountNode();
   enum class Kind {
@@ -76,13 +76,12 @@ class CountNode {
     FormatUsingU64,
     FormatUsingUint8
   };
-  size_t getHeapKey() const { return getWeight(); }
   size_t getCount() const { return Count; }
   virtual size_t getWeight() const;
   void increment(size_t Cnt=1) { Count += Cnt; }
 
   // The following two handle associating a heap entry with this.
-  void associateWithHeap(HeapEntryType& Entry) {
+  void associateWithHeap(HeapEntryType Entry) {
     HeapEntry = Entry;
   }
   void disassociateFromHeap() {

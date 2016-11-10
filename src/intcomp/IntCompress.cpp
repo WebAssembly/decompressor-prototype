@@ -335,8 +335,11 @@ class IntSeqCollector {
     return Entry->getValue();
   }
   void clearHeap();
-  void describeHeap(FILE* Out);
-  void describeHeapSubtree(FILE* Out, size_t Parent, size_t Ixndent);
+  void describeHeap(FILE* Out) {
+    ValuesHeap->describe(Out, [](FILE* Out, CountNode::HeapValueType Value) {
+      Value->describe(Out);
+    });
+  }
   void clear();
   void collectNode(CountNode* Nd);
   void describe(FILE* Out);
@@ -354,55 +357,13 @@ void IntSeqCollector::clear() {
 }
 
 void IntSeqCollector::buildHeap() {
-#if 0
-  fprintf(stderr, "-> buildHeap\n");
-#endif
-  for (auto& Value : Values) {
-#if 0
-    fprintf(stderr, "-- add: ");
-    Value->describe(stderr);
-#endif
-    ValuesHeap->push(Value->getHeapKey(), Value);
-#if 0
-    describeHeap(stderr);
-#endif
-  }
-#if 0
-  fprintf(stderr, "<- buildHeap\n");
-#endif
-}
-
-void IntSeqCollector::describeHeap(FILE* Out) {
-  fprintf(Out, "*** Heap ***:\n");
-#if 0
-  for (size_t i = 0, e = ValuesHeap->size(); i < e; ++i) {
-    (*ValuesHeap)[i].get()->getValue()->describe(Out, 2);
-  }
-#else
-  describeHeapSubtree(Out, 0, 0);
-  fprintf(Out, "************:\n");
-#endif
-}
-
-void IntSeqCollector::describeHeapSubtree(FILE* Out, size_t Parent,
-                                          size_t Indent) {
-  if (Parent >= ValuesHeap->size())
-    return;
-  for (size_t i = 0; i < Indent; ++i)
-    fputs("  ", Out);
-  fprintf(Out, "%" PRIuMAX "\n", uintmax_t((*ValuesHeap)[Parent].get()->getKey()));
-  (*ValuesHeap)[Parent].get()->getValue()->describe(Out, Indent + 4);
-  ++Indent;
-  describeHeapSubtree(Out, 2 * Parent + 1, Indent);
-  describeHeapSubtree(Out, 2 * Parent + 2, Indent);
+  for (auto& Value : Values)
+    Value->associateWithHeap(ValuesHeap->push(Value));
 }
 
 void IntSeqCollector::collect() {
   for (const auto& pair : UsageMap)
     collectNode(pair.second);
-#if 0
-  std::sort(Values.begin(), Values.end(), std::greater<CountNodePtr>());
-#endif
 }
 
 void IntSeqCollector::collectNode(CountNode* Nd) {
@@ -446,24 +407,12 @@ void IntSeqCollector::describe(FILE* Out) {
           uintmax_t(WeightReported), uintmax_t(CountTotal),
           uintmax_t(CountReported));
   size_t Count = 0;
-#if 0
-  for (const auto& v : Values) {
-    ++Count;
-    fprintf(Out, "%-8" PRIuMAX ": ", uintmax_t(Count));
-    v->describe(Out);
-  }
-  clearHeap();
-#else
   while (!ValuesHeap->empty()) {
     CountNode::HeapValueType NdPtr = popHeap();
     ++Count;
-    fprintf(Out, "%-8" PRIuMAX ": ", uintmax_t(Count));
+    fprintf(Out, "%8" PRIuMAX ": ", uintmax_t(Count));
     NdPtr->describe(Out);
-#if 0
-    describeHeap(Out);
-#endif
   }
-#endif
 }
 
 }  // end of anonymous namespace
