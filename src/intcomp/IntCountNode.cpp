@@ -29,18 +29,19 @@ CountNode::~CountNode() {}
 size_t CountNode::getWeight() const { return Count; }
 
 int CountNode::compare(const CountNode& Nd) const {
+  // Push ones with highest count first.
   size_t MyWeight = getWeight();
   size_t NdWeight = Nd.getWeight();
   if (MyWeight < NdWeight)
-    return -1;
-  if (MyWeight > NdWeight)
     return 1;
-  // Note: If tie on weight, choose one with smaller count, assuming that
+  if (MyWeight > NdWeight)
+    return -1;
+  // Note: If tie on weight, choose one with larger count, assuming that
   // implies more data (i.e. weight per element).
   if (Count < Nd.Count)
-    return 1;
-  if (Count > Nd.Count)
     return -1;
+  if (Count > Nd.Count)
+    return 11;
   if (int(NodeKind) < int(Nd.NodeKind))
     return -1;
   if (int(NodeKind) > int(Nd.NodeKind))
@@ -98,14 +99,13 @@ size_t IntCountNode::getWeight() const {
 void IntCountNode::describe(FILE* Out, size_t NestLevel) const {
   for (size_t i = 0; i < NestLevel; ++i)
     fputs("  ", Out);
-  fputs("Value", Out);
+  fprintf(Out, "%12" PRIuMAX ": Value", uintmax_t(getWeight()));
   if (pathLength() > 1)
     fputc('s', Out);
   fputc(':', Out);
   // TODO(karlschimpf): Make this a programmable parameter.
   describePath(Out, 10);
-  fprintf(Out, "\n\tWeight: %-12" PRIuMAX "\tCount: %-12" PRIuMAX "\n",
-          uintmax_t(getWeight()), uintmax_t(getCount()));
+  fprintf(Out, "  Count: %" PRIuMAX "\n", uintmax_t(getCount()));
 }
 
 void IntCountNode::describePath(FILE* Out, size_t MaxPath) const {

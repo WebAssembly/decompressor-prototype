@@ -21,6 +21,7 @@
 
 #include "utils/Casting.h"
 #include "utils/Defs.h"
+#include "utils/heap.h"
 
 #include <map>
 #include <memory>
@@ -29,6 +30,34 @@ namespace wasm {
 
 namespace intcomp {
 
+class CountNode;
+
+// Intentionally encapsulated pointer, so that we can define comparison.
+class CountNodePtr {
+ public:
+  CountNode* Ptr;
+  CountNodePtr() : Ptr(nullptr) {}
+  CountNodePtr(const CountNodePtr& Nd) : Ptr(Nd.Ptr) {}
+  CountNodePtr(CountNode* Ptr) : Ptr(Ptr) {}
+  CountNodePtr& operator=(const CountNodePtr& Nd) {
+    Ptr = Nd.Ptr;
+    return *this;
+  }
+  int compare(const CountNodePtr& Nd) const;
+  CountNode* get() { return Ptr; }
+  const CountNode* get() const { return Ptr; }
+  CountNode& operator*() { return *get(); }
+  const CountNode& operator*() const { return *get(); }
+  CountNode* operator->() { return get(); }
+  const CountNode* operator->() const { return get(); }
+  bool operator<(const CountNodePtr& Nd) const { return compare(Nd) < 0; }
+  bool operator<=(const CountNodePtr& Nd) const { return compare(Nd) <= 0; }
+  bool operator==(const CountNodePtr& Nd) const { return compare(Nd) == 0; }
+  bool operator!=(const CountNodePtr& Nd) const { return compare(Nd) != 0; }
+  bool operator>=(const CountNodePtr& Nd) const { return compare(Nd) >= 0; }
+  bool operator>(const CountNodePtr& Nd) const { return compare(Nd) > 0; }
+};
+
 // Generic base class for counting the number of times an input artifact
 // appears in a WASM file.
 class CountNode {
@@ -36,6 +65,9 @@ class CountNode {
   CountNode() = delete;
   CountNode& operator=(const CountNode&) = delete;
  public:
+  typedef CountNodePtr HeapValueType;
+  typedef utils::heap<HeapValueType, size_t> HeapType;
+  typedef std::shared_ptr<HeapType::entry> HeapEntryType;
   virtual ~CountNode();
   enum class Kind {
     IntSequence,
@@ -44,9 +76,18 @@ class CountNode {
     FormatUsingU64,
     FormatUsingUint8
   };
+  size_t getHeapKey() const { return getWeight(); }
   size_t getCount() const { return Count; }
   virtual size_t getWeight() const;
   void increment(size_t Cnt=1) { Count += Cnt; }
+
+  // The following two handle associating a heap entry with this.
+  void associateWithHeap(HeapEntryType& Entry) {
+    HeapEntry = Entry;
+  }
+  void disassociateFromHeap() {
+    HeapEntry.reset();
+  }
 
   int compare(const CountNode& Nd) const;
   bool operator<(const CountNode& Nd) const {
@@ -78,35 +119,13 @@ class CountNode {
  protected:
   Kind NodeKind;
   size_t Count;
+  // The heap position of this, when added to heap. Note: Used to
+  // allow the ability to change the priority key (i.e. weight) while
+  // it is on the heap.
+  HeapEntryType HeapEntry;
 
   CountNode(Kind NodeKind) : NodeKind(NodeKind), Count(0) {}
   virtual int compareLocal(const CountNode& Nd) const;
-};
-
-// Intentionally encapsulated pointer, so that we can define comparison.
-class CountNodePtr {
- public:
-  CountNode* Ptr;
-  CountNodePtr() : Ptr(nullptr) {}
-  CountNodePtr(const CountNodePtr& Nd) : Ptr(Nd.Ptr) {}
-  CountNodePtr(CountNode* Ptr) : Ptr(Ptr) {}
-  CountNodePtr& operator=(const CountNodePtr& Nd) {
-    Ptr = Nd.Ptr;
-    return *this;
-  }
-  int compare(const CountNodePtr& Nd) const;
-  CountNode* get() { return Ptr; }
-  const CountNode* get() const { return Ptr; }
-  CountNode& operator*() { return *get(); }
-  const CountNode& operator*() const { return *get(); }
-  CountNode* operator->() { return get(); }
-  const CountNode* operator->() const { return get(); }
-  bool operator<(const CountNodePtr& Nd) const { return compare(Nd) < 0; }
-  bool operator<=(const CountNodePtr& Nd) const { return compare(Nd) <= 0; }
-  bool operator==(const CountNodePtr& Nd) const { return compare(Nd) == 0; }
-  bool operator!=(const CountNodePtr& Nd) const { return compare(Nd) != 0; }
-  bool operator>=(const CountNodePtr& Nd) const { return compare(Nd) >= 0; }
-  bool operator>(const CountNodePtr& Nd) const { return compare(Nd) > 0; }
 };
 
 typedef std::map<decode::IntType, CountNode*> IntCountUsageMap;
