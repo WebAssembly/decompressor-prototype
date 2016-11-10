@@ -18,6 +18,8 @@
 
 #include "intcomp/IntCompress.h"
 #include "utils/circular-vector.h"
+#include "utils/heap.h"
+
 #include <vector>
 #include <algorithm>
 
@@ -297,10 +299,11 @@ void IntCompressor::compress() {
 
 namespace {
 
-struct IntSeqCollector {
+class IntSeqCollector {
+ public:
   IntCountUsageMap& UsageMap;
-  typedef std::vector<CountNodePtr> WeightedVector;
-  WeightedVector Values;
+  std::vector<CountNode::HeapValueType> Values;
+  std::shared_ptr<CountNode::HeapType> ValuesHeap;
   uint64_t WeightTotal;
   uint64_t CountTotal;
   uint64_t WeightReported;
@@ -310,8 +313,9 @@ struct IntSeqCollector {
   uint64_t WeightCutoff;
   size_t MinPathLength;
 
-  IntSeqCollector(IntCountUsageMap& UsageMap)
+  explicit IntSeqCollector(IntCountUsageMap& UsageMap)
       : UsageMap(UsageMap),
+        ValuesHeap(std::make_shared<CountNode::HeapType>()),
         WeightTotal(0),
         CountTotal(0),
         WeightReported(0),
@@ -320,17 +324,46 @@ struct IntSeqCollector {
         CountCutoff(1),
         WeightCutoff(1),
         MinPathLength(1) {}
-  ~IntSeqCollector() {}
+  ~IntSeqCollector() { clear(); }
 
   void collect();
+  void buildHeap();
+  CountNode::HeapValueType popHeap() {
+    assert(ValuesHeap);
+    CountNode::HeapEntryType Entry = ValuesHeap->top();
+    ValuesHeap->pop();
+    return Entry->getValue();
+  }
+  void clearHeap();
+  void describeHeap(FILE* Out) {
+    ValuesHeap->describe(Out, [](FILE* Out, CountNode::HeapValueType Value) {
+      Value->describe(Out);
+    });
+  }
+  void clear();
   void collectNode(CountNode* Nd);
   void describe(FILE* Out);
 };
 
+void IntSeqCollector::clearHeap() {
+  for (auto& Value : Values)
+    Value->disassociateFromHeap();
+}
+
+void IntSeqCollector::clear() {
+  clearHeap();
+  Values.clear();
+  ValuesHeap.reset();
+}
+
+void IntSeqCollector::buildHeap() {
+  for (auto& Value : Values)
+    Value->associateWithHeap(ValuesHeap->push(Value));
+}
+
 void IntSeqCollector::collect() {
   for (const auto& pair : UsageMap)
     collectNode(pair.second);
-  std::sort(Values.begin(), Values.end(), std::greater<CountNodePtr>());
 }
 
 void IntSeqCollector::collectNode(CountNode* Nd) {
@@ -350,7 +383,7 @@ void IntSeqCollector::collectNode(CountNode* Nd) {
   if (Weight < WeightCutoff)
     return;
   if (PathLength >= MinPathLength) {
-    Values.push_back(CountNodePtr(Nd));
+    Values.push_back(CountNode::Ptr(Nd));
     CountReported += Count;
     WeightReported += Weight;
     ++NumNodesReported;
@@ -363,6 +396,8 @@ void IntSeqCollector::collectNode(CountNode* Nd) {
 }
 
 void IntSeqCollector::describe(FILE* Out) {
+  assert(ValuesHeap->empty());
+  buildHeap();
   fprintf(Out, "Number nodes reported: %" PRIuMAX
                "\n"
                "Total weight: %" PRIuMAX " Reported Weight %" PRIuMAX
@@ -372,10 +407,11 @@ void IntSeqCollector::describe(FILE* Out) {
           uintmax_t(WeightReported), uintmax_t(CountTotal),
           uintmax_t(CountReported));
   size_t Count = 0;
-  for (const auto& v : Values) {
+  while (!ValuesHeap->empty()) {
+    CountNode::HeapValueType NdPtr = popHeap();
     ++Count;
-    fprintf(Out, "[%" PRIuMAX "] ", uintmax_t(Count));
-    v->describe(Out);
+    fprintf(Out, "%8" PRIuMAX ": ", uintmax_t(Count));
+    NdPtr->describe(Out);
   }
 }
 

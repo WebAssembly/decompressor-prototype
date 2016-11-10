@@ -16,8 +16,8 @@
 
 // Defines a circular vector.
 
-#ifndef DECOMPRESSOR_SRC_CIRCULAR_VECTOR_H
-#define DECOMPRESSOR_SRC_CIRCULAR_VECTOR_H
+#ifndef DECOMPRESSOR_SRC_UTILS_CIRCULAR_VECTOR_H
+#define DECOMPRESSOR_SRC_UTILS_CIRCULAR_VECTOR_H
 
 #include <cassert>
 #include <iterator>
@@ -279,4 +279,4 @@ class circular_vector {
 
 } // end of namespace wasm
 
-#endif // DECOMPRESSOR_SRC_CIRCULAR_VECTOR_H
+#endif // DECOMPRESSOR_SRC_UTILS_CIRCULAR_VECTOR_H
