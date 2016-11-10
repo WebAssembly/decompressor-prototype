@@ -39,6 +39,7 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
   heap& operator=(const heap&) = delete;
 
  public:
+  // Holds entries in the heap.
   class entry : public std::enable_shared_from_this<entry> {
     entry() = delete;
     entry(const entry&) = delete;
@@ -53,7 +54,7 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
     ~entry() {}
     value_type getValue() { return Value; }
     // Note: Call this whenever the notion of the comparison changes for a value
-    // (which can happen if a value is a pointer).
+    // in the heap (which can happen if a value is a pointer).
     void reinsert() { reinsert(Index); }
 
    private:
@@ -62,8 +63,8 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
     size_t Index;
   };
 
-  // WARNING: Only create using std::make_shared<heap<value_type, key_type>>();
-  // DO NOT call constructor directly!
+  // WARNING: Only create using std::make_shared<heap<value_type>>(); DO NOT
+  // call constructor directly!
   heap() {}
 
   bool empty() const { return Contents.empty(); }
