@@ -36,7 +36,7 @@ namespace wasm {
 
 namespace utils {
 
-// NOTE: Uses value_type::operator<() to maintain notion of heap.
+// NOTE: Uses value_type::operator<() to define ordering of entries in heap.
 template <class value_type>
 class heap : public std::enable_shared_from_this<heap<value_type>> {
   heap(const heap&) = delete;
@@ -51,17 +51,31 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
     friend class heap<value_type>;
 
    public:
-    entry(std::shared_ptr<heap<value_type>> HeapPtr,
+    entry(std::weak_ptr<heap<value_type>> HeapWeakPtr,
           const value_type& Value,
           size_t Index)
-        : HeapPtr(HeapPtr), Value(Value), Index(Index) {}
+        : HeapWeakPtr(HeapWeakPtr), Value(Value), Index(Index) {}
     ~entry() {}
     value_type getValue() { return Value; }
-    void reinsert() { HeapPtr->reinsert(Index); }
-    void remove() { HeapPtr->remove(Index); }
+    bool reinsert() {
+      bool Inserted = false;
+      if (auto HeapPtr = HeapWeakPtr->lock()) {
+        HeapPtr->reinsert(Index);
+        Inserted = true;
+      }
+      return Inserted;
+    }
+    bool remove() {
+      bool Removed = false;
+      if (auto HeapPtr = HeapWeakPtr->lock()) {
+        HeapPtr->remove(Index);
+        Removed = true;
+      }
+      return Removed;
+    }
 
    private:
-    std::shared_ptr<heap<value_type>> HeapPtr;
+    std::weak_ptr<heap<value_type>> HeapWeakPtr;
     value_type Value;
     size_t Index;
   };
@@ -69,6 +83,8 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
   // WARNING: Only create using std::make_shared<heap<value_type>>(); DO NOT
   // call constructor directly!
   heap() {}
+
+  ~heap() {}
 
   bool empty() const { return Contents.empty(); }
 
