@@ -28,6 +28,22 @@ namespace wasm {
 
 namespace intcomp {
 
+typedef uint32_t CollectionFlags;
+
+
+enum class CollectionFlag : CollectionFlags {
+  None = 0x0,
+  TopLevel = 0x1,
+  IntPaths = 0x2,
+  All = 0x3
+};
+
+inline CollectionFlags Flag(CollectionFlag F) { return CollectionFlags(F); }
+
+inline bool hasFlag(CollectionFlag F, CollectionFlags Flags) {
+  return Flag(F) & Flags;
+}
+
 class CounterWriter;
 
 class IntCompressor FINAL {
@@ -59,7 +75,7 @@ class IntCompressor FINAL {
 
   interp::TraceClassSexpReader& getTrace() { return *Trace; }
 
-  void describe(FILE* Out, size_t MinPathLength);
+  void describe(FILE* Out, CollectionFlags = Flag(CollectionFlag::All));
 
  private:
   std::shared_ptr<filt::SymbolTable> Symtab;

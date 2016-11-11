@@ -61,6 +61,20 @@ int CountNode::Ptr::compare(const CountNode::Ptr& P) const {
   return NdPtr->compare(*P.NdPtr);
 }
 
+void CountNode::indent(FILE* Out, size_t NestLevel, bool AddWeight) const {
+  for (size_t i = 0; i < NestLevel; ++i)
+    fputs("  ", Out);
+  if (AddWeight)
+    fprintf(Out, "%12" PRIuMAX "", uintmax_t(getWeight()));
+}
+
+BlockCountNode::~BlockCountNode() {}
+
+void BlockCountNode::describe(FILE* Out, size_t NestLevel) const {
+  indent(Out, NestLevel);
+  fputs(": Block\n", Out);
+}
+
 IntCountNode::IntCountNode(IntType Value, IntCountNode* Parent)
     : CountNode(Kind::IntSequence), Value(Value), Parent(Parent) {}
 
@@ -97,9 +111,8 @@ size_t IntCountNode::getWeight() const {
 }
 
 void IntCountNode::describe(FILE* Out, size_t NestLevel) const {
-  for (size_t i = 0; i < NestLevel; ++i)
-    fputs("  ", Out);
-  fprintf(Out, "%12" PRIuMAX ": Value", uintmax_t(getWeight()));
+  indent(Out, NestLevel);
+  fputs(": Value", Out);
   if (pathLength() > 1)
     fputc('s', Out);
   fputc(':', Out);
