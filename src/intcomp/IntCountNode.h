@@ -72,10 +72,7 @@ class CountNode {
   virtual ~CountNode();
   enum class Kind {
     IntSequence,
-    Block,
-    FormatUsingI64,
-    FormatUsingU64,
-    FormatUsingUint8
+    Block
   };
   size_t getCount() const { return Count; }
   virtual size_t getWeight() const;
@@ -115,7 +112,7 @@ class CountNode {
   Kind getRtClassId() const {
     return NodeKind;
   }
-  static bool implementsClass(Kind NdKind) { return true; }
+  static bool implementsClass(Kind /*NodeKind*/) { return true; }
  protected:
   Kind NodeKind;
   size_t Count;
@@ -126,6 +123,19 @@ class CountNode {
 
   CountNode(Kind NodeKind) : NodeKind(NodeKind), Count(0) {}
   virtual int compareLocal(const CountNode& Nd) const;
+  void indent(FILE* Out, size_t NestLevel, bool AddWeight=true) const;
+};
+
+// Implements a counter of the number of blocks in a bitcode file.
+class BlockCountNode : public CountNode {
+  BlockCountNode(const BlockCountNode&) = delete;
+  BlockCountNode& operator=(const BlockCountNode&) = delete;
+ public:
+  explicit BlockCountNode()
+      : CountNode(Kind::Block) {}
+  ~BlockCountNode() OVERRIDE;
+  void describe(FILE* Out, size_t NestLevel=0) const OVERRIDE;
+  static bool implementsClass(Kind NodeKind) { return NodeKind == Kind::Block; }
 };
 
 typedef std::map<decode::IntType, CountNode*> IntCountUsageMap;
@@ -156,7 +166,7 @@ class IntCountNode : public CountNode {
     UsageMap.erase(Key);
   }
 
-  static bool implementsClass(Kind NdKind) { return NdKind == Kind::IntSequence; }
+  static bool implementsClass(Kind NodeKind) { return NodeKind == Kind::IntSequence; }
  private:
   decode::IntType Value;
   IntCountUsageMap NextUsageMap;

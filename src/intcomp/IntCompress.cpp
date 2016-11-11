@@ -77,6 +77,8 @@ class CounterWriter : public Writer {
   bool writeValue(decode::IntType Value, const filt::Node* Format) OVERRIDE;
   bool writeAction(const filt::CallbackNode* Action) OVERRIDE;
 
+  BlockCountNode& getBlockCount() { return BlockCount; }
+
 // For debugging
 #if DESCRIBE_INPUT
   void describeInput();
@@ -84,6 +86,7 @@ class CounterWriter : public Writer {
 
  private:
   IntCountUsageMap& UsageMap;
+  BlockCountNode BlockCount;
   circular_vector<IntType>* input_seq;
   uint64_t CountCutoff;
   uint64_t WeightCutoff;
@@ -211,6 +214,7 @@ bool CounterWriter::writeAction(const filt::CallbackNode* Action) {
   switch (Sym->getPredefinedSymbol()) {
     case PredefinedSymbol::Block_enter:
       addAllInputSeqsToUsageMap();
+      BlockCount.increment();
       return true;
     case PredefinedSymbol::Block_exit:
       addAllInputSeqsToUsageMap();
@@ -299,9 +303,10 @@ void IntCompressor::compress() {
 
 namespace {
 
-class IntSeqCollector {
+class CountNodeCollector  {
  public:
   IntCountUsageMap& UsageMap;
+  CounterWriter* Counter;
   std::vector<CountNode::HeapValueType> Values;
   std::shared_ptr<CountNode::HeapType> ValuesHeap;
   uint64_t WeightTotal;
@@ -313,8 +318,10 @@ class IntSeqCollector {
   uint64_t WeightCutoff;
   size_t MinPathLength;
 
-  explicit IntSeqCollector(IntCountUsageMap& UsageMap)
+  explicit CountNodeCollector (IntCountUsageMap& UsageMap,
+                               CounterWriter* Counter)
       : UsageMap(UsageMap),
+        Counter(Counter),
         ValuesHeap(std::make_shared<CountNode::HeapType>()),
         WeightTotal(0),
         CountTotal(0),
@@ -324,7 +331,7 @@ class IntSeqCollector {
         CountCutoff(1),
         WeightCutoff(1),
         MinPathLength(1) {}
-  ~IntSeqCollector() { clear(); }
+  ~CountNodeCollector () { clear(); }
 
   void collect();
   void buildHeap();
@@ -345,28 +352,30 @@ class IntSeqCollector {
   void describe(FILE* Out);
 };
 
-void IntSeqCollector::clearHeap() {
+void CountNodeCollector ::clearHeap() {
   for (auto& Value : Values)
     Value->disassociateFromHeap();
 }
 
-void IntSeqCollector::clear() {
+void CountNodeCollector ::clear() {
   clearHeap();
   Values.clear();
   ValuesHeap.reset();
 }
 
-void IntSeqCollector::buildHeap() {
+void CountNodeCollector ::buildHeap() {
   for (auto& Value : Values)
     Value->associateWithHeap(ValuesHeap->push(Value));
 }
 
-void IntSeqCollector::collect() {
+void CountNodeCollector ::collect() {
+  if (MinPathLength == 1)
+    Values.push_back(&Counter->getBlockCount());
   for (const auto& pair : UsageMap)
     collectNode(pair.second);
 }
 
-void IntSeqCollector::collectNode(CountNode* Nd) {
+void CountNodeCollector ::collectNode(CountNode* Nd) {
   uint64_t Weight = Nd->getWeight();
   uint64_t Count = Nd->getCount();
   size_t PathLength = MinPathLength;  // until proven otherwise
@@ -395,7 +404,7 @@ void IntSeqCollector::collectNode(CountNode* Nd) {
   }
 }
 
-void IntSeqCollector::describe(FILE* Out) {
+void CountNodeCollector ::describe(FILE* Out) {
   assert(ValuesHeap->empty());
   buildHeap();
   fprintf(Out, "Number nodes reported: %" PRIuMAX
@@ -419,7 +428,7 @@ void IntSeqCollector::describe(FILE* Out) {
 
 void IntCompressor::describe(FILE* Out, size_t MinPathLength) {
   fprintf(stderr, "Collecting results...\n");
-  IntSeqCollector Collector(UsageMap);
+  CountNodeCollector Collector(UsageMap, Counter);
   Collector.CountCutoff = CountCutoff;
   Collector.WeightCutoff = WeightCutoff;
   Collector.MinPathLength = MinPathLength;
