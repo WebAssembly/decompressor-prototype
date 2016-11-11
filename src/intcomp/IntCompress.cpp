@@ -293,12 +293,12 @@ void IntCompressor::compress() {
   // IntCountNode trie.
   compressUpToSize(1);
   removeSmallUsageCounts();
-  describe(stderr, 1);
+  describe(stderr, Flag(CollectionFlag::TopLevel));
   if (LengthLimit > 1) {
     compressUpToSize(LengthLimit);
     removeSmallUsageCounts();
   }
-  describe(stderr, 2);
+  describe(stderr, Flag(CollectionFlag::IntPaths));
 }
 
 namespace {
@@ -316,7 +316,6 @@ class CountNodeCollector  {
   uint64_t NumNodesReported;
   uint64_t CountCutoff;
   uint64_t WeightCutoff;
-  size_t MinPathLength;
 
   explicit CountNodeCollector (IntCountUsageMap& UsageMap,
                                CounterWriter* Counter)
@@ -329,11 +328,10 @@ class CountNodeCollector  {
         CountReported(0),
         NumNodesReported(0),
         CountCutoff(1),
-        WeightCutoff(1),
-        MinPathLength(1) {}
+        WeightCutoff(1) {}
   ~CountNodeCollector () { clear(); }
 
-  void collect();
+  void collect(CollectionFlags Flags = Flag(CollectionFlag::All));
   void buildHeap();
   CountNode::HeapValueType popHeap() {
     assert(ValuesHeap);
@@ -348,7 +346,7 @@ class CountNodeCollector  {
     });
   }
   void clear();
-  void collectNode(CountNode* Nd);
+  void collectNode(CountNode* Nd, CollectionFlags Flags);
   void describe(FILE* Out);
 };
 
@@ -368,40 +366,51 @@ void CountNodeCollector ::buildHeap() {
     Value->associateWithHeap(ValuesHeap->push(Value));
 }
 
-void CountNodeCollector ::collect() {
-  if (MinPathLength == 1)
-    Values.push_back(&Counter->getBlockCount());
+void CountNodeCollector ::collect(CollectionFlags Flags) {
+  if (hasFlag(CollectionFlag::TopLevel, Flags))
+    collectNode(&Counter->getBlockCount(), Flags);
   for (const auto& pair : UsageMap)
-    collectNode(pair.second);
+    collectNode(pair.second, Flags);
 }
 
-void CountNodeCollector ::collectNode(CountNode* Nd) {
+void CountNodeCollector ::collectNode(CountNode* Nd,
+                                      CollectionFlags Flags) {
   uint64_t Weight = Nd->getWeight();
   uint64_t Count = Nd->getCount();
-  size_t PathLength = MinPathLength;  // until proven otherwise
   auto* IntNd = dyn_cast<IntCountNode>(Nd);
-  if (IntNd) {
-    PathLength = IntNd->pathLength();
-    if (PathLength >= MinPathLength) {
-      CountTotal += Count;
-      WeightTotal += Weight;
+  if (hasFlag(CollectionFlag::TopLevel, Flags)) {
+    CountTotal += Count;
+    WeightTotal += Weight;
+    if (Count < CountCutoff)
+      return;
+    if (Weight < WeightCutoff)
+      return;
+    if (IntNd == nullptr || IntNd->isSingletonPath()) {
+      CountReported += Count;
+      WeightReported += Weight;
+      ++NumNodesReported;
+      Values.push_back(Nd);
     }
+  }
+  if (IntNd == nullptr || !hasFlag(CollectionFlag::IntPaths, Flags))
+    return;
+  if (!IntNd->isSingletonPath()) {
+    CountTotal += Count;
+    WeightTotal += Weight;
   }
   if (Count < CountCutoff)
     return;
   if (Weight < WeightCutoff)
     return;
-  if (PathLength >= MinPathLength) {
+  if (!IntNd->isSingletonPath()) {
     Values.push_back(CountNode::Ptr(Nd));
     CountReported += Count;
     WeightReported += Weight;
     ++NumNodesReported;
   }
-  if (IntNd) {
-    IntCountUsageMap& NdUsageMap = IntNd->getNextUsageMap();
-    for (const auto& pair : NdUsageMap)
-      collectNode(pair.second);
-  }
+  IntCountUsageMap& NdUsageMap = IntNd->getNextUsageMap();
+  for (const auto& pair : NdUsageMap)
+    collectNode(pair.second, Flags);
 }
 
 void CountNodeCollector ::describe(FILE* Out) {
@@ -426,13 +435,12 @@ void CountNodeCollector ::describe(FILE* Out) {
 
 }  // end of anonymous namespace
 
-void IntCompressor::describe(FILE* Out, size_t MinPathLength) {
+void IntCompressor::describe(FILE* Out, CollectionFlags Flags) {
   fprintf(stderr, "Collecting results...\n");
   CountNodeCollector Collector(UsageMap, Counter);
   Collector.CountCutoff = CountCutoff;
   Collector.WeightCutoff = WeightCutoff;
-  Collector.MinPathLength = MinPathLength;
-  Collector.collect();
+  Collector.collect(Flags);
   Collector.describe(Out);
 }
 
