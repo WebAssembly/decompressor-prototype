@@ -60,16 +60,24 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
     bool reinsert() {
       bool Inserted = false;
       if (auto HeapPtr = HeapWeakPtr->lock()) {
-        HeapPtr->reinsert(Index);
-        Inserted = true;
+        if (HeapPtr->isValidEntry(this)) {
+          HeapPtr->reinsert(Index);
+          Inserted = true;
+        } else {
+          HeapWeakPtr.reset();
+        }
       }
       return Inserted;
     }
     bool remove() {
       bool Removed = false;
       if (auto HeapPtr = HeapWeakPtr->lock()) {
-        HeapPtr->remove(Index);
-        Removed = true;
+        if (HeapPtr->isValidEntry(this)) {
+          HeapPtr->remove(Index);
+          Removed = true;
+        } else {
+          HeapWeakPtr.reset();
+        }
       }
       return Removed;
     }
@@ -89,6 +97,12 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
   bool empty() const { return Contents.empty(); }
 
   size_t size() const { return Contents.size(); }
+
+  bool isValidEntry(entry* E) {
+    if (E->Index >= Contents.size())
+      return false;
+    return Contents[E->Index].get() == E;
+  }
 
   std::shared_ptr<entry> top() { return Contents.front(); }
 
