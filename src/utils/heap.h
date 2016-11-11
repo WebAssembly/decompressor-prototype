@@ -14,9 +14,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Defines a heap using a vector. Note: Can't use std::make_heap() or a priority
-// queue because we need the ability to change the values in the heap, which may
-// also change its ordering.
+// Defines a heap that also allows fast removal and reinsertion. To do this, a
+// (shared) pointer to an (internal) entry is returned to the caller. By using
+// the returned entery, a fast (i.e. log n) removal/reinsertion can be
+// performed.
+//
+// Note: Can't use std::make_heap() or a priority queue because we need the
+// ability to quickly remove elements as well.
 
 #ifndef DECOMPRESSOR_SRC_UTILS_HEAP_H
 #define DECOMPRESSOR_SRC_UTILS_HEAP_H
@@ -53,9 +57,8 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
         : HeapPtr(HeapPtr), Value(Value), Index(Index) {}
     ~entry() {}
     value_type getValue() { return Value; }
-    // Note: Call this whenever the notion of the comparison changes for a value
-    // in the heap (which can happen if a value is a pointer).
-    void reinsert() { reinsert(Index); }
+    void reinsert() { HeapPtr->reinsert(Index); }
+    void remove() { HeapPtr->remove(Index); }
 
    private:
     std::shared_ptr<heap<value_type>> HeapPtr;
@@ -82,12 +85,7 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
     return Entry;
   }
 
-  void pop() {
-    assert(!Contents.empty());
-    Contents[0] = Contents[Contents.size() - 1];
-    Contents.pop_back();
-    insertDown(0);
-  }
+  void pop() { remove(0); }
 
   // Note: This operation is provided to make debugging easier.
   void describe(FILE* Out,
@@ -155,8 +153,19 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
 
   // Reinsert value since key changed.
   void reinsert(size_t Index) {
+    assert(Index < Contents.size());
     if (!insertUp(Index))
       insertDown(Index);
+  }
+
+  void remove(size_t Index) {
+    assert(Index < Contents.size());
+    auto& Avail = Contents.back();
+    Contents[Index] = Avail;
+    Avail->Index = Index;
+    Contents.pop_back();
+    if (Index > 0 || !Contents.empty())
+      reinsert(Index);
   }
 
   // Describes subtree rooted at parent.
