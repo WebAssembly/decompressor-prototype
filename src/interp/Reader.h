@@ -20,6 +20,7 @@
 #define DECOMPRESSOR_SRC_INTERP_READER_H
 
 #include "stream/Queue.h"
+#include "interp/ByteReadStream.h"
 #include "stream/ReadCursor.h"
 #include "interp/Interpreter.def"
 #include "interp/ReadStream.h"
@@ -37,14 +38,12 @@ class Reader {
   Reader& operator=(const Reader&) = delete;
 
  public:
-  Reader(std::shared_ptr<decode::Queue> Input,
-         Writer& Output,
+  Reader(Writer& Output,
          std::shared_ptr<filt::SymbolTable> Symtab);
   virtual ~Reader();
 
   // Starts up decompression.
   void start() { callTopLevel(Method::GetFile, nullptr); }
-  void start(const decode::ReadCursor& ReadPos);
 
   // Resumes decompression where it left off. Assumes that more
   // input has been added since the previous start()/resume() call.
@@ -64,7 +63,10 @@ class Reader {
   // Force interpretation to fail.
   void fail(const std::string& Message);
 
-  virtual decode::ReadCursor& getPos();
+  // Returns the current read position of the input stream. NOTE:
+  // This (in general) should not be called unless you explicitly know
+  // that the input is a stream that can defined cursors.
+  virtual decode::ReadCursor& getPos() = 0;
 
   void setTrace(filt::TraceClassSexp& Trace) { TracePtr = &Trace; }
   filt::TraceClassSexp& getTrace() { return *TracePtr; }
@@ -166,8 +168,6 @@ class Reader {
     size_t CallingEvalIndex;
   };
 
-  decode::ReadCursor ReadPos;
-  std::shared_ptr<ReadStream> Input;
   Writer& Output;
   std::shared_ptr<filt::SymbolTable> Symtab;
   // The magic number of the input.
@@ -190,9 +190,6 @@ class Reader {
   // The stack of (eval) calls.
   EvalFrame CallingEval;
   utils::ValueStack<EvalFrame> CallingEvalStack;
-  // The stack of read cursors (used by peek)
-  decode::ReadCursor PeekPos;
-  utils::ValueStack<decode::ReadCursor> PeekPosStack;
   // The stack of loop counters.
   size_t LoopCounter;
   utils::ValueStack<size_t> LoopCounterStack;
@@ -262,11 +259,35 @@ class Reader {
 
   void describeFrameStack(FILE* Out);
   void describeCallingEvalStack(FILE* Out);
-  void describePeekPosStack(FILE* Out);
+  virtual void describePeekPosStack(FILE* Out) = 0;
   void describeLoopCounterStack(FILE* Out);
   void describeLocalsStack(FILE* Out);
   void describeOpcodeLocalStack(FILE* Out);
   virtual void describeState(FILE* Out);
+
+ protected:
+  virtual bool canProcessMoreInputNow() = 0;
+  virtual bool stillMoreInputToProcessNow() = 0;
+  virtual bool atInputEob() = 0;
+  virtual void resetPeekPosStack() = 0;
+  virtual void pushPeekPos() = 0;
+  virtual void popPeekPos() = 0;
+  virtual decode::StreamType getStreamType() = 0;
+  virtual bool processedInputCorrectly() = 0;
+  virtual void enterBlock() = 0;
+  virtual void exitBlock() = 0;
+  // Read fills input with some more bytes if possible. Returns true if ability possible.
+  virtual bool readFillInput() = 0;
+  // Hard coded reads.
+  virtual uint8_t readUint8() = 0;
+  virtual uint32_t readUint32() = 0;
+  virtual uint64_t readUint64() = 0;
+  virtual int32_t readVarint32() = 0;
+  virtual int64_t readVarint64() = 0;
+  virtual uint32_t readVaruint32() = 0;
+  virtual uint64_t readVaruint64() = 0;
+  virtual decode::IntType readValue(const filt::Node* Format) = 0;
+
 };
 
 }  // end of namespace interp

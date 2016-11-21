@@ -19,7 +19,7 @@
 #ifndef DECOMPRESSOR_SRC_INTERP_INTERPRETER_H
 #define DECOMPRESSOR_SRC_INTERP_INTERPRETER_H
 
-#include "interp/Reader.h"
+#include "interp/StreamReader.h"
 #include "interp/TraceSexpReaderWriter.h"
 #include "interp/StreamWriter.h"
 
@@ -78,7 +78,7 @@ class Interpreter FINAL {
 
  private:
   std::shared_ptr<filt::SymbolTable> Symtab;
-  Reader Input;
+  StreamReader Input;
   StreamWriter Output;
   TraceClassSexpReaderWriter Trace;
 };

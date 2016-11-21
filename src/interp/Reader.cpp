@@ -18,30 +18,31 @@
 
 #include "interp/Reader.h"
 
-#include "interp/ByteReadStream.h"
 #include "sexp/TextWriter.h"
+
+#define LOG_DEFAULT_VALUE 0
 
 // By default, methods resume() and readBackFilled() are not traced,
 // since they are the glue between a push and pull models. Rather, they
 // conceptually mimic the natural call structure. If you want to trace
 // resume() and readBackFilled() as well, change this flag to 1.
-#define LOG_RUNMETHODS 0
+#define LOG_RUNMETHODS LOG_DEFAULT_VALUE
 // The following tracks runMetthods() and readBackFilled(), which run
 // interpreter methods with tracing showing equivalent non-push inter
 // The following turn on logging sections, functions in the decompression
 // algorithm.
-#define LOG_SECTIONS 0
-#define LOG_FUNCTIONS 0
+#define LOG_SECTIONS LOG_DEFAULT_VALUE
+#define LOG_FUNCTIONS LOG_DEFAULT_VALUE
 // The following logs lookahead on each call to eval.
-#define LOG_EVAL_LOOKAHEAD 0
+#define LOG_EVAL_LOOKAHEAD LOG_DEFAULT_VALUE
 
 // The following two defines allows turning on tracing for the nth (zero based)
 // function.
-#define LOG_NUMBERED_BLOCK 0
-#define LOG_FUNCTION_NUMBER 0
+#define LOG_NUMBERED_BLOCK LOG_DEFAULT_VALUE
+#define LOG_FUNCTION_NUMBER LOG_DEFAULT_VALUE
 
 // The following shows stack contents on each iteration of resume();
-#define LOG_CALLSTACKS 0
+#define LOG_CALLSTACKS LOG_DEFAULT_VALUE
 
 #if LOG_FUNCTIONS || LOG_NUMBERED_BLOCK
 namespace {
@@ -125,25 +126,20 @@ const char* Reader::getName(SectionCode Code) {
   return SectionCodeName[Index];
 }
 
-Reader::Reader(std::shared_ptr<decode::Queue> StrmInput,
-               Writer& StrmOutput,
+Reader::Reader(Writer& StrmOutput,
                std::shared_ptr<filt::SymbolTable> Symtab)
-    : ReadPos(StreamType::Byte, StrmInput),
-      Input(std::make_shared<ByteReadStream>()),
-      Output(StrmOutput),
+    : Output(StrmOutput),
       Symtab(Symtab),
       LastReadValue(0),
       DispatchedMethod(Method::NO_SUCH_METHOD),
       TracePtr(&DefaultTrace),
       FrameStack(Frame),
       CallingEvalStack(CallingEval),
-      PeekPosStack(PeekPos),
       LoopCounter(0),
       LoopCounterStack(LoopCounter),
       LocalsBase(0),
       LocalsBaseStack(LocalsBase),
       OpcodeLocalsStack(OpcodeLocals) {
-  getTrace().setReadPos(&ReadPos);
   CurSectionName.reserve(MaxExpectedSectionNameSize);
   FrameStack.reserve(DefaultStackSize);
   CallingEvalStack.reserve(DefaultStackSize);
@@ -153,15 +149,6 @@ Reader::Reader(std::shared_ptr<decode::Queue> StrmInput,
 }
 
 Reader::~Reader() {
-}
-
-ReadCursor& Reader::getPos() {
-  return ReadPos;
-}
-
-void Reader::start(const ReadCursor& NewCursor) {
-  ReadPos = NewCursor;
-  start();
 }
 
 void Reader::traceEnterFrameInternal() {
@@ -212,14 +199,6 @@ void Reader::describeCallingEvalStack(FILE* File) {
   fprintf(File, "************************\n");
 }
 
-void Reader::describePeekPosStack(FILE* File) {
-  fprintf(File, "*** Peek Pos Stack ***\n");
-  fprintf(File, "**********************\n");
-  for (const auto& Pos : PeekPosStack.iterRange(1))
-    fprintf(File, "@%" PRIxMAX "\n", uintmax_t(Pos.getCurAddress()));
-  fprintf(File, "**********************\n");
-}
-
 void Reader::describeLoopCounterStack(FILE* File) {
   fprintf(File, "*** Loop Counter Stack ***\n");
   for (const auto& Count : LoopCounterStack.iterRange(1))
@@ -250,8 +229,7 @@ void Reader::describeState(FILE* File) {
   describeFrameStack(File);
   if (!CallingEvalStack.empty())
     describeCallingEvalStack(File);
-  if (!PeekPosStack.empty())
-    describePeekPosStack(File);
+  describePeekPosStack(File);
   if (!LoopCounterStack.empty())
     describeLoopCounterStack(File);
   if (!LocalsBaseStack.empty())
@@ -264,8 +242,6 @@ void Reader::describeState(FILE* File) {
 void Reader::reset() {
   Frame.reset();
   FrameStack.clear();
-  PeekPos = ReadCursor();
-  PeekPosStack.clear();
   LoopCounter = 0;
   LoopCounterStack.clear();
   LocalsBase = 0;
@@ -335,16 +311,9 @@ void Reader::resume() {
   TRACE_ENTER("resume");
   TRACE_BLOCK({ describeState(tracE.getFile()); });
 #endif
-  size_t FillPos = ReadPos.fillSize();
-  // Headroom is used to guarantee that several (integer) reads
-  // can be done in a single iteration of the loop.
-  constexpr size_t kResumeHeadroom = 100;
-  if (!ReadPos.isEofFrozen()) {
-    if (FillPos < kResumeHeadroom)
-      return;
-    FillPos -= kResumeHeadroom;
-  }
-  while (ReadPos.getCurByteAddress() <= FillPos) {
+  if (!canProcessMoreInputNow())
+    return;
+  while (stillMoreInputToProcessNow()) {
     if (errorsFound())
       break;
 #if LOG_CALLSTACKS
@@ -360,11 +329,11 @@ void Reader::resume() {
             Frame.CallState = State::Loop;
             break;
           case State::Loop:
-            if (ReadPos.atByteEob()) {
+            if (atInputEob()) {
               Frame.CallState = State::Exit;
               break;
             }
-            LastReadValue = Input->readUint8(ReadPos);
+            LastReadValue = readUint8();
             Output.writeUint8(LastReadValue);
             break;
           case State::Exit:
@@ -377,17 +346,17 @@ void Reader::resume() {
         break;
       case Method::Eval:
 #if LOG_EVAL_LOOKAHEAD
-        if (Frame.State == State::Enter) {
+        if (Frame.CallState == State::Enter) {
           TRACE_BLOCK({
-            decode::ReadCursor Lookahead(ReadPos);
-            fprintf(TRACE.indent(), "Lookahead:");
-            for (int i = 0; i < 10; ++i) {
-              if (!Lookahead.atByteEob())
-                fprintf(TRACE.getFile(), " %x", Lookahead.readByte());
-            }
-            fprintf(TRACE.getFile(), " ");
-            fprintf(ReadPos.describe(TRACE.getFile(), true), "\n");
-          });
+              decode::ReadCursor Lookahead(getPos());
+              fprintf(getTrace().indent(), "Lookahead:");
+              for (int i = 0; i < 10; ++i) {
+                if (!Lookahead.atByteEob())
+                  fprintf(getTrace().getFile(), " %x", Lookahead.readByte());
+              }
+              fprintf(getTrace().getFile(), " ");
+              fprintf(getPos().describe(getTrace().getFile(), true), "\n");
+            });
         }
 #endif
         switch (Frame.Nd->getType()) {
@@ -550,14 +519,13 @@ void Reader::resume() {
             switch (Frame.CallState) {
               case State::Enter:
                 traceEnterFrame();
-                PeekPosStack.push(ReadPos);
+                pushPeekPos();
                 Frame.CallState = State::Exit;
                 call(Method::Eval, MethodModifier::ReadOnly,
                      Frame.Nd->getKid(0));
                 break;
               case State::Exit:
-                ReadPos = PeekPos;
-                PeekPosStack.pop();
+                popPeekPos();
                 popAndReturn(Frame.ReturnValue);
                 traceExitFrame();
                 break;
@@ -589,7 +557,7 @@ void Reader::resume() {
           case OpVaruint32:
           case OpVaruint64: {
             traceEnterFrame();
-            IntType Value = Input->readValue(ReadPos, Frame.Nd);
+            IntType Value = readValue(Frame.Nd);
             if (hasReadMode())
               LastReadValue = Value;
             if (hasWriteMode()) {
@@ -676,30 +644,7 @@ void Reader::resume() {
           case OpStream: {  // Method::Eval
             traceEnterFrame();
             const auto* Stream = cast<StreamNode>(Frame.Nd);
-            IntType Result = 0;
-            switch (Stream->getStreamKind()) {
-              case StreamKind::Input:
-                switch (Stream->getStreamType()) {
-                  case StreamType::Byte:
-                    Result = isa<ByteReadStream>(Input.get());
-                    break;
-                  case StreamType::Int:
-                    TRACE_SEXP("stream check", Frame.Nd);
-                    return fail("Stream check not implemented!");
-                }
-                break;
-              case StreamKind::Output:
-                switch (Stream->getStreamType()) {
-                  case StreamType::Byte:
-                    Result = Output.getStreamType() == StreamType::Byte;
-                    break;
-                  case StreamType::Int:
-                    TRACE_SEXP("stream check", Frame.Nd);
-                    return fail("Stream check not implemented!");
-                }
-                break;
-            }
-            popAndReturn(Result);
+            popAndReturn(IntType(Stream->getStreamType() == getStreamType()));
             break;
           }
           case OpNot:  // Method::Eval
@@ -824,7 +769,7 @@ void Reader::resume() {
                 Frame.CallState = State::Loop;
                 break;
               case State::Loop:
-                if (ReadPos.atReadBitEob()) {
+                if (atInputEob()) {
                   Frame.CallState = State::Exit;
                   break;
                 }
@@ -1011,11 +956,11 @@ void Reader::resume() {
                 // NOTE: This assumes that blocks (outside of sections) are only
                 // used to define functions.
                 TRACE_BLOCK({
-                  fprintf(TRACE.indent(), " Function %" PRIuMAX "\n",
-                          uintmax_t(LogBlockCount));
-                  if (LOG_NUMBERED_BLOCK &&
-                      LogBlockCount == LOG_FUNCTION_NUMBER)
-                    TRACE.setTraceProgress(true);
+                    fprintf(getTrace().indent(), " Function %" PRIuMAX "\n",
+                            uintmax_t(LogBlockCount));
+                    if (LOG_NUMBERED_BLOCK &&
+                        LogBlockCount == LOG_FUNCTION_NUMBER)
+                      getTrace().setTraceProgress(true);
                 });
 #endif
                 Frame.CallState = State::Exit;
@@ -1027,9 +972,9 @@ void Reader::resume() {
 #if LOG_FUNCTIONS || LOG_NUMBERED_BLOCKS
 #if LOG_NUMBERED_BLOCK
                 TRACE_BLOCK({
-                  if (LogBlockCount == LOG_FUNCTION_NUMBER)
-                    TRACE.setTraceProgress(0);
-                });
+                    if (LogBlockCount == LOG_FUNCTION_NUMBER)
+                      getTrace().setTraceProgress(0);
+                  });
 #endif
                 ++LogBlockCount;
 #endif
@@ -1051,9 +996,7 @@ void Reader::resume() {
         switch (Frame.CallState) {
           case State::Enter: {
             traceEnterFrame();
-            const uint32_t OldSize = Input->readBlockSize(ReadPos);
-            TRACE(uint32_t, "block size", OldSize);
-            Input->pushEobAddress(ReadPos, OldSize);
+            enterBlock();
             if (!Output.writeAction(Symtab->getBlockEnterCallback()))
               break;
             Frame.CallState = State::Exit;
@@ -1063,7 +1006,7 @@ void Reader::resume() {
           case State::Exit:
             if (!Output.writeAction(Symtab->getBlockExitCallback()))
               break;
-            ReadPos.popEobAddress();
+            exitBlock();
             popAndReturn();
             traceExitFrame();
             break;
@@ -1121,7 +1064,7 @@ void Reader::resume() {
         switch (Frame.CallState) {
           case State::Enter:
             traceEnterFrame();
-            MagicNumber = Input->readUint32(ReadPos);
+            MagicNumber = readUint32();
             TRACE(hex_uint32_t, "magic number", MagicNumber);
             if (MagicNumber != WasmBinaryMagic)
               return fail(
@@ -1129,7 +1072,7 @@ void Reader::resume() {
                   "magic number!");
             if (!Output.writeMagicNumber(MagicNumber))
               return failCantWrite();
-            Version = Input->readUint32(ReadPos);
+            Version = readUint32();
             TRACE(hex_uint32_t, "version", Version);
             if (Version != WasmBinaryVersionD)
               return fail("Unable to decompress. WASM version not known");
@@ -1138,7 +1081,7 @@ void Reader::resume() {
             Frame.CallState = State::Loop;
             break;
           case State::Loop:
-            if (ReadPos.atByteEob()) {
+            if (atInputEob()) {
               Frame.CallState = State::Exit;
               break;
             }
@@ -1175,7 +1118,7 @@ void Reader::resume() {
           case State::Enter:
             traceEnterFrame();
             CurSectionName.clear();
-            LoopCounterStack.push(Input->readVaruint32(ReadPos));
+            LoopCounterStack.push(readVaruint32());
             Output.writeVaruint32(LoopCounter);
             Frame.CallState = State::Loop;
             break;
@@ -1185,7 +1128,7 @@ void Reader::resume() {
               break;
             }
             --LoopCounter;
-            uint8_t Byte = Input->readUint8(ReadPos);
+            uint8_t Byte = readUint8();
             Output.writeUint8(Byte);
             CurSectionName.push_back(char(Byte));
             break;
@@ -1203,9 +1146,8 @@ void Reader::resume() {
         switch (Frame.CallState) {
           case State::Enter:
             traceEnterFrame();
-            assert(isa<ByteReadStream>(Input.get()));
 #if LOG_SECTIONS
-            TRACE(hex_size_t, "SectionAddress", ReadPos.getCurByteAddress());
+            TRACE(hex_size_t, "SectionAddress", getPos().getCurByteAddress());
 #endif
             Frame.CallState = State::Step2;
             call(Method::GetSecName, Frame.CallModifier, nullptr);
@@ -1328,7 +1270,7 @@ void Reader::resume() {
         // If reached, we finished processing the input.
         assert(FrameStack.empty());
         Frame.CallMethod = Method::Finished;
-        if (ReadPos.atEof() && ReadPos.isQueueGood())
+        if (processedInputCorrectly())
           Frame.CallState = State::Succeeded;
         else
           return fail("Malformed input in compressed file");
@@ -1345,10 +1287,11 @@ void Reader::readBackFilled() {
 #if LOG_RUNMETHODS
   TRACE_METHOD("readBackFilled");
 #endif
-  ReadCursor FillPos(ReadPos);
   while (!isFinished()) {
-    if (!FillPos.atEof())
-      FillPos.advance(Page::Size);
+    if (!readFillInput()) {
+      fail("Can't readBackFilled, input doesn't allow");
+      break;
+    }
     resume();
   }
 }
