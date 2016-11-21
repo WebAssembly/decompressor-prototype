@@ -30,6 +30,8 @@
 
 namespace wasm {
 
+#define WASM_IGNORE(V) (void)(V);
+
 #ifdef NDEBUG
 inline bool isRelease() {
   return true;
