@@ -27,11 +27,9 @@ using namespace filt;
 
 namespace interp {
 
-StreamWriter::StreamWriter(std::shared_ptr<decode::Queue> Output,
-                           TraceClassSexp& Trace)
+StreamWriter::StreamWriter(std::shared_ptr<decode::Queue> Output)
     : Pos(StreamType::Byte, Output),
       Stream(std::make_shared<ByteWriteStream>()),
-      Trace(Trace),
       BlockStartStack(BlockStart) {
 }
 

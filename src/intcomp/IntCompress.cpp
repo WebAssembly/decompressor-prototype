@@ -230,7 +230,8 @@ IntCompressor::IntCompressor(std::shared_ptr<decode::Queue> InputStream,
     : Symtab(Symtab), CountCutoff(0), WeightCutoff(0), LengthLimit(1) {
   Counter = new CounterWriter(UsageMap);
   Trace = new TraceClassSexpReader(nullptr, "IntCompress");
-  Input = new Reader(InputStream, *Counter, Symtab, *Trace);
+  Input = new Reader(InputStream, *Counter, Symtab);
+  Input->setTrace(*Trace);
   StartPos = Input->getPos();
   (void)OutputStream;
 }

@@ -45,9 +45,12 @@ class Interpreter FINAL {
               std::shared_ptr<decode::Queue> OutputStream,
               std::shared_ptr<filt::SymbolTable> Symtab)
       : Symtab(Symtab),
-        Input(InputStream, Output, Symtab, Trace),
-        Output(OutputStream, Trace),
-        Trace(&Input.getPos(), &Output.getPos(), "InterpSexp") {}
+        Input(InputStream, Output, Symtab),
+        Output(OutputStream),
+        Trace(&Input.getPos(), &Output.getPos(), "InterpSexp") {
+    Input.setTrace(Trace);
+    Output.setTrace(Trace);
+  }
 
   ~Interpreter() {}
 

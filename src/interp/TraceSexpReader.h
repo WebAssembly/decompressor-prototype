@@ -35,12 +35,12 @@ class TraceClassSexpReader : public filt::TraceClassSexp {
   TraceClassSexpReader(decode::Cursor* ReadPos, const char* Label);
   TraceClassSexpReader(decode::Cursor* ReadPos, FILE* File);
   TraceClassSexpReader(decode::Cursor* ReadPos, const char* Label, FILE* File);
-  ~TraceClassSexpReader();
+  ~TraceClassSexpReader() OVERRIDE;
 
   void traceContext() const OVERRIDE;
 
   decode::Cursor* getReadPos() const { return ReadPos; }
-  void setReadPos(decode::Cursor* NewPos) { ReadPos = NewPos; }
+  void setReadPos(decode::Cursor* NewPos) OVERRIDE;
 
  protected:
   decode::Cursor* ReadPos;
