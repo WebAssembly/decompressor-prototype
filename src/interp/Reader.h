@@ -277,7 +277,7 @@ class Reader {
   virtual void enterBlock() = 0;
   virtual void exitBlock() = 0;
   virtual void readFillStart() = 0;
-  virtual bool readFillMoreInput() = 0;
+  virtual void readFillMoreInput() = 0;
   // Hard coded reads.
   virtual uint8_t readUint8() = 0;
   virtual uint32_t readUint32() = 0;

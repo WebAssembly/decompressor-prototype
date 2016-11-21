@@ -109,12 +109,14 @@ void StreamReader::exitBlock() {
   ReadPos.popEobAddress();
 }
 
-bool StreamReader::readFillInput() {
-  if (ReadPos.atEof())
-    return true;
-  ReadCursor FillPos(ReadPos);
-  FillPos.advance(ReadPos.fillSize() + Page::Size);
-  return true;
+void StreamReader::readFillStart() {
+  FillCursor = ReadPos;
+}
+
+void StreamReader::readFillMoreInput() {
+  if (FillCursor.atEof())
+    return;
+  FillCursor.advance(Page::Size);
 }
 
 uint8_t StreamReader::readUint8() {

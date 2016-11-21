@@ -1289,10 +1289,7 @@ void Reader::readBackFilled() {
 #endif
   readFillStart();
   while (!isFinished()) {
-    if (!readFillMoreInput()) {
-      fail("Can't readBackFilled, input doesn't allow");
-      break;
-    }
+    readFillMoreInput();
     resume();
   }
 }

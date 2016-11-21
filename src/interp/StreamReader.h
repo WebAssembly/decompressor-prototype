@@ -48,7 +48,7 @@ class StreamReader : public Reader {
   // The input position needed to fill to process now.
   size_t FillPos;
   // The input cursor position if back filling.
-  ReadCursor FillCursor;
+  decode::ReadCursor FillCursor;
   // The stack of read cursors (used by peek)
   decode::ReadCursor PeekPos;
   utils::ValueStack<decode::ReadCursor> PeekPosStack;
@@ -65,7 +65,8 @@ class StreamReader : public Reader {
   bool processedInputCorrectly() OVERRIDE;
   void enterBlock() OVERRIDE;
   void exitBlock() OVERRIDE;
-  bool readFillInput() OVERRIDE;
+  void readFillStart() OVERRIDE;
+  void readFillMoreInput() OVERRIDE;
   uint8_t readUint8() OVERRIDE;
   uint32_t readUint32() OVERRIDE;
   uint64_t readUint64() OVERRIDE;
