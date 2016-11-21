@@ -20,7 +20,7 @@
 #define DECOMPRESSOR_SRC_INTCOMP_INTCOMPRESS_H
 
 #include "intcomp/IntCountNode.h"
-#include "interp/Reader.h"
+#include "interp/StreamReader.h"
 #include "interp/TraceSexpReader.h"
 #include "interp/StreamWriter.h"
 
@@ -79,7 +79,7 @@ class IntCompressor FINAL {
 
  private:
   std::shared_ptr<filt::SymbolTable> Symtab;
-  interp::Reader* Input;
+  interp::StreamReader* Input;
   CounterWriter* Counter;
   decode::ReadCursor StartPos;
   IntCountUsageMap UsageMap;

@@ -17,6 +17,7 @@
 // Implements the compressor of WASM fiels base on integer usage.
 
 #include "intcomp/IntCompress.h"
+#include "interp/StreamReader.h"
 #include "utils/circular-vector.h"
 #include "utils/heap.h"
 
@@ -230,7 +231,7 @@ IntCompressor::IntCompressor(std::shared_ptr<decode::Queue> InputStream,
     : Symtab(Symtab), CountCutoff(0), WeightCutoff(0), LengthLimit(1) {
   Counter = new CounterWriter(UsageMap);
   Trace = new TraceClassSexpReader(nullptr, "IntCompress");
-  Input = new Reader(InputStream, *Counter, Symtab);
+  Input = new StreamReader(InputStream, *Counter, Symtab);
   Input->setTrace(*Trace);
   StartPos = Input->getPos();
   (void)OutputStream;
@@ -248,7 +249,7 @@ void IntCompressor::compressUpToSize(size_t Size) {
           "Collecting integer sequences of (up to) length: %" PRIuMAX "\n",
           uintmax_t(Size));
   Counter->setUpToSize(Size);
-  Input->start(StartPos);
+  Input->startUsing(StartPos);
   Input->readBackFilled();
   // Flush any remaining values in input sequece.
   Counter->addAllInputSeqsToUsageMap();
