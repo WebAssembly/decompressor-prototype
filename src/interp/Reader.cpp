@@ -1287,8 +1287,9 @@ void Reader::readBackFilled() {
 #if LOG_RUNMETHODS
   TRACE_METHOD("readBackFilled");
 #endif
+  readFillStart();
   while (!isFinished()) {
-    if (!readFillInput()) {
+    if (!readFillMoreInput()) {
       fail("Can't readBackFilled, input doesn't allow");
       break;
     }

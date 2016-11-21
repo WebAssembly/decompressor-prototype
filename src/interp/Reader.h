@@ -276,8 +276,8 @@ class Reader {
   virtual bool processedInputCorrectly() = 0;
   virtual void enterBlock() = 0;
   virtual void exitBlock() = 0;
-  // Read fills input with some more bytes if possible. Returns true if ability possible.
-  virtual bool readFillInput() = 0;
+  virtual void readFillStart() = 0;
+  virtual bool readFillMoreInput() = 0;
   // Hard coded reads.
   virtual uint8_t readUint8() = 0;
   virtual uint32_t readUint32() = 0;

@@ -45,7 +45,10 @@ class StreamReader : public Reader {
   decode::ReadCursor ReadPos;
   std::shared_ptr<ReadStream> Input;
   TraceClassSexpReader Trace;
+  // The input position needed to fill to process now.
   size_t FillPos;
+  // The input cursor position if back filling.
+  ReadCursor FillCursor;
   // The stack of read cursors (used by peek)
   decode::ReadCursor PeekPos;
   utils::ValueStack<decode::ReadCursor> PeekPosStack;

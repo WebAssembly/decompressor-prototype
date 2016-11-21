@@ -113,7 +113,7 @@ bool StreamReader::readFillInput() {
   if (ReadPos.atEof())
     return true;
   ReadCursor FillPos(ReadPos);
-  FillPos.advance(Page::Size);
+  FillPos.advance(ReadPos.fillSize() + Page::Size);
   return true;
 }
 
