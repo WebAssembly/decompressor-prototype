@@ -46,6 +46,14 @@ TraceClassSexp::~TraceClassSexp() {
   delete Writer;
 }
 
+void TraceClassSexp::setReadPos(decode::Cursor* NewPos) {
+  (void) NewPos;
+}
+
+void TraceClassSexp::setWritePos(decode::Cursor* NewPos) {
+  (void) NewPos;
+}
+
 TextWriter* TraceClassSexp::getNewTextWriter() {
   return new TextWriter();
 }

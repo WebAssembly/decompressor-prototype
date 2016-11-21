@@ -48,6 +48,10 @@ TraceClassSexpReaderWriter::TraceClassSexpReaderWriter(decode::Cursor* ReadPos,
 TraceClassSexpReaderWriter::~TraceClassSexpReaderWriter() {
 }
 
+void TraceClassSexpReaderWriter::setWritePos(decode::Cursor* NewPos) {
+  WritePos = NewPos;
+}
+
 void TraceClassSexpReaderWriter::traceContext() const {
   if (ReadPos)
     ReadPos->describe(File);

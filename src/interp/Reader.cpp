@@ -127,15 +127,14 @@ const char* Reader::getName(SectionCode Code) {
 
 Reader::Reader(std::shared_ptr<decode::Queue> StrmInput,
                Writer& StrmOutput,
-               std::shared_ptr<filt::SymbolTable> Symtab,
-               TraceClassSexpReader& Trace)
+               std::shared_ptr<filt::SymbolTable> Symtab)
     : ReadPos(StreamType::Byte, StrmInput),
       Input(std::make_shared<ByteReadStream>()),
       Output(StrmOutput),
       Symtab(Symtab),
       LastReadValue(0),
       DispatchedMethod(Method::NO_SUCH_METHOD),
-      Trace(Trace),
+      TracePtr(&DefaultTrace),
       FrameStack(Frame),
       CallingEvalStack(CallingEval),
       PeekPosStack(PeekPos),
@@ -144,7 +143,7 @@ Reader::Reader(std::shared_ptr<decode::Queue> StrmInput,
       LocalsBase(0),
       LocalsBaseStack(LocalsBase),
       OpcodeLocalsStack(OpcodeLocals) {
-  Trace.setReadPos(&ReadPos);
+  getTrace().setReadPos(&ReadPos);
   CurSectionName.reserve(MaxExpectedSectionNameSize);
   FrameStack.reserve(DefaultStackSize);
   CallingEvalStack.reserve(DefaultStackSize);
@@ -685,7 +684,7 @@ void Reader::resume() {
                     Result = isa<ByteReadStream>(Input.get());
                     break;
                   case StreamType::Int:
-                    Trace.errorSexp("Stream check: ", Frame.Nd);
+                    TRACE_SEXP("stream check", Frame.Nd);
                     return fail("Stream check not implemented!");
                 }
                 break;
@@ -695,7 +694,7 @@ void Reader::resume() {
                     Result = Output.getStreamType() == StreamType::Byte;
                     break;
                   case StreamType::Int:
-                    Trace.errorSexp("Stream check: ", Frame.Nd);
+                    TRACE_SEXP("stream check", Frame.Nd);
                     return fail("Stream check not implemented!");
                 }
                 break;
@@ -977,11 +976,14 @@ void Reader::resume() {
                 assert(NumParams);
                 int NumCallArgs = Frame.Nd->getNumKids() - 1;
                 if (NumParams->getValue() != IntType(NumCallArgs)) {
-                  fprintf(Trace.getFile(), "Definition %s expects %" PRIuMAX
-                                           "parameters, found: %" PRIuMAX "\n",
-                          Sym->getName().c_str(),
-                          uintmax_t(NumParams->getValue()),
-                          uintmax_t(NumCallArgs));
+                  TRACE_BLOCK({
+                      fprintf(getTrace().getFile(),
+                              "Definition %s expects %" PRIuMAX
+                              "parameters, found: %" PRIuMAX "\n",
+                              Sym->getName().c_str(),
+                              uintmax_t(NumParams->getValue()),
+                              uintmax_t(NumCallArgs));
+                    });
                   return fail("Unable to evaluate call");
                 }
                 size_t CallingEvalIndex = CallingEvalStack.size();

@@ -35,6 +35,7 @@
 namespace wasm {
 
 namespace decode {
+class Cursor;
 class ReadCursor;
 class WriteCursor;
 }
@@ -53,7 +54,10 @@ class TraceClassSexp : public utils::TraceClass {
   TraceClassSexp(const char* Label);
   TraceClassSexp(FILE* File);
   TraceClassSexp(const char* Label, FILE* File);
-  ~TraceClassSexp();
+  virtual ~TraceClassSexp();
+
+  virtual void setReadPos(decode::Cursor* NewPos);
+  virtual void setWritePos(decode::Cursor* NewPos);
 
   void trace_node_ptr(const char* Name, const Node* Nd) {
     traceSexpInternal(Name, Nd);

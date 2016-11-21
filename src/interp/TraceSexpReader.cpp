@@ -43,6 +43,10 @@ TraceClassSexpReader::TraceClassSexpReader(decode::Cursor* ReadPos,
 TraceClassSexpReader::~TraceClassSexpReader() {
 }
 
+void TraceClassSexpReader::setReadPos(decode::Cursor* NewPos) {
+  ReadPos = NewPos;
+}
+
 void TraceClassSexpReader::traceContext() const {
   if (ReadPos == nullptr)
     return;

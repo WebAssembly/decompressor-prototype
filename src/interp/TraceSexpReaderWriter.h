@@ -44,9 +44,10 @@ class TraceClassSexpReaderWriter : public TraceClassSexpReader {
                              decode::Cursor* WritePos,
                              const char* Label,
                              FILE* File);
-  ~TraceClassSexpReaderWriter();
+  ~TraceClassSexpReaderWriter() OVERRIDE;
 
   void traceContext() const OVERRIDE;
+  void setWritePos(decode::Cursor* NewPos) OVERRIDE;
 
  protected:
   decode::Cursor* WritePos;

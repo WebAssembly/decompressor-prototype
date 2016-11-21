@@ -23,7 +23,7 @@
 #include "stream/ReadCursor.h"
 #include "interp/Interpreter.def"
 #include "interp/ReadStream.h"
-#include "interp/TraceSexpReader.h"
+#include "sexp/TraceSexp.h"
 #include "interp/Writer.h"
 #include "utils/ValueStack.h"
 
@@ -39,8 +39,7 @@ class Reader {
  public:
   Reader(std::shared_ptr<decode::Queue> Input,
          Writer& Output,
-         std::shared_ptr<filt::SymbolTable> Symtab,
-         TraceClassSexpReader& Trace);
+         std::shared_ptr<filt::SymbolTable> Symtab);
   virtual ~Reader();
 
   // Starts up decompression.
@@ -67,7 +66,8 @@ class Reader {
 
   virtual decode::ReadCursor& getPos();
 
-  TraceClassSexpReader& getTrace() { return Trace; }
+  void setTrace(filt::TraceClassSexp& Trace) { TracePtr = &Trace; }
+  filt::TraceClassSexp& getTrace() { return *TracePtr; }
 
   enum class SectionCode : uint32_t {
 #define X(code, value) code = value,
@@ -181,7 +181,8 @@ class Reader {
   // Holds the method to call (i.e. dispatch) if code expects a method to be
   // provided by the caller.
   Method DispatchedMethod;
-  TraceClassSexpReader& Trace;
+  filt::TraceClassSexp DefaultTrace;
+  filt::TraceClassSexp* TracePtr;
 
   // The stack of called methods.
   CallFrame Frame;
