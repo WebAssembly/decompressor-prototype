@@ -30,7 +30,6 @@ namespace intcomp {
 
 typedef uint32_t CollectionFlags;
 
-
 enum class CollectionFlag : CollectionFlags {
   None = 0x0,
   TopLevel = 0x1,
@@ -38,7 +37,9 @@ enum class CollectionFlag : CollectionFlags {
   All = 0x3
 };
 
-inline CollectionFlags Flag(CollectionFlag F) { return CollectionFlags(F); }
+inline CollectionFlags Flag(CollectionFlag F) {
+  return CollectionFlags(F);
+}
 
 inline bool hasFlag(CollectionFlag F, CollectionFlags Flags) {
   return Flag(F) & Flags;

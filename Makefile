@@ -162,6 +162,9 @@ INTERP_SRCS = \
 	ByteReadStream.cpp \
 	ByteWriteStream.cpp \
 	Decompress.cpp \
+	IntReader.cpp \
+	IntStream.cpp \
+	IntWriter.cpp \
 	Reader.cpp \
 	ReadStream.cpp \
 	StreamReader.cpp \
@@ -619,6 +622,8 @@ $(PARSER_GENDIR)/Lexer.cpp: $(PARSER_GENDIR)/Lexer.lex
 
 $(PARSER_GENDIR)/Parser.ypp: $(PARSER_DIR)/Parser.ypp $(PARSER_GENDIR)
 	cp $< $@
+
+-include $(PARSER_GENDIR)/Parser.tab.d
 
 $(PARSER_GENDIR)/Parser.tab.cpp: $(PARSER_GENDIR)/Parser.ypp
 	cd $(PARSER_GENDIR); bison -d -r all Parser.ypp

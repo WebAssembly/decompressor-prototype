@@ -47,11 +47,11 @@ TraceClassSexp::~TraceClassSexp() {
 }
 
 void TraceClassSexp::setReadPos(decode::Cursor* NewPos) {
-  (void) NewPos;
+  (void)NewPos;
 }
 
 void TraceClassSexp::setWritePos(decode::Cursor* NewPos) {
-  (void) NewPos;
+  (void)NewPos;
 }
 
 TextWriter* TraceClassSexp::getNewTextWriter() {

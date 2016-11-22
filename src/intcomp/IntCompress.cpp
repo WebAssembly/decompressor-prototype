@@ -305,7 +305,7 @@ void IntCompressor::compress() {
 
 namespace {
 
-class CountNodeCollector  {
+class CountNodeCollector {
  public:
   IntCountUsageMap& UsageMap;
   CounterWriter* Counter;
@@ -319,8 +319,8 @@ class CountNodeCollector  {
   uint64_t CountCutoff;
   uint64_t WeightCutoff;
 
-  explicit CountNodeCollector (IntCountUsageMap& UsageMap,
-                               CounterWriter* Counter)
+  explicit CountNodeCollector(IntCountUsageMap& UsageMap,
+                              CounterWriter* Counter)
       : UsageMap(UsageMap),
         Counter(Counter),
         ValuesHeap(std::make_shared<CountNode::HeapType>()),
@@ -331,7 +331,7 @@ class CountNodeCollector  {
         NumNodesReported(0),
         CountCutoff(1),
         WeightCutoff(1) {}
-  ~CountNodeCollector () { clear(); }
+  ~CountNodeCollector() { clear(); }
 
   void collect(CollectionFlags Flags = Flag(CollectionFlag::All));
   void buildHeap();
@@ -352,31 +352,30 @@ class CountNodeCollector  {
   void describe(FILE* Out);
 };
 
-void CountNodeCollector ::clearHeap() {
+void CountNodeCollector::clearHeap() {
   for (auto& Value : Values)
     Value->disassociateFromHeap();
 }
 
-void CountNodeCollector ::clear() {
+void CountNodeCollector::clear() {
   clearHeap();
   Values.clear();
   ValuesHeap.reset();
 }
 
-void CountNodeCollector ::buildHeap() {
+void CountNodeCollector::buildHeap() {
   for (auto& Value : Values)
     Value->associateWithHeap(ValuesHeap->push(Value));
 }
 
-void CountNodeCollector ::collect(CollectionFlags Flags) {
+void CountNodeCollector::collect(CollectionFlags Flags) {
   if (hasFlag(CollectionFlag::TopLevel, Flags))
     collectNode(&Counter->getBlockCount(), Flags);
   for (const auto& pair : UsageMap)
     collectNode(pair.second, Flags);
 }
 
-void CountNodeCollector ::collectNode(CountNode* Nd,
-                                      CollectionFlags Flags) {
+void CountNodeCollector::collectNode(CountNode* Nd, CollectionFlags Flags) {
   uint64_t Weight = Nd->getWeight();
   uint64_t Count = Nd->getCount();
   auto* IntNd = dyn_cast<IntCountNode>(Nd);
@@ -415,7 +414,7 @@ void CountNodeCollector ::collectNode(CountNode* Nd,
     collectNode(pair.second, Flags);
 }
 
-void CountNodeCollector ::describe(FILE* Out) {
+void CountNodeCollector::describe(FILE* Out) {
   assert(ValuesHeap->empty());
   buildHeap();
   fprintf(Out, "Number nodes reported: %" PRIuMAX

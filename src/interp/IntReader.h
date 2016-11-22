@@ -14,44 +14,44 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Defines a stream reader for wasm/casm files.
+// Defines a reader from a (non-file based) integer stream.
 
-#ifndef DECOMPRESSOR_SRC_INTERP_STREAM_READER_H
-#define DECOMPRESSOR_SRC_INTERP_STREAM_READER_H
+#ifndef DECOMPRESSOR_SRC_INTERP_INTREADER_H
+#define DECOMPRESSOR_SRC_INTERP_INTREADER_H
 
+#include "interp/IntStream.h"
 #include "interp/Reader.h"
-#include "interp/ReadStream.h"
-#include "interp/TraceSexpReader.h"
-#include "stream/ReadCursor.h"
+#include "utils/Defs.h"
+#include "utils/ValueStack.h"
+
+#include <memory>
 
 namespace wasm {
 
 namespace interp {
 
-class StreamReader : public Reader {
-  StreamReader() = delete;
-  StreamReader(const StreamReader&) = delete;
-  StreamReader& operator=(const StreamReader&) = delete;
+class IntReader : public Reader {
+  IntReader() = delete;
+  IntReader(const IntReader&) = delete;
+  IntReader& operator=(const IntReader&) = delete;
+
  public:
-  StreamReader(std::shared_ptr<decode::Queue> Input,
-               Writer& Output,
-               std::shared_ptr<filt::SymbolTable> Symtab);
-  ~StreamReader() OVERRIDE;
-  void startUsing(const decode::ReadCursor& ReadPos);
-  decode::ReadCursor& getPos() OVERRIDE;
+  IntReader(std::shared_ptr<IntStream> Input,
+            Writer& Output,
+            std::shared_ptr<filt::SymbolTable> Symtab);
+  ~IntReader() OVERRIDE;
+
+  void startAtBeginning();
 
  private:
-
-  decode::ReadCursor ReadPos;
-  std::shared_ptr<ReadStream> Input;
-  TraceClassSexpReader Trace;
-  // The input position needed to fill to process now.
-  size_t FillPos;
-  // The input cursor position if back filling.
-  decode::ReadCursor FillCursor;
-  // The stack of read cursors (used by peek)
-  decode::ReadCursor PeekPos;
-  utils::ValueStack<decode::ReadCursor> PeekPosStack;
+  IntStream::ReadCursor Pos;
+  IntStream::StreamPtr Input;
+  // Shows how many are still available since last call to
+  // canProcessMoreInputNow().
+  size_t StillAvailable;
+  // The stack of read cursors (used by peek).
+  IntStream::ReadCursor PeekPos;
+  utils::ValueStack<IntStream::Cursor> PeekPosStack;
 
   void describePeekPosStack(FILE* Out) OVERRIDE;
 
@@ -77,10 +77,8 @@ class StreamReader : public Reader {
   decode::IntType readValue(const filt::Node* Format) OVERRIDE;
 };
 
-
 }  // end of namespace interp
 
 }  // end of namespace wasm
 
-
-#endif // DECOMPRESSOR_SRC_INTERP_STREAM_READER_H
+#endif  // DECOMPRESSOR_SRC_INTERP_INTREADER_H

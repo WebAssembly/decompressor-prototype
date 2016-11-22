@@ -38,8 +38,7 @@ class Reader {
   Reader& operator=(const Reader&) = delete;
 
  public:
-  Reader(Writer& Output,
-         std::shared_ptr<filt::SymbolTable> Symtab);
+  Reader(Writer& Output, std::shared_ptr<filt::SymbolTable> Symtab);
   virtual ~Reader();
 
   // Starts up decompression.
@@ -274,8 +273,8 @@ class Reader {
   virtual void popPeekPos() = 0;
   virtual decode::StreamType getStreamType() = 0;
   virtual bool processedInputCorrectly() = 0;
-  virtual void enterBlock() = 0;
-  virtual void exitBlock() = 0;
+  virtual bool enterBlock() = 0;
+  virtual bool exitBlock() = 0;
   virtual void readFillStart() = 0;
   virtual void readFillMoreInput() = 0;
   // Hard coded reads.
@@ -287,7 +286,6 @@ class Reader {
   virtual uint32_t readVaruint32() = 0;
   virtual uint64_t readVaruint64() = 0;
   virtual decode::IntType readValue(const filt::Node* Format) = 0;
-
 };
 
 }  // end of namespace interp
