@@ -431,10 +431,6 @@ $(SEXP_GENDIR)/defaults-0xd.cpp: $(SEXP_GENDIR)/defaults-0xd.df \
 
 ###### Compiliing binary generation Sources ######
 
-binary-objs: $(BINARY_OBJS) $(BINARY_OBJS_BOOT)
-
-.PHONY: binary-objs
-
 $(BINARY_OBJS): | $(BINARY_OBJDIR)
 
 $(BINARY_OBJDIR):
@@ -465,10 +461,6 @@ $(BINARY_LIB_BOOT): $(BINARY_OBJS_BOOT)
 
 ###### Compiliing top-level Sources ######
 
-utils-objs: $(UTILS_OBJS) $(UTILS_OBJS_BOOT)
-
-.PHONY: utils-objs
-
 $(UTILS_OBJS): | $(UTILS_OBJDIR)
 
 $(UTILS_OBJDIR):
@@ -498,10 +490,6 @@ $(UTILS_LIB_BOOT): $(UTILS_OBJS_BOOT)
 	ranlib $@
 
 ###### Compiling s-expression interpeter sources ######
-
-interp-objs: $(INTERP_OBJS) $(INTERP_OBJS_BOOT)
-
-.PHONY: interp-objs
 
 $(INTERP_OBJS): | $(INTERP_OBJDIR)
 
@@ -585,10 +573,6 @@ $(SEXP_LIB_BOOT): $(SEXP_OBJS_BOOT)
 
 ###### Compiling stream sources ######
 
-strm-objs: $(STRM_OBJS) $(STRM_OBJS_BOOT)
-
-.PHONY: strm-objs
-
 $(STRM_OBJS): | $(STRM_OBJDIR)
 
 $(STRM_OBJDIR):
@@ -619,10 +603,6 @@ $(STRM_LIB_BOOT): $(STRM_OBJS_BOOT)
 	ranlib $@
 
 ###### Compiling Filter Parser #######
-
-parser-objs: $(PARSER_OBJS) $(PARSER_OBJS_BOOT)
-
-.PHONY: parser-objs
 
 $(PARSER_GEN_DIR):
 	mkdir -p $@
