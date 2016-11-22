@@ -55,6 +55,7 @@ BINARY_LIB_BOOT = $(LIBDIR_BOOT)/$(LIBPREFIX)binary.a
 ###### Parse objects and locations ######
 
 PARSER_DIR = $(SRCDIR)/sexp-parser
+PARSER_GEN_DIR = $(BUILDDIR)/src/sexp-parser
 PARSER_OBJDIR = $(OBJDIR)/sexp-parser
 PARSER_OBJDIR_BOOT = $(OBJDIR_BOOT)/sexp-parser
 PARSER_GENSRCS = \
@@ -67,14 +68,20 @@ PARSER_GENSRCS = \
 	stack.hh
 
 PARSER_SRCS = \
-	Driver.cpp \
+	Driver.cpp
+
+PARSER_GENSRCS = \
 	Lexer.cpp \
 	Parser.tab.cpp
 
-PARSER_GENERATED_SRCS=$(patsubst %, $(PARSER_DIR)/%, $(PARSER_GENSRCS))
 
-PARSER_OBJS=$(patsubst %.cpp, $(PARSER_OBJDIR)/%.o, $(PARSER_SRCS))
-PARSER_OBJS_BOOT=$(patsubst %.cpp, $(PARSER_OBJDIR_BOOT)/%.o, $(PARSER_SRCS))
+PARSER_STD_OBJS=$(patsubst %.cpp, $(PARSER_OBJDIR)/%.o, $(PARSER_SRCS))
+PARSER_GEN_OBJS=$(patsubst %.cpp, $(PARSER_OBJDIR)/%.o, $(PARSER_GENSRCS))
+PARSER_OBJS=$(PARSER_STD_OBJS) $(PARSER_GEN_OBJS)
+
+PARSER_STD_OBJS_BOOT=$(patsubst %.cpp, $(PARSER_OBJDIR_BOOT)/%.o, $(PARSER_SRCS))
+PARSER_GEN_OBJS_BOOT=$(patsubst %.cpp, $(PARSER_OBJDIR_BOOT)/%.o, $(PARSER_GENSRCS))
+PARSER_OBJS_BOOT=$(PARSER_STD_OBJS_BOOT) $(PARSER_GEN_OBJS_BOOT)
 
 PARSER_LIB = $(LIBDIR)/$(LIBPREFIX)parser.a
 PARSER_LIB_BOOT = $(LIBDIR_BOOT)/$(LIBPREFIX)parser.a
@@ -335,7 +342,7 @@ CPP_COMPILER_BOOT := CCACHE_CPP2=yes $(CCACHE) $(CXX_BOOT)
 # Note: g++ on Travis doesn't support -std=gnu++11
 CXXFLAGS_BASE := -Wall -Wextra -O2 -g -pedantic -MP -MD \
 	    -Werror -Wno-unused-parameter -fno-omit-frame-pointer -fPIC \
-	    -Isrc
+	    -Isrc -I$(SRC_GENDIR)
 CXXFLAGS := $(TARGET_CXXFLAGS) $(PLATFORM_CXXFLAGS) \
 	    $(CXXFLAGS_BASE)
 
@@ -378,18 +385,15 @@ boot: $(EXECS_BOOT)
 
 ## TODO(karlschimpf): Fix clean to handle sources!
 
-clean: clean-gen clean-wabt
+clean: clean-wabt
 	rm -rf $(BUILDDIR) $(BUILDDIR_BOOT)
 
 .PHONY: clean
 
-clean-all: clean-gen clean-wabt
+clean-all: clean-wabt
 	rm -rf $(BUILDBASEDIR)
 
 .PHONY: clean-all
-
-clean-gen:
-	rm -rf $(PARSER_GENERATED_SRCS)
 
 clean-wabt:
 	cd $(WABT_DIR); make clean
@@ -406,7 +410,7 @@ gen-lexer: $(PARSER_DIR)/Lexer.cpp
 
 .PHONY: gen-lexer
 
-gen-parser: $(PARSER_DIR)/Parser.tab.cpp
+gen-parser: $(PARSER_GEN_DIR)/Parser.tab.cpp
 
 .PHONY: gen-parser
 
@@ -620,11 +624,20 @@ parser-objs: $(PARSER_OBJS) $(PARSER_OBJS_BOOT)
 
 .PHONY: parser-objs
 
-$(PARSER_DIR)/Lexer.cpp: $(PARSER_DIR)/Lexer.lex $(PARSER_DIR)/Parser.tab.cpp
-	cd $(PARSER_DIR); lex -o Lexer.cpp Lexer.lex
+$(PARSER_GEN_DIR):
+	mkdir -p $@
 
-$(PARSER_DIR)/Parser.tab.cpp: $(PARSER_DIR)/Parser.ypp
-	cd $(PARSER_DIR); bison -d -r all Parser.ypp
+$(PARSER_GEN_DIR)/Lexer.lex: $(PARSER_DIR)/Lexer.lex $(PARSER_GEN_DIR)
+	cp $< $@
+
+$(PARSER_GEN_DIR)/Lexer.cpp: $(PARSER_GEN_DIR)/Lexer.lex $(PARSER_GEN_DIR)/Parser.tab.cpp
+	cd $(PARSER_GEN_DIR); lex -o Lexer.cpp Lexer.lex
+
+$(PARSER_GEN_DIR)/Parser.ypp: $(PARSER_DIR)/Parser.ypp $(PARSER_GEN_DIR)
+	cp $< $@
+
+$(PARSER_GEN_DIR)/Parser.tab.cpp: $(PARSER_GEN_DIR)/Parser.ypp
+	cd $(PARSER_GEN_DIR); bison -d -r all Parser.ypp
 
 $(PARSER_OBJS): | $(PARSER_OBJDIR)
 
@@ -638,15 +651,29 @@ $(PARSER_OBJDIR_BOOT):
 
 -include $(foreach dep,$(PARSER_SRCS:.cpp=.d),$(PARSER_OBJDIR)/$(dep))
 
-$(PARSER_OBJS): $(PARSER_OBJDIR)/%.o: $(PARSER_DIR)/%.cpp \
-		$(PARSER_DIR)/Lexer.cpp $(PARSER_DIR)/Parser.tab.cpp
+
+$(PARSER_STD_OBJS): $(PARSER_OBJDIR)/%.o: $(PARSER_DIR)/%.cpp \
+		$(PARSER_GEN_DIR)/Lexer.cpp $(PARSER_GEN_DIR)/Parser.tab.cpp
+	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
+
+-include $(foreach dep,$(PARSER_GENSRCS:.cpp=.d),$(PARSER_OBJDIR)/$(dep))
+
+$(PARSER_GEN_OBJS): $(PARSER_OBJDIR)/%.o: $(PARSER_GEN_DIR)/%.cpp \
+		$(PARSER_GEN_DIR)/Lexer.cpp $(PARSER_GEN_DIR)/Parser.tab.cpp
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
 
 -include $(foreach dep,$(PARSER_SRCS:.cpp=.d),$(PARSER_OBJDIR_BOOT)/$(dep))
 
-$(PARSER_OBJS_BOOT): $(PARSER_OBJDIR_BOOT)/%.o: $(PARSER_DIR)/%.cpp \
-	        $(PARSER_DIR)/Lexer.cpp $(PARSER_DIR)/Parser.tab.cpp
+$(PARSER_STD_OBJS_BOOT): $(PARSER_OBJDIR_BOOT)/%.o: $(PARSER_DIR)/%.cpp \
+	        $(PARSER_GEN_DIR)/Lexer.cpp $(PARSER_GEN_DIR)/Parser.tab.cpp
+	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
+
+
+-include $(foreach dep,$(PARSER_GENSRCS:.cpp=.d),$(PARSER_OBJDIR_BOOT)/$(dep))
+
+$(PARSER_GEN_OBJS_BOOT): $(PARSER_OBJDIR_BOOT)/%.o: $(PARSER_GEN_DIR)/%.cpp \
+	        $(PARSER_GEN_DIR)/Lexer.cpp $(PARSER_GEN_DIR)/Parser.tab.cpp
 	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
 
 $(PARSER_LIB): $(PARSER_OBJS)
@@ -729,7 +756,7 @@ $(TEST_OBJS): | $(TEST_OBJDIR)
 -include $(foreach dep,$(TEST_SRCS:.cpp=.d),$(TEST_OBJDIR)/$(dep))
 
 $(TEST_OBJS): $(TEST_OBJDIR)/%.o: $(TEST_DIR)/%.cpp \
-		$(PARSER_DIR)/Lexer.cpp $(PARSER_DIR)/Parser.tab.cpp
+		$(PARSER_GEN_DIR)/Lexer.cpp $(PARSER_GEN_DIR)/Parser.tab.cpp
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
 $(TEST_EXECDIR):

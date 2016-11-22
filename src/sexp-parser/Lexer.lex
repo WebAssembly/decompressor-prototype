@@ -19,8 +19,8 @@
 
 #include <string>
 
-#include "Parser.tab.hpp"
-#include "Driver.h"
+#include "sexp-parser/Parser.tab.hpp"
+#include "sexp-parser/Driver.h"
 
 using namespace wasm::decode;
 using namespace wasm::filt;

@@ -67,7 +67,7 @@ struct IntValue {
 %code
 {
 // Note: Must follow definitions above, so that location_type is declared.
-# include "Driver.h"
+# include "sexp-parser/Driver.h"
 
 }
 
