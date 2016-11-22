@@ -42,8 +42,8 @@ StreamReader::StreamReader(std::shared_ptr<decode::Queue> StrmInput,
 StreamReader::~StreamReader() {
 }
 
-void StreamReader::startUsing(const ReadCursor& NewCursor) {
-  ReadPos = NewCursor;
+void StreamReader::startUsing(const decode::ReadCursor& StartPos) {
+  ReadPos = StartPos;
   start();
 }
 
@@ -99,14 +99,16 @@ bool StreamReader::processedInputCorrectly() {
   return ReadPos.atEof() && ReadPos.isQueueGood();
 }
 
-void StreamReader::enterBlock() {
+bool StreamReader::enterBlock() {
   const uint32_t OldSize = Input->readBlockSize(ReadPos);
   TRACE(uint32_t, "block size", OldSize);
   Input->pushEobAddress(ReadPos, OldSize);
+  return true;
 }
 
-void StreamReader::exitBlock() {
+bool StreamReader::exitBlock() {
   ReadPos.popEobAddress();
+  return true;
 }
 
 void StreamReader::readFillStart() {

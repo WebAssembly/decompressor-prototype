@@ -126,8 +126,7 @@ const char* Reader::getName(SectionCode Code) {
   return SectionCodeName[Index];
 }
 
-Reader::Reader(Writer& StrmOutput,
-               std::shared_ptr<filt::SymbolTable> Symtab)
+Reader::Reader(Writer& StrmOutput, std::shared_ptr<filt::SymbolTable> Symtab)
     : Output(StrmOutput),
       Symtab(Symtab),
       LastReadValue(0),
@@ -348,15 +347,15 @@ void Reader::resume() {
 #if LOG_EVAL_LOOKAHEAD
         if (Frame.CallState == State::Enter) {
           TRACE_BLOCK({
-              decode::ReadCursor Lookahead(getPos());
-              fprintf(getTrace().indent(), "Lookahead:");
-              for (int i = 0; i < 10; ++i) {
-                if (!Lookahead.atByteEob())
-                  fprintf(getTrace().getFile(), " %x", Lookahead.readByte());
-              }
-              fprintf(getTrace().getFile(), " ");
-              fprintf(getPos().describe(getTrace().getFile(), true), "\n");
-            });
+            decode::ReadCursor Lookahead(getPos());
+            fprintf(getTrace().indent(), "Lookahead:");
+            for (int i = 0; i < 10; ++i) {
+              if (!Lookahead.atByteEob())
+                fprintf(getTrace().getFile(), " %x", Lookahead.readByte());
+            }
+            fprintf(getTrace().getFile(), " ");
+            fprintf(getPos().describe(getTrace().getFile(), true), "\n");
+          });
         }
 #endif
         switch (Frame.Nd->getType()) {
@@ -922,13 +921,13 @@ void Reader::resume() {
                 int NumCallArgs = Frame.Nd->getNumKids() - 1;
                 if (NumParams->getValue() != IntType(NumCallArgs)) {
                   TRACE_BLOCK({
-                      fprintf(getTrace().getFile(),
-                              "Definition %s expects %" PRIuMAX
-                              "parameters, found: %" PRIuMAX "\n",
-                              Sym->getName().c_str(),
-                              uintmax_t(NumParams->getValue()),
-                              uintmax_t(NumCallArgs));
-                    });
+                    fprintf(getTrace().getFile(),
+                            "Definition %s expects %" PRIuMAX
+                            "parameters, found: %" PRIuMAX "\n",
+                            Sym->getName().c_str(),
+                            uintmax_t(NumParams->getValue()),
+                            uintmax_t(NumCallArgs));
+                  });
                   return fail("Unable to evaluate call");
                 }
                 size_t CallingEvalIndex = CallingEvalStack.size();
@@ -956,11 +955,11 @@ void Reader::resume() {
                 // NOTE: This assumes that blocks (outside of sections) are only
                 // used to define functions.
                 TRACE_BLOCK({
-                    fprintf(getTrace().indent(), " Function %" PRIuMAX "\n",
-                            uintmax_t(LogBlockCount));
-                    if (LOG_NUMBERED_BLOCK &&
-                        LogBlockCount == LOG_FUNCTION_NUMBER)
-                      getTrace().setTraceProgress(true);
+                  fprintf(getTrace().indent(), " Function %" PRIuMAX "\n",
+                          uintmax_t(LogBlockCount));
+                  if (LOG_NUMBERED_BLOCK &&
+                      LogBlockCount == LOG_FUNCTION_NUMBER)
+                    getTrace().setTraceProgress(true);
                 });
 #endif
                 Frame.CallState = State::Exit;
@@ -972,9 +971,9 @@ void Reader::resume() {
 #if LOG_FUNCTIONS || LOG_NUMBERED_BLOCKS
 #if LOG_NUMBERED_BLOCK
                 TRACE_BLOCK({
-                    if (LogBlockCount == LOG_FUNCTION_NUMBER)
-                      getTrace().setTraceProgress(0);
-                  });
+                  if (LogBlockCount == LOG_FUNCTION_NUMBER)
+                    getTrace().setTraceProgress(0);
+                });
 #endif
                 ++LogBlockCount;
 #endif
@@ -996,7 +995,8 @@ void Reader::resume() {
         switch (Frame.CallState) {
           case State::Enter: {
             traceEnterFrame();
-            enterBlock();
+            if (!enterBlock())
+              break;
             if (!Output.writeAction(Symtab->getBlockEnterCallback()))
               break;
             Frame.CallState = State::Exit;
@@ -1006,7 +1006,8 @@ void Reader::resume() {
           case State::Exit:
             if (!Output.writeAction(Symtab->getBlockExitCallback()))
               break;
-            exitBlock();
+            if (!exitBlock())
+              break;
             popAndReturn();
             traceExitFrame();
             break;
