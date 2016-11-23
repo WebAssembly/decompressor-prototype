@@ -68,9 +68,7 @@ Decompressor::Decompressor()
       Symtab(std::make_shared<SymbolTable>()),
       Input(std::make_shared<Queue>()),
       MyState(State::NeedsMoreInput) {
-  fprintf(stderr, "Builing inputpos...\n");
   InputPos = std::make_shared<WriteCursor2ReadQueue>(Input);
-  fprintf(stderr, "Builing outputpos...\n");
   OutputPos = std::make_shared<ReadCursor>(OutputPipe.getOutput());
 }
 

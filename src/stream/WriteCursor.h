@@ -25,7 +25,7 @@ namespace wasm {
 
 namespace decode {
 
-class WriteCursor FINAL : public WriteCursorBase {
+class WriteCursor : public WriteCursorBase {
  public:
   // Note: The nullary write cursor should not be used until it has been
   // assigned a value.

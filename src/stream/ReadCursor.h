@@ -26,7 +26,7 @@ namespace wasm {
 
 namespace decode {
 
-class ReadCursor FINAL : public Cursor {
+class ReadCursor : public Cursor {
  public:
   // Note: The nullary read cursor should not be used until it has been assigned
   // a valid value.
