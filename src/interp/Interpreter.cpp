@@ -1,4 +1,4 @@
-// -*- C++ -*-
+// -*- C++ -*- */
 //
 // Copyright 2016 WebAssembly Community Group participants
 //
@@ -14,30 +14,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "stream/WriteCursor.h"
+// Defines the interpretater for filter s-expressions.
+
+#include "interp/Interpreter.h"
 
 namespace wasm {
 
-using namespace utils;
+using namespace filt;
 
-namespace decode {
+namespace interp {
 
-WriteCursor::~WriteCursor() {
+void Interpreter::setTrace(std::shared_ptr<TraceClassSexp> NewTrace) {
+  Trace = NewTrace;
+  if (Trace) {
+    Input.setTrace(Trace);
+    Output.setTrace(Trace);
+  }
 }
 
-void WriteCursor::writeFillWriteByte(uint8_t Byte) {
-  if (isIndexAtEndOfPage())
-    writeFillBuffer();
-  updateGuaranteedBeforeEob();
-  writeOneByte(Byte);
+TraceClassSexp& Interpreter::getTrace() {
+  if (!Trace)
+    setTrace(std::make_shared<TraceClassSexp>("InterpSexp"));
+  return *Trace;
 }
 
-TraceClass::ContextPtr WriteCursorWithTraceContext::getTraceContext() {
-  if (!TraceContext)
-    TraceContext = std::make_shared<Cursor::TraceContext>(*this);
-  return TraceContext;
-}
+}  // end of namespace interp.
 
-}  // end of namespace decode
-
-}  // end of namespace wasm
+}  // end of namespace wasm.

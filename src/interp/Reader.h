@@ -67,8 +67,10 @@ class Reader {
   // that the input is a stream that can defined cursors.
   virtual decode::ReadCursor& getPos() = 0;
 
-  void setTrace(filt::TraceClassSexp& Trace) { TracePtr = &Trace; }
-  filt::TraceClassSexp& getTrace() { return *TracePtr; }
+  // Returns non-null context handler if applicable.
+  virtual utils::TraceClass::ContextPtr getTraceContext();
+  void setTrace(std::shared_ptr<filt::TraceClassSexp> Trace);
+  filt::TraceClassSexp& getTrace();
 
   enum class SectionCode : uint32_t {
 #define X(code, value) code = value,
@@ -180,8 +182,7 @@ class Reader {
   // Holds the method to call (i.e. dispatch) if code expects a method to be
   // provided by the caller.
   Method DispatchedMethod;
-  filt::TraceClassSexp DefaultTrace;
-  filt::TraceClassSexp* TracePtr;
+  std::shared_ptr<filt::TraceClassSexp> Trace;
 
   // The stack of called methods.
   CallFrame Frame;

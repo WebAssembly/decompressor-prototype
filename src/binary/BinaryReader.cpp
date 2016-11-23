@@ -548,12 +548,26 @@ BinaryReader::BinaryReader(std::shared_ptr<decode::Queue> Input,
       Input(Input),
       Symtab(Symtab),
       SectionSymtab(Symtab),
-      Trace(&ReadPos, "BinaryReader"),
       CurFile(nullptr),
       CurBlockApplyFcn(Method::NO_SUCH_METHOD),
       FrameStack(Frame),
       Counter(0),
       CounterStack(Counter) {
+}
+
+void BinaryReader::setTrace(std::shared_ptr<TraceClassSexp> NewTrace) {
+  Trace = NewTrace;
+  if (!Trace)
+    return;
+  Trace->addContext(ReadPos.getTraceContext());
+}
+
+TraceClassSexp& BinaryReader::getTrace() const {
+  if (!Trace) {
+    const_cast<BinaryReader*>(this)
+        ->setTrace(std::make_shared<TraceClassSexp>("BinaryReader"));
+  }
+  return *Trace;
 }
 
 template <class T>

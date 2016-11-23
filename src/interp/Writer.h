@@ -32,7 +32,7 @@ class Writer {
   Writer& operator=(const Writer&) = delete;
 
  public:
-  explicit Writer() : MinimizeBlockSize(false), TracePtr(&DefaultTrace) {}
+  explicit Writer() : MinimizeBlockSize(false) {}
   virtual ~Writer();
 
   virtual void reset();
@@ -55,14 +55,13 @@ class Writer {
   void setMinimizeBlockSize(bool NewValue) { MinimizeBlockSize = NewValue; }
   virtual void describeState(FILE* File);
 
-  filt::TraceClassSexp& getTrace() { return *TracePtr; }
-
-  void setTrace(filt::TraceClassSexp& Trace) { TracePtr = &Trace; }
+  virtual utils::TraceClass::ContextPtr getTraceContext();
+  filt::TraceClassSexp& getTrace();
+  void setTrace(std::shared_ptr<filt::TraceClassSexp> Trace);
 
  protected:
   bool MinimizeBlockSize;
-  filt::TraceClassSexp DefaultTrace;
-  filt::TraceClassSexp* TracePtr;
+  std::shared_ptr<filt::TraceClassSexp> Trace;
 };
 
 }  // end of namespace interp

@@ -20,12 +20,13 @@
 #define DECOMPRESSOR_SRC_STREAM_READCURSOR_H
 
 #include "stream/Cursor.h"
+#include "utils/Trace.h"
 
 namespace wasm {
 
 namespace decode {
 
-class ReadCursor FINAL : public Cursor {
+class ReadCursor : public Cursor {
  public:
   // Note: The nullary read cursor should not be used until it has been assigned
   // a valid value.
@@ -100,6 +101,28 @@ class ReadCursor FINAL : public Cursor {
   uint8_t readOneByte();
 
   uint8_t readByteAfterReadFill();
+};
+
+class ReadCursorWithTraceContext : public ReadCursor {
+ public:
+  ReadCursorWithTraceContext() : ReadCursor() {}
+
+  ReadCursorWithTraceContext(std::shared_ptr<Queue> Que) : ReadCursor(Que) {}
+
+  ReadCursorWithTraceContext(StreamType Type, std::shared_ptr<Queue> Que)
+      : ReadCursor(Type, Que) {}
+
+  explicit ReadCursorWithTraceContext(const Cursor& C) : ReadCursor(C) {}
+
+  ReadCursorWithTraceContext& operator=(const ReadCursor& C) {
+    ReadCursor::operator=(C);
+    return *this;
+  }
+
+  utils::TraceClass::ContextPtr getTraceContext();
+
+ private:
+  utils::TraceClass::ContextPtr TraceContext;
 };
 
 }  // end of namespace decode

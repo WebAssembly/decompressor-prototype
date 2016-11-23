@@ -18,6 +18,8 @@
 
 namespace wasm {
 
+using namespace utils;
+
 namespace decode {
 
 uint8_t ReadCursor::readByteAfterReadFill() {
@@ -65,6 +67,12 @@ uint8_t ReadCursor::readOneByte() {
   uint8_t Byte = *getBufferPtr();
   ++CurAddress;
   return Byte;
+}
+
+TraceClass::ContextPtr ReadCursorWithTraceContext::getTraceContext() {
+  if (!TraceContext)
+    TraceContext = std::make_shared<Cursor::TraceContext>(*this);
+  return TraceContext;
 }
 
 }  // end of namespace decode

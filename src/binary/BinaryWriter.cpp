@@ -37,8 +37,20 @@ BinaryWriter::BinaryWriter(std::shared_ptr<decode::Queue> Output,
     : WritePos(decode::StreamType::Byte, Output),
       Writer(std::make_shared<ByteWriteStream>()),
       SectionSymtab(Symtab),
-      MinimizeBlockSize(false),
-      Trace(WritePos, "BinaryWriter") {
+      MinimizeBlockSize(false) {
+}
+
+void BinaryWriter::setTrace(std::shared_ptr<TraceClassSexp> NewTrace) {
+  Trace = NewTrace;
+  if (!Trace)
+    return;
+  Trace->addContext(WritePos.getTraceContext());
+}
+
+TraceClassSexp& BinaryWriter::getTrace() {
+  if (!Trace)
+    setTrace(std::make_shared<TraceClassSexp>("BinaryWriter"));
+  return *Trace;
 }
 
 void BinaryWriter::writePreamble() {

@@ -230,17 +230,26 @@ IntCompressor::IntCompressor(std::shared_ptr<decode::Queue> InputStream,
                              std::shared_ptr<filt::SymbolTable> Symtab)
     : Symtab(Symtab), CountCutoff(0), WeightCutoff(0), LengthLimit(1) {
   Counter = new CounterWriter(UsageMap);
-  Trace = new TraceClassSexpReader(nullptr, "IntCompress");
   Input = new StreamReader(InputStream, *Counter, Symtab);
-  Input->setTrace(*Trace);
   StartPos = Input->getPos();
   (void)OutputStream;
+}
+
+void IntCompressor::setTrace(std::shared_ptr<TraceClassSexp> NewTrace) {
+  Trace = NewTrace;
+  if (Trace)
+    Input->setTrace(Trace);
+}
+
+TraceClassSexp& IntCompressor::getTrace() {
+  if (!Trace)
+    setTrace(std::make_shared<TraceClassSexp>("IntCompress"));
+  return *Trace;
 }
 
 IntCompressor::~IntCompressor() {
   delete Input;
   delete Counter;
-  delete Trace;
   IntCountNode::clear(UsageMap);
 }
 

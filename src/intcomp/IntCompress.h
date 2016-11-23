@@ -21,8 +21,8 @@
 
 #include "intcomp/IntCountNode.h"
 #include "interp/StreamReader.h"
-#include "interp/TraceSexpReader.h"
 #include "interp/StreamWriter.h"
+#include "sexp/TraceSexp.h"
 
 namespace wasm {
 
@@ -64,17 +64,16 @@ class IntCompressor FINAL {
   void compress();
 
   void setTraceProgress(bool NewValue) {
-    if (Trace)
-      Trace->setTraceProgress(NewValue);
+    getTrace().setTraceProgress(NewValue);
   }
+  void setTrace(std::shared_ptr<filt::TraceClassSexp> Trace);
+  filt::TraceClassSexp& getTrace();
 
   void setCountCutoff(uint64_t NewCutoff) { CountCutoff = NewCutoff; }
   void setWeightCutoff(uint64_t NewCutoff) { WeightCutoff = NewCutoff; }
   void setLengthLimit(size_t NewLimit) { LengthLimit = NewLimit; }
 
   void setMinimizeBlockSize(bool NewValue) { (void)NewValue; }
-
-  interp::TraceClassSexpReader& getTrace() { return *Trace; }
 
   void describe(FILE* Out, CollectionFlags = Flag(CollectionFlag::All));
 
@@ -84,7 +83,7 @@ class IntCompressor FINAL {
   CounterWriter* Counter;
   decode::ReadCursor StartPos;
   IntCountUsageMap UsageMap;
-  interp::TraceClassSexpReader* Trace;
+  std::shared_ptr<filt::TraceClassSexp> Trace;
   uint64_t CountCutoff;
   uint64_t WeightCutoff;
   size_t LengthLimit;

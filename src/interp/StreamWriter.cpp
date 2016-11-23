@@ -24,6 +24,7 @@ namespace wasm {
 
 using namespace decode;
 using namespace filt;
+using namespace utils;
 
 namespace interp {
 
@@ -43,6 +44,10 @@ void StreamWriter::reset() {
 
 WriteCursor& StreamWriter::getPos() {
   return Pos;
+}
+
+TraceClass::ContextPtr StreamWriter::getTraceContext() {
+  return Pos.getTraceContext();
 }
 
 decode::StreamType StreamWriter::getStreamType() const {

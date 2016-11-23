@@ -54,6 +54,7 @@ namespace wasm {
 
 using namespace decode;
 using namespace filt;
+using namespace utils;
 
 namespace interp {
 
@@ -95,6 +96,23 @@ struct {
 
 }  // end of anonymous namespace
 
+TraceClass::ContextPtr Reader::getTraceContext() {
+  TraceClass::ContextPtr Ptr;
+  return Ptr;
+}
+
+void Reader::setTrace(std::shared_ptr<TraceClassSexp> NewTrace) {
+  Trace = NewTrace;
+  if (Trace)
+    Trace->addContext(getTraceContext());
+}
+
+TraceClassSexp& Reader::getTrace() {
+  if (!Trace)
+    setTrace(std::make_shared<TraceClassSexp>("StreamReader"));
+  return *Trace;
+}
+
 const char* Reader::getName(Method M) {
   size_t Index = size_t(M);
   if (Index >= size(MethodName))
@@ -131,7 +149,6 @@ Reader::Reader(Writer& StrmOutput, std::shared_ptr<filt::SymbolTable> Symtab)
       Symtab(Symtab),
       LastReadValue(0),
       DispatchedMethod(Method::NO_SUCH_METHOD),
-      TracePtr(&DefaultTrace),
       FrameStack(Frame),
       CallingEvalStack(CallingEval),
       LoopCounter(0),

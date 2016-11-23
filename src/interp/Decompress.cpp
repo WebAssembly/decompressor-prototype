@@ -52,7 +52,7 @@ struct Decompressor {
   int32_t getOutputSize() {
     return OutputPipe.getOutput()->fillSize() - OutputPos->getCurByteAddress();
   }
-  TraceClassSexpReaderWriter& getTrace() { return Interp->getTrace(); }
+  TraceClassSexp& getTrace() { return Interp->getTrace(); }
   void setTraceProgress(bool NewValue) { Interp->setTraceProgress(NewValue); }
 
  private:

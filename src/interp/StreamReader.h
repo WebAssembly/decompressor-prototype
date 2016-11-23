@@ -21,7 +21,6 @@
 
 #include "interp/Reader.h"
 #include "interp/ReadStream.h"
-#include "interp/TraceSexpReader.h"
 #include "stream/ReadCursor.h"
 
 namespace wasm {
@@ -39,12 +38,12 @@ class StreamReader : public Reader {
   ~StreamReader() OVERRIDE;
   void startUsing(const decode::ReadCursor& ReadPos);
   decode::ReadCursor& getPos() OVERRIDE;
+  utils::TraceClass::ContextPtr getTraceContext() OVERRIDE;
 
  private:
 
-  decode::ReadCursor ReadPos;
+  decode::ReadCursorWithTraceContext ReadPos;
   std::shared_ptr<ReadStream> Input;
-  TraceClassSexpReader Trace;
   // The input position needed to fill to process now.
   size_t FillPos;
   // The input cursor position if back filling.
