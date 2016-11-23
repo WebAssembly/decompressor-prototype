@@ -48,6 +48,33 @@ class WriteCursor FINAL : public WriteCursorBase {
   void writeFillWriteByte(uint8_t Byte) OVERRIDE;
 };
 
+class WriteCursorWithTraceContext : public WriteCursor {
+ public:
+  // Note: The nullary write cursor should not be used until it has been
+  // assigned a value.
+  WriteCursorWithTraceContext() : WriteCursor() {}
+
+  WriteCursorWithTraceContext(std::shared_ptr<Queue> Que) : WriteCursor(Que) {}
+
+  WriteCursorWithTraceContext(StreamType Type, std::shared_ptr<Queue> Que)
+      : WriteCursor(Type, Que) {}
+
+  explicit WriteCursorWithTraceContext(const WriteCursor& C)
+      : WriteCursor(C) {}
+
+  WriteCursorWithTraceContext(const Cursor& C, size_t StartAddress)
+      : WriteCursor(C, StartAddress) {}
+
+  WriteCursorWithTraceContext& operator=(WriteCursor& C) {
+    WriteCursor::operator=(C);
+    return *this;
+  }
+
+  utils::TraceClass::ContextPtr getTraceContext();
+
+ private:
+  utils::TraceClass::ContextPtr TraceContext;
+};
 }  // end of namespace decode
 
 }  // end of namespace wasm

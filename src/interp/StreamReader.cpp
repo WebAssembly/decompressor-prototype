@@ -22,6 +22,7 @@ namespace wasm {
 
 using namespace decode;
 using namespace filt;
+using namespace utils;
 
 namespace interp {
 
@@ -31,12 +32,8 @@ StreamReader::StreamReader(std::shared_ptr<decode::Queue> StrmInput,
     : Reader(Output, Symtab),
       ReadPos(StreamType::Byte, StrmInput),
       Input(std::make_shared<ByteReadStream>()),
-      Trace(&ReadPos),
       FillPos(0),
-      PeekPosStack(PeekPos)
-{
-  setTrace(Trace);
-  getTrace().setReadPos(&ReadPos);
+      PeekPosStack(PeekPos) {
 }
 
 StreamReader::~StreamReader() {
@@ -45,6 +42,10 @@ StreamReader::~StreamReader() {
 void StreamReader::startUsing(const decode::ReadCursor& StartPos) {
   ReadPos = StartPos;
   start();
+}
+
+TraceClass::ContextPtr StreamReader::getTraceContext() {
+  return ReadPos.getTraceContext();
 }
 
 namespace {

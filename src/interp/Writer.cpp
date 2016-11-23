@@ -22,10 +22,28 @@ namespace wasm {
 
 using namespace decode;
 using namespace filt;
+using namespace utils;
 
 namespace interp {
 
 Writer::~Writer() {
+}
+
+TraceClass::ContextPtr Writer::getTraceContext() {
+  TraceClass::ContextPtr Ptr;
+  return Ptr;
+}
+
+TraceClassSexp& Writer::getTrace() {
+  if (!Trace)
+    setTrace(std::make_shared<TraceClassSexp>("Writer"));
+  return *Trace;
+}
+
+void Writer::setTrace(std::shared_ptr<filt::TraceClassSexp> NewTrace) {
+  Trace = NewTrace;
+  if (Trace)
+    Trace->addContext(getTraceContext());
 }
 
 void Writer::reset() {

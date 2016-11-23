@@ -25,6 +25,12 @@ FILE* WorkingByte::describe(FILE* File) {
   return File;
 }
 
+Cursor::TraceContext::~TraceContext() {}
+
+void Cursor::TraceContext::describe(FILE* File) {
+  Pos.describe(File);
+}
+
 void Cursor::close() {
   CurPage = Que->getErrorPage();
   CurByte.reset();

@@ -91,11 +91,12 @@ namespace wasm {
 
 namespace utils {
 
-class TraceClass : std::enable_shared_from_this<TraceClass> {
+class TraceClass : public std::enable_shared_from_this<TraceClass> {
   TraceClass(const TraceClass&) = delete;
   TraceClass& operator=(const TraceClass&) = delete;
 
  public:
+  // Models called methods in traces.
   class Method {
     Method() = delete;
     Method(const Method&) = delete;
@@ -116,6 +117,17 @@ class TraceClass : std::enable_shared_from_this<TraceClass> {
    private:
     TraceClass& Cls;
   };
+  // Models calling contexts to be associated with each trace line.
+  class Context : public std::enable_shared_from_this<Context> {
+    Context(const Context&) = delete;
+    Context& operator=(const Context&) = delete;
+   public:
+    virtual ~Context() {}
+    virtual void describe(FILE* File) = 0;
+   protected:
+    Context() {}
+  };
+  typedef std::shared_ptr<Context> ContextPtr;
 
   TraceClass();
   explicit TraceClass(const char* Label);
@@ -125,6 +137,8 @@ class TraceClass : std::enable_shared_from_this<TraceClass> {
   void enter(const char* Name);
   void exit(const char* Name = nullptr);
   virtual void traceContext() const;
+  void addContext(ContextPtr Ctx);
+
   // Prints trace prefix only.
   FILE* indent();
   void trace_message(const char* Message) { traceMessageInternal(Message); }
@@ -227,6 +241,7 @@ class TraceClass : std::enable_shared_from_this<TraceClass> {
   int IndentLevel;
   bool TraceProgress;
   std::vector<const char*> CallStack;
+  std::vector<ContextPtr> ContextList;
   void traceMessageInternal(const std::string& Message);
   void traceBoolInternal(const char* Name, bool Value);
   void traceCharInternal(const char* Name, char Ch);

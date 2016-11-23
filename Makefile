@@ -162,6 +162,7 @@ INTERP_SRCS = \
 	ByteReadStream.cpp \
 	ByteWriteStream.cpp \
 	Decompress.cpp \
+	Interpreter.cpp \
 	IntReader.cpp \
 	IntStream.cpp \
 	IntWriter.cpp \

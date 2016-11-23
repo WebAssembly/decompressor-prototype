@@ -37,6 +37,7 @@ class StreamWriter : public Writer {
   StreamWriter(std::shared_ptr<decode::Queue> Output);
   ~StreamWriter() OVERRIDE;
   decode::WriteCursor& getPos();
+  utils::TraceClass::ContextPtr getTraceContext() OVERRIDE;
 
   void reset() OVERRIDE;
   decode::StreamType getStreamType() const OVERRIDE;
@@ -54,7 +55,7 @@ class StreamWriter : public Writer {
   void describeState(FILE* File) OVERRIDE;
 
  private:
-  decode::WriteCursor Pos;
+  decode::WriteCursorWithTraceContext Pos;
   std::shared_ptr<WriteStream> Stream;
   // The stack of block patch locations.
   decode::WriteCursor BlockStart;

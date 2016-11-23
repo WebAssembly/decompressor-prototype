@@ -227,6 +227,7 @@ int main(int Argc, char* Argv[]) {
     fprintf(stderr, "Unable to load compiled in default rules!\n");
     return exit_status(EXIT_FAILURE);
   }
+  fprintf(stderr, "Reading default files...\n");
   for (int i : DefaultIndices) {
     if (Verbose)
       fprintf(stderr, "Loading default: %s\n", Argv[i]);
@@ -248,11 +249,13 @@ int main(int Argc, char* Argv[]) {
     }
   }
   for (size_t i = 0; i < NumTries; ++i) {
+    fprintf(stderr, "Building decompressor...\n");
     Interpreter Decompressor(std::make_shared<ReadBackedQueue>(getInput()),
                              std::make_shared<WriteBackedQueue>(getOutput()),
                              Symtab);
     Decompressor.setTraceProgress(Verbose >= 1);
     Decompressor.setMinimizeBlockSize(MinimizeBlockSize);
+    fprintf(stderr, "Decompressing...\n");
     Decompressor.decompress();
     if (Decompressor.errorsFound()) {
       fatal("Failed to decompress due to errors!");

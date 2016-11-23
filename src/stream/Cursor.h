@@ -20,6 +20,7 @@
 #define DECOMPRESSOR_SRC_STREAM_CURSOR_H
 
 #include "stream/Queue.h"
+#include "utils/Trace.h"
 
 namespace wasm {
 
@@ -81,6 +82,17 @@ class Cursor : public PageCursor {
   Cursor& operator=(const Cursor&) = delete;
 
  public:
+  class TraceContext : public utils::TraceClass::Context {
+    TraceContext() = delete;
+    TraceContext(const TraceContext&) = delete;
+    TraceContext& operator=(const TraceContext&) = delete;
+   public:
+    TraceContext(Cursor& Pos) : Pos(Pos) {}
+    ~TraceContext();
+    void describe(FILE* File) OVERRIDE;
+   private:
+    Cursor& Pos;
+  };
   ~Cursor() {}
 
   void swap(Cursor& C) {

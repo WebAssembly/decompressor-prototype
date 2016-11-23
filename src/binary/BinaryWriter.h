@@ -21,10 +21,10 @@
 #define DECOMPRESSOR_SRC_BINARY_BINGEN_H
 
 #include "binary/SectionSymbolTable.h"
+#include "interp/WriteStream.h"
+#include "sexp/TraceSexp.h"
 #include "stream/Queue.h"
 #include "stream/WriteCursor.h"
-#include "interp/TraceSexpWriter.h"
-#include "interp/WriteStream.h"
 #include "utils/Defs.h"
 
 #include <functional>
@@ -53,18 +53,20 @@ class BinaryWriter {
   void writeFile(const FileNode* File);
   void writeSection(const SectionNode* Section);
 
-  void setTraceProgress(bool NewValue) { Trace.setTraceProgress(NewValue); }
-
   void setMinimizeBlockSize(bool NewValue) { MinimizeBlockSize = NewValue; }
 
-  interp::TraceClassSexpWriter& getTrace() { return Trace; }
+  void setTraceProgress(bool NewValue) {
+    getTrace().setTraceProgress(NewValue);
+  }
+  void setTrace(std::shared_ptr<filt::TraceClassSexp> Trace);
+  TraceClassSexp& getTrace();
 
  private:
-  decode::WriteCursor WritePos;
+  decode::WriteCursorWithTraceContext WritePos;
   std::shared_ptr<interp::WriteStream> Writer;
   SectionSymbolTable SectionSymtab;
   bool MinimizeBlockSize;
-  interp::TraceClassSexpWriter Trace;
+  std::shared_ptr<TraceClassSexp> Trace;
 
   void writeNode(const Node* Nd);
   void writeBlock(std::function<void()> ApplyFn);

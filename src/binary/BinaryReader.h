@@ -23,8 +23,8 @@
 #include "binary/SectionSymbolTable.h"
 #include "interp/ByteReadStream.h"
 #include "interp/ReadStream.h"
-#include "interp/TraceSexpReader.h"
 #include "sexp/Ast.h"
+#include "sexp/TraceSexp.h"
 #include "stream/Queue.h"
 #include "stream/ReadCursor.h"
 #include "stream/WriteCursor.h"
@@ -106,9 +106,13 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
 
   SectionNode* readSection();
 
-  TraceClassSexpReader& getTrace() { return Trace; }
+  void setTraceProgress(bool NewValue) {
+    getTrace().setTraceProgress(NewValue);
+  }
+  void setTrace(std::shared_ptr<TraceClassSexp> Trace);
+  TraceClassSexp& getTrace() const;
 
-  TextWriter* getTextWriter() const { return Trace.getTextWriter(); }
+  TextWriter* getTextWriter() const { return getTrace().getTextWriter(); }
 
  private:
   struct CallFrame {
@@ -131,7 +135,7 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
   };
 
   std::shared_ptr<interp::ByteReadStream> Reader;
-  decode::ReadCursor ReadPos;
+  decode::ReadCursorWithTraceContext ReadPos;
   decode::WriteCursor FillPos;
   std::shared_ptr<decode::Queue> Input;
   std::shared_ptr<SymbolTable> Symtab;
@@ -141,7 +145,7 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
   // The version of the input.
   uint32_t CasmVersion;
   uint32_t WasmVersion;
-  mutable TraceClassSexpReader Trace;
+  mutable std::shared_ptr<TraceClassSexp> Trace;
   std::string Name;
   FileNode* CurFile;
   SectionNode* CurSection;

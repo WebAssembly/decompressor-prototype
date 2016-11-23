@@ -52,7 +52,7 @@ struct Decompressor {
   int32_t getOutputSize() {
     return OutputPipe.getOutput()->fillSize() - OutputPos->getCurByteAddress();
   }
-  TraceClassSexpReaderWriter& getTrace() { return Interp->getTrace(); }
+  TraceClassSexp& getTrace() { return Interp->getTrace(); }
   void setTraceProgress(bool NewValue) { Interp->setTraceProgress(NewValue); }
 
  private:
@@ -68,7 +68,9 @@ Decompressor::Decompressor()
       Symtab(std::make_shared<SymbolTable>()),
       Input(std::make_shared<Queue>()),
       MyState(State::NeedsMoreInput) {
+  fprintf(stderr, "Builing inputpos...\n");
   InputPos = std::make_shared<WriteCursor2ReadQueue>(Input);
+  fprintf(stderr, "Builing outputpos...\n");
   OutputPos = std::make_shared<ReadCursor>(OutputPipe.getOutput());
 }
 

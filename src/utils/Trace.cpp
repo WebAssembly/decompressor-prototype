@@ -53,7 +53,24 @@ TraceClass::TraceClass(const char* Lbl, FILE* Fl) {
 TraceClass::~TraceClass() {
 }
 
+void TraceClass::addContext(ContextPtr NewCtx) {
+  if (!NewCtx)
+    return;
+  for (auto Ctx : ContextList)
+    if (NewCtx.get() == Ctx.get())
+      return;
+  ContextList.push_back(NewCtx);
+}
+
 void TraceClass::traceContext() const {
+  if (ContextList.empty())
+    return;
+  for (size_t i = 0; i < ContextList.size(); ++i) {
+    if (i > 0 && (i + 1) < ContextList.size())
+      fputc('/', File);
+    ContextList[i]->describe(File);
+  }
+  fputc(' ', File);
 }
 
 void TraceClass::enter(const char* Name) {

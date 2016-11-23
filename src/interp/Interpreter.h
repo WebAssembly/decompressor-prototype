@@ -20,8 +20,8 @@
 #define DECOMPRESSOR_SRC_INTERP_INTERPRETER_H
 
 #include "interp/StreamReader.h"
-#include "interp/TraceSexpReaderWriter.h"
 #include "interp/StreamWriter.h"
+#include "sexp/TraceSexp.h"
 
 namespace wasm {
 
@@ -44,13 +44,9 @@ class Interpreter FINAL {
   Interpreter(std::shared_ptr<decode::Queue> InputStream,
               std::shared_ptr<decode::Queue> OutputStream,
               std::shared_ptr<filt::SymbolTable> Symtab)
-      : Symtab(Symtab),
-        Input(InputStream, Output, Symtab),
-        Output(OutputStream),
-        Trace(&Input.getPos(), &Output.getPos(), "InterpSexp") {
-    Input.setTrace(Trace);
-    Output.setTrace(Trace);
-  }
+  : Symtab(Symtab),
+    Input(InputStream, Output, Symtab),
+    Output(OutputStream) {}
 
   ~Interpreter() {}
 
@@ -68,19 +64,20 @@ class Interpreter FINAL {
     Input.readBackFilled();
   }
 
-  void setTraceProgress(bool NewValue) { Trace.setTraceProgress(NewValue); }
+  void setTraceProgress(bool NewValue) { getTrace().setTraceProgress(NewValue); }
 
   void setMinimizeBlockSize(bool NewValue) {
     Output.setMinimizeBlockSize(NewValue);
   }
 
-  TraceClassSexpReaderWriter& getTrace() { return Trace; }
+  void setTrace(std::shared_ptr<filt::TraceClassSexp> Trace);
+  filt::TraceClassSexp& getTrace();
 
  private:
   std::shared_ptr<filt::SymbolTable> Symtab;
   StreamReader Input;
   StreamWriter Output;
-  TraceClassSexpReaderWriter Trace;
+  std::shared_ptr<filt::TraceClassSexp> Trace;
 };
 
 }  // end of namespace interp.
