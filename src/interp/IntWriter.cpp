@@ -22,11 +22,16 @@ namespace wasm {
 
 using namespace decode;
 using namespace filt;
+using namespace utils;
 
 namespace interp {
 
 void IntWriter::reset() {
   Output.reset();
+}
+
+TraceClass::ContextPtr IntWriter::getTraceContext() {
+  return Pos.getTraceContext();
 }
 
 StreamType IntWriter::getStreamType() const {
@@ -101,7 +106,6 @@ bool IntWriter::writeAction(const filt::CallbackNode* Action) {
   switch (Sym->getPredefinedSymbol()) {
     case PredefinedSymbol::Block_enter:
       return Pos.openBlock();
-      return true;
     case PredefinedSymbol::Block_exit:
       return Pos.closeBlock();
     default:

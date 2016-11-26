@@ -88,7 +88,7 @@ class Cursor : public PageCursor {
     TraceContext& operator=(const TraceContext&) = delete;
    public:
     TraceContext(Cursor& Pos) : Pos(Pos) {}
-    ~TraceContext();
+    ~TraceContext() OVERRIDE;
     void describe(FILE* File) OVERRIDE;
    private:
     Cursor& Pos;

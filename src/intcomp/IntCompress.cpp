@@ -17,6 +17,7 @@
 // Implements the compressor of WASM fiels base on integer usage.
 
 #include "intcomp/IntCompress.h"
+#include "interp/IntWriter.h"
 #include "interp/StreamReader.h"
 #include "utils/circular-vector.h"
 #include "utils/heap.h"
@@ -229,10 +230,11 @@ IntCompressor::IntCompressor(std::shared_ptr<decode::Queue> InputStream,
                              std::shared_ptr<decode::Queue> OutputStream,
                              std::shared_ptr<filt::SymbolTable> Symtab)
     : Symtab(Symtab), CountCutoff(0), WeightCutoff(0), LengthLimit(1) {
+  readInput(InputStream, Symtab);
   Counter = new CounterWriter(UsageMap);
   Input = new StreamReader(InputStream, *Counter, Symtab);
-  StartPos = Input->getPos();
   (void)OutputStream;
+  getTrace().setTraceProgress(true);
 }
 
 void IntCompressor::setTrace(std::shared_ptr<TraceClassSexp> NewTrace) {
@@ -245,6 +247,20 @@ TraceClassSexp& IntCompressor::getTrace() {
   if (!Trace)
     setTrace(std::make_shared<TraceClassSexp>("IntCompress"));
   return *Trace;
+}
+
+bool IntCompressor::readInput(std::shared_ptr<Queue> InputStream,
+                              std::shared_ptr<SymbolTable> Symtab) {
+  Contents = std::make_shared<IntStream>();
+  IntWriter MyWriter(Contents);
+  StreamReader MyReader(InputStream, MyWriter, Symtab);
+  TraceClassSexp& Trace = MyReader.getTrace();
+  Trace.addContext(MyReader.getTraceContext());
+  Trace.addContext(MyWriter.getTraceContext());
+  Trace.setTraceProgress(true);
+  MyReader.start();
+  MyReader.readBackFilled();
+  return MyReader.isFinished() && MyReader.isSuccessful();
 }
 
 IntCompressor::~IntCompressor() {
@@ -297,6 +313,11 @@ bool IntCompressor::removeSmallUsageCounts(CountNode* Nd) {
 
 void IntCompressor::compress() {
   TRACE_METHOD("compress");
+#if 0
+  if (!readInput()) {
+    fprintf(stderr, "Unable to decompress, input malformed");
+    return;
+  }
   Counter->setCountCutoff(CountCutoff);
   Counter->setWeightCutoff(WeightCutoff);
   // Start by collecting number of occurrences of each integer, so
@@ -310,6 +331,7 @@ void IntCompressor::compress() {
     removeSmallUsageCounts();
   }
   describe(stderr, Flag(CollectionFlag::IntPaths));
+#endif
 }
 
 namespace {

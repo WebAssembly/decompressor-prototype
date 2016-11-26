@@ -50,9 +50,11 @@ class IntWriter : public Writer {
   bool writeValue(decode::IntType Value, const filt::Node* Format) OVERRIDE;
   bool writeAction(const filt::CallbackNode* Action) OVERRIDE;
 
+  utils::TraceClass::ContextPtr getTraceContext() OVERRIDE;
+
  private:
   std::shared_ptr<IntStream> Output;
-  IntStream::WriteCursor Pos;
+  IntStream::WriteCursorWithTraceContext Pos;
 };
 
 }  // end of namespace interp

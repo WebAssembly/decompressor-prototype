@@ -20,6 +20,7 @@
 #define DECOMPRESSOR_SRC_INTCOMP_INTCOMPRESS_H
 
 #include "intcomp/IntCountNode.h"
+#include "interp/IntStream.h"
 #include "interp/StreamReader.h"
 #include "interp/StreamWriter.h"
 #include "sexp/TraceSexp.h"
@@ -80,6 +81,7 @@ class IntCompressor FINAL {
  private:
   std::shared_ptr<filt::SymbolTable> Symtab;
   interp::StreamReader* Input;
+  std::shared_ptr<interp::IntStream> Contents;
   CounterWriter* Counter;
   decode::ReadCursor StartPos;
   IntCountUsageMap UsageMap;
@@ -87,6 +89,8 @@ class IntCompressor FINAL {
   uint64_t CountCutoff;
   uint64_t WeightCutoff;
   size_t LengthLimit;
+  bool readInput(std::shared_ptr<decode::Queue> InputStream,
+                 std::shared_ptr<filt::SymbolTable> Symtab);
   void compressUpToSize(size_t Size);
   void removeSmallUsageCounts() { removeSmallUsageCounts(UsageMap); }
   void removeSmallUsageCounts(IntCountUsageMap& UsageMap);
