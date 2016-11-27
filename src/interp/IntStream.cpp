@@ -44,7 +44,8 @@ IntStream::Cursor::Cursor(StreamPtr Stream) : Index(0), Stream(Stream) {
 }
 
 IntStream::Cursor::Cursor(const IntStream::Cursor& C)
-    : Index(C.Index), EnclosingBlocks(C.EnclosingBlocks), Stream(C.Stream) {
+    : std::enable_shared_from_this<Cursor>(C), Index(C.Index),
+    EnclosingBlocks(C.EnclosingBlocks), Stream(C.Stream) {
 }
 
 IntStream::Cursor& IntStream::Cursor::operator=(const IntStream::Cursor& C) {
