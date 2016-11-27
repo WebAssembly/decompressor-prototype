@@ -18,17 +18,6 @@
 
 #include "interp/IntStream.h"
 
-namespace {
-
-void describeBlockIndex(FILE* File, size_t Index) {
-  if (Index == std::numeric_limits<size_t>::max())
-    fputc('?', File);
-  else
-    fprintf(File, "%" PRIxMAX "", Index);
-}
-
-} // end of anonymous namespace
-
 namespace wasm {
 
 using namespace decode;
@@ -37,10 +26,9 @@ using namespace utils;
 namespace interp {
 
 void IntStream::Block::describe(FILE* File) {
-  fputc('[', File);
-  describeBlockIndex(File, BeginIndex);
-  fputc(':', File);
-  describeBlockIndex(File, EndIndex);
+  fprintf(File, "[%" PRIxMAX "", BeginIndex);
+  if (EndIndex != std::numeric_limits<size_t>::max())
+    fprintf(File, ":%" PRIxMAX "", EndIndex);
   fputc(']', File);
 }
 
@@ -166,6 +154,7 @@ bool IntStream::ReadCursor::openBlock() {
   std::shared_ptr<Block> CurBlock = EnclosingBlocks.back();
   assert(CurBlock);
   EnclosingBlocks.push_back(Blk);
+  ++NextBlock;
   return true;
 }
 

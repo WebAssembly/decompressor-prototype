@@ -22,6 +22,7 @@ namespace wasm {
 
 using namespace decode;
 using namespace filt;
+using namespace utils;
 
 namespace interp {
 
@@ -38,9 +39,61 @@ IntReader::IntReader(IntStream::StreamPtr Input,
 IntReader::~IntReader() {
 }
 
-void IntReader::startAtBeginning() {
+TraceClass::ContextPtr  IntReader::getTraceContext() {
+  return Pos.getTraceContext();
+}
+
+std::shared_ptr<TraceClassSexp> IntReader::createTrace() {
+  return std::make_shared<TraceClassSexp>("IntReader");
+}
+
+void IntReader::interpRead() {
+  TRACE_MESSAGE("interpRead");
   Pos = IntStream::ReadCursor(Input);
   start();
+  readBackFilled();
+}
+
+void IntReader::fastRead() {
+  // TRACE_METHOD("fastRead");
+  Pos = IntStream::ReadCursor(Input);
+  start();
+  fastReadUntil(Input->size());
+}
+
+bool IntReader::fastReadUntil(size_t Eob) {
+  // TODO: remove recursion.
+  TRACE_METHOD("fastReadUntil");
+  while (!errorsFound() && Pos.getIndex() < Eob) {
+    bool moreBlocks = Pos.hasMoreBlocks();
+    if (moreBlocks) {
+      IntStream::BlockPtr Blk = Pos.getNextBlock();
+      if (Blk->getBeginIndex() > Eob)
+        moreBlocks = false;
+    }
+    if (moreBlocks) {
+      IntStream::BlockPtr Blk = Pos.getNextBlock();
+      size_t BlkBegin = Blk->getBeginIndex();
+      while (!errorsFound() && Pos.getIndex() < BlkBegin) {
+        IntType Value = read();
+        TRACE(IntType, "read/write", Value);
+        if (!Output.writeVarint64(Value))
+          return false;
+      }
+      if (!enterBlock())
+        return false;
+      if (!fastReadUntil(Blk->getEndIndex()))
+        return false;
+      if (!exitBlock())
+        return false;
+    } else {
+      IntType Value = read();
+      TRACE(IntType, "read/write", Value);
+      if (!Output.writeVarint64(Value))
+        return false;
+    }
+  }
+  return !errorsFound();
 }
 
 namespace {
@@ -114,31 +167,31 @@ void IntReader::readFillMoreInput() {
 }
 
 uint8_t IntReader::readUint8() {
-  return Pos.read();
+  return read();
 }
 
 uint32_t IntReader::readUint32() {
-  return Pos.read();
+  return read();
 }
 
 uint64_t IntReader::readUint64() {
-  return Pos.read();
+  return read();
 }
 
 int32_t IntReader::readVarint32() {
-  return Pos.read();
+  return read();
 }
 
 int64_t IntReader::readVarint64() {
-  return Pos.read();
+  return read();
 }
 
 uint32_t IntReader::readVaruint32() {
-  return Pos.read();
+  return read();
 }
 
 uint64_t IntReader::readVaruint64() {
-  return Pos.read();
+  return read();
 }
 
 IntType IntReader::readValue(const filt::Node* Format) {

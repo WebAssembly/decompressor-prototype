@@ -151,6 +151,12 @@ class IntStream : public std::enable_shared_from_this<IntStream> {
     decode::IntType read();
     bool openBlock();
     bool closeBlock();
+    bool hasMoreBlocks() const {
+      return NextBlock != EndBlocks;
+    }
+    BlockPtr getNextBlock() const {
+      return *NextBlock;
+    }
 
    private:
     IntStream::BlockIterator NextBlock;
@@ -158,6 +164,7 @@ class IntStream : public std::enable_shared_from_this<IntStream> {
   };
 
   class ReadCursorWithTraceContext : public ReadCursor {
+   public:
     ReadCursorWithTraceContext() : ReadCursor() {}
     explicit ReadCursorWithTraceContext(StreamPtr Stream)
         : ReadCursor(Stream) {}
