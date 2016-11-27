@@ -37,7 +37,7 @@ class StreamReader : public Reader {
                std::shared_ptr<filt::SymbolTable> Symtab);
   ~StreamReader() OVERRIDE;
   void startUsing(const decode::ReadCursor& ReadPos);
-  decode::ReadCursor& getPos() OVERRIDE;
+  decode::ReadCursor& getPos();
   utils::TraceClass::ContextPtr getTraceContext() OVERRIDE;
 
  private:
@@ -52,6 +52,7 @@ class StreamReader : public Reader {
   decode::ReadCursor PeekPos;
   utils::ValueStack<decode::ReadCursor> PeekPosStack;
 
+  std::shared_ptr<filt::TraceClassSexp> createTrace() OVERRIDE;
   void describePeekPosStack(FILE* Out) OVERRIDE;
 
   bool canProcessMoreInputNow() OVERRIDE;

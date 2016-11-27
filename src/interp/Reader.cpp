@@ -103,13 +103,19 @@ TraceClass::ContextPtr Reader::getTraceContext() {
 
 void Reader::setTrace(std::shared_ptr<TraceClassSexp> NewTrace) {
   Trace = NewTrace;
-  if (Trace)
+  if (Trace) {
     Trace->addContext(getTraceContext());
+    Trace->addContext(Output.getTraceContext());
+  }
+}
+
+std::shared_ptr<TraceClassSexp> Reader::createTrace() {
+  return std::make_shared<TraceClassSexp>("Reader");
 }
 
 TraceClassSexp& Reader::getTrace() {
   if (!Trace)
-    setTrace(std::make_shared<TraceClassSexp>("StreamReader"));
+    setTrace(createTrace());
   return *Trace;
 }
 
@@ -144,8 +150,8 @@ const char* Reader::getName(SectionCode Code) {
   return SectionCodeName[Index];
 }
 
-Reader::Reader(Writer& StrmOutput, std::shared_ptr<filt::SymbolTable> Symtab)
-    : Output(StrmOutput),
+Reader::Reader(Writer& Output, std::shared_ptr<filt::SymbolTable> Symtab)
+    : Output(Output),
       Symtab(Symtab),
       LastReadValue(0),
       DispatchedMethod(Method::NO_SUCH_METHOD),
@@ -275,8 +281,6 @@ void Reader::callTopLevel(Method Method, const filt::Node* Nd) {
 }
 
 bool Reader::writeAction(const filt::CallbackNode* Action) {
-  // TODO(karlschimpf) Capture symbol_name's so that we can
-  // dispatch on it.
   return Output.writeAction(Action);
 }
 

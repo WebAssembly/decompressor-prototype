@@ -17,6 +17,8 @@
 // Implements the compressor of WASM fiels base on integer usage.
 
 #include "intcomp/IntCompress.h"
+#include "interp/IntReader.h"
+#include "interp/IntWriter.h"
 #include "interp/StreamReader.h"
 #include "utils/circular-vector.h"
 #include "utils/heap.h"
@@ -35,20 +37,20 @@ using namespace utils;
 
 namespace intcomp {
 
-class CounterWriter : public Writer {
-  CounterWriter() = delete;
-  CounterWriter(const CounterWriter&) = delete;
-  CounterWriter& operator=(const CounterWriter&) = delete;
+class IntCounterWriter : public Writer {
+  IntCounterWriter() = delete;
+  IntCounterWriter(const IntCounterWriter&) = delete;
+  IntCounterWriter& operator=(const IntCounterWriter&) = delete;
 
  public:
-  CounterWriter(IntCountUsageMap& UsageMap)
-      : UsageMap(UsageMap),
+  IntCounterWriter(IntCompressor::IntCounter& Counter)
+      : Counter(Counter),
         input_seq(new circular_vector<IntType>(1)),
         CountCutoff(1),
         WeightCutoff(1),
         UpToSize(0) {}
 
-  ~CounterWriter() OVERRIDE;
+  ~IntCounterWriter() OVERRIDE;
 
   void setSequenceSize(size_t Size);
   void setCountCutoff(uint64_t NewValue) { CountCutoff = NewValue; }
@@ -78,16 +80,13 @@ class CounterWriter : public Writer {
   bool writeValue(decode::IntType Value, const filt::Node* Format) OVERRIDE;
   bool writeAction(const filt::CallbackNode* Action) OVERRIDE;
 
-  BlockCountNode& getBlockCount() { return BlockCount; }
-
 // For debugging
 #if DESCRIBE_INPUT
   void describeInput();
 #endif
 
  private:
-  IntCountUsageMap& UsageMap;
-  BlockCountNode BlockCount;
+  IntCompressor::IntCounter& Counter;
   circular_vector<IntType>* input_seq;
   uint64_t CountCutoff;
   uint64_t WeightCutoff;
@@ -96,7 +95,7 @@ class CounterWriter : public Writer {
 };
 
 #if DESCRIBE_INPUT
-void CounterWriter::describeInput() {
+void IntCounterWriter::describeInput() {
   fprintf(stderr, "input seq:");
   for (size_t i = 0; i < input_seq->size(); ++i)
     fprintf(stderr, " %" PRIuMAX, uintmax_t((*input_seq).at(i)));
@@ -104,22 +103,22 @@ void CounterWriter::describeInput() {
 }
 #endif
 
-CounterWriter::~CounterWriter() {
+IntCounterWriter::~IntCounterWriter() {
   // TODO(karlschimpf): Recover memory of input_seq. Not done now due to
   // (optimized) of destruction of circular_vector<IntType>
 }
 
-StreamType CounterWriter::getStreamType() const {
+StreamType IntCounterWriter::getStreamType() const {
   return StreamType::Int;
 }
 
-void CounterWriter::setSequenceSize(size_t Size) {
+void IntCounterWriter::setSequenceSize(size_t Size) {
   input_seq->clear();
   if (Size > 0)
     input_seq->resize(Size);
 }
 
-void CounterWriter::popValuesFromInputSeq(size_t Size) {
+void IntCounterWriter::popValuesFromInputSeq(size_t Size) {
   for (size_t i = 0; i < Size; ++i) {
     if (input_seq->empty())
       return;
@@ -127,11 +126,11 @@ void CounterWriter::popValuesFromInputSeq(size_t Size) {
   }
 }
 
-void CounterWriter::addInputSeqToUsageMap() {
+void IntCounterWriter::addInputSeqToUsageMap() {
 #if DESCRIBE_INPUT
   describeInput();
 #endif
-  IntCountUsageMap* Map = &UsageMap;
+  IntCountUsageMap* Map = &Counter.UsageMap;
   IntCountNode* Nd = nullptr;
   for (size_t i = 0, e = input_seq->size(); i < e; ++i) {
     IntType Val = (*input_seq)[i];
@@ -156,66 +155,66 @@ void CounterWriter::addInputSeqToUsageMap() {
   popValuesFromInputSeq(1);
 }
 
-void CounterWriter::addAllInputSeqsToUsageMap() {
+void IntCounterWriter::addAllInputSeqsToUsageMap() {
   while (!input_seq->empty())
     addInputSeqToUsageMap();
 }
 
-void CounterWriter::addToUsageMap(IntType Value) {
+void IntCounterWriter::addToUsageMap(IntType Value) {
   input_seq->push_back(Value);
   if (!input_seq->full())
     return;
   addInputSeqToUsageMap();
 }
 
-bool CounterWriter::writeUint8(uint8_t Value) {
+bool IntCounterWriter::writeUint8(uint8_t Value) {
   addToUsageMap(Value);
   return true;
 }
 
-bool CounterWriter::writeUint32(uint32_t Value) {
+bool IntCounterWriter::writeUint32(uint32_t Value) {
   addToUsageMap(Value);
   return true;
 }
 
-bool CounterWriter::writeUint64(uint64_t Value) {
+bool IntCounterWriter::writeUint64(uint64_t Value) {
   addToUsageMap(Value);
   return true;
 }
 
-bool CounterWriter::writeVarint32(int32_t Value) {
+bool IntCounterWriter::writeVarint32(int32_t Value) {
   addToUsageMap(Value);
   return true;
 }
 
-bool CounterWriter::writeVarint64(int64_t Value) {
+bool IntCounterWriter::writeVarint64(int64_t Value) {
   addToUsageMap(Value);
   return true;
 }
 
-bool CounterWriter::writeVaruint32(uint32_t Value) {
+bool IntCounterWriter::writeVaruint32(uint32_t Value) {
   addToUsageMap(Value);
   return true;
 }
 
-bool CounterWriter::writeVaruint64(uint64_t Value) {
+bool IntCounterWriter::writeVaruint64(uint64_t Value) {
   addToUsageMap(Value);
   return true;
 }
 
-bool CounterWriter::writeValue(decode::IntType Value, const filt::Node*) {
+bool IntCounterWriter::writeValue(decode::IntType Value, const filt::Node*) {
   addToUsageMap(Value);
   return true;
 }
 
-bool CounterWriter::writeAction(const filt::CallbackNode* Action) {
+bool IntCounterWriter::writeAction(const filt::CallbackNode* Action) {
   const auto* Sym = dyn_cast<SymbolNode>(Action->getKid(0));
   if (Sym == nullptr)
     return false;
   switch (Sym->getPredefinedSymbol()) {
     case PredefinedSymbol::Block_enter:
       addAllInputSeqsToUsageMap();
-      BlockCount.increment();
+      Counter.BlockCount.increment();
       return true;
     case PredefinedSymbol::Block_exit:
       addAllInputSeqsToUsageMap();
@@ -225,20 +224,19 @@ bool CounterWriter::writeAction(const filt::CallbackNode* Action) {
   }
 }
 
-IntCompressor::IntCompressor(std::shared_ptr<decode::Queue> InputStream,
-                             std::shared_ptr<decode::Queue> OutputStream,
+IntCompressor::IntCompressor(std::shared_ptr<decode::Queue> Input,
+                             std::shared_ptr<decode::Queue> Output,
                              std::shared_ptr<filt::SymbolTable> Symtab)
-    : Symtab(Symtab), CountCutoff(0), WeightCutoff(0), LengthLimit(1) {
-  Counter = new CounterWriter(UsageMap);
-  Input = new StreamReader(InputStream, *Counter, Symtab);
-  StartPos = Input->getPos();
-  (void)OutputStream;
+    : Input(Input), Output(Output), Symtab(Symtab),
+      CountCutoff(0), WeightCutoff(0), LengthLimit(1), ErrorsFound(false) {
 }
 
 void IntCompressor::setTrace(std::shared_ptr<TraceClassSexp> NewTrace) {
   Trace = NewTrace;
+#if 0
   if (Trace)
     Input->setTrace(Trace);
+#endif
 }
 
 TraceClassSexp& IntCompressor::getTrace() {
@@ -247,22 +245,50 @@ TraceClassSexp& IntCompressor::getTrace() {
   return *Trace;
 }
 
+void IntCompressor::readInput(std::shared_ptr<Queue> InputStream,
+                              std::shared_ptr<SymbolTable> Symtab,
+                              bool TraceParsing) {
+  Contents = std::make_shared<IntStream>();
+  IntWriter MyWriter(Contents);
+  StreamReader MyReader(InputStream, MyWriter, Symtab);
+  if (TraceParsing) {
+    TraceClassSexp& Trace = MyReader.getTrace();
+    Trace.addContext(MyReader.getTraceContext());
+    Trace.addContext(MyWriter.getTraceContext());
+    Trace.setTraceProgress(true);
+  }
+  MyReader.start();
+  MyReader.readBackFilled();
+  bool Successful = MyReader.isFinished() && MyReader.isSuccessful();
+  if (!Successful)
+    ErrorsFound = true;
+  Input.reset();
+  return;
+}
+
 IntCompressor::~IntCompressor() {
-  delete Input;
-  delete Counter;
+  Input.reset();
+  Output.reset();
   IntCountNode::clear(UsageMap);
 }
 
-void IntCompressor::compressUpToSize(size_t Size) {
-  fprintf(stderr,
-          "Collecting integer sequences of (up to) length: %" PRIuMAX "\n",
-          uintmax_t(Size));
-  Counter->setUpToSize(Size);
-  Input->startUsing(StartPos);
-  Input->readBackFilled();
-  // Flush any remaining values in input sequece.
-  Counter->addAllInputSeqsToUsageMap();
-  Counter->resetUpToSize();
+bool IntCompressor::compressUpToSize(size_t Size, bool TraceParsing) {
+  if (Size == 1)
+    fprintf(stderr, "Collecting integer sequences of length: 1\n");
+  else
+    fprintf(stderr,
+            "Collecting integer sequences of (up to) length: %" PRIuMAX "\n",
+            uintmax_t(Size));
+  IntCounterWriter Writer(Counter);
+  Writer.setCountCutoff(CountCutoff);
+  Writer.setWeightCutoff(WeightCutoff);
+  Writer.setUpToSize(Size);
+  IntReader Reader(Contents, Writer, Symtab);
+  Reader.getTrace().setTraceProgress(TraceParsing);
+  Reader.fastRead();
+  if (!Reader.errorsFound())
+    Writer.addAllInputSeqsToUsageMap();
+  return !Reader.errorsFound();
 }
 
 void IntCompressor::removeSmallUsageCounts(IntCountUsageMap& UsageMap) {
@@ -295,18 +321,23 @@ bool IntCompressor::removeSmallUsageCounts(CountNode* Nd) {
   return false;
 }
 
-void IntCompressor::compress() {
+void IntCompressor::compress(bool TraceParsing, bool TraceFirstPassOnly) {
   TRACE_METHOD("compress");
-  Counter->setCountCutoff(CountCutoff);
-  Counter->setWeightCutoff(WeightCutoff);
+  readInput(Input, Symtab, TraceParsing);
+  if (errorsFound()) {
+    fprintf(stderr, "Unable to decompress, input malformed");
+    return;
+  }
   // Start by collecting number of occurrences of each integer, so
   // that we can use as a filter on integer sequence inclusion into the
   // IntCountNode trie.
-  compressUpToSize(1);
+  if (!compressUpToSize(1, TraceParsing))
+    return;
   removeSmallUsageCounts();
   describe(stderr, Flag(CollectionFlag::TopLevel));
   if (LengthLimit > 1) {
-    compressUpToSize(LengthLimit);
+    if (!compressUpToSize(LengthLimit, TraceParsing))
+      return;
     removeSmallUsageCounts();
   }
   describe(stderr, Flag(CollectionFlag::IntPaths));
@@ -316,8 +347,7 @@ namespace {
 
 class CountNodeCollector {
  public:
-  IntCountUsageMap& UsageMap;
-  CounterWriter* Counter;
+  IntCompressor::IntCounter& Counter;
   std::vector<CountNode::HeapValueType> Values;
   std::shared_ptr<CountNode::HeapType> ValuesHeap;
   uint64_t WeightTotal;
@@ -328,10 +358,8 @@ class CountNodeCollector {
   uint64_t CountCutoff;
   uint64_t WeightCutoff;
 
-  explicit CountNodeCollector(IntCountUsageMap& UsageMap,
-                              CounterWriter* Counter)
-      : UsageMap(UsageMap),
-        Counter(Counter),
+  explicit CountNodeCollector(IntCompressor::IntCounter& Counter)
+      : Counter(Counter),
         ValuesHeap(std::make_shared<CountNode::HeapType>()),
         WeightTotal(0),
         CountTotal(0),
@@ -379,8 +407,8 @@ void CountNodeCollector::buildHeap() {
 
 void CountNodeCollector::collect(CollectionFlags Flags) {
   if (hasFlag(CollectionFlag::TopLevel, Flags))
-    collectNode(&Counter->getBlockCount(), Flags);
-  for (const auto& pair : UsageMap)
+    collectNode(&Counter.BlockCount, Flags);
+  for (const auto& pair : Counter.UsageMap)
     collectNode(pair.second, Flags);
 }
 
@@ -447,7 +475,7 @@ void CountNodeCollector::describe(FILE* Out) {
 
 void IntCompressor::describe(FILE* Out, CollectionFlags Flags) {
   fprintf(stderr, "Collecting results...\n");
-  CountNodeCollector Collector(UsageMap, Counter);
+  CountNodeCollector Collector(Counter);
   Collector.CountCutoff = CountCutoff;
   Collector.WeightCutoff = WeightCutoff;
   Collector.collect(Flags);

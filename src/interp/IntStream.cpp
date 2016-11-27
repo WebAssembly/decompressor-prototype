@@ -21,8 +21,22 @@
 namespace wasm {
 
 using namespace decode;
+using namespace utils;
 
 namespace interp {
+
+void IntStream::Block::describe(FILE* File) {
+  fprintf(File, "[%" PRIxMAX "", BeginIndex);
+  if (EndIndex != std::numeric_limits<size_t>::max())
+    fprintf(File, ":%" PRIxMAX "", EndIndex);
+  fputc(']', File);
+}
+
+IntStream::Cursor::TraceContext::~TraceContext() {}
+
+void IntStream::Cursor::TraceContext::describe(FILE* File) {
+  Pos.describe(File);
+}
 
 IntStream::Cursor::Cursor(StreamPtr Stream) : Index(0), Stream(Stream) {
   assert(Stream);
@@ -38,6 +52,19 @@ IntStream::Cursor& IntStream::Cursor::operator=(const IntStream::Cursor& C) {
   EnclosingBlocks = C.EnclosingBlocks;
   Stream = C.Stream;
   return *this;
+}
+
+FILE* IntStream::Cursor::describe(FILE* File, bool IncludeDetail, bool AddEoln) {
+  if (IncludeDetail)
+    fputs("IntStream::Cursor<", File);
+  fprintf(File, "@%" PRIxMAX "", uintmax_t(Index));
+  for (auto Blk : EnclosingBlocks)
+    Blk->describe(File);
+  if (IncludeDetail)
+    fputc('>', File);
+  if (AddEoln)
+    fputc('\n', File);
+  return File;
 }
 
 bool IntStream::Cursor::atEof() const {
@@ -68,6 +95,7 @@ bool IntStream::WriteCursor::write(IntType Value) {
   assert(!EnclosingBlocks.empty());
   assert(EnclosingBlocks.back()->getEndIndex() >= Index);
   Stream->Values.push_back(Value);
+  ++Index;
   return true;
 }
 
@@ -101,6 +129,13 @@ bool IntStream::WriteCursor::closeBlock() {
   return true;
 }
 
+TraceClass::ContextPtr
+IntStream::WriteCursorWithTraceContext::getTraceContext() {
+  if (!TraceContext)
+    TraceContext = std::make_shared<IntStream::Cursor::TraceContext>(*this);
+  return TraceContext;
+}
+
 IntType IntStream::ReadCursor::read() {
   // TODO(karlschimpf): Add capability to communicate failure to caller.
   assert(!EnclosingBlocks.empty());
@@ -119,6 +154,7 @@ bool IntStream::ReadCursor::openBlock() {
   std::shared_ptr<Block> CurBlock = EnclosingBlocks.back();
   assert(CurBlock);
   EnclosingBlocks.push_back(Blk);
+  ++NextBlock;
   return true;
 }
 
@@ -127,6 +163,13 @@ bool IntStream::ReadCursor::closeBlock() {
   if (!Blk)
     return false;
   return Blk->getEndIndex() == Index;
+}
+
+TraceClass::ContextPtr
+IntStream::ReadCursorWithTraceContext::getTraceContext() {
+  if (!TraceContext)
+    TraceContext = std::make_shared<IntStream::Cursor::TraceContext>(*this);
+  return TraceContext;
 }
 
 }  // end of namespace interp

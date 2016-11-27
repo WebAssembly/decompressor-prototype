@@ -74,12 +74,15 @@ void usage(const char* AppName) {
             "Show progress (can be repeated for more detail).\n");
     fprintf(stderr,
             "\t\t\t-v          : "
-            "Trace progress of compression.\n");
+            "Add progress of compression.\n");
     fprintf(stderr,
             "\t\t\t-v -v       : "
-            "Add progress of parsing default files.\n");
+            "Add trace of parsing (wasm) input file..\n");
     fprintf(stderr,
             "\t\t\t-v -v -v    : "
+            "Add progress of parsing default files.\n");
+    fprintf(stderr,
+            "\t\t\t-v -v -v -v : "
             "Add progress of lexing default files.\n");
   }
 }
@@ -160,7 +163,7 @@ int main(int Argc, char* Argv[]) {
     CountCutoff = WeightCutoff;
   auto Symtab = std::make_shared<SymbolTable>();
   if (InstallPredefinedRules &&
-      !SymbolTable::installPredefinedDefaults(Symtab, Verbose >= 2)) {
+      !SymbolTable::installPredefinedDefaults(Symtab, Verbose >= 3)) {
     fprintf(stderr, "Unable to load compiled in default rules!\n");
     return exit_status(EXIT_FAILURE);
   }
@@ -171,14 +174,14 @@ int main(int Argc, char* Argv[]) {
       std::shared_ptr<RawStream> Stream = std::make_shared<FileReader>(Argv[i]);
       BinaryReader Reader(std::make_shared<ReadBackedQueue>(std::move(Stream)),
                           Symtab);
-      Reader.getTrace().setTraceProgress(Verbose >= 2);
+      Reader.getTrace().setTraceProgress(Verbose >= 3);
       if (Reader.readFile()) {
         continue;
       }
     }
     Driver Parser(Symtab);
-    Parser.setTraceParsing(Verbose >= 2);
-    Parser.setTraceLexing(Verbose >= 3);
+    Parser.setTraceParsing(Verbose >= 3);
+    Parser.setTraceLexing(Verbose >= 4);
     if (!Parser.parse(Argv[i])) {
       fprintf(stderr, "Unable to parse default algorithms: %s\n", Argv[i]);
       return exit_status(EXIT_FAILURE);
@@ -192,7 +195,7 @@ int main(int Argc, char* Argv[]) {
   Compressor.setWeightCutoff(WeightCutoff);
   Compressor.setTraceProgress(Verbose >= 1);
   Compressor.setMinimizeBlockSize(MinimizeBlockSize);
-  Compressor.compress();
+  Compressor.compress(Verbose >= 2);
   if (Compressor.errorsFound()) {
     fatal("Failed to compress due to errors!");
     exit_status(EXIT_FAILURE);

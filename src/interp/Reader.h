@@ -62,11 +62,6 @@ class Reader {
   // Force interpretation to fail.
   void fail(const std::string& Message);
 
-  // Returns the current read position of the input stream. NOTE:
-  // This (in general) should not be called unless you explicitly know
-  // that the input is a stream that can defined cursors.
-  virtual decode::ReadCursor& getPos() = 0;
-
   // Returns non-null context handler if applicable.
   virtual utils::TraceClass::ContextPtr getTraceContext();
   void setTrace(std::shared_ptr<filt::TraceClassSexp> Trace);
@@ -82,6 +77,7 @@ class Reader {
   static const char* getName(SectionCode Code);
 
  protected:
+
   enum class Method {
 #define X(tag) tag,
     INTERPRETER_METHODS_TABLE
@@ -215,6 +211,8 @@ class Reader {
   OpcodeLocalsFrame OpcodeLocals;
   utils::ValueStack<OpcodeLocalsFrame> OpcodeLocalsStack;
 
+  virtual std::shared_ptr<filt::TraceClassSexp> createTrace();
+
   virtual void reset();
 
   // Initializes all internal stacks, for an initial call to Method with
@@ -232,7 +230,8 @@ class Reader {
   }
 
   void popAndReturn(decode::IntType Value = 0) {
-    FrameStack.pop();
+    if (!FrameStack.empty())
+      FrameStack.pop();
     Frame.ReturnValue = Value;
     TRACE(IntType, "returns", Value);
   }

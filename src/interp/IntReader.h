@@ -41,10 +41,15 @@ class IntReader : public Reader {
             std::shared_ptr<filt::SymbolTable> Symtab);
   ~IntReader() OVERRIDE;
 
-  void startAtBeginning();
+  // Parses inpuot structure of int stream using rules in Symtab.
+  void interpRead();
+
+  // Parses input structure of int stream (rather than using rules in
+  // Symtab).
+  void fastRead();
 
  private:
-  IntStream::ReadCursor Pos;
+  IntStream::ReadCursorWithTraceContext Pos;
   IntStream::StreamPtr Input;
   // Shows how many are still available since last call to
   // canProcessMoreInputNow().
@@ -53,7 +58,17 @@ class IntReader : public Reader {
   IntStream::ReadCursor PeekPos;
   utils::ValueStack<IntStream::Cursor> PeekPosStack;
 
+  std::shared_ptr<filt::TraceClassSexp> createTrace() OVERRIDE;
+
   void describePeekPosStack(FILE* Out) OVERRIDE;
+
+  bool fastReadUntil(size_t Eob);
+
+  decode::IntType read() {
+    return Pos.read();
+  }
+
+  utils::TraceClass::ContextPtr getTraceContext() OVERRIDE;
 
   bool canProcessMoreInputNow() OVERRIDE;
   bool stillMoreInputToProcessNow() OVERRIDE;
@@ -75,6 +90,8 @@ class IntReader : public Reader {
   uint32_t readVaruint32() OVERRIDE;
   uint64_t readVaruint64() OVERRIDE;
   decode::IntType readValue(const filt::Node* Format) OVERRIDE;
+
+  void fastReadBlock();
 };
 
 }  // end of namespace interp

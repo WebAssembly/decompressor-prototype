@@ -39,6 +39,10 @@ StreamReader::StreamReader(std::shared_ptr<decode::Queue> StrmInput,
 StreamReader::~StreamReader() {
 }
 
+std::shared_ptr<TraceClassSexp> StreamReader::createTrace() {
+  return std::make_shared<TraceClassSexp>("StreamReader");
+}
+
 void StreamReader::startUsing(const decode::ReadCursor& StartPos) {
   ReadPos = StartPos;
   start();

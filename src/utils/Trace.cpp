@@ -66,7 +66,7 @@ void TraceClass::traceContext() const {
   if (ContextList.empty())
     return;
   for (size_t i = 0; i < ContextList.size(); ++i) {
-    if (i > 0 && (i + 1) < ContextList.size())
+    if (i > 0)
       fputc('/', File);
     ContextList[i]->describe(File);
   }

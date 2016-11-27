@@ -20,6 +20,7 @@
 #define DECOMPRESSOR_SRC_INTCOMP_INTCOMPRESS_H
 
 #include "intcomp/IntCountNode.h"
+#include "interp/IntStream.h"
 #include "interp/StreamReader.h"
 #include "interp/StreamWriter.h"
 #include "sexp/TraceSexp.h"
@@ -27,6 +28,8 @@
 namespace wasm {
 
 namespace intcomp {
+
+class IntCounterWriter;
 
 typedef uint32_t CollectionFlags;
 
@@ -45,7 +48,6 @@ inline bool hasFlag(CollectionFlag F, CollectionFlags Flags) {
   return Flag(F) & Flags;
 }
 
-class CounterWriter;
 
 class IntCompressor FINAL {
   IntCompressor() = delete;
@@ -53,18 +55,37 @@ class IntCompressor FINAL {
   IntCompressor& operator=(const IntCompressor&) = delete;
 
  public:
+  IntCountUsageMap UsageMap;
+  class IntCounter {
+    IntCounter(const IntCounter&) = delete;
+    IntCounter& operator=(const IntCounter&) = delete;
+   public:
+    IntCounter() {}
+    ~IntCounter() = default;
+    const IntCountUsageMap& getUsageMap() const {
+      return UsageMap;
+    }
+    IntCountUsageMap UsageMap;
+    BlockCountNode BlockCount;
+  };
   IntCompressor(std::shared_ptr<decode::Queue> InputStream,
                 std::shared_ptr<decode::Queue> OutputStream,
                 std::shared_ptr<filt::SymbolTable> Symtab);
 
   ~IntCompressor();
 
-  bool errorsFound() const { return Input == nullptr && Input->errorsFound(); }
+  bool errorsFound() const { return ErrorsFound; }
 
-  void compress();
+  void compress(bool TraceParsing = false,
+                bool TraceFirstPassOnly = true);
 
   void setTraceProgress(bool NewValue) {
+    // TODO: Don't force creation of trace object if not needed.
     getTrace().setTraceProgress(NewValue);
+  }
+  bool getTraceProgress() {
+    // TODO: Don't force creation of trace object if not needed.
+    return getTrace().getTraceProgress();
   }
   void setTrace(std::shared_ptr<filt::TraceClassSexp> Trace);
   filt::TraceClassSexp& getTrace();
@@ -78,17 +99,21 @@ class IntCompressor FINAL {
   void describe(FILE* Out, CollectionFlags = Flag(CollectionFlag::All));
 
  private:
+  std::shared_ptr<decode::Queue> Input;
+  std::shared_ptr<decode::Queue> Output;
   std::shared_ptr<filt::SymbolTable> Symtab;
-  interp::StreamReader* Input;
-  CounterWriter* Counter;
-  decode::ReadCursor StartPos;
-  IntCountUsageMap UsageMap;
+  std::shared_ptr<interp::IntStream> Contents;
+  IntCounter Counter;
   std::shared_ptr<filt::TraceClassSexp> Trace;
   uint64_t CountCutoff;
   uint64_t WeightCutoff;
   size_t LengthLimit;
-  void compressUpToSize(size_t Size);
-  void removeSmallUsageCounts() { removeSmallUsageCounts(UsageMap); }
+  bool ErrorsFound;
+  void readInput(std::shared_ptr<decode::Queue> InputStream,
+                 std::shared_ptr<filt::SymbolTable> Symtab,
+                 bool TraceParsing);
+  bool compressUpToSize(size_t Size, bool TraceParsing);
+  void removeSmallUsageCounts() { removeSmallUsageCounts(Counter.UsageMap); }
   void removeSmallUsageCounts(IntCountUsageMap& UsageMap);
   bool removeSmallUsageCounts(CountNode* Nd);
 };

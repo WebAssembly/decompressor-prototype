@@ -70,13 +70,13 @@ FILE* Cursor::describe(FILE* File, bool IncludeDetail, bool AddEoln) {
     fputc(' ', File);
     CurByte.describe(File);
   }
-  if (!IncludeDetail)
-    return File;
-  if (EobPtr->isDefined()) {
-    fprintf(File, ", eob=");
-    getEobAddress().describe(File);
+  if (IncludeDetail) {
+    if (EobPtr->isDefined()) {
+      fprintf(File, ", eob=");
+      getEobAddress().describe(File);
+    }
+    fputc('>', File);
   }
-  fputc('>', File);
   if (AddEoln)
     fputc('\n', File);
   return File;
