@@ -77,7 +77,6 @@ class Reader {
   static const char* getName(SectionCode Code);
 
  protected:
-
   enum class Method {
 #define X(tag) tag,
     INTERPRETER_METHODS_TABLE

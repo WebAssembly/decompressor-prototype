@@ -65,15 +65,16 @@ class IntStream : public std::enable_shared_from_this<IntStream> {
 
   class Cursor : public std::enable_shared_from_this<Cursor> {
    public:
-
-    class TraceContext: public utils::TraceClass::Context {
+    class TraceContext : public utils::TraceClass::Context {
       TraceContext() = delete;
       TraceContext(const TraceContext&) = delete;
       TraceContext& operator=(const TraceContext&) = delete;
+
      public:
       TraceContext(Cursor& Pos) : Pos(Pos) {}
       ~TraceContext() OVERRIDE;
       void describe(FILE* File);
+
      private:
       Cursor& Pos;
     };
@@ -90,7 +91,8 @@ class IntStream : public std::enable_shared_from_this<IntStream> {
     bool atEnd() const;
 
     // For debugging.
-    FILE* describe(FILE* File, bool IncludeDetail = false,
+    FILE* describe(FILE* File,
+                   bool IncludeDetail = false,
                    bool AddEoln = false);
 
    protected:
@@ -151,12 +153,8 @@ class IntStream : public std::enable_shared_from_this<IntStream> {
     decode::IntType read();
     bool openBlock();
     bool closeBlock();
-    bool hasMoreBlocks() const {
-      return NextBlock != EndBlocks;
-    }
-    BlockPtr getNextBlock() const {
-      return *NextBlock;
-    }
+    bool hasMoreBlocks() const { return NextBlock != EndBlocks; }
+    BlockPtr getNextBlock() const { return *NextBlock; }
 
    private:
     IntStream::BlockIterator NextBlock;
@@ -168,8 +166,7 @@ class IntStream : public std::enable_shared_from_this<IntStream> {
     ReadCursorWithTraceContext() : ReadCursor() {}
     explicit ReadCursorWithTraceContext(StreamPtr Stream)
         : ReadCursor(Stream) {}
-    explicit ReadCursorWithTraceContext(const ReadCursor& C)
-        : ReadCursor(C) {}
+    explicit ReadCursorWithTraceContext(const ReadCursor& C) : ReadCursor(C) {}
     ReadCursorWithTraceContext& operator=(const ReadCursor& C) {
       ReadCursor::operator=(C);
       return *this;

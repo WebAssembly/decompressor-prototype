@@ -227,8 +227,13 @@ bool IntCounterWriter::writeAction(const filt::CallbackNode* Action) {
 IntCompressor::IntCompressor(std::shared_ptr<decode::Queue> Input,
                              std::shared_ptr<decode::Queue> Output,
                              std::shared_ptr<filt::SymbolTable> Symtab)
-    : Input(Input), Output(Output), Symtab(Symtab),
-      CountCutoff(0), WeightCutoff(0), LengthLimit(1), ErrorsFound(false) {
+    : Input(Input),
+      Output(Output),
+      Symtab(Symtab),
+      CountCutoff(0),
+      WeightCutoff(0),
+      LengthLimit(1),
+      ErrorsFound(false) {
 }
 
 void IntCompressor::setTrace(std::shared_ptr<TraceClassSexp> NewTrace) {

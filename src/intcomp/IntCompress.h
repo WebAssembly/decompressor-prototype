@@ -48,7 +48,6 @@ inline bool hasFlag(CollectionFlag F, CollectionFlags Flags) {
   return Flag(F) & Flags;
 }
 
-
 class IntCompressor FINAL {
   IntCompressor() = delete;
   IntCompressor(const IntCompressor&) = delete;
@@ -59,12 +58,11 @@ class IntCompressor FINAL {
   class IntCounter {
     IntCounter(const IntCounter&) = delete;
     IntCounter& operator=(const IntCounter&) = delete;
+
    public:
     IntCounter() {}
     ~IntCounter() = default;
-    const IntCountUsageMap& getUsageMap() const {
-      return UsageMap;
-    }
+    const IntCountUsageMap& getUsageMap() const { return UsageMap; }
     IntCountUsageMap UsageMap;
     BlockCountNode BlockCount;
   };
@@ -76,8 +74,7 @@ class IntCompressor FINAL {
 
   bool errorsFound() const { return ErrorsFound; }
 
-  void compress(bool TraceParsing = false,
-                bool TraceFirstPassOnly = true);
+  void compress(bool TraceParsing = false, bool TraceFirstPassOnly = true);
 
   void setTraceProgress(bool NewValue) {
     // TODO: Don't force creation of trace object if not needed.

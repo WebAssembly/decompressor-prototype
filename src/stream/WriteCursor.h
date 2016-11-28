@@ -59,8 +59,7 @@ class WriteCursorWithTraceContext : public WriteCursor {
   WriteCursorWithTraceContext(StreamType Type, std::shared_ptr<Queue> Que)
       : WriteCursor(Type, Que) {}
 
-  explicit WriteCursorWithTraceContext(const WriteCursor& C)
-      : WriteCursor(C) {}
+  explicit WriteCursorWithTraceContext(const WriteCursor& C) : WriteCursor(C) {}
 
   WriteCursorWithTraceContext(const Cursor& C, size_t StartAddress)
       : WriteCursor(C, StartAddress) {}

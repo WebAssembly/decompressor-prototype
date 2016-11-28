@@ -64,9 +64,7 @@ class IntReader : public Reader {
 
   bool fastReadUntil(size_t Eob);
 
-  decode::IntType read() {
-    return Pos.read();
-  }
+  decode::IntType read() { return Pos.read(); }
 
   utils::TraceClass::ContextPtr getTraceContext() OVERRIDE;
 
