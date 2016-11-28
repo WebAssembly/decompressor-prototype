@@ -26,13 +26,14 @@ using namespace utils;
 namespace interp {
 
 void IntStream::Block::describe(FILE* File) {
-  fprintf(File, "[%" PRIxMAX "", BeginIndex);
+  fprintf(File, "[%" PRIxMAX "", uintmax_t(BeginIndex));
   if (EndIndex != std::numeric_limits<size_t>::max())
-    fprintf(File, ":%" PRIxMAX "", EndIndex);
+    fprintf(File, ":%" PRIxMAX "", uintmax_t(EndIndex));
   fputc(']', File);
 }
 
-IntStream::Cursor::TraceContext::~TraceContext() {}
+IntStream::Cursor::TraceContext::~TraceContext() {
+}
 
 void IntStream::Cursor::TraceContext::describe(FILE* File) {
   Pos.describe(File);
@@ -44,8 +45,10 @@ IntStream::Cursor::Cursor(StreamPtr Stream) : Index(0), Stream(Stream) {
 }
 
 IntStream::Cursor::Cursor(const IntStream::Cursor& C)
-    : std::enable_shared_from_this<Cursor>(C), Index(C.Index),
-    EnclosingBlocks(C.EnclosingBlocks), Stream(C.Stream) {
+    : std::enable_shared_from_this<Cursor>(C),
+      Index(C.Index),
+      EnclosingBlocks(C.EnclosingBlocks),
+      Stream(C.Stream) {
 }
 
 IntStream::Cursor& IntStream::Cursor::operator=(const IntStream::Cursor& C) {
@@ -55,7 +58,9 @@ IntStream::Cursor& IntStream::Cursor::operator=(const IntStream::Cursor& C) {
   return *this;
 }
 
-FILE* IntStream::Cursor::describe(FILE* File, bool IncludeDetail, bool AddEoln) {
+FILE* IntStream::Cursor::describe(FILE* File,
+                                  bool IncludeDetail,
+                                  bool AddEoln) {
   if (IncludeDetail)
     fputs("IntStream::Cursor<", File);
   fprintf(File, "@%" PRIxMAX "", uintmax_t(Index));

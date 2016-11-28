@@ -25,7 +25,8 @@ FILE* WorkingByte::describe(FILE* File) {
   return File;
 }
 
-Cursor::TraceContext::~TraceContext() {}
+Cursor::TraceContext::~TraceContext() {
+}
 
 void Cursor::TraceContext::describe(FILE* File) {
   Pos.describe(File);

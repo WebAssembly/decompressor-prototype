@@ -44,9 +44,9 @@ class Interpreter FINAL {
   Interpreter(std::shared_ptr<decode::Queue> InputStream,
               std::shared_ptr<decode::Queue> OutputStream,
               std::shared_ptr<filt::SymbolTable> Symtab)
-  : Symtab(Symtab),
-    Input(InputStream, Output, Symtab),
-    Output(OutputStream) {}
+      : Symtab(Symtab),
+        Input(InputStream, Output, Symtab),
+        Output(OutputStream) {}
 
   ~Interpreter() {}
 
@@ -64,7 +64,9 @@ class Interpreter FINAL {
     Input.readBackFilled();
   }
 
-  void setTraceProgress(bool NewValue) { getTrace().setTraceProgress(NewValue); }
+  void setTraceProgress(bool NewValue) {
+    getTrace().setTraceProgress(NewValue);
+  }
 
   void setMinimizeBlockSize(bool NewValue) {
     Output.setMinimizeBlockSize(NewValue);

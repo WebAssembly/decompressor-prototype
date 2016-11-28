@@ -25,7 +25,7 @@ namespace wasm {
 namespace decode {
 
 FILE* BitAddress::describe(FILE* File) const {
-  fprintf(File, "@%" PRIxMAX, ByteAddr);
+  fprintf(File, "@%" PRIxMAX, uintmax_t(ByteAddr));
   if (BitAddr != 0)
     fprintf(File, ":%u", BitAddr);
   return File;

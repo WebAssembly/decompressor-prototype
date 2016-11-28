@@ -121,9 +121,11 @@ class TraceClass : public std::enable_shared_from_this<TraceClass> {
   class Context : public std::enable_shared_from_this<Context> {
     Context(const Context&) = delete;
     Context& operator=(const Context&) = delete;
+
    public:
     virtual ~Context() {}
     virtual void describe(FILE* File) = 0;
+
    protected:
     Context() {}
   };

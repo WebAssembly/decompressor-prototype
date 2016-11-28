@@ -39,7 +39,7 @@ IntReader::IntReader(IntStream::StreamPtr Input,
 IntReader::~IntReader() {
 }
 
-TraceClass::ContextPtr  IntReader::getTraceContext() {
+TraceClass::ContextPtr IntReader::getTraceContext() {
   return Pos.getTraceContext();
 }
 
