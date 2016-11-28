@@ -54,6 +54,19 @@ void IntReader::interpRead() {
   readBackFilled();
 }
 
+#if 1
+void IntReader::fastRead() {
+  if (canFastRead()) {
+    fprintf(stderr, "Using fast read...\n");
+    fastStart();
+    fastReadBackFilled();
+  } else {
+    fprintf(stderr, "Using slow read...\n");
+    start();
+    readBackFilled();
+  }
+}
+#else
 void IntReader::fastRead() {
   // TRACE_METHOD("fastRead");
   Pos = IntStream::ReadCursor(Input);
@@ -95,6 +108,7 @@ bool IntReader::fastReadUntil(size_t Eob) {
   }
   return !errorsFound();
 }
+#endif
 
 namespace {
 
@@ -115,7 +129,7 @@ bool IntReader::canProcessMoreInputNow() {
 }
 
 bool IntReader::stillMoreInputToProcessNow() {
-  return Pos.getIndex() < StillAvailable;
+  return Pos.getIndex() <= StillAvailable;
 }
 
 bool IntReader::atInputEob() {
@@ -164,6 +178,8 @@ void IntReader::readFillStart() {
 }
 
 void IntReader::readFillMoreInput() {
+  TRACE_METHOD("readFillMoreInput");
+  TRACE(bool, "atEof", Pos.atEof());
 }
 
 uint8_t IntReader::readUint8() {

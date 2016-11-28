@@ -62,7 +62,9 @@ class IntReader : public Reader {
 
   void describePeekPosStack(FILE* Out) OVERRIDE;
 
+#if 0
   bool fastReadUntil(size_t Eob);
+#endif
 
   decode::IntType read() { return Pos.read(); }
 

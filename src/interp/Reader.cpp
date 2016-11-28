@@ -20,7 +20,9 @@
 
 #include "sexp/TextWriter.h"
 
-#define LOG_DEFAULT_VALUE 0
+#define LOG_TRUE_VALUE 1
+#define LOG_FALSE_VALUE 0
+#define LOG_DEFAULT_VALUE LOG_FALSE_VALUE
 
 // By default, methods resume() and readBackFilled() are not traced,
 // since they are the glue between a push and pull models. Rather, they
@@ -1314,6 +1316,28 @@ void Reader::readBackFilled() {
     readFillMoreInput();
     resume();
   }
+}
+
+bool Reader::canFastRead() const {
+  return false;
+}
+
+void Reader::fastStart() {
+  assert(canFastRead());
+  // TODO(karlschimpf) Convert to use fast read.
+  start();
+}
+
+void Reader::fastResume() {
+  assert(canFastRead());
+  // TODO(karlschimpf) Convert to use fast read.
+  resume();
+}
+
+void Reader::fastReadBackFilled() {
+  assert(canFastRead());
+  // TODO(karlschimpf) Convert to use fast read.
+  readBackFilled();
 }
 
 }  // end of namespace interp

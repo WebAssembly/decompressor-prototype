@@ -52,6 +52,13 @@ class Reader {
   // Reads from backfilled input stream.
   void readBackFilled();
 
+  // How to fast read. Only applicable if canFastRead() returns true.
+  virtual bool canFastRead() const;
+  void fastStart();
+  void fastResume();
+  void fastReadBackFilled();
+
+
   // Check status of read.
   bool isFinished() const { return Frame.CallMethod == Method::Finished; }
   bool isSuccessful() const { return Frame.CallState == State::Succeeded; }
