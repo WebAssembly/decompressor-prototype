@@ -50,8 +50,8 @@ class Interpreter FINAL {
 
   ~Interpreter() {}
 
-  void start() { Input.start(); }
-  void resume() { Input.resume(); }
+  void start() { Input.algorithmStart(); }
+  void resume() { Input.algorithmResume(); }
   void fail(const std::string& Message) { Input.fail(Message); }
   bool isFinished() const { return Input.isFinished(); }
   bool isSuccessful() const { return Input.isSuccessful(); }
@@ -61,7 +61,7 @@ class Interpreter FINAL {
   // to the corresponding output.
   void decompress() {
     start();
-    Input.readBackFilled();
+    Input.algorithmReadBackFilled();
   }
 
   void setTraceProgress(bool NewValue) {
