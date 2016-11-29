@@ -52,7 +52,7 @@ class CountNode {
       NdPtr = P.NdPtr;
       return *this;
     }
-    virtual int compare(const Ptr& Nd) const;
+    int compare(const Ptr& Nd) const;
     CountNode* get() { return NdPtr; }
     const CountNode* get() const { return NdPtr; }
     CountNode& operator*() { return *get(); }
@@ -65,6 +65,7 @@ class CountNode {
     bool operator!=(const Ptr& Nd) const { return compare(Nd) != 0; }
     bool operator>=(const Ptr& Nd) const { return compare(Nd) >= 0; }
     bool operator>(const Ptr& Nd) const { return compare(Nd) > 0; }
+    void describe(FILE* File);
   };
   typedef Ptr HeapValueType;
   typedef utils::heap<HeapValueType> HeapType;
@@ -87,7 +88,7 @@ class CountNode {
     HeapEntry.reset();
   }
 
-  int compare(const CountNode& Nd) const;
+  virtual int compare(const CountNode& Nd) const;
   bool operator<(const CountNode& Nd) const {
     return compare(Nd) < 0;
   }

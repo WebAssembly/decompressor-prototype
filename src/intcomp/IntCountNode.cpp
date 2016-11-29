@@ -39,13 +39,13 @@ int CountNode::compare(const CountNode& Nd) const {
   // Note: If tie on weight, choose one with larger count, assuming that
   // implies more data (i.e. weight per element).
   if (Count < Nd.Count)
-    return -1;
+    return -2;
   if (Count > Nd.Count)
-    return 11;
+    return 2;
   if (int(NodeKind) < int(Nd.NodeKind))
-    return -1;
+    return -3;
   if (int(NodeKind) > int(Nd.NodeKind))
-    return 1;
+    return 3;
   return 0;
 }
 
@@ -55,6 +55,13 @@ int CountNode::Ptr::compare(const CountNode::Ptr& P) const {
   if (P.NdPtr == nullptr)
     return 1;
   return NdPtr->compare(*P.NdPtr);
+}
+
+void CountNode::Ptr::describe(FILE* File) {
+  if (NdPtr)
+    NdPtr->describe(File);
+  else
+    fprintf(File, "nullptr\n");
 }
 
 void CountNode::indent(FILE* Out, size_t NestLevel, bool AddWeight) const {
@@ -78,7 +85,7 @@ int IntCountNode::compare(const CountNode& Nd) const {
   // Compare structurally.
   const IntCountNode* Arg2 = dyn_cast<IntCountNode>(&Nd);
   if (Arg2 == nullptr)
-    return 1;
+    return Diff;
   const IntCountNode* Arg1 = this;
   size_t Arg1Len = Arg1->pathLength();
   size_t Arg2Len = Arg2->pathLength();
