@@ -47,68 +47,148 @@ std::shared_ptr<TraceClassSexp> IntReader::createTrace() {
   return std::make_shared<TraceClassSexp>("IntReader");
 }
 
-void IntReader::interpRead() {
-  TRACE_MESSAGE("interpRead");
-  Pos = IntStream::ReadCursor(Input);
-  start();
-  readBackFilled();
+bool IntReader::canFastRead() const {
+  return true;
 }
 
-#if 1
-void IntReader::fastRead() {
-  if (canFastRead()) {
-    fprintf(stderr, "Using fast read...\n");
-    fastStart();
-    fastReadBackFilled();
-  } else {
-    fprintf(stderr, "Using slow read...\n");
-    start();
-    readBackFilled();
-  }
-}
-#else
-void IntReader::fastRead() {
-  // TRACE_METHOD("fastRead");
-  Pos = IntStream::ReadCursor(Input);
-  start();
-  fastReadUntil(Input->size());
+void IntReader::fastStart() {
+  algorithmStart();
 }
 
-bool IntReader::fastReadUntil(size_t Eob) {
-  // TODO: remove recursion.
-  TRACE_METHOD("fastReadUntil");
-  while (!errorsFound() && Pos.getIndex() < Eob) {
-    bool moreBlocks = Pos.hasMoreBlocks();
-    if (moreBlocks) {
-      IntStream::BlockPtr Blk = Pos.getNextBlock();
-      if (Blk->getBeginIndex() > Eob)
-        moreBlocks = false;
-    }
-    if (moreBlocks) {
-      IntStream::BlockPtr Blk = Pos.getNextBlock();
-      size_t BlkBegin = Blk->getBeginIndex();
-      while (!errorsFound() && Pos.getIndex() < BlkBegin) {
-        IntType Value = read();
-        TRACE(IntType, "read/write", Value);
-        if (!Output.writeVarint64(Value))
-          return false;
-      }
-      if (!enterBlock())
-        return false;
-      if (!fastReadUntil(Blk->getEndIndex()))
-        return false;
-      if (!exitBlock())
-        return false;
-    } else {
-      IntType Value = read();
-      TRACE(IntType, "read/write", Value);
-      if (!Output.writeVarint64(Value))
-        return false;
+void IntReader::fastResume() {
+  if (!canProcessMoreInputNow())
+    return;
+  while (stillMoreInputToProcessNow()) {
+    if (errorsFound())
+      break;
+    switch (Frame.CallMethod) {
+      default:
+        return handleOtherMethods();
+      case Method::GetFile:
+        switch (Frame.CallState) {
+          case State::Enter:
+            traceEnterFrame();
+            LocalValues.push_back(Input->size());
+            Frame.CallState = State::Exit;
+            call(Method::ReadFast, Frame.CallModifier, nullptr);
+            break;
+          case State::Exit:
+            if (!Output.writeFreezeEof())
+              return failFreezingEof();
+            traceExitFrame();
+            popAndReturn();
+            break;
+          default:
+            return failBadState();
+        }
+        break;
+      case Method::ReadFast:
+        TRACE_BLOCK({
+          FILE* File = getTrace().getFile();
+          fprintf(File, "Values stack:\n");
+          for (size_t i = 0; i < LocalValues.size(); ++i)
+            fprintf(File, "  [%" PRIuMAX "] = %" PRIxMAX "\n", uintmax_t(i),
+                    uintmax_t(LocalValues[i]));
+        });
+        switch (Frame.CallState) {
+          case State::Enter:
+            traceEnterFrame();
+            TRACE(hex_size_t, "eob", LocalValues.back());
+            Frame.CallState = State::Loop;
+            break;
+          case State::Loop: {
+            size_t Eob = LocalValues.back();
+            if (Pos.getIndex() >= Eob) {
+              Frame.CallState = State::Exit;
+              break;
+            }
+            bool moreBlocks = Pos.hasMoreBlocks();
+            if (moreBlocks) {
+              IntStream::BlockPtr Blk = Pos.getNextBlock();
+              if (Blk->getBeginIndex() > Eob)
+                moreBlocks = false;
+            }
+            TRACE(bool, "more blocks", moreBlocks);
+            if (!moreBlocks) {
+              // Only top-level values left. Read until all processed.
+              LocalValues.push_back(Eob);
+              Frame.CallState = State::Exit;
+              call(Method::ReadFastUntil, Frame.CallModifier, nullptr);
+              break;
+            }
+            IntStream::BlockPtr Blk = Pos.getNextBlock();
+            LocalValues.push_back(Blk->getBeginIndex());
+            Frame.CallState = State::Step2;
+            call(Method::ReadFastUntil, Frame.CallModifier, nullptr);
+            break;
+          }
+          case State::Step2: {
+            IntStream::BlockPtr Blk = Pos.getNextBlock();
+            TRACE_BLOCK(
+                { TRACE(hex_size_t, "block.open", Blk->getBeginIndex()); });
+            if (!enterBlock())
+              return fail("Unable to open block");
+            Frame.CallState = State::Step3;
+            LocalValues.push_back(Blk->getEndIndex());
+            call(Method::ReadFast, Frame.CallModifier, nullptr);
+            break;
+          }
+          case State::Step3: {
+            TRACE_BLOCK(
+                { TRACE(hex_size_t, "block.close", LocalValues.back()); });
+            if (!exitBlock())
+              return fail("Unable to close block");
+            Frame.CallState = State::Loop;
+            break;
+          }
+          case State::Exit:
+            LocalValues.pop_back();
+            traceExitFrame();
+            popAndReturn();
+            break;
+          default:
+            return failBadState();
+        }
+        break;
+      case Method::ReadFastUntil:
+        switch (Frame.CallState) {
+          case State::Enter:
+            traceEnterFrame();
+            TRACE(hex_size_t, "end index", LocalValues.back());
+            Frame.CallState = State::Loop;
+            break;
+          case State::Loop: {
+            size_t EndIndex = LocalValues.back();
+            if (Pos.getIndex() >= EndIndex) {
+              Frame.CallState = State::Exit;
+              break;
+            }
+            IntType Value = read();
+            TRACE(IntType, "read/write", Value);
+            if (!Output.writeVarint64(Value))
+              return fail("Unable to write last value");
+            break;
+          }
+          case State::Exit:
+            LocalValues.pop_back();
+            traceExitFrame();
+            popAndReturn();
+            break;
+          default:
+            return failBadState();
+        }
+        break;
     }
   }
-  return !errorsFound();
 }
-#endif
+
+void IntReader::fastReadBackFilled() {
+  readFillStart();
+  while (!isFinished()) {
+    readFillMoreInput();
+    fastResume();
+  }
+}
 
 namespace {
 
@@ -178,8 +258,6 @@ void IntReader::readFillStart() {
 }
 
 void IntReader::readFillMoreInput() {
-  TRACE_METHOD("readFillMoreInput");
-  TRACE(bool, "atEof", Pos.atEof());
 }
 
 uint8_t IntReader::readUint8() {

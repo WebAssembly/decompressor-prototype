@@ -45,7 +45,7 @@ std::shared_ptr<TraceClassSexp> StreamReader::createTrace() {
 
 void StreamReader::startUsing(const decode::ReadCursor& StartPos) {
   ReadPos = StartPos;
-  start();
+  algorithmStart();
 }
 
 TraceClass::ContextPtr StreamReader::getTraceContext() {

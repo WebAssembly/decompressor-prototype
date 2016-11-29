@@ -262,8 +262,8 @@ void IntCompressor::readInput(std::shared_ptr<Queue> InputStream,
     Trace.addContext(MyWriter.getTraceContext());
     Trace.setTraceProgress(true);
   }
-  MyReader.start();
-  MyReader.readBackFilled();
+  MyReader.fastStart();
+  MyReader.fastReadBackFilled();
   bool Successful = MyReader.isFinished() && MyReader.isSuccessful();
   if (!Successful)
     ErrorsFound = true;
@@ -290,7 +290,8 @@ bool IntCompressor::compressUpToSize(size_t Size, bool TraceParsing) {
   Writer.setUpToSize(Size);
   IntReader Reader(Contents, Writer, Symtab);
   Reader.getTrace().setTraceProgress(TraceParsing);
-  Reader.fastRead();
+  Reader.fastStart();
+  Reader.fastReadBackFilled();
   if (!Reader.errorsFound())
     Writer.addAllInputSeqsToUsageMap();
   return !Reader.errorsFound();

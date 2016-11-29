@@ -180,7 +180,8 @@ void Reader::traceEnterFrameInternal() {
   // compiled in release mode.
   TRACE_BLOCK({
     TRACE_ENTER(getName(Frame.CallMethod));
-    TRACE_SEXP("Nd", Frame.Nd);
+    if (Frame.Nd)
+      TRACE_SEXP("Nd", Frame.Nd);
     if (Frame.CallModifier != MethodModifier::ReadAndWrite)
       TRACE_MESSAGE(std::string("(") + getName(Frame.CallModifier) + ")");
   });
@@ -238,11 +239,12 @@ void Reader::describeLocalsStack(FILE* File) {
     for (size_t i = BaseIndex; i < Index; ++i) {
       fprintf(File, "  %" PRIuMAX "\n", LocalValues[i]);
     }
+    BaseIndex = Index;
   }
   fprintf(File, "*************************\n");
 }
 
-void Reader::describeOpcodeLocalStack(FILE* File) {
+void Reader::describeOpcodeLocalsStack(FILE* File) {
   fprintf(File, "*** Opcode Stack ***\n");
   for (auto& Frame : OpcodeLocalsStack.iterRange(1))
     Frame.describe(File, getTrace().getTextWriter());
@@ -259,7 +261,7 @@ void Reader::describeState(FILE* File) {
   if (!LocalsBaseStack.empty())
     describeLocalsStack(File);
   if (!OpcodeLocalsStack.empty())
-    describeOpcodeLocalStack(File);
+    describeOpcodeLocalsStack(File);
   Output.describeState(File);
 }
 
@@ -308,8 +310,8 @@ void Reader::fail(const std::string& Message) {
 }
 
 void Reader::failBadState() {
-  fail(std::string("Bad internal decompressor state in method: ") +
-       getName(Frame.CallMethod));
+  fail(std::string("Bad internal decompressor state: ") +
+       getName(Frame.CallState));
 }
 
 void Reader::failNotImplemented() {
@@ -328,7 +330,41 @@ void Reader::failInWriteOnlyMode() {
   fail("Method can only be processed in read mode");
 }
 
-void Reader::resume() {
+void Reader::handleOtherMethods() {
+  while (1) {
+    switch (Frame.CallMethod) {
+      default:
+        return failNotImplemented();
+      case Method::Started:
+        // If reached, we finished processing the input.
+        assert(FrameStack.empty());
+        Frame.CallMethod = Method::Finished;
+        if (processedInputCorrectly())
+          Frame.CallState = State::Succeeded;
+        else
+          return fail("Malformed input in compressed file");
+        break;
+      case Method::Finished:
+        assert(FrameStack.empty());
+        switch (Frame.CallState) {
+          case State::Succeeded:
+          case State::Failed:
+            break;
+          default:
+            TRACE(string, "State", getName(Frame.CallState));
+            TRACE_MESSAGE("Malformed finish state found, Correcting!");
+            Frame.CallState = State::Failed;
+        }
+#if LOG_RUNMETHODS
+        TRACE_BLOCK({ describeState(tracE.getFile()); });
+        TRACE_EXIT_OVERRIDE("resume");
+#endif
+        return;
+    }
+  }
+}
+
+void Reader::algorithmResume() {
 #if LOG_RUNMETHODS
   TRACE_ENTER("resume");
   TRACE_BLOCK({ describeState(tracE.getFile()); });
@@ -342,8 +378,8 @@ void Reader::resume() {
     TRACE_BLOCK({ describeState(tracE.getFile()); });
 #endif
     switch (Frame.CallMethod) {
-      case Method::NO_SUCH_METHOD:
-        return failNotImplemented();
+      default:
+        return handleOtherMethods();
       case Method::CopyBlock:
         switch (Frame.CallState) {
           case State::Enter:
@@ -1038,22 +1074,6 @@ void Reader::resume() {
             return failBadState();
         }
         break;
-      case Method::Finished:
-        assert(FrameStack.empty());
-        switch (Frame.CallState) {
-          case State::Succeeded:
-          case State::Failed:
-            break;
-          default:
-            TRACE(string, "State", getName(Frame.CallState));
-            TRACE_MESSAGE("Malformed finish state found, Correcting!");
-            Frame.CallState = State::Failed;
-        }
-#if LOG_RUNMETHODS
-        TRACE_BLOCK({ describeState(tracE.getFile()); });
-        TRACE_EXIT_OVERRIDE("resume");
-#endif
-        return;
       case Method::EvalParam:
         switch (Frame.CallState) {
           case State::Enter: {
@@ -1290,15 +1310,6 @@ void Reader::resume() {
             break;
         }
         break;
-      case Method::Started:
-        // If reached, we finished processing the input.
-        assert(FrameStack.empty());
-        Frame.CallMethod = Method::Finished;
-        if (processedInputCorrectly())
-          Frame.CallState = State::Succeeded;
-        else
-          return fail("Malformed input in compressed file");
-        break;
     }
   }
 #if LOG_RUNMETHODS
@@ -1307,14 +1318,14 @@ void Reader::resume() {
 #endif
 }
 
-void Reader::readBackFilled() {
+void Reader::algorithmReadBackFilled() {
 #if LOG_RUNMETHODS
   TRACE_METHOD("readBackFilled");
 #endif
   readFillStart();
   while (!isFinished()) {
     readFillMoreInput();
-    resume();
+    algorithmResume();
   }
 }
 
@@ -1323,21 +1334,18 @@ bool Reader::canFastRead() const {
 }
 
 void Reader::fastStart() {
-  assert(canFastRead());
-  // TODO(karlschimpf) Convert to use fast read.
-  start();
+  // Default to non-fast read.
+  algorithmStart();
 }
 
 void Reader::fastResume() {
-  assert(canFastRead());
-  // TODO(karlschimpf) Convert to use fast read.
-  resume();
+  // Default to non-fast read.
+  algorithmResume();
 }
 
 void Reader::fastReadBackFilled() {
-  assert(canFastRead());
-  // TODO(karlschimpf) Convert to use fast read.
-  readBackFilled();
+  // Default to non-fast read.
+  algorithmReadBackFilled();
 }
 
 }  // end of namespace interp

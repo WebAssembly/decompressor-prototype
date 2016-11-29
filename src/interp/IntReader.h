@@ -41,12 +41,10 @@ class IntReader : public Reader {
             std::shared_ptr<filt::SymbolTable> Symtab);
   ~IntReader() OVERRIDE;
 
-  // Parses inpuot structure of int stream using rules in Symtab.
-  void interpRead();
-
-  // Parses input structure of int stream (rather than using rules in
-  // Symtab).
-  void fastRead();
+  bool canFastRead() const OVERRIDE;
+  virtual void fastStart() OVERRIDE;
+  virtual void fastResume() OVERRIDE;
+  virtual void fastReadBackFilled() OVERRIDE;
 
  private:
   IntStream::ReadCursorWithTraceContext Pos;

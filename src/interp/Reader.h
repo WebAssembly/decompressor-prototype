@@ -41,23 +41,32 @@ class Reader {
   Reader(Writer& Output, std::shared_ptr<filt::SymbolTable> Symtab);
   virtual ~Reader();
 
-  // Starts up decompression.
-  void start() { callTopLevel(Method::GetFile, nullptr); }
+  // Starts up decompression using a (file) algorithm.
+  void algorithmStart() { callTopLevel(Method::GetFile, nullptr); }
 
   // Resumes decompression where it left off. Assumes that more
   // input has been added since the previous start()/resume() call.
   // Resume should be called until isFinished() is true.
-  void resume();
+  void algorithmResume();
 
   // Reads from backfilled input stream.
-  void readBackFilled();
+  void algorithmReadBackFilled();
 
-  // How to fast read. Only applicable if canFastRead() returns true.
+  void algorithmRead() {
+    algorithmStart();
+    algorithmReadBackFilled();
+  }
+
+  // Reads fast, if possible. Otherwise use algorithm read.
   virtual bool canFastRead() const;
-  void fastStart();
-  void fastResume();
-  void fastReadBackFilled();
+  virtual void fastStart();
+  virtual void fastResume();
+  virtual void fastReadBackFilled();
 
+  void fastRead() {
+    fastStart();
+    fastReadBackFilled();
+  }
 
   // Check status of read.
   bool isFinished() const { return Frame.CallMethod == Method::Finished; }
@@ -221,6 +230,8 @@ class Reader {
 
   virtual void reset();
 
+  void handleOtherMethods();
+
   // Initializes all internal stacks, for an initial call to Method with
   // argument Nd.
   void callTopLevel(Method Method, const filt::Node* Nd);
@@ -267,7 +278,7 @@ class Reader {
   virtual void describePeekPosStack(FILE* Out) = 0;
   void describeLoopCounterStack(FILE* Out);
   void describeLocalsStack(FILE* Out);
-  void describeOpcodeLocalStack(FILE* Out);
+  void describeOpcodeLocalsStack(FILE* Out);
   virtual void describeState(FILE* Out);
 
  protected:
