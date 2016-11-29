@@ -67,7 +67,6 @@ void IntReader::fastResume() {
       case Method::GetFile:
         switch (Frame.CallState) {
           case State::Enter:
-            traceEnterFrame();
             LocalValues.push_back(Input->size());
             Frame.CallState = State::Exit;
             call(Method::ReadFast, Frame.CallModifier, nullptr);
@@ -91,7 +90,6 @@ void IntReader::fastResume() {
         });
         switch (Frame.CallState) {
           case State::Enter:
-            traceEnterFrame();
             TRACE(hex_size_t, "eob", LocalValues.back());
             Frame.CallState = State::Loop;
             break;
@@ -151,7 +149,6 @@ void IntReader::fastResume() {
       case Method::ReadFastUntil:
         switch (Frame.CallState) {
           case State::Enter:
-            traceEnterFrame();
             TRACE(hex_size_t, "end index", LocalValues.back());
             Frame.CallState = State::Loop;
             break;

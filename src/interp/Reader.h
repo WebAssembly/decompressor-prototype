@@ -236,15 +236,7 @@ class Reader {
   // argument Nd.
   void callTopLevel(Method Method, const filt::Node* Nd);
 
-  void call(Method Method, MethodModifier Modifier, const filt::Node* Nd) {
-    Frame.ReturnValue = 0;
-    FrameStack.push();
-    Frame.CallMethod = Method;
-    Frame.CallState = State::Enter;
-    Frame.CallModifier = Modifier;
-    Frame.Nd = Nd;
-    Frame.ReturnValue = 0;
-  }
+  void call(Method Method, MethodModifier Modifier, const filt::Node* Nd);
 
   void popAndReturn(decode::IntType Value = 0);
 
