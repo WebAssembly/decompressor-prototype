@@ -32,13 +32,13 @@ namespace intcomp {
 
 class CountNode;
 
-
 // Generic base class for counting the number of times an input artifact
 // appears in a WASM file.
 class CountNode {
   CountNode(const CountNode&) = delete;
   CountNode() = delete;
   CountNode& operator=(const CountNode&) = delete;
+
  public:
   // Intentionally encapsulate a pointer, so that we can define comparison
   // for use in a heap.
@@ -71,50 +71,29 @@ class CountNode {
   typedef utils::heap<HeapValueType> HeapType;
   typedef std::shared_ptr<HeapType::entry> HeapEntryType;
   virtual ~CountNode();
-  enum class Kind {
-    Block,
-    Singleton,
-    IntSequence
-  };
+  enum class Kind { Block, Singleton, IntSequence };
   size_t getCount() const { return Count; }
   virtual size_t getWeight() const;
-  void increment(size_t Cnt=1) { Count += Cnt; }
+  void increment(size_t Cnt = 1) { Count += Cnt; }
 
   // The following two handle associating a heap entry with this.
-  void associateWithHeap(HeapEntryType Entry) {
-    HeapEntry = Entry;
-  }
-  void disassociateFromHeap() {
-    HeapEntry.reset();
-  }
+  void associateWithHeap(HeapEntryType Entry) { HeapEntry = Entry; }
+  void disassociateFromHeap() { HeapEntry.reset(); }
 
   virtual int compare(const CountNode& Nd) const;
-  bool operator<(const CountNode& Nd) const {
-    return compare(Nd) < 0;
-  }
-  bool operator<=(const CountNode& Nd) const {
-    return compare(Nd) <= 0;
-  }
-  bool operator==(const CountNode& Nd) const {
-    return compare(Nd) == 0;
-  }
-  bool operator!=(const CountNode& Nd) const {
-    return compare(Nd) != 0;
-  }
-  bool operator>=(const CountNode& Nd) const {
-    return compare(Nd) >= 0;
-  }
-  bool operator>(const CountNode& Nd) const {
-    return compare(Nd) > 0;
-  }
+  bool operator<(const CountNode& Nd) const { return compare(Nd) < 0; }
+  bool operator<=(const CountNode& Nd) const { return compare(Nd) <= 0; }
+  bool operator==(const CountNode& Nd) const { return compare(Nd) == 0; }
+  bool operator!=(const CountNode& Nd) const { return compare(Nd) != 0; }
+  bool operator>=(const CountNode& Nd) const { return compare(Nd) >= 0; }
+  bool operator>(const CountNode& Nd) const { return compare(Nd) > 0; }
 
-  virtual void describe(FILE* out, size_t NestLevel=0) const = 0;
+  virtual void describe(FILE* out, size_t NestLevel = 0) const = 0;
 
   // The following define casting operations isa<>, dyn_cast<>, and cast<>.
-  Kind getRtClassId() const {
-    return NodeKind;
-  }
+  Kind getRtClassId() const { return NodeKind; }
   static bool implementsClass(Kind /*NodeKind*/) { return true; }
+
  protected:
   Kind NodeKind;
   size_t Count;
@@ -124,18 +103,18 @@ class CountNode {
   HeapEntryType HeapEntry;
 
   CountNode(Kind NodeKind) : NodeKind(NodeKind), Count(0) {}
-  void indent(FILE* Out, size_t NestLevel, bool AddWeight=true) const;
+  void indent(FILE* Out, size_t NestLevel, bool AddWeight = true) const;
 };
 
 // Implements a counter of the number of blocks in a bitcode file.
 class BlockCountNode : public CountNode {
   BlockCountNode(const BlockCountNode&) = delete;
   BlockCountNode& operator=(const BlockCountNode&) = delete;
+
  public:
-  explicit BlockCountNode()
-      : CountNode(Kind::Block) {}
+  explicit BlockCountNode() : CountNode(Kind::Block) {}
   ~BlockCountNode() OVERRIDE;
-  void describe(FILE* Out, size_t NestLevel=0) const OVERRIDE;
+  void describe(FILE* Out, size_t NestLevel = 0) const OVERRIDE;
   static bool implementsClass(Kind NodeKind) { return NodeKind == Kind::Block; }
 };
 
@@ -146,11 +125,12 @@ class IntCountNode : public CountNode {
   IntCountNode() = delete;
   IntCountNode(const IntCountNode&) = delete;
   IntCountNode& operator=(const IntCountNode&) = delete;
+
  public:
   ~IntCountNode() OVERRIDE {}
   size_t getValue() const { return Value; }
   size_t getWeight() const OVERRIDE;
-  void describe(FILE* Out, size_t NestLevel=0) const OVERRIDE;
+  void describe(FILE* Out, size_t NestLevel = 0) const OVERRIDE;
   size_t pathLength() const;
   bool isSingletonPath() const { return Parent == nullptr; }
   // Lookup (or create if necessary), the entry for Value in UsageMap. Uses
@@ -170,6 +150,7 @@ class IntCountNode : public CountNode {
   static bool implementsClass(Kind NodeKind) {
     return NodeKind == Kind::IntSequence || NodeKind == Kind::Singleton;
   }
+
  protected:
   IntCountNode(Kind NodeKind, decode::IntType Value, IntCountNode* Parent)
       : CountNode(Kind::IntSequence), Value(Value), Parent(Parent) {}
@@ -184,25 +165,30 @@ class SingletonCountNode : public IntCountNode {
   SingletonCountNode() = delete;
   SingletonCountNode(const SingletonCountNode&) = delete;
   SingletonCountNode& operator=(const SingletonCountNode&) = delete;
+
  public:
   SingletonCountNode(decode::IntType);
   ~SingletonCountNode() OVERRIDE;
-  static bool implementsClass(Kind NodeKind) { return NodeKind == Kind::Singleton; }
+  static bool implementsClass(Kind NodeKind) {
+    return NodeKind == Kind::Singleton;
+  }
 };
 
 class IntSeqCountNode : public IntCountNode {
   IntSeqCountNode() = delete;
   IntSeqCountNode(const IntSeqCountNode&) = delete;
   IntSeqCountNode& operator=(const IntSeqCountNode&) = delete;
+
  public:
   IntSeqCountNode(decode::IntType Value, IntCountNode* Parent);
   ~IntSeqCountNode() OVERRIDE;
-  static bool implementsClass(Kind NodeKind) { return NodeKind == Kind::IntSequence; }
+  static bool implementsClass(Kind NodeKind) {
+    return NodeKind == Kind::IntSequence;
+  }
 };
 
-} // end of namespace intcomp
+}  // end of namespace intcomp
 
-} // end of namespace wasm
+}  // end of namespace wasm
 
-
-#endif // DEcOMPRESSOR_SRC_INTCOMP_INTCOUNTNODE_H
+#endif  // DEcOMPRESSOR_SRC_INTCOMP_INTCOUNTNODE_H

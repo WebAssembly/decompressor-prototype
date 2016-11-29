@@ -18,6 +18,8 @@
 
 #include "interp/ReadStream.h"
 
+#include "interp/LEB128Helpers.h"
+
 namespace wasm {
 
 using namespace decode;
@@ -25,6 +27,7 @@ using namespace filt;
 
 namespace interp {
 
+#if 0
 namespace {
 
 template <class Type>
@@ -71,6 +74,7 @@ Type readSignedLEB128(ReadCursor& Pos) {
 }
 
 }  // end of anonymous namespace
+#endif
 
 ReadStream::~ReadStream() {
 }

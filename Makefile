@@ -189,7 +189,8 @@ INTCOMP_OBJDIR = $(OBJDIR)/intcomp
 
 INTCOMP_SRCS = \
 	IntCompress.cpp \
-	IntCountNode.cpp
+	IntCountNode.cpp \
+	IntFormats.cpp
 
 INTCOMP_OBJS = $(patsubst %.cpp, $(INTCOMP_OBJDIR)/%.o, $(INTCOMP_SRCS))
 INTCOMP_LIB = $(LIBDIR)/$(LIBPREFIX)intcomp.a
@@ -762,7 +763,8 @@ $(TEST_EXECS): $(TEST_EXECDIR)/%$(EXE): $(TEST_OBJDIR)/%.o $(LIBS)
 ###### Testing ######
 
 test: build-all test-parser test-raw-streams test-byte-queues \
-	test-decompsexp-wasm test-decompwasm-sexp test-decompress
+	test-decompsexp-wasm test-decompwasm-sexp test-decompress \
+	test-compress
 	@echo "*** all tests passed ***"
 
 .PHONY: test
@@ -801,6 +803,7 @@ test-decompress: \
 .PHONY: test-decompress
 
 test-compress: $(TEST_WASM_COMP_FILES)
+	@echo "*** compress 0xD tests passed ***"
 
 .PHONY: test-compress
 

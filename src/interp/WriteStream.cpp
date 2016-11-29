@@ -18,6 +18,8 @@
 
 #include "interp/WriteStream.h"
 
+#include "interp/LEB128Helpers.h"
+
 namespace wasm {
 
 using namespace decode;
@@ -25,6 +27,7 @@ using namespace filt;
 
 namespace interp {
 
+#if 0
 namespace {
 
 // Define LEB128 writers.
@@ -82,6 +85,7 @@ void writeFixed(Type Value, WriteCursor& Pos) {
 }
 
 }  // end of anonymous namespace
+#endif
 
 WriteStream::~WriteStream() {
 }
