@@ -65,14 +65,16 @@ class CountNode {
     bool operator!=(const Ptr& Nd) const { return compare(Nd) != 0; }
     bool operator>=(const Ptr& Nd) const { return compare(Nd) >= 0; }
     bool operator>(const Ptr& Nd) const { return compare(Nd) > 0; }
+    void describe(FILE* File);
   };
   typedef Ptr HeapValueType;
   typedef utils::heap<HeapValueType> HeapType;
   typedef std::shared_ptr<HeapType::entry> HeapEntryType;
   virtual ~CountNode();
   enum class Kind {
-    IntSequence,
-    Block
+    Block,
+    Singleton,
+    IntSequence
   };
   size_t getCount() const { return Count; }
   virtual size_t getWeight() const;
@@ -86,7 +88,7 @@ class CountNode {
     HeapEntry.reset();
   }
 
-  int compare(const CountNode& Nd) const;
+  virtual int compare(const CountNode& Nd) const;
   bool operator<(const CountNode& Nd) const {
     return compare(Nd) < 0;
   }
@@ -122,7 +124,6 @@ class CountNode {
   HeapEntryType HeapEntry;
 
   CountNode(Kind NodeKind) : NodeKind(NodeKind), Count(0) {}
-  virtual int compareLocal(const CountNode& Nd) const;
   void indent(FILE* Out, size_t NestLevel, bool AddWeight=true) const;
 };
 
@@ -142,11 +143,11 @@ typedef std::map<decode::IntType, CountNode*> IntCountUsageMap;
 
 // Implements a notion of a trie on value usage counts.
 class IntCountNode : public CountNode {
+  IntCountNode() = delete;
   IntCountNode(const IntCountNode&) = delete;
   IntCountNode& operator=(const IntCountNode&) = delete;
  public:
-  explicit IntCountNode(decode::IntType Value, IntCountNode* Parent = nullptr);
-  ~IntCountNode();
+  ~IntCountNode() OVERRIDE {}
   size_t getValue() const { return Value; }
   size_t getWeight() const OVERRIDE;
   void describe(FILE* Out, size_t NestLevel=0) const OVERRIDE;
@@ -166,13 +167,37 @@ class IntCountNode : public CountNode {
     UsageMap.erase(Key);
   }
 
-  static bool implementsClass(Kind NodeKind) { return NodeKind == Kind::IntSequence; }
- private:
+  static bool implementsClass(Kind NodeKind) {
+    return NodeKind == Kind::IntSequence || NodeKind == Kind::Singleton;
+  }
+ protected:
+  IntCountNode(Kind NodeKind, decode::IntType Value, IntCountNode* Parent)
+      : CountNode(Kind::IntSequence), Value(Value), Parent(Parent) {}
   decode::IntType Value;
   IntCountUsageMap NextUsageMap;
   IntCountNode* Parent;
   void describePath(FILE* Out, size_t MaxPath) const;
-  int compareLocal(const CountNode& Nd) const OVERRIDE;
+  int compare(const CountNode& Nd) const OVERRIDE;
+};
+
+class SingletonCountNode : public IntCountNode {
+  SingletonCountNode() = delete;
+  SingletonCountNode(const SingletonCountNode&) = delete;
+  SingletonCountNode& operator=(const SingletonCountNode&) = delete;
+ public:
+  SingletonCountNode(decode::IntType);
+  ~SingletonCountNode() OVERRIDE;
+  static bool implementsClass(Kind NodeKind) { return NodeKind == Kind::Singleton; }
+};
+
+class IntSeqCountNode : public IntCountNode {
+  IntSeqCountNode() = delete;
+  IntSeqCountNode(const IntSeqCountNode&) = delete;
+  IntSeqCountNode& operator=(const IntSeqCountNode&) = delete;
+ public:
+  IntSeqCountNode(decode::IntType Value, IntCountNode* Parent);
+  ~IntSeqCountNode() OVERRIDE;
+  static bool implementsClass(Kind NodeKind) { return NodeKind == Kind::IntSequence; }
 };
 
 } // end of namespace intcomp

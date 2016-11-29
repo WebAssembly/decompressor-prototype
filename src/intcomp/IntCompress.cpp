@@ -118,7 +118,6 @@ void IntCounterWriter::addInputSeqToUsageMap() {
   for (size_t i = 0, e = input_seq->size(); i < e; ++i) {
     IntType Val = (*input_seq)[i];
     Nd = IntCountNode::lookup(*Map, Val, Nd);
-
     if (UpToSize == 1 || i > 0)
       Nd->increment();
     if (e > 1) {
@@ -311,7 +310,9 @@ bool IntCompressor::removeSmallUsageCounts(CountNode* Nd) {
   return false;
 }
 
-void IntCompressor::compress(bool TraceParsing, bool TraceFirstPassOnly) {
+void IntCompressor::compress(DetailLevel Level,
+                             bool TraceParsing,
+                             bool TraceFirstPassOnly) {
   TRACE_METHOD("compress");
   readInput(Input, Symtab, TraceParsing);
   if (errorsFound()) {
@@ -321,16 +322,26 @@ void IntCompressor::compress(bool TraceParsing, bool TraceFirstPassOnly) {
   // Start by collecting number of occurrences of each integer, so
   // that we can use as a filter on integer sequence inclusion into the
   // IntCountNode trie.
-  if (!compressUpToSize(1, TraceParsing))
+  if (!compressUpToSize(1, TraceParsing && !TraceFirstPassOnly))
     return;
   removeSmallUsageCounts();
-  describe(stderr, Flag(CollectionFlag::TopLevel));
+  if (Level == AllDetail)
+    describe(stderr, Flag(CollectionFlag::TopLevel));
   if (LengthLimit > 1) {
-    if (!compressUpToSize(LengthLimit, TraceParsing))
+    if (!compressUpToSize(LengthLimit, TraceParsing && !TraceFirstPassOnly))
       return;
     removeSmallUsageCounts();
   }
-  describe(stderr, Flag(CollectionFlag::IntPaths));
+  switch (Level) {
+    case DetailLevel::NoDetail:
+      break;
+    case DetailLevel::SomeDetail:
+      describe(stderr, Flag(CollectionFlag::All));
+      break;
+    case DetailLevel::AllDetail:
+      describe(stderr, Flag(CollectionFlag::IntPaths));
+      break;
+  }
 }
 
 namespace {

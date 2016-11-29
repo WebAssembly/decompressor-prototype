@@ -39,17 +39,13 @@ int CountNode::compare(const CountNode& Nd) const {
   // Note: If tie on weight, choose one with larger count, assuming that
   // implies more data (i.e. weight per element).
   if (Count < Nd.Count)
-    return -1;
+    return -2;
   if (Count > Nd.Count)
-    return 11;
+    return 2;
   if (int(NodeKind) < int(Nd.NodeKind))
-    return -1;
+    return -3;
   if (int(NodeKind) > int(Nd.NodeKind))
-    return 1;
-  return compareLocal(Nd);
-}
-
-int CountNode::compareLocal(const CountNode& Nd) const {
+    return 3;
   return 0;
 }
 
@@ -59,6 +55,13 @@ int CountNode::Ptr::compare(const CountNode::Ptr& P) const {
   if (P.NdPtr == nullptr)
     return 1;
   return NdPtr->compare(*P.NdPtr);
+}
+
+void CountNode::Ptr::describe(FILE* File) {
+  if (NdPtr)
+    NdPtr->describe(File);
+  else
+    fprintf(File, "nullptr\n");
 }
 
 void CountNode::indent(FILE* Out, size_t NestLevel, bool AddWeight) const {
@@ -75,17 +78,14 @@ void BlockCountNode::describe(FILE* Out, size_t NestLevel) const {
   fputs(": Block\n", Out);
 }
 
-IntCountNode::IntCountNode(IntType Value, IntCountNode* Parent)
-    : CountNode(Kind::IntSequence), Value(Value), Parent(Parent) {}
-
-IntCountNode::~IntCountNode() {
-  clear(NextUsageMap);
-}
-
-int IntCountNode::compareLocal(const CountNode& Nd) const {
+int IntCountNode::compare(const CountNode& Nd) const {
+  int Diff = CountNode::compare(Nd);
+  if (Diff != 0)
+    return Diff;
+  // Compare structurally.
   const IntCountNode* Arg2 = dyn_cast<IntCountNode>(&Nd);
   if (Arg2 == nullptr)
-    return 1;
+    return Diff;
   const IntCountNode* Arg1 = this;
   size_t Arg1Len = Arg1->pathLength();
   size_t Arg2Len = Arg2->pathLength();
@@ -146,7 +146,10 @@ IntCountNode* IntCountNode::lookup(IntCountUsageMap& UsageMap,
   CountNode* CntNd = UsageMap[Value];
   IntCountNode* Nd = dyn_cast<IntCountNode>(CntNd);
   if (Nd == nullptr) {
-    Nd = new IntCountNode(Value, Parent);
+    if (Parent)
+      Nd = new IntSeqCountNode(Value, Parent);
+    else
+      Nd = new SingletonCountNode(Value);
     UsageMap[Value] = Nd;
   }
   return Nd;
@@ -156,6 +159,21 @@ void IntCountNode::clear(IntCountUsageMap& UsageMap) {
   for (auto& pair : UsageMap)
     delete pair.second;
   UsageMap.clear();
+}
+
+SingletonCountNode::SingletonCountNode(IntType Value)
+    : IntCountNode(Kind::Singleton, Value, nullptr) {
+}
+
+SingletonCountNode::~SingletonCountNode() {}
+
+IntSeqCountNode::IntSeqCountNode(IntType Value, IntCountNode* Parent)
+    : IntCountNode(Kind::IntSequence, Value, Parent) {
+  assert(Parent);
+}
+
+IntSeqCountNode::~IntSeqCountNode() {
+  clear(NextUsageMap);
 }
 
 } // end of namespace intcomp
