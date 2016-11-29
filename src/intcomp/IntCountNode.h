@@ -74,7 +74,7 @@ class CountNode {
   enum class Kind {
     Block,
     Singleton,
-    IntSequence,
+    IntSequence
   };
   size_t getCount() const { return Count; }
   virtual size_t getWeight() const;
