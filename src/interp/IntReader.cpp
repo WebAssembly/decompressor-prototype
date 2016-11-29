@@ -88,31 +88,36 @@ void IntReader::fastResume() {
             fprintf(File, "  [%" PRIuMAX "] = %" PRIxMAX "\n", uintmax_t(i),
                     uintmax_t(LocalValues[i]));
         });
+        TRACE(string, "state", getName(Frame.CallState));
+        TRACE(hex_size_t, "eob", LocalValues.back());
         switch (Frame.CallState) {
           case State::Enter:
             TRACE(hex_size_t, "eob", LocalValues.back());
             Frame.CallState = State::Loop;
             break;
           case State::Loop: {
+            // Check if end of current (enclosing) block has been reached.
             size_t Eob = LocalValues.back();
             if (Pos.getIndex() >= Eob) {
               Frame.CallState = State::Exit;
               break;
             }
-            bool moreBlocks = Pos.hasMoreBlocks();
-            if (moreBlocks) {
+            // Check if any nested blocks.
+            bool hasNestedBlocks = Pos.hasMoreBlocks();
+            if (hasNestedBlocks) {
               IntStream::BlockPtr Blk = Pos.getNextBlock();
-              if (Blk->getBeginIndex() > Eob)
-                moreBlocks = false;
+              if (Blk->getBeginIndex() >= Eob)
+                hasNestedBlocks = false;
             }
-            TRACE(bool, "more blocks", moreBlocks);
-            if (!moreBlocks) {
+            TRACE(bool, "more nested blocks", hasNestedBlocks);
+            if (!hasNestedBlocks) {
               // Only top-level values left. Read until all processed.
               LocalValues.push_back(Eob);
               Frame.CallState = State::Exit;
               call(Method::ReadFastUntil, Frame.CallModifier, nullptr);
               break;
             }
+            // Read to beginning of nested block.
             IntStream::BlockPtr Blk = Pos.getNextBlock();
             LocalValues.push_back(Blk->getBeginIndex());
             Frame.CallState = State::Step2;
@@ -120,6 +125,7 @@ void IntReader::fastResume() {
             break;
           }
           case State::Step2: {
+            // At the beginning of a nested block.
             IntStream::BlockPtr Blk = Pos.getNextBlock();
             TRACE_BLOCK(
                 { TRACE(hex_size_t, "block.open", Blk->getBeginIndex()); });
@@ -131,10 +137,12 @@ void IntReader::fastResume() {
             break;
           }
           case State::Step3: {
+            // At the end of a nested block.
             TRACE_BLOCK(
                 { TRACE(hex_size_t, "block.close", LocalValues.back()); });
             if (!exitBlock())
               return fail("Unable to close block");
+            // Continue to process rest of block.
             Frame.CallState = State::Loop;
             break;
           }
