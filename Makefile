@@ -804,6 +804,7 @@ test-compress: $(TEST_WASM_COMP_FILES)
 
 .PHONY: test-compress
 
+# Note: Currently only tests that code executes (without errors).
 $(TEST_WASM_COMP_FILES): $(TEST_0XD_GENDIR)/%.wasm-comp: $(TEST_0XD_SRCDIR)/%.wasm \
 		$(BUILD_EXECDIR)/compress-int
 	$(BUILD_EXECDIR)/compress-int -c 2 -l 10 -i $<
