@@ -74,7 +74,11 @@ class IntCompressor FINAL {
 
   bool errorsFound() const { return ErrorsFound; }
 
-  void compress(bool TraceParsing = false, bool TraceFirstPassOnly = true);
+  enum DetailLevel { NoDetail, SomeDetail, AllDetail };
+
+  void compress(DetailLevel Level = NoDetail,
+                bool TraceParsing = false,
+                bool TraceFirstPassOnly = true);
 
   void setTraceProgress(bool NewValue) {
     // TODO: Don't force creation of trace object if not needed.
