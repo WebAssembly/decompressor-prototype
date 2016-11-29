@@ -80,11 +80,6 @@ class IntCounterWriter : public Writer {
   bool writeValue(decode::IntType Value, const filt::Node* Format) OVERRIDE;
   bool writeAction(const filt::CallbackNode* Action) OVERRIDE;
 
-// For debugging
-#if DESCRIBE_INPUT
-  void describeInput();
-#endif
-
  private:
   IntCompressor::IntCounter& Counter;
   circular_vector<IntType>* input_seq;
@@ -93,15 +88,6 @@ class IntCounterWriter : public Writer {
   size_t UpToSize;
   void popValuesFromInputSeq(size_t Size);
 };
-
-#if DESCRIBE_INPUT
-void IntCounterWriter::describeInput() {
-  fprintf(stderr, "input seq:");
-  for (size_t i = 0; i < input_seq->size(); ++i)
-    fprintf(stderr, " %" PRIuMAX, uintmax_t((*input_seq).at(i)));
-  fprintf(stderr, "\n");
-}
-#endif
 
 IntCounterWriter::~IntCounterWriter() {
   // TODO(karlschimpf): Recover memory of input_seq. Not done now due to
@@ -127,9 +113,6 @@ void IntCounterWriter::popValuesFromInputSeq(size_t Size) {
 }
 
 void IntCounterWriter::addInputSeqToUsageMap() {
-#if DESCRIBE_INPUT
-  describeInput();
-#endif
   IntCountUsageMap* Map = &Counter.UsageMap;
   IntCountNode* Nd = nullptr;
   for (size_t i = 0, e = input_seq->size(); i < e; ++i) {
@@ -278,12 +261,13 @@ IntCompressor::~IntCompressor() {
 }
 
 bool IntCompressor::compressUpToSize(size_t Size, bool TraceParsing) {
-  if (Size == 1)
-    fprintf(stderr, "Collecting integer sequences of length: 1\n");
-  else
-    fprintf(stderr,
-            "Collecting integer sequences of (up to) length: %" PRIuMAX "\n",
-            uintmax_t(Size));
+  TRACE_BLOCK({
+    if (Size == 1)
+      TRACE_MESSAGE("Collecting integer sequences of length: 1");
+    else
+      TRACE_MESSAGE("Collecting integer sequences of (up to) length: " +
+                    std::to_string(Size));
+  });
   IntCounterWriter Writer(Counter);
   Writer.setCountCutoff(CountCutoff);
   Writer.setWeightCutoff(WeightCutoff);
@@ -480,12 +464,11 @@ void CountNodeCollector::describe(FILE* Out) {
 }  // end of anonymous namespace
 
 void IntCompressor::describe(FILE* Out, CollectionFlags Flags) {
-  fprintf(stderr, "Collecting results...\n");
   CountNodeCollector Collector(Counter);
   Collector.CountCutoff = CountCutoff;
   Collector.WeightCutoff = WeightCutoff;
   Collector.collect(Flags);
-  Collector.describe(Out);
+  TRACE_BLOCK({ Collector.describe(getTrace().getFile()); });
 }
 
 }  // end of namespace intcomp
