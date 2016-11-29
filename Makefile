@@ -328,6 +328,9 @@ TEST_WASM_WPD_GEN_FILES = $(patsubst %.wast, $(TEST_0XD_GENDIR)/%.wasm-wpd, \
 TEST_WASM_CAPI_GEN_FILES = $(patsubst %.wast, $(TEST_0XD_GENDIR)/%.wasm-capi, \
                         $(TEST_WASM_SRCS))
 
+TEST_WASM_COMP_FILES = $(patsubst %.wast, $(TEST_0XD_GENDIR)/%.wasm-comp, \
+                        $(TEST_WASM_SRCS))
+
 ###### General compilation definitions ######
 
 LIBS = $(PARSER_LIB) $(BINARY_LIB) $(INTERP_LIB) $(SEXP_LIB) \
@@ -796,6 +799,16 @@ test-decompress: \
 	@echo "*** decompress 0xD tests passed ***"
 
 .PHONY: test-decompress
+
+test-compress: $(TEST_WASM_COMP_FILES)
+
+.PHONY: test-compress
+
+$(TEST_WASM_COMP_FILES): $(TEST_0XD_GENDIR)/%.wasm-comp: $(TEST_0XD_SRCDIR)/%.wasm \
+		$(BUILD_EXECDIR)/compress-int
+	$(BUILD_EXECDIR)/compress-int -c 2 -l 10 -i $<
+
+.PHONY: $(TEST_WASM_COMP_FILES)
 
 $(TEST_WASM_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm: $(TEST_0XD_SRCDIR)/%.wasm \
 		$(BUILD_EXECDIR)/decompress
