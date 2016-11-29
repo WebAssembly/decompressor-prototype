@@ -278,7 +278,9 @@ void Reader::reset() {
   Output.reset();
 }
 
-void Reader::call(Method Method, MethodModifier Modifier, const filt::Node* Nd) {
+void Reader::call(Method Method,
+                  MethodModifier Modifier,
+                  const filt::Node* Nd) {
   Frame.ReturnValue = 0;
   FrameStack.push();
   Frame.CallMethod = Method;
@@ -288,7 +290,6 @@ void Reader::call(Method Method, MethodModifier Modifier, const filt::Node* Nd) 
   Frame.ReturnValue = 0;
   traceEnterFrame();
 }
-
 
 void Reader::popAndReturn(decode::IntType Value) {
   TRACE(IntType, "returns", Value);
