@@ -278,6 +278,14 @@ void Reader::reset() {
   Output.reset();
 }
 
+void Reader::popAndReturn(decode::IntType Value) {
+  TRACE(IntType, "returns", Value);
+  traceExitFrame();
+  if (!FrameStack.empty())
+    FrameStack.pop();
+  Frame.ReturnValue = Value;
+}
+
 void Reader::callTopLevel(Method Method, const filt::Node* Nd) {
   reset();
   Frame.reset();
@@ -290,10 +298,8 @@ bool Reader::writeAction(const filt::CallbackNode* Action) {
 
 void Reader::fail() {
   TRACE_MESSAGE("method failed");
-  while (!FrameStack.empty()) {
-    traceExitFrame();
+  while (!FrameStack.empty())
     popAndReturn();
-  }
   reset();
   Frame.fail();
 }
@@ -396,7 +402,6 @@ void Reader::algorithmResume() {
             break;
           case State::Exit:
             popAndReturn();
-            traceExitFrame();
             break;
           default:
             return failBadState();
@@ -457,7 +462,6 @@ void Reader::algorithmResume() {
                 IntType Arg1 = LocalValues.back();
                 LocalValues.pop_back();
                 popAndReturn(Arg1 & Arg2);
-                traceExitFrame();
                 break;
               }
               default:
@@ -483,7 +487,6 @@ void Reader::algorithmResume() {
                 IntType Arg1 = LocalValues.back();
                 LocalValues.pop_back();
                 popAndReturn(Arg1 | Arg2);
-                traceExitFrame();
                 break;
               }
               default:
@@ -509,7 +512,6 @@ void Reader::algorithmResume() {
                 IntType Arg1 = LocalValues.back();
                 LocalValues.pop_back();
                 popAndReturn(Arg1 ^ Arg2);
-                traceExitFrame();
                 break;
               }
               default:
@@ -529,7 +531,6 @@ void Reader::algorithmResume() {
                 IntType Arg = Frame.ReturnValue;
                 LocalValues.pop_back();
                 popAndReturn(~Arg);
-                traceExitFrame();
                 break;
               }
               default:
@@ -542,7 +543,6 @@ void Reader::algorithmResume() {
             traceEnterFrame();
             writeAction(cast<CallbackNode>(Frame.Nd));
             popAndReturn(LastReadValue);
-            traceExitFrame();
             break;
           case OpI32Const:
           case OpI64Const:
@@ -554,13 +554,11 @@ void Reader::algorithmResume() {
             if (hasReadMode())
               LastReadValue = Value;
             popAndReturn(Value);
-            traceExitFrame();
             break;
           }
           case OpLastRead:
             traceEnterFrame();
             popAndReturn(LastReadValue);
-            traceExitFrame();
             break;
           case OpLocal: {
             traceEnterFrame();
@@ -570,7 +568,6 @@ void Reader::algorithmResume() {
               return fail("Local variable index out of range!");
             }
             popAndReturn(LocalValues[LocalsBase + Index]);
-            traceExitFrame();
             break;
           }
           case OpPeek:
@@ -585,7 +582,6 @@ void Reader::algorithmResume() {
               case State::Exit:
                 popPeekPos();
                 popAndReturn(Frame.ReturnValue);
-                traceExitFrame();
                 break;
               default:
                 return failBadState();
@@ -601,7 +597,6 @@ void Reader::algorithmResume() {
                 break;
               case State::Exit:
                 popAndReturn(Frame.ReturnValue);
-                traceExitFrame();
                 break;
               default:
                 return failBadState();
@@ -623,7 +618,6 @@ void Reader::algorithmResume() {
                 break;
             }
             popAndReturn(Value);
-            traceExitFrame();
             break;
           }
           case OpMap:
@@ -646,7 +640,6 @@ void Reader::algorithmResume() {
                 if (hasReadMode())
                   LastReadValue = Frame.ReturnValue;
                 popAndReturn(LastReadValue);
-                traceExitFrame();
                 break;
               default:
                 return failBadState();
@@ -669,7 +662,6 @@ void Reader::algorithmResume() {
                 }
                 LocalValues[LocalsBase + Index] = Frame.ReturnValue;
                 popAndReturn(LastReadValue);
-                traceExitFrame();
                 break;
               }
               default:
@@ -693,7 +685,6 @@ void Reader::algorithmResume() {
                 break;
               case State::Exit:
                 popAndReturn(Frame.ReturnValue);
-                traceExitFrame();
                 break;
               default:
                 return failBadState();
@@ -716,7 +707,6 @@ void Reader::algorithmResume() {
                 break;
               case State::Exit: {
                 popAndReturn(Frame.ReturnValue);
-                traceExitFrame();
                 break;
               }
               default:
@@ -739,7 +729,6 @@ void Reader::algorithmResume() {
                 break;
               case State::Exit: {
                 popAndReturn(Frame.ReturnValue);
-                traceExitFrame();
                 break;
               }
               default:
@@ -762,7 +751,6 @@ void Reader::algorithmResume() {
                 break;
               case State::Exit: {
                 popAndReturn(Frame.ReturnValue);
-                traceExitFrame();
                 break;
               }
               default:
@@ -787,7 +775,6 @@ void Reader::algorithmResume() {
               case State::Exit:
                 LoopCounterStack.pop();
                 popAndReturn(LastReadValue);
-                traceExitFrame();
                 break;
               default:
                 return failBadState();
@@ -814,7 +801,6 @@ void Reader::algorithmResume() {
               case State::Exit:
                 LoopCounterStack.pop();
                 popAndReturn();
-                traceExitFrame();
                 break;
               default:
                 return failBadState();
@@ -835,7 +821,6 @@ void Reader::algorithmResume() {
                 break;
               case State::Exit:
                 popAndReturn();
-                traceExitFrame();
                 break;
               default:
                 return failBadState();
@@ -855,7 +840,6 @@ void Reader::algorithmResume() {
                 break;
               case State::Exit:
                 popAndReturn();
-                traceExitFrame();
                 break;
               default:
                 return failBadState();
@@ -877,7 +861,6 @@ void Reader::algorithmResume() {
                 break;
               case State::Exit:
                 popAndReturn();
-                traceExitFrame();
                 break;
               default:
                 return failBadState();
@@ -901,7 +884,6 @@ void Reader::algorithmResume() {
               }
               case State::Exit:
                 popAndReturn();
-                traceExitFrame();
                 break;
               default:
                 return failBadState();
@@ -916,7 +898,6 @@ void Reader::algorithmResume() {
                 break;
               case State::Exit:
                 popAndReturn();
-                traceExitFrame();
                 break;
               default:
                 return failBadState();
@@ -944,7 +925,6 @@ void Reader::algorithmResume() {
                   LocalsBaseStack.pop();
                 }
                 popAndReturn();
-                traceExitFrame();
                 break;
               }
               default:
@@ -961,7 +941,6 @@ void Reader::algorithmResume() {
                 break;
               case State::Exit:
                 popAndReturn();
-                traceExitFrame();
                 break;
               default:
                 return failBadState();
@@ -1000,7 +979,6 @@ void Reader::algorithmResume() {
               case State::Exit:
                 CallingEvalStack.pop();
                 popAndReturn(LastReadValue);
-                traceExitFrame();
                 break;
               default:
                 return failBadState();
@@ -1037,7 +1015,6 @@ void Reader::algorithmResume() {
                 ++LogBlockCount;
 #endif
                 popAndReturn();
-                traceExitFrame();
                 break;
               default:
                 return failBadState();
@@ -1046,7 +1023,6 @@ void Reader::algorithmResume() {
           case OpVoid:  // Method::Eval
             traceEnterFrame();
             popAndReturn(LastReadValue);
-            traceExitFrame();
             break;
         }
         break;
@@ -1068,7 +1044,6 @@ void Reader::algorithmResume() {
             if (!exitBlock())
               break;
             popAndReturn();
-            traceExitFrame();
             break;
           default:
             return failBadState();
@@ -1098,7 +1073,6 @@ void Reader::algorithmResume() {
           case State::Exit:
             CallingEvalStack.pop();
             popAndReturn(Frame.ReturnValue);
-            traceExitFrame();
             break;
           default:
             return failBadState();
@@ -1151,7 +1125,6 @@ void Reader::algorithmResume() {
             if (!Output.writeFreezeEof())
               return failFreezingEof();
             popAndReturn();
-            traceExitFrame();
             break;
           default:
             return failBadState();
@@ -1180,7 +1153,6 @@ void Reader::algorithmResume() {
           case State::Exit:
             LoopCounterStack.pop();
             popAndReturn();
-            traceExitFrame();
             break;
           default:
             return failBadState();
@@ -1210,7 +1182,6 @@ void Reader::algorithmResume() {
           }
           case State::Exit:
             popAndReturn();
-            traceExitFrame();
             break;
           default:
             return failBadState();
@@ -1253,7 +1224,6 @@ void Reader::algorithmResume() {
               }
               case State::Exit:
                 popAndReturn();
-                traceExitFrame();
                 break;
               default:
                 return failBadState();
@@ -1269,7 +1239,6 @@ void Reader::algorithmResume() {
                 OpcodeLocals.CaseMask = Frame.ReturnValue;
                 OpcodeLocals.SelShift = cast<Uint8Node>(Frame.Nd)->getValue();
                 popAndReturn();
-                traceExitFrame();
                 break;
               default:
                 return failBadState();
@@ -1285,7 +1254,6 @@ void Reader::algorithmResume() {
                 OpcodeLocals.CaseMask = Frame.ReturnValue;
                 OpcodeLocals.SelShift = cast<Uint32Node>(Frame.Nd)->getValue();
                 popAndReturn();
-                traceExitFrame();
                 break;
               default:
                 return failBadState();
@@ -1302,7 +1270,6 @@ void Reader::algorithmResume() {
                 OpcodeLocals.CaseMask = Frame.ReturnValue;
                 OpcodeLocals.SelShift = cast<Uint64Node>(Frame.Nd)->getValue();
                 popAndReturn();
-                traceExitFrame();
                 break;
               default:
                 return failBadState();

@@ -246,12 +246,7 @@ class Reader {
     Frame.ReturnValue = 0;
   }
 
-  void popAndReturn(decode::IntType Value = 0) {
-    if (!FrameStack.empty())
-      FrameStack.pop();
-    Frame.ReturnValue = Value;
-    TRACE(IntType, "returns", Value);
-  }
+  void popAndReturn(decode::IntType Value = 0);
 
   // Dispatches writeAction to Output. Captures special cases if needed by the
   // reader.

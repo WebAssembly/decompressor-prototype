@@ -75,7 +75,6 @@ void IntReader::fastResume() {
           case State::Exit:
             if (!Output.writeFreezeEof())
               return failFreezingEof();
-            traceExitFrame();
             popAndReturn();
             break;
           default:
@@ -143,7 +142,6 @@ void IntReader::fastResume() {
           }
           case State::Exit:
             LocalValues.pop_back();
-            traceExitFrame();
             popAndReturn();
             break;
           default:
@@ -171,7 +169,6 @@ void IntReader::fastResume() {
           }
           case State::Exit:
             LocalValues.pop_back();
-            traceExitFrame();
             popAndReturn();
             break;
           default:
