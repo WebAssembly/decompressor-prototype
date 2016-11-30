@@ -24,9 +24,12 @@ using namespace decode;
 
 namespace intcomp {
 
-CountNode::~CountNode() {}
+CountNode::~CountNode() {
+}
 
-size_t CountNode::getWeight() const { return Count; }
+size_t CountNode::getWeight() const {
+  return Count;
+}
 
 int CountNode::compare(const CountNode& Nd) const {
   // Push ones with highest count first.
@@ -71,7 +74,8 @@ void CountNode::indent(FILE* Out, size_t NestLevel, bool AddWeight) const {
     fprintf(Out, "%12" PRIuMAX "", uintmax_t(getWeight()));
 }
 
-BlockCountNode::~BlockCountNode() {}
+BlockCountNode::~BlockCountNode() {
+}
 
 void BlockCountNode::describe(FILE* Out, size_t NestLevel) const {
   indent(Out, NestLevel);
@@ -142,7 +146,8 @@ size_t IntCountNode::pathLength() const {
 }
 
 IntCountNode* IntCountNode::lookup(IntCountUsageMap& UsageMap,
-                                   IntType Value, IntCountNode* Parent) {
+                                   IntType Value,
+                                   IntCountNode* Parent) {
   CountNode* CntNd = UsageMap[Value];
   IntCountNode* Nd = dyn_cast<IntCountNode>(CntNd);
   if (Nd == nullptr) {
@@ -165,7 +170,8 @@ SingletonCountNode::SingletonCountNode(IntType Value)
     : IntCountNode(Kind::Singleton, Value, nullptr) {
 }
 
-SingletonCountNode::~SingletonCountNode() {}
+SingletonCountNode::~SingletonCountNode() {
+}
 
 IntSeqCountNode::IntSeqCountNode(IntType Value, IntCountNode* Parent)
     : IntCountNode(Kind::IntSequence, Value, Parent) {
@@ -176,6 +182,6 @@ IntSeqCountNode::~IntSeqCountNode() {
   clear(NextUsageMap);
 }
 
-} // end of namespace intcomp
+}  // end of namespace intcomp
 
-} // end of namespace wasm
+}  // end of namespace wasm
