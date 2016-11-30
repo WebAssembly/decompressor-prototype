@@ -149,14 +149,17 @@ IntCountNode* IntCountNode::lookup(IntCountUsageMap& UsageMap,
                                    IntType Value,
                                    IntCountNode* Parent) {
   CountNode* CntNd = UsageMap[Value];
-  IntCountNode* Nd = dyn_cast<IntCountNode>(CntNd);
-  if (Nd == nullptr) {
-    if (Parent)
-      Nd = new IntSeqCountNode(Value, Parent);
-    else
-      Nd = new SingletonCountNode(Value);
-    UsageMap[Value] = Nd;
+  IntCountNode* Nd;
+  if (CntNd) {
+    Nd = dyn_cast<IntCountNode>(CntNd);
+    assert(Nd);
+    return Nd;
   }
+  if (Parent)
+    Nd = new IntSeqCountNode(Value, Parent);
+  else
+    Nd = new SingletonCountNode(Value);
+  UsageMap[Value] = Nd;
   return Nd;
 }
 

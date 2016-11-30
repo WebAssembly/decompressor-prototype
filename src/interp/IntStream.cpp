@@ -178,6 +178,20 @@ IntStream::ReadCursorWithTraceContext::getTraceContext() {
   return TraceContext;
 }
 
+void IntStream::describe(FILE* File) {
+  fprintf(File, "*** IntStream ***\n");
+  fputs("Blocks:\n", File);
+  for (auto BlkIter = Blocks.begin(); BlkIter != Blocks.end(); ++BlkIter) {
+    fputs("  ", File);
+    BlkIter->get()->describe(File);
+    fputc('\n', File);
+  }
+  fputs("Values:\n", File);
+  for (auto V : Values)
+    fprintf(File, "  %" PRIuMAX "\n", uintmax_t(V));
+  fprintf(File, "*****************\n");
+}
+
 }  // end of namespace interp
 
 }  // end of namespace wasm
