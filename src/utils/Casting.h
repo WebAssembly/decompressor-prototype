@@ -40,12 +40,12 @@ namespace wasm {
 // Returns true if N points to an instance of WantedClass
 template <class WantedClass, class TestClass>
 bool isa(TestClass* N) {
-  return N && WantedClass::implementsClass(N->getRtClassId());
+  return WantedClass::implementsClass(N->getRtClassId());
 }
 
 template <class WantedClass, class TestClass>
 bool isa(const TestClass* N) {
-  return N && WantedClass::implementsClass(N->getRtClassId());
+  return WantedClass::implementsClass(N->getRtClassId());
 }
 
 // Cast N (no type checking) to type T*.
