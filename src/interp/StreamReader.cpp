@@ -58,7 +58,7 @@ namespace {
 // can be done in a single iteration of the loop.
 constexpr size_t kResumeHeadroom = 100;
 
-} // end of anonymous namespace
+}  // end of anonymous namespace
 
 bool StreamReader::canProcessMoreInputNow() {
   FillPos = ReadPos.fillSize();

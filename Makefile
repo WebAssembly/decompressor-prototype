@@ -189,8 +189,7 @@ INTCOMP_OBJDIR = $(OBJDIR)/intcomp
 
 INTCOMP_SRCS = \
 	IntCompress.cpp \
-	IntCountNode.cpp \
-	IntFormats.cpp
+	IntCountNode.cpp
 
 INTCOMP_OBJS = $(patsubst %.cpp, $(INTCOMP_OBJDIR)/%.o, $(INTCOMP_SRCS))
 INTCOMP_LIB = $(LIBDIR)/$(LIBPREFIX)intcomp.a

@@ -31,6 +31,7 @@ class StreamReader : public Reader {
   StreamReader() = delete;
   StreamReader(const StreamReader&) = delete;
   StreamReader& operator=(const StreamReader&) = delete;
+
  public:
   StreamReader(std::shared_ptr<decode::Queue> Input,
                Writer& Output,
@@ -41,7 +42,6 @@ class StreamReader : public Reader {
   utils::TraceClass::ContextPtr getTraceContext() OVERRIDE;
 
  private:
-
   decode::ReadCursorWithTraceContext ReadPos;
   std::shared_ptr<ReadStream> Input;
   // The input position needed to fill to process now.
@@ -77,10 +77,8 @@ class StreamReader : public Reader {
   decode::IntType readValue(const filt::Node* Format) OVERRIDE;
 };
 
-
 }  // end of namespace interp
 
 }  // end of namespace wasm
 
-
-#endif // DECOMPRESSOR_SRC_INTERP_STREAM_READER_H
+#endif  // DECOMPRESSOR_SRC_INTERP_STREAM_READER_H
