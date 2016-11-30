@@ -190,6 +190,8 @@ class IntStream : public std::enable_shared_from_this<IntStream> {
   BlockIterator getBlocksBegin() { return Blocks.begin(); }
   BlockIterator getBlocksEnd() { return Blocks.end(); }
 
+  void describe(FILE* File);
+
  private:
   IntVector Values;
   BlockPtr TopBlock;

@@ -272,6 +272,7 @@ bool IntCompressor::compressUpToSize(size_t Size, bool TraceParsing) {
   Writer.setWeightCutoff(WeightCutoff);
   Writer.setUpToSize(Size);
   IntReader Reader(Contents, Writer, Symtab);
+  Contents->describe(stderr);
   Reader.getTrace().setTraceProgress(TraceParsing);
   Reader.fastStart();
   Reader.fastReadBackFilled();
