@@ -31,7 +31,7 @@ namespace utils {
 // the elements will eventually get destroyed (no later than destruction).
 // ToDO(karlschimpf): Emscriptem doen't appear to like the allocator arguments,
 // hence they have been removed.
-template<class T>
+template <class T>
 class circular_vector {
  public:
   typedef T value_type;
@@ -42,7 +42,6 @@ class circular_vector {
   typedef size_t size_type;
 
   class circ_iterator : public std::bidirectional_iterator_tag {
-
    public:
     circ_iterator() : circ_vector(nullptr), index(0) {}
 
@@ -117,11 +116,8 @@ class circular_vector {
   typedef circ_iterator reverse_iterator;
   typedef const circ_iterator const_reverse_iterator;
 
-
   explicit circular_vector(size_type vector_max_size)
-      : vector_max_size(vector_max_size),
-        start_index(0),
-        vector_size(0) {
+      : vector_max_size(vector_max_size), start_index(0), vector_size(0) {
     prefill();
   }
 
@@ -129,8 +125,7 @@ class circular_vector {
       : contents(cv.contents),
         vector_max_size(cv.vector_max_size),
         start_index(cv.start_index),
-        vector_size(cv.vector_size) {
-  }
+        vector_size(cv.vector_size) {}
 
   ~circular_vector() {}
 
@@ -144,41 +139,31 @@ class circular_vector {
 
   bool full() const { return vector_size == vector_max_size; }
 
-  iterator begin() {
-    return circ_iterator(*this, 0);
-  }
+  iterator begin() { return circ_iterator(*this, 0); }
 
   const_iterator begin() const {
     return circ_iterator(const_cast<circular_vector*>(this), 0);
   }
 
-  iterator end() {
-    return circ_iterator(this, size());
-  }
+  iterator end() { return circ_iterator(this, size()); }
 
   const_iterator end() const {
     return circ_iterator(const_cast<circular_vector*>(this), size());
   }
 
-  reverse_iterator rbegin() {
-    return circ_iterator(this, size() - 1);
-  }
+  reverse_iterator rbegin() { return circ_iterator(this, size() - 1); }
 
   const_reverse_iterator rbegin() const {
     return circ_iterator(const_cast<circular_vector*>(this), size() - 1);
   }
 
-  reverse_iterator rend() {
-    return circ_iterator(this, size_type(-1));
-  }
+  reverse_iterator rend() { return circ_iterator(this, size_type(-1)); }
 
   const_reverse_iterator rend() const {
     return circ_iterator(const_cast<circular_vector*>(this), size_type(-1));
   }
 
-  reference operator[](size_type n) {
-    return contents.at(get_index(n));
-  }
+  reference operator[](size_type n) { return contents.at(get_index(n)); }
 
   const_reference operator[](size_type n) const {
     return contents.at(get_index(n));
@@ -186,21 +171,15 @@ class circular_vector {
 
   reference at(size_type n) { return contents.at(get_index(n)); }
 
-  const_reference at(size_type n) const {
-    return contents.at(get_index(n));
-  }
+  const_reference at(size_type n) const { return contents.at(get_index(n)); }
 
   reference front() { return at(0); }
 
-  const_reference front() const {
-    return at(0);
-  }
+  const_reference front() const { return at(0); }
 
   reference back() { return at(vector_size - 1); }
 
-  const_reference back() const {
-    return at(vector_size - 1);
-  }
+  const_reference back() const { return at(vector_size - 1); }
 
   void push_front(const value_type& v) {
     if (vector_size < vector_max_size)
@@ -259,9 +238,7 @@ class circular_vector {
   size_type get_index(size_type n) const {
     return (start_index + n) % vector_max_size;
   }
-  void inc_start_index() {
-    start_index = (start_index + 1) % vector_max_size;
-  }
+  void inc_start_index() { start_index = (start_index + 1) % vector_max_size; }
   void dec_start_index() {
     if (start_index == 0)
       start_index = vector_max_size - 1;
@@ -275,8 +252,8 @@ class circular_vector {
   }
 };
 
-} // end of namespace utils
+}  // end of namespace utils
 
-} // end of namespace wasm
+}  // end of namespace wasm
 
-#endif // DECOMPRESSOR_SRC_UTILS_CIRCULAR_VECTOR_H
+#endif  // DECOMPRESSOR_SRC_UTILS_CIRCULAR_VECTOR_H

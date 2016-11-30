@@ -18,7 +18,7 @@
 
 #include "interp/ReadStream.h"
 
-#include "interp/LEB128Helpers.h"
+#include "interp/FormatHelpers.h"
 
 namespace wasm {
 
@@ -26,55 +26,6 @@ using namespace decode;
 using namespace filt;
 
 namespace interp {
-
-#if 0
-namespace {
-
-template <class Type>
-Type readFixed(ReadCursor& Pos) {
-  Type Value = 0;
-  constexpr uint32_t WordSize = sizeof(Type);
-  uint32_t Shift = 0;
-  for (uint32_t i = 0; i < WordSize; ++i) {
-    Value |= Type(Pos.readByte()) << Shift;
-    Shift += CHAR_BIT;
-  }
-  return Value;
-}
-
-template <class Type>
-Type readLEB128Loop(ReadCursor& Pos, uint32_t& Shift, uint8_t& Chunk) {
-  Type Value = 0;
-  Shift = 0;
-  while (true) {
-    Chunk = Pos.readByte();
-    Type Data = Chunk & ~(uint8_t(1) << 7);
-    Value |= Data << Shift;
-    Shift += 7;
-    if ((Chunk >> 7) == 0)
-      return Value;
-  }
-}
-
-template <class Type>
-Type readLEB128(ReadCursor& Pos) {
-  uint32_t Shift;
-  uint8_t Chunk;
-  return readLEB128Loop<Type>(Pos, Shift, Chunk);
-}
-
-template <class Type>
-Type readSignedLEB128(ReadCursor& Pos) {
-  uint32_t Shift;
-  uint8_t Chunk;
-  Type Value = readLEB128Loop<Type>(Pos, Shift, Chunk);
-  if ((Chunk & 0x40) && (Shift < sizeof(Type) * CHAR_BIT))
-    Value |= ~Type(0) << Shift;
-  return Value;
-}
-
-}  // end of anonymous namespace
-#endif
 
 ReadStream::~ReadStream() {
 }

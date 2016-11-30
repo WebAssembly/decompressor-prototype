@@ -18,7 +18,7 @@
 
 #include "interp/WriteStream.h"
 
-#include "interp/LEB128Helpers.h"
+#include "interp/FormatHelpers.h"
 
 namespace wasm {
 
@@ -26,66 +26,6 @@ using namespace decode;
 using namespace filt;
 
 namespace interp {
-
-#if 0
-namespace {
-
-// Define LEB128 writers.
-#ifdef LEB128_LOOP_UNTIL
-#error("LEB128_LOOP_UNTIL already defined!")
-#else
-#define LEB128_LOOP_UNTIL(EndCond) \
-  do {                             \
-    uint8_t Byte = Value & 0x7f;   \
-    Value >>= 7;                   \
-    if (EndCond) {                 \
-      Pos.writeByte(Byte);         \
-      break;                       \
-    } else {                       \
-      Pos.writeByte(Byte | 0x80);  \
-    }                              \
-  } while (true)
-
-template <class Type>
-void writeLEB128(Type Value, WriteCursor& Pos) {
-  LEB128_LOOP_UNTIL(Value == 0);
-}
-
-template <class Type>
-void writePositiveLEB128(Type Value, WriteCursor& Pos) {
-  LEB128_LOOP_UNTIL(Value == 0 && !(Byte & 0x40));
-}
-
-template <class Type>
-void writeNegativeLEB128(Type Value, WriteCursor& Pos) {
-  LEB128_LOOP_UNTIL(Value == -1 && (Byte & 0x40));
-}
-
-template <class Type>
-void writeFixedLEB128(Type Value, WriteCursor& Pos) {
-  constexpr uint32_t BitsInWord = sizeof(Type) * CHAR_BIT;
-  constexpr uint32_t ChunkSize = CHAR_BIT - 1;
-  constexpr uint32_t ChunksInWord = (BitsInWord + ChunkSize - 1) / ChunkSize;
-  uint32_t Count = 0;
-  LEB128_LOOP_UNTIL(++Count == ChunksInWord);
-}
-
-#undef LEB128_LOOP_UNTIL
-
-#endif
-
-template <class Type>
-void writeFixed(Type Value, WriteCursor& Pos) {
-  constexpr uint32_t WordSize = sizeof(Type);
-  constexpr Type Mask = (Type(1) << CHAR_BIT) - 1;
-  for (uint32_t i = 0; i < WordSize; ++i) {
-    Pos.writeByte(uint8_t(Value & Mask));
-    Value >>= CHAR_BIT;
-  }
-}
-
-}  // end of anonymous namespace
-#endif
 
 WriteStream::~WriteStream() {
 }
