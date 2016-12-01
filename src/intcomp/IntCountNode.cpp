@@ -27,7 +27,7 @@ namespace intcomp {
 CountNode::~CountNode() {
 }
 
-size_t CountNode::getWeight() const {
+size_t CountNode::getWeight(size_t Count) const {
   return Count;
 }
 
@@ -109,11 +109,6 @@ int IntCountNode::compare(const CountNode& Nd) const {
   return 0;
 }
 
-size_t IntCountNode::getWeight() const {
-  size_t Len = pathLength();
-  return getCount() * Len;
-}
-
 void IntCountNode::describe(FILE* Out, size_t NestLevel) const {
   indent(Out, NestLevel);
   fputs(": Value", Out);
@@ -145,10 +140,11 @@ size_t IntCountNode::pathLength() const {
   return len;
 }
 
-IntCountNode* IntCountNode::lookup(IntCountUsageMap& UsageMap,
+IntCountNode* IntCountNode::lookup(IntCountUsageMap& LocalUsageMap,
+                                   IntCountUsageMap& TopLevelUsageMap,
                                    IntType Value,
                                    IntCountNode* Parent) {
-  CountNode* CntNd = UsageMap[Value];
+  CountNode* CntNd = LocalUsageMap[Value];
   IntCountNode* Nd;
   if (CntNd) {
     Nd = dyn_cast<IntCountNode>(CntNd);
@@ -156,10 +152,10 @@ IntCountNode* IntCountNode::lookup(IntCountUsageMap& UsageMap,
     return Nd;
   }
   if (Parent)
-    Nd = new IntSeqCountNode(Value, Parent);
+    Nd = new IntSeqCountNode(TopLevelUsageMap, Value, Parent);
   else
     Nd = new SingletonCountNode(Value);
-  UsageMap[Value] = Nd;
+  LocalUsageMap[Value] = Nd;
   return Nd;
 }
 
@@ -170,20 +166,38 @@ void IntCountNode::clear(IntCountUsageMap& UsageMap) {
 }
 
 SingletonCountNode::SingletonCountNode(IntType Value)
-    : IntCountNode(Kind::Singleton, Value, nullptr),
-      Formats(Value) {
+    : IntCountNode(Kind::Singleton, Value, nullptr), Formats(Value) {
 }
 
 SingletonCountNode::~SingletonCountNode() {
 }
 
-IntSeqCountNode::IntSeqCountNode(IntType Value, IntCountNode* Parent)
-    : IntCountNode(Kind::IntSequence, Value, Parent) {
+size_t SingletonCountNode::getWeight(size_t Count) const {
+  return Count * getMinByteSize();
+}
+
+IntSeqCountNode::IntSeqCountNode(IntCountUsageMap& TopLevelUsageMap,
+                                 IntType Value,
+                                 IntCountNode* Parent)
+    : IntCountNode(Kind::IntSequence, Value, Parent),
+      TopLevelUsageMap(TopLevelUsageMap) {
   assert(Parent);
 }
 
 IntSeqCountNode::~IntSeqCountNode() {
   clear(NextUsageMap);
+}
+
+size_t IntSeqCountNode::getWeight(size_t Count) const {
+  // TOOD(karlschimpf) Remove recursion to compute.
+  int MinByteSize = 0;
+  if (auto* Nd = dyn_cast<SingletonCountNode>(TopLevelUsageMap[getValue()])) {
+    MinByteSize = Nd->getMinByteSize();
+  } else {
+    IntTypeFormats Formats(getValue());
+    MinByteSize = Formats.getMinFormatSize();
+  }
+  return Parent->getWeight(Count) + MinByteSize * Count;
 }
 
 }  // end of namespace intcomp

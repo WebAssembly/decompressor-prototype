@@ -117,7 +117,7 @@ void IntCounterWriter::addInputSeqToUsageMap() {
   IntCountNode* Nd = nullptr;
   for (size_t i = 0, e = input_seq->size(); i < e; ++i) {
     IntType Val = (*input_seq)[i];
-    Nd = IntCountNode::lookup(*Map, Val, Nd);
+    Nd = IntCountNode::lookup(*Map, Counter.UsageMap, Val, Nd);
     if (UpToSize == 1 || i > 0)
       Nd->increment();
     if (e > 1) {
@@ -220,10 +220,6 @@ IntCompressor::IntCompressor(std::shared_ptr<decode::Queue> Input,
 
 void IntCompressor::setTrace(std::shared_ptr<TraceClassSexp> NewTrace) {
   Trace = NewTrace;
-#if 0
-  if (Trace)
-    Input->setTrace(Trace);
-#endif
 }
 
 TraceClassSexp& IntCompressor::getTrace() {
@@ -414,6 +410,9 @@ void CountNodeCollector::collect(CollectionFlags Flags) {
 }
 
 void CountNodeCollector::collectNode(CountNode* Nd, CollectionFlags Flags) {
+  // TODO(karlschimpf) Make this non-recursive.
+  if (Nd == nullptr)
+    return;
   uint64_t Weight = Nd->getWeight();
   uint64_t Count = Nd->getCount();
   auto* IntNd = dyn_cast<IntCountNode>(Nd);
