@@ -187,8 +187,11 @@ void IntStream::describe(FILE* File) {
     fputc('\n', File);
   }
   fputs("Values:\n", File);
-  for (auto V : Values)
-    fprintf(File, "  %" PRIuMAX "\n", uintmax_t(V));
+  for (auto V : Values) {
+    fputs("  ", File);
+    fprint_IntType(File, V);
+    fputc('\n', File);
+  }
   fprintf(File, "*****************\n");
 }
 

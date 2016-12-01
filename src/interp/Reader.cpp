@@ -188,8 +188,10 @@ void Reader::traceEnterFrameInternal() {
 }
 
 void Reader::CallFrame::describe(FILE* File, TextWriter* Writer) const {
-  fprintf(File, "%s.%s (%s) = %" PRIuMAX ": ", getName(CallMethod),
-          getName(CallState), getName(CallModifier), uintmax_t(ReturnValue));
+  fprintf(File, "%s.%s (%s) = ", getName(CallMethod), getName(CallState),
+          getName(CallModifier));
+  fprint_IntType(File, ReturnValue);
+  fputs(": ", File);
   if (Nd)
     Writer->writeAbbrev(File, Nd);
   else
@@ -237,7 +239,9 @@ void Reader::describeLocalsStack(FILE* File) {
   for (const auto& Index : LocalsBaseStack.iterRange(1)) {
     fprintf(File, "%" PRIuMAX ":\n", uintmax_t(Index));
     for (size_t i = BaseIndex; i < Index; ++i) {
-      fprintf(File, "  %" PRIuMAX "\n", LocalValues[i]);
+      fputs("  ", File);
+      fprint_IntType(File, LocalValues[i]);
+      fputc('\n', File);
     }
     BaseIndex = Index;
   }

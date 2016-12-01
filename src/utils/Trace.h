@@ -220,7 +220,7 @@ class TraceClass : public std::enable_shared_from_this<TraceClass> {
     traceUintInternal(Name, Value);
   }
   void trace_IntType(const char* Name, decode::IntType Value) {
-    traceUintInternal(Name, Value);
+    traceIntTypeInternal(Name, Value);
   }
   void trace_size_t(const char* Name, size_t Value) {
     traceUintInternal(Name, Value);
@@ -250,6 +250,7 @@ class TraceClass : public std::enable_shared_from_this<TraceClass> {
   void traceStringInternal(const char* Name, const char* Value);
   void traceIntInternal(const char* Name, intmax_t Value);
   void traceUintInternal(const char* Name, uintmax_t Value);
+  void traceIntTypeInternal(const char* Name, decode::IntType Value);
   void traceHexInternal(const char* Name, uintmax_t Value);
   void tracePointerInternal(const char* Name, void* Value);
 

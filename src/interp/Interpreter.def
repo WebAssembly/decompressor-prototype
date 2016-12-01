@@ -44,9 +44,9 @@ X(Finished)                                                   \
 X(GetFile)                                                    \
 X(GetSecName)                                                 \
 X(GetSection)                                                 \
+X(ReadIntBlock)                                               \
 X(ReadOpcode)                                                 \
-X(ReadFast)                                                   \
-X(ReadFastUntil)                                              \
+X(ReadIntValues)                                              \
 X(Started)                                                    \
 
 //#define X(tag)

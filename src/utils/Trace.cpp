@@ -21,6 +21,8 @@
 
 namespace wasm {
 
+using namespace decode;
+
 namespace utils {
 
 void TraceClass::init() {
@@ -137,6 +139,13 @@ void TraceClass::traceIntInternal(const char* Name, intmax_t Value) {
 void TraceClass::traceUintInternal(const char* Name, uintmax_t Value) {
   indent();
   fprintf(File, "%s = %" PRIuMAX "\n", Name, Value);
+}
+
+void TraceClass::traceIntTypeInternal(const char* Name, IntType Value) {
+  indent();
+  fprintf(File, "%s = ", Name);
+  fprint_IntType(File, Value);
+  fputc('\n', File);
 }
 
 void TraceClass::traceHexInternal(const char* Name, uintmax_t Value) {

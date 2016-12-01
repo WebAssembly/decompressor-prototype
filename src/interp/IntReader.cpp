@@ -69,7 +69,7 @@ void IntReader::fastResume() {
           case State::Enter:
             LocalValues.push_back(Input->size());
             Frame.CallState = State::Exit;
-            call(Method::ReadFast, Frame.CallModifier, nullptr);
+            call(Method::ReadIntBlock, Frame.CallModifier, nullptr);
             break;
           case State::Exit:
             if (!Output.writeFreezeEof())
@@ -80,19 +80,9 @@ void IntReader::fastResume() {
             return failBadState();
         }
         break;
-      case Method::ReadFast:
-        TRACE_BLOCK({
-          FILE* File = getTrace().getFile();
-          fprintf(File, "Values stack:\n");
-          for (size_t i = 0; i < LocalValues.size(); ++i)
-            fprintf(File, "  [%" PRIuMAX "] = %" PRIxMAX "\n", uintmax_t(i),
-                    uintmax_t(LocalValues[i]));
-        });
-        TRACE(string, "state", getName(Frame.CallState));
-        TRACE(hex_size_t, "eob", LocalValues.back());
+      case Method::ReadIntBlock:
         switch (Frame.CallState) {
           case State::Enter:
-            TRACE(hex_size_t, "eob", LocalValues.back());
             Frame.CallState = State::Loop;
             break;
           case State::Loop: {
@@ -109,19 +99,18 @@ void IntReader::fastResume() {
               if (Blk->getBeginIndex() >= Eob)
                 hasNestedBlocks = false;
             }
-            TRACE(bool, "more nested blocks", hasNestedBlocks);
             if (!hasNestedBlocks) {
               // Only top-level values left. Read until all processed.
               LocalValues.push_back(Eob);
               Frame.CallState = State::Exit;
-              call(Method::ReadFastUntil, Frame.CallModifier, nullptr);
+              call(Method::ReadIntValues, Frame.CallModifier, nullptr);
               break;
             }
             // Read to beginning of nested block.
             IntStream::BlockPtr Blk = Pos.getNextBlock();
             LocalValues.push_back(Blk->getBeginIndex());
             Frame.CallState = State::Step2;
-            call(Method::ReadFastUntil, Frame.CallModifier, nullptr);
+            call(Method::ReadIntValues, Frame.CallModifier, nullptr);
             break;
           }
           case State::Step2: {
@@ -133,7 +122,7 @@ void IntReader::fastResume() {
               return fail("Unable to open block");
             Frame.CallState = State::Step3;
             LocalValues.push_back(Blk->getEndIndex());
-            call(Method::ReadFast, Frame.CallModifier, nullptr);
+            call(Method::ReadIntBlock, Frame.CallModifier, nullptr);
             break;
           }
           case State::Step3: {
@@ -154,7 +143,7 @@ void IntReader::fastResume() {
             return failBadState();
         }
         break;
-      case Method::ReadFastUntil:
+      case Method::ReadIntValues:
         switch (Frame.CallState) {
           case State::Enter:
             TRACE(hex_size_t, "end index", LocalValues.back());
@@ -167,7 +156,7 @@ void IntReader::fastResume() {
               break;
             }
             IntType Value = read();
-            TRACE(IntType, "read/write", Value);
+            TRACE(IntType, "value", Value);
             if (!Output.writeVarint64(Value))
               return fail("Unable to write last value");
             break;

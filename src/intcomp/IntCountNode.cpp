@@ -117,7 +117,7 @@ void IntCountNode::describe(FILE* Out, size_t NestLevel) const {
   fputc(':', Out);
   // TODO(karlschimpf): Make this a programmable parameter.
   describePath(Out, 10);
-  fprintf(Out, "  Count: %" PRIuMAX "\n", uintmax_t(getCount()));
+  fprintf(Out, " Count: %" PRIuMAX "\n", uintmax_t(getCount()));
 }
 
 void IntCountNode::describePath(FILE* Out, size_t MaxPath) const {
@@ -127,7 +127,8 @@ void IntCountNode::describePath(FILE* Out, size_t MaxPath) const {
   }
   if (Parent)
     Parent->describePath(Out, MaxPath - 1);
-  fprintf(Out, " %" PRIuMAX "", uintmax_t(Value));
+  fputc(' ', Out);
+  fprint_IntType(Out, Value);
 }
 
 size_t IntCountNode::pathLength() const {
