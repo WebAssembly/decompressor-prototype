@@ -19,6 +19,7 @@
 #ifndef DEcOMPRESSOR_SRC_INTCOMP_INTCOUNTNODE_H
 #define DEcOMPRESSOR_SRC_INTCOMP_INTCOUNTNODE_H
 
+#include "intcomp/IntFormats.h"
 #include "utils/Casting.h"
 #include "utils/Defs.h"
 #include "utils/heap.h"
@@ -172,6 +173,12 @@ class SingletonCountNode : public IntCountNode {
   static bool implementsClass(Kind NodeKind) {
     return NodeKind == Kind::Singleton;
   }
+  int getByteSize(IntTypeFormat Fmt) const {
+    return Formats.getByteSize(Fmt);
+  }
+
+ private:
+  IntTypeFormats Formats;
 };
 
 class IntSeqCountNode : public IntCountNode {
