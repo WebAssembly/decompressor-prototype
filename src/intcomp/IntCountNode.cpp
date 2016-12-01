@@ -170,7 +170,8 @@ void IntCountNode::clear(IntCountUsageMap& UsageMap) {
 }
 
 SingletonCountNode::SingletonCountNode(IntType Value)
-    : IntCountNode(Kind::Singleton, Value, nullptr) {
+    : IntCountNode(Kind::Singleton, Value, nullptr),
+      Formats(Value) {
 }
 
 SingletonCountNode::~SingletonCountNode() {

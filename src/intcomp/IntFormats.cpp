@@ -21,6 +21,8 @@
 
 namespace wasm {
 
+using namespace decode;
+
 namespace intcomp {
 
 namespace {
@@ -35,10 +37,54 @@ const char* IntTypeFormatName[NumIntTypeFormats] = {
   "varuint64"
 };
 
+template<class T> bool isInstanceOf(IntType Value) {
+  return Value == IntType(T(Value));
+}
+
 } // end of anonymous namespace
 
 const char* getName(IntTypeFormat Fmt) {
+  assert(int(Fmt) <= int(IntTypeFormat::LAST));
   return IntTypeFormatName[size_t(Fmt)];
+}
+
+IntTypeFormats::IntTypeFormats(IntType Value)
+    : Value(Value) {
+  // Initialize to unknownSize
+  for (size_t i = 0; i < NumIntTypeFormats; ++i)
+    ByteSize[i] = UnknownSize;
+  installValidByteSizes(Value);
+}
+
+void IntTypeFormats::installValidByteSizes(IntType Value) {
+  if (isInstanceOf<size_t>(Value))
+    ByteSize[size_t(IntTypeFormat::Uint8)] = sizeof(uint8_t);
+  if (isInstanceOf<size_t>(Value))
+    ByteSize[size_t(IntTypeFormat::Uint32)] = sizeof(uint32_t);
+}
+
+IntTypeFormat IntTypeFormats::getFirstMinimumFormat() const {
+  IntTypeFormat Fmt = IntTypeFormat::LAST;
+  // Initialize minimum byte size with number guaranteed to be larger
+  // than any known byte count for a format.
+  int MinByteSize = sizeof(uint64_t) * 2;
+  for (size_t i = 0; i < NumIntTypeFormats; ++i) {
+    if (ByteSize[i] != UnknownSize && ByteSize[i] < MinByteSize) {
+      Fmt = IntTypeFormat(i);
+      MinByteSize = ByteSize[i];
+    }
+  }
+  return Fmt;
+}
+
+IntTypeFormat IntTypeFormats::getNextMatchingFormat(IntTypeFormat Fmt) const {
+  assert(int(Fmt) <= int(IntTypeFormat::LAST));
+  int WantedSize = ByteSize[size_t(Fmt)];
+  for (size_t i = size_t(Fmt) + 1; i < NumIntTypeFormats; ++i) {
+    if (WantedSize == ByteSize[i])
+      return IntTypeFormat(i);
+  }
+  return Fmt;
 }
 
 }  // end of namespace intcomp

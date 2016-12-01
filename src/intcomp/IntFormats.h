@@ -27,14 +27,16 @@ namespace wasm {
 namespace intcomp {
 
 enum class IntTypeFormat {
+  // Note: Sizes are listed in order of preference, if they contain the
+  // same number of bytes.
   Uint8,
   Uint32,
   Uint64,
-  Varint32,
-  Varint64,
   Varuint32,
+  Varint32,
   Varuint64,
-  LAST = Varuint64
+  Varint64,
+  LAST = Varint64  // Note: worst case choice.
 };
 
 const char* getName(IntTypeFormat Fmt);
@@ -47,11 +49,25 @@ class IntTypeFormats {
   IntTypeFormats& operator=(const IntTypeFormats&) = delete;
 
  public:
+  static constexpr int UnknownSize = 0;
   IntTypeFormats(decode::IntType Value);
+
+  decode::IntType getValue() const { return Value; }
+  int getByteSize(IntTypeFormat Fmt) const {
+    return ByteSize[size_t(Fmt)];
+  }
+
+  // Returns the preferred format, based on the number of bytes.
+  IntTypeFormat getFirstMinimumFormat() const;
+
+  // Returns next format with same size, or Fmt if no more candidates.
+  IntTypeFormat getNextMatchingFormat(IntTypeFormat Fmt) const;
 
  private:
   decode::IntType Value;
   int ByteSize[NumIntTypeFormats];
+
+  void installValidByteSizes(decode::IntType Value);
 };
 
 }  // end of namespace intcomp
