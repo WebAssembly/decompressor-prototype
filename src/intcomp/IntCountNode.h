@@ -82,6 +82,10 @@ class CountNode {
   void associateWithHeap(HeapEntryType Entry) { HeapEntry = Entry; }
   void disassociateFromHeap() { HeapEntry.reset(); }
 
+  decode::IntType getAbbrevIndex() const { return AbbrevIndex; }
+  bool hasAbbrevIndex() const { return AbbrevIndex != BAD_ABBREV_INDEX; }
+  void setAbbrevIndex(decode::IntType NewValue) { AbbrevIndex = NewValue; }
+
   virtual int compare(const CountNode& Nd) const;
   bool operator<(const CountNode& Nd) const { return compare(Nd) < 0; }
   bool operator<=(const CountNode& Nd) const { return compare(Nd) <= 0; }
@@ -99,13 +103,19 @@ class CountNode {
  protected:
   Kind NodeKind;
   size_t Count;
+  decode::IntType AbbrevIndex;
+  static constexpr decode::IntType BAD_ABBREV_INDEX =
+      std::numeric_limits<decode::IntType>::max();
   // The heap position of this, when added to heap. Note: Used to
   // allow the ability to change the priority key (i.e. weight) while
   // it is on the heap.
   HeapEntryType HeapEntry;
 
-  CountNode(Kind NodeKind) : NodeKind(NodeKind), Count(0) {}
+  CountNode(Kind NodeKind)
+      : NodeKind(NodeKind), Count(0), AbbrevIndex(BAD_ABBREV_INDEX) {}
+  // The following two enclose description entries.
   void indent(FILE* Out, size_t NestLevel, bool AddWeight = true) const;
+  void newline(FILE* Out) const;
 };
 
 // Implements a counter of the number of blocks in a bitcode file.

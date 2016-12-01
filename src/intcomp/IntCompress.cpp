@@ -322,22 +322,17 @@ void IntCompressor::compress(DetailLevel Level,
     return;
   removeSmallUsageCounts();
   if (Level == AllDetail)
-    describe(stderr, Flag(CollectionFlag::TopLevel));
+    describe(stderr, makeFlags(CollectionFlag::TopLevel));
   if (LengthLimit > 1) {
     if (!compressUpToSize(LengthLimit, TraceParsing && !TraceFirstPassOnly))
       return;
     removeSmallUsageCounts();
   }
-  switch (Level) {
-    case DetailLevel::NoDetail:
-      break;
-    case DetailLevel::SomeDetail:
-      describe(stderr, Flag(CollectionFlag::All));
-      break;
-    case DetailLevel::AllDetail:
-      describe(stderr, Flag(CollectionFlag::IntPaths));
-      break;
-  }
+  if (Level == AllDetail)
+    describe(stderr, makeFlags(CollectionFlag::IntPaths));
+  assignInitialAbbreviations();
+  if (Level != DetailLevel::NoDetail)
+    describe(stderr, makeFlags(CollectionFlag::All));
 }
 
 namespace {
@@ -367,7 +362,7 @@ class CountNodeCollector {
         WeightCutoff(1) {}
   ~CountNodeCollector() { clear(); }
 
-  void collect(CollectionFlags Flags = Flag(CollectionFlag::All));
+  void collect(CollectionFlags Flags = makeFlags(CollectionFlag::All));
   void buildHeap();
   CountNode::HeapValueType popHeap() {
     assert(ValuesHeap);
@@ -383,6 +378,7 @@ class CountNodeCollector {
   }
   void clear();
   void collectNode(CountNode* Nd, CollectionFlags Flags);
+  void assignInitialAbbreviations();
   void describe(FILE* Out);
 };
 
@@ -451,6 +447,17 @@ void CountNodeCollector::collectNode(CountNode* Nd, CollectionFlags Flags) {
     collectNode(pair.second, Flags);
 }
 
+void CountNodeCollector::assignInitialAbbreviations() {
+  collect(makeFlags(CollectionFlag::All));
+  buildHeap();
+  IntType AbbrevIndex = 0;
+  while (!ValuesHeap->empty()) {
+    CountNode::HeapValueType NdPtr = popHeap();
+    NdPtr->setAbbrevIndex(AbbrevIndex++);
+    // TODO(karlschimpf): Fix related nodes (prefix/suffix).
+  }
+}
+
 void CountNodeCollector::describe(FILE* Out) {
   assert(ValuesHeap->empty());
   buildHeap();
@@ -472,6 +479,13 @@ void CountNodeCollector::describe(FILE* Out) {
 }
 
 }  // end of anonymous namespace
+
+void IntCompressor::assignInitialAbbreviations() {
+  CountNodeCollector Collector(Counter);
+  Collector.CountCutoff = CountCutoff;
+  Collector.WeightCutoff = WeightCutoff;
+  Collector.assignInitialAbbreviations();
+}
 
 void IntCompressor::describe(FILE* Out, CollectionFlags Flags) {
   CountNodeCollector Collector(Counter);

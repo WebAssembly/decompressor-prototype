@@ -40,12 +40,12 @@ enum class CollectionFlag : CollectionFlags {
   All = 0x3
 };
 
-inline CollectionFlags Flag(CollectionFlag F) {
+inline CollectionFlags makeFlags(CollectionFlag F) {
   return CollectionFlags(F);
 }
 
 inline bool hasFlag(CollectionFlag F, CollectionFlags Flags) {
-  return Flag(F) & Flags;
+  return makeFlags(F) & Flags;
 }
 
 class IntCompressor FINAL {
@@ -54,7 +54,6 @@ class IntCompressor FINAL {
   IntCompressor& operator=(const IntCompressor&) = delete;
 
  public:
-  IntCountUsageMap UsageMap;
   class IntCounter {
     IntCounter(const IntCounter&) = delete;
     IntCounter& operator=(const IntCounter&) = delete;
@@ -96,9 +95,10 @@ class IntCompressor FINAL {
 
   void setMinimizeBlockSize(bool NewValue) { (void)NewValue; }
 
-  void describe(FILE* Out, CollectionFlags = Flag(CollectionFlag::All));
+  void describe(FILE* Out, CollectionFlags = makeFlags(CollectionFlag::All));
 
  private:
+  IntCountUsageMap UsageMap;
   std::shared_ptr<decode::Queue> Input;
   std::shared_ptr<decode::Queue> Output;
   std::shared_ptr<filt::SymbolTable> Symtab;
@@ -116,6 +116,7 @@ class IntCompressor FINAL {
   void removeSmallUsageCounts() { removeSmallUsageCounts(Counter.UsageMap); }
   void removeSmallUsageCounts(IntCountUsageMap& UsageMap);
   bool removeSmallUsageCounts(CountNode* Nd);
+  void assignInitialAbbreviations();
 };
 
 }  // end of namespace intcomp

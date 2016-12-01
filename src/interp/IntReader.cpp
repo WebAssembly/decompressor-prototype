@@ -120,6 +120,8 @@ void IntReader::fastResume() {
                 { TRACE(hex_size_t, "block.open", Blk->getBeginIndex()); });
             if (!enterBlock())
               return fail("Unable to open block");
+            if (!Output.writeAction(Symtab->getBlockEnterCallback()))
+              break;
             Frame.CallState = State::Step3;
             LocalValues.push_back(Blk->getEndIndex());
             call(Method::ReadIntBlock, Frame.CallModifier, nullptr);
@@ -129,6 +131,8 @@ void IntReader::fastResume() {
             // At the end of a nested block.
             TRACE_BLOCK(
                 { TRACE(hex_size_t, "block.close", LocalValues.back()); });
+            if (!Output.writeAction(Symtab->getBlockExitCallback()))
+              break;
             if (!exitBlock())
               return fail("Unable to close block");
             // Continue to process rest of block.
@@ -146,7 +150,6 @@ void IntReader::fastResume() {
       case Method::ReadIntValues:
         switch (Frame.CallState) {
           case State::Enter:
-            TRACE(hex_size_t, "end index", LocalValues.back());
             Frame.CallState = State::Loop;
             break;
           case State::Loop: {
