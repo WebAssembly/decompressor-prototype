@@ -24,19 +24,6 @@ using namespace decode;
 
 namespace intcomp {
 
-namespace {
-
-void describeIntType(FILE* File, IntType Value) {
-  SignedIntType SignedValue = SignedIntType(Value);
-  if (SignedValue < 0) {
-    fputc('-', File);
-    Value = IntType(-SignedValue);
-  }
-  fprintf(File, "%" PRIuMAX "", uintmax_t(Value));
-}
-
-}  // end of anonymous namespace
-
 CountNode::~CountNode() {
 }
 
@@ -141,7 +128,7 @@ void IntCountNode::describePath(FILE* Out, size_t MaxPath) const {
   if (Parent)
     Parent->describePath(Out, MaxPath - 1);
   fputc(' ', Out);
-  describeIntType(Out, Value);
+  fprint_IntType(Out, Value);
 }
 
 size_t IntCountNode::pathLength() const {

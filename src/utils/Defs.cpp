@@ -34,6 +34,15 @@ namespace wasm {
 
 namespace decode {
 
+void fprint_IntType(FILE* File, IntType Value) {
+  SignedIntType SignedValue = SignedIntType(Value);
+  if (SignedValue < 0) {
+    fputc('-', File);
+    Value = IntType(-SignedValue);
+  }
+  fprintf(File, "%" PRIuMAX "", uintmax_t(Value));
+}
+
 bool ExpectExitFail = false;
 
 const char* getName(StreamType Type) {

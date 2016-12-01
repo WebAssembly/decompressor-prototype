@@ -86,6 +86,11 @@ namespace decode {
 typedef uint64_t IntType;
 typedef int64_t SignedIntType;
 
+void fprint_IntType(FILE* File, IntType Value);
+inline void print_IntType(IntType Value) {
+  fprint_IntType(stdout, Value);
+}
+
 #define PRI_IntType PRIu64
 static constexpr size_t kBitsInIntType = 64;
 

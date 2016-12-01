@@ -446,9 +446,10 @@ bool ParamNode::validateNode(NodeVectorType& Parents) {
     TRACE_SEXP("Enclosing define", Nd);
     // Scope found. Check if parameter is legal.
     if (!Define->isValidParam(getValue())) {
-      fprintf(getTrace().getFile(),
-              "Error: Param %" PRIuMAX " not defined for method: %s\n",
-              uintmax_t(getValue()), Define->getName().c_str());
+      FILE* Out = getTrace().getFile();
+      fputs("Error: Param ", Out);
+      fprint_IntType(Out, getValue());
+      fprintf(Out, " not defined for method: %s\n", Define->getName().c_str());
       return false;
     }
     return true;
