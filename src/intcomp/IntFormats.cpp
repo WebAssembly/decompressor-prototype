@@ -18,49 +18,101 @@
 // Implementseach integer value.
 
 #include "intcomp/IntFormats.h"
+#include "interp/FormatHelpers.h"
 
 namespace wasm {
 
 using namespace decode;
+using namespace interp;
 
 namespace intcomp {
 
 namespace {
 
 const char* IntTypeFormatName[NumIntTypeFormats] = {
-  "uint8",
-  "uint32",
-  "uint64",
-  "varint32",
-  "varint64",
-  "varuint32",
-  "varuint64"
+    "uint8",
+    "varint32",
+    "varuint32",
+    "uint32",
+    "varint64",
+    "varuint64"
+    "uint64",
 };
 
-template<class T> bool isInstanceOf(IntType Value) {
+template <class T>
+bool isInstanceOf(IntType Value) {
   return Value == IntType(T(Value));
 }
 
-} // end of anonymous namespace
+class TestBuffer {
+  TestBuffer(const TestBuffer&) = delete;
+  TestBuffer& operator-(const TestBuffer&) = delete;
+
+ public:
+  TestBuffer() : Index(0) {}
+  void reset() { Index = 0; }
+  void writeByte(uint8_t Byte) {
+    (void)Byte;
+    ++Index;
+  }
+  size_t getSize() const { return Index; }
+  size_t writeVarint32(uint32_t Value) {
+    reset();
+    fmt::writeVarint32(Value, *this);
+    return getSize();
+  }
+  size_t writeVaruint32(uint32_t Value) {
+    reset();
+    fmt::writeVaruint32(Value, *this);
+    return getSize();
+  }
+  size_t writeVarint64(uint64_t Value) {
+    reset();
+    fmt::writeVarint64(Value, *this);
+    return getSize();
+  }
+  size_t writeVaruint64(uint64_t Value) {
+    reset();
+    fmt::writeVaruint64(Value, *this);
+    return getSize();
+  }
+
+ private:
+  size_t Index;
+};
+
+}  // end of anonymous namespace
 
 const char* getName(IntTypeFormat Fmt) {
   assert(int(Fmt) <= int(IntTypeFormat::LAST));
   return IntTypeFormatName[size_t(Fmt)];
 }
 
-IntTypeFormats::IntTypeFormats(IntType Value)
-    : Value(Value) {
-  // Initialize to unknownSize
-  for (size_t i = 0; i < NumIntTypeFormats; ++i)
-    ByteSize[i] = UnknownSize;
+IntTypeFormats::IntTypeFormats(IntType Value) : Value(Value) {
   installValidByteSizes(Value);
 }
 
 void IntTypeFormats::installValidByteSizes(IntType Value) {
-  if (isInstanceOf<size_t>(Value))
+  // Initialize to unknownSize
+  for (size_t i = 0; i < NumIntTypeFormats; ++i)
+    ByteSize[i] = UnknownSize;
+  TestBuffer Buffer;
+  if (isInstanceOf<uint8_t>(Value))
     ByteSize[size_t(IntTypeFormat::Uint8)] = sizeof(uint8_t);
-  if (isInstanceOf<size_t>(Value))
+  if (isInstanceOf<uint32_t>(Value)) {
     ByteSize[size_t(IntTypeFormat::Uint32)] = sizeof(uint32_t);
+    ByteSize[size_t(IntTypeFormat::Varint32)] =
+        Buffer.writeVarint32(uint32_t(Value));
+    ByteSize[size_t(IntTypeFormat::Varuint32)] =
+        Buffer.writeVaruint32(uint32_t(Value));
+  }
+  if (isInstanceOf<uint64_t>(Value)) {
+    ByteSize[size_t(IntTypeFormat::Uint64)] = sizeof(uint64_t);
+    ByteSize[size_t(IntTypeFormat::Varint64)] =
+        Buffer.writeVarint64(uint64_t(Value));
+    ByteSize[size_t(IntTypeFormat::Varuint64)] =
+        Buffer.writeVaruint64(uint64_t(Value));
+  }
 }
 
 IntTypeFormat IntTypeFormats::getFirstMinimumFormat() const {

@@ -31,41 +31,35 @@ WriteStream::~WriteStream() {
 }
 
 void WriteStream::writeUint8(uint8_t Value, WriteCursor& Pos) {
-  Pos.writeByte(uint8_t(Value));
+  fmt::writeUint8(Value, Pos);
 }
 
 void WriteStream::writeUint32(uint32_t Value, WriteCursor& Pos) {
-  writeFixed<uint32_t>(Value, Pos);
+  fmt::writeUint32(Value, Pos);
 }
 
 void WriteStream::writeUint64(uint64_t Value, WriteCursor& Pos) {
-  writeFixed<uint64_t>(Value, Pos);
+  fmt::writeUint64(Value, Pos);
 }
 
 void WriteStream::writeVarint32(int32_t Value, WriteCursor& Pos) {
-  if (Value < 0)
-    writeNegativeLEB128<int32_t>(Value, Pos);
-  else
-    writePositiveLEB128<int32_t>(Value, Pos);
+  fmt::writeVarint32(Value, Pos);
 }
 
 void WriteStream::writeVarint64(int64_t Value, WriteCursor& Pos) {
-  if (Value < 0)
-    writeNegativeLEB128<int64_t>(Value, Pos);
-  else
-    writePositiveLEB128<int64_t>(Value, Pos);
+  fmt::writeVarint64(Value, Pos);
 }
 
 void WriteStream::writeVaruint32(uint32_t Value, WriteCursor& Pos) {
-  writeLEB128<uint32_t>(Value, Pos);
+  fmt::writeVaruint32(Value, Pos);
 }
 
 void WriteStream::writeVaruint64(uint64_t Value, WriteCursor& Pos) {
-  writeLEB128<uint64_t>(Value, Pos);
+  fmt::writeVaruint64(Value, Pos);
 }
 
 void WriteStream::writeFixedVaruint32(uint32_t Value, WriteCursor& Pos) {
-  writeFixedLEB128<uint32_t>(Value, Pos);
+  fmt::writeFixedVaruint32(Value, Pos);
 }
 
 }  // end of namespace decode

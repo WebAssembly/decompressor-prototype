@@ -31,31 +31,31 @@ ReadStream::~ReadStream() {
 }
 
 uint8_t ReadStream::readUint8(ReadCursor& Pos) {
-  return Pos.readByte();
+  return fmt::readUint8(Pos);
 }
 
 uint32_t ReadStream::readUint32(ReadCursor& Pos) {
-  return readFixed<uint32_t>(Pos);
+  return fmt::readUint32(Pos);
 }
 
 uint64_t ReadStream::readUint64(ReadCursor& Pos) {
-  return readFixed<uint64_t>(Pos);
+  return fmt::readUint64(Pos);
 }
 
 int32_t ReadStream::readVarint32(ReadCursor& Pos) {
-  return readSignedLEB128<uint32_t>(Pos);
+  return fmt::readVarint32(Pos);
 }
 
 int64_t ReadStream::readVarint64(ReadCursor& Pos) {
-  return readSignedLEB128<uint64_t>(Pos);
+  return fmt::readVarint64(Pos);
 }
 
 uint32_t ReadStream::readVaruint32(ReadCursor& Pos) {
-  return readLEB128<uint32_t>(Pos);
+  return fmt::readVaruint32(Pos);
 }
 
 uint64_t ReadStream::readVaruint64(ReadCursor& Pos) {
-  return readLEB128<uint64_t>(Pos);
+  return fmt::readVaruint64(Pos);
 }
 
 }  // end of namespace interp

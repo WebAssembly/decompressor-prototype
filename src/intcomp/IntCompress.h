@@ -62,7 +62,6 @@ class IntCompressor FINAL {
    public:
     IntCounter() {}
     ~IntCounter() = default;
-    const IntCountUsageMap& getUsageMap() const { return UsageMap; }
     IntCountUsageMap UsageMap;
     BlockCountNode BlockCount;
   };

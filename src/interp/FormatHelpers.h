@@ -25,6 +25,8 @@ namespace wasm {
 
 namespace interp {
 
+namespace fmt {
+
 template <class Type, class ReadCursor>
 Type readFixed(ReadCursor& Pos) {
   Type Value = 0;
@@ -66,6 +68,41 @@ Type readSignedLEB128(ReadCursor& Pos) {
   if ((Chunk & 0x40) && (Shift < sizeof(Type) * CHAR_BIT))
     Value |= ~Type(0) << Shift;
   return Value;
+}
+
+template <class ReadCursor>
+uint8_t readUint8(ReadCursor& Pos) {
+  return Pos.readByte();
+}
+
+template <class ReadCursor>
+uint32_t readUint32(ReadCursor& Pos) {
+  return fmt::readFixed<uint32_t>(Pos);
+}
+
+template <class ReadCursor>
+uint64_t readUint64(ReadCursor& Pos) {
+  return fmt::readFixed<uint64_t>(Pos);
+}
+
+template <class ReadCursor>
+int32_t readVarint32(ReadCursor& Pos) {
+  return fmt::readSignedLEB128<uint32_t>(Pos);
+}
+
+template <class ReadCursor>
+int64_t readVarint64(ReadCursor& Pos) {
+  return fmt::readSignedLEB128<uint64_t>(Pos);
+}
+
+template <class ReadCursor>
+uint32_t readVaruint32(ReadCursor& Pos) {
+  return fmt::readLEB128<uint32_t>(Pos);
+}
+
+template <class ReadCursor>
+uint64_t readVaruint64(ReadCursor& Pos) {
+  return fmt::readLEB128<uint64_t>(Pos);
 }
 
 // Define LEB128 writers.
@@ -121,6 +158,54 @@ void writeFixed(Type Value, WriteCursor& Pos) {
     Value >>= CHAR_BIT;
   }
 }
+
+template <class WriteCursor>
+void writeUint8(uint8_t Value, WriteCursor& Pos) {
+  Pos.writeByte(Value);
+}
+
+template <class WriteCursor>
+void writeUint32(uint32_t Value, WriteCursor& Pos) {
+  writeFixed(Value, Pos);
+}
+
+template <class WriteCursor>
+void writeUint64(uint64_t Value, WriteCursor& Pos) {
+  writeFixed(Value, Pos);
+}
+
+template <class WriteCursor>
+void writeVarint32(int32_t Value, WriteCursor& Pos) {
+  if (Value < 0)
+    writeNegativeLEB128(Value, Pos);
+  else
+    writePositiveLEB128(Value, Pos);
+}
+
+template <class WriteCursor>
+void writeVarint64(int64_t Value, WriteCursor& Pos) {
+  if (Value < 0)
+    writeNegativeLEB128(Value, Pos);
+  else
+    writePositiveLEB128(Value, Pos);
+}
+
+template <class WriteCursor>
+void writeVaruint32(uint32_t Value, WriteCursor& Pos) {
+  writeLEB128(Value, Pos);
+}
+
+template <class WriteCursor>
+void writeVaruint64(uint64_t Value, WriteCursor& Pos) {
+  writeLEB128(Value, Pos);
+}
+
+template <class WriteCursor>
+void writeFixedVaruint32(uint32_t Value, WriteCursor& Pos) {
+  writeFixedLEB128(Value, Pos);
+}
+
+}  // end of namespace fmt
 
 }  // end of namespace decode
 

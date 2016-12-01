@@ -29,14 +29,16 @@ namespace intcomp {
 enum class IntTypeFormat {
   // Note: Sizes are listed in order of preference, if they contain the
   // same number of bytes.
+  // NOTE: If you change this list, change the definition of IntTypeFormatName
+  // (in cpp file) as well.
   Uint8,
-  Uint32,
-  Uint64,
-  Varuint32,
   Varint32,
-  Varuint64,
+  Varuint32,
+  Uint32,
   Varint64,
-  LAST = Varint64  // Note: worst case choice.
+  Varuint64,
+  Uint64,
+  LAST = Uint64  // Note: worst case choice.
 };
 
 const char* getName(IntTypeFormat Fmt);
@@ -53,15 +55,17 @@ class IntTypeFormats {
   IntTypeFormats(decode::IntType Value);
 
   decode::IntType getValue() const { return Value; }
-  int getByteSize(IntTypeFormat Fmt) const {
-    return ByteSize[size_t(Fmt)];
-  }
+  int getByteSize(IntTypeFormat Fmt) const { return ByteSize[size_t(Fmt)]; }
 
   // Returns the preferred format, based on the number of bytes.
   IntTypeFormat getFirstMinimumFormat() const;
 
   // Returns next format with same size, or Fmt if no more candidates.
   IntTypeFormat getNextMatchingFormat(IntTypeFormat Fmt) const;
+
+  int getMinFormatSize() const {
+    return ByteSize[size_t(getFirstMinimumFormat())];
+  }
 
  private:
   decode::IntType Value;
@@ -74,5 +78,4 @@ class IntTypeFormats {
 
 }  // end of namespace wasm
 
-
-#endif // DECOMPRESSOR_SRC_INTCOMP_INTFORMATS_H
+#endif  // DECOMPRESSOR_SRC_INTCOMP_INTFORMATS_H

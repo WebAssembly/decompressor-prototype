@@ -74,7 +74,8 @@ class CountNode {
   virtual ~CountNode();
   enum class Kind { Block, Singleton, IntSequence };
   size_t getCount() const { return Count; }
-  virtual size_t getWeight() const;
+  size_t getWeight() const { return getWeight(getCount()); }
+  virtual size_t getWeight(size_t Count) const;
   void increment(size_t Cnt = 1) { Count += Cnt; }
 
   // The following two handle associating a heap entry with this.
@@ -130,13 +131,13 @@ class IntCountNode : public CountNode {
  public:
   ~IntCountNode() OVERRIDE {}
   size_t getValue() const { return Value; }
-  size_t getWeight() const OVERRIDE;
   void describe(FILE* Out, size_t NestLevel = 0) const OVERRIDE;
   size_t pathLength() const;
   bool isSingletonPath() const { return Parent == nullptr; }
   // Lookup (or create if necessary), the entry for Value in UsageMap. Uses
   // Parent value to define parent.
-  static IntCountNode* lookup(IntCountUsageMap& UsageMap,
+  static IntCountNode* lookup(IntCountUsageMap& LocalUsageMap,
+                              IntCountUsageMap& TopLevelUsageMap,
                               decode::IntType Value,
                               IntCountNode* Parent);
   IntCountUsageMap& getNextUsageMap() { return NextUsageMap; }
@@ -170,12 +171,12 @@ class SingletonCountNode : public IntCountNode {
  public:
   SingletonCountNode(decode::IntType);
   ~SingletonCountNode() OVERRIDE;
+  size_t getWeight(size_t Count) const OVERRIDE;
   static bool implementsClass(Kind NodeKind) {
     return NodeKind == Kind::Singleton;
   }
-  int getByteSize(IntTypeFormat Fmt) const {
-    return Formats.getByteSize(Fmt);
-  }
+  int getByteSize(IntTypeFormat Fmt) const { return Formats.getByteSize(Fmt); }
+  int getMinByteSize() const { return Formats.getMinFormatSize(); }
 
  private:
   IntTypeFormats Formats;
@@ -187,11 +188,17 @@ class IntSeqCountNode : public IntCountNode {
   IntSeqCountNode& operator=(const IntSeqCountNode&) = delete;
 
  public:
-  IntSeqCountNode(decode::IntType Value, IntCountNode* Parent);
+  IntSeqCountNode(IntCountUsageMap& TopLevelUsageMap,
+                  decode::IntType Value,
+                  IntCountNode* Parent);
   ~IntSeqCountNode() OVERRIDE;
+  size_t getWeight(size_t Count) const OVERRIDE;
   static bool implementsClass(Kind NodeKind) {
     return NodeKind == Kind::IntSequence;
   }
+
+ private:
+  IntCountUsageMap& TopLevelUsageMap;
 };
 
 }  // end of namespace intcomp
