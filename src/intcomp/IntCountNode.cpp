@@ -74,12 +74,20 @@ void CountNode::indent(FILE* Out, size_t NestLevel, bool AddWeight) const {
     fprintf(Out, "%12" PRIuMAX "", uintmax_t(getWeight()));
 }
 
+void CountNode::newline(FILE* Out) const {
+  fprintf(Out, " - Count: %" PRIuMAX "", uintmax_t(getCount()));
+  if (AbbrevIndex != BAD_ABBREV_INDEX)
+    fprintf(Out, " Abbrev: %" PRIuMAX "", uintmax_t(AbbrevIndex));
+  fputc('\n', Out);
+}
+
 BlockCountNode::~BlockCountNode() {
 }
 
 void BlockCountNode::describe(FILE* Out, size_t NestLevel) const {
   indent(Out, NestLevel);
-  fputs(": Block\n", Out);
+  fputs(": Block", Out);
+  newline(Out);
 }
 
 int IntCountNode::compare(const CountNode& Nd) const {
@@ -117,7 +125,7 @@ void IntCountNode::describe(FILE* Out, size_t NestLevel) const {
   fputc(':', Out);
   // TODO(karlschimpf): Make this a programmable parameter.
   describePath(Out, 10);
-  fprintf(Out, " Count: %" PRIuMAX "\n", uintmax_t(getCount()));
+  newline(Out);
 }
 
 void IntCountNode::describePath(FILE* Out, size_t MaxPath) const {
