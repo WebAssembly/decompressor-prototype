@@ -32,6 +32,12 @@ namespace wasm {
 
 #define WASM_IGNORE(V) (void)(V);
 
+#ifdef __GNUC__
+#define WASM_RETURN_UNREACHABLE(V) return (V);
+#else
+#define WASM_RETURN_UNREACHABLE(V)
+#endif
+
 #ifdef NDEBUG
 inline bool isRelease() {
   return true;
