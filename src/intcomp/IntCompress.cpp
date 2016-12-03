@@ -43,8 +43,8 @@ class IntCounterWriter : public Writer {
   IntCounterWriter& operator=(const IntCounterWriter&) = delete;
 
  public:
-  IntCounterWriter(IntCompressor::IntCounter& Counter)
-      : Counter(Counter),
+  IntCounterWriter(std::shared_ptr<RootCountNode> Root)
+      : Root(Root),
         input_seq(new circular_vector<IntType>(1)),
         CountCutoff(1),
         WeightCutoff(1),
@@ -81,7 +81,7 @@ class IntCounterWriter : public Writer {
   bool writeAction(const filt::CallbackNode* Action) OVERRIDE;
 
  private:
-  IntCompressor::IntCounter& Counter;
+  std::shared_ptr<RootCountNode> Root;
   circular_vector<IntType>* input_seq;
   uint64_t CountCutoff;
   uint64_t WeightCutoff;
@@ -113,11 +113,10 @@ void IntCounterWriter::popValuesFromInputSeq(size_t Size) {
 }
 
 void IntCounterWriter::addInputSeqToUsageMap() {
-  IntCountUsageMap* Map = &Counter.UsageMap;
-  IntCountNode* Nd = nullptr;
+  std::shared_ptr<CountNodeWithSuccs> Nd = Root;
   for (size_t i = 0, e = input_seq->size(); i < e; ++i) {
     IntType Val = (*input_seq)[i];
-    Nd = IntCountNode::lookup(*Map, Counter.UsageMap, Val, Nd);
+    Nd = CountNodeWithSuccs::lookup(Nd, Val);
     if (UpToSize == 1 || i > 0)
       Nd->increment();
     if (e > 1) {
@@ -130,7 +129,6 @@ void IntCounterWriter::addInputSeqToUsageMap() {
       popValuesFromInputSeq(e);
       return;
     }
-    Map = &Nd->getNextUsageMap();
   }
   // If reached, no values added. Pop one value so that this
   // metod guarantees to shrink the input sequence.
@@ -196,9 +194,10 @@ bool IntCounterWriter::writeAction(const filt::CallbackNode* Action) {
   switch (Sym->getPredefinedSymbol()) {
     case PredefinedSymbol::Block_enter:
       addAllInputSeqsToUsageMap();
-      Counter.BlockCount.increment();
+      Root->getBlockEnter()->increment();
       return true;
     case PredefinedSymbol::Block_exit:
+      Root->getBlockExit()->increment();
       addAllInputSeqsToUsageMap();
       return true;
     default:
@@ -222,10 +221,16 @@ void IntCompressor::setTrace(std::shared_ptr<TraceClassSexp> NewTrace) {
   Trace = NewTrace;
 }
 
-TraceClassSexp& IntCompressor::getTrace() {
+std::shared_ptr<TraceClassSexp> IntCompressor::getTracePtr() {
   if (!Trace)
     setTrace(std::make_shared<TraceClassSexp>("IntCompress"));
-  return *Trace;
+  return Trace;
+}
+
+std::shared_ptr<RootCountNode> IntCompressor::getRoot() {
+  if (!Root)
+    Root = std::make_shared<RootCountNode>();
+  return Root;
 }
 
 void IntCompressor::readInput(std::shared_ptr<Queue> InputStream,
@@ -250,9 +255,6 @@ void IntCompressor::readInput(std::shared_ptr<Queue> InputStream,
 }
 
 IntCompressor::~IntCompressor() {
-  Input.reset();
-  Output.reset();
-  IntCountNode::clear(UsageMap);
 }
 
 bool IntCompressor::compressUpToSize(size_t Size, bool TraceParsing) {
@@ -263,7 +265,7 @@ bool IntCompressor::compressUpToSize(size_t Size, bool TraceParsing) {
       TRACE_MESSAGE("Collecting integer sequences of (up to) length: " +
                     std::to_string(Size));
   });
-  IntCounterWriter Writer(Counter);
+  IntCounterWriter Writer(getRoot());
   Writer.setCountCutoff(CountCutoff);
   Writer.setWeightCutoff(WeightCutoff);
   Writer.setUpToSize(Size);
@@ -276,32 +278,26 @@ bool IntCompressor::compressUpToSize(size_t Size, bool TraceParsing) {
   return !Reader.errorsFound();
 }
 
-void IntCompressor::removeSmallUsageCounts(IntCountUsageMap& UsageMap) {
-  std::vector<IntType> KeysToRemove;
-  for (const auto& pair : UsageMap) {
-    if (pair.second == nullptr || removeSmallUsageCounts(pair.second))
-      KeysToRemove.push_back(pair.first);
-  }
-  for (const auto Key : KeysToRemove)
-    IntCountNode::erase(UsageMap, Key);
-}
-
-bool IntCompressor::removeSmallUsageCounts(CountNode* Nd) {
-  if (Nd == nullptr)
+bool IntCompressor::removeSmallUsageCounts(std::shared_ptr<CountNode> Nd) {
+  if (!Nd)
     return true;
-  {
-    bool RemoveNode = false;
-    if (Nd->getCount() < CountCutoff)
-      RemoveNode = true;
-    else if (Nd->getWeight() < WeightCutoff)
-      RemoveNode = true;
-    if (!RemoveNode)
-      return false;
-  }
-  if (auto* IntNd = dyn_cast<IntCountNode>(Nd)) {
-    IntCountUsageMap& NdUsageMap = IntNd->getNextUsageMap();
-    removeSmallUsageCounts(NdUsageMap);
-    return NdUsageMap.empty();
+  bool RemoveNode = false;
+  if (Nd->getCount() < CountCutoff)
+    RemoveNode = true;
+  else if (Nd->getWeight() < WeightCutoff)
+    RemoveNode = true;
+  if (!RemoveNode)
+    return false;
+  if (auto* SuccNd = dyn_cast<CountNodeWithSuccs>(Nd.get())) {
+    std::vector<IntType> KeysToRemove;
+    for (CountNode::SuccMapIterator
+             Iter = SuccNd->getSuccBegin(),
+             End = SuccNd->getSuccEnd(); Iter != End; ++Iter) {
+      if (Iter->second == nullptr || removeSmallUsageCounts(Iter->second))
+        KeysToRemove.push_back(Iter->first);
+    }
+    for (const auto Key : KeysToRemove)
+      SuccNd->eraseSucc(Key);
   }
   return false;
 }
@@ -339,7 +335,7 @@ namespace {
 
 class CountNodeCollector {
  public:
-  IntCompressor::IntCounter& Counter;
+  std::shared_ptr<RootCountNode> Root;
   std::vector<CountNode::HeapValueType> Values;
   std::shared_ptr<CountNode::HeapType> ValuesHeap;
   uint64_t WeightTotal;
@@ -349,9 +345,10 @@ class CountNodeCollector {
   uint64_t NumNodesReported;
   uint64_t CountCutoff;
   uint64_t WeightCutoff;
+  std::shared_ptr<filt::TraceClassSexp> Trace;
 
-  explicit CountNodeCollector(IntCompressor::IntCounter& Counter)
-      : Counter(Counter),
+  explicit CountNodeCollector(std::shared_ptr<RootCountNode> Root)
+      : Root(Root),
         ValuesHeap(std::make_shared<CountNode::HeapType>()),
         WeightTotal(0),
         CountTotal(0),
@@ -377,10 +374,24 @@ class CountNodeCollector {
     });
   }
   void clear();
-  void collectNode(CountNode* Nd, CollectionFlags Flags);
+  void collectNode(std::shared_ptr<CountNode> Nd, CollectionFlags Flags);
   void assignInitialAbbreviations();
+
+  void setTrace(std::shared_ptr<filt::TraceClassSexp> Trace);
+  filt::TraceClassSexp& getTrace();
+  bool hasTrace() { return bool(Trace); }
   void describe(FILE* Out);
 };
+
+void CountNodeCollector::setTrace(std::shared_ptr<TraceClassSexp> NewTrace) {
+  Trace = NewTrace;
+}
+
+filt::TraceClassSexp& CountNodeCollector::getTrace() {
+  if (!Trace)
+    setTrace(std::make_shared<TraceClassSexp>("IntCompress"));
+  return *Trace;
+}
 
 void CountNodeCollector::clearHeap() {
   for (auto& Value : Values)
@@ -399,19 +410,24 @@ void CountNodeCollector::buildHeap() {
 }
 
 void CountNodeCollector::collect(CollectionFlags Flags) {
-  if (hasFlag(CollectionFlag::TopLevel, Flags))
-    collectNode(&Counter.BlockCount, Flags);
-  for (const auto& pair : Counter.UsageMap)
-    collectNode(pair.second, Flags);
+  if (hasFlag(CollectionFlag::TopLevel, Flags)) {
+    collectNode(Root->getBlockEnter(), Flags);
+    collectNode(Root->getBlockExit(), Flags);
+  }
+  for (CountNode::SuccMapIterator
+           Iter = Root->getSuccBegin(),
+           End = Root->getSuccEnd(); Iter != End; ++Iter)
+    collectNode(Iter->second, Flags);
 }
 
-void CountNodeCollector::collectNode(CountNode* Nd, CollectionFlags Flags) {
+void CountNodeCollector::collectNode(std::shared_ptr<CountNode> Nd,
+                                     CollectionFlags Flags) {
   // TODO(karlschimpf) Make this non-recursive.
-  if (Nd == nullptr)
+  if (!Nd)
     return;
   uint64_t Weight = Nd->getWeight();
   uint64_t Count = Nd->getCount();
-  auto* IntNd = dyn_cast<IntCountNode>(Nd);
+  auto* IntNd = dyn_cast<IntCountNode>(Nd.get());
   if (hasFlag(CollectionFlag::TopLevel, Flags)) {
     CountTotal += Count;
     WeightTotal += Weight;
@@ -442,9 +458,10 @@ void CountNodeCollector::collectNode(CountNode* Nd, CollectionFlags Flags) {
     WeightReported += Weight;
     ++NumNodesReported;
   }
-  IntCountUsageMap& NdUsageMap = IntNd->getNextUsageMap();
-  for (const auto& pair : NdUsageMap)
-    collectNode(pair.second, Flags);
+  for (CountNode::SuccMapIterator
+           Iter = IntNd->getSuccBegin(),
+           End = IntNd->getSuccEnd(); Iter != End; ++Iter)
+    collectNode(Iter->second, Flags);
 }
 
 void CountNodeCollector::assignInitialAbbreviations() {
@@ -481,14 +498,16 @@ void CountNodeCollector::describe(FILE* Out) {
 }  // end of anonymous namespace
 
 void IntCompressor::assignInitialAbbreviations() {
-  CountNodeCollector Collector(Counter);
+  CountNodeCollector Collector(getRoot());
   Collector.CountCutoff = CountCutoff;
   Collector.WeightCutoff = WeightCutoff;
   Collector.assignInitialAbbreviations();
 }
 
 void IntCompressor::describe(FILE* Out, CollectionFlags Flags) {
-  CountNodeCollector Collector(Counter);
+  CountNodeCollector Collector(getRoot());
+  if (hasTrace())
+    Collector.setTrace(getTracePtr());
   Collector.CountCutoff = CountCutoff;
   Collector.WeightCutoff = WeightCutoff;
   Collector.collect(Flags);

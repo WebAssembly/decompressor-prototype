@@ -52,21 +52,6 @@ int CountNode::compare(const CountNode& Nd) const {
   return 0;
 }
 
-int CountNode::Ptr::compare(const CountNode::Ptr& P) const {
-  if (NdPtr == nullptr)
-    return P.NdPtr == nullptr ? 0 : -1;
-  if (P.NdPtr == nullptr)
-    return 1;
-  return NdPtr->compare(*P.NdPtr);
-}
-
-void CountNode::Ptr::describe(FILE* File) {
-  if (NdPtr)
-    NdPtr->describe(File);
-  else
-    fprintf(File, "nullptr\n");
-}
-
 void CountNode::indent(FILE* Out, size_t NestLevel, bool AddWeight) const {
   for (size_t i = 0; i < NestLevel; ++i)
     fputs("  ", Out);
@@ -81,132 +66,178 @@ void CountNode::newline(FILE* Out) const {
   fputc('\n', Out);
 }
 
+int compare(CountNode::Ptr N1, CountNode::Ptr N2) {
+  if (N1) {
+    if (N2)
+      return N1->compare(*N2);
+    return 1;
+  }
+  return -1;
+}
+
+CountNodeWithSuccs::~CountNodeWithSuccs() {}
+
+std::shared_ptr<IntCountNode> CountNodeWithSuccs::lookup(
+    std::shared_ptr<CountNodeWithSuccs> Nd,
+    IntType Value) {
+  std::shared_ptr<IntCountNode> Succ = Nd->getSucc(Value);
+  if (Succ)
+    return Succ;
+  Succ = std::make_shared<IntSeqCountNode>(Value, Nd);
+  Nd->Successors[Value] = Succ;
+  return Succ;
+}
+
+std::shared_ptr<IntCountNode> CountNodeWithSuccs::getSucc(IntType Value) {
+  if (Successors.count(Value))
+    return Successors[Value];
+  return std::shared_ptr<IntCountNode>();
+}
+
+bool CountNodeWithSuccs::implementsClass(Kind K) {
+  switch (K) {
+    case Kind::Root:
+      return true;
+    case Kind::Block:
+      return false;
+    case Kind::Singleton:
+      return true;
+    case Kind::IntSequence:
+      return true;
+  }
+  WASM_RETURN_UNREACHABLE(false);
+}
+
+RootCountNode::RootCountNode()
+    : CountNodeWithSuccs(Kind::Root),
+      BlockEnter(std::make_shared<BlockCountNode>(true)),
+      BlockExit(std::make_shared<BlockCountNode>(false))
+{}
+
+RootCountNode::~RootCountNode() {}
+
+void RootCountNode::describe(FILE* Out, size_t NestLevel) const {
+  indent(Out, NestLevel);
+  fputs(": Root", Out);
+  newline(Out);
+}
+
+int RootCountNode::compare(const CountNode& Nd) const {
+  int Diff = CountNodeWithSuccs::compare(Nd);
+  if (Diff != 0)
+    return Diff;
+  assert(isa<RootCountNode>(Nd));
+  const auto* Root = cast<RootCountNode>(Nd);
+  assert(BlockEnter);
+  assert(BlockExit);
+  Diff = BlockEnter.get()->compare(*Root->BlockExit);
+  if (Diff != 0)
+    return Diff;
+  return BlockExit.get()->compare(*Root->BlockExit);
+}
+
 BlockCountNode::~BlockCountNode() {
+}
+
+int BlockCountNode::compare(const CountNode&Nd) const {
+  int Diff = CountNode::compare(Nd);
+  if (Diff != 0)
+    return Diff;
+  assert(isa<BlockCountNode>(Nd));
+  const auto* BlkNd = cast<BlockCountNode>(Nd);
+  if (IsEnter)
+    return BlkNd->IsEnter ? 0 : -1;
+  else
+    return BlkNd->IsEnter ? 1 : 0;
 }
 
 void BlockCountNode::describe(FILE* Out, size_t NestLevel) const {
   indent(Out, NestLevel);
-  fputs(": Block", Out);
+  fputs(": Block.", Out);
+  fputs(IsEnter ? "enter" : "exit", Out);
   newline(Out);
 }
 
 int IntCountNode::compare(const CountNode& Nd) const {
-  int Diff = CountNode::compare(Nd);
+  int Diff = CountNodeWithSuccs::compare(Nd);
   if (Diff != 0)
     return Diff;
-  // Compare structurally.
-  const IntCountNode* Arg2 = dyn_cast<IntCountNode>(&Nd);
-  if (Arg2 == nullptr)
-    return Diff;
-  const IntCountNode* Arg1 = this;
-  size_t Arg1Len = Arg1->pathLength();
-  size_t Arg2Len = Arg2->pathLength();
-  if (Arg1Len < Arg2Len)
+  assert(isa<IntCountNode>(Nd));
+  const IntCountNode* IntNd = cast<IntCountNode>(Nd);
+  if (Value < IntNd->Value)
     return -1;
-  if (Arg1Len > Arg2Len)
-    return 1;
-  while (Arg1) {
-    assert(Arg2);
-    if (Arg1->Value < Arg2->Value)
-      return -1;
-    if (Arg1->Value > Arg2->Value)
+  if (Value > IntNd->Value)
       return 1;
-    Arg1 = Arg1->Parent;
-    Arg2 = Arg2->Parent;
-  }
-  return 0;
+  return intcomp::compare(getParent(), IntNd->Parent.lock());
 }
 
 void IntCountNode::describe(FILE* Out, size_t NestLevel) const {
+  std::vector<const IntCountNode*> IntSeq;
+  const IntCountNode* Nd = this;
+  while (Nd) {
+    IntSeq.push_back(Nd);
+    Nd = dyn_cast<IntCountNode>(Nd->getParent().get());
+  }
   indent(Out, NestLevel);
   fputs(": Value", Out);
   if (pathLength() > 1)
     fputc('s', Out);
   fputc(':', Out);
-  // TODO(karlschimpf): Make this a programmable parameter.
-  describePath(Out, 10);
-  newline(Out);
-}
-
-void IntCountNode::describePath(FILE* Out, size_t MaxPath) const {
-  if (MaxPath == 0) {
-    fprintf(Out, " ...[%" PRIuMAX "]", uintmax_t(pathLength()));
-    return;
+  for (std::vector<const IntCountNode*>::reverse_iterator
+           Iter = IntSeq.rbegin(), EndIter = IntSeq.rend();
+       Iter != EndIter; ++Iter) {
+    fputc(' ', Out);
+    fprint_IntType(Out, (*Iter)->getValue());
   }
-  if (Parent)
-    Parent->describePath(Out, MaxPath - 1);
-  fputc(' ', Out);
-  fprint_IntType(Out, Value);
+  newline(Out);
 }
 
 size_t IntCountNode::pathLength() const {
   size_t len = 0;
-  IntCountNode* Nd = const_cast<IntCountNode*>(this);
-  while (Nd) {
+ const  IntCountNode* Nd = this;
+ while (Nd) {
     ++len;
-    Nd = Nd->Parent;
+    Nd = dyn_cast<IntCountNode>(Nd->getParent().get());
   }
   return len;
 }
 
-IntCountNode* IntCountNode::lookup(IntCountUsageMap& LocalUsageMap,
-                                   IntCountUsageMap& TopLevelUsageMap,
-                                   IntType Value,
-                                   IntCountNode* Parent) {
-  CountNode* CntNd = LocalUsageMap[Value];
-  IntCountNode* Nd;
-  if (CntNd) {
-    Nd = dyn_cast<IntCountNode>(CntNd);
-    assert(Nd);
-    return Nd;
-  }
-  if (Parent)
-    Nd = new IntSeqCountNode(TopLevelUsageMap, Value, Parent);
-  else
-    Nd = new SingletonCountNode(Value);
-  LocalUsageMap[Value] = Nd;
-  return Nd;
-}
-
-void IntCountNode::clear(IntCountUsageMap& UsageMap) {
-  for (auto& pair : UsageMap)
-    delete pair.second;
-  UsageMap.clear();
-}
-
 SingletonCountNode::SingletonCountNode(IntType Value)
-    : IntCountNode(Kind::Singleton, Value, nullptr), Formats(Value) {
+    : IntCountNode(Kind::Singleton, Value), Formats(Value) {
 }
 
 SingletonCountNode::~SingletonCountNode() {
 }
 
 size_t SingletonCountNode::getWeight(size_t Count) const {
-  return Count * getMinByteSize();
+  return Count * getLocalWeight();
 }
 
-IntSeqCountNode::IntSeqCountNode(IntCountUsageMap& TopLevelUsageMap,
-                                 IntType Value,
-                                 IntCountNode* Parent)
-    : IntCountNode(Kind::IntSequence, Value, Parent),
-      TopLevelUsageMap(TopLevelUsageMap) {
-  assert(Parent);
+size_t SingletonCountNode::getLocalWeight() const {
+  return getMinByteSize();
+}
+
+IntSeqCountNode::IntSeqCountNode(IntType Value,
+                                 std::shared_ptr<CountNodeWithSuccs> Parent)
+    : IntCountNode(Kind::IntSequence, Value, Parent) {
 }
 
 IntSeqCountNode::~IntSeqCountNode() {
-  clear(NextUsageMap);
 }
 
 size_t IntSeqCountNode::getWeight(size_t Count) const {
-  // TOOD(karlschimpf) Remove recursion to compute.
-  int MinByteSize = 0;
-  if (auto* Nd = dyn_cast<SingletonCountNode>(TopLevelUsageMap[getValue()])) {
-    MinByteSize = Nd->getMinByteSize();
-  } else {
-    IntTypeFormats Formats(getValue());
-    MinByteSize = Formats.getMinFormatSize();
+  size_t Weight = 0;
+  const IntCountNode* Nd = this;
+  while (Nd) {
+    Weight += Nd->getLocalWeight() * Count;
+    Nd = dyn_cast<IntCountNode>(Nd->getParent().get());
   }
-  return Parent->getWeight(Count) + MinByteSize * Count;
+  return Weight;
+}
+
+size_t IntSeqCountNode::getLocalWeight() const {
+  IntTypeFormats Formats(getValue());
+  return Formats.getMinFormatSize();
 }
 
 }  // end of namespace intcomp

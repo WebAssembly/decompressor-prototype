@@ -54,16 +54,6 @@ class IntCompressor FINAL {
   IntCompressor& operator=(const IntCompressor&) = delete;
 
  public:
-  class IntCounter {
-    IntCounter(const IntCounter&) = delete;
-    IntCounter& operator=(const IntCounter&) = delete;
-
-   public:
-    IntCounter() {}
-    ~IntCounter() = default;
-    IntCountUsageMap UsageMap;
-    BlockCountNode BlockCount;
-  };
   IntCompressor(std::shared_ptr<decode::Queue> InputStream,
                 std::shared_ptr<decode::Queue> OutputStream,
                 std::shared_ptr<filt::SymbolTable> Symtab);
@@ -73,6 +63,8 @@ class IntCompressor FINAL {
   bool errorsFound() const { return ErrorsFound; }
 
   enum DetailLevel { NoDetail, SomeDetail, AllDetail };
+
+  std::shared_ptr<RootCountNode> getRoot();
 
   void compress(DetailLevel Level = NoDetail,
                 bool TraceParsing = false,
@@ -87,7 +79,9 @@ class IntCompressor FINAL {
     return getTrace().getTraceProgress();
   }
   void setTrace(std::shared_ptr<filt::TraceClassSexp> Trace);
-  filt::TraceClassSexp& getTrace();
+  filt::TraceClassSexp& getTrace() { return *getTracePtr(); }
+  std::shared_ptr<filt::TraceClassSexp> getTracePtr();
+  bool hasTrace() { return bool(Trace); }
 
   void setCountCutoff(uint64_t NewCutoff) { CountCutoff = NewCutoff; }
   void setWeightCutoff(uint64_t NewCutoff) { WeightCutoff = NewCutoff; }
@@ -98,12 +92,11 @@ class IntCompressor FINAL {
   void describe(FILE* Out, CollectionFlags = makeFlags(CollectionFlag::All));
 
  private:
-  IntCountUsageMap UsageMap;
+  std::shared_ptr<RootCountNode> Root;
   std::shared_ptr<decode::Queue> Input;
   std::shared_ptr<decode::Queue> Output;
   std::shared_ptr<filt::SymbolTable> Symtab;
   std::shared_ptr<interp::IntStream> Contents;
-  IntCounter Counter;
   std::shared_ptr<filt::TraceClassSexp> Trace;
   uint64_t CountCutoff;
   uint64_t WeightCutoff;
@@ -113,9 +106,8 @@ class IntCompressor FINAL {
                  std::shared_ptr<filt::SymbolTable> Symtab,
                  bool TraceParsing);
   bool compressUpToSize(size_t Size, bool TraceParsing);
-  void removeSmallUsageCounts() { removeSmallUsageCounts(Counter.UsageMap); }
-  void removeSmallUsageCounts(IntCountUsageMap& UsageMap);
-  bool removeSmallUsageCounts(CountNode* Nd);
+  void removeSmallUsageCounts() { removeSmallUsageCounts(Root); }
+  bool removeSmallUsageCounts(std::shared_ptr<CountNode> Nd);
   void assignInitialAbbreviations();
 };
 

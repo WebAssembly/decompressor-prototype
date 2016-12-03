@@ -40,12 +40,22 @@ namespace wasm {
 // Returns true if N points to an instance of WantedClass
 template <class WantedClass, class TestClass>
 bool isa(TestClass* N) {
-  return WantedClass::implementsClass(N->getRtClassId());
+  return N && WantedClass::implementsClass(N->getRtClassId());
 }
 
 template <class WantedClass, class TestClass>
 bool isa(const TestClass* N) {
-  return WantedClass::implementsClass(N->getRtClassId());
+  return N && WantedClass::implementsClass(N->getRtClassId());
+}
+
+template <class WantedClass, class TestClass>
+bool isa(TestClass& N) {
+  return WantedClass::implementsClass(N.getRtClassId());
+}
+
+template <class WantedClass, class TestClass>
+bool isa(const TestClass& N) {
+  return WantedClass::implementsClass(N.getRtClassId());
 }
 
 // Cast N (no type checking) to type T*.
@@ -59,6 +69,16 @@ const WantedClass* cast(const TestClass* N) {
   return reinterpret_cast<WantedClass*>(const_cast<TestClass*>(N));
 }
 
+template <class WantedClass, class TestClass>
+WantedClass* cast(TestClass& N) {
+  return reinterpret_cast<WantedClass*>(&N);
+}
+
+template <class WantedClass, class TestClass>
+const WantedClass* cast(const TestClass& N) {
+  return reinterpret_cast<WantedClass*>(const_cast<TestClass*>(&N));
+}
+
 // Cast to type T. Returns nullptr if unable.
 template <class WantedClass, class TestClass>
 WantedClass* dyn_cast(TestClass* N) {
@@ -67,6 +87,16 @@ WantedClass* dyn_cast(TestClass* N) {
 
 template <class WantedClass, class TestClass>
 const WantedClass* dyn_cast(const TestClass* N) {
+  return isa<WantedClass>(N) ? cast<WantedClass>(N) : nullptr;
+}
+
+template <class WantedClass, class TestClass>
+WantedClass* dyn_cast(TestClass& N) {
+  return isa<WantedClass>(N) ? cast<WantedClass>(N) : nullptr;
+}
+
+template <class WantedClass, class TestClass>
+const WantedClass* dyn_cast(const TestClass& N) {
   return isa<WantedClass>(N) ? cast<WantedClass>(N) : nullptr;
 }
 
