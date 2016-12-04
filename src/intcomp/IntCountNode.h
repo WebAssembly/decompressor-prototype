@@ -14,7 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Defines nodes to count usages of integers in a WASM module.
+// Defines nodes to count usages for abbreviations for blocks, integers,
+// and seqeences of integers.
 
 #ifndef DEcOMPRESSOR_SRC_INTCOMP_INTCOUNTNODE_H
 #define DEcOMPRESSOR_SRC_INTCOMP_INTCOUNTNODE_H
@@ -33,7 +34,9 @@ namespace wasm {
 
 namespace intcomp {
 
+class BlockCountNode;
 class CountNode;
+class CountNodeWithSuccs;
 class IntCountNode;
 class RootCountNode;
 
@@ -46,11 +49,17 @@ class CountNode : public std::enable_shared_from_this<CountNode> {
 
  public:
   typedef std::shared_ptr<CountNode> Ptr;
-  typedef std::map<decode::IntType, std::shared_ptr<IntCountNode>> SuccMap;
+  typedef std::shared_ptr<BlockCountNode> BlockPtr;
+  typedef std::shared_ptr<CountNodeWithSuccs> WithSuccsPtr;
+  typedef std::weak_ptr<CountNodeWithSuccs> ParentPtr;
+  typedef std::shared_ptr<IntCountNode> IntPtr;
+  typedef std::shared_ptr<RootCountNode> RootPtr;
+  typedef std::map<decode::IntType, CountNode::IntPtr> SuccMap;
   typedef SuccMap::const_iterator SuccMapIterator;
   typedef Ptr HeapValueType;
   typedef utils::heap<HeapValueType> HeapType;
   typedef std::shared_ptr<HeapType::entry> HeapEntryType;
+
   virtual ~CountNode();
   enum class Kind { Root, Block, Singleton, IntSequence };
   size_t getCount() const { return Count; }
@@ -100,33 +109,27 @@ class CountNode : public std::enable_shared_from_this<CountNode> {
 
 int compare(CountNode::Ptr P1, CountNode::Ptr P2);
 
-inline bool operator<(CountNode::Ptr Nd1,
-                      CountNode::Ptr Nd2) {
+inline bool operator<(CountNode::Ptr Nd1, CountNode::Ptr Nd2) {
   return compare(Nd1, Nd2) < 0;
 }
 
-inline bool operator<=(CountNode::Ptr Nd1,
-                      CountNode::Ptr Nd2) {
+inline bool operator<=(CountNode::Ptr Nd1, CountNode::Ptr Nd2) {
   return compare(Nd1, Nd2) <= 0;
 }
 
-inline bool operator==(CountNode::Ptr Nd1,
-                      CountNode::Ptr Nd2) {
+inline bool operator==(CountNode::Ptr Nd1, CountNode::Ptr Nd2) {
   return compare(Nd1, Nd2) == 0;
 }
 
-inline bool operator>=(CountNode::Ptr Nd1,
-                      CountNode::Ptr Nd2) {
+inline bool operator>=(CountNode::Ptr Nd1, CountNode::Ptr Nd2) {
   return compare(Nd1, Nd2) >= 0;
 }
 
-inline bool operator>(CountNode::Ptr Nd1,
-                      CountNode::Ptr Nd2) {
+inline bool operator>(CountNode::Ptr Nd1, CountNode::Ptr Nd2) {
   return compare(Nd1, Nd2) > 0;
 }
 
-inline bool operator!=(CountNode::Ptr Nd1,
-                      CountNode::Ptr Nd2) {
+inline bool operator!=(CountNode::Ptr Nd1, CountNode::Ptr Nd2) {
   return compare(Nd1, Nd2) != 0;
 }
 
@@ -139,18 +142,13 @@ class CountNodeWithSuccs : public CountNode {
   ~CountNodeWithSuccs() OVERRIDE;
   // Lookup (or create if necessary), the successor entry for Value.
   // Parent value to define parent.
-  static std::shared_ptr<IntCountNode> lookup(
-      std::shared_ptr<CountNodeWithSuccs> Nd,
-      decode::IntType Value);
-  SuccMapIterator getSuccBegin() const {
-    return Successors.begin();
-  }
-  SuccMapIterator getSuccEnd() const {
-    return Successors.end();
-  }
+  static CountNode::IntPtr lookup(CountNode::WithSuccsPtr Nd,
+                                  decode::IntType Value);
+  SuccMapIterator getSuccBegin() const { return Successors.begin(); }
+  SuccMapIterator getSuccEnd() const { return Successors.end(); }
   const SuccMap& getSuccessors() const { return Successors; }
   void clearSuccs() { Successors.clear(); }
-  std::shared_ptr<IntCountNode> getSucc(decode::IntType V);
+  CountNode::IntPtr getSucc(decode::IntType V);
   void eraseSucc(decode::IntType V) { Successors.erase(V); }
   static bool implementsClass(Kind K);
 
@@ -166,8 +164,7 @@ class BlockCountNode : public CountNode {
 
  public:
   explicit BlockCountNode(bool IsEnter)
-      : CountNode(Kind::Block), IsEnter(IsEnter) {
-  }
+      : CountNode(Kind::Block), IsEnter(IsEnter) {}
   ~BlockCountNode() OVERRIDE;
   bool isEnter() const { return IsEnter; }
   bool IsExit() const { return !IsEnter; }
@@ -186,15 +183,15 @@ class RootCountNode : public CountNodeWithSuccs {
  public:
   RootCountNode();
   ~RootCountNode() OVERRIDE;
-  std::shared_ptr<BlockCountNode> getBlockEnter() { return BlockEnter; }
-  std::shared_ptr<BlockCountNode> getBlockExit() { return BlockExit; }
+  CountNode::BlockPtr getBlockEnter() { return BlockEnter; }
+  CountNode::BlockPtr getBlockExit() { return BlockExit; }
   void describe(FILE* Out, size_t NestLevel = 0) const OVERRIDE;
   int compare(const CountNode& Nd) const OVERRIDE;
   static bool implementsClass(Kind K) { return K == Kind::Root; }
 
  private:
-  std::shared_ptr<BlockCountNode> BlockEnter;
-  std::shared_ptr<BlockCountNode> BlockExit;
+  CountNode::BlockPtr BlockEnter;
+  CountNode::BlockPtr BlockExit;
 };
 
 // Node defining an IntValue
@@ -209,28 +206,22 @@ class IntCountNode : public CountNodeWithSuccs {
   void describe(FILE* Out, size_t NestLevel = 0) const OVERRIDE;
   size_t getValue() const { return Value; }
   size_t pathLength() const;
-  std::shared_ptr<CountNodeWithSuccs> getParent() const {
-    return Parent.lock();
-  }
-  bool isSingletonPath() const { return implementsClass(Kind::Singleton); }
+  CountNode::WithSuccsPtr getParent() const { return Parent.lock(); }
   virtual size_t getLocalWeight() const = 0;
 
   static bool implementsClass(Kind NodeKind) {
     return NodeKind == Kind::IntSequence || NodeKind == Kind::Singleton;
   }
 
-
  protected:
   decode::IntType Value;
-  std::weak_ptr<CountNodeWithSuccs> Parent;
+  CountNode::ParentPtr Parent;
   IntCountNode(Kind NodeKind, decode::IntType Value)
-      : CountNodeWithSuccs(Kind::IntSequence),
-        Value(Value) {}
-  IntCountNode(Kind NodeKind, decode::IntType Value,
-               std::weak_ptr<CountNodeWithSuccs> Parent)
-      : CountNodeWithSuccs(Kind::IntSequence),
-        Value(Value),
-        Parent(Parent) {}
+      : CountNodeWithSuccs(Kind::IntSequence), Value(Value) {}
+  IntCountNode(Kind NodeKind,
+               decode::IntType Value,
+               CountNode::ParentPtr Parent)
+      : CountNodeWithSuccs(Kind::IntSequence), Value(Value), Parent(Parent) {}
 };
 
 class SingletonCountNode : public IntCountNode {
@@ -259,8 +250,7 @@ class IntSeqCountNode : public IntCountNode {
   IntSeqCountNode& operator=(const IntSeqCountNode&) = delete;
 
  public:
-  IntSeqCountNode(decode::IntType Value,
-                  std::shared_ptr<CountNodeWithSuccs> Parent);
+  IntSeqCountNode(decode::IntType Value, CountNode::ParentPtr Parent);
   ~IntSeqCountNode() OVERRIDE;
   size_t getWeight(size_t Count) const OVERRIDE;
   static bool implementsClass(Kind NodeKind) {
