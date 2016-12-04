@@ -147,7 +147,10 @@ class CountNodeWithSuccs : public CountNode {
   ~CountNodeWithSuccs() OVERRIDE;
   SuccMapIterator getSuccBegin() const { return Successors.begin(); }
   SuccMapIterator getSuccEnd() const { return Successors.end(); }
+  bool hasSuccessors() const { return !Successors.empty(); }
+#if 0
   const SuccMap& getSuccessors() const { return Successors; }
+#endif
   void clearSuccs() { Successors.clear(); }
   CountNode::IntPtr getSucc(decode::IntType V);
   void eraseSucc(decode::IntType V) { Successors.erase(V); }
@@ -222,7 +225,7 @@ class IntCountNode : public CountNodeWithSuccs {
   mutable size_t LocalWeight;
   IntCountNode(Kind NodeKind, decode::IntType Value)
       : CountNodeWithSuccs(Kind::IntSequence), Value(Value),
-        PathLength(0),
+        PathLength(1),
         LocalWeight(0) {}
   IntCountNode(Kind NodeKind,
                decode::IntType Value,

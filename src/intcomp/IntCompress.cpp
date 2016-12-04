@@ -281,28 +281,29 @@ bool IntCompressor::compressUpToSize(size_t Size, bool TraceParsing) {
 }
 
 bool IntCompressor::removeSmallUsageCounts(CountNode::Ptr Nd) {
-  if (!Nd)
-    return true;
-  bool RemoveNode = false;
-  if (Nd->getCount() < CountCutoff)
-    RemoveNode = true;
-  else if (Nd->getWeight() < WeightCutoff)
-    RemoveNode = true;
-  if (!RemoveNode)
-    return false;
-  Nd->setCount(0);
+  assert(Nd);
+  bool IsRemovable = true;
+  if (Nd->getCount() >= CountCutoff || Nd->getWeight() >= WeightCutoff)
+    IsRemovable = false;
   if (auto* SuccNd = dyn_cast<CountNodeWithSuccs>(Nd.get())) {
     std::vector<IntType> KeysToRemove;
     for (CountNode::SuccMapIterator Iter = SuccNd->getSuccBegin(),
                                     End = SuccNd->getSuccEnd();
          Iter != End; ++Iter) {
-      if (Iter->second == nullptr || removeSmallUsageCounts(Iter->second))
+      bool KeepKey = true;
+      if (!Iter->second)
+        KeepKey = false;
+      else if (removeSmallUsageCounts(Iter->second))
+        KeepKey = false;
+      if (!KeepKey)
         KeysToRemove.push_back(Iter->first);
     }
     for (const auto Key : KeysToRemove)
       SuccNd->eraseSucc(Key);
+    if (SuccNd->hasSuccessors())
+      IsRemovable = false;
   }
-  return RemoveNode;
+  return IsRemovable;
 }
 
 void IntCompressor::compress(DetailLevel Level,
@@ -319,7 +320,6 @@ void IntCompressor::compress(DetailLevel Level,
   // IntCountNode trie.
   if (!compressUpToSize(1, TraceParsing && !TraceFirstPassOnly))
     return;
-  removeSmallUsageCounts();
   if (Level == AllDetail)
     describe(stderr, makeFlags(CollectionFlag::TopLevel));
   if (LengthLimit > 1) {
