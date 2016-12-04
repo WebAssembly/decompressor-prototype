@@ -189,7 +189,7 @@ void IntCountNode::describe(FILE* Out, size_t NestLevel) const {
   }
   indent(Out, NestLevel);
   fputs(": Value", Out);
-  if (pathLength() > 1)
+  if (getPathLength() > 1)
     fputc('s', Out);
   fputc(':', Out);
   for (std::vector<const IntCountNode*>::reverse_iterator
@@ -200,16 +200,6 @@ void IntCountNode::describe(FILE* Out, size_t NestLevel) const {
     fprint_IntType(Out, (*Iter)->getValue());
   }
   newline(Out);
-}
-
-size_t IntCountNode::pathLength() const {
-  size_t len = 0;
-  const IntCountNode* Nd = this;
-  while (Nd) {
-    ++len;
-    Nd = dyn_cast<IntCountNode>(Nd->getParent().get());
-  }
-  return len;
 }
 
 SingletonCountNode::SingletonCountNode(IntType Value, CountNode::RootPtr Root)
@@ -228,7 +218,7 @@ size_t SingletonCountNode::getLocalWeight() const {
 }
 
 IntSeqCountNode::IntSeqCountNode(IntType Value,
-                                 CountNode::ParentPtr Parent,
+                                 CountNode::IntPtr Parent,
                                  CountNode::RootPtr Root)
     : IntCountNode(Kind::IntSequence, Value, Parent, Root) {
 }

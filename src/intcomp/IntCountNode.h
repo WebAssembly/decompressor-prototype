@@ -206,7 +206,7 @@ class IntCountNode : public CountNodeWithSuccs {
   int compare(const CountNode& Nd) const OVERRIDE;
   void describe(FILE* Out, size_t NestLevel = 0) const OVERRIDE;
   size_t getValue() const { return Value; }
-  size_t pathLength() const;
+  size_t getPathLength() const { return PathLength; }
   CountNode::RootPtr getRoot() { return Root; }
   CountNode::IntPtr getParent() const { return Parent.lock(); }
   virtual size_t getLocalWeight() const = 0;
@@ -219,16 +219,19 @@ class IntCountNode : public CountNodeWithSuccs {
   decode::IntType Value;
   CountNode::ParentPtr Parent;
   CountNode::RootPtr Root;
+  size_t PathLength;
   IntCountNode(Kind NodeKind, decode::IntType Value, CountNode::RootPtr Root)
-      : CountNodeWithSuccs(Kind::IntSequence), Value(Value), Root(Root) {}
+      : CountNodeWithSuccs(Kind::IntSequence), Value(Value), Root(Root),
+        PathLength(0) {}
   IntCountNode(Kind NodeKind,
                decode::IntType Value,
-               CountNode::ParentPtr Parent,
+               CountNode::IntPtr Parent,
                CountNode::RootPtr Root)
       : CountNodeWithSuccs(Kind::IntSequence),
         Value(Value),
         Parent(Parent),
-        Root(Root) {}
+        Root(Root),
+        PathLength(Parent->getPathLength() + 1) {}
 };
 
 class SingletonCountNode : public IntCountNode {
@@ -258,7 +261,7 @@ class IntSeqCountNode : public IntCountNode {
 
  public:
   IntSeqCountNode(decode::IntType Value,
-                  CountNode::ParentPtr Parent,
+                  CountNode::IntPtr Parent,
                   CountNode::RootPtr Root);
   ~IntSeqCountNode() OVERRIDE;
   size_t getWeight(size_t Count) const OVERRIDE;
