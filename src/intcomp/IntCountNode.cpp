@@ -75,12 +75,12 @@ int compare(CountNode::Ptr N1, CountNode::Ptr N2) {
   return -1;
 }
 
-CountNodeWithSuccs::~CountNodeWithSuccs() {}
+CountNodeWithSuccs::~CountNodeWithSuccs() {
+}
 
-std::shared_ptr<IntCountNode> CountNodeWithSuccs::lookup(
-    std::shared_ptr<CountNodeWithSuccs> Nd,
-    IntType Value) {
-  std::shared_ptr<IntCountNode> Succ = Nd->getSucc(Value);
+CountNode::IntPtr CountNodeWithSuccs::lookup(CountNode::WithSuccsPtr Nd,
+                                             IntType Value) {
+  CountNode::IntPtr Succ = Nd->getSucc(Value);
   if (Succ)
     return Succ;
   Succ = std::make_shared<IntSeqCountNode>(Value, Nd);
@@ -88,10 +88,10 @@ std::shared_ptr<IntCountNode> CountNodeWithSuccs::lookup(
   return Succ;
 }
 
-std::shared_ptr<IntCountNode> CountNodeWithSuccs::getSucc(IntType Value) {
+CountNode::IntPtr CountNodeWithSuccs::getSucc(IntType Value) {
   if (Successors.count(Value))
     return Successors[Value];
-  return std::shared_ptr<IntCountNode>();
+  return CountNode::IntPtr();
 }
 
 bool CountNodeWithSuccs::implementsClass(Kind K) {
@@ -111,10 +111,11 @@ bool CountNodeWithSuccs::implementsClass(Kind K) {
 RootCountNode::RootCountNode()
     : CountNodeWithSuccs(Kind::Root),
       BlockEnter(std::make_shared<BlockCountNode>(true)),
-      BlockExit(std::make_shared<BlockCountNode>(false))
-{}
+      BlockExit(std::make_shared<BlockCountNode>(false)) {
+}
 
-RootCountNode::~RootCountNode() {}
+RootCountNode::~RootCountNode() {
+}
 
 void RootCountNode::describe(FILE* Out, size_t NestLevel) const {
   indent(Out, NestLevel);
@@ -139,7 +140,7 @@ int RootCountNode::compare(const CountNode& Nd) const {
 BlockCountNode::~BlockCountNode() {
 }
 
-int BlockCountNode::compare(const CountNode&Nd) const {
+int BlockCountNode::compare(const CountNode& Nd) const {
   int Diff = CountNode::compare(Nd);
   if (Diff != 0)
     return Diff;
@@ -167,7 +168,7 @@ int IntCountNode::compare(const CountNode& Nd) const {
   if (Value < IntNd->Value)
     return -1;
   if (Value > IntNd->Value)
-      return 1;
+    return 1;
   return intcomp::compare(getParent(), IntNd->Parent.lock());
 }
 
@@ -184,7 +185,8 @@ void IntCountNode::describe(FILE* Out, size_t NestLevel) const {
     fputc('s', Out);
   fputc(':', Out);
   for (std::vector<const IntCountNode*>::reverse_iterator
-           Iter = IntSeq.rbegin(), EndIter = IntSeq.rend();
+           Iter = IntSeq.rbegin(),
+           EndIter = IntSeq.rend();
        Iter != EndIter; ++Iter) {
     fputc(' ', Out);
     fprint_IntType(Out, (*Iter)->getValue());
@@ -194,8 +196,8 @@ void IntCountNode::describe(FILE* Out, size_t NestLevel) const {
 
 size_t IntCountNode::pathLength() const {
   size_t len = 0;
- const  IntCountNode* Nd = this;
- while (Nd) {
+  const IntCountNode* Nd = this;
+  while (Nd) {
     ++len;
     Nd = dyn_cast<IntCountNode>(Nd->getParent().get());
   }
@@ -217,8 +219,7 @@ size_t SingletonCountNode::getLocalWeight() const {
   return getMinByteSize();
 }
 
-IntSeqCountNode::IntSeqCountNode(IntType Value,
-                                 std::shared_ptr<CountNodeWithSuccs> Parent)
+IntSeqCountNode::IntSeqCountNode(IntType Value, CountNode::ParentPtr Parent)
     : IntCountNode(Kind::IntSequence, Value, Parent) {
 }
 

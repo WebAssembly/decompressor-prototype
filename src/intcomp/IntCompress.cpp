@@ -43,7 +43,7 @@ class IntCounterWriter : public Writer {
   IntCounterWriter& operator=(const IntCounterWriter&) = delete;
 
  public:
-  IntCounterWriter(std::shared_ptr<RootCountNode> Root)
+  IntCounterWriter(CountNode::RootPtr Root)
       : Root(Root),
         input_seq(new circular_vector<IntType>(1)),
         CountCutoff(1),
@@ -81,7 +81,7 @@ class IntCounterWriter : public Writer {
   bool writeAction(const filt::CallbackNode* Action) OVERRIDE;
 
  private:
-  std::shared_ptr<RootCountNode> Root;
+  CountNode::RootPtr Root;
   circular_vector<IntType>* input_seq;
   uint64_t CountCutoff;
   uint64_t WeightCutoff;
@@ -113,7 +113,7 @@ void IntCounterWriter::popValuesFromInputSeq(size_t Size) {
 }
 
 void IntCounterWriter::addInputSeqToUsageMap() {
-  std::shared_ptr<CountNodeWithSuccs> Nd = Root;
+  CountNode::WithSuccsPtr Nd = Root;
   for (size_t i = 0, e = input_seq->size(); i < e; ++i) {
     IntType Val = (*input_seq)[i];
     Nd = CountNodeWithSuccs::lookup(Nd, Val);
@@ -227,7 +227,7 @@ std::shared_ptr<TraceClassSexp> IntCompressor::getTracePtr() {
   return Trace;
 }
 
-std::shared_ptr<RootCountNode> IntCompressor::getRoot() {
+CountNode::RootPtr IntCompressor::getRoot() {
   if (!Root)
     Root = std::make_shared<RootCountNode>();
   return Root;
@@ -278,7 +278,7 @@ bool IntCompressor::compressUpToSize(size_t Size, bool TraceParsing) {
   return !Reader.errorsFound();
 }
 
-bool IntCompressor::removeSmallUsageCounts(std::shared_ptr<CountNode> Nd) {
+bool IntCompressor::removeSmallUsageCounts(CountNode::Ptr Nd) {
   if (!Nd)
     return true;
   bool RemoveNode = false;
@@ -290,9 +290,9 @@ bool IntCompressor::removeSmallUsageCounts(std::shared_ptr<CountNode> Nd) {
     return false;
   if (auto* SuccNd = dyn_cast<CountNodeWithSuccs>(Nd.get())) {
     std::vector<IntType> KeysToRemove;
-    for (CountNode::SuccMapIterator
-             Iter = SuccNd->getSuccBegin(),
-             End = SuccNd->getSuccEnd(); Iter != End; ++Iter) {
+    for (CountNode::SuccMapIterator Iter = SuccNd->getSuccBegin(),
+                                    End = SuccNd->getSuccEnd();
+         Iter != End; ++Iter) {
       if (Iter->second == nullptr || removeSmallUsageCounts(Iter->second))
         KeysToRemove.push_back(Iter->first);
     }
@@ -335,7 +335,7 @@ namespace {
 
 class CountNodeCollector {
  public:
-  std::shared_ptr<RootCountNode> Root;
+  CountNode::RootPtr Root;
   std::vector<CountNode::HeapValueType> Values;
   std::shared_ptr<CountNode::HeapType> ValuesHeap;
   uint64_t WeightTotal;
@@ -347,7 +347,7 @@ class CountNodeCollector {
   uint64_t WeightCutoff;
   std::shared_ptr<filt::TraceClassSexp> Trace;
 
-  explicit CountNodeCollector(std::shared_ptr<RootCountNode> Root)
+  explicit CountNodeCollector(CountNode::RootPtr Root)
       : Root(Root),
         ValuesHeap(std::make_shared<CountNode::HeapType>()),
         WeightTotal(0),
@@ -374,7 +374,7 @@ class CountNodeCollector {
     });
   }
   void clear();
-  void collectNode(std::shared_ptr<CountNode> Nd, CollectionFlags Flags);
+  void collectNode(CountNode::Ptr Nd, CollectionFlags Flags);
   void assignInitialAbbreviations();
 
   void setTrace(std::shared_ptr<filt::TraceClassSexp> Trace);
@@ -414,19 +414,19 @@ void CountNodeCollector::collect(CollectionFlags Flags) {
     collectNode(Root->getBlockEnter(), Flags);
     collectNode(Root->getBlockExit(), Flags);
   }
-  for (CountNode::SuccMapIterator
-           Iter = Root->getSuccBegin(),
-           End = Root->getSuccEnd(); Iter != End; ++Iter)
+  for (CountNode::SuccMapIterator Iter = Root->getSuccBegin(),
+                                  End = Root->getSuccEnd();
+       Iter != End; ++Iter)
     collectNode(Iter->second, Flags);
 }
 
-void CountNodeCollector::collectNode(std::shared_ptr<CountNode> Nd,
-                                     CollectionFlags Flags) {
+void CountNodeCollector::collectNode(CountNode::Ptr Nd, CollectionFlags Flags) {
   // TODO(karlschimpf) Make this non-recursive.
   if (!Nd)
     return;
   uint64_t Weight = Nd->getWeight();
   uint64_t Count = Nd->getCount();
+  bool IsSingleton = isa<SingletonCountNode>(*Nd);
   auto* IntNd = dyn_cast<IntCountNode>(Nd.get());
   if (hasFlag(CollectionFlag::TopLevel, Flags)) {
     CountTotal += Count;
@@ -435,7 +435,7 @@ void CountNodeCollector::collectNode(std::shared_ptr<CountNode> Nd,
       return;
     if (Weight < WeightCutoff)
       return;
-    if (IntNd == nullptr || IntNd->isSingletonPath()) {
+    if (IntNd == nullptr || IsSingleton) {
       CountReported += Count;
       WeightReported += Weight;
       ++NumNodesReported;
@@ -444,7 +444,7 @@ void CountNodeCollector::collectNode(std::shared_ptr<CountNode> Nd,
   }
   if (IntNd == nullptr || !hasFlag(CollectionFlag::IntPaths, Flags))
     return;
-  if (!IntNd->isSingletonPath()) {
+  if (!IsSingleton) {
     CountTotal += Count;
     WeightTotal += Weight;
   }
@@ -452,15 +452,15 @@ void CountNodeCollector::collectNode(std::shared_ptr<CountNode> Nd,
     return;
   if (Weight < WeightCutoff)
     return;
-  if (!IntNd->isSingletonPath()) {
+  if (!IsSingleton) {
     Values.push_back(CountNode::Ptr(Nd));
     CountReported += Count;
     WeightReported += Weight;
     ++NumNodesReported;
   }
-  for (CountNode::SuccMapIterator
-           Iter = IntNd->getSuccBegin(),
-           End = IntNd->getSuccEnd(); Iter != End; ++Iter)
+  for (CountNode::SuccMapIterator Iter = IntNd->getSuccBegin(),
+                                  End = IntNd->getSuccEnd();
+       Iter != End; ++Iter)
     collectNode(Iter->second, Flags);
 }
 
