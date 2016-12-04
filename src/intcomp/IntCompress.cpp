@@ -434,7 +434,7 @@ void CountNodeCollector::collectNode(CountNode::Ptr Nd, CollectionFlags Flags) {
 
     if (auto* IntNd = dyn_cast<IntCountNode>(*Nd))
       for (CountNode::SuccMapIterator Iter = IntNd->getSuccBegin(),
-               End = IntNd->getSuccEnd();
+                                      End = IntNd->getSuccEnd();
            Iter != End; ++Iter)
         ToAdd.push_back(Iter->second);
 
