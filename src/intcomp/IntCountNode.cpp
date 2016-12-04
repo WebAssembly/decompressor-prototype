@@ -31,6 +31,24 @@ size_t CountNode::getWeight(size_t Count) const {
   return Count;
 }
 
+CountNode::IntPtr lookup(CountNode::RootPtr Root, IntType Value) {
+  CountNode::IntPtr Succ = Root->getSucc(Value);
+  if (Succ)
+    return Succ;
+  Succ = std::make_shared<SingletonCountNode>(Value, Root);
+  Root->Successors[Value] = Succ;
+  return Succ;
+}
+
+CountNode::IntPtr lookup(CountNode::IntPtr Nd, IntType Value) {
+  CountNode::IntPtr Succ = Nd->getSucc(Value);
+  if (Succ)
+    return Succ;
+  Succ = std::make_shared<IntSeqCountNode>(Value, Nd, Nd->getRoot());
+  Nd->Successors[Value] = Succ;
+  return Succ;
+}
+
 int CountNode::compare(const CountNode& Nd) const {
   // Push ones with highest count first.
   size_t MyWeight = getWeight();
@@ -76,16 +94,6 @@ int compare(CountNode::Ptr N1, CountNode::Ptr N2) {
 }
 
 CountNodeWithSuccs::~CountNodeWithSuccs() {
-}
-
-CountNode::IntPtr CountNodeWithSuccs::lookup(CountNode::WithSuccsPtr Nd,
-                                             IntType Value) {
-  CountNode::IntPtr Succ = Nd->getSucc(Value);
-  if (Succ)
-    return Succ;
-  Succ = std::make_shared<IntSeqCountNode>(Value, Nd);
-  Nd->Successors[Value] = Succ;
-  return Succ;
 }
 
 CountNode::IntPtr CountNodeWithSuccs::getSucc(IntType Value) {
@@ -204,8 +212,8 @@ size_t IntCountNode::pathLength() const {
   return len;
 }
 
-SingletonCountNode::SingletonCountNode(IntType Value)
-    : IntCountNode(Kind::Singleton, Value), Formats(Value) {
+SingletonCountNode::SingletonCountNode(IntType Value, CountNode::RootPtr Root)
+    : IntCountNode(Kind::Singleton, Value, Root), Formats(Value) {
 }
 
 SingletonCountNode::~SingletonCountNode() {
@@ -219,8 +227,10 @@ size_t SingletonCountNode::getLocalWeight() const {
   return getMinByteSize();
 }
 
-IntSeqCountNode::IntSeqCountNode(IntType Value, CountNode::ParentPtr Parent)
-    : IntCountNode(Kind::IntSequence, Value, Parent) {
+IntSeqCountNode::IntSeqCountNode(IntType Value,
+                                 CountNode::ParentPtr Parent,
+                                 CountNode::RootPtr Root)
+    : IntCountNode(Kind::IntSequence, Value, Parent, Root) {
 }
 
 IntSeqCountNode::~IntSeqCountNode() {

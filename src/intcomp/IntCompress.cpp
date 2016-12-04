@@ -113,10 +113,12 @@ void IntCounterWriter::popValuesFromInputSeq(size_t Size) {
 }
 
 void IntCounterWriter::addInputSeqToUsageMap() {
-  CountNode::WithSuccsPtr Nd = Root;
+  if (input_seq->empty())
+    return;
+  CountNode::IntPtr Nd;
   for (size_t i = 0, e = input_seq->size(); i < e; ++i) {
     IntType Val = (*input_seq)[i];
-    Nd = CountNodeWithSuccs::lookup(Nd, Val);
+    Nd = (i == 0) ? lookup(Root, Val) : lookup(Nd, Val);
     if (UpToSize == 1 || i > 0)
       Nd->increment();
     if (e > 1) {
