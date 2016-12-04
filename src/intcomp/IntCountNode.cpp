@@ -171,13 +171,24 @@ int IntCountNode::compare(const CountNode& Nd) const {
   int Diff = CountNodeWithSuccs::compare(Nd);
   if (Diff != 0)
     return Diff;
+
+  const IntCountNode* ThisNd = this;
   assert(isa<IntCountNode>(Nd));
   const IntCountNode* IntNd = cast<IntCountNode>(Nd);
-  if (Value < IntNd->Value)
-    return -1;
-  if (Value > IntNd->Value)
+
+  while (ThisNd && IntNd) {
+    if (ThisNd->Value < IntNd->Value)
+      return -1;
+    if (ThisNd->Value > IntNd->Value)
+      return 1;
+    ThisNd = ThisNd->getParent().get();
+    IntNd = IntNd->getParent().get();
+  }
+  if (ThisNd)
     return 1;
-  return intcomp::compare(getParent(), IntNd->Parent.lock());
+  if (IntNd)
+    return -1;
+  return 0;
 }
 
 size_t IntCountNode::getLocalWeight() const {
