@@ -377,6 +377,7 @@ class CountNodeCollector {
   }
   void clear();
   void collectNode(CountNode::Ptr Nd, CollectionFlags Flags);
+  void collectNodeLocal(CountNode::Ptr Nd, CollectionFlags Flags);
   void assignInitialAbbreviations();
 
   void setTrace(std::shared_ptr<filt::TraceClassSexp> Trace);
@@ -422,6 +423,7 @@ void CountNodeCollector::collect(CollectionFlags Flags) {
     collectNode(Iter->second, Flags);
 }
 
+#if 0
 void CountNodeCollector::collectNode(CountNode::Ptr Nd, CollectionFlags Flags) {
   // TODO(karlschimpf) Make this non-recursive.
   if (!Nd)
@@ -465,7 +467,58 @@ void CountNodeCollector::collectNode(CountNode::Ptr Nd, CollectionFlags Flags) {
        Iter != End; ++Iter)
     collectNode(Iter->second, Flags);
 }
+#else
+void CountNodeCollector::collectNode(CountNode::Ptr Nd, CollectionFlags Flags) {
+  collectNodeLocal(Nd, Flags);
+  if (auto* IntNd = dyn_cast<IntCountNode>(*Nd))
+    for (CountNode::SuccMapIterator Iter = IntNd->getSuccBegin(),
+             End = IntNd->getSuccEnd();
+         Iter != End; ++Iter)
+      collectNode(Iter->second, Flags);
+}
 
+void CountNodeCollector::collectNodeLocal(CountNode::Ptr Nd,
+                                          CollectionFlags Flags) {
+  // TODO(karlschimpf) Make this non-recursive.
+  if (!Nd)
+    return;
+  uint64_t Weight = Nd->getWeight();
+  uint64_t Count = Nd->getCount();
+  bool IsSingleton = isa<SingletonCountNode>(*Nd);
+  auto* IntNd = dyn_cast<IntCountNode>(Nd.get());
+  if (hasFlag(CollectionFlag::TopLevel, Flags)) {
+    CountTotal += Count;
+    WeightTotal += Weight;
+    if (Count < CountCutoff)
+      return;
+    if (Weight < WeightCutoff)
+      return;
+    if (IntNd == nullptr || IsSingleton) {
+      CountReported += Count;
+      WeightReported += Weight;
+      ++NumNodesReported;
+      Values.push_back(Nd);
+    }
+  }
+  if (IntNd == nullptr || !hasFlag(CollectionFlag::IntPaths, Flags))
+    return;
+  if (!IsSingleton) {
+    CountTotal += Count;
+    WeightTotal += Weight;
+  }
+  if (Count < CountCutoff)
+    return;
+  if (Weight < WeightCutoff)
+    return;
+  if (!IsSingleton) {
+    Values.push_back(CountNode::Ptr(Nd));
+    CountReported += Count;
+    WeightReported += Weight;
+    ++NumNodesReported;
+  }
+}
+
+#endif
 void CountNodeCollector::assignInitialAbbreviations() {
   collect(makeFlags(CollectionFlag::All));
   buildHeap();
