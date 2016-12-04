@@ -49,10 +49,9 @@ class CountNode : public std::enable_shared_from_this<CountNode> {
 
  public:
   typedef std::shared_ptr<CountNode> Ptr;
-  typedef std::shared_ptr<BlockCountNode> BlockPtr;
-  typedef std::shared_ptr<CountNodeWithSuccs> WithSuccsPtr;
-  typedef std::weak_ptr<CountNodeWithSuccs> ParentPtr;
   typedef std::shared_ptr<IntCountNode> IntPtr;
+  typedef std::shared_ptr<BlockCountNode> BlockPtr;
+  typedef std::weak_ptr<IntCountNode> ParentPtr;
   typedef std::shared_ptr<RootCountNode> RootPtr;
   typedef std::map<decode::IntType, CountNode::IntPtr> SuccMap;
   typedef SuccMap::const_iterator SuccMapIterator;
@@ -209,7 +208,7 @@ class IntCountNode : public CountNodeWithSuccs {
   size_t getValue() const { return Value; }
   size_t pathLength() const;
   CountNode::RootPtr getRoot() { return Root; }
-  CountNode::WithSuccsPtr getParent() const { return Parent.lock(); }
+  CountNode::IntPtr getParent() const { return Parent.lock(); }
   virtual size_t getLocalWeight() const = 0;
 
   static bool implementsClass(Kind NodeKind) {
