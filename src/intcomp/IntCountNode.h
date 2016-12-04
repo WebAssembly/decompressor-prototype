@@ -208,7 +208,6 @@ class IntCountNode : public CountNodeWithSuccs {
   void describe(FILE* Out, size_t NestLevel = 0) const OVERRIDE;
   size_t getValue() const { return Value; }
   size_t getPathLength() const { return PathLength; }
-  CountNode::RootPtr getRoot() { return Root; }
   CountNode::IntPtr getParent() const { return Parent.lock(); }
   size_t getLocalWeight() const;
 
@@ -219,21 +218,18 @@ class IntCountNode : public CountNodeWithSuccs {
  protected:
   decode::IntType Value;
   CountNode::ParentPtr Parent;
-  CountNode::RootPtr Root;
   size_t PathLength;
   mutable size_t LocalWeight;
-  IntCountNode(Kind NodeKind, decode::IntType Value, CountNode::RootPtr Root)
-      : CountNodeWithSuccs(Kind::IntSequence), Value(Value), Root(Root),
+  IntCountNode(Kind NodeKind, decode::IntType Value)
+      : CountNodeWithSuccs(Kind::IntSequence), Value(Value),
         PathLength(0),
         LocalWeight(0) {}
   IntCountNode(Kind NodeKind,
                decode::IntType Value,
-               CountNode::IntPtr Parent,
-               CountNode::RootPtr Root)
+               CountNode::IntPtr Parent)
       : CountNodeWithSuccs(Kind::IntSequence),
         Value(Value),
         Parent(Parent),
-        Root(Root),
         PathLength(Parent->getPathLength() + 1),
         LocalWeight(0) {}
 };
@@ -244,7 +240,8 @@ class SingletonCountNode : public IntCountNode {
   SingletonCountNode& operator=(const SingletonCountNode&) = delete;
 
  public:
-  SingletonCountNode(decode::IntType, CountNode::RootPtr Root);
+  SingletonCountNode(decode::IntType Value)
+      : IntCountNode(Kind::Singleton, Value) {}
   ~SingletonCountNode() OVERRIDE;
   size_t getWeight(size_t Count) const OVERRIDE;
   static bool implementsClass(Kind NodeKind) {
@@ -258,9 +255,9 @@ class IntSeqCountNode : public IntCountNode {
   IntSeqCountNode& operator=(const IntSeqCountNode&) = delete;
 
  public:
-  IntSeqCountNode(decode::IntType Value,
-                  CountNode::IntPtr Parent,
-                  CountNode::RootPtr Root);
+  IntSeqCountNode(decode::IntType Value, CountNode::IntPtr Parent)
+      : IntCountNode(Kind::IntSequence, Value, Parent) {}
+
   ~IntSeqCountNode() OVERRIDE;
   size_t getWeight(size_t Count) const OVERRIDE;
   static bool implementsClass(Kind NodeKind) {

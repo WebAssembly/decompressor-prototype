@@ -35,7 +35,7 @@ CountNode::IntPtr lookup(CountNode::RootPtr Root, IntType Value) {
   CountNode::IntPtr Succ = Root->getSucc(Value);
   if (Succ)
     return Succ;
-  Succ = std::make_shared<SingletonCountNode>(Value, Root);
+  Succ = std::make_shared<SingletonCountNode>(Value);
   Root->Successors[Value] = Succ;
   return Succ;
 }
@@ -44,7 +44,7 @@ CountNode::IntPtr lookup(CountNode::IntPtr Nd, IntType Value) {
   CountNode::IntPtr Succ = Nd->getSucc(Value);
   if (Succ)
     return Succ;
-  Succ = std::make_shared<IntSeqCountNode>(Value, Nd, Nd->getRoot());
+  Succ = std::make_shared<IntSeqCountNode>(Value, Nd);
   Nd->Successors[Value] = Succ;
   return Succ;
 }
@@ -210,21 +210,11 @@ void IntCountNode::describe(FILE* Out, size_t NestLevel) const {
   newline(Out);
 }
 
-SingletonCountNode::SingletonCountNode(IntType Value, CountNode::RootPtr Root)
-    : IntCountNode(Kind::Singleton, Value, Root) {
-}
-
 SingletonCountNode::~SingletonCountNode() {
 }
 
 size_t SingletonCountNode::getWeight(size_t Count) const {
   return Count * getLocalWeight();
-}
-
-IntSeqCountNode::IntSeqCountNode(IntType Value,
-                                 CountNode::IntPtr Parent,
-                                 CountNode::RootPtr Root)
-    : IntCountNode(Kind::IntSequence, Value, Parent, Root) {
 }
 
 IntSeqCountNode::~IntSeqCountNode() {
