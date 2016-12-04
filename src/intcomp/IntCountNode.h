@@ -224,12 +224,11 @@ class IntCountNode : public CountNodeWithSuccs {
   size_t PathLength;
   mutable size_t LocalWeight;
   IntCountNode(Kind NodeKind, decode::IntType Value)
-      : CountNodeWithSuccs(Kind::IntSequence), Value(Value),
+      : CountNodeWithSuccs(Kind::IntSequence),
+        Value(Value),
         PathLength(1),
         LocalWeight(0) {}
-  IntCountNode(Kind NodeKind,
-               decode::IntType Value,
-               CountNode::IntPtr Parent)
+  IntCountNode(Kind NodeKind, decode::IntType Value, CountNode::IntPtr Parent)
       : CountNodeWithSuccs(Kind::IntSequence),
         Value(Value),
         Parent(Parent),
