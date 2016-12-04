@@ -31,6 +31,24 @@ size_t CountNode::getWeight(size_t Count) const {
   return Count;
 }
 
+CountNode::IntPtr lookup(CountNode::RootPtr Root, IntType Value) {
+  CountNode::IntPtr Succ = Root->getSucc(Value);
+  if (Succ)
+    return Succ;
+  Succ = std::make_shared<SingletonCountNode>(Value);
+  Root->Successors[Value] = Succ;
+  return Succ;
+}
+
+CountNode::IntPtr lookup(CountNode::IntPtr Nd, IntType Value) {
+  CountNode::IntPtr Succ = Nd->getSucc(Value);
+  if (Succ)
+    return Succ;
+  Succ = std::make_shared<IntSeqCountNode>(Value, Nd);
+  Nd->Successors[Value] = Succ;
+  return Succ;
+}
+
 int CountNode::compare(const CountNode& Nd) const {
   // Push ones with highest count first.
   size_t MyWeight = getWeight();
@@ -76,16 +94,6 @@ int compare(CountNode::Ptr N1, CountNode::Ptr N2) {
 }
 
 CountNodeWithSuccs::~CountNodeWithSuccs() {
-}
-
-CountNode::IntPtr CountNodeWithSuccs::lookup(CountNode::WithSuccsPtr Nd,
-                                             IntType Value) {
-  CountNode::IntPtr Succ = Nd->getSucc(Value);
-  if (Succ)
-    return Succ;
-  Succ = std::make_shared<IntSeqCountNode>(Value, Nd);
-  Nd->Successors[Value] = Succ;
-  return Succ;
 }
 
 CountNode::IntPtr CountNodeWithSuccs::getSucc(IntType Value) {
@@ -172,6 +180,14 @@ int IntCountNode::compare(const CountNode& Nd) const {
   return intcomp::compare(getParent(), IntNd->Parent.lock());
 }
 
+size_t IntCountNode::getLocalWeight() const {
+  if (LocalWeight == 0) {
+    IntTypeFormats Formats(Value);
+    LocalWeight = Formats.getMinFormatSize();
+  }
+  return LocalWeight;
+}
+
 void IntCountNode::describe(FILE* Out, size_t NestLevel) const {
   std::vector<const IntCountNode*> IntSeq;
   const IntCountNode* Nd = this;
@@ -181,7 +197,7 @@ void IntCountNode::describe(FILE* Out, size_t NestLevel) const {
   }
   indent(Out, NestLevel);
   fputs(": Value", Out);
-  if (pathLength() > 1)
+  if (getPathLength() > 1)
     fputc('s', Out);
   fputc(':', Out);
   for (std::vector<const IntCountNode*>::reverse_iterator
@@ -194,33 +210,11 @@ void IntCountNode::describe(FILE* Out, size_t NestLevel) const {
   newline(Out);
 }
 
-size_t IntCountNode::pathLength() const {
-  size_t len = 0;
-  const IntCountNode* Nd = this;
-  while (Nd) {
-    ++len;
-    Nd = dyn_cast<IntCountNode>(Nd->getParent().get());
-  }
-  return len;
-}
-
-SingletonCountNode::SingletonCountNode(IntType Value)
-    : IntCountNode(Kind::Singleton, Value), Formats(Value) {
-}
-
 SingletonCountNode::~SingletonCountNode() {
 }
 
 size_t SingletonCountNode::getWeight(size_t Count) const {
   return Count * getLocalWeight();
-}
-
-size_t SingletonCountNode::getLocalWeight() const {
-  return getMinByteSize();
-}
-
-IntSeqCountNode::IntSeqCountNode(IntType Value, CountNode::ParentPtr Parent)
-    : IntCountNode(Kind::IntSequence, Value, Parent) {
 }
 
 IntSeqCountNode::~IntSeqCountNode() {
@@ -234,11 +228,6 @@ size_t IntSeqCountNode::getWeight(size_t Count) const {
     Nd = dyn_cast<IntCountNode>(Nd->getParent().get());
   }
   return Weight;
-}
-
-size_t IntSeqCountNode::getLocalWeight() const {
-  IntTypeFormats Formats(getValue());
-  return Formats.getMinFormatSize();
 }
 
 }  // end of namespace intcomp
