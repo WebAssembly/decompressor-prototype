@@ -180,6 +180,14 @@ int IntCountNode::compare(const CountNode& Nd) const {
   return intcomp::compare(getParent(), IntNd->Parent.lock());
 }
 
+size_t IntCountNode::getLocalWeight() const {
+  if (LocalWeight == 0) {
+    IntTypeFormats Formats(Value);
+    LocalWeight = Formats.getMinFormatSize();
+  }
+  return LocalWeight;
+}
+
 void IntCountNode::describe(FILE* Out, size_t NestLevel) const {
   std::vector<const IntCountNode*> IntSeq;
   const IntCountNode* Nd = this;
@@ -203,7 +211,7 @@ void IntCountNode::describe(FILE* Out, size_t NestLevel) const {
 }
 
 SingletonCountNode::SingletonCountNode(IntType Value, CountNode::RootPtr Root)
-    : IntCountNode(Kind::Singleton, Value, Root), Formats(Value) {
+    : IntCountNode(Kind::Singleton, Value, Root) {
 }
 
 SingletonCountNode::~SingletonCountNode() {
@@ -211,10 +219,6 @@ SingletonCountNode::~SingletonCountNode() {
 
 size_t SingletonCountNode::getWeight(size_t Count) const {
   return Count * getLocalWeight();
-}
-
-size_t SingletonCountNode::getLocalWeight() const {
-  return getMinByteSize();
 }
 
 IntSeqCountNode::IntSeqCountNode(IntType Value,
@@ -234,11 +238,6 @@ size_t IntSeqCountNode::getWeight(size_t Count) const {
     Nd = dyn_cast<IntCountNode>(Nd->getParent().get());
   }
   return Weight;
-}
-
-size_t IntSeqCountNode::getLocalWeight() const {
-  IntTypeFormats Formats(getValue());
-  return Formats.getMinFormatSize();
 }
 
 }  // end of namespace intcomp

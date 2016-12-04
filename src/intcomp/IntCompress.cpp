@@ -290,6 +290,7 @@ bool IntCompressor::removeSmallUsageCounts(CountNode::Ptr Nd) {
     RemoveNode = true;
   if (!RemoveNode)
     return false;
+  Nd->setCount(0);
   if (auto* SuccNd = dyn_cast<CountNodeWithSuccs>(Nd.get())) {
     std::vector<IntType> KeysToRemove;
     for (CountNode::SuccMapIterator Iter = SuccNd->getSuccBegin(),
@@ -301,7 +302,7 @@ bool IntCompressor::removeSmallUsageCounts(CountNode::Ptr Nd) {
     for (const auto Key : KeysToRemove)
       SuccNd->eraseSucc(Key);
   }
-  return false;
+  return RemoveNode;
 }
 
 void IntCompressor::compress(DetailLevel Level,

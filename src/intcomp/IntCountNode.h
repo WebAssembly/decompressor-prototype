@@ -62,6 +62,7 @@ class CountNode : public std::enable_shared_from_this<CountNode> {
   virtual ~CountNode();
   enum class Kind { Root, Block, Singleton, IntSequence };
   size_t getCount() const { return Count; }
+  void setCount(size_t NewValue) { Count = NewValue; }
   size_t getWeight() const { return getWeight(getCount()); }
   virtual size_t getWeight(size_t Count) const;
   void increment(size_t Cnt = 1) { Count += Cnt; }
@@ -209,7 +210,7 @@ class IntCountNode : public CountNodeWithSuccs {
   size_t getPathLength() const { return PathLength; }
   CountNode::RootPtr getRoot() { return Root; }
   CountNode::IntPtr getParent() const { return Parent.lock(); }
-  virtual size_t getLocalWeight() const = 0;
+  size_t getLocalWeight() const;
 
   static bool implementsClass(Kind NodeKind) {
     return NodeKind == Kind::IntSequence || NodeKind == Kind::Singleton;
@@ -220,9 +221,11 @@ class IntCountNode : public CountNodeWithSuccs {
   CountNode::ParentPtr Parent;
   CountNode::RootPtr Root;
   size_t PathLength;
+  mutable size_t LocalWeight;
   IntCountNode(Kind NodeKind, decode::IntType Value, CountNode::RootPtr Root)
       : CountNodeWithSuccs(Kind::IntSequence), Value(Value), Root(Root),
-        PathLength(0) {}
+        PathLength(0),
+        LocalWeight(0) {}
   IntCountNode(Kind NodeKind,
                decode::IntType Value,
                CountNode::IntPtr Parent,
@@ -231,7 +234,8 @@ class IntCountNode : public CountNodeWithSuccs {
         Value(Value),
         Parent(Parent),
         Root(Root),
-        PathLength(Parent->getPathLength() + 1) {}
+        PathLength(Parent->getPathLength() + 1),
+        LocalWeight(0) {}
 };
 
 class SingletonCountNode : public IntCountNode {
@@ -246,12 +250,6 @@ class SingletonCountNode : public IntCountNode {
   static bool implementsClass(Kind NodeKind) {
     return NodeKind == Kind::Singleton;
   }
-  int getByteSize(IntTypeFormat Fmt) const { return Formats.getByteSize(Fmt); }
-  int getMinByteSize() const { return Formats.getMinFormatSize(); }
-  size_t getLocalWeight() const OVERRIDE;
-
- private:
-  IntTypeFormats Formats;
 };
 
 class IntSeqCountNode : public IntCountNode {
@@ -268,7 +266,6 @@ class IntSeqCountNode : public IntCountNode {
   static bool implementsClass(Kind NodeKind) {
     return NodeKind == Kind::IntSequence;
   }
-  size_t getLocalWeight() const OVERRIDE;
 };
 
 }  // end of namespace intcomp
