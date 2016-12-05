@@ -106,8 +106,8 @@ class IntCompressor FINAL {
                  std::shared_ptr<filt::SymbolTable> Symtab,
                  bool TraceParsing);
   bool compressUpToSize(size_t Size, bool TraceParsing);
-  void removeSmallUsageCounts() { removeSmallUsageCounts(Root); }
-  bool removeSmallUsageCounts(std::shared_ptr<CountNode> Nd);
+  bool removeSmallUsageCounts(CountNode::Ptr Nd);
+  void removeSmallUsageCounts();
   void assignInitialAbbreviations();
 };
 

@@ -241,6 +241,103 @@ bool IntCompressor::compressUpToSize(size_t Size, bool TraceParsing) {
   return !Reader.errorsFound();
 }
 
+namespace {
+
+class RemoveFrame {
+ public:
+  enum class State { Enter , Visiting, Exit };
+  RemoveFrame(CountNode::WithSuccsPtr Nd, size_t FirstKid, size_t LastKid)
+      : Nd(Nd), FirstKid(FirstKid), LastKid(LastKid), CurKid(FirstKid),
+        CurState(State::Enter) {
+    assert(Nd);
+  }
+  CountNode::WithSuccsPtr Nd;
+  size_t FirstKid;
+  size_t LastKid;
+  size_t CurKid;
+  State CurState;
+  std::vector<CountNode::IntPtr> RemoveSet;
+  void describe(FILE* Out) {
+    fputs("<Frame ", Out);
+    Nd->describe(Out);
+    fprintf(stderr, "  %" PRIuMAX "..%" PRIuMAX " [%" PRIuMAX ":%u]\n",
+            uintmax_t(FirstKid), uintmax_t(LastKid), uintmax_t(CurKid),
+            unsigned(CurState));
+    for (auto Nd : RemoveSet) {
+      fputs("  ", Out);
+      Nd->describe(Out);
+    }
+    fputs(">\n", Out);
+  }
+};
+
+} // end of anonymous namespace
+
+void IntCompressor::removeSmallUsageCounts() {
+  fprintf(stderr, "-> removeSmallUsageCounts\n");
+  // NOTE: This tries to simplify/remove nodes from the count trie, under the
+  // assumption that the remaining trie will be faster to process.
+  std::vector<CountNode::IntPtr> ToVisit;
+  std::vector<RemoveFrame> FrameStack;
+  for (CountNode::SuccMapIterator Iter = Root->getSuccBegin(),
+           End = Root->getSuccEnd(); Iter != End; ++Iter) {
+    ToVisit.push_back(Iter->second);
+  }
+  FrameStack.push_back(RemoveFrame(Root, 0, ToVisit.size()));
+  size_t Count = 0;
+  while (!FrameStack.empty()) {
+    if (++Count == 100) {
+      fprintf(stderr, "Count too big!\n");
+      break;
+    }
+    RemoveFrame& Frame(FrameStack.back());
+    Frame.describe(stderr);
+    switch (Frame.CurState) {
+      case RemoveFrame::State::Enter: {
+        if (Frame.CurKid >= Frame.LastKid) {
+          Frame.CurState = RemoveFrame::State::Visiting;
+          continue;
+        }
+        CountNode::IntPtr CurNd = ToVisit[Frame.CurKid++];
+        fprintf(stderr, "CurNd = "); CurNd->describe(stderr);
+        if (!CurNd->hasSuccessors()) {
+          if (CurNd->getWeight() < CountCutoff)
+            Frame.RemoveSet.push_back(CurNd);
+          break;
+        }
+        size_t FirstKid = ToVisit.size();
+        for (CountNode::SuccMapIterator Iter = CurNd->getSuccBegin(),
+                 End = CurNd->getSuccEnd(); Iter != End; ++Iter) {
+          ToVisit.push_back(Iter->second);
+        }
+        FrameStack.push_back(RemoveFrame(CurNd, FirstKid, ToVisit.size()));
+        break;
+      }
+      case RemoveFrame::State::Visiting: {
+        Frame.CurState = RemoveFrame::State::Exit;
+        fprintf(stderr, "Removing candidates\n");
+        describe(stderr);
+        while (!Frame.RemoveSet.empty()) {
+          CountNode::IntPtr Nd = Frame.RemoveSet.back();
+          Frame.RemoveSet.pop_back();
+          fputs("Removing: ", stderr);
+          fprint_IntType(stderr, Nd->getValue());
+          fputc('\n', stderr);
+          Frame.Nd->eraseSucc(Nd->getValue());
+          describe(stderr);
+        }
+        break;
+      }
+      case RemoveFrame::State::Exit: {
+        FrameStack.pop_back();
+        break;
+      }
+    }
+  }
+  fprintf(stderr, "<- removeSmallUsageCounts\n");
+  describe(stderr);
+}
+
 bool IntCompressor::removeSmallUsageCounts(CountNode::Ptr Nd) {
   assert(Nd);
   bool IsRemovable = true;
@@ -283,10 +380,14 @@ void IntCompressor::compress(DetailLevel Level,
     return;
   if (Level == AllDetail)
     describe(stderr, makeFlags(CollectionFlag::TopLevel));
+  removeSmallUsageCounts();
+#if 0
+  removeSmallUsageCounts(Root);
+#endif
   if (LengthLimit > 1) {
     if (!compressUpToSize(LengthLimit, TraceParsing && !TraceFirstPassOnly))
       return;
-    removeSmallUsageCounts();
+    removeSmallUsageCounts(Root);
   }
   if (Level == AllDetail)
     describe(stderr, makeFlags(CollectionFlag::IntPaths));
