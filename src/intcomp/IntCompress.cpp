@@ -20,7 +20,6 @@
 #include "interp/IntReader.h"
 #include "interp/IntWriter.h"
 #include "interp/StreamReader.h"
-#include "utils/circular-vector.h"
 #include "utils/heap.h"
 
 #include <algorithm>
@@ -38,39 +37,32 @@ using namespace utils;
 
 namespace intcomp {
 
+// Warning: This code assumes that multiple passes are used by the writer, where
+// each pass calls setUpToSize(N) with a value N. Further, the first pass always
+// uses N=1.  Failure to perform an initial write with setUpToSize(1) will
+// result in very bad behaviour.
 class IntCounterWriter : public Writer {
   IntCounterWriter() = delete;
   IntCounterWriter(const IntCounterWriter&) = delete;
   IntCounterWriter& operator=(const IntCounterWriter&) = delete;
 
  public:
+  typedef std::vector<CountNode::IntPtr> IntFrontier;
   typedef std::set<CountNode::IntPtr> CountNodeIntSet;
   IntCounterWriter(CountNode::RootPtr Root)
-      : Root(Root),
-        input_seq(new circular_vector<IntType>(1)),
-        CountCutoff(1),
-        WeightCutoff(1),
-        UpToSize(0) {}
+      : Root(Root), CountCutoff(1), UpToSize(0) {}
 
   ~IntCounterWriter() OVERRIDE;
 
-  void setSequenceSize(size_t Size);
   void setCountCutoff(uint64_t NewValue) { CountCutoff = NewValue; }
-  void setWeightCutoff(uint64_t NewValue) { WeightCutoff = NewValue; }
   void setUpToSize(size_t NewSize) {
+    assert(NewSize >= 1);
     UpToSize = NewSize;
-    setSequenceSize(NewSize);
   }
-  void resetUpToSize() {
-    UpToSize = 0;
-    setSequenceSize(UpToSize);
-  }
+  void resetUpToSize() { UpToSize = 0; }
   size_t getUpToSize() const { return UpToSize; }
 
   void addToUsageMap(IntType Value);
-  void addInputSeqToUsageMap();
-  void addAllInputSeqsToUsageMap();
-  CountNode::IntPtr appendValue(CountNode::IntPtr Nd, IntType Val);
 
   StreamType getStreamType() const OVERRIDE;
   bool writeUint8(uint8_t Value) OVERRIDE;
@@ -85,11 +77,9 @@ class IntCounterWriter : public Writer {
 
  private:
   CountNode::RootPtr Root;
-  circular_vector<IntType>* input_seq;
+  IntFrontier Frontier;
   uint64_t CountCutoff;
-  uint64_t WeightCutoff;
   size_t UpToSize;
-  void popValuesFromInputSeq(size_t Size);
 };
 
 IntCounterWriter::~IntCounterWriter() {
@@ -101,86 +91,25 @@ StreamType IntCounterWriter::getStreamType() const {
   return StreamType::Int;
 }
 
-void IntCounterWriter::setSequenceSize(size_t Size) {
-  input_seq->clear();
-  if (Size > 0)
-    input_seq->resize(Size);
-}
-
-void IntCounterWriter::popValuesFromInputSeq(size_t Size) {
-  for (size_t i = 0; i < Size; ++i) {
-    if (input_seq->empty())
-      return;
-    input_seq->pop_front();
-  }
-}
-
-CountNode::IntPtr IntCounterWriter::appendValue(CountNode::IntPtr Nd,
-                                                IntType Val) {
-  if (UpToSize > 1) {
-    // If second pass, see if the number of all occurrences of Val merit
-    // extending the path by Val.
-    CountNode::IntPtr ByteNode = Root->getSucc(Val);
-    if (!ByteNode || ByteNode->getCount() < CountCutoff)
-      return CountNode::IntPtr();
-  }
-  Nd = lookup(Nd, Val);
-  return Nd;
-}
-
-void IntCounterWriter::addInputSeqToUsageMap() {
-  // TODO(karlschimpf): Add subsequences as well!
-  if (input_seq->empty())
-    return;
-  // Add possible subpaths to trie (note: just an approximation to all
-  // possible).
-  IntType Val = (*input_seq)[0];
-  if (UpToSize == 1) {
-    CountNode::IntPtr Nd = lookup(Root, Val);
-    Nd->increment();
-    popValuesFromInputSeq(1);
-    return;
-  }
-  CountNodeIntSet Frontier;
-  for (size_t i = 1, e = input_seq->size(); i < e; ++i) {
-    CountNode::IntPtr Nd = lookup(Root, Val);
-    if (Nd->getCount() >= CountCutoff)
-      Frontier.insert(Nd);
-    std::vector<CountNode::IntPtr> ToVisit(Frontier.begin(), Frontier.end());
-    Frontier.clear();
-    Val = (*input_seq)[i];
-    for (auto Nd : ToVisit) {
-      CountNode::IntPtr Succ = appendValue(Nd, Val);
-      if (!Succ)
-        continue;
-      Succ->increment();
-      Frontier.insert(Succ);
-    }
-    if (i + 1 == e) {
-      // Reached the end of the valid path length. Stop adding.
-      popValuesFromInputSeq(e);
-      return;
-    }
-    if (!Frontier.empty())
-      continue;
-    popValuesFromInputSeq(i + 1);
-    return;
-  }
-  // If reached, no values added. Pop one value so that this
-  // metod guarantees to shrink the input sequence.
-  popValuesFromInputSeq(1);
-}
-
-void IntCounterWriter::addAllInputSeqsToUsageMap() {
-  while (!input_seq->empty())
-    addInputSeqToUsageMap();
-}
-
 void IntCounterWriter::addToUsageMap(IntType Value) {
-  input_seq->push_back(Value);
-  if (!input_seq->full())
+  CountNode::IntPtr TopNd = lookup(Root, Value);
+  if (UpToSize == 1) {
+    TopNd->increment();
     return;
-  addInputSeqToUsageMap();
+  }
+  IntFrontier NextFrontier;
+  while (!Frontier.empty()) {
+    CountNode::IntPtr Nd = Frontier.back();
+    Frontier.pop_back();
+    if (Nd->getPathLength() >= UpToSize || TopNd->getWeight() < CountCutoff)
+      continue;
+    Nd = lookup(Nd, Value);
+    Nd->increment();
+    NextFrontier.push_back(Nd);
+  }
+  Frontier.swap(NextFrontier);
+  if (TopNd->getWeight() >= CountCutoff)
+    Frontier.push_back(TopNd);
 }
 
 bool IntCounterWriter::writeUint8(uint8_t Value) {
@@ -229,12 +158,12 @@ bool IntCounterWriter::writeAction(const filt::CallbackNode* Action) {
     return false;
   switch (Sym->getPredefinedSymbol()) {
     case PredefinedSymbol::Block_enter:
-      addAllInputSeqsToUsageMap();
+      Frontier.clear();
       Root->getBlockEnter()->increment();
       return true;
     case PredefinedSymbol::Block_exit:
+      Frontier.clear();
       Root->getBlockExit()->increment();
-      addAllInputSeqsToUsageMap();
       return true;
     default:
       return true;
@@ -303,15 +232,12 @@ bool IntCompressor::compressUpToSize(size_t Size, bool TraceParsing) {
   });
   IntCounterWriter Writer(getRoot());
   Writer.setCountCutoff(CountCutoff);
-  Writer.setWeightCutoff(WeightCutoff);
   Writer.setUpToSize(Size);
   IntReader Reader(Contents, Writer, Symtab);
   if (TraceParsing)
     Reader.getTrace().setTraceProgress(true);
   Reader.fastStart();
   Reader.fastReadBackFilled();
-  if (!Reader.errorsFound())
-    Writer.addAllInputSeqsToUsageMap();
   return !Reader.errorsFound();
 }
 
