@@ -200,24 +200,9 @@ size_t IntCountNode::getLocalWeight() const {
 }
 
 void IntCountNode::describe(FILE* Out, size_t NestLevel) const {
-  std::vector<const IntCountNode*> IntSeq;
-  const IntCountNode* Nd = this;
-  while (Nd) {
-    IntSeq.push_back(Nd);
-    Nd = dyn_cast<IntCountNode>(Nd->getParent().get());
-  }
   indent(Out, NestLevel);
-  fputs(": Value", Out);
-  if (getPathLength() > 1)
-    fputc('s', Out);
-  fputc(':', Out);
-  for (std::vector<const IntCountNode*>::reverse_iterator
-           Iter = IntSeq.rbegin(),
-           EndIter = IntSeq.rend();
-       Iter != EndIter; ++Iter) {
-    fputc(' ', Out);
-    fprint_IntType(Out, (*Iter)->getValue());
-  }
+  fputs(": ", Out);
+  describeValues(Out);
   newline(Out);
 }
 
@@ -226,6 +211,11 @@ SingletonCountNode::~SingletonCountNode() {
 
 size_t SingletonCountNode::getWeight(size_t Count) const {
   return Count * getLocalWeight();
+}
+
+void SingletonCountNode::describeValues(FILE* Out) const {
+  fputs("Value: ", Out);
+  fprint_IntType(Out, getValue());
 }
 
 IntSeqCountNode::~IntSeqCountNode() {
@@ -239,6 +229,32 @@ size_t IntSeqCountNode::getWeight(size_t Count) const {
     Nd = dyn_cast<IntCountNode>(Nd->getParent().get());
   }
   return Weight;
+}
+
+void IntSeqCountNode::describeValues(FILE* Out) const {
+  std::vector<const IntCountNode*> Nodes;
+  const IntCountNode* Nd = this;
+  while (Nd) {
+    Nodes.push_back(Nd);
+    Nd = Nd->getParent().get();
+  }
+  fputs("Values:", Out);
+  size_t Count = 0;
+  size_t ElidedCount = 0;
+  for (
+      std::vector<const IntCountNode*>::reverse_iterator Iter = Nodes.rbegin(),
+                                                         IterEnd = Nodes.rend();
+      Iter != IterEnd; ++Iter) {
+    ++Count;
+    if (Count > 10) {
+      ++ElidedCount;
+    } else {
+      fputc(' ', Out);
+      fprint_IntType(Out, (*Iter)->getValue());
+    }
+  }
+  if (ElidedCount)
+    fprintf(Out, " ...[%" PRIuMAX "]", ElidedCount);
 }
 
 }  // end of namespace intcomp
