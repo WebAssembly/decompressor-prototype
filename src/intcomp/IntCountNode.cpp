@@ -233,7 +233,7 @@ size_t IntSeqCountNode::getWeight(size_t Count) const {
 
 void IntSeqCountNode::describeValues(FILE* Out) const {
   std::vector<const IntCountNode*> Nodes;
-  const IntCountNode *Nd = this;
+  const IntCountNode* Nd = this;
   while (Nd) {
     Nodes.push_back(Nd);
     Nd = Nd->getParent().get();
@@ -241,10 +241,10 @@ void IntSeqCountNode::describeValues(FILE* Out) const {
   fputs("Values:", Out);
   size_t Count = 0;
   size_t ElidedCount = 0;
-  for (std::vector<const IntCountNode*>::reverse_iterator
-           Iter = Nodes.rbegin(),
-           IterEnd = Nodes.rend();
-       Iter != IterEnd; ++Iter) {
+  for (
+      std::vector<const IntCountNode*>::reverse_iterator Iter = Nodes.rbegin(),
+                                                         IterEnd = Nodes.rend();
+      Iter != IterEnd; ++Iter) {
     ++Count;
     if (Count > 10) {
       ++ElidedCount;
