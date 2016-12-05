@@ -23,8 +23,9 @@
 #include "utils/circular-vector.h"
 #include "utils/heap.h"
 
-#include <vector>
 #include <algorithm>
+#include <vector>
+#include <set>
 
 #define DESCRIBE_INPUT 0
 
@@ -43,6 +44,7 @@ class IntCounterWriter : public Writer {
   IntCounterWriter& operator=(const IntCounterWriter&) = delete;
 
  public:
+  typedef std::set<CountNode::IntPtr> CountNodeIntSet;
   IntCounterWriter(CountNode::RootPtr Root)
       : Root(Root),
         input_seq(new circular_vector<IntType>(1)),
@@ -68,6 +70,7 @@ class IntCounterWriter : public Writer {
   void addToUsageMap(IntType Value);
   void addInputSeqToUsageMap();
   void addAllInputSeqsToUsageMap();
+  CountNode::IntPtr appendValue(CountNode::IntPtr Nd, IntType Val);
 
   StreamType getStreamType() const OVERRIDE;
   bool writeUint8(uint8_t Value) OVERRIDE;
@@ -112,26 +115,56 @@ void IntCounterWriter::popValuesFromInputSeq(size_t Size) {
   }
 }
 
+CountNode::IntPtr IntCounterWriter::appendValue(CountNode::IntPtr Nd,
+                                                IntType Val) {
+  if (UpToSize > 1) {
+    // If second pass, see if the number of all occurrences of Val merit
+    // extending the path by Val.
+    CountNode::IntPtr ByteNode = Root->getSucc(Val);
+    if (!ByteNode || ByteNode->getCount() < CountCutoff)
+      return CountNode::IntPtr();
+  }
+  Nd = lookup(Nd, Val);
+  return Nd;
+}
+
 void IntCounterWriter::addInputSeqToUsageMap() {
+  // TODO(karlschimpf): Add subsequences as well!
   if (input_seq->empty())
     return;
-  CountNode::IntPtr Nd;
-  for (size_t i = 0, e = input_seq->size(); i < e; ++i) {
-    IntType Val = (*input_seq)[i];
-    Nd = (i == 0) ? lookup(Root, Val) : lookup(Nd, Val);
-    if (UpToSize == 1 || i > 0) {
-      Nd->increment();
-    }
-    if (e > 1) {
-      if (Nd->getCount() < CountCutoff || Nd->getWeight() < WeightCutoff) {
-        popValuesFromInputSeq(i == 0 ? 1 : i);
-        return;
-      }
+  // Add possible subpaths to trie (note: just an approximation to all
+  // possible).
+  IntType Val = (*input_seq)[0];
+  if (UpToSize == 1) {
+    CountNode::IntPtr Nd = lookup(Root, Val);
+    Nd->increment();
+    popValuesFromInputSeq(1);
+    return;
+  }
+  CountNodeIntSet Frontier;
+  for (size_t i = 1, e = input_seq->size(); i < e; ++i) {
+    CountNode::IntPtr Nd = lookup(Root, Val);
+    if (Nd->getCount() >= CountCutoff)
+      Frontier.insert(Nd);
+    std::vector<CountNode::IntPtr> ToVisit(Frontier.begin(), Frontier.end());
+    Frontier.clear();
+    Val = (*input_seq)[i];
+    for (auto Nd : ToVisit) {
+      CountNode::IntPtr Succ = appendValue(Nd, Val);
+      if (!Succ)
+        continue;
+      Succ->increment();
+      Frontier.insert(Succ);
     }
     if (i + 1 == e) {
+      // Reached the end of the valid path length. Stop adding.
       popValuesFromInputSeq(e);
       return;
     }
+    if (!Frontier.empty())
+      continue;
+    popValuesFromInputSeq(i + 1);
+    return;
   }
   // If reached, no values added. Pop one value so that this
   // metod guarantees to shrink the input sequence.
@@ -273,7 +306,8 @@ bool IntCompressor::compressUpToSize(size_t Size, bool TraceParsing) {
   Writer.setWeightCutoff(WeightCutoff);
   Writer.setUpToSize(Size);
   IntReader Reader(Contents, Writer, Symtab);
-  Reader.getTrace().setTraceProgress(TraceParsing);
+  if (TraceParsing)
+    Reader.getTrace().setTraceProgress(true);
   Reader.fastStart();
   Reader.fastReadBackFilled();
   if (!Reader.errorsFound())
