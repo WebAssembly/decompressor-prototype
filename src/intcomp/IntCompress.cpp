@@ -119,8 +119,9 @@ void IntCounterWriter::addInputSeqToUsageMap() {
   for (size_t i = 0, e = input_seq->size(); i < e; ++i) {
     IntType Val = (*input_seq)[i];
     Nd = (i == 0) ? lookup(Root, Val) : lookup(Nd, Val);
-    if (UpToSize == 1 || i > 0)
+    if (UpToSize == 1 || i > 0) {
       Nd->increment();
+    }
     if (e > 1) {
       if (Nd->getCount() < CountCutoff || Nd->getWeight() < WeightCutoff) {
         popValuesFromInputSeq(i == 0 ? 1 : i);
@@ -431,15 +432,13 @@ void CountNodeCollector::collectNode(CountNode::Ptr Nd, CollectionFlags Flags) {
     ToAdd.pop_back();
     if (!Nd)  // This shouldn't happen, but be safe.
       continue;
-
     if (auto* IntNd = dyn_cast<IntCountNode>(*Nd))
       for (CountNode::SuccMapIterator Iter = IntNd->getSuccBegin(),
                                       End = IntNd->getSuccEnd();
            Iter != End; ++Iter)
         ToAdd.push_back(Iter->second);
-
     uint64_t Weight = Nd->getWeight();
-    uint64_t Count = Nd->getCount();
+    size_t Count = Nd->getCount();
     bool IsSingleton = isa<SingletonCountNode>(*Nd);
     auto* IntNd = dyn_cast<IntCountNode>(Nd.get());
     if (hasFlag(CollectionFlag::TopLevel, Flags)) {
