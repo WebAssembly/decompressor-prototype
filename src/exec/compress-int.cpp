@@ -98,8 +98,8 @@ int main(int Argc, char* Argv[]) {
   bool MinimizeBlockSize = false;
   bool InstallPredefinedRules = true;
   std::vector<int> DefaultIndices;
-  size_t CountCutoff = 0;
-  size_t WeightCutoff = 0;
+  size_t CountCutoff = 10;
+  size_t WeightCutoff = 100;
   size_t LengthLimit = 5;
   for (int i = 1; i < Argc; ++i) {
     std::string Arg(Argv[i]);

@@ -230,6 +230,14 @@ class circular_vector {
     prefill();
   }
 
+  // Note: This operation is provided to make debugging easier.
+  void describe(FILE* Out, std::function<void(FILE*, T)> describe_fcn) {
+    fprintf(Out, "*** circular vector[%" PRIuMAX "] ***\n", uintmax_t(size()));
+    for (size_t i = 0; i < size(); ++i)
+      describe_fcn(Out, at(i));
+    fprintf(Out, "******\n");
+  }
+
  private:
   std::vector<T> contents;
   size_type vector_max_size;
