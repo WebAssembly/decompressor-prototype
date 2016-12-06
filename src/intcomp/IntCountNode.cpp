@@ -26,7 +26,7 @@ int compareBoolean(bool V1, bool V2) {
   return V2 ? 1 : 0;
 }
 
-template<class T>
+template <class T>
 int compareValues(T V1, T V2) {
   if (V1 < V2)
     return -1;
@@ -35,7 +35,7 @@ int compareValues(T V1, T V2) {
   return 0;
 }
 
-template<class T>
+template <class T>
 int comparePointers(std::shared_ptr<T> V1, std::shared_ptr<T> V2) {
   if (V1) {
     if (V2)
@@ -45,7 +45,7 @@ int comparePointers(std::shared_ptr<T> V1, std::shared_ptr<T> V2) {
   return -1;
 }
 
-} // end of anonymous namespace
+}  // end of anonymous namespace
 
 namespace wasm {
 
