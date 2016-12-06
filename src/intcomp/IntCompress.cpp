@@ -245,19 +245,25 @@ namespace {
 
 class RemoveFrame {
  public:
-  enum class State { Enter , Visiting, Exit };
-  RemoveFrame(CountNode::RootPtr Root,
-              size_t FirstKid, size_t LastKid)
-      : FirstKid(FirstKid), LastKid(LastKid),
-        CurKid(FirstKid), CurState(State::Enter),
+  enum class State { Enter, Visiting, Exit };
+  RemoveFrame(CountNode::RootPtr Root, size_t FirstKid, size_t LastKid)
+      : FirstKid(FirstKid),
+        LastKid(LastKid),
+        CurKid(FirstKid),
+        CurState(State::Enter),
         Root(Root) {
     assert(Root);
   }
-  RemoveFrame(CountNode::RootPtr Root, CountNode::IntPtr Nd,
-              size_t FirstKid, size_t LastKid)
-      : FirstKid(FirstKid), LastKid(LastKid),
-        CurKid(FirstKid), CurState(State::Enter),
-        Root(Root), Nd(Nd) {
+  RemoveFrame(CountNode::RootPtr Root,
+              CountNode::IntPtr Nd,
+              size_t FirstKid,
+              size_t LastKid)
+      : FirstKid(FirstKid),
+        LastKid(LastKid),
+        CurKid(FirstKid),
+        CurState(State::Enter),
+        Root(Root),
+        Nd(Nd) {
     assert(Root);
     assert(Nd);
   }
@@ -293,7 +299,7 @@ void RemoveFrame::describe(FILE* Out) const {
   fputs(">\n", Out);
 }
 
-} // end of anonymous namespace
+}  // end of anonymous namespace
 
 void IntCompressor::removeSmallUsageCounts() {
   // NOTE: The main purpose of this method is to shrink the size of
@@ -301,18 +307,17 @@ void IntCompressor::removeSmallUsageCounts() {
   // faster.  It does this by removing int count nodes that are not
   // NodeUseful() (defined immediately below), until all int count
   // nodes are useful.
-  auto NodeUseful =
-      [&](CountNode::IntPtr Nd) {
-        return Nd
-            && (Nd->hasSuccessors()
-                || (Nd->getWeight() >= CountCutoff && Nd->getCount() > 1));
-      };
+  auto NodeUseful = [&](CountNode::IntPtr Nd) {
+    return Nd && (Nd->hasSuccessors() ||
+                  (Nd->getWeight() >= CountCutoff && Nd->getCount() > 1));
+  };
   // NOTE: This tries to simplify/remove nodes from the count trie, under the
   // assumption that the remaining trie will be faster to process.
   std::vector<CountNode::IntPtr> ToVisit;
   std::vector<RemoveFrame> FrameStack;
   for (CountNode::SuccMapIterator Iter = Root->getSuccBegin(),
-           End = Root->getSuccEnd(); Iter != End; ++Iter) {
+                                  End = Root->getSuccEnd();
+       Iter != End; ++Iter) {
     ToVisit.push_back(Iter->second);
   }
   FrameStack.push_back(RemoveFrame(Root, 0, ToVisit.size()));
@@ -332,11 +337,12 @@ void IntCompressor::removeSmallUsageCounts() {
         // If reached, simulate recursive calls on CurNod;
         size_t FirstKid = ToVisit.size();
         for (CountNode::SuccMapIterator Iter = CurNd->getSuccBegin(),
-                 End = CurNd->getSuccEnd(); Iter != End; ++Iter) {
+                                        End = CurNd->getSuccEnd();
+             Iter != End; ++Iter) {
           ToVisit.push_back(Iter->second);
         }
-        FrameStack.push_back(RemoveFrame(Root, CurNd,
-                                         FirstKid, ToVisit.size()));
+        FrameStack.push_back(
+            RemoveFrame(Root, CurNd, FirstKid, ToVisit.size()));
         break;
       }
       case RemoveFrame::State::Visiting: {
