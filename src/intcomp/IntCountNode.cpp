@@ -79,11 +79,11 @@ CountNode::IntPtr lookup(CountNode::IntPtr Nd, IntType Value) {
 }
 
 int CountNode::compare(const CountNode& Nd) const {
-  // Push ones with highest count first.
+  // Push ones with highest weight first.
   int Diff = compareValues(getWeight(), Nd.getWeight());
   if (Diff != 0)
     return -Diff;
-  // Note: If tie on weight, choose one with larger count, assuming that
+  // Note: If tie on weight, choose one with smaller count, assuming that
   // implies more data (i.e. weight per element).
   Diff = compareValues(Count, Nd.Count);
   if (Diff)
@@ -154,12 +154,16 @@ int RootCountNode::compare(const CountNode& Nd) const {
     return Diff;
   assert(isa<RootCountNode>(Nd));
   const auto* Root = cast<RootCountNode>(Nd);
-  assert(BlockEnter);
-  assert(BlockExit);
-  Diff = BlockEnter.get()->compare(*Root->BlockExit);
+  Diff = BlockEnter.get()->compare(*Root->BlockEnter);
   if (Diff != 0)
     return Diff;
-  return BlockExit.get()->compare(*Root->BlockExit);
+  Diff = BlockExit.get()->compare(*Root->BlockExit);
+  if (Diff != 0)
+    return Diff;
+  Diff = DefaultSingle.get()->compare(*Root->DefaultSingle);
+  if (Diff != 0)
+    return Diff;
+  return DefaultMultiple.get()->compare(*Root->DefaultMultiple);
 }
 
 BlockCountNode::~BlockCountNode() {

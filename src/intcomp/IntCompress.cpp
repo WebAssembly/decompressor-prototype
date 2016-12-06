@@ -83,8 +83,6 @@ class IntCounterWriter : public Writer {
 };
 
 IntCounterWriter::~IntCounterWriter() {
-  // TODO(karlschimpf): Recover memory of input_seq. Not done now due to
-  // (optimized) of destruction of circular_vector<IntType>
 }
 
 StreamType IntCounterWriter::getStreamType() const {
@@ -305,14 +303,7 @@ void IntCompressor::removeSmallUsageCounts() {
   // NOTE: The main purpose of this method is to shrink the size of
   // the trie to (a) recover memory and (b) make remaining analysis
   // faster.  It does this by removing int count nodes that are not
-  // NodeUseful() (defined immediately below), until all int count
-  // nodes are useful.
-  auto NodeUseful = [&](CountNode::IntPtr Nd) {
-    return Nd && (Nd->hasSuccessors() ||
-                  (Nd->getWeight() >= CountCutoff && Nd->getCount() > 1));
-  };
-  // NOTE: This tries to simplify/remove nodes from the count trie, under the
-  // assumption that the remaining trie will be faster to process.
+  // not useful (See case RemoveFrame::State::Exit for details).
   std::vector<CountNode::IntPtr> ToVisit;
   std::vector<RemoveFrame> FrameStack;
   for (CountNode::SuccMapIterator Iter = Root->getSuccBegin(),
@@ -330,10 +321,6 @@ void IntCompressor::removeSmallUsageCounts() {
           continue;
         }
         CountNode::IntPtr CurNd = ToVisit[Frame.CurKid++];
-        if (!NodeUseful(CurNd)) {
-          Frame.RemoveSet.push_back(CurNd);
-          break;
-        }
         // If reached, simulate recursive calls on CurNod;
         size_t FirstKid = ToVisit.size();
         for (CountNode::SuccMapIterator Iter = CurNd->getSuccBegin(),
@@ -357,11 +344,17 @@ void IntCompressor::removeSmallUsageCounts() {
         break;
       }
       case RemoveFrame::State::Exit: {
+        // Pop frame. Keep hold of node from popped frame so that it
+        // can be checked for usefulness.
+        CountNode::IntPtr Nd = Frame.getIntNode();
         while (ToVisit.size() > Frame.FirstKid)
           ToVisit.pop_back();
-        CountNode::IntPtr Nd = Frame.getIntNode();
         FrameStack.pop_back();
-        if (!FrameStack.empty() && !NodeUseful(Nd)) {
+        if (!Nd)
+          break;
+        if (!FrameStack.empty() &&
+            !(Nd->hasSuccessors() ||
+              (Nd->getWeight() >= CountCutoff && Nd->getCount() > 1))) {
           FrameStack.back().RemoveSet.push_back(Nd);
         }
         break;
@@ -381,7 +374,7 @@ void IntCompressor::compress(DetailLevel Level,
   }
   // Start by collecting number of occurrences of each integer, so
   // that we can use as a filter on integer sequence inclusion into the
-  // IntCountNode trie.
+  // trie.
   if (!compressUpToSize(1, TraceParsing && !TraceFirstPassOnly))
     return;
   if (Level == AllDetail)
