@@ -241,60 +241,101 @@ bool IntCompressor::compressUpToSize(size_t Size, bool TraceParsing) {
 
 namespace {
 
-class RemoveFrame {
- public:
-  enum class State { Enter, Visiting, Exit };
-  RemoveFrame(CountNode::RootPtr Root, size_t FirstKid, size_t LastKid)
-      : FirstKid(FirstKid),
-        LastKid(LastKid),
-        CurKid(FirstKid),
-        CurState(State::Enter),
-        Root(Root) {
-    assert(Root);
-  }
-  RemoveFrame(CountNode::RootPtr Root,
-              CountNode::IntPtr Nd,
-              size_t FirstKid,
-              size_t LastKid)
-      : FirstKid(FirstKid),
-        LastKid(LastKid),
-        CurKid(FirstKid),
-        CurState(State::Enter),
-        Root(Root),
-        Nd(Nd) {
-    assert(Root);
-    assert(Nd);
-  }
-  size_t FirstKid;
-  size_t LastKid;
-  size_t CurKid;
-  State CurState;
-  CountNode::RootPtr getRoot() const { return Root; }
-  CountNode::IntPtr getIntNode() const { return Nd; }
-  CountNode::WithSuccsPtr getBase() const {
-    if (Nd)
-      return Nd;
-    return Root;
-  }
-  std::vector<CountNode::IntPtr> RemoveSet;
-  void describe(FILE* Out) const;
+class RemoveNodesVisitor : public CountNodeVisitor {
+  RemoveNodesVisitor() = delete;
+  RemoveNodesVisitor(const RemoveNodesVisitor&) = delete;
+  RemoveNodesVisitor& operator=(const RemoveNodesVisitor&) = delete;
 
- private:
-  CountNode::RootPtr Root;
-  CountNode::IntPtr Nd;
+ public:
+  class Frame : public CountNodeVisitor::Frame {
+    Frame() = delete;
+    Frame(const Frame&) = delete;
+    Frame& operator=(const Frame&) = delete;
+    friend class RemoveNodesVisitor;
+
+   public:
+    Frame(CountNodeVisitor& Visitor, size_t FirstKid, size_t LastKid)
+        : CountNodeVisitor::Frame(Visitor, FirstKid, LastKid) {}
+
+    Frame(CountNodeVisitor& Visitor,
+          CountNode::IntPtr Nd,
+          size_t FirstKid,
+          size_t LastKid)
+        : CountNodeVisitor::Frame(Visitor, Nd, FirstKid, LastKid) {
+      assert(Nd);
+    }
+
+    ~Frame() OVERRIDE {}
+
+    void describeSuffix(FILE* Out) const OVERRIDE;
+
+   private:
+    std::vector<CountNode::IntPtr> RemoveSet;
+  };
+  explicit RemoveNodesVisitor(CountNode::RootPtr Root,
+                              size_t CountCutoff,
+                              size_t PatternCutoff = 2)
+      : CountNodeVisitor(Root),
+        CountCutoff(CountCutoff),
+        PatternCutoff(PatternCutoff) {}
+  ~RemoveNodesVisitor() {}
+
+ protected:
+  size_t CountCutoff;
+  size_t PatternCutoff;
+  FramePtr getFrame(size_t FirstKid, size_t LastKid) OVERRIDE;
+  FramePtr getFrame(CountNode::IntPtr Nd,
+                    size_t FirstKid,
+                    size_t LastKid) OVERRIDE;
+
+  void visit(FramePtr Frame) OVERRIDE;
+  void visitReturn(FramePtr Frame) OVERRIDE;
 };
 
-void RemoveFrame::describe(FILE* Out) const {
-  fputs("<Frame ", Out);
-  getBase()->describe(Out);
-  fprintf(stderr, "  %" PRIuMAX "..%" PRIuMAX " [%" PRIuMAX ":%u]\n",
-          uintmax_t(FirstKid), uintmax_t(LastKid), uintmax_t(CurKid),
-          unsigned(CurState));
-  for (auto Nd : RemoveSet) {
-    fputs("  ", Out);
-    Nd->describe(Out);
+CountNodeVisitor::FramePtr RemoveNodesVisitor::getFrame(size_t FirstKid,
+                                                        size_t LastKid) {
+  return std::make_shared<RemoveNodesVisitor::Frame>(*this, FirstKid, LastKid);
+}
+
+CountNodeVisitor::FramePtr RemoveNodesVisitor::getFrame(CountNode::IntPtr Nd,
+                                                        size_t FirstKid,
+                                                        size_t LastKid) {
+  return std::make_shared<RemoveNodesVisitor::Frame>(*this, Nd, FirstKid,
+                                                     LastKid);
+}
+
+void RemoveNodesVisitor::visit(FramePtr Frame) {
+  auto* F = reinterpret_cast<RemoveNodesVisitor::Frame*>(Frame.get());
+  while (!F->RemoveSet.empty()) {
+    CountNode::IntPtr Nd = F->RemoveSet.back();
+    F->RemoveSet.pop_back();
+    if (isa<SingletonCountNode>(*Nd))
+      getRoot()->getDefaultSingle()->increment(Nd->getCount());
+    F->getNode()->eraseSucc(Nd->getValue());
   }
-  fputs(">\n", Out);
+}
+
+void RemoveNodesVisitor::visitReturn(FramePtr Frame) {
+  auto* F = reinterpret_cast<RemoveNodesVisitor::Frame*>(Frame.get());
+  if (!F->isIntNodeFrame())
+    return;
+  CountNode::IntPtr Nd = F->getIntNode();
+  if (!(Nd->hasSuccessors() ||
+        (Nd->getWeight() >= CountCutoff && Nd->getCount() >= PatternCutoff))) {
+    reinterpret_cast<RemoveNodesVisitor::Frame*>(Stack.back().get())
+        ->RemoveSet.push_back(Nd);
+  }
+}
+
+void RemoveNodesVisitor::Frame::describeSuffix(FILE* Out) const {
+  if (!RemoveSet.empty()) {
+    fputc('\n', Out);
+    for (auto Nd : RemoveSet) {
+      fputs("  ", Out);
+      Nd->describe(Out);
+    }
+  }
+  CountNodeVisitor::Frame::describeSuffix(Out);
 }
 
 }  // end of anonymous namespace
@@ -304,63 +345,8 @@ void IntCompressor::removeSmallUsageCounts() {
   // the trie to (a) recover memory and (b) make remaining analysis
   // faster.  It does this by removing int count nodes that are not
   // not useful (See case RemoveFrame::State::Exit for details).
-  std::vector<CountNode::IntPtr> ToVisit;
-  std::vector<RemoveFrame> FrameStack;
-  for (CountNode::SuccMapIterator Iter = Root->getSuccBegin(),
-                                  End = Root->getSuccEnd();
-       Iter != End; ++Iter) {
-    ToVisit.push_back(Iter->second);
-  }
-  FrameStack.push_back(RemoveFrame(Root, 0, ToVisit.size()));
-  while (!FrameStack.empty()) {
-    RemoveFrame& Frame(FrameStack.back());
-    switch (Frame.CurState) {
-      case RemoveFrame::State::Enter: {
-        if (Frame.CurKid >= Frame.LastKid) {
-          Frame.CurState = RemoveFrame::State::Visiting;
-          continue;
-        }
-        CountNode::IntPtr CurNd = ToVisit[Frame.CurKid++];
-        // If reached, simulate recursive calls on CurNod;
-        size_t FirstKid = ToVisit.size();
-        for (CountNode::SuccMapIterator Iter = CurNd->getSuccBegin(),
-                                        End = CurNd->getSuccEnd();
-             Iter != End; ++Iter) {
-          ToVisit.push_back(Iter->second);
-        }
-        FrameStack.push_back(
-            RemoveFrame(Root, CurNd, FirstKid, ToVisit.size()));
-        break;
-      }
-      case RemoveFrame::State::Visiting: {
-        Frame.CurState = RemoveFrame::State::Exit;
-        while (!Frame.RemoveSet.empty()) {
-          CountNode::IntPtr Nd = Frame.RemoveSet.back();
-          Frame.RemoveSet.pop_back();
-          if (isa<SingletonCountNode>(*Nd))
-            Root->getDefaultSingle()->increment(Nd->getCount());
-          Frame.getBase()->eraseSucc(Nd->getValue());
-        }
-        break;
-      }
-      case RemoveFrame::State::Exit: {
-        // Pop frame. Keep hold of node from popped frame so that it
-        // can be checked for usefulness.
-        CountNode::IntPtr Nd = Frame.getIntNode();
-        while (ToVisit.size() > Frame.FirstKid)
-          ToVisit.pop_back();
-        FrameStack.pop_back();
-        if (!Nd)
-          break;
-        if (!FrameStack.empty() &&
-            !(Nd->hasSuccessors() ||
-              (Nd->getWeight() >= CountCutoff && Nd->getCount() > 1))) {
-          FrameStack.back().RemoveSet.push_back(Nd);
-        }
-        break;
-      }
-    }
-  }
+  RemoveNodesVisitor Visitor(Root, CountCutoff);
+  Visitor.walk();
 }
 
 void IntCompressor::compress(DetailLevel Level,
