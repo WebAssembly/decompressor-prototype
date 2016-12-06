@@ -241,30 +241,127 @@ bool IntCompressor::compressUpToSize(size_t Size, bool TraceParsing) {
   return !Reader.errorsFound();
 }
 
-bool IntCompressor::removeSmallUsageCounts(CountNode::Ptr Nd) {
-  assert(Nd);
-  bool IsRemovable = true;
-  if (Nd->getCount() >= CountCutoff || Nd->getWeight() >= WeightCutoff)
-    IsRemovable = false;
-  if (auto* SuccNd = dyn_cast<CountNodeWithSuccs>(Nd.get())) {
-    std::vector<IntType> KeysToRemove;
-    for (CountNode::SuccMapIterator Iter = SuccNd->getSuccBegin(),
-                                    End = SuccNd->getSuccEnd();
-         Iter != End; ++Iter) {
-      bool KeepKey = true;
-      if (!Iter->second)
-        KeepKey = false;
-      else if (removeSmallUsageCounts(Iter->second))
-        KeepKey = false;
-      if (!KeepKey)
-        KeysToRemove.push_back(Iter->first);
-    }
-    for (const auto Key : KeysToRemove)
-      SuccNd->eraseSucc(Key);
-    if (SuccNd->hasSuccessors())
-      IsRemovable = false;
+namespace {
+
+class RemoveFrame {
+ public:
+  enum class State { Enter , Visiting, Exit };
+  RemoveFrame(CountNode::RootPtr Root,
+              size_t FirstKid, size_t LastKid)
+      : FirstKid(FirstKid), LastKid(LastKid),
+        CurKid(FirstKid), CurState(State::Enter),
+        Root(Root) {
+    assert(Root);
   }
-  return IsRemovable;
+  RemoveFrame(CountNode::RootPtr Root, CountNode::IntPtr Nd,
+              size_t FirstKid, size_t LastKid)
+      : FirstKid(FirstKid), LastKid(LastKid),
+        CurKid(FirstKid), CurState(State::Enter),
+        Root(Root), Nd(Nd) {
+    assert(Root);
+    assert(Nd);
+  }
+  size_t FirstKid;
+  size_t LastKid;
+  size_t CurKid;
+  State CurState;
+  CountNode::RootPtr getRoot() const { return Root; }
+  CountNode::IntPtr getIntNode() const { return Nd; }
+  CountNode::WithSuccsPtr getBase() const {
+    if (Nd)
+      return Nd;
+    return Root;
+  }
+  std::vector<CountNode::IntPtr> RemoveSet;
+  void describe(FILE* Out) const;
+
+ private:
+  CountNode::RootPtr Root;
+  CountNode::IntPtr Nd;
+};
+
+void RemoveFrame::describe(FILE* Out) const {
+  fputs("<Frame ", Out);
+  getBase()->describe(Out);
+  fprintf(stderr, "  %" PRIuMAX "..%" PRIuMAX " [%" PRIuMAX ":%u]\n",
+          uintmax_t(FirstKid), uintmax_t(LastKid), uintmax_t(CurKid),
+          unsigned(CurState));
+  for (auto Nd : RemoveSet) {
+    fputs("  ", Out);
+    Nd->describe(Out);
+  }
+  fputs(">\n", Out);
+}
+
+} // end of anonymous namespace
+
+void IntCompressor::removeSmallUsageCounts() {
+  // NOTE: The main purpose of this method is to shrink the size of
+  // the trie to (a) recover memory and (b) make remaining analysis
+  // faster.  It does this by removing int count nodes that are not
+  // NodeUseful() (defined immediately below), until all int count
+  // nodes are useful.
+  auto NodeUseful =
+      [&](CountNode::IntPtr Nd) {
+        return Nd
+            && (Nd->hasSuccessors()
+                || (Nd->getWeight() >= CountCutoff && Nd->getCount() > 1));
+      };
+  // NOTE: This tries to simplify/remove nodes from the count trie, under the
+  // assumption that the remaining trie will be faster to process.
+  std::vector<CountNode::IntPtr> ToVisit;
+  std::vector<RemoveFrame> FrameStack;
+  for (CountNode::SuccMapIterator Iter = Root->getSuccBegin(),
+           End = Root->getSuccEnd(); Iter != End; ++Iter) {
+    ToVisit.push_back(Iter->second);
+  }
+  FrameStack.push_back(RemoveFrame(Root, 0, ToVisit.size()));
+  while (!FrameStack.empty()) {
+    RemoveFrame& Frame(FrameStack.back());
+    switch (Frame.CurState) {
+      case RemoveFrame::State::Enter: {
+        if (Frame.CurKid >= Frame.LastKid) {
+          Frame.CurState = RemoveFrame::State::Visiting;
+          continue;
+        }
+        CountNode::IntPtr CurNd = ToVisit[Frame.CurKid++];
+        if (!NodeUseful(CurNd)) {
+          Frame.RemoveSet.push_back(CurNd);
+          break;
+        }
+        // If reached, simulate recursive calls on CurNod;
+        size_t FirstKid = ToVisit.size();
+        for (CountNode::SuccMapIterator Iter = CurNd->getSuccBegin(),
+                 End = CurNd->getSuccEnd(); Iter != End; ++Iter) {
+          ToVisit.push_back(Iter->second);
+        }
+        FrameStack.push_back(RemoveFrame(Root, CurNd,
+                                         FirstKid, ToVisit.size()));
+        break;
+      }
+      case RemoveFrame::State::Visiting: {
+        Frame.CurState = RemoveFrame::State::Exit;
+        while (!Frame.RemoveSet.empty()) {
+          CountNode::IntPtr Nd = Frame.RemoveSet.back();
+          Frame.RemoveSet.pop_back();
+          if (isa<SingletonCountNode>(*Nd))
+            Root->getDefaultSingle()->increment(Nd->getCount());
+          Frame.getBase()->eraseSucc(Nd->getValue());
+        }
+        break;
+      }
+      case RemoveFrame::State::Exit: {
+        while (ToVisit.size() > Frame.FirstKid)
+          ToVisit.pop_back();
+        CountNode::IntPtr Nd = Frame.getIntNode();
+        FrameStack.pop_back();
+        if (!FrameStack.empty() && !NodeUseful(Nd)) {
+          FrameStack.back().RemoveSet.push_back(Nd);
+        }
+        break;
+      }
+    }
+  }
 }
 
 void IntCompressor::compress(DetailLevel Level,
@@ -283,6 +380,7 @@ void IntCompressor::compress(DetailLevel Level,
     return;
   if (Level == AllDetail)
     describe(stderr, makeFlags(CollectionFlag::TopLevel));
+  removeSmallUsageCounts();
   if (LengthLimit > 1) {
     if (!compressUpToSize(LengthLimit, TraceParsing && !TraceFirstPassOnly))
       return;
@@ -377,6 +475,8 @@ void CountNodeCollector::collect(CollectionFlags Flags) {
   if (hasFlag(CollectionFlag::TopLevel, Flags)) {
     collectNode(Root->getBlockEnter(), Flags);
     collectNode(Root->getBlockExit(), Flags);
+    collectNode(Root->getDefaultSingle(), Flags);
+    collectNode(Root->getDefaultMultiple(), Flags);
   }
   for (CountNode::SuccMapIterator Iter = Root->getSuccBegin(),
                                   End = Root->getSuccEnd();
@@ -385,6 +485,7 @@ void CountNodeCollector::collect(CollectionFlags Flags) {
 }
 
 void CountNodeCollector::collectNode(CountNode::Ptr Nd, CollectionFlags Flags) {
+  bool IsIntNode = isa<IntCountNode>(*Nd);
   std::vector<CountNode::Ptr> ToAdd;
   ToAdd.push_back(Nd);
   while (!ToAdd.empty()) {
@@ -399,15 +500,17 @@ void CountNodeCollector::collectNode(CountNode::Ptr Nd, CollectionFlags Flags) {
         ToAdd.push_back(Iter->second);
     uint64_t Weight = Nd->getWeight();
     size_t Count = Nd->getCount();
-    bool IsSingleton = isa<SingletonCountNode>(*Nd);
+    bool IsSingleton = !IsIntNode || isa<SingletonCountNode>(*Nd);
     auto* IntNd = dyn_cast<IntCountNode>(Nd.get());
     if (hasFlag(CollectionFlag::TopLevel, Flags)) {
       CountTotal += Count;
       WeightTotal += Weight;
-      if (Count < CountCutoff)
-        continue;
-      if (Weight < WeightCutoff)
-        continue;
+      if (IsIntNode) {
+        if (Count < CountCutoff)
+          continue;
+        if (Weight < WeightCutoff)
+          continue;
+      }
       if (IntNd == nullptr || IsSingleton) {
         CountReported += Count;
         WeightReported += Weight;
@@ -421,10 +524,12 @@ void CountNodeCollector::collectNode(CountNode::Ptr Nd, CollectionFlags Flags) {
       CountTotal += Count;
       WeightTotal += Weight;
     }
-    if (Count < CountCutoff)
-      continue;
-    if (Weight < WeightCutoff)
-      continue;
+    if (IsIntNode) {
+      if (Count < CountCutoff)
+        continue;
+      if (Weight < WeightCutoff)
+        continue;
+    }
     if (!IsSingleton) {
       Values.push_back(CountNode::Ptr(Nd));
       CountReported += Count;
