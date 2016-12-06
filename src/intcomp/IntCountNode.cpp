@@ -18,6 +18,35 @@
 
 #include "intcomp/IntCountNode.h"
 
+namespace {
+
+int compareBoolean(bool V1, bool V2) {
+  if (V1)
+    return V2 ? 0 : -1;
+  return V2 ? 1 : 0;
+}
+
+template<class T>
+int compareValues(T V1, T V2) {
+  if (V1 < V2)
+    return -1;
+  if (V2 < V1)
+    return 1;
+  return 0;
+}
+
+template<class T>
+int comparePointers(std::shared_ptr<T> V1, std::shared_ptr<T> V2) {
+  if (V1) {
+    if (V2)
+      return V1->compare(*V2);
+    return 1;
+  }
+  return -1;
+}
+
+} // end of anonymous namespace
+
 namespace wasm {
 
 using namespace decode;
@@ -51,23 +80,15 @@ CountNode::IntPtr lookup(CountNode::IntPtr Nd, IntType Value) {
 
 int CountNode::compare(const CountNode& Nd) const {
   // Push ones with highest count first.
-  size_t MyWeight = getWeight();
-  size_t NdWeight = Nd.getWeight();
-  if (MyWeight < NdWeight)
-    return 1;
-  if (MyWeight > NdWeight)
-    return -1;
+  int Diff = compareValues(getWeight(), Nd.getWeight());
+  if (Diff != 0)
+    return -Diff;
   // Note: If tie on weight, choose one with larger count, assuming that
   // implies more data (i.e. weight per element).
-  if (Count < Nd.Count)
-    return -2;
-  if (Count > Nd.Count)
-    return 2;
-  if (int(NodeKind) < int(Nd.NodeKind))
-    return -3;
-  if (int(NodeKind) > int(Nd.NodeKind))
-    return 3;
-  return 0;
+  Diff = compareValues(Count, Nd.Count);
+  if (Diff)
+    return Diff;
+  return compareValues(int(NodeKind), int(Nd.NodeKind));
 }
 
 void CountNode::indent(FILE* Out, size_t NestLevel, bool AddWeight) const {
@@ -85,12 +106,7 @@ void CountNode::newline(FILE* Out) const {
 }
 
 int compare(CountNode::Ptr N1, CountNode::Ptr N2) {
-  if (N1) {
-    if (N2)
-      return N1->compare(*N2);
-    return 1;
-  }
-  return -1;
+  return comparePointers(N1, N2);
 }
 
 CountNodeWithSuccs::~CountNodeWithSuccs() {
@@ -105,13 +121,12 @@ CountNode::IntPtr CountNodeWithSuccs::getSucc(IntType Value) {
 bool CountNodeWithSuccs::implementsClass(Kind K) {
   switch (K) {
     case Kind::Root:
-      return true;
-    case Kind::Block:
-      return false;
     case Kind::Singleton:
-      return true;
     case Kind::IntSequence:
       return true;
+    case Kind::Block:
+    case Kind::Default:
+      return false;
   }
   WASM_RETURN_UNREACHABLE(false);
 }
@@ -119,7 +134,9 @@ bool CountNodeWithSuccs::implementsClass(Kind K) {
 RootCountNode::RootCountNode()
     : CountNodeWithSuccs(Kind::Root),
       BlockEnter(std::make_shared<BlockCountNode>(true)),
-      BlockExit(std::make_shared<BlockCountNode>(false)) {
+      BlockExit(std::make_shared<BlockCountNode>(false)),
+      DefaultSingle(std::make_shared<DefaultCountNode>(true)),
+      DefaultMultiple(std::make_shared<DefaultCountNode>(false)) {
 }
 
 RootCountNode::~RootCountNode() {
@@ -154,16 +171,32 @@ int BlockCountNode::compare(const CountNode& Nd) const {
     return Diff;
   assert(isa<BlockCountNode>(Nd));
   const auto* BlkNd = cast<BlockCountNode>(Nd);
-  if (IsEnter)
-    return BlkNd->IsEnter ? 0 : -1;
-  else
-    return BlkNd->IsEnter ? 1 : 0;
+  return compareBoolean(IsEnter, BlkNd->IsEnter);
 }
 
 void BlockCountNode::describe(FILE* Out, size_t NestLevel) const {
   indent(Out, NestLevel);
   fputs(": Block.", Out);
   fputs(IsEnter ? "enter" : "exit", Out);
+  newline(Out);
+}
+
+DefaultCountNode::~DefaultCountNode() {
+}
+
+int DefaultCountNode::compare(const CountNode& Nd) const {
+  int Diff = CountNode::compare(Nd);
+  if (Diff != 0)
+    return Diff;
+  assert(isa<DefaultCountNode>(Nd));
+  const auto* DefaultNd = cast<DefaultCountNode>(Nd);
+  return compareBoolean(IsSingle, DefaultNd->IsSingle);
+}
+
+void DefaultCountNode::describe(FILE* Out, size_t NestLevel) const {
+  indent(Out, NestLevel);
+  fputs(": default.", Out);
+  fputs(IsSingle ? "single" : "multiple", Out);
   newline(Out);
 }
 
@@ -177,10 +210,9 @@ int IntCountNode::compare(const CountNode& Nd) const {
   const IntCountNode* IntNd = cast<IntCountNode>(Nd);
 
   while (ThisNd && IntNd) {
-    if (ThisNd->Value < IntNd->Value)
-      return -1;
-    if (ThisNd->Value > IntNd->Value)
-      return 1;
+    Diff = compareValues(ThisNd->Value, IntNd->Value);
+    if (Diff)
+      return Diff;
     ThisNd = ThisNd->getParent().get();
     IntNd = IntNd->getParent().get();
   }

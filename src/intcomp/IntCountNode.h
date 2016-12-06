@@ -37,6 +37,7 @@ namespace intcomp {
 class BlockCountNode;
 class CountNode;
 class CountNodeWithSuccs;
+class DefaultCountNode;
 class IntCountNode;
 class RootCountNode;
 
@@ -51,6 +52,7 @@ class CountNode : public std::enable_shared_from_this<CountNode> {
   typedef std::shared_ptr<CountNode> Ptr;
   typedef std::shared_ptr<IntCountNode> IntPtr;
   typedef std::shared_ptr<BlockCountNode> BlockPtr;
+  typedef std::shared_ptr<DefaultCountNode> DefaultPtr;
   typedef std::weak_ptr<IntCountNode> ParentPtr;
   typedef std::shared_ptr<RootCountNode> RootPtr;
   typedef std::shared_ptr<CountNodeWithSuccs> WithSuccsPtr;
@@ -61,7 +63,7 @@ class CountNode : public std::enable_shared_from_this<CountNode> {
   typedef std::shared_ptr<HeapType::entry> HeapEntryType;
 
   virtual ~CountNode();
-  enum class Kind { Root, Block, Singleton, IntSequence };
+  enum class Kind { Root, Block, Default, Singleton, IntSequence };
   size_t getCount() const { return Count; }
   void setCount(size_t NewValue) { Count = NewValue; }
   size_t getWeight() const { return getWeight(getCount()); }
@@ -178,6 +180,25 @@ class BlockCountNode : public CountNode {
   bool IsEnter;
 };
 
+// Implements default encodings of integers.
+class DefaultCountNode : public CountNode {
+  DefaultCountNode(const DefaultCountNode&) = delete;
+  DefaultCountNode& operator=(const DefaultCountNode&) = delete;
+
+ public:
+  explicit DefaultCountNode(bool IsSingle)
+      : CountNode(Kind::Default), IsSingle(IsSingle) {}
+  ~DefaultCountNode() OVERRIDE;
+  bool isSingle() const { return IsSingle; }
+  bool isMultiple() const { return !IsSingle; }
+  int compare(const CountNode& Nd) const OVERRIDE;
+  void describe(FILE* Out, size_t NestLevel = 0) const OVERRIDE;
+  static bool implementsClass(Kind K) { return K == Kind::Default; }
+
+ private:
+  bool IsSingle;
+};
+
 class RootCountNode : public CountNodeWithSuccs {
   RootCountNode(const RootCountNode&) = delete;
   RootCountNode& operator=(const RootCountNode&) = delete;
@@ -187,6 +208,8 @@ class RootCountNode : public CountNodeWithSuccs {
   ~RootCountNode() OVERRIDE;
   CountNode::BlockPtr getBlockEnter() { return BlockEnter; }
   CountNode::BlockPtr getBlockExit() { return BlockExit; }
+  CountNode::DefaultPtr getDefaultSingle() { return DefaultSingle; }
+  CountNode::DefaultPtr getDefaultMultiple() { return DefaultMultiple; }
   void describe(FILE* Out, size_t NestLevel = 0) const OVERRIDE;
   int compare(const CountNode& Nd) const OVERRIDE;
 
@@ -195,6 +218,8 @@ class RootCountNode : public CountNodeWithSuccs {
  private:
   CountNode::BlockPtr BlockEnter;
   CountNode::BlockPtr BlockExit;
+  CountNode::DefaultPtr DefaultSingle;
+  CountNode::DefaultPtr DefaultMultiple;
 };
 
 // Node defining an IntValue
