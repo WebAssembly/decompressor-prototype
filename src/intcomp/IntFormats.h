@@ -51,11 +51,15 @@ class IntTypeFormats {
   IntTypeFormats& operator=(const IntTypeFormats&) = delete;
 
  public:
-  static constexpr int UnknownSize = 0;
+  static constexpr size_t NotValid = 0;
+
   IntTypeFormats(decode::IntType Value);
 
   decode::IntType getValue() const { return Value; }
-  int getByteSize(IntTypeFormat Fmt) const { return ByteSize[size_t(Fmt)]; }
+
+  bool isValid(IntTypeFormat Fmt) const { return getByteSize(Fmt) != NotValid; }
+
+  size_t getByteSize(IntTypeFormat Fmt) const;
 
   // Returns the preferred format, based on the number of bytes.
   IntTypeFormat getFirstMinimumFormat() const;
@@ -63,13 +67,18 @@ class IntTypeFormats {
   // Returns next format with same size, or Fmt if no more candidates.
   IntTypeFormat getNextMatchingFormat(IntTypeFormat Fmt) const;
 
-  int getMinFormatSize() const {
+  size_t getMinFormatSize() const {
+    // Note: We assume that getFirstMinimumFormat has already cached result.
     return ByteSize[size_t(getFirstMinimumFormat())];
   }
 
  private:
   decode::IntType Value;
-  int ByteSize[NumIntTypeFormats];
+  // Caches - updated on demand.
+  mutable size_t ByteSize[NumIntTypeFormats];
+  mutable bool Cached[NumIntTypeFormats];
+
+  void cacheFormat(IntTypeFormat Fmt) const;
 
   void installValidByteSizes(decode::IntType Value);
 };

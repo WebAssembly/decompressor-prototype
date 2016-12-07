@@ -142,7 +142,7 @@ RootCountNode::RootCountNode()
 RootCountNode::~RootCountNode() {
 }
 
-void RootCountNode::getOthers(OthersList& L) const {
+void RootCountNode::getOthers(PtrVector& L) const {
   L.push_back(BlockEnter);
   L.push_back(BlockExit);
   L.push_back(DefaultSingle);
@@ -383,7 +383,7 @@ void CountNodeVisitor::walk() {
 }
 
 void CountNodeVisitor::walkOther() {
-  CountNode::OthersList L;
+  CountNode::PtrVector L;
   Root->getOthers(L);
   for (CountNode::Ptr Nd : L)
     visitOther(Nd);

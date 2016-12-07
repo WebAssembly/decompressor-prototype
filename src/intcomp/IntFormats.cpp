@@ -29,13 +29,16 @@ namespace intcomp {
 
 namespace {
 
+// TODO(karlschimpf): Consider building a cache for numbers, to
+// cut down the number of calls to get the minimum size.
+
 const char* IntTypeFormatName[NumIntTypeFormats] = {
     "uint8",
     "varint32",
     "varuint32",
     "uint32",
     "varint64",
-    "varuint64"
+    "varuint64",
     "uint64",
 };
 
@@ -84,57 +87,94 @@ class TestBuffer {
 }  // end of anonymous namespace
 
 const char* getName(IntTypeFormat Fmt) {
-  assert(int(Fmt) <= int(IntTypeFormat::LAST));
-  return IntTypeFormatName[size_t(Fmt)];
+  size_t Index = size_t(Fmt);
+  assert(Index < NumIntTypeFormats);
+  return IntTypeFormatName[Index];
 }
 
 IntTypeFormats::IntTypeFormats(IntType Value) : Value(Value) {
   installValidByteSizes(Value);
 }
 
+size_t IntTypeFormats::getByteSize(IntTypeFormat Fmt) const {
+  size_t Index = size_t(Fmt);
+  if (!Cached[Index])
+    cacheFormat(Fmt);
+  return ByteSize[Index];
+}
+
+void IntTypeFormats::cacheFormat(IntTypeFormat Fmt) const {
+  size_t Index = size_t(Fmt);
+  Cached[Index] = true;
+  TestBuffer Buffer;
+  switch (Fmt) {
+    case IntTypeFormat::Uint8:
+      ByteSize[Index] =
+          isInstanceOf<uint8_t>(Value) ? sizeof(uint8_t) : NotValid;
+      break;
+    case IntTypeFormat::Uint32:
+      ByteSize[Index] =
+          isInstanceOf<uint32_t>(Value) ? sizeof(uint32_t) : NotValid;
+      break;
+    case IntTypeFormat::Uint64:
+      ByteSize[Index] =
+          isInstanceOf<uint64_t>(Value) ? sizeof(uint64_t) : NotValid;
+      break;
+    case IntTypeFormat::Varint32:
+      ByteSize[Index] = isInstanceOf<int32_t>(Value)
+                            ? Buffer.writeVarint32(int32_t(Value))
+                            : NotValid;
+      break;
+    case IntTypeFormat::Varuint32:
+      ByteSize[Index] = isInstanceOf<uint32_t>(Value)
+                            ? Buffer.writeVaruint32(uint32_t(Value))
+                            : NotValid;
+      break;
+    case IntTypeFormat::Varint64:
+      ByteSize[Index] = isInstanceOf<int64_t>(Value)
+                            ? Buffer.writeVarint64(int64_t(Value))
+                            : NotValid;
+      break;
+    case IntTypeFormat::Varuint64:
+      ByteSize[Index] = isInstanceOf<uint64_t>(Value)
+                            ? Buffer.writeVaruint64(uint64_t(Value))
+                            : NotValid;
+      break;
+  }
+}
+
 void IntTypeFormats::installValidByteSizes(IntType Value) {
   // Initialize to unknownSize
-  for (size_t i = 0; i < NumIntTypeFormats; ++i)
-    ByteSize[i] = UnknownSize;
-  TestBuffer Buffer;
-  if (isInstanceOf<uint8_t>(Value))
-    ByteSize[size_t(IntTypeFormat::Uint8)] = sizeof(uint8_t);
-  if (isInstanceOf<uint32_t>(Value)) {
-    ByteSize[size_t(IntTypeFormat::Uint32)] = sizeof(uint32_t);
-    ByteSize[size_t(IntTypeFormat::Varint32)] =
-        Buffer.writeVarint32(uint32_t(Value));
-    ByteSize[size_t(IntTypeFormat::Varuint32)] =
-        Buffer.writeVaruint32(uint32_t(Value));
-  }
-  if (isInstanceOf<uint64_t>(Value)) {
-    ByteSize[size_t(IntTypeFormat::Uint64)] = sizeof(uint64_t);
-    ByteSize[size_t(IntTypeFormat::Varint64)] =
-        Buffer.writeVarint64(uint64_t(Value));
-    ByteSize[size_t(IntTypeFormat::Varuint64)] =
-        Buffer.writeVaruint64(uint64_t(Value));
+  for (size_t i = 0; i < NumIntTypeFormats; ++i) {
+    ByteSize[i] = NotValid;
+    Cached[i] = false;
   }
 }
 
 IntTypeFormat IntTypeFormats::getFirstMinimumFormat() const {
-  IntTypeFormat Fmt = IntTypeFormat::LAST;
-  // Initialize minimum byte size with number guaranteed to be larger
-  // than any known byte count for a format.
-  int MinByteSize = sizeof(uint64_t) * 2;
+  IntTypeFormat MinFmt = IntTypeFormat::LAST;
+  size_t MinSize = std::numeric_limits<size_t>::max();
   for (size_t i = 0; i < NumIntTypeFormats; ++i) {
-    if (ByteSize[i] != UnknownSize && ByteSize[i] < MinByteSize) {
-      Fmt = IntTypeFormat(i);
-      MinByteSize = ByteSize[i];
+    IntTypeFormat Fmt = IntTypeFormat(i);
+    size_t FmtSize = getByteSize(Fmt);
+    if (FmtSize == NotValid)
+      continue;
+    if (FmtSize < MinSize) {
+      MinFmt = Fmt;
+      MinSize = FmtSize;
     }
   }
-  return Fmt;
+  return MinFmt;
 }
 
 IntTypeFormat IntTypeFormats::getNextMatchingFormat(IntTypeFormat Fmt) const {
-  assert(int(Fmt) <= int(IntTypeFormat::LAST));
-  int WantedSize = ByteSize[size_t(Fmt)];
+  assert(size_t(Fmt) <= size_t(IntTypeFormat::LAST));
+  size_t FmtSize = getByteSize(Fmt);
   for (size_t i = size_t(Fmt) + 1; i < NumIntTypeFormats; ++i) {
-    if (WantedSize == ByteSize[i])
-      return IntTypeFormat(i);
+    IntTypeFormat NextFmt = IntTypeFormat(i);
+    size_t NextSize = getByteSize(NextFmt);
+    if (NextSize == FmtSize)
+      return NextFmt;
   }
   return Fmt;
 }
