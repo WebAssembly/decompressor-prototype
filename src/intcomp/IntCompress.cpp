@@ -21,6 +21,7 @@
 #include "interp/IntWriter.h"
 #include "interp/StreamReader.h"
 #include "utils/heap.h"
+#include "utils/circular-vector.h"
 
 #include <algorithm>
 #include <vector>
@@ -166,6 +167,217 @@ bool IntCounterWriter::writeAction(const filt::CallbackNode* Action) {
     default:
       return true;
   }
+}
+
+class AbbrevAssignWriter : public Writer {
+  AbbrevAssignWriter() = delete;
+  AbbrevAssignWriter(const AbbrevAssignWriter&) = delete;
+  AbbrevAssignWriter& operator=(const AbbrevAssignWriter&) = delete;
+
+ public:
+  typedef std::pair<IntType, IntType> ValuePair;
+  AbbrevAssignWriter(CountNode::RootPtr Root,
+                     std::shared_ptr<IntStream> Output,
+                     size_t BufSize,
+                     IntTypeFormat AbbrevFormat)
+      : Root(Root),
+        Writer(Output),
+        Buffer(BufSize),
+        AbbrevFormat(AbbrevFormat) {
+    assert(Root->getDefaultSingle()->hasAbbrevIndex());
+    assert(Root->getDefaultMultiple()->hasAbbrevIndex());
+  }
+
+  ~AbbrevAssignWriter() OVERRIDE {}
+
+  StreamType getStreamType() const OVERRIDE;
+  bool writeUint8(uint8_t Value) OVERRIDE;
+  bool writeUint32(uint32_t Value) OVERRIDE;
+  bool writeUint64(uint64_t Value) OVERRIDE;
+  bool writeVarint32(int32_t Value) OVERRIDE;
+  bool writeVarint64(int64_t Value) OVERRIDE;
+  bool writeVaruint32(uint32_t Value) OVERRIDE;
+  bool writeVaruint64(uint64_t Value) OVERRIDE;
+  bool writeValue(decode::IntType Value, const filt::Node* Format) OVERRIDE;
+  bool writeAction(const filt::CallbackNode* Action) OVERRIDE;
+
+ private:
+  CountNode::RootPtr Root;
+  IntWriter Writer;
+  circular_vector<ValuePair> Buffer;
+  IntTypeFormat AbbrevFormat;
+  std::vector<IntType> DefaultValues;
+  static constexpr IntTypeFormat DefaultFormat = IntTypeFormat::Varint64;
+  static constexpr IntTypeFormat LoopSizeFormat = IntTypeFormat::Varuint64;
+
+  void bufferValue(IntType Value);
+  void forwardAbbrevValue(IntType Value) {
+    flushDefaultValues();
+    writeValue(Value, AbbrevFormat);
+  }
+  void forwardOtherValue(IntType Value) { DefaultValues.push_back(Value); }
+  void forwardValue(ValuePair Pair) {
+    if (CountNode::isAbbrevDefined(Pair.second))
+      forwardAbbrevValue(Pair.first);
+    else
+      forwardOtherValue(Pair.first);
+  }
+  void writeFromBuffer();
+  void writeUntilBufferEmpty();
+  void popValuesFromBuffer(size_t size);
+  void flushDefaultValues();
+  void writeValue(IntType Value, IntTypeFormat Format);
+};
+
+StreamType AbbrevAssignWriter::getStreamType() const {
+  return StreamType::Int;
+}
+
+bool AbbrevAssignWriter::writeUint8(uint8_t Value) {
+  bufferValue(Value);
+  return true;
+}
+
+bool AbbrevAssignWriter::writeUint32(uint32_t Value) {
+  bufferValue(Value);
+  return true;
+}
+
+bool AbbrevAssignWriter::writeUint64(uint64_t Value) {
+  bufferValue(Value);
+  return true;
+}
+
+bool AbbrevAssignWriter::writeVarint32(int32_t Value) {
+  bufferValue(Value);
+  return true;
+}
+
+bool AbbrevAssignWriter::writeVarint64(int64_t Value) {
+  bufferValue(Value);
+  return true;
+}
+
+bool AbbrevAssignWriter::writeVaruint32(uint32_t Value) {
+  bufferValue(Value);
+  return true;
+}
+
+bool AbbrevAssignWriter::writeVaruint64(uint64_t Value) {
+  bufferValue(Value);
+  return true;
+}
+
+bool AbbrevAssignWriter::writeValue(decode::IntType Value, const filt::Node*) {
+  bufferValue(Value);
+  return true;
+}
+
+bool AbbrevAssignWriter::writeAction(const filt::CallbackNode* Action) {
+  const auto* Sym = dyn_cast<SymbolNode>(Action->getKid(0));
+  if (Sym == nullptr)
+    return false;
+  switch (Sym->getPredefinedSymbol()) {
+    case PredefinedSymbol::Block_enter:
+    case PredefinedSymbol::Block_exit:
+      writeUntilBufferEmpty();
+    // Intentionally drop to default case.
+    default:
+      Writer.writeAction(Action);
+      return true;
+  }
+}
+
+void AbbrevAssignWriter::bufferValue(IntType Value) {
+  assert(!Buffer.full());
+  Buffer.push_back(std::make_pair(Value, CountNode::BAD_ABBREV_INDEX));
+  if (!Buffer.full())
+    return;
+  writeFromBuffer();
+}
+
+void AbbrevAssignWriter::writeFromBuffer() {
+  // TODO(karlschimpf): When writing values, dont' create abbreviation
+  // if there are already default values, and adding as a default value
+  // will use less space.
+  if (Buffer.empty())
+    return;
+  // Collect abbreviations available for value sequences in buffer.
+  CountNode::IntPtr Nd;
+  size_t MaxIndex = 0;
+  for (size_t e = Buffer.size(); MaxIndex < e; ++MaxIndex) {
+    ValuePair& Pair = Buffer[MaxIndex];
+    Nd = MaxIndex ? lookup(Nd, Pair.first) : lookup(Root, Pair.first);
+    Pair.second = Nd->getAbbrevIndex();
+  }
+  // Choose maximal abbreviation (if possible).
+  do {
+    size_t Index = MaxIndex--;
+    if (CountNode::isAbbrevDefined(Buffer[Index].second))
+      continue;
+    forwardValue(Buffer[Index]);
+    popValuesFromBuffer(Index + 1);
+    return;
+  } while (MaxIndex > 0);
+  // Default to writing at least one value.
+  forwardValue(Buffer[0]);
+  popValuesFromBuffer(1);
+}
+
+void AbbrevAssignWriter::writeUntilBufferEmpty() {
+  while (!Buffer.empty())
+    writeFromBuffer();
+}
+
+void AbbrevAssignWriter::popValuesFromBuffer(size_t Size) {
+  for (size_t i = 0; i < Size; ++i) {
+    if (Buffer.empty())
+      return;
+    Buffer.pop_front();
+  }
+}
+
+void AbbrevAssignWriter::writeValue(IntType Value, IntTypeFormat Format) {
+  switch (Format) {
+    case IntTypeFormat::Uint8:
+      Writer.writeUint8(Value);
+      break;
+    case IntTypeFormat::Uint32:
+      Writer.writeUint32(Value);
+      break;
+    case IntTypeFormat::Uint64:
+      Writer.writeUint64(Value);
+      break;
+    case IntTypeFormat::Varint32:
+      Writer.writeVarint32(Value);
+      break;
+    case IntTypeFormat::Varint64:
+      Writer.writeVarint64(Value);
+      break;
+    case IntTypeFormat::Varuint32:
+      Writer.writeVaruint32(Value);
+      break;
+    case IntTypeFormat::Varuint64:
+      Writer.writeVaruint64(Value);
+  }
+}
+
+void AbbrevAssignWriter::flushDefaultValues() {
+  if (DefaultValues.empty())
+    return;
+
+  if (DefaultValues.size() == 1) {
+    writeValue(Root->getDefaultSingle()->getAbbrevIndex(), AbbrevFormat);
+    writeValue(DefaultValues[0], DefaultFormat);
+    DefaultValues.clear();
+    return;
+  }
+
+  writeValue(Root->getDefaultMultiple()->getAbbrevIndex(), AbbrevFormat);
+  writeValue(DefaultValues.size(), LoopSizeFormat);
+  for (const auto V : DefaultValues)
+    writeValue(V, DefaultFormat);
+  DefaultValues.clear();
 }
 
 IntCompressor::IntCompressor(std::shared_ptr<decode::Queue> Input,

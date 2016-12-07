@@ -256,7 +256,7 @@ class circular_vector {
   void prefill() {
     contents.clear();
     for (size_t i = 0; i < vector_max_size; ++i)
-      contents.push_back(0);
+      contents.push_back(T());
   }
 };
 

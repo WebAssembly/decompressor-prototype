@@ -53,6 +53,9 @@ using namespace decode;
 
 namespace intcomp {
 
+const decode::IntType CountNode::BAD_ABBREV_INDEX =
+    std::numeric_limits<decode::IntType>::max();
+
 CountNode::~CountNode() {
 }
 

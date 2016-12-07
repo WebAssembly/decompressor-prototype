@@ -63,6 +63,8 @@ class CountNode : public std::enable_shared_from_this<CountNode> {
   typedef utils::heap<HeapValueType> HeapType;
   typedef std::shared_ptr<HeapType::entry> HeapEntryType;
 
+  static const decode::IntType BAD_ABBREV_INDEX;
+
   virtual ~CountNode();
   enum class Kind { Root, Block, Default, Singleton, IntSequence };
   size_t getCount() const { return Count; }
@@ -75,6 +77,9 @@ class CountNode : public std::enable_shared_from_this<CountNode> {
   void associateWithHeap(HeapEntryType Entry) { HeapEntry = Entry; }
   void disassociateFromHeap() { HeapEntry.reset(); }
 
+  static bool isAbbrevDefined(decode::IntType Abbrev) {
+    return Abbrev != BAD_ABBREV_INDEX;
+  }
   decode::IntType getAbbrevIndex() const { return AbbrevIndex; }
   bool hasAbbrevIndex() const { return AbbrevIndex != BAD_ABBREV_INDEX; }
   void setAbbrevIndex(decode::IntType NewValue) { AbbrevIndex = NewValue; }
@@ -97,8 +102,7 @@ class CountNode : public std::enable_shared_from_this<CountNode> {
   Kind NodeKind;
   size_t Count;
   decode::IntType AbbrevIndex;
-  static constexpr decode::IntType BAD_ABBREV_INDEX =
-      std::numeric_limits<decode::IntType>::max();
+
   // The heap position of this, when added to heap. Note: Used to
   // allow the ability to change the priority key (i.e. weight) while
   // it is on the heap.
