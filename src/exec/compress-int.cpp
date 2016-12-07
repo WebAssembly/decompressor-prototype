@@ -73,23 +73,26 @@ void usage(const char* AppName) {
             "  -v | --verbose\t"
             "Show progress (can be repeated for more detail).\n");
     fprintf(stderr,
-            "\t\t\t-v                : "
-            "Add progress of compression.\n");
+            "\t\t\t-v\n"
+            "\t\t\t\tAdd progress of compression.\n");
     fprintf(stderr,
-            "\t\t\t-v -v             : "
-            "Add detailed progress of compression.\n");
+            "\t\t\t-v -v\n"
+            "\t\t\t\tAdd detailed progress of compression.\n");
     fprintf(stderr,
-            "\t\t\t-v -v -v          : "
-            "Add trace of initial parsing of (wasm) input file..\n");
+            "\t\t\t-v -v -v\n"
+            "\t\t\t\tAdd showing internal integer streams.\n");
     fprintf(stderr,
-            "\t\t\t-v -v -v -v       : "
-            "Add trace of subsequent parses of (wasm) input file..\n");
+            "\t\t\t-v -v -v -v\n"
+            "\t\t\t\tAdd trace of initial parsing of (wasm) input file.\n");
     fprintf(stderr,
-            "\t\t\t-v -v -v -v -v    : "
-            "Add progress of parsing default files.\n");
+            "\t\t\t-v -v -v -v -v\n"
+            "\t\t\t\tAdd trace of subsequent parses of (wasm) input file.\n");
     fprintf(stderr,
-            "\t\t\t-v -v -v -v -v -v : "
-            "Add progress of lexing default files.\n");
+            "\t\t\t-v -v -v -v -v -v\n"
+            "\t\t\t\tAdd progress of parsing default files.\n");
+    fprintf(stderr,
+            "\t\t\t-v -v -v -v -v -v -v\n"
+            "\t\t\t\tAdd progress of lexing default files.\n");
   }
 }
 
@@ -167,9 +170,19 @@ int main(int Argc, char* Argv[]) {
     WeightCutoff = CountCutoff;
   if (CountCutoff == 0)
     CountCutoff = WeightCutoff;
+  // Extract compression detail level from verbose, and adjust, so
+  // that remaining verbose checks need not be changed if detail level
+  // changes.
+  unsigned CompressVerbose = Verbose;
+  constexpr unsigned MaxCompressVerbose = 3;
+  if (Verbose < MaxCompressVerbose)
+    Verbose = 0;
+  else
+    Verbose -= MaxCompressVerbose;
+
   auto Symtab = std::make_shared<SymbolTable>();
   if (InstallPredefinedRules &&
-      !SymbolTable::installPredefinedDefaults(Symtab, Verbose >= 5)) {
+      !SymbolTable::installPredefinedDefaults(Symtab, Verbose >= 3)) {
     fprintf(stderr, "Unable to load compiled in default rules!\n");
     return exit_status(EXIT_FAILURE);
   }
@@ -180,18 +193,34 @@ int main(int Argc, char* Argv[]) {
       std::shared_ptr<RawStream> Stream = std::make_shared<FileReader>(Argv[i]);
       BinaryReader Reader(std::make_shared<ReadBackedQueue>(std::move(Stream)),
                           Symtab);
-      Reader.getTrace().setTraceProgress(Verbose >= 5);
+      Reader.getTrace().setTraceProgress(Verbose >= 3);
       if (Reader.readFile()) {
         continue;
       }
     }
     Driver Parser(Symtab);
-    Parser.setTraceParsing(Verbose >= 5);
-    Parser.setTraceLexing(Verbose >= 6);
+    Parser.setTraceParsing(Verbose >= 3);
+    Parser.setTraceLexing(Verbose >= 4);
+    ;
     if (!Parser.parse(Argv[i])) {
       fprintf(stderr, "Unable to parse default algorithms: %s\n", Argv[i]);
       return exit_status(EXIT_FAILURE);
     }
+  }
+  IntCompressor::DetailLevel DetailLevel;
+  switch (CompressVerbose) {
+    case 0:
+      DetailLevel = IntCompressor::NoDetail;
+      break;
+    case 1:
+      DetailLevel = IntCompressor::SomeDetail;
+      break;
+    case 2:
+      DetailLevel = IntCompressor::MoreDetail;
+      break;
+    default:
+      DetailLevel = IntCompressor::AllDetail;
+      break;
   }
   IntCompressor Compressor(std::make_shared<ReadBackedQueue>(getInput()),
                            std::make_shared<WriteBackedQueue>(getOutput()),
@@ -199,21 +228,9 @@ int main(int Argc, char* Argv[]) {
   Compressor.setLengthLimit(LengthLimit);
   Compressor.setCountCutoff(CountCutoff);
   Compressor.setWeightCutoff(WeightCutoff);
-  Compressor.setTraceProgress(Verbose);
+  Compressor.setTraceProgress(CompressVerbose);
   Compressor.setMinimizeBlockSize(MinimizeBlockSize);
-  IntCompressor::DetailLevel DetailLevel;
-  switch (Verbose) {
-    case 0:
-      DetailLevel = IntCompressor::NoDetail;
-      break;
-    case 1:
-      DetailLevel = IntCompressor::SomeDetail;
-      break;
-    default:
-      DetailLevel = IntCompressor::AllDetail;
-      break;
-  }
-  Compressor.compress(DetailLevel, Verbose >= 3, Verbose <= 3);
+  Compressor.compress(DetailLevel, Verbose >= 1, Verbose <= 2);
   if (Compressor.errorsFound()) {
     fatal("Failed to compress due to errors!");
     exit_status(EXIT_FAILURE);

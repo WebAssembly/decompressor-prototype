@@ -178,8 +178,10 @@ IntStream::ReadCursorWithTraceContext::getTraceContext() {
   return TraceContext;
 }
 
-void IntStream::describe(FILE* File) {
-  fprintf(File, "*** IntStream ***\n");
+void IntStream::describe(FILE* File, const char* Name) {
+  if (Name == nullptr)
+    Name = "IntStream";
+  fprintf(File, "*** %s ***\n", Name);
   fputs("Blocks:\n", File);
   for (auto BlkIter = Blocks.begin(); BlkIter != Blocks.end(); ++BlkIter) {
     fputs("  ", File);
@@ -187,12 +189,14 @@ void IntStream::describe(FILE* File) {
     fputc('\n', File);
   }
   fputs("Values:\n", File);
+  size_t Index = 0;
   for (auto V : Values) {
-    fputs("  ", File);
+    fprintf(File, "  [%" PRIxMAX "] ", Index);
     fprint_IntType(File, V);
     fputc('\n', File);
+    ++Index;
   }
-  fprintf(File, "*****************\n");
+  fprintf(File, "******\n");
 }
 
 }  // end of namespace interp

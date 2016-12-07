@@ -63,7 +63,7 @@ class IntCompressor FINAL {
 
   bool errorsFound() const { return ErrorsFound; }
 
-  enum DetailLevel { NoDetail, SomeDetail, AllDetail };
+  enum DetailLevel { NoDetail, SomeDetail, MoreDetail, AllDetail };
 
   std::shared_ptr<RootCountNode> getRoot();
 

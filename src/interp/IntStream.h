@@ -184,13 +184,14 @@ class IntStream : public std::enable_shared_from_this<IntStream> {
   ~IntStream() {}
 
   size_t size() const { return Values.size(); }
+  size_t getNumIntegers() const { return Values.size() + Blocks.size() * 2; }
   BlockPtr getTopBlock() { return TopBlock; }
   bool isFrozen() const { return isFrozenFlag; }
 
   BlockIterator getBlocksBegin() { return Blocks.begin(); }
   BlockIterator getBlocksEnd() { return Blocks.end(); }
 
-  void describe(FILE* File);
+  void describe(FILE* File, const char* Name = nullptr);
 
  private:
   IntVector Values;

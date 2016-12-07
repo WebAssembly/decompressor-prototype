@@ -571,12 +571,15 @@ void IntCompressor::compress(DetailLevel Level,
     fprintf(stderr, "Unable to decompress, input malformed");
     return;
   }
+  TRACE(size_t, "Number of integers in input", Contents->getNumIntegers());
+  if (Level == DetailLevel::AllDetail)
+    Contents->describe(stderr, "Input int stream");
   // Start by collecting number of occurrences of each integer, so
   // that we can use as a filter on integer sequence inclusion into the
   // trie.
   if (!compressUpToSize(1, TraceParsing && !TraceFirstPassOnly))
     return;
-  if (Level == AllDetail)
+  if (Level >= DetailLevel::MoreDetail)
     describe(stderr, makeFlags(CollectionFlag::TopLevel));
   removeSmallUsageCounts();
   if (LengthLimit > 1) {
@@ -584,10 +587,10 @@ void IntCompressor::compress(DetailLevel Level,
       return;
     removeSmallUsageCounts();
   }
-  if (Level == AllDetail)
+  if (Level >= DetailLevel::MoreDetail)
     describe(stderr, makeFlags(CollectionFlag::IntPaths));
   assignInitialAbbreviations();
-  if (Level != DetailLevel::NoDetail)
+  if (Level > DetailLevel::NoDetail)
     describe(stderr, makeFlags(CollectionFlag::All));
 }
 
