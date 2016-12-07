@@ -57,7 +57,7 @@ class CountNode : public std::enable_shared_from_this<CountNode> {
   typedef std::shared_ptr<RootCountNode> RootPtr;
   typedef std::shared_ptr<CountNodeWithSuccs> WithSuccsPtr;
   typedef std::map<decode::IntType, CountNode::IntPtr> SuccMap;
-  typedef std::vector<Ptr> OthersList;
+  typedef std::vector<Ptr> PtrVector;
   typedef SuccMap::const_iterator SuccMapIterator;
   typedef Ptr HeapValueType;
   typedef utils::heap<HeapValueType> HeapType;
@@ -214,7 +214,7 @@ class RootCountNode : public CountNodeWithSuccs {
   void describe(FILE* Out, size_t NestLevel = 0) const OVERRIDE;
   int compare(const CountNode& Nd) const OVERRIDE;
 
-  void getOthers(OthersList& L) const;
+  void getOthers(PtrVector& L) const;
 
   static bool implementsClass(Kind K) { return K == Kind::Root; }
 

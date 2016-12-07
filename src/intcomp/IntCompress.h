@@ -20,6 +20,7 @@
 #define DECOMPRESSOR_SRC_INTCOMP_INTCOMPRESS_H
 
 #include "intcomp/IntCountNode.h"
+#include "intcomp/IntFormats.h"
 #include "interp/IntStream.h"
 #include "interp/StreamReader.h"
 #include "interp/StreamWriter.h"
@@ -89,6 +90,9 @@ class IntCompressor FINAL {
 
   void setMinimizeBlockSize(bool NewValue) { (void)NewValue; }
 
+  IntTypeFormat getAbbrevFormat() const { return AbbrevFormat; }
+  void setAbbrevFormat(IntTypeFormat Fmt) { AbbrevFormat = Fmt; }
+
   void describe(FILE* Out, CollectionFlags = makeFlags(CollectionFlag::All));
 
  private:
@@ -101,6 +105,7 @@ class IntCompressor FINAL {
   uint64_t CountCutoff;
   uint64_t WeightCutoff;
   size_t LengthLimit;
+  IntTypeFormat AbbrevFormat;
   bool ErrorsFound;
   void readInput(std::shared_ptr<decode::Queue> InputStream,
                  std::shared_ptr<filt::SymbolTable> Symtab,

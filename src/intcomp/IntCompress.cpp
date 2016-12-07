@@ -177,6 +177,7 @@ IntCompressor::IntCompressor(std::shared_ptr<decode::Queue> Input,
       CountCutoff(0),
       WeightCutoff(0),
       LengthLimit(1),
+      AbbrevFormat(IntTypeFormat::Varuint64),
       ErrorsFound(false) {
 }
 
@@ -422,7 +423,6 @@ class CountNodeCollector {
   }
   void clear();
   void collectNode(CountNode::Ptr Nd, CollectionFlags Flags);
-  void assignInitialAbbreviations();
 
   void setTrace(std::shared_ptr<filt::TraceClassSexp> Trace);
   filt::TraceClassSexp& getTrace();
@@ -524,17 +524,6 @@ void CountNodeCollector::collectNode(CountNode::Ptr Nd, CollectionFlags Flags) {
   }
 }
 
-void CountNodeCollector::assignInitialAbbreviations() {
-  collect(makeFlags(CollectionFlag::All));
-  buildHeap();
-  IntType AbbrevIndex = 0;
-  while (!ValuesHeap->empty()) {
-    CountNode::HeapValueType NdPtr = popHeap();
-    NdPtr->setAbbrevIndex(AbbrevIndex++);
-    // TODO(karlschimpf): Fix related nodes (prefix/suffix).
-  }
-}
-
 void CountNodeCollector::describe(FILE* Out) {
   assert(ValuesHeap->empty());
   buildHeap();
@@ -555,13 +544,40 @@ void CountNodeCollector::describe(FILE* Out) {
   }
 }
 
+class AbbreviationsCollector : public CountNodeCollector {
+ public:
+  AbbreviationsCollector(CountNode::RootPtr Root, IntTypeFormat AbbrevFormat)
+      : CountNodeCollector(Root), AbbrevFormat(AbbrevFormat) {}
+  void assignAbbreviations(CountNode::PtrVector& Assignment);
+
+ private:
+  IntTypeFormat AbbrevFormat;
+};
+
+void AbbreviationsCollector::assignAbbreviations(
+    CountNode::PtrVector& Assignment) {
+  collect(makeFlags(CollectionFlag::All));
+  buildHeap();
+  while (!ValuesHeap->empty()) {
+    CountNode::Ptr Nd = popHeap();
+    IntType Index = Assignment.size();
+    IntTypeFormats Formats(Index);
+    size_t Space = Formats.getByteSize(AbbrevFormat);
+    if (Space <= Nd->getWeight()) {
+      Nd->setAbbrevIndex(Index);
+      Assignment.push_back(Nd);
+    }
+  }
+}
+
 }  // end of anonymous namespace
 
 void IntCompressor::assignInitialAbbreviations() {
-  CountNodeCollector Collector(getRoot());
+  AbbreviationsCollector Collector(getRoot(), AbbrevFormat);
   Collector.CountCutoff = CountCutoff;
   Collector.WeightCutoff = WeightCutoff;
-  Collector.assignInitialAbbreviations();
+  CountNode::PtrVector Assignment;
+  Collector.assignAbbreviations(Assignment);
 }
 
 void IntCompressor::describe(FILE* Out, CollectionFlags Flags) {
