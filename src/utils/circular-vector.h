@@ -139,7 +139,7 @@ class circular_vector {
 
   bool full() const { return vector_size == vector_max_size; }
 
-  iterator begin() { return circ_iterator(*this, 0); }
+  iterator begin() { return circ_iterator(this, 0); }
 
   const_iterator begin() const {
     return circ_iterator(const_cast<circular_vector*>(this), 0);

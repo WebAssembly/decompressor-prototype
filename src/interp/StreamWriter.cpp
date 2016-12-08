@@ -50,6 +50,10 @@ TraceClass::ContextPtr StreamWriter::getTraceContext() {
   return Pos.getTraceContext();
 }
 
+const char* StreamWriter::getDefaultTraceName() const {
+  return "StreamWriter";
+}
+
 decode::StreamType StreamWriter::getStreamType() const {
   return Stream->getType();
 }

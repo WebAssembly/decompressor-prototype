@@ -34,16 +34,20 @@ TraceClass::ContextPtr Writer::getTraceContext() {
   return Ptr;
 }
 
-TraceClassSexp& Writer::getTrace() {
+std::shared_ptr<TraceClassSexp> Writer::getTracePtr() {
   if (!Trace)
-    setTrace(std::make_shared<TraceClassSexp>("Writer"));
-  return *Trace;
+    setTrace(std::make_shared<TraceClassSexp>(getDefaultTraceName()));
+  return Trace;
 }
 
 void Writer::setTrace(std::shared_ptr<filt::TraceClassSexp> NewTrace) {
   Trace = NewTrace;
   if (Trace)
     Trace->addContext(getTraceContext());
+}
+
+const char* Writer::getDefaultTraceName() const {
+  return "Writer";
 }
 
 void Writer::reset() {

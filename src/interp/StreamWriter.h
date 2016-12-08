@@ -61,6 +61,7 @@ class StreamWriter : public Writer {
   decode::WriteCursor BlockStart;
   utils::ValueStack<decode::WriteCursor> BlockStartStack;
   void describeBlockStartStack(FILE* File);
+  const char* getDefaultTraceName() const OVERRIDE;
 };
 
 }  // end of namespace interp

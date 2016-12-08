@@ -101,6 +101,7 @@ class IntCompressor FINAL {
   std::shared_ptr<decode::Queue> Output;
   std::shared_ptr<filt::SymbolTable> Symtab;
   std::shared_ptr<interp::IntStream> Contents;
+  std::shared_ptr<interp::IntStream> IntOutput;
   std::shared_ptr<filt::TraceClassSexp> Trace;
   uint64_t CountCutoff;
   uint64_t WeightCutoff;
@@ -113,6 +114,7 @@ class IntCompressor FINAL {
   bool compressUpToSize(size_t Size, bool TraceParsing);
   void removeSmallUsageCounts();
   void assignInitialAbbreviations();
+  bool generateIntOutput(bool TraceParsing);
 };
 
 }  // end of namespace intcomp

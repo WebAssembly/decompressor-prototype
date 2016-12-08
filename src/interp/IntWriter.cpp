@@ -34,6 +34,10 @@ TraceClass::ContextPtr IntWriter::getTraceContext() {
   return Pos.getTraceContext();
 }
 
+const char* IntWriter::getDefaultTraceName() const {
+  return "IntWriter";
+}
+
 StreamType IntWriter::getStreamType() const {
   return StreamType::Int;
 }

@@ -52,7 +52,8 @@ class StreamReader : public Reader {
   decode::ReadCursor PeekPos;
   utils::ValueStack<decode::ReadCursor> PeekPosStack;
 
-  std::shared_ptr<filt::TraceClassSexp> createTrace() OVERRIDE;
+  const char* getDefaultTraceName() const OVERRIDE;
+
   void describePeekPosStack(FILE* Out) OVERRIDE;
 
   bool canProcessMoreInputNow() OVERRIDE;

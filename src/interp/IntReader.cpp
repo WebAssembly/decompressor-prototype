@@ -43,8 +43,8 @@ TraceClass::ContextPtr IntReader::getTraceContext() {
   return Pos.getTraceContext();
 }
 
-std::shared_ptr<TraceClassSexp> IntReader::createTrace() {
-  return std::make_shared<TraceClassSexp>("IntReader");
+const char* IntReader::getDefaultTraceName() const {
+  return "IntReader";
 }
 
 bool IntReader::canFastRead() const {
