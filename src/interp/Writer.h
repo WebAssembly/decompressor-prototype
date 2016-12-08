@@ -56,12 +56,15 @@ class Writer {
   virtual void describeState(FILE* File);
 
   virtual utils::TraceClass::ContextPtr getTraceContext();
-  filt::TraceClassSexp& getTrace();
-  void setTrace(std::shared_ptr<filt::TraceClassSexp> Trace);
+  virtual void setTrace(std::shared_ptr<filt::TraceClassSexp> Trace);
+  std::shared_ptr<filt::TraceClassSexp> getTracePtr();
+  filt::TraceClassSexp& getTrace() { return *getTracePtr(); }
 
  protected:
   bool MinimizeBlockSize;
   std::shared_ptr<filt::TraceClassSexp> Trace;
+
+  virtual const char* getDefaultTraceName() const;
 };
 
 }  // end of namespace interp

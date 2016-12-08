@@ -80,8 +80,9 @@ class Reader {
 
   // Returns non-null context handler if applicable.
   virtual utils::TraceClass::ContextPtr getTraceContext();
-  void setTrace(std::shared_ptr<filt::TraceClassSexp> Trace);
-  filt::TraceClassSexp& getTrace();
+  virtual void setTrace(std::shared_ptr<filt::TraceClassSexp> Trace);
+  std::shared_ptr<filt::TraceClassSexp> getTracePtr();
+  filt::TraceClassSexp& getTrace() { return *getTracePtr(); }
 
   enum class SectionCode : uint32_t {
 #define X(code, value) code = value,
@@ -226,8 +227,6 @@ class Reader {
   OpcodeLocalsFrame OpcodeLocals;
   utils::ValueStack<OpcodeLocalsFrame> OpcodeLocalsStack;
 
-  virtual std::shared_ptr<filt::TraceClassSexp> createTrace();
-
   virtual void reset();
 
   void handleOtherMethods();
@@ -290,6 +289,7 @@ class Reader {
   virtual uint32_t readVaruint32() = 0;
   virtual uint64_t readVaruint64() = 0;
   virtual decode::IntType readValue(const filt::Node* Format) = 0;
+  virtual const char* getDefaultTraceName() const;
 };
 
 }  // end of namespace interp

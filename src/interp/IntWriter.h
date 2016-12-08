@@ -55,6 +55,8 @@ class IntWriter : public Writer {
  private:
   std::shared_ptr<IntStream> Output;
   IntStream::WriteCursorWithTraceContext Pos;
+
+  const char* getDefaultTraceName() const OVERRIDE;
 };
 
 }  // end of namespace interp

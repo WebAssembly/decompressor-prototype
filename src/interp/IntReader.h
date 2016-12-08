@@ -56,8 +56,7 @@ class IntReader : public Reader {
   IntStream::ReadCursor PeekPos;
   utils::ValueStack<IntStream::Cursor> PeekPosStack;
 
-  std::shared_ptr<filt::TraceClassSexp> createTrace() OVERRIDE;
-
+  const char* getDefaultTraceName() const OVERRIDE;
   void describePeekPosStack(FILE* Out) OVERRIDE;
 
 #if 0

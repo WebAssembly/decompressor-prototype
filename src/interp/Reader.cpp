@@ -111,14 +111,14 @@ void Reader::setTrace(std::shared_ptr<TraceClassSexp> NewTrace) {
   }
 }
 
-std::shared_ptr<TraceClassSexp> Reader::createTrace() {
-  return std::make_shared<TraceClassSexp>("Reader");
+const char* Reader::getDefaultTraceName() const {
+  return "Reader";
 }
 
-TraceClassSexp& Reader::getTrace() {
+std::shared_ptr<TraceClassSexp> Reader::getTracePtr() {
   if (!Trace)
-    setTrace(createTrace());
-  return *Trace;
+    setTrace(std::make_shared<TraceClassSexp>(getDefaultTraceName()));
+  return Trace;
 }
 
 const char* Reader::getName(Method M) {

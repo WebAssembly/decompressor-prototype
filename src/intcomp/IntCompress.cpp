@@ -175,7 +175,6 @@ class AbbrevAssignWriter : public Writer {
   AbbrevAssignWriter& operator=(const AbbrevAssignWriter&) = delete;
 
  public:
-  typedef std::pair<IntType, IntType> ValuePair;
   AbbrevAssignWriter(CountNode::RootPtr Root,
                      std::shared_ptr<IntStream> Output,
                      size_t BufSize,
@@ -201,33 +200,55 @@ class AbbrevAssignWriter : public Writer {
   bool writeValue(decode::IntType Value, const filt::Node* Format) OVERRIDE;
   bool writeAction(const filt::CallbackNode* Action) OVERRIDE;
 
+  utils::TraceClass::ContextPtr getTraceContext() OVERRIDE;
+  void setTrace(std::shared_ptr<filt::TraceClassSexp> Trace) OVERRIDE;
+
  private:
   CountNode::RootPtr Root;
   IntWriter Writer;
-  circular_vector<ValuePair> Buffer;
+  circular_vector<IntType> Buffer;
   IntTypeFormat AbbrevFormat;
   std::vector<IntType> DefaultValues;
   static constexpr IntTypeFormat DefaultFormat = IntTypeFormat::Varint64;
   static constexpr IntTypeFormat LoopSizeFormat = IntTypeFormat::Varuint64;
 
   void bufferValue(IntType Value);
-  void forwardAbbrevValue(IntType Value) {
-    flushDefaultValues();
-    writeValue(Value, AbbrevFormat);
-  }
-  void forwardOtherValue(IntType Value) { DefaultValues.push_back(Value); }
-  void forwardValue(ValuePair Pair) {
-    if (CountNode::isAbbrevDefined(Pair.second))
-      forwardAbbrevValue(Pair.first);
-    else
-      forwardOtherValue(Pair.first);
-  }
+  void forwardAbbrevValue(IntType Value);
+  void forwardOtherValue(IntType Value);
   void writeFromBuffer();
   void writeUntilBufferEmpty();
   void popValuesFromBuffer(size_t size);
   void flushDefaultValues();
   void writeValue(IntType Value, IntTypeFormat Format);
+
+  const char* getDefaultTraceName() const OVERRIDE;
 };
+
+const char* AbbrevAssignWriter::getDefaultTraceName() const {
+  return "AbbrevAssignWriter";
+}
+
+utils::TraceClass::ContextPtr AbbrevAssignWriter::getTraceContext() {
+  return Writer.getTraceContext();
+}
+
+void AbbrevAssignWriter::forwardAbbrevValue(IntType Value) {
+  TRACE_METHOD("forwardAbbrevValue");
+  TRACE(IntType, "Value", Value);
+  flushDefaultValues();
+  writeValue(Value, AbbrevFormat);
+}
+
+void AbbrevAssignWriter::forwardOtherValue(IntType Value) {
+  TRACE_METHOD("forwardOtherValue");
+  TRACE(IntType, "Value", Value);
+  DefaultValues.push_back(Value);
+}
+
+void AbbrevAssignWriter::setTrace(std::shared_ptr<filt::TraceClassSexp> Trace) {
+  Writer::setTrace(Trace);
+  Writer.setTrace(Trace);
+}
 
 StreamType AbbrevAssignWriter::getStreamType() const {
   return StreamType::Int;
@@ -274,6 +295,8 @@ bool AbbrevAssignWriter::writeValue(decode::IntType Value, const filt::Node*) {
 }
 
 bool AbbrevAssignWriter::writeAction(const filt::CallbackNode* Action) {
+  TRACE_METHOD("writeAction");
+  TRACE_SEXP("Action", Action);
   const auto* Sym = dyn_cast<SymbolNode>(Action->getKid(0));
   if (Sym == nullptr)
     return false;
@@ -289,14 +312,17 @@ bool AbbrevAssignWriter::writeAction(const filt::CallbackNode* Action) {
 }
 
 void AbbrevAssignWriter::bufferValue(IntType Value) {
+  TRACE_METHOD("bufferValue");
+  TRACE(IntType, "Value", Value);
   assert(!Buffer.full());
-  Buffer.push_back(std::make_pair(Value, CountNode::BAD_ABBREV_INDEX));
+  Buffer.push_back(Value);
   if (!Buffer.full())
     return;
   writeFromBuffer();
 }
 
 void AbbrevAssignWriter::writeFromBuffer() {
+  TRACE_METHOD("writeFromBuffer");
   // TODO(karlschimpf): When writing values, dont' create abbreviation
   // if there are already default values, and adding as a default value
   // will use less space.
@@ -304,24 +330,24 @@ void AbbrevAssignWriter::writeFromBuffer() {
     return;
   // Collect abbreviations available for value sequences in buffer.
   CountNode::IntPtr Nd;
-  size_t MaxIndex = 0;
-  for (size_t e = Buffer.size(); MaxIndex < e; ++MaxIndex) {
-    ValuePair& Pair = Buffer[MaxIndex];
-    Nd = MaxIndex ? lookup(Nd, Pair.first) : lookup(Root, Pair.first);
-    Pair.second = Nd->getAbbrevIndex();
+  CountNode::IntPtr Max;
+  TRACE(size_t, "Buffer size", Buffer.size());
+  for (IntType Value : Buffer) {
+    TRACE(IntType, "Check value", Value);
+    Nd = Nd ? lookup(Nd, Value) : lookup(Root, Value);
+    if (Nd->hasAbbrevIndex()) {
+      TRACE_MESSAGE("candidate max");
+      Max = Nd;
+    }
   }
-  // Choose maximal abbreviation (if possible).
-  do {
-    size_t Index = MaxIndex--;
-    if (CountNode::isAbbrevDefined(Buffer[Index].second))
-      continue;
-    forwardValue(Buffer[Index]);
-    popValuesFromBuffer(Index + 1);
+  if (!Max) {
+    // Default to writing at least one value.
+    forwardOtherValue(Buffer[0]);
+    popValuesFromBuffer(1);
     return;
-  } while (MaxIndex > 0);
-  // Default to writing at least one value.
-  forwardValue(Buffer[0]);
-  popValuesFromBuffer(1);
+  }
+  forwardAbbrevValue(Max->getAbbrevIndex());
+  popValuesFromBuffer(Max->getPathLength());
 }
 
 void AbbrevAssignWriter::writeUntilBufferEmpty() {
@@ -592,6 +618,11 @@ void IntCompressor::compress(DetailLevel Level,
   assignInitialAbbreviations();
   if (Level > DetailLevel::NoDetail)
     describe(stderr, makeFlags(CollectionFlag::All));
+  if (!generateIntOutput(TraceParsing && !TraceFirstPassOnly))
+    return;
+  TRACE(size_t, "Number of integers in output", IntOutput->getNumIntegers());
+  if (Level == DetailLevel::AllDetail)
+    IntOutput->describe(stderr, "Input int stream");
 }
 
 namespace {
@@ -763,25 +794,40 @@ class AbbreviationsCollector : public CountNodeCollector {
  public:
   AbbreviationsCollector(CountNode::RootPtr Root, IntTypeFormat AbbrevFormat)
       : CountNodeCollector(Root), AbbrevFormat(AbbrevFormat) {}
-  void assignAbbreviations(CountNode::PtrVector& Assignment);
+  void assignAbbreviations();
+
+  size_t getNextAvailableIndex() const { return Assignment.size(); }
+
+  void addAbbreviation(CountNode::Ptr Nd) {
+    if (Nd->hasAbbrevIndex())
+      return;
+    Nd->setAbbrevIndex(Assignment.size());
+    Assignment.push_back(Nd);
+  }
 
  private:
+  CountNode::PtrVector Assignment;
   IntTypeFormat AbbrevFormat;
 };
 
-void AbbreviationsCollector::assignAbbreviations(
-    CountNode::PtrVector& Assignment) {
+void AbbreviationsCollector::assignAbbreviations() {
+  {
+    CountNode::PtrVector Others;
+    Root->getOthers(Others);
+    for (CountNode::Ptr Nd : Others)
+      addAbbreviation(Nd);
+  }
   collect(makeFlags(CollectionFlag::All));
   buildHeap();
   while (!ValuesHeap->empty()) {
     CountNode::Ptr Nd = popHeap();
-    IntType Index = Assignment.size();
-    IntTypeFormats Formats(Index);
+    // For now, only assume we are trying to handle integer sequences.
+    if (!isa<IntSeqCountNode>(*Nd))
+      continue;
+    IntTypeFormats Formats(getNextAvailableIndex());
     size_t Space = Formats.getByteSize(AbbrevFormat);
-    if (Space <= Nd->getWeight()) {
-      Nd->setAbbrevIndex(Index);
-      Assignment.push_back(Nd);
-    }
+    if (Space <= Nd->getWeight())
+      addAbbreviation(Nd);
   }
 }
 
@@ -792,7 +838,23 @@ void IntCompressor::assignInitialAbbreviations() {
   Collector.CountCutoff = CountCutoff;
   Collector.WeightCutoff = WeightCutoff;
   CountNode::PtrVector Assignment;
-  Collector.assignAbbreviations(Assignment);
+  Collector.assignAbbreviations();
+}
+
+bool IntCompressor::generateIntOutput(bool TraceParsing) {
+  IntOutput = std::make_shared<IntStream>();
+  AbbrevAssignWriter Writer(Root, IntOutput, LengthLimit, AbbrevFormat);
+  IntReader Reader(Contents, Writer, Symtab);
+  if (TraceParsing) {
+    std::shared_ptr<TraceClassSexp> Trace = Writer.getTracePtr();
+    Reader.setTrace(Trace);
+    Writer.setTrace(Trace);
+    Reader.getTrace().setTraceProgress(true);
+    Writer.getTrace().setTraceProgress(true);
+  }
+  Reader.fastStart();
+  Reader.fastReadBackFilled();
+  return !Reader.errorsFound();
 }
 
 void IntCompressor::describe(FILE* Out, CollectionFlags Flags) {
