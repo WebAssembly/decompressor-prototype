@@ -300,16 +300,17 @@ bool AbbrevAssignWriter::writeAction(const filt::CallbackNode* Action) {
       flushDefaultValues();
       assert(Root->getBlockEnter()->hasAbbrevIndex());
       forwardAbbrevValue(Root->getBlockEnter()->getAbbrevIndex());
-      return true;
+      break;
     case PredefinedSymbol::Block_exit:
       writeUntilBufferEmpty();
       flushDefaultValues();
       assert(Root->getBlockExit()->hasAbbrevIndex());
       forwardAbbrevValue(Root->getBlockExit()->getAbbrevIndex());
-      return true;
+      break;
     default:
-      return Writer.writeAction(Action);
+      break;
   }
+  return Writer.writeAction(Action);
 }
 
 void AbbrevAssignWriter::bufferValue(IntType Value) {
