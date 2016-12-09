@@ -233,15 +233,11 @@ utils::TraceClass::ContextPtr AbbrevAssignWriter::getTraceContext() {
 }
 
 void AbbrevAssignWriter::forwardAbbrevValue(IntType Value) {
-  TRACE_METHOD("forwardAbbrevValue");
-  TRACE(IntType, "Value", Value);
   flushDefaultValues();
   writeValue(Value, AbbrevFormat);
 }
 
 void AbbrevAssignWriter::forwardOtherValue(IntType Value) {
-  TRACE_METHOD("forwardOtherValue");
-  TRACE(IntType, "Value", Value);
   DefaultValues.push_back(Value);
 }
 
@@ -295,25 +291,28 @@ bool AbbrevAssignWriter::writeValue(decode::IntType Value, const filt::Node*) {
 }
 
 bool AbbrevAssignWriter::writeAction(const filt::CallbackNode* Action) {
-  TRACE_METHOD("writeAction");
-  TRACE_SEXP("Action", Action);
   const auto* Sym = dyn_cast<SymbolNode>(Action->getKid(0));
   if (Sym == nullptr)
     return false;
   switch (Sym->getPredefinedSymbol()) {
     case PredefinedSymbol::Block_enter:
+      writeUntilBufferEmpty();
+      flushDefaultValues();
+      assert(Root->getBlockEnter()->hasAbbrevIndex());
+      forwardAbbrevValue(Root->getBlockEnter()->getAbbrevIndex());
+      return true;
     case PredefinedSymbol::Block_exit:
       writeUntilBufferEmpty();
-    // Intentionally drop to default case.
-    default:
-      Writer.writeAction(Action);
+      flushDefaultValues();
+      assert(Root->getBlockExit()->hasAbbrevIndex());
+      forwardAbbrevValue(Root->getBlockExit()->getAbbrevIndex());
       return true;
+    default:
+      return Writer.writeAction(Action);
   }
 }
 
 void AbbrevAssignWriter::bufferValue(IntType Value) {
-  TRACE_METHOD("bufferValue");
-  TRACE(IntType, "Value", Value);
   assert(!Buffer.full());
   Buffer.push_back(Value);
   if (!Buffer.full())
@@ -322,7 +321,6 @@ void AbbrevAssignWriter::bufferValue(IntType Value) {
 }
 
 void AbbrevAssignWriter::writeFromBuffer() {
-  TRACE_METHOD("writeFromBuffer");
   // TODO(karlschimpf): When writing values, dont' create abbreviation
   // if there are already default values, and adding as a default value
   // will use less space.
@@ -331,14 +329,10 @@ void AbbrevAssignWriter::writeFromBuffer() {
   // Collect abbreviations available for value sequences in buffer.
   CountNode::IntPtr Nd;
   CountNode::IntPtr Max;
-  TRACE(size_t, "Buffer size", Buffer.size());
   for (IntType Value : Buffer) {
-    TRACE(IntType, "Check value", Value);
     Nd = Nd ? lookup(Nd, Value) : lookup(Root, Value);
-    if (Nd->hasAbbrevIndex()) {
-      TRACE_MESSAGE("candidate max");
+    if (Nd->hasAbbrevIndex())
       Max = Nd;
-    }
   }
   if (!Max) {
     // Default to writing at least one value.
@@ -616,12 +610,13 @@ void IntCompressor::compress(DetailLevel Level,
   if (Level >= DetailLevel::MoreDetail)
     describe(stderr, makeFlags(CollectionFlag::IntPaths));
   assignInitialAbbreviations();
-  if (Level > DetailLevel::NoDetail)
+  if (Level >= DetailLevel::MoreDetail)
     describe(stderr, makeFlags(CollectionFlag::All));
   if (!generateIntOutput(TraceParsing && !TraceFirstPassOnly))
     return;
-  TRACE(size_t, "Number of integers in output", IntOutput->getNumIntegers());
-  if (Level == DetailLevel::AllDetail)
+  TRACE(size_t, "Number of integers in compressed output",
+        IntOutput->getNumIntegers());
+  if (Level >= DetailLevel::MoreDetail)
     IntOutput->describe(stderr, "Input int stream");
 }
 
