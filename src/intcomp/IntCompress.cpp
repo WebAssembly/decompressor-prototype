@@ -20,6 +20,7 @@
 #include "interp/IntReader.h"
 #include "interp/IntWriter.h"
 #include "interp/StreamReader.h"
+#include "sexp/TextWriter.h"
 #include "utils/heap.h"
 #include "utils/circular-vector.h"
 
@@ -429,12 +430,10 @@ CountNode::RootPtr IntCompressor::getRoot() {
   return Root;
 }
 
-void IntCompressor::readInput(std::shared_ptr<Queue> InputStream,
-                              std::shared_ptr<SymbolTable> Symtab,
-                              bool TraceParsing) {
+void IntCompressor::readInput(bool TraceParsing) {
   Contents = std::make_shared<IntStream>();
   IntWriter MyWriter(Contents);
-  StreamReader MyReader(InputStream, MyWriter, Symtab);
+  StreamReader MyReader(Input, MyWriter, Symtab);
   if (TraceParsing) {
     TraceClassSexp& Trace = MyReader.getTrace();
     Trace.addContext(MyReader.getTraceContext());
@@ -448,6 +447,14 @@ void IntCompressor::readInput(std::shared_ptr<Queue> InputStream,
     ErrorsFound = true;
   Input.reset();
   return;
+}
+
+void IntCompressor::writeOutput(std::shared_ptr<SymbolTable> Symtab,
+                                Node* File,
+                                bool Trace) {
+  WASM_IGNORE(Symtab);
+  WASM_IGNORE(File);
+  WASM_IGNORE(Trace);
 }
 
 IntCompressor::~IntCompressor() {
@@ -586,7 +593,7 @@ void IntCompressor::compress(DetailLevel Level,
                              bool TraceParsing,
                              bool TraceFirstPassOnly) {
   TRACE_METHOD("compress");
-  readInput(Input, Symtab, TraceParsing);
+  readInput(TraceParsing);
   if (errorsFound()) {
     fprintf(stderr, "Unable to decompress, input malformed");
     return;
@@ -609,7 +616,8 @@ void IntCompressor::compress(DetailLevel Level,
   }
   if (Level >= DetailLevel::MoreDetail)
     describe(stderr, makeFlags(CollectionFlag::IntPaths));
-  assignInitialAbbreviations();
+  CountNode::PtrVector AbbrevAssignments;
+  assignInitialAbbreviations(AbbrevAssignments);
   if (Level >= DetailLevel::MoreDetail)
     describe(stderr, makeFlags(CollectionFlag::All));
   IntOutput = std::make_shared<IntStream>();
@@ -619,6 +627,12 @@ void IntCompressor::compress(DetailLevel Level,
         IntOutput->getNumIntegers());
   if (Level >= DetailLevel::MoreDetail)
     IntOutput->describe(stderr, "Input int stream");
+  std::shared_ptr<SymbolTable> OutSymtab = std::make_shared<SymbolTable>();
+  writeOutput(Symtab, generateCode(OutSymtab, AbbrevAssignments, false), true);
+  if (errorsFound()) {
+    fprintf(stderr, "Unable to compress, output malformed");
+    return;
+  }
 }
 
 namespace {
@@ -788,22 +802,26 @@ void CountNodeCollector::describe(FILE* Out) {
 
 class AbbreviationsCollector : public CountNodeCollector {
  public:
-  AbbreviationsCollector(CountNode::RootPtr Root, IntTypeFormat AbbrevFormat)
-      : CountNodeCollector(Root), AbbrevFormat(AbbrevFormat) {}
+  AbbreviationsCollector(CountNode::RootPtr Root,
+                         IntTypeFormat AbbrevFormat,
+                         CountNode::PtrVector& Assignments)
+      : CountNodeCollector(Root),
+        AbbrevFormat(AbbrevFormat),
+        Assignments(Assignments) {}
   void assignAbbreviations();
 
-  size_t getNextAvailableIndex() const { return Assignment.size(); }
+  size_t getNextAvailableIndex() const { return Assignments.size(); }
 
   void addAbbreviation(CountNode::Ptr Nd) {
     if (Nd->hasAbbrevIndex())
       return;
-    Nd->setAbbrevIndex(Assignment.size());
-    Assignment.push_back(Nd);
+    Nd->setAbbrevIndex(Assignments.size());
+    Assignments.push_back(Nd);
   }
 
  private:
-  CountNode::PtrVector Assignment;
   IntTypeFormat AbbrevFormat;
+  CountNode::PtrVector& Assignments;
 };
 
 void AbbreviationsCollector::assignAbbreviations() {
@@ -829,11 +847,11 @@ void AbbreviationsCollector::assignAbbreviations() {
 
 }  // end of anonymous namespace
 
-void IntCompressor::assignInitialAbbreviations() {
-  AbbreviationsCollector Collector(getRoot(), AbbrevFormat);
+void IntCompressor::assignInitialAbbreviations(
+    CountNode::PtrVector& Assignments) {
+  AbbreviationsCollector Collector(getRoot(), AbbrevFormat, Assignments);
   Collector.CountCutoff = CountCutoff;
   Collector.WeightCutoff = WeightCutoff;
-  CountNode::PtrVector Assignment;
   Collector.assignAbbreviations();
 }
 
@@ -850,6 +868,147 @@ bool IntCompressor::generateIntOutput(bool TraceParsing) {
   Reader.fastStart();
   Reader.fastReadBackFilled();
   return !Reader.errorsFound();
+}
+
+namespace {
+
+Node* generateAbbrevFormat(std::shared_ptr<SymbolTable> Symtab,
+                           IntTypeFormat AbbrevFormat) {
+  switch (AbbrevFormat) {
+    case IntTypeFormat::Uint8:
+      return Symtab->getUint8Definition();
+    case IntTypeFormat::Varint32:
+      return Symtab->getVarint32Definition();
+    case IntTypeFormat::Varuint32:
+      return Symtab->getVaruint32Definition();
+    case IntTypeFormat::Uint32:
+      return Symtab->getUint32Definition();
+    case IntTypeFormat::Varint64:
+      return Symtab->getVarint64Definition();
+    case IntTypeFormat::Varuint64:
+      return Symtab->getVaruint64Definition();
+    case IntTypeFormat::Uint64:
+      return Symtab->getUint64Definition();
+  }
+  WASM_RETURN_UNREACHABLE(nullptr);
+}
+
+Node* generateIntValue(std::shared_ptr<SymbolTable> Symtab, IntType Value) {
+  return Symtab->getU64ConstDefinition(Value, decode::ValueFormat::Decimal);
+}
+
+Node* generateDefaultSingleAction(std::shared_ptr<SymbolTable> Symtab) {
+  return Symtab->getVarint64Definition();
+}
+
+Node* generateDefaultMultipleAction(std::shared_ptr<SymbolTable> Symtab) {
+  return Symtab->create<LoopNode>(Symtab->getVaruint64Definition(),
+                                  generateDefaultSingleAction(Symtab));
+}
+
+Node* generateDefaultAction(std::shared_ptr<SymbolTable> Symtab,
+                            DefaultCountNode* Default) {
+  return Default->isSingle() ? generateDefaultSingleAction(Symtab)
+                             : generateDefaultMultipleAction(Symtab);
+}
+
+Node* generateIntLitAction(std::shared_ptr<SymbolTable> Symtab,
+                           IntCountNode* Nd) {
+  if (Nd->getPathLength() == 1)
+    return generateIntValue(Symtab, Nd->getValue());
+  std::vector<IntCountNode*> Values;
+  while (Nd) {
+    Values.push_back(Nd);
+    Nd = Nd->getParent().get();
+  }
+  auto* Seq = Symtab->create<SequenceNode>();
+  for (IntCountNode* Nd : Values)
+    Seq->append(generateIntValue(Symtab, Nd->getValue()));
+  return Seq;
+}
+
+Node* generateBlockAction(std::shared_ptr<SymbolTable> Symtab,
+                          BlockCountNode* Blk) {
+  return Symtab->create<CallbackNode>(
+      Symtab->getPredefined(Blk->isEnter() ? PredefinedSymbol::Block_enter
+                                           : PredefinedSymbol::Block_exit));
+}
+
+Node* generateAction(std::shared_ptr<SymbolTable> Symtab, CountNode::Ptr Nd) {
+  CountNode* NdPtr = Nd.get();
+  if (auto* CntNd = dyn_cast<IntCountNode>(NdPtr))
+    return generateIntLitAction(Symtab, CntNd);
+  else if (auto* BlkPtr = dyn_cast<BlockCountNode>(NdPtr))
+    return generateBlockAction(Symtab, BlkPtr);
+  else if (auto* DefaultPtr = dyn_cast<DefaultCountNode>(NdPtr))
+    return generateDefaultAction(Symtab, DefaultPtr);
+  return Symtab->create<ErrorNode>();
+}
+
+Node* generateCase(std::shared_ptr<SymbolTable> Symtab,
+                   size_t AbbrevIndex,
+                   CountNode::Ptr Nd) {
+  return Symtab->create<CaseNode>(
+      Symtab->getU64ConstDefinition(AbbrevIndex, decode::ValueFormat::Decimal),
+      generateAction(Symtab, Nd));
+}
+
+Node* generateSwitchStatement(std::shared_ptr<SymbolTable> Symtab,
+                              CountNode::RootPtr Root,
+                              IntTypeFormat AbbrevFormat,
+                              CountNode::PtrVector& Assignments) {
+  auto SwitchStmt = Symtab->create<SwitchNode>();
+  SwitchStmt->append(generateAbbrevFormat(Symtab, AbbrevFormat));
+  SwitchStmt->append(generateDefaultMultipleAction(Symtab));
+  for (size_t i = 0; i < Assignments.size(); ++i) {
+    CountNode::Ptr Nd = Assignments[i];
+    // Note: Don't process multiple default rule, handled as default case.
+    if (auto* DefaultPtr = dyn_cast<DefaultCountNode>(*Nd)) {
+      if (DefaultPtr->isMultiple())
+        continue;
+    }
+    SwitchStmt->append(generateCase(Symtab, i, Nd));
+  }
+  return SwitchStmt;
+}
+
+Node* generateFileFcn(std::shared_ptr<SymbolTable> Symtab,
+                      CountNode::RootPtr Root,
+                      IntTypeFormat AbbrevFormat,
+                      CountNode::PtrVector& Assignments) {
+  auto Fcn = Symtab->create<DefineNode>();
+  Fcn->append(Symtab->getPredefined(PredefinedSymbol::Section));
+  Fcn->append(Symtab->getParamsDefinition());
+  Fcn->append(generateSwitchStatement(Symtab, Root, AbbrevFormat, Assignments));
+  return Fcn;
+}
+
+Node* generateFileBody(std::shared_ptr<SymbolTable> Symtab,
+                       CountNode::RootPtr Root,
+                       IntTypeFormat AbbrevFormat,
+                       CountNode::PtrVector& Assignments) {
+  auto Body = Symtab->create<SectionNode>();
+  Body->append(generateFileFcn(Symtab, Root, AbbrevFormat, Assignments));
+  return Body;
+}
+
+}  // End of anonymous namespace
+
+Node* IntCompressor::generateCode(std::shared_ptr<SymbolTable> Symtab,
+                                  CountNode::PtrVector& Assignments,
+                                  bool Trace) {
+  TRACE_METHOD("generateCode");
+  auto File = Symtab->create<FileNode>();
+  File->append(Symtab->getWasmVersionDefinition(
+      CasmBinaryMagic, decode::ValueFormat::Hexidecimal));
+  File->append(Symtab->getCasmVersionDefinition(
+      CasmBinaryVersion, decode::ValueFormat::Hexidecimal));
+  File->append(generateFileBody(Symtab, Root, AbbrevFormat, Assignments));
+  if (Trace) {
+    TRACE_MESSAGE("Compressed code:");
+    getTrace().getTextWriter()->write(getTrace().getFile(), File);
+  }
+  return File;
 }
 
 void IntCompressor::describe(FILE* Out, CollectionFlags Flags) {
