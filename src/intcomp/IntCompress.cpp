@@ -300,17 +300,16 @@ bool AbbrevAssignWriter::writeAction(const filt::CallbackNode* Action) {
       flushDefaultValues();
       assert(Root->getBlockEnter()->hasAbbrevIndex());
       forwardAbbrevValue(Root->getBlockEnter()->getAbbrevIndex());
-      break;
+      return true;
     case PredefinedSymbol::Block_exit:
       writeUntilBufferEmpty();
       flushDefaultValues();
       assert(Root->getBlockExit()->hasAbbrevIndex());
       forwardAbbrevValue(Root->getBlockExit()->getAbbrevIndex());
-      break;
+      return true;
     default:
-      break;
+      return Writer.writeAction(Action);
   }
-  return Writer.writeAction(Action);
 }
 
 void AbbrevAssignWriter::bufferValue(IntType Value) {
@@ -613,6 +612,7 @@ void IntCompressor::compress(DetailLevel Level,
   assignInitialAbbreviations();
   if (Level >= DetailLevel::MoreDetail)
     describe(stderr, makeFlags(CollectionFlag::All));
+  IntOutput = std::make_shared<IntStream>();
   if (!generateIntOutput(TraceParsing && !TraceFirstPassOnly))
     return;
   TRACE(size_t, "Number of integers in compressed output",
@@ -838,7 +838,6 @@ void IntCompressor::assignInitialAbbreviations() {
 }
 
 bool IntCompressor::generateIntOutput(bool TraceParsing) {
-  IntOutput = std::make_shared<IntStream>();
   AbbrevAssignWriter Writer(Root, IntOutput, LengthLimit, AbbrevFormat);
   IntReader Reader(Contents, Writer, Symtab);
   if (TraceParsing) {
