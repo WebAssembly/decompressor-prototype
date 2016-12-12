@@ -155,6 +155,9 @@ const char* Reader::getName(SectionCode Code) {
 Reader::Reader(Writer& Output, std::shared_ptr<filt::SymbolTable> Symtab)
     : Output(Output),
       Symtab(Symtab),
+      ReadFileHeader(true),
+      MagicNumber(0),
+      Version(0),
       LastReadValue(0),
       DispatchedMethod(Method::NO_SUCH_METHOD),
       FrameStack(Frame),
@@ -387,9 +390,17 @@ void Reader::handleOtherMethods() {
   }
 }
 
+void Reader::insertFileVersion(uint32_t NewMagicNumber, uint32_t NewVersion) {
+  assert(ReadFileHeader);
+  ReadFileHeader = false;
+  MagicNumber = NewMagicNumber;
+  Version = NewVersion;
+}
+
+
 void Reader::algorithmResume() {
 #if LOG_RUNMETHODS
-  TRACE_ENTER("resume");
+  TRACE_METHOD("resume");
   TRACE_BLOCK({ describeState(tracE.getFile()); });
 #endif
   if (!canProcessMoreInputNow())
@@ -619,7 +630,7 @@ void Reader::algorithmResume() {
               LastReadValue = Value;
             if (hasWriteMode()) {
               if (!Output.writeValue(LastReadValue, Frame.Nd))
-                break;
+                return failCantWrite();
             }
             popAndReturn(Value);
             break;
@@ -1064,7 +1075,14 @@ void Reader::algorithmResume() {
       case Method::GetFile:
         switch (Frame.CallState) {
           case State::Enter:
+            Frame.CallState = ReadFileHeader ? State::Step2 : State::Step3;
+            break;
+          case State::Step2:
             MagicNumber = readUint32();
+            Version = readUint32();
+            Frame.CallState = State::Step3;
+            break;
+          case State::Step3:
             TRACE(hex_uint32_t, "magic number", MagicNumber);
             if (MagicNumber != WasmBinaryMagic)
               return fail(
@@ -1072,7 +1090,6 @@ void Reader::algorithmResume() {
                   "magic number!");
             if (!Output.writeMagicNumber(MagicNumber))
               return failCantWrite();
-            Version = readUint32();
             TRACE(hex_uint32_t, "version", Version);
             if (Version != WasmBinaryVersionD)
               return fail("Unable to decompress. WASM version not known");

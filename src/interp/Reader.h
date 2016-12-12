@@ -41,6 +41,10 @@ class Reader {
   Reader(Writer& Output, std::shared_ptr<filt::SymbolTable> Symtab);
   virtual ~Reader();
 
+  // Can be called immediately before algorithmStart() to insert file version
+  // into the output (instead of reading from input).
+  void insertFileVersion(uint32_t MagicNumber, uint32_t Version);
+
   // Starts up decompression using a (file) algorithm.
   void algorithmStart() { callTopLevel(Method::GetFile, nullptr); }
 
@@ -183,6 +187,8 @@ class Reader {
 
   Writer& Output;
   std::shared_ptr<filt::SymbolTable> Symtab;
+  // True if magic number/file header should be read.
+  bool ReadFileHeader;
   // The magic number of the input.
   uint32_t MagicNumber;
   // The version of the input.

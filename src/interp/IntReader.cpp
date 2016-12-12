@@ -254,6 +254,10 @@ void IntReader::readFillStart() {
 void IntReader::readFillMoreInput() {
 }
 
+decode::IntType IntReader::read() {
+  return Pos.read();
+}
+
 uint8_t IntReader::readUint8() {
   return read();
 }

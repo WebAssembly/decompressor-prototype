@@ -46,6 +46,8 @@ class IntReader : public Reader {
   virtual void fastResume() OVERRIDE;
   virtual void fastReadBackFilled() OVERRIDE;
 
+  utils::TraceClass::ContextPtr getTraceContext() OVERRIDE;
+
  private:
   IntStream::ReadCursorWithTraceContext Pos;
   IntStream::StreamPtr Input;
@@ -63,9 +65,7 @@ class IntReader : public Reader {
   bool fastReadUntil(size_t Eob);
 #endif
 
-  decode::IntType read() { return Pos.read(); }
-
-  utils::TraceClass::ContextPtr getTraceContext() OVERRIDE;
+  decode::IntType read();
 
   bool canProcessMoreInputNow() OVERRIDE;
   bool stillMoreInputToProcessNow() OVERRIDE;
