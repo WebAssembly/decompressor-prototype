@@ -55,6 +55,7 @@ bool ByteWriteStream::writeValue(IntType Value,
       return true;
     case OpVaruint64:
       writeVaruint64(Value, Pos);
+      return true;
     default:
       return false;
   }

@@ -198,6 +198,7 @@ class AbbrevAssignWriter : public Writer {
   bool writeVarint64(int64_t Value) OVERRIDE;
   bool writeVaruint32(uint32_t Value) OVERRIDE;
   bool writeVaruint64(uint64_t Value) OVERRIDE;
+  bool writeFreezeEof() OVERRIDE;
   bool writeValue(decode::IntType Value, const filt::Node* Format) OVERRIDE;
   bool writeAction(const filt::CallbackNode* Action) OVERRIDE;
 
@@ -284,6 +285,12 @@ bool AbbrevAssignWriter::writeVaruint32(uint32_t Value) {
 bool AbbrevAssignWriter::writeVaruint64(uint64_t Value) {
   bufferValue(Value);
   return true;
+}
+
+bool AbbrevAssignWriter::writeFreezeEof() {
+  writeUntilBufferEmpty();
+  flushDefaultValues();
+  return Writer.writeFreezeEof();
 }
 
 bool AbbrevAssignWriter::writeValue(decode::IntType Value, const filt::Node*) {
@@ -450,11 +457,25 @@ void IntCompressor::readInput(bool TraceParsing) {
 }
 
 void IntCompressor::writeOutput(std::shared_ptr<SymbolTable> Symtab,
-                                Node* File,
                                 bool Trace) {
-  WASM_IGNORE(Symtab);
-  WASM_IGNORE(File);
-  WASM_IGNORE(Trace);
+  TRACE_METHOD("writeOutput");
+  StreamWriter MyWriter(Output);
+  IntReader MyReader(IntOutput, MyWriter, Symtab);
+  if (Trace) {
+    TRACE(bool, "Trace", Trace);
+    TraceClassSexp& Trace = MyReader.getTrace();
+    Trace.addContext(MyReader.getTraceContext());
+    Trace.addContext(MyWriter.getTraceContext());
+    Trace.setTraceProgress(true);
+  }
+  MyReader.insertFileVersion(WasmBinaryMagic, WasmBinaryVersionD);
+  MyReader.algorithmStart();
+  MyReader.algorithmReadBackFilled();
+  bool Successful = MyReader.isFinished() && MyReader.isSuccessful();
+  if (!Successful)
+    ErrorsFound = true;
+  IntOutput.reset();
+  return;
 }
 
 IntCompressor::~IntCompressor() {
@@ -628,9 +649,10 @@ void IntCompressor::compress(DetailLevel Level,
   if (Level >= DetailLevel::MoreDetail)
     IntOutput->describe(stderr, "Input int stream");
   std::shared_ptr<SymbolTable> OutSymtab = std::make_shared<SymbolTable>();
-  writeOutput(Symtab, generateCode(OutSymtab, AbbrevAssignments, false), true);
+  generateCode(OutSymtab, AbbrevAssignments);
+  writeOutput(OutSymtab);
   if (errorsFound()) {
-    fprintf(stderr, "Unable to compress, output malformed");
+    fprintf(stderr, "Unable to compress, output malformed\n");
     return;
   }
 }
@@ -867,6 +889,7 @@ bool IntCompressor::generateIntOutput(bool TraceParsing) {
   }
   Reader.fastStart();
   Reader.fastReadBackFilled();
+  assert(IntOutput->isFrozen());
   return !Reader.errorsFound();
 }
 
@@ -959,16 +982,9 @@ Node* generateSwitchStatement(std::shared_ptr<SymbolTable> Symtab,
                               CountNode::PtrVector& Assignments) {
   auto SwitchStmt = Symtab->create<SwitchNode>();
   SwitchStmt->append(generateAbbrevFormat(Symtab, AbbrevFormat));
-  SwitchStmt->append(generateDefaultMultipleAction(Symtab));
-  for (size_t i = 0; i < Assignments.size(); ++i) {
-    CountNode::Ptr Nd = Assignments[i];
-    // Note: Don't process multiple default rule, handled as default case.
-    if (auto* DefaultPtr = dyn_cast<DefaultCountNode>(*Nd)) {
-      if (DefaultPtr->isMultiple())
-        continue;
-    }
-    SwitchStmt->append(generateCase(Symtab, i, Nd));
-  }
+  SwitchStmt->append(Symtab->create<ErrorNode>());
+  for (size_t i = 0; i < Assignments.size(); ++i)
+    SwitchStmt->append(generateCase(Symtab, i, Assignments[i]));
   return SwitchStmt;
 }
 
@@ -994,9 +1010,9 @@ Node* generateFileBody(std::shared_ptr<SymbolTable> Symtab,
 
 }  // End of anonymous namespace
 
-Node* IntCompressor::generateCode(std::shared_ptr<SymbolTable> Symtab,
-                                  CountNode::PtrVector& Assignments,
-                                  bool Trace) {
+void IntCompressor::generateCode(std::shared_ptr<SymbolTable> Symtab,
+                                 CountNode::PtrVector& Assignments,
+                                 bool Trace) {
   TRACE_METHOD("generateCode");
   auto File = Symtab->create<FileNode>();
   File->append(Symtab->getWasmVersionDefinition(
@@ -1008,7 +1024,7 @@ Node* IntCompressor::generateCode(std::shared_ptr<SymbolTable> Symtab,
     TRACE_MESSAGE("Compressed code:");
     getTrace().getTextWriter()->write(getTrace().getFile(), File);
   }
-  return File;
+  Symtab->install(File);
 }
 
 void IntCompressor::describe(FILE* Out, CollectionFlags Flags) {

@@ -99,9 +99,7 @@ bool StreamWriter::writeFreezeEof() {
 }
 
 bool StreamWriter::writeValue(IntType Value, const Node* Format) {
-  if (Stream->writeValue(Value, Pos, Format))
-    return true;
-  return false;
+  return Stream->writeValue(Value, Pos, Format);
 }
 
 bool StreamWriter::writeAction(const filt::CallbackNode* Action) {

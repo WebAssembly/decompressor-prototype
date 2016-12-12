@@ -108,17 +108,16 @@ class IntCompressor FINAL {
   size_t LengthLimit;
   IntTypeFormat AbbrevFormat;
   bool ErrorsFound;
-  void readInput(bool TraceParsing);
+  void readInput(bool Trace = false);
   void writeOutput(std::shared_ptr<filt::SymbolTable> Symtab,
-                   filt::Node* File,
-                   bool Trace);
+                   bool Trace = false);
   bool compressUpToSize(size_t Size, bool TraceParsing);
   void removeSmallUsageCounts();
   void assignInitialAbbreviations(CountNode::PtrVector& Assignments);
-  bool generateIntOutput(bool TraceParsing);
-  filt::Node* generateCode(std::shared_ptr<filt::SymbolTable> Symtab,
-                           CountNode::PtrVector& Assignments,
-                           bool Trace);
+  bool generateIntOutput(bool Trace = false);
+  void generateCode(std::shared_ptr<filt::SymbolTable> Symtab,
+                    CountNode::PtrVector& Assignments,
+                    bool Trace = false);
 };
 
 }  // end of namespace intcomp
