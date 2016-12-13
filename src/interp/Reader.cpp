@@ -129,7 +129,6 @@ const char* Reader::getName(Method M) {
 }
 
 const char* Reader::getName(MethodModifier Modifier) {
-  fprintf(stderr, "[mm=%u]", unsigned(Modifier));
   uint32_t Index = uint32_t(Modifier);
   for (size_t i = 0; i < size(MethodModifierName); ++i) {
     if (Index == MethodModifierName[i].Index)
@@ -624,14 +623,13 @@ void Reader::algorithmResume() {
           case OpVarint64:
           case OpVaruint32:
           case OpVaruint64: {
-            IntType Value = readValue(Frame.Nd);
             if (hasReadMode())
-              LastReadValue = Value;
+              LastReadValue = readValue(Frame.Nd);
             if (hasWriteMode()) {
               if (!Output.writeValue(LastReadValue, Frame.Nd))
                 return failCantWrite();
             }
-            popAndReturn(Value);
+            popAndReturn(LastReadValue);
             break;
           }
           case OpMap:
@@ -681,19 +679,24 @@ void Reader::algorithmResume() {
             }
             break;
           case OpWrite:  // Method::Eval
-#if 0
-            // TODO(karlschimpf) Generalize this to accept arbitrary
-            // expressions.
             switch (Frame.CallState) {
               case State::Enter:
+                LoopCounterStack.push(0);
+                Frame.CallState = State::Loop;
+                break;
+              case State::Loop:
+                if (++LoopCounter == size_t(Frame.Nd->getNumKids())) {
+                  Frame.CallState = State::Exit;
+                  break;
+                }
                 Frame.CallState = State::Step2;
                 call(Method::Eval, MethodModifier::ReadOnly,
-                     Frame.Nd->getKid(0));
+                     Frame.Nd->getKid(LoopCounter));
                 break;
               case State::Step2:
-                Frame.CallState = State::Exit;
+                Frame.CallState = State::Loop;
                 call(Method::Eval, MethodModifier::WriteOnly,
-                     Frame.Nd->getKid(1));
+                     Frame.Nd->getKid(0));
                 break;
               case State::Exit:
                 popAndReturn(Frame.ReturnValue);
@@ -701,9 +704,6 @@ void Reader::algorithmResume() {
               default:
                 return failBadState();
             }
-#else
-            failNotImplemented();
-#endif
             break;
           case OpStream: {  // Method::Eval
             const auto* Stream = cast<StreamNode>(Frame.Nd);
