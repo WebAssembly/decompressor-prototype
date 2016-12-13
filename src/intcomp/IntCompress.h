@@ -93,8 +93,10 @@ class IntCompressor FINAL {
   IntTypeFormat AbbrevFormat;
   bool ErrorsFound;
   void readInput(bool Trace = false);
-  void writeOutput(std::shared_ptr<filt::SymbolTable> Symtab,
-                   bool Trace = false);
+  void writeCodeOutput(std::shared_ptr<filt::SymbolTable> Symtab,
+                       bool Trace = false);
+  void writeDataOutput(std::shared_ptr<filt::SymbolTable> Symtab,
+                       bool Trace = false);
   bool compressUpToSize(size_t Size, bool TraceParsing);
   void removeSmallUsageCounts();
   void assignInitialAbbreviations(CountNode::PtrVector& Assignments);
