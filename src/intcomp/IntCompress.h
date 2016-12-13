@@ -19,6 +19,7 @@
 #ifndef DECOMPRESSOR_SRC_INTCOMP_INTCOMPRESS_H
 #define DECOMPRESSOR_SRC_INTCOMP_INTCOMPRESS_H
 
+#include "intcomp/CompressionFlags.h"
 #include "intcomp/IntCountNode.h"
 #include "intcomp/IntFormats.h"
 #include "interp/IntStream.h"
@@ -31,23 +32,6 @@ namespace wasm {
 namespace intcomp {
 
 class IntCounterWriter;
-
-typedef uint32_t CollectionFlags;
-
-enum class CollectionFlag : CollectionFlags {
-  None = 0x0,
-  TopLevel = 0x1,
-  IntPaths = 0x2,
-  All = 0x3
-};
-
-inline CollectionFlags makeFlags(CollectionFlag F) {
-  return CollectionFlags(F);
-}
-
-inline bool hasFlag(CollectionFlag F, CollectionFlags Flags) {
-  return makeFlags(F) & Flags;
-}
 
 class IntCompressor FINAL {
   IntCompressor() = delete;
