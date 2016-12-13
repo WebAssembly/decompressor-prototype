@@ -24,6 +24,7 @@
 #include "intcomp/CountWriter.h"
 #include "intcomp/RemoveNodesVisitor.h"
 #include "interp/IntReader.h"
+#include "sexp/TextWriter.h"
 
 namespace wasm {
 
@@ -173,9 +174,15 @@ void IntCompressor::compress(DetailLevel Level,
         IntOutput->getNumIntegers());
   if (Level >= DetailLevel::MoreDetail)
     IntOutput->describe(stderr, "Input int stream");
+#if 0
+  std::shared_ptr<SymbolTable> OutSymtab =
+      generateCode(AbbrevAssignments, true, true);
+  writeOutput(OutSymtab, true);
+#else
   std::shared_ptr<SymbolTable> OutSymtab =
       generateCode(AbbrevAssignments, false);
   writeOutput(OutSymtab);
+#endif
   if (errorsFound()) {
     fprintf(stderr, "Unable to compress, output malformed\n");
     return;
@@ -211,7 +218,11 @@ std::shared_ptr<SymbolTable> IntCompressor::generateCode(
     bool ToRead,
     bool Trace) {
   AbbreviationCodegen Codegen(Root, AbbrevFormat, Assignments);
-  return Codegen.getCodeSymtab(ToRead);
+  std::shared_ptr<SymbolTable> Symtab = Codegen.getCodeSymtab(ToRead);
+  if (Trace)
+    getTrace().getTextWriter()->write(getTrace().getFile(),
+                                      Symtab->getInstalledRoot());
+  return Symtab;
 }
 
 void IntCompressor::describe(FILE* Out, CollectionFlags Flags) {

@@ -78,7 +78,7 @@
   X(Peek,              0x40, "peek",             nullptr,           1, 0)      \
   X(Read,              0x41, "read",             nullptr,           1, 0)      \
   X(LastRead,          0x42, "read",             "lastRead",        0, 0)      \
-  X(Write,             0x43, "write",            nullptr,           2, 0)      \
+  X(Write,             0x43, "write",            nullptr,           1, 1)      \
                                                                                \
   /* Other */                                                                  \
   X(Convert,           0x50, "convert",          nullptr,           2, 1)      \
@@ -190,7 +190,6 @@
   X(Rename,)                                                                   \
   X(Set,)                                                                      \
   X(LiteralDef,)                                                               \
-  X(Write,)                                                                    \
 
 //#define X(tag, NODE_DECLS)
 #define AST_SELECTNODE_TABLE                                                   \
@@ -205,6 +204,7 @@
   X(Eval, EVAL_DECLS)                                                          \
   X(Section, SECTION_DECLS)                                                    \
   X(Sequence,)                                                                 \
+  X(Write,)                                                                    \
 
 #define DEFINE_DECLS                                                           \
   bool isValidParam(decode::IntType Index);                                    \
@@ -256,5 +256,6 @@
   X(Section)                                                                   \
   X(Undefine)                                                                  \
   X(UnknownSection)                                                            \
+  X(Write)                                                                     \
 
 #endif // DECOMPRESSOR_SRC_AST_DEF

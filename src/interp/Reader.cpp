@@ -681,6 +681,7 @@ void Reader::algorithmResume() {
             }
             break;
           case OpWrite:  // Method::Eval
+#if 0
             // TODO(karlschimpf) Generalize this to accept arbitrary
             // expressions.
             switch (Frame.CallState) {
@@ -700,6 +701,9 @@ void Reader::algorithmResume() {
               default:
                 return failBadState();
             }
+#else
+            failNotImplemented();
+#endif
             break;
           case OpStream: {  // Method::Eval
             const auto* Stream = cast<StreamNode>(Frame.Nd);

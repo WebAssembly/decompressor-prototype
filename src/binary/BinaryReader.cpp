@@ -390,7 +390,7 @@ void BinaryReader::resume() {
                 readNullary<VoidNode>();
                 break;
               case OpWrite:
-                readBinary<WriteNode>();
+                readNary<WriteNode>();
                 break;
 // The following read integer nodes.
 #define X(tag, format, defval, mergable, NODE_DECLS)                      \

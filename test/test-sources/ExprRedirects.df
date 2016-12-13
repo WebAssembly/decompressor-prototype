@@ -21,7 +21,7 @@
    (read)
    (peek (uint8))
    (read (uint8))
-   (write (i32.const 8) (uint8))
+   (write (uint8) (i32.const 8))
    (peek (uint8) (uint8))
    (read (uint8) (uint8)))
 

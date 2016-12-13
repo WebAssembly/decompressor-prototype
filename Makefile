@@ -338,6 +338,31 @@ TEST_WASM_CAPI_GEN_FILES = $(patsubst %.wast, $(TEST_0XD_GENDIR)/%.wasm-capi, \
 TEST_WASM_COMP_FILES = $(patsubst %.wast, $(TEST_0XD_GENDIR)/%.wasm-comp, \
                         $(TEST_WASM_SRCS))
 
+TEST_CASM_SRCS = \
+	defaults-0xd.df \
+	ExprRedirects.df
+
+TEST_CASM_SRC_FILES = $(patsubst %.df, $(TEST_SRCS_DIR)/%.df, \
+			$(TEST_CASM_SRCS))
+
+TEST_CASM_WASM_FILES = $(patsubst %.df, $(TEST_SRCS_DIR)/%.wasm, \
+			$(TEST_CASM_SRCS))
+
+TEST_CASM_WASM_W_FILES = $(patsubst %.df, $(TEST_SRCS_DIR)/%.wasm-w, \
+			  $(TEST_CASM_SRCS))
+
+TEST_CASM_GEN_FILES = $(patsubst %.df, $(TEST_0XD_GENDIR)/%.wasm, \
+	 	  	$(TEST_CASM_SRCS))
+
+TEST_CASM_W_GEN_FILES = $(patsubst %.df, $(TEST_0XD_GENDIR)/%.wasm-w, \
+	 	  	$(TEST_CASM_SRCS))
+
+$(info TEST_CASM_SRC_FILES = $(TEST_CASM_SRC_FILES))
+$(info TEST_CASM_WASM_FILES = $(TEST_CASM_WASM_FILES))
+$(info TEST_CASM_WASM_W_FILES = $(TEST_CASM_WASM_W_FILES))
+$(info TEST_CASM_GEN_FILES = $(TEST_CASM_GEN_FILES))
+$(info TEST_CASM_W_GEN_FILES = $(TEST_CASM_W_GEN_FILES))
+
 ###### General compilation definitions ######
 
 LIBS = $(PARSER_LIB) $(BINARY_LIB) $(INTERP_LIB) $(SEXP_LIB) \
@@ -813,6 +838,20 @@ test-compress: $(TEST_WASM_COMP_FILES)
 
 .PHONY: test-compress
 
+$(TEST_CASM_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm: $(TEST_SRCS_DIR)/%.df \
+		$(BUILD_EXECDIR)/decompsexp-wasm
+	$(BUILD_EXECDIR)/decompsexp-wasm -m -i $< | \
+		cmp - $(patsubst %.df, %.wasm, $<)
+
+.PHONY: $(TEST_CASM_GEN_FILES)
+
+$(TEST_CASM_W_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm-w: $(TEST_SRCS_DIR)/%.df \
+		$(BUILD_EXECDIR)/decompsexp-wasm
+	$(BUILD_EXECDIR)/decompsexp-wasm -i $< | \
+		cmp - $(patsubst %.df, %.wasm-w, $<)
+
+.PHONY: $(TEST_CASM_GEN_FILES)
+
 # Note: Currently only tests that code executes (without errors).
 $(TEST_WASM_COMP_FILES): $(TEST_0XD_GENDIR)/%.wasm-comp: $(TEST_0XD_SRCDIR)/%.wasm \
 		$(BUILD_EXECDIR)/compress-int
@@ -868,9 +907,7 @@ $(TEST_WASM_CAPI_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm-capi: \
 
 .PHOHY: $(TEST_WASM_WPD_GEN_FILES)
 
-test-decompsexp-wasm: $(BUILD_EXECDIR)/decompsexp-wasm
-	$< -m -i $(TEST_DEFAULT_DF) | diff - $(TEST_DEFAULT_WASM)
-	$< -i $(TEST_DEFAULT_DF) | diff - $(TEST_DEFAULT_WASM_W)
+test-decompsexp-wasm: $(TEST_CASM_GEN_FILES) $(TEST_CASM_W_GEN_FILES)
 	@echo "*** sexp2wasm tests passed ***"
 
 .PHONY: test-decompsexp-wasm
@@ -968,8 +1005,8 @@ update-all: wabt-submodule gen \
 	$(TEST_WASM_SRC_FILES) \
 	$(TEST_WASM_W_SRC_FILES) \
 	$(TEST_DEFAULT_DF) \
-	$(TEST_DEFAULT_WASM) \
-	$(TEST_DEFAULT_WASM_W)
+	$(TEST_CASM_WASM_FILES) \
+	$(TEST_CASM_WASM_W_FILES)
 
 $(TEST_WASM_SRC_FILES): $(TEST_0XD_SRCDIR)/%.wasm: $(WABT_WAST_DIR)/%.wast \
 		wabt-submodule
@@ -983,11 +1020,11 @@ $(TEST_DEFAULT_DF): $(TEST_SRCS_DIR)/%.df: $(SEXP_SRCDIR)/%.df \
 		 $(TEST_EXECDIR)/TestParser
 	rm -rf $@; $(TEST_EXECDIR)/TestParser -w $< > $@
 
-$(TEST_DEFAULT_WASM): $(TEST_SRCS_DIR)/%.wasm: $(SEXP_SRCDIR)/%.df \
+$(TEST_CASM_WASM_FILES): $(TEST_SRCS_DIR)/%.wasm: $(TEST_SRCS_DIR)/%.df \
 		$(BUILD_EXECDIR)/decompsexp-wasm
 	rm -rf $@; $(BUILD_EXECDIR)/decompsexp-wasm -m -i $< -o $@
 
-$(TEST_DEFAULT_WASM_W): $(TEST_SRCS_DIR)/%.wasm-w: $(SEXP_SRCDIR)/%.df \
+$(TEST_CASM_WASM_W_FILES): $(TEST_SRCS_DIR)/%.wasm-w: $(TEST_SRCS_DIR)/%.df \
 		$(BUILD_EXECDIR)/decompsexp-wasm
 	rm -rf $@; $(BUILD_EXECDIR)/decompsexp-wasm -i $< -o $@
 
