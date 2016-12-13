@@ -18,6 +18,7 @@
 
 #include "intcomp/IntCompress.h"
 
+#include "binary/BinaryWriter.h"
 #include "intcomp/AbbrevAssignWriter.h"
 #include "intcomp/AbbreviationCodegen.h"
 #include "intcomp/AbbreviationsCollector.h"
@@ -83,25 +84,34 @@ void IntCompressor::readInput(bool TraceParsing) {
   return;
 }
 
-void IntCompressor::writeOutput(std::shared_ptr<SymbolTable> Symtab,
-                                bool Trace) {
+void IntCompressor::writeCodeOutput(std::shared_ptr<SymbolTable> Symtab,
+                                    bool Trace) {
+  BinaryWriter Writer(Output, Symtab);
+  // Writer.setTraceProgress(Trace);
+  Writer.setMinimizeBlockSize(true);
+  Writer.writePreamble();
+  Writer.writeFile(dyn_cast<FileNode>(Symtab->getInstalledRoot()));
+  Writer.freezeEof();
+}
+
+void IntCompressor::writeDataOutput(std::shared_ptr<SymbolTable> Symtab,
+                                    bool Trace) {
   TRACE_METHOD("writeOutput");
-  StreamWriter MyWriter(Output);
-  IntReader MyReader(IntOutput, MyWriter, Symtab);
+  StreamWriter Writer(Output);
+  IntReader Reader(IntOutput, Writer, Symtab);
   if (Trace) {
     TRACE(bool, "Trace", Trace);
-    TraceClassSexp& Trace = MyReader.getTrace();
-    Trace.addContext(MyReader.getTraceContext());
-    Trace.addContext(MyWriter.getTraceContext());
+    TraceClassSexp& Trace = Reader.getTrace();
+    Trace.addContext(Reader.getTraceContext());
+    Trace.addContext(Writer.getTraceContext());
     Trace.setTraceProgress(true);
   }
-  MyReader.insertFileVersion(WasmBinaryMagic, WasmBinaryVersionD);
-  MyReader.algorithmStart();
-  MyReader.algorithmReadBackFilled();
-  bool Successful = MyReader.isFinished() && MyReader.isSuccessful();
+  Reader.insertFileVersion(WasmBinaryMagic, WasmBinaryVersionD);
+  Reader.algorithmStart();
+  Reader.algorithmReadBackFilled();
+  bool Successful = Reader.isFinished() && Reader.isSuccessful();
   if (!Successful)
     ErrorsFound = true;
-  IntOutput.reset();
   return;
 }
 
@@ -174,9 +184,11 @@ void IntCompressor::compress(DetailLevel Level,
         IntOutput->getNumIntegers());
   if (Level >= DetailLevel::MoreDetail)
     IntOutput->describe(stderr, "Input int stream");
-  std::shared_ptr<SymbolTable> OutSymtab =
-      generateCode(AbbrevAssignments, false);
-  writeOutput(OutSymtab);
+#if 1
+  writeCodeOutput(generateCode(AbbrevAssignments, true));
+#else
+  writeDataOutput(generateCode(AbbrevAssignments, false));
+#endif
   if (errorsFound()) {
     fprintf(stderr, "Unable to compress, output malformed\n");
     return;
