@@ -178,6 +178,7 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
   const CallbackNode* getBlockExitCallback() const { return BlockExitCallback; }
   // Install definitions in tree defined by root.
   void install(Node* Root);
+  const Node* getInstalledRoot() const { return Root; }
   void clear() { SymbolMap.clear(); }
   int getNextCreationIndex() { return ++NextCreationIndex; }
 
@@ -196,6 +197,7 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
  private:
   std::vector<Node*>* Allocated;
   TraceClassSexp Trace;
+  Node* Root;
   Node* Error;
   int NextCreationIndex;
   std::map<std::string, SymbolNode*> SymbolMap;

@@ -251,6 +251,7 @@ AST_INTEGERNODE_TABLE
 
 void SymbolTable::install(Node* Root) {
   TRACE_METHOD("install");
+  this->Root = Root;
   // Before starting, clear all known caches.
   VisitedNodesType VisitedNodes;
   NodeVectorType AdditionalNodes;

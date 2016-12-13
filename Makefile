@@ -189,6 +189,7 @@ INTCOMP_OBJDIR = $(OBJDIR)/intcomp
 
 INTCOMP_SRCS = \
 	AbbrevAssignWriter.cpp \
+	AbbreviationCodegen.cpp \
 	AbbreviationsCollector.cpp \
 	CountNodeCollector.cpp \
 	CountWriter.cpp \

@@ -270,23 +270,23 @@ void TextWriter::writeNodeKidsAbbrev(const Node* Nd, bool EmbeddedInParent) {
   // Write out with number of kids specified to be on same line,
   // with remaining kids on separate (indented) lines.
   int Type = int(Nd->getType());
-  int Count = 0;
   int KidsSameLine = KidCountSameLine[int(Type)];
   int NumKids = Nd->getNumKids();
   if (NumKids <= MaxKidCountSameLine[int(Type)])
     KidsSameLine = MaxKidCountSameLine[int(Type)];
-  Node* LastKid = Nd->getLastKid();
   int HasHiddenSeq = HasHiddenSeqSet.count(Type);
-  for (auto* Kid : *Nd) {
-    if (HasHiddenSeq && Kid == LastKid && isa<SequenceNode>(Kid)) {
+  for (int i = 0; i < NumKids; ++i) {
+    Node* Kid = Nd->getKid(i);
+    bool LastKid = i + 1 == NumKids;
+    if (HasHiddenSeq && LastKid && isa<SequenceNode>(Kid)) {
       fprintf(File, " ...[%d]", Kid->getNumKids());
       return;
     }
     if (NeverSameLine.count(Kid->getType())) {
-      fprintf(File, " ...[%d]", NumKids - Count);
+      fprintf(File, " ...[%d]", NumKids - i);
       return;
     }
-    ++Count;
+    int Count = i + 1;
     if (Count < KidsSameLine) {
       writeSpace();
       writeNodeAbbrev(Kid, false);
@@ -295,7 +295,7 @@ void TextWriter::writeNodeKidsAbbrev(const Node* Nd, bool EmbeddedInParent) {
     if (Count == KidsSameLine) {
       writeSpace();
       writeNode(Kid, false);
-      if (Kid != LastKid)
+      if (!LastKid)
         fprintf(File, " ...[%d]", NumKids - Count);
       return;
     }
@@ -305,7 +305,7 @@ void TextWriter::writeNodeKidsAbbrev(const Node* Nd, bool EmbeddedInParent) {
     }
     writeSpace();
     writeNode(Kid, false);
-    if (Kid != LastKid)
+    if (!LastKid)
       fprintf(File, " ...[%d]", NumKids - Count);
     return;
   }
