@@ -188,9 +188,14 @@ INTCOMP_SRCDIR = $(SRCDIR)/intcomp
 INTCOMP_OBJDIR = $(OBJDIR)/intcomp
 
 INTCOMP_SRCS = \
+	AbbrevAssignWriter.cpp \
+	AbbreviationsCollector.cpp \
+	CountNodeCollector.cpp \
+	CountWriter.cpp \
 	IntCompress.cpp \
 	IntCountNode.cpp \
-	IntFormats.cpp
+	IntFormats.cpp \
+	RemoveNodesVisitor.cpp
 
 INTCOMP_OBJS = $(patsubst %.cpp, $(INTCOMP_OBJDIR)/%.o, $(INTCOMP_SRCS))
 INTCOMP_LIB = $(LIBDIR)/$(LIBPREFIX)intcomp.a
@@ -810,7 +815,7 @@ test-compress: $(TEST_WASM_COMP_FILES)
 # Note: Currently only tests that code executes (without errors).
 $(TEST_WASM_COMP_FILES): $(TEST_0XD_GENDIR)/%.wasm-comp: $(TEST_0XD_SRCDIR)/%.wasm \
 		$(BUILD_EXECDIR)/compress-int
-	$(BUILD_EXECDIR)/compress-int -c 2 -l 10 -i $<
+	$(BUILD_EXECDIR)/compress-int -c 2 -l 10 -i $< -o /dev/null
 
 .PHONY: $(TEST_WASM_COMP_FILES)
 

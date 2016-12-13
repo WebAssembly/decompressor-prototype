@@ -397,7 +397,6 @@ void Reader::insertFileVersion(uint32_t NewMagicNumber, uint32_t NewVersion) {
   Version = NewVersion;
 }
 
-
 void Reader::algorithmResume() {
 #if LOG_RUNMETHODS
   TRACE_METHOD("resume");
