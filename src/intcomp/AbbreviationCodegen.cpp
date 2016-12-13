@@ -18,6 +18,8 @@
 
 #include "intcomp/AbbreviationCodegen.h"
 
+#include <algorithm>
+
 namespace wasm {
 
 using namespace decode;
@@ -120,10 +122,12 @@ Node* AbbreviationCodegen::generateIntLitActionRead(IntCountNode* Nd) {
     Values.push_back(Nd);
     Nd = Nd->getParent().get();
   }
-  auto* Seq = Symtab->create<SequenceNode>();
+  std::reverse(Values.begin(), Values.end());
+  auto* Write = Symtab->create<WriteNode>();
+  Write->append(Symtab->getVaruint64Definition());
   for (IntCountNode* Nd : Values)
-    Seq->append(generateIntType(Nd->getValue()));
-  return Seq;
+    Write->append(generateIntType(Nd->getValue()));
+  return Write;
 }
 
 Node* AbbreviationCodegen::generateIntLitActionWrite(IntCountNode* Nd) {

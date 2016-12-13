@@ -172,6 +172,7 @@ struct IntValue {
 %type <wasm::filt::Node *> symbol
 %type <wasm::filt::Node *> casm_version
 %type <wasm::filt::Node *> wasm_version
+%type <wasm::filt::Node *> write_args
 
 %start file
 
@@ -378,11 +379,23 @@ expression
         | "(" "read" ")" {
             $$ = Driver.create<LastReadNode>();
           }
-        | "(" "write" expression expression ")" {
-            $$ = Driver.create<WriteNode>($3, $4);
+        | "(" "write" write_args ")" {
+            $$ = $3;
           }
         | "(" expression_redirect ")" {
             $$ = $2;
+          }
+        ;
+
+write_args
+        : fixed_format_directive expression {
+            $$ = Driver.create<WriteNode>();
+            $$->append($1);
+            $$->append($2);
+          }
+        | write_args expression {
+            $$ = $1;
+            $$->append($2);
           }
         ;
 

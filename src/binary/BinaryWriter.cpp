@@ -122,8 +122,7 @@ void BinaryWriter::writeNode(const Node* Nd) {
     case OpSet:
     case OpLiteralDef:
     case OpLiteralUse:
-    case OpVoid:
-    case OpWrite: {
+    case OpVoid: {
       // Operations that are written out in postorder, with a fixed number of
       // arguments.
       for (const auto* Kid : *Nd)
@@ -190,7 +189,8 @@ void BinaryWriter::writeNode(const Node* Nd) {
     case OpOpcode:
     case OpMap:
     case OpSwitch:
-    case OpSequence: {
+    case OpSequence:
+    case OpWrite: {
       // Operations that are written out in postorder, and have a variable
       // number of arguments.
       for (const auto* Kid : *Nd)
