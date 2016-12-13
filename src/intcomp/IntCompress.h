@@ -99,9 +99,10 @@ class IntCompressor FINAL {
   void removeSmallUsageCounts();
   void assignInitialAbbreviations(CountNode::PtrVector& Assignments);
   bool generateIntOutput(bool Trace = false);
-  void generateCode(std::shared_ptr<filt::SymbolTable> Symtab,
-                    CountNode::PtrVector& Assignments,
-                    bool Trace = false);
+  std::shared_ptr<filt::SymbolTable> generateCode(
+      CountNode::PtrVector& Assignments,
+      bool ToRead,
+      bool Trace = false);
 };
 
 }  // end of namespace intcomp
