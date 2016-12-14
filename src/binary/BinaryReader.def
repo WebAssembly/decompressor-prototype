@@ -38,8 +38,9 @@
   X(Enter,     "enter")                                                        \
   X(Exit,      "exit")                                                         \
   X(Loop,      "loop")                                                         \
-  X(LoopCont,   "loop-cont")                                                   \
-  X(Setup,     "setup")                                                        \
+  X(LoopCont,  "loop-cont")                                                    \
+  X(Step2,     "step2")                                                        \
+  X(Step3,     "step3")                                                        \
   X(Failed,    "failed")                                                       \
   X(Succeeded, "Succeeded")                                                    \
 

@@ -181,13 +181,14 @@ struct IntValue {
 
 %%
 
-/* TODO: Make FileNode binary */
 file    : file_version {
-            $$ = $1;
+            $$ = Driver.create<FileNode>();
+            $$->append($1);
             Driver.setParsedAst($$);
           }
         | file_version section {
-            $$ = $1;
+            $$ = Driver.create<FileNode>();
+            $$->append($1);
             $$->append($2);
             Driver.setParsedAst($$);
           }
@@ -195,8 +196,7 @@ file    : file_version {
 
 file_version
         : "(" "file" "." "version" casm_magic casm_version wasm_version ")" {
-            $$ = Driver.create<FileNode>();
-            $$->append(Driver.create<FileVersionNode>($5, $6, $7));
+            $$ = Driver.create<FileVersionNode>($5, $6, $7);
           }
         ;
 

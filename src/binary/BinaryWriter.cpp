@@ -62,6 +62,9 @@ void BinaryWriter::writePreamble(const FileNode* File) {
   const auto* CasmVersion = dyn_cast<CasmVersionNode>(FileVersion->getKid(1));
   assert(CasmVersion != nullptr);
   Writer->writeUint32(CasmVersion->getValue(), WritePos);
+  const auto* WasmVersion = dyn_cast<WasmVersionNode>(FileVersion->getKid(2));
+  assert(WasmVersion != nullptr);
+  Writer->writeUint32(WasmVersion->getValue(), WritePos);
 }
 
 void BinaryWriter::writeFile(const FileNode* File) {
@@ -81,6 +84,7 @@ void BinaryWriter::writeNode(const Node* Nd) {
   TRACE_SEXP(nullptr, Nd);
   switch (NodeType Opcode = Nd->getType()) {
     case NO_SUCH_NODETYPE:
+    case OpFileVersion:
     case OpUnknownSection: {
       fprintf(stderr, "Misplaced s-expression: %s\n", getNodeTypeName(Opcode));
       fatal("Unable to write filter s-expression");
@@ -127,7 +131,6 @@ void BinaryWriter::writeNode(const Node* Nd) {
     case OpOr:
     case OpNot:
     case OpError:
-    case OpFileVersion:
     case OpIfThen:
     case OpIfThenElse:
     case OpLastSymbolIs:
@@ -150,10 +153,13 @@ void BinaryWriter::writeNode(const Node* Nd) {
       break;
     }
     case OpFile: {
-      assert(Nd->getNumKids() <= 2);
-      Writer->writeUint8(Nd->getNumKids(), WritePos);
-      for (int i = 0; i < 2; ++i)
-        writeNode(Nd->getKid(i));
+      // Note: The File version was generated as part of the preamble.
+      int NumKids = Nd->getNumKids();
+      assert(NumKids <= 2);
+      assert(NumKids >= 1);
+      Writer->writeUint8(NumKids - 1, WritePos);
+      if (NumKids == 2)
+        writeNode(Nd->getKid(1));
       break;
     }
     case OpStream: {
