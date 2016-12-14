@@ -27,6 +27,7 @@
 #include "stream/WriteCursor.h"
 #include "utils/Defs.h"
 
+#include <cstdio>
 #include <cstring>
 #include <unistd.h>
 #include <iostream>
@@ -47,8 +48,30 @@ std::shared_ptr<RawStream> getInput() {
   }
   if (UseFileStreams)
     return std::make_shared<FileReader>(InputFilename);
-  return std::make_shared<FstreamReader>(OutputFilename);
+  return std::make_shared<FstreamReader>(InputFilename);
 }
+
+class OutputHandler {
+  OutputHandler(const OutputHandler&) = delete;
+  OutputHandler& operator=(const OutputHandler&) = delete;
+ public:
+  OutputHandler() : Out(stdout) {
+    if (strcmp("-", OutputFilename) == 0)
+      return;
+    Out = fopen(OutputFilename, "w");
+    if (Out == nullptr) {
+      fprintf(stderr, "Unable to open: %s\n", OutputFilename);
+      exit(exit_status(EXIT_FAILURE));
+    }
+  }
+  ~OutputHandler() {
+    if (Out != stdout)
+      fclose(Out);
+  }
+  FILE* getFile() { return Out; }
+ private:
+  FILE* Out;
+};
 
 void usage(const char* AppName) {
   fprintf(stderr, "usage: %s [options]\n", AppName);
@@ -150,7 +173,8 @@ int main(int Argc, char* Argv[]) {
     fprintf(stderr, "Unable to parse WASM module!\n");
     return exit_status(EXIT_FAILURE);
   }
+  OutputHandler Output;
   TextWriter Writer;
-  Writer.write(stdout, File);
+  Writer.write(Output.getFile(), File);
   return exit_status(EXIT_SUCCESS);
 }

@@ -351,10 +351,16 @@ TEST_CASM_WASM_FILES = $(patsubst %.df, $(TEST_SRCS_DIR)/%.wasm, \
 TEST_CASM_WASM_W_FILES = $(patsubst %.df, $(TEST_SRCS_DIR)/%.wasm-w, \
 			  $(TEST_CASM_SRCS))
 
+TEST_CASM_DF_OUT_FILES = $(patsubst %.df, $(TEST_SRCS_DIR)/%.df-out, \
+			  $(TEST_CASM_SRCS))
+
 TEST_CASM_GEN_FILES = $(patsubst %.df, $(TEST_0XD_GENDIR)/%.wasm, \
 	 	  	$(TEST_CASM_SRCS))
 
 TEST_CASM_W_GEN_FILES = $(patsubst %.df, $(TEST_0XD_GENDIR)/%.wasm-w, \
+	 	  	$(TEST_CASM_SRCS))
+
+TEST_CASM_DF_GEN_FILES = $(patsubst %.df, $(TEST_0XD_GENDIR)/%.df-out, \
 	 	  	$(TEST_CASM_SRCS))
 
 ###### General compilation definitions ######
@@ -845,7 +851,17 @@ $(TEST_CASM_W_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm-w: $(TEST_SRCS_DIR)/%.df \
 	$(BUILD_EXECDIR)/decompsexp-wasm -i $< | \
 		cmp - $(patsubst %.df, %.wasm-w, $<)
 
-.PHONY: $(TEST_CASM_GEN_FILES)
+.PHONY: $(TEST_CASM_W_GEN_FILES)
+
+$(TEST_CASM_DF_GEN_FILES): $(TEST_0XD_GENDIR)/%.df-out: $(TEST_SRCS_DIR)/%.wasm \
+		$(TEST_SRCS_DIR)/%.wasm $(BUILD_EXECDIR)/decompwasm-sexp
+	$(BUILD_EXECDIR)/decompwasm-sexp -i $< | \
+		cmp - $(patsubst %.wasm, %.df-out, $<)
+	$(BUILD_EXECDIR)/decompwasm-sexp -i \
+		$(patsubst %.wasm, %.wasm-w, $<) | \
+		cmp - $(patsubst %.wasm, %.df-out, $<)
+
+.PHONY: $(TEST_CASM_DF_GEN_FILES)
 
 # Note: Currently only tests that code executes (without errors).
 $(TEST_WASM_COMP_FILES): $(TEST_0XD_GENDIR)/%.wasm-comp: $(TEST_0XD_SRCDIR)/%.wasm \
@@ -907,7 +923,7 @@ test-decompsexp-wasm: $(TEST_CASM_GEN_FILES) $(TEST_CASM_W_GEN_FILES)
 
 .PHONY: test-decompsexp-wasm
 
-test-decompwasm-sexp: $(BUILD_EXECDIR)/decompwasm-sexp
+test-decompwasm-sexp: $(BUILD_EXECDIR)/decompwasm-sexp $(TEST_CASM_DF_GEN_FILES)
 	$< -i $(TEST_DEFAULT_WASM) \
 		| diff - $(TEST_DEFAULT_DF)
 	$< -i $(TEST_DEFAULT_WASM_W) \
@@ -1001,7 +1017,8 @@ update-all: wabt-submodule gen \
 	$(TEST_WASM_W_SRC_FILES) \
 	$(TEST_DEFAULT_DF) \
 	$(TEST_CASM_WASM_FILES) \
-	$(TEST_CASM_WASM_W_FILES)
+	$(TEST_CASM_WASM_W_FILES) \
+	$(TEST_CASM_DF_OUT_FILES)
 
 $(TEST_WASM_SRC_FILES): $(TEST_0XD_SRCDIR)/%.wasm: $(WABT_WAST_DIR)/%.wast \
 		wabt-submodule
@@ -1022,5 +1039,9 @@ $(TEST_CASM_WASM_FILES): $(TEST_SRCS_DIR)/%.wasm: $(TEST_SRCS_DIR)/%.df \
 $(TEST_CASM_WASM_W_FILES): $(TEST_SRCS_DIR)/%.wasm-w: $(TEST_SRCS_DIR)/%.df \
 		$(BUILD_EXECDIR)/decompsexp-wasm
 	rm -rf $@; $(BUILD_EXECDIR)/decompsexp-wasm -i $< -o $@
+
+$(TEST_CASM_DF_OUT_FILES): $(TEST_SRCS_DIR)/%.df-out: $(TEST_SRCS_DIR)/%.wasm \
+		$(BUILD_EXECDIR)/decompwasm-sexp
+	rm -rf $@; $(BUILD_EXECDIR)/decompwasm-sexp -i $< -o $@
 
 endif
