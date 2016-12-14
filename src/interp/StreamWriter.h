@@ -39,6 +39,8 @@ class StreamWriter : public Writer {
   decode::WriteCursor& getPos();
   utils::TraceClass::ContextPtr getTraceContext() OVERRIDE;
 
+  void setPos(const decode::WriteCursor& NewPos) { Pos = NewPos; }
+
   void reset() OVERRIDE;
   decode::StreamType getStreamType() const OVERRIDE;
   bool writeUint8(uint8_t Value) OVERRIDE;

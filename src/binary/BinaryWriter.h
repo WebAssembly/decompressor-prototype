@@ -51,6 +51,8 @@ class BinaryWriter {
     writeFile(File);
   }
 
+  const decode::WriteCursor& getWritePos() const { return WritePos; }
+
   void freezeEof() { WritePos.freezeEof(); }
 
   void setMinimizeBlockSize(bool NewValue) { MinimizeBlockSize = NewValue; }

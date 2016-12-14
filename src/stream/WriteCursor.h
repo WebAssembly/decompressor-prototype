@@ -42,6 +42,9 @@ class WriteCursor : public WriteCursorBase {
   WriteCursor(const Cursor& C, size_t StartAddress)
       : WriteCursorBase(C, StartAddress) {}
 
+  WriteCursor(const WriteCursorBase& C)
+      : WriteCursorBase(C) {}
+
   ~WriteCursor() OVERRIDE;
 
  protected:
@@ -64,7 +67,7 @@ class WriteCursorWithTraceContext : public WriteCursor {
   WriteCursorWithTraceContext(const Cursor& C, size_t StartAddress)
       : WriteCursor(C, StartAddress) {}
 
-  WriteCursorWithTraceContext& operator=(WriteCursor& C) {
+  WriteCursorWithTraceContext& operator=(const WriteCursor& C) {
     WriteCursor::operator=(C);
     return *this;
   }
