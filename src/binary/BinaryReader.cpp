@@ -198,8 +198,10 @@ void BinaryReader::resume() {
         switch (Frame.CallState) {
           case State::Enter: {
             uint32_t MagicNumber = Reader->readUint32(ReadPos);
+            WASM_IGNORE(MagicNumber);
             TRACE(hex_uint32_t, "Magic number", MagicNumber);
             uint32_t CasmVersion = Reader->readUint32(ReadPos);
+            WASM_IGNORE(CasmVersion);
             TRACE(hex_uint32_t, "Version number", CasmVersion);
             CounterStack.push(Reader->readUint8(ReadPos));
             Frame.CallState = State::Setup;
