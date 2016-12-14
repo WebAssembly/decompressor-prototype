@@ -48,6 +48,7 @@ class AbbreviationCodegen {
   void generateFile();
   filt::Node* generateFileBody();
   filt::Node* generateFileFcn();
+  filt::Node* generateAbbreviationRead();
   filt::Node* generateSwitchStatement();
   filt::Node* generateCase(size_t AbbrevIndex, CountNode::Ptr Nd);
   filt::Node* generateAction(CountNode::Ptr Nd);

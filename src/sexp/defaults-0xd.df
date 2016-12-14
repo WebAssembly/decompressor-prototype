@@ -16,9 +16,11 @@
 # This file defines the default algorithms for decompressing a WASM
 # module, version 0xC.
 
-(wasm.version 0xd)
-(casm.version 0x0)
-
+(file.version
+  (casm.magic 0x6d736163)
+  (casm.version 0x0)
+  (wasm.version 0xd)
+)
 (literal 'inst.unreachable'         (u8.const 0x00))
 (literal 'inst.nop'                 (u8.const 0x01))
 (literal 'inst.block'               (u8.const 0x02))

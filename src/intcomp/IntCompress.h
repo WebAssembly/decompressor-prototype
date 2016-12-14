@@ -105,6 +105,14 @@ class IntCompressor FINAL {
       CountNode::PtrVector& Assignments,
       bool ToRead,
       bool Trace = false);
+  std::shared_ptr<filt::SymbolTable> generateCodeForReading(
+      CountNode::PtrVector& Assignments, bool Trace = false) {
+    return generateCode(Assignments, true, Trace);
+  }
+  std::shared_ptr<filt::SymbolTable> generateCodeForWriting(
+      CountNode::PtrVector& Assignments, bool Trace = false) {
+    return generateCode(Assignments, false, Trace);
+  }
 };
 
 }  // end of namespace intcomp

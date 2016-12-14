@@ -87,6 +87,7 @@ struct IntValue {
 %token DOUBLE_ARROW  "=>"
 %token ERROR         "error"
 %token EVAL          "eval"
+%token FILE          "file"
 %token FILTER        "filter"
 %token IF            "if"
 %token IN            "in"
@@ -100,6 +101,7 @@ struct IntValue {
 %token LOCALS        "locals"
 %token LOOP          "loop"
 %token LOOP_UNBOUNDED "loop.unbounded"
+%token MAGIC         "magic"
 %token MAP           "map"
 %token NEGATE        "negate"
 %token NOT           "not"
@@ -170,6 +172,7 @@ struct IntValue {
 %type <wasm::filt::Node *> section
 %type <wasm::filt::Node *> sequence_args
 %type <wasm::filt::Node *> symbol
+%type <wasm::filt::Node *> casm_magic
 %type <wasm::filt::Node *> casm_version
 %type <wasm::filt::Node *> wasm_version
 %type <wasm::filt::Node *> write_args
@@ -178,6 +181,7 @@ struct IntValue {
 
 %%
 
+/* TODO: Make FileNode binary */
 file    : file_version {
             $$ = $1;
             Driver.setParsedAst($$);
@@ -190,10 +194,9 @@ file    : file_version {
         ;
 
 file_version
-        : wasm_version casm_version {
+        : "(" "file" "." "version" casm_magic casm_version wasm_version ")" {
             $$ = Driver.create<FileNode>();
-            $$->append($1);
-            $$->append($2);
+            $$->append(Driver.create<FileVersionNode>($5, $6, $7));
           }
         ;
 
@@ -530,15 +533,19 @@ params_decl
           }
         ;
 
+casm_magic
+        : "(" "casm" "." "magic" INTEGER ")" {
+            $$ = Driver.getCasmMagicDefinition($5.Value, $5.Format);
+            if ($5.Format != decode::ValueFormat::Hexidecimal)
+              Driver.error("Casm version # not hexidecimal");
+          }
+        ;
+
 casm_version
         : "(" "casm" "." "version" INTEGER ")" {
             $$ = Driver.getCasmVersionDefinition($5.Value, $5.Format);
             if ($5.Format != decode::ValueFormat::Hexidecimal)
               Driver.error("Casm version # not hexidecimal");
-            if ($5.Value != CasmBinaryVersion)
-              Driver.error("Only casm version "
-                           + std::to_string(CasmBinaryVersion)
-                           + " is supported");
           }
         ;
 

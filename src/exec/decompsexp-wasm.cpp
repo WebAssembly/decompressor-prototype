@@ -217,8 +217,7 @@ int main(int Argc, char* Argv[]) {
   }
   Writer->setTraceProgress(Verbose >= 1);
   Writer->setMinimizeBlockSize(MinimizeBlockSize);
-  Writer->writePreamble();
-  Writer->writeFile(wasm::dyn_cast<FileNode>(Parser.getParsedAst()));
+  Writer->write(wasm::dyn_cast<FileNode>(Parser.getParsedAst()));
   Writer->freezeEof();
   if (GenerateCppSource)
     generateArrayImpl(InputFilename, ReadPos, Output, WasmBinaryVersionD);

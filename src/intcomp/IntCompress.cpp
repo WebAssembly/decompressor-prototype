@@ -89,8 +89,7 @@ void IntCompressor::writeCodeOutput(std::shared_ptr<SymbolTable> Symtab,
   BinaryWriter Writer(Output, Symtab);
   // Writer.setTraceProgress(Trace);
   Writer.setMinimizeBlockSize(true);
-  Writer.writePreamble();
-  Writer.writeFile(dyn_cast<FileNode>(Symtab->getInstalledRoot()));
+  Writer.write(dyn_cast<FileNode>(Symtab->getInstalledRoot()));
   Writer.freezeEof();
 }
 
@@ -185,9 +184,9 @@ void IntCompressor::compress(DetailLevel Level,
   if (Level >= DetailLevel::MoreDetail)
     IntOutput->describe(stderr, "Input int stream");
 #if 1
-  writeCodeOutput(generateCode(AbbrevAssignments, true));
+  writeCodeOutput(generateCodeForReading(AbbrevAssignments));
 #else
-  writeDataOutput(generateCode(AbbrevAssignments, false));
+  writeDataOutput(generateCodeForWriting(AbbrevAssignments));
 #endif
   if (errorsFound()) {
     fprintf(stderr, "Unable to compress, output malformed\n");

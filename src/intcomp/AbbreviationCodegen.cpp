@@ -34,11 +34,14 @@ AbbreviationCodegen::AbbreviationCodegen(CountNode::RootPtr Root,
 }
 
 void AbbreviationCodegen::generateFile() {
-  auto File = Symtab->create<FileNode>();
-  File->append(Symtab->getWasmVersionDefinition(
-      CasmBinaryMagic, decode::ValueFormat::Hexidecimal));
-  File->append(Symtab->getCasmVersionDefinition(
-      CasmBinaryVersion, decode::ValueFormat::Hexidecimal));
+  auto* File = Symtab->create<FileNode>();
+  File->append(Symtab->create<FileVersionNode>(
+      Symtab->create<CasmMagicNode>(CasmBinaryMagic,
+                                    decode::ValueFormat::Hexidecimal),
+      Symtab->create<CasmVersionNode>(CasmBinaryVersion,
+                                      decode::ValueFormat::Hexidecimal),
+      Symtab->create<WasmVersionNode>(WasmBinaryVersionD,
+                                      decode::ValueFormat::Hexidecimal)));
   File->append(generateFileBody());
   Symtab->install(File);
 }
@@ -47,22 +50,30 @@ AbbreviationCodegen::~AbbreviationCodegen() {
 }
 
 Node* AbbreviationCodegen::generateFileBody() {
-  auto Body = Symtab->create<SectionNode>();
+  auto* Body = Symtab->create<SectionNode>();
   Body->append(generateFileFcn());
   return Body;
 }
 
 Node* AbbreviationCodegen::generateFileFcn() {
-  auto Fcn = Symtab->create<DefineNode>();
+  auto* Fcn = Symtab->create<DefineNode>();
   Fcn->append(Symtab->getPredefined(PredefinedSymbol::Section));
   Fcn->append(Symtab->getParamsDefinition());
   Fcn->append(Symtab->create<LoopUnboundedNode>(generateSwitchStatement()));
   return Fcn;
 }
 
+Node* AbbreviationCodegen::generateAbbreviationRead() {
+  auto* Format = generateAbbrevFormat(AbbrevFormat);
+  if (ToRead) {
+    Format = Symtab->create<ReadNode>(Format);
+  }
+  return Format;
+}
+
 Node* AbbreviationCodegen::generateSwitchStatement() {
-  auto SwitchStmt = Symtab->create<SwitchNode>();
-  SwitchStmt->append(generateAbbrevFormat(AbbrevFormat));
+  auto* SwitchStmt = Symtab->create<SwitchNode>();
+  SwitchStmt->append(generateAbbreviationRead());
   SwitchStmt->append(Symtab->create<ErrorNode>());
   for (size_t i = 0; i < Assignments.size(); ++i)
     SwitchStmt->append(generateCase(i, Assignments[i]));

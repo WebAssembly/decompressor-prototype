@@ -1,3 +1,6 @@
-(wasm.version 0xb)
-(casm.version 0x0)
+(file.version
+  (casm.magic 0x6d736163)
+  (casm.version 0x0)
+  (wasm.version 0xd)
+)
 (define 'foo' (params) (void)))

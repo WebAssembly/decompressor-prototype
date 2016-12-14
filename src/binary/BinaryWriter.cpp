@@ -53,8 +53,15 @@ TraceClassSexp& BinaryWriter::getTrace() {
   return *Trace;
 }
 
-void BinaryWriter::writePreamble() {
-  Writer->writeUint32(CasmBinaryMagic, WritePos);
+void BinaryWriter::writePreamble(const FileNode* File) {
+  const auto* FileVersion = dyn_cast<FileVersionNode>(File->getKid(0));
+  assert(FileVersion != nullptr);
+  const auto* CasmMagic = dyn_cast<CasmMagicNode>(FileVersion->getKid(0));
+  assert(CasmMagic != nullptr);
+  Writer->writeUint32(CasmMagic->getValue(), WritePos);
+  const auto* CasmVersion = dyn_cast<CasmVersionNode>(FileVersion->getKid(1));
+  assert(CasmVersion != nullptr);
+  Writer->writeUint32(CasmVersion->getValue(), WritePos);
 }
 
 void BinaryWriter::writeFile(const FileNode* File) {
@@ -74,15 +81,26 @@ void BinaryWriter::writeNode(const Node* Nd) {
   TRACE_SEXP(nullptr, Nd);
   switch (NodeType Opcode = Nd->getType()) {
     case NO_SUCH_NODETYPE:
-#define X(tag, format, defval, mergable, NODE_DECLS) case Op##tag:
-      AST_VERSION_INTEGERNODE_TABLE
-#undef X
     case OpUnknownSection: {
-      // TODO(kschimpf) Fix this list.
       fprintf(stderr, "Misplaced s-expression: %s\n", getNodeTypeName(Opcode));
       fatal("Unable to write filter s-expression");
       break;
     }
+#define X(tag, format, defval, mergable, NODE_DECLS)           \
+  case Op##tag: {                                              \
+    Writer->writeUint8(Opcode, WritePos);                      \
+    auto* Int = cast<tag##Node>(Nd);                           \
+    if (Int->isDefaultValue()) {                               \
+      Writer->writeUint8(0, WritePos);                         \
+    } else {                                                   \
+      Writer->writeUint8(int(Int->getFormat()) + 1, WritePos); \
+      Writer->write##format(Int->getValue(), WritePos);        \
+    }                                                          \
+    break;                                                     \
+  }
+
+      AST_VERSION_INTEGERNODE_TABLE
+#undef X
 #define X(tag, format, defval, mergable, NODE_DECLS)           \
   case Op##tag: {                                              \
     Writer->writeUint8(Opcode, WritePos);                      \
@@ -109,6 +127,7 @@ void BinaryWriter::writeNode(const Node* Nd) {
     case OpOr:
     case OpNot:
     case OpError:
+    case OpFileVersion:
     case OpIfThen:
     case OpIfThenElse:
     case OpLastSymbolIs:
@@ -131,35 +150,10 @@ void BinaryWriter::writeNode(const Node* Nd) {
       break;
     }
     case OpFile: {
-      int NumKids = Nd->getNumKids();
-      if (NumKids < 2)
-        fatal("File must begin with casm and wasm versions");
-      for (int i = 0, NumKids = Nd->getNumKids(); i < NumKids; ++i) {
-        const Node* Kid = Nd->getKid(i);
-        switch (i) {
-          case 0:
-            if (auto* Version = dyn_cast<WasmVersionNode>(Kid)) {
-              uint32_t Value = Version->getValue();
-              TRACE(hex_uint32_t, "Wasm version", Value);
-              Writer->writeUint32(Value, WritePos);
-            } else {
-              fatal("Wasm version not specified");
-            }
-            break;
-          case 1:
-            if (auto* Version = dyn_cast<CasmVersionNode>(Kid)) {
-              uint32_t Value = Version->getValue();
-              TRACE(hex_uint32_t, "casm version", Value);
-              Writer->writeUint32(Value, WritePos);
-            } else {
-              fatal("Casm version not specified");
-            }
-            break;
-          default:
-            writeNode(Kid);
-            break;
-        }
-      }
+      assert(Nd->getNumKids() <= 2);
+      Writer->writeUint8(Nd->getNumKids(), WritePos);
+      for (int i = 0; i < 2; ++i)
+        writeNode(Nd->getKid(i));
       break;
     }
     case OpStream: {

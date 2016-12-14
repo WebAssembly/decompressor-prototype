@@ -462,6 +462,8 @@ void Reader::algorithmResume() {
           case OpSection:
           case OpUndefine:
           case OpUnknownSection:
+          case OpFileVersion:
+          case OpCasmMagic:
           case OpCasmVersion:
           case OpWasmVersion:  // Method::Eval
             return failNotImplemented();
