@@ -197,34 +197,38 @@ void BinaryReader::resume() {
       case Method::File:
         switch (Frame.CallState) {
           case State::Enter: {
+            CurFile = Symtab->create<FileNode>();
             uint32_t MagicNumber = Reader->readUint32(ReadPos);
-            WASM_IGNORE(MagicNumber);
-            TRACE(hex_uint32_t, "Magic number", MagicNumber);
+            TRACE(hex_uint32_t, "Casm magic number", MagicNumber);
             uint32_t CasmVersion = Reader->readUint32(ReadPos);
-            WASM_IGNORE(CasmVersion);
-            TRACE(hex_uint32_t, "Version number", CasmVersion);
-            CounterStack.push(Reader->readUint8(ReadPos));
-            Frame.CallState = State::Setup;
-            call(Method::FileVersion);
+            TRACE(hex_uint32_t, "Casm version number", CasmVersion);
+            uint32_t WasmVersion = Reader->readUint32(ReadPos);
+            TRACE(hex_uint32_t, "Wasm version number", WasmVersion);
+            CurFile->append(
+                Symtab->create<FileVersionNode>(
+                    Symtab->getCasmMagicDefinition(MagicNumber,
+                                                   ValueFormat::Hexidecimal),
+                    Symtab->getCasmVersionDefinition(CasmVersion,
+                                                     ValueFormat::Hexidecimal),
+                    Symtab->getWasmVersionDefinition(WasmVersion,
+                                                     ValueFormat::Hexidecimal)));
+            uint8_t SectionFlag = Reader->readUint8(ReadPos);
+            assert(SectionFlag <= 1);
+            if (SectionFlag) {
+              Frame.CallState = State::Step2;
+              call(Method::Section);
+              break;
+            }
+            Frame.CallState = State::Exit;
             break;
           }
-          case State::Setup:
+          case State::Step2:
+            CurFile->append(NodeStack.back());
+            NodeStack.pop_back();
             Frame.CallState = State::Exit;
-            call(Method::Section);
             break;
           case State::Exit: {
-            CurFile = Symtab->create<FileNode>();
-            std::vector<Node*> Kids;
-            for (size_t i = 0; i < Counter; ++i) {
-              Kids.push_back(NodeStack.back());
-              NodeStack.pop_back();
-            }
-            while (!Kids.empty()) {
-              CurFile->append(Kids.back());
-              Kids.pop_back();
-            }
             TRACE_SEXP("File", CurFile);
-            CounterStack.pop();
             SectionSymtab.install(CurFile);
             returnFromCall();
             break;
