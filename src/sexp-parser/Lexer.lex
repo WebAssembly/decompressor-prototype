@@ -218,6 +218,7 @@ letter	[a-zA-Z]
 "define"          return Parser::make_DEFINE(Driver.getLoc());
 "error"           return Parser::make_ERROR(Driver.getLoc());
 "eval"            return Parser::make_EVAL(Driver.getLoc());
+"file"            return Parser::make_FILE(Driver.getLoc());
 "filter"          return Parser::make_FILTER(Driver.getLoc());
 "if"              return Parser::make_IF(Driver.getLoc());
 "int"             return Parser::make_INT(Driver.getLoc());
@@ -231,6 +232,7 @@ letter	[a-zA-Z]
 "locals"          return Parser::make_LOCALS(Driver.getLoc());
 "loop.unbounded"  return Parser::make_LOOP_UNBOUNDED(Driver.getLoc());
 "loop"            return Parser::make_LOOP(Driver.getLoc());
+"magic"           return Parser::make_MAGIC(Driver.getLoc());
 "map"             return Parser::make_MAP(Driver.getLoc());
 "negate"          return Parser::make_NEGATE(Driver.getLoc());
 "not"             return Parser::make_NOT(Driver.getLoc());

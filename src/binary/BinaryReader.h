@@ -71,9 +71,6 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
   static bool isBinary(const char* Filename);
 
   // Use resume() to continue.
-  void startReadingSection();
-
-  // Use resume() to continue.
   void startReadingFile();
 
   // Continues to read until finishedProcessingInput().
@@ -104,7 +101,9 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
 
   FileNode* readFile();
 
+#if 0
   SectionNode* readSection();
+#endif
 
   void setTraceProgress(bool NewValue) {
     getTrace().setTraceProgress(NewValue);
@@ -140,11 +139,13 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
   std::shared_ptr<decode::Queue> Input;
   std::shared_ptr<SymbolTable> Symtab;
   SectionSymbolTable SectionSymtab;
+#if 0
   // The magic number of the input.
   uint32_t MagicNumber;
   // The version of the input.
   uint32_t CasmVersion;
   uint32_t WasmVersion;
+#endif
   mutable std::shared_ptr<TraceClassSexp> Trace;
   std::string Name;
   FileNode* CurFile;

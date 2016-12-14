@@ -197,45 +197,36 @@ void BinaryReader::resume() {
       case Method::File:
         switch (Frame.CallState) {
           case State::Enter: {
-            CurFile = Symtab->create<FileNode>();
-            MagicNumber = Reader->readUint32(ReadPos);
-            TRACE(uint32_t, "MagicNumber", MagicNumber);
-            if (MagicNumber != CasmBinaryMagic) {
-              fail(
-                  "Unable to read, did not find compressed"
-                  " WASM binary magic number");
-              break;
-            }
-            WasmVersion = Reader->readUint32(ReadPos);
-            auto* Wasm = Symtab->getWasmVersionDefinition(
-                WasmVersion, ValueFormat::Hexidecimal);
-            TRACE_SEXP("Wasm version", Wasm);
-            CurFile->append(Wasm);
-            CasmVersion = Reader->readUint32(ReadPos);
-            if (CasmVersion != CasmBinaryVersion)
-              fatal("Casm version not " + std::to_string(CasmBinaryVersion));
-            auto* Casm = Symtab->getCasmVersionDefinition(
-                CasmVersion, ValueFormat::Hexidecimal);
-            TRACE_SEXP("Casm version", Casm);
-            CurFile->append(Casm);
-            Frame.CallState = State::Loop;
-            call(Method::Section);
+            uint32_t MagicNumber = Reader->readUint32(ReadPos);
+            TRACE(hex_uint32_t, "Magic number", MagicNumber);
+            uint32_t CasmVersion = Reader->readUint32(ReadPos);
+            TRACE(hex_uint32_t, "Version number", CasmVersion);
+            CounterStack.push(Reader->readUint8(ReadPos));
+            Frame.CallState = State::Setup;
+            call(Method::FileVersion);
             break;
           }
-          case State::Loop:
-            CurFile->append(CurSection);
-            TRACE_SEXP("CurSection", CurSection);
-            CurSection = nullptr;
-            if (ReadPos.atEof()) {
-              Frame.CallState = State::Exit;
-              break;
-            }
+          case State::Setup:
+            Frame.CallState = State::Exit;
             call(Method::Section);
             break;
-          case State::Exit:
+          case State::Exit: {
+            CurFile = Symtab->create<FileNode>();
+            std::vector<Node*> Kids;
+            for (size_t i = 0; i < Counter; ++i) {
+              Kids.push_back(NodeStack.back());
+              NodeStack.pop_back();
+            }
+            while (!Kids.empty()) {
+              CurFile->append(Kids.back());
+              Kids.pop_back();
+            }
+            TRACE_SEXP("File", CurFile);
+            CounterStack.pop();
             SectionSymtab.install(CurFile);
             returnFromCall();
             break;
+          }
           default:
             failBadState();
             break;
@@ -315,6 +306,9 @@ void BinaryReader::resume() {
                 break;
               case OpEval:
                 readNary<EvalNode>();
+                break;
+              case OpFileVersion:
+                readTernary<FileVersionNode>();
                 break;
               case OpFilter:
                 readNary<FilterNode>();
@@ -410,7 +404,20 @@ void BinaryReader::resume() {
                 AST_OTHER_INTEGERNODE_TABLE
 #undef X
 // The following read version nodes.
-#define X(tag, format, defval, mergable, NODE_DECLS) case Op##tag:
+#define X(tag, format, defval, mergable, NODE_DECLS)                      \
+  case Op##tag: {                                                         \
+    Node* Nd;                                                             \
+    int FormatIndex = Reader->readUint8(ReadPos);                         \
+    if (FormatIndex == 0) {                                               \
+      Nd = Symtab->get##tag##Definition();                                \
+    } else {                                                              \
+      Nd = Symtab->get##tag##Definition(Reader->read##format(ReadPos),    \
+                                        getValueFormat(FormatIndex - 1)); \
+    }                                                                     \
+    TRACE_SEXP(nullptr, Nd);                                              \
+    NodeStack.push_back(Nd);                                              \
+    break;                                                                \
+  }
                 AST_VERSION_INTEGERNODE_TABLE
 #undef X
               case NO_SUCH_NODETYPE:
@@ -452,6 +459,7 @@ void BinaryReader::resume() {
               CurSection->append(NodeStack[i]);
             for (size_t i = StartStackSize; i < StackSize; ++i)
               NodeStack.pop_back();
+            NodeStack.push_back(CurSection);
             returnFromCall();
             break;
           }
@@ -503,6 +511,28 @@ void BinaryReader::resume() {
             TRACE(string, "Symbol", Name);
             SectionSymtab.addSymbol(Name);
             Frame.CallState = State::Loop;
+            break;
+          case State::Exit:
+            returnFromCall();
+            break;
+          default:
+            failBadState();
+            break;
+        }
+        break;
+      case Method::FileVersion:
+        switch (Frame.CallState) {
+          case State::Enter:
+            Frame.CallState = State::Loop;
+            CounterStack.push(4);
+            break;
+          case State::Loop:
+            if (Counter-- == 0) {
+              CounterStack.pop();
+              Frame.CallState = State::Exit;
+              break;
+            }
+            call(Method::Node);
             break;
           case State::Exit:
             returnFromCall();
@@ -699,18 +729,6 @@ FileNode* BinaryReader::readFile() {
   readBackFilled();
   TRACE_BLOCK({ describeState(stderr); });
   return getFile();
-}
-
-SectionNode* BinaryReader::readSection() {
-  TRACE_METHOD("toplevel.readSection");
-  startReadingSection();
-  readBackFilled();
-  return getSection();
-}
-
-void BinaryReader::startReadingSection() {
-  Frame.init();
-  call(Method::Section);
 }
 
 void BinaryReader::startReadingFile() {

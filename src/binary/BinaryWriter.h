@@ -46,12 +46,12 @@ class BinaryWriter {
 
   ~BinaryWriter() { WritePos.freezeEof(); }
 
-  void writePreamble();
+  void write(const FileNode* File) {
+    writePreamble(File);
+    writeFile(File);
+  }
 
   void freezeEof() { WritePos.freezeEof(); }
-
-  void writeFile(const FileNode* File);
-  void writeSection(const SectionNode* Section);
 
   void setMinimizeBlockSize(bool NewValue) { MinimizeBlockSize = NewValue; }
 
@@ -65,12 +65,16 @@ class BinaryWriter {
   decode::WriteCursorWithTraceContext WritePos;
   std::shared_ptr<interp::WriteStream> Writer;
   SectionSymbolTable SectionSymtab;
-  bool MinimizeBlockSize;
   std::shared_ptr<TraceClassSexp> Trace;
+  bool MinimizeBlockSize;
 
   void writeNode(const Node* Nd);
   void writeBlock(std::function<void()> ApplyFn);
   void writeSymbol(const Node* Symbol);
+  void writeFile(const FileNode* File);
+  void writeSection(const SectionNode* Section);
+  void writePreamble(const FileNode* File);
+
 };
 
 }  // end of namespace filt

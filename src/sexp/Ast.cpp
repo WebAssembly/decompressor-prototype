@@ -58,7 +58,7 @@ const char* getName(PredefinedSymbol Sym) {
 
 AstTraitsType AstTraits[NumNodeTypes] = {
 #define X(tag, opcode, sexp_name, type_name, text_num_args, text_max_args) \
-  { Op##tag, sexp_name, type_name, text_num_args, text_max_args }          \
+  { Op##tag, sexp_name, type_name, text_num_args, text_max_args } \
   ,
     AST_OPCODE_TABLE
 #undef X

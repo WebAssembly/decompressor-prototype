@@ -15,8 +15,11 @@
 # This file tests if input/output redirect expressions properly insert a
 # (hidden) sequence node it they get more than one argument.
 
-(wasm.version 0xb)
-(casm.version 0x0)
+(file.version
+  (casm.magic 0x6d736163)
+  (casm.version 0x0)
+  (wasm.version 0xd)
+)
 (define 'code' (params)
    (read)
    (peek (uint8))
