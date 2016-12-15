@@ -101,10 +101,6 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
 
   FileNode* readFile();
 
-#if 0
-  SectionNode* readSection();
-#endif
-
   void setTraceProgress(bool NewValue) {
     getTrace().setTraceProgress(NewValue);
   }

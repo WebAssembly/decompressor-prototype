@@ -529,28 +529,6 @@ void BinaryReader::resume() {
             break;
         }
         break;
-      case Method::FileVersion:
-        switch (Frame.CallState) {
-          case State::Enter:
-            Frame.CallState = State::Loop;
-            CounterStack.push(4);
-            break;
-          case State::Loop:
-            if (Counter-- == 0) {
-              CounterStack.pop();
-              Frame.CallState = State::Exit;
-              break;
-            }
-            call(Method::Node);
-            break;
-          case State::Exit:
-            returnFromCall();
-            break;
-          default:
-            failBadState();
-            break;
-        }
-        break;
       case Method::NO_SUCH_METHOD:
         failBadState();
         break;
