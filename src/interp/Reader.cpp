@@ -1108,7 +1108,7 @@ void Reader::algorithmResume() {
           case State::Step4: {
             Frame.CallState = State::Exit;
             SymbolNode* File = Symtab->getPredefined(PredefinedSymbol::File);
-             if (File == nullptr)
+            if (File == nullptr)
               fail("Can't find sexpression to process file");
             const Node* FileDefn = File->getDefineDefinition();
             if (FileDefn == nullptr)
@@ -1125,35 +1125,6 @@ void Reader::algorithmResume() {
             return failBadState();
         }
         break;
-#if 0
-      case Method::GetSecName:
-        switch (Frame.CallState) {
-          case State::Enter:
-            CurSectionName.clear();
-            LoopCounterStack.push(readVaruint32());
-            Output.writeVaruint32(LoopCounter);
-            Frame.CallState = State::Loop;
-            break;
-          case State::Loop: {
-            if (LoopCounter == 0) {
-              Frame.CallState = State::Exit;
-              break;
-            }
-            --LoopCounter;
-            uint8_t Byte = readUint8();
-            Output.writeUint8(Byte);
-            CurSectionName.push_back(char(Byte));
-            break;
-          }
-          case State::Exit:
-            LoopCounterStack.pop();
-            popAndReturn();
-            break;
-          default:
-            return failBadState();
-        }
-        break;
-#endif
       case Method::ReadOpcode:
         // Note: Assumes that caller pushes OpcodeLocals;
         switch (Frame.Nd->getType()) {
