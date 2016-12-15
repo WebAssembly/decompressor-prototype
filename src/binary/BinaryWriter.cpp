@@ -90,6 +90,9 @@ void BinaryWriter::writeNode(const Node* Nd) {
   TRACE_SEXP(nullptr, Nd);
   switch (NodeType Opcode = Nd->getType()) {
     case NO_SUCH_NODETYPE:
+    case OpHeader:
+    case OpInputHeader:
+    case OpOutputHeader:
     case OpFileVersion:
     case OpUnknownSection: {
       fprintf(stderr, "Misplaced s-expression: %s\n", getNodeTypeName(Opcode));

@@ -220,6 +220,7 @@ letter	[a-zA-Z]
 "eval"            return Parser::make_EVAL(Driver.getLoc());
 "file"            return Parser::make_FILE(Driver.getLoc());
 "filter"          return Parser::make_FILTER(Driver.getLoc());
+"header"          return Parser::make_HEADER(Driver.getLoc());
 "if"              return Parser::make_IF(Driver.getLoc());
 "int"             return Parser::make_INT(Driver.getLoc());
 "in"              return Parser::make_IN(Driver.getLoc());
