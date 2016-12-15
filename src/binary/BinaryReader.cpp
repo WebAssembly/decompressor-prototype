@@ -96,12 +96,13 @@ void BinaryReader::describeCurBlockApplyFcn(FILE* Out) const {
   }
 }
 
-void BinaryReader::describeNodeStack(FILE* Out, TextWriter* Writer) const {
+void BinaryReader::describeNodeStack(FILE* Out) const {
   if (NodeStack.empty())
     return;
+  TextWriter Writer;
   fprintf(Out, "*** Node Stack ***\n");
   for (auto* Nd : NodeStack)
-    Writer->writeAbbrev(Out, Nd);
+    Writer.writeAbbrev(Out, Nd);
   fprintf(Out, "******************\n");
 }
 
@@ -109,7 +110,7 @@ void BinaryReader::describeState(FILE* Out) const {
   describeFrameStack(Out);
   describeCounterStack(Out);
   describeCurBlockApplyFcn(Out);
-  describeNodeStack(Out, getTextWriter());
+  describeNodeStack(Out);
 }
 
 bool BinaryReader::hasEnoughHeadroom() const {
@@ -202,6 +203,9 @@ void BinaryReader::resume() {
             TRACE(hex_uint32_t, "Casm magic number", MagicNumber);
             uint32_t CasmVersion = Reader->readUint32(ReadPos);
             TRACE(hex_uint32_t, "Casm version number", CasmVersion);
+            uint8_t Form = Reader->readUint8(ReadPos);
+            WASM_IGNORE(Form);
+            TRACE(uint8_t, "Form", Form);
             uint32_t WasmVersion = Reader->readUint32(ReadPos);
             TRACE(hex_uint32_t, "Wasm version number", WasmVersion);
             CurFile->append(Symtab->create<FileVersionNode>(
@@ -519,28 +523,6 @@ void BinaryReader::resume() {
             TRACE(string, "Symbol", Name);
             SectionSymtab.addSymbol(Name);
             Frame.CallState = State::Loop;
-            break;
-          case State::Exit:
-            returnFromCall();
-            break;
-          default:
-            failBadState();
-            break;
-        }
-        break;
-      case Method::FileVersion:
-        switch (Frame.CallState) {
-          case State::Enter:
-            Frame.CallState = State::Loop;
-            CounterStack.push(4);
-            break;
-          case State::Loop:
-            if (Counter-- == 0) {
-              CounterStack.pop();
-              Frame.CallState = State::Exit;
-              break;
-            }
-            call(Method::Node);
             break;
           case State::Exit:
             returnFromCall();

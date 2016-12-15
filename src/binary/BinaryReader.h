@@ -101,17 +101,11 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
 
   FileNode* readFile();
 
-#if 0
-  SectionNode* readSection();
-#endif
-
   void setTraceProgress(bool NewValue) {
     getTrace().setTraceProgress(NewValue);
   }
   void setTrace(std::shared_ptr<TraceClassSexp> Trace);
   TraceClassSexp& getTrace() const;
-
-  TextWriter* getTextWriter() const { return getTrace().getTextWriter(); }
 
  private:
   struct CallFrame {
@@ -218,7 +212,7 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
   void describeFrameStack(FILE* Out) const;
   void describeCounterStack(FILE* Out) const;
   void describeCurBlockApplyFcn(FILE* Out) const;
-  void describeNodeStack(FILE* Out, TextWriter* Writer) const;
+  void describeNodeStack(FILE* Out) const;
   void describeState(FILE* Out) const;
 };
 

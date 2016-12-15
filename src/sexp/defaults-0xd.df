@@ -13,8 +13,8 @@
 # limitations under the License.
 
 
-# This file defines the default algorithms for decompressing a WASM
-# module, version 0xC.
+# This file defines the CASM algorithms for decompressing a WASM
+# module, version 0xD.
 
 (file.version
   (casm.magic 0x6d736163)

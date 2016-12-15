@@ -61,16 +61,22 @@ void BinaryWriter::writePreamble(const FileNode* File) {
   Node* Preamble = File->getKid(0);
   if (const auto* Header = dyn_cast<HeaderNode>(Preamble))
     return writeNode(Header);
+  TRACE_METHOD("writePreamble");
   const auto* FileVersion = dyn_cast<FileVersionNode>(Preamble);
   assert(FileVersion != nullptr);
   const auto* CasmMagic = dyn_cast<CasmMagicNode>(FileVersion->getKid(0));
   assert(CasmMagic != nullptr);
+  TRACE_SEXP(nullptr, CasmMagic);
   Writer->writeUint32(CasmMagic->getValue(), WritePos);
   const auto* CasmVersion = dyn_cast<CasmVersionNode>(FileVersion->getKid(1));
   assert(CasmVersion != nullptr);
+  TRACE_SEXP(nullptr, CasmVersion);
   Writer->writeUint32(CasmVersion->getValue(), WritePos);
   const auto* WasmVersion = dyn_cast<WasmVersionNode>(FileVersion->getKid(2));
   assert(WasmVersion != nullptr);
+  TRACE_SEXP(nullptr, WasmVersion);
+  // TODO: Remove this field. Temporary until FileVersion removed.
+  Writer->writeUint8(OpFileVersion, WritePos);
   Writer->writeUint32(WasmVersion->getValue(), WritePos);
 }
 
@@ -193,6 +199,9 @@ void BinaryWriter::writeNode(const Node* Nd) {
     }
     case OpOutputHeader: {
       const auto* Header = cast<OutputHeaderNode>(Nd);
+      // TODO: Remove this feild. Temporary until FileVersion is removed.
+      assert(uint8_t(OpOutputHeader) == uint32_t(OpOutputHeader));
+      Writer->writeUint8(OpOutputHeader, WritePos);
       // Note: The output header appears right after the input header, and
       // hence, need not be labeled.
       Writer->writeVaruint32(Header->getNumKids(), WritePos);
