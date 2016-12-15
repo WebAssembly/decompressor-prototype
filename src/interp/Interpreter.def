@@ -43,7 +43,7 @@ X(EvalParam)                                                  \
 X(Finished)                                                   \
 X(GetFile)                                                    \
 X(GetSecName)                                                 \
-X(GetSection)                                                 \
+    /*X(GetSection)*/                                         \
 X(ReadIntBlock)                                               \
 X(ReadOpcode)                                                 \
 X(ReadIntValues)                                              \

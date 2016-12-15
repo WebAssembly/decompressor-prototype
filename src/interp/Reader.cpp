@@ -1111,9 +1111,6 @@ void Reader::algorithmResume() {
               break;
             }
             switch (Version) {
-              case 0xb:
-                call(Method::GetSection, Frame.CallModifier, nullptr);
-                break;
               case 0xd: {
                 SymbolNode* Sections = Symtab->getSymbol("section");
                 if (Sections == nullptr)
@@ -1158,34 +1155,6 @@ void Reader::algorithmResume() {
           }
           case State::Exit:
             LoopCounterStack.pop();
-            popAndReturn();
-            break;
-          default:
-            return failBadState();
-        }
-        break;
-      case Method::GetSection:
-        switch (Frame.CallState) {
-          case State::Enter:
-#if LOG_SECTIONS
-            TRACE(hex_size_t, "SectionAddress", getPos().getCurByteAddress());
-#endif
-            Frame.CallState = State::Step2;
-            call(Method::GetSecName, Frame.CallModifier, nullptr);
-            break;
-          case State::Step2: {
-            TRACE(string, "Section", CurSectionName);
-            // TODO(kschimpf) Handle 'filter' sections specially (i.e. install).
-            SymbolNode* Sym = Symtab->getSymbol(CurSectionName);
-            const Node* Algorithm = nullptr;
-            if (Sym)
-              Algorithm = Sym->getDefineDefinition();
-            DispatchedMethod = Algorithm ? Method::Eval : Method::CopyBlock;
-            Frame.CallState = State::Exit;
-            call(Method::EvalBlock, Frame.CallModifier, Algorithm);
-            break;
-          }
-          case State::Exit:
             popAndReturn();
             break;
           default:
