@@ -36,7 +36,7 @@ utils::TraceClass::ContextPtr AbbrevAssignWriter::getTraceContext() {
 
 void AbbrevAssignWriter::forwardAbbrevValue(IntType Value) {
   flushDefaultValues();
-  writeValue(Value, AbbrevFormat);
+  writeTypedValue(Value, AbbrevFormat);
 }
 
 void AbbrevAssignWriter::forwardOtherValue(IntType Value) {
@@ -165,46 +165,21 @@ void AbbrevAssignWriter::popValuesFromBuffer(size_t Size) {
   }
 }
 
-void AbbrevAssignWriter::writeValue(IntType Value, IntTypeFormat Format) {
-  switch (Format) {
-    case IntTypeFormat::Uint8:
-      Writer.writeUint8(Value);
-      break;
-    case IntTypeFormat::Uint32:
-      Writer.writeUint32(Value);
-      break;
-    case IntTypeFormat::Uint64:
-      Writer.writeUint64(Value);
-      break;
-    case IntTypeFormat::Varint32:
-      Writer.writeVarint32(Value);
-      break;
-    case IntTypeFormat::Varint64:
-      Writer.writeVarint64(Value);
-      break;
-    case IntTypeFormat::Varuint32:
-      Writer.writeVaruint32(Value);
-      break;
-    case IntTypeFormat::Varuint64:
-      Writer.writeVaruint64(Value);
-  }
-}
-
 void AbbrevAssignWriter::flushDefaultValues() {
   if (DefaultValues.empty())
     return;
 
   if (DefaultValues.size() == 1) {
-    writeValue(Root->getDefaultSingle()->getAbbrevIndex(), AbbrevFormat);
-    writeValue(DefaultValues[0], DefaultFormat);
+    writeTypedValue(Root->getDefaultSingle()->getAbbrevIndex(), AbbrevFormat);
+    writeTypedValue(DefaultValues[0], DefaultFormat);
     DefaultValues.clear();
     return;
   }
 
-  writeValue(Root->getDefaultMultiple()->getAbbrevIndex(), AbbrevFormat);
-  writeValue(DefaultValues.size(), LoopSizeFormat);
+  writeTypedValue(Root->getDefaultMultiple()->getAbbrevIndex(), AbbrevFormat);
+  writeTypedValue(DefaultValues.size(), LoopSizeFormat);
   for (const auto V : DefaultValues)
-    writeValue(V, DefaultFormat);
+    writeTypedValue(V, DefaultFormat);
   DefaultValues.clear();
 }
 

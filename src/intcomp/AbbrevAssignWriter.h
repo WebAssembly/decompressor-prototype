@@ -81,7 +81,6 @@ class AbbrevAssignWriter : public interp::Writer {
   void writeUntilBufferEmpty();
   void popValuesFromBuffer(size_t size);
   void flushDefaultValues();
-  void writeValue(decode::IntType Value, interp::IntTypeFormat Format);
 
   const char* getDefaultTraceName() const OVERRIDE;
 };
