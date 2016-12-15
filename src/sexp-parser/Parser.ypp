@@ -217,7 +217,7 @@ input_header
         ;
 
 output_header
-        : %empty { $$ = Driver.create<InputHeaderNode>(); }
+        : %empty { $$ = Driver.create<OutputHeaderNode>(); }
         | output_header literal_expression {
             $$ = $1;
             $$->append($2);
