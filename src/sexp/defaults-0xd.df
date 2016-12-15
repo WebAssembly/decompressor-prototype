@@ -303,6 +303,14 @@
   (=> 'external_kind.end')
 )
 
+(define 'file' (params)
+  (=> 'file.begin')
+  (loop.unbounded
+    (eval 'section')
+  )
+  (=> 'file.begin')
+)
+
 (define 'function.section' (params)
   (=> 'function.section.begin')
   (loop
