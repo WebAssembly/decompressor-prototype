@@ -89,6 +89,7 @@ struct IntValue {
 %token EVAL          "eval"
 %token FILE          "file"
 %token FILTER        "filter"
+%token HEADER        "header"
 %token IF            "if"
 %token IN            "in"
 %token INT           "int"
@@ -156,12 +157,14 @@ struct IntValue {
 %type <wasm::filt::Node *> file_version
 %type <wasm::filt::Node *> fixed_format_directive
 %type <wasm::filt::Node *> format_directive
+%type <wasm::filt::Node *> input_header
 %type <wasm::filt::Node *> literal_expression
 %type <wasm::filt::Node *> locals_decl
 %type <wasm::filt::Node *> local_var
 %type <wasm::filt::Node *> loop_body
 %type <wasm::filt::MapNode *> map_args
 %type <wasm::filt::OpcodeNode *> opcode_args
+%type <wasm::filt::Node *> output_header
 %type <wasm::filt::Node *> params_decl
 %type <wasm::filt::Node *> stream
 %type <wasm::filt::Node *> convert
@@ -197,6 +200,27 @@ file    : file_version {
 file_version
         : "(" "file" "." "version" casm_magic casm_version wasm_version ")" {
             $$ = Driver.create<FileVersionNode>($5, $6, $7);
+          }
+        | "(" "header" "(" "in" input_header ")"
+                       "(" "out"  output_header ")"
+          ")" {
+            $$ = Driver.create<HeaderNode>($5, $9);
+        }
+        ;
+
+input_header
+        : %empty { $$ = Driver.create<InputHeaderNode>(); }
+        | input_header literal_expression {
+            $$ = $1;
+            $$->append($2);
+          }
+        ;
+
+output_header
+        : %empty { $$ = Driver.create<InputHeaderNode>(); }
+        | output_header literal_expression {
+            $$ = $1;
+            $$->append($2);
           }
         ;
 

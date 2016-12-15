@@ -449,6 +449,9 @@ void Reader::algorithmResume() {
 #endif
         switch (Frame.Nd->getType()) {
           case NO_SUCH_NODETYPE:
+          case OpHeader:
+          case OpInputHeader:
+          case OpOutputHeader:
           case OpConvert:
           case OpParams:
           case OpFilter:  // Method::Eval
