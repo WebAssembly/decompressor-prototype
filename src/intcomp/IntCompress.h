@@ -94,7 +94,8 @@ class IntCompressor FINAL {
   bool ErrorsFound;
   void readInput(bool Trace = false);
   const decode::WriteCursor writeCodeOutput(
-      std::shared_ptr<filt::SymbolTable> Symtab, bool Trace = false);
+      std::shared_ptr<filt::SymbolTable> Symtab,
+      bool Trace = false);
   void writeDataOutput(const decode::WriteCursor& StartPos,
                        std::shared_ptr<filt::SymbolTable> Symtab,
                        bool Trace = false);
@@ -107,11 +108,13 @@ class IntCompressor FINAL {
       bool ToRead,
       bool Trace = false);
   std::shared_ptr<filt::SymbolTable> generateCodeForReading(
-      CountNode::PtrVector& Assignments, bool Trace = false) {
+      CountNode::PtrVector& Assignments,
+      bool Trace = false) {
     return generateCode(Assignments, true, Trace);
   }
   std::shared_ptr<filt::SymbolTable> generateCodeForWriting(
-      CountNode::PtrVector& Assignments, bool Trace = false) {
+      CountNode::PtrVector& Assignments,
+      bool Trace = false) {
     return generateCode(Assignments, false, Trace);
   }
 };

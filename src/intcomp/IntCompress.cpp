@@ -84,34 +84,24 @@ void IntCompressor::readInput(bool TraceParsing) {
   return;
 }
 
-const WriteCursor IntCompressor::writeCodeOutput(std::shared_ptr<SymbolTable> Symtab,
-                                                 bool Trace) {
-  TRACE_METHOD("writeCodeOutput");
-  TRACE(bool, "Trace", Trace);
+const WriteCursor IntCompressor::writeCodeOutput(
+    std::shared_ptr<SymbolTable> Symtab,
+    bool Trace) {
   BinaryWriter Writer(Output, Symtab);
-  // TODO(karlschimpf): Make sure that we overriding freezing eof when Writer
-  // is destructed.
+  Writer.setFreezeEofOnDestruct(false);
   Writer.setTraceProgress(Trace);
   Writer.setMinimizeBlockSize(true);
   Writer.write(dyn_cast<FileNode>(Symtab->getInstalledRoot()));
-  TRACE(bool, "isEofFrozen", Writer.getWritePos().isEofFrozen());
-  TRACE(size_t, "eof address", Writer.getWritePos().getEofAddress());
-  TRACE(size_t, "current byte", Writer.getWritePos().getCurByteAddress());
   return Writer.getWritePos();
 }
 
 void IntCompressor::writeDataOutput(const WriteCursor& StartPos,
                                     std::shared_ptr<SymbolTable> Symtab,
                                     bool Trace) {
-  TRACE_METHOD("writeOutput");
   StreamWriter Writer(Output);
   Writer.setPos(StartPos);
-  TRACE(bool, "isEofFrozen", Writer.getPos().isEofFrozen());
-  TRACE(size_t, "eof address", Writer.getPos().getEofAddress());
-  TRACE(size_t, "current byte", Writer.getPos().getCurByteAddress());
   IntReader Reader(IntOutput, Writer, Symtab);
   if (Trace) {
-    TRACE(bool, "Trace", Trace);
     TraceClassSexp& Trace = Reader.getTrace();
     Trace.addContext(Reader.getTraceContext());
     Trace.addContext(Writer.getTraceContext());
@@ -195,16 +185,13 @@ void IntCompressor::compress(DetailLevel Level,
         IntOutput->getNumIntegers());
   if (Level >= DetailLevel::MoreDetail)
     IntOutput->describe(stderr, "Input int stream");
-  const WriteCursor Pos = writeCodeOutput(generateCodeForReading(AbbrevAssignments));
+  const WriteCursor Pos =
+      writeCodeOutput(generateCodeForReading(AbbrevAssignments));
   if (errorsFound()) {
     fprintf(stderr, "Unable to compress, output malformed\n");
     return;
   }
-#if 1
-  WASM_IGNORE(Pos);
-#else
   writeDataOutput(Pos, generateCodeForWriting(AbbrevAssignments));
-#endif
   if (errorsFound()) {
     fprintf(stderr, "Unable to compress, output malformed\n");
     return;

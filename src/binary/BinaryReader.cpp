@@ -204,14 +204,13 @@ void BinaryReader::resume() {
             TRACE(hex_uint32_t, "Casm version number", CasmVersion);
             uint32_t WasmVersion = Reader->readUint32(ReadPos);
             TRACE(hex_uint32_t, "Wasm version number", WasmVersion);
-            CurFile->append(
-                Symtab->create<FileVersionNode>(
-                    Symtab->getCasmMagicDefinition(MagicNumber,
-                                                   ValueFormat::Hexidecimal),
-                    Symtab->getCasmVersionDefinition(CasmVersion,
-                                                     ValueFormat::Hexidecimal),
-                    Symtab->getWasmVersionDefinition(WasmVersion,
-                                                     ValueFormat::Hexidecimal)));
+            CurFile->append(Symtab->create<FileVersionNode>(
+                Symtab->getCasmMagicDefinition(MagicNumber,
+                                               ValueFormat::Hexidecimal),
+                Symtab->getCasmVersionDefinition(CasmVersion,
+                                                 ValueFormat::Hexidecimal),
+                Symtab->getWasmVersionDefinition(WasmVersion,
+                                                 ValueFormat::Hexidecimal)));
             uint8_t SectionFlag = Reader->readUint8(ReadPos);
             assert(SectionFlag <= 1);
             if (SectionFlag) {
