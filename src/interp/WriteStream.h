@@ -39,7 +39,13 @@ class WriteStream : public std::enable_shared_from_this<WriteStream> {
   virtual ~WriteStream();
   void writeUint8(uint8_t Value, decode::WriteCursor& Pos);
   void writeUint32(uint32_t Value, decode::WriteCursor& Pos);
+  void writeInt32(int32_t Value, decode::WriteCursor& Pos) {
+    writeUint32(uint32_t(Value), Pos);
+  }
   void writeUint64(uint64_t Value, decode::WriteCursor& Pos);
+  void writeInt64(int64_t Value, decode::WriteCursor& Pos) {
+    writeUint64(uint64_t(Value), Pos);
+  }
   void writeVarint32(int32_t Value, decode::WriteCursor& Pos);
   void writeVarint64(int64_t Value, decode::WriteCursor& Pos);
   void writeVaruint32(uint32_t Value, decode::WriteCursor& Pos);

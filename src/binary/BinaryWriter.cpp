@@ -30,8 +30,6 @@ using namespace utils;
 
 namespace filt {
 
-namespace {}  // end of anonymous namespace
-
 BinaryWriter::BinaryWriter(std::shared_ptr<decode::Queue> Output,
                            std::shared_ptr<SymbolTable> Symtab)
     : WritePos(decode::StreamType::Byte, Output),
@@ -60,7 +58,10 @@ TraceClassSexp& BinaryWriter::getTrace() {
 }
 
 void BinaryWriter::writePreamble(const FileNode* File) {
-  const auto* FileVersion = dyn_cast<FileVersionNode>(File->getKid(0));
+  Node* Preamble = File->getKid(0);
+  if (const auto* Header = dyn_cast<HeaderNode>(Preamble))
+    return writeNode(Header);
+  const auto* FileVersion = dyn_cast<FileVersionNode>(Preamble);
   assert(FileVersion != nullptr);
   const auto* CasmMagic = dyn_cast<CasmMagicNode>(FileVersion->getKid(0));
   assert(CasmMagic != nullptr);
@@ -73,16 +74,32 @@ void BinaryWriter::writePreamble(const FileNode* File) {
   Writer->writeUint32(WasmVersion->getValue(), WritePos);
 }
 
-void BinaryWriter::writeFile(const FileNode* File) {
-  TRACE_METHOD("writeFile");
-  TRACE_SEXP(nullptr, File);
-  writeNode(File);
-}
-
-void BinaryWriter::writeSection(const SectionNode* Section) {
-  TRACE_METHOD("writeSection");
-  TRACE_SEXP(nullptr, Section);
-  writeNode(Section);
+void BinaryWriter::writeLiteral(const Node* Nd) {
+  TRACE_METHOD("writeliteral");
+  TRACE_SEXP("", Nd);
+  const auto* Const = dyn_cast<IntegerNode>(Nd);
+  if (Const == nullptr)
+    fatal("Unrecognized literal constant!");
+  switch (Const->getType()) {
+    default:
+      fatal("Unrecognized literal constant!");
+      break;
+    case OpU8Const:
+      Writer->writeUint8(cast<U8ConstNode>(Const)->getValue(), WritePos);
+      break;
+    case OpI32Const:
+      Writer->writeInt32(cast<I32ConstNode>(Const)->getValue(), WritePos);
+      break;
+    case OpU32Const:
+      Writer->writeUint32(cast<U32ConstNode>(Const)->getValue(), WritePos);
+      break;
+    case OpI64Const:
+      Writer->writeInt64(cast<I64ConstNode>(Const)->getValue(), WritePos);
+      break;
+    case OpU64Const:
+      Writer->writeUint64(cast<U64ConstNode>(Const)->getValue(), WritePos);
+      break;
+  }
 }
 
 void BinaryWriter::writeNode(const Node* Nd) {
@@ -90,9 +107,6 @@ void BinaryWriter::writeNode(const Node* Nd) {
   TRACE_SEXP(nullptr, Nd);
   switch (NodeType Opcode = Nd->getType()) {
     case NO_SUCH_NODETYPE:
-    case OpHeader:
-    case OpInputHeader:
-    case OpOutputHeader:
     case OpFileVersion:
     case OpUnknownSection: {
       fprintf(stderr, "Misplaced s-expression: %s\n", getNodeTypeName(Opcode));
@@ -161,8 +175,34 @@ void BinaryWriter::writeNode(const Node* Nd) {
       Writer->writeUint8(Opcode, WritePos);
       break;
     }
+    case OpHeader: {
+      // Note: The header appears at the beginning of the file, and hence,
+      // isn't labeled.
+      const auto* Header = cast<HeaderNode>(Nd);
+      for (int i = 0; i < Header->getNumKids(); ++i)
+        writeNode(Header->getKid(i));
+      break;
+    }
+    case OpInputHeader: {
+      // Note: The input header appears at the beginning of the file, and hence,
+      // isn't labeled.
+      const auto* Header = cast<InputHeaderNode>(Nd);
+      for (int i = 0; i < Header->getNumKids(); ++i)
+        writeLiteral(Header->getKid(i));
+      break;
+    }
+    case OpOutputHeader: {
+      const auto* Header = cast<OutputHeaderNode>(Nd);
+      // Note: The output header appears right after the input header, and
+      // hence, need not be labeled.
+      Writer->writeVaruint32(Header->getNumKids(), WritePos);
+      for (int i = 0; i < Header->getNumKids(); ++i)
+        writeLiteral(Header->getKid(i));
+      break;
+    }
     case OpFile: {
-      // Note: The File version was generated as part of the preamble.
+      // TODO: remove once we are only using HeaderNode's for preamble.
+      writePreamble(cast<FileNode>(Nd));
       int NumKids = Nd->getNumKids();
       assert(NumKids <= 2);
       assert(NumKids >= 1);

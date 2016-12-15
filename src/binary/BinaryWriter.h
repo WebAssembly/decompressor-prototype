@@ -46,10 +46,7 @@ class BinaryWriter {
 
   ~BinaryWriter();
 
-  void write(const FileNode* File) {
-    writePreamble(File);
-    writeFile(File);
-  }
+  void write(const FileNode* File) { writeNode(File); }
 
   const decode::WriteCursor& getWritePos() const { return WritePos; }
 
@@ -62,6 +59,7 @@ class BinaryWriter {
   void setTraceProgress(bool NewValue) {
     getTrace().setTraceProgress(NewValue);
   }
+
   void setTrace(std::shared_ptr<filt::TraceClassSexp> Trace);
   TraceClassSexp& getTrace();
 
@@ -76,9 +74,8 @@ class BinaryWriter {
   void writeNode(const Node* Nd);
   void writeBlock(std::function<void()> ApplyFn);
   void writeSymbol(const Node* Symbol);
-  void writeFile(const FileNode* File);
-  void writeSection(const SectionNode* Section);
   void writePreamble(const FileNode* File);
+  void writeLiteral(const Node* Nd);
 };
 
 }  // end of namespace filt
