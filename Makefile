@@ -163,6 +163,7 @@ INTERP_SRCS = \
 	ByteWriteStream.cpp \
 	Decompress.cpp \
 	Interpreter.cpp \
+	IntFormats.cpp \
 	IntReader.cpp \
 	IntStream.cpp \
 	IntWriter.cpp \
@@ -195,7 +196,6 @@ INTCOMP_SRCS = \
 	CountWriter.cpp \
 	IntCompress.cpp \
 	IntCountNode.cpp \
-	IntFormats.cpp \
 	RemoveNodesVisitor.cpp
 
 INTCOMP_OBJS = $(patsubst %.cpp, $(INTCOMP_OBJDIR)/%.o, $(INTCOMP_SRCS))

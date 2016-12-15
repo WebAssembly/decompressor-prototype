@@ -39,7 +39,7 @@ class AbbrevAssignWriter : public interp::Writer {
   AbbrevAssignWriter(CountNode::RootPtr Root,
                      std::shared_ptr<interp::IntStream> Output,
                      size_t BufSize,
-                     IntTypeFormat AbbrevFormat)
+                     interp::IntTypeFormat AbbrevFormat)
       : Root(Root),
         Writer(Output),
         Buffer(BufSize),
@@ -69,10 +69,10 @@ class AbbrevAssignWriter : public interp::Writer {
   CountNode::RootPtr Root;
   interp::IntWriter Writer;
   utils::circular_vector<decode::IntType> Buffer;
-  IntTypeFormat AbbrevFormat;
+  interp::IntTypeFormat AbbrevFormat;
   std::vector<decode::IntType> DefaultValues;
-  static constexpr IntTypeFormat DefaultFormat = IntTypeFormat::Varint64;
-  static constexpr IntTypeFormat LoopSizeFormat = IntTypeFormat::Varuint64;
+  static constexpr interp::IntTypeFormat DefaultFormat = interp::IntTypeFormat::Varint64;
+  static constexpr interp::IntTypeFormat LoopSizeFormat = interp::IntTypeFormat::Varuint64;
 
   void bufferValue(decode::IntType Value);
   void forwardAbbrevValue(decode::IntType Value);
@@ -81,7 +81,7 @@ class AbbrevAssignWriter : public interp::Writer {
   void writeUntilBufferEmpty();
   void popValuesFromBuffer(size_t size);
   void flushDefaultValues();
-  void writeValue(decode::IntType Value, IntTypeFormat Format);
+  void writeValue(decode::IntType Value, interp::IntTypeFormat Format);
 
   const char* getDefaultTraceName() const OVERRIDE;
 };

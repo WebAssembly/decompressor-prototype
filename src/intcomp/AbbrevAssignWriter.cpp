@@ -22,6 +22,7 @@ namespace wasm {
 
 using namespace decode;
 using namespace filt;
+using namespace interp;
 
 namespace intcomp {
 

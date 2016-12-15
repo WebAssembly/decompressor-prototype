@@ -21,6 +21,8 @@
 
 namespace wasm {
 
+using namespace interp;
+
 namespace intcomp {
 
 void AbbreviationsCollector::assignAbbreviations() {

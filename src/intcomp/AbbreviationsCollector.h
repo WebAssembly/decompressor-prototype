@@ -28,7 +28,7 @@ namespace intcomp {
 class AbbreviationsCollector : public CountNodeCollector {
  public:
   AbbreviationsCollector(CountNode::RootPtr Root,
-                         IntTypeFormat AbbrevFormat,
+                         interp::IntTypeFormat AbbrevFormat,
                          CountNode::PtrVector& Assignments)
       : CountNodeCollector(Root),
         AbbrevFormat(AbbrevFormat),
@@ -45,7 +45,7 @@ class AbbreviationsCollector : public CountNodeCollector {
   }
 
  private:
-  IntTypeFormat AbbrevFormat;
+  interp::IntTypeFormat AbbrevFormat;
   CountNode::PtrVector& Assignments;
 };
 
