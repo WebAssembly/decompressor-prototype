@@ -1103,28 +1103,19 @@ void Reader::algorithmResume() {
               return fail("Unable to decompress. WASM version not known");
             if (!Output.writeVersionNumber(Version))
               return failCantWrite();
-            Frame.CallState = State::Loop;
+            Frame.CallState = State::Step4;
             break;
-          case State::Loop:
-            if (atInputEob()) {
-              Frame.CallState = State::Exit;
-              break;
-            }
-            switch (Version) {
-              case 0xd: {
-                SymbolNode* Sections = Symtab->getSymbol("section");
-                if (Sections == nullptr)
-                  fail("Can't find sexpression to process sections");
-                const Node* SectionsDef = Sections->getDefineDefinition();
-                if (SectionsDef == nullptr)
-                  fail("Can't find sexpression to process sections");
-                call(Method::Eval, Frame.CallModifier, SectionsDef);
-                break;
-              }
-              default:
-                return fail("Version not understood, can't find sections");
-            }
+          case State::Step4: {
+            Frame.CallState = State::Exit;
+            SymbolNode* File = Symtab->getPredefined(PredefinedSymbol::File);
+             if (File == nullptr)
+              fail("Can't find sexpression to process file");
+            const Node* FileDefn = File->getDefineDefinition();
+            if (FileDefn == nullptr)
+              fail("Can't find sexpression to process file");
+            call(Method::Eval, Frame.CallModifier, FileDefn);
             break;
+          }
           case State::Exit:
             if (!Output.writeFreezeEof())
               return failFreezingEof();
@@ -1134,6 +1125,7 @@ void Reader::algorithmResume() {
             return failBadState();
         }
         break;
+#if 0
       case Method::GetSecName:
         switch (Frame.CallState) {
           case State::Enter:
@@ -1161,6 +1153,7 @@ void Reader::algorithmResume() {
             return failBadState();
         }
         break;
+#endif
       case Method::ReadOpcode:
         // Note: Assumes that caller pushes OpcodeLocals;
         switch (Frame.Nd->getType()) {

@@ -67,6 +67,9 @@ X(External_kind_function, "external_kind.function") \
 X(External_kind_global, "external_kind.global") \
 X(External_kind_memory, "external_kind.memory") \
 X(External_kind_table, "external_kind.table") \
+X(File, "file") \
+X(File_begin, "file.begin") \
+X(File_end, "file.end") \
 X(Function_body, "function_body") \
 X(Function_body_begin, "function_body.begin") \
 X(Function_body_code_begin, "function_body.code.begin") \

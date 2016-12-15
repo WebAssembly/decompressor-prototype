@@ -57,7 +57,7 @@ Node* AbbreviationCodegen::generateFileBody() {
 
 Node* AbbreviationCodegen::generateFileFcn() {
   auto* Fcn = Symtab->create<DefineNode>();
-  Fcn->append(Symtab->getPredefined(PredefinedSymbol::Section));
+  Fcn->append(Symtab->getPredefined(PredefinedSymbol::File));
   Fcn->append(Symtab->getParamsDefinition());
   Fcn->append(Symtab->create<LoopUnboundedNode>(generateSwitchStatement()));
   return Fcn;
