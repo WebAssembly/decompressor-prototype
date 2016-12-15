@@ -96,12 +96,13 @@ void BinaryReader::describeCurBlockApplyFcn(FILE* Out) const {
   }
 }
 
-void BinaryReader::describeNodeStack(FILE* Out, TextWriter* Writer) const {
+void BinaryReader::describeNodeStack(FILE* Out) const {
   if (NodeStack.empty())
     return;
+  TextWriter Writer;
   fprintf(Out, "*** Node Stack ***\n");
   for (auto* Nd : NodeStack)
-    Writer->writeAbbrev(Out, Nd);
+    Writer.writeAbbrev(Out, Nd);
   fprintf(Out, "******************\n");
 }
 
@@ -109,7 +110,7 @@ void BinaryReader::describeState(FILE* Out) const {
   describeFrameStack(Out);
   describeCounterStack(Out);
   describeCurBlockApplyFcn(Out);
-  describeNodeStack(Out, getTextWriter());
+  describeNodeStack(Out);
 }
 
 bool BinaryReader::hasEnoughHeadroom() const {
