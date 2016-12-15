@@ -204,6 +204,7 @@ void BinaryReader::resume() {
             uint32_t CasmVersion = Reader->readUint32(ReadPos);
             TRACE(hex_uint32_t, "Casm version number", CasmVersion);
             uint8_t Form = Reader->readUint8(ReadPos);
+            WASM_IGNORE(Form);
             TRACE(uint8_t, "Form", Form);
             uint32_t WasmVersion = Reader->readUint32(ReadPos);
             TRACE(hex_uint32_t, "Wasm version number", WasmVersion);
