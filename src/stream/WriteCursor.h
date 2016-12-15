@@ -42,8 +42,7 @@ class WriteCursor : public WriteCursorBase {
   WriteCursor(const Cursor& C, size_t StartAddress)
       : WriteCursorBase(C, StartAddress) {}
 
-  WriteCursor(const WriteCursorBase& C)
-      : WriteCursorBase(C) {}
+  WriteCursor(const WriteCursorBase& C) : WriteCursorBase(C) {}
 
   ~WriteCursor() OVERRIDE;
 

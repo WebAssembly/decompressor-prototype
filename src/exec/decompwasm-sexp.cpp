@@ -54,6 +54,7 @@ std::shared_ptr<RawStream> getInput() {
 class OutputHandler {
   OutputHandler(const OutputHandler&) = delete;
   OutputHandler& operator=(const OutputHandler&) = delete;
+
  public:
   OutputHandler() : Out(stdout) {
     if (strcmp("-", OutputFilename) == 0)
@@ -69,6 +70,7 @@ class OutputHandler {
       fclose(Out);
   }
   FILE* getFile() { return Out; }
+
  private:
   FILE* Out;
 };
