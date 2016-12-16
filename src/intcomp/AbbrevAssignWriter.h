@@ -71,8 +71,10 @@ class AbbrevAssignWriter : public interp::Writer {
   utils::circular_vector<decode::IntType> Buffer;
   interp::IntTypeFormat AbbrevFormat;
   std::vector<decode::IntType> DefaultValues;
-  static constexpr interp::IntTypeFormat DefaultFormat = interp::IntTypeFormat::Varint64;
-  static constexpr interp::IntTypeFormat LoopSizeFormat = interp::IntTypeFormat::Varuint64;
+  static constexpr interp::IntTypeFormat DefaultFormat =
+      interp::IntTypeFormat::Varint64;
+  static constexpr interp::IntTypeFormat LoopSizeFormat =
+      interp::IntTypeFormat::Varuint64;
 
   void bufferValue(decode::IntType Value);
   void forwardAbbrevValue(decode::IntType Value);

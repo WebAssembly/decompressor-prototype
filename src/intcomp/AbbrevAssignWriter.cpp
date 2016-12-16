@@ -36,7 +36,7 @@ utils::TraceClass::ContextPtr AbbrevAssignWriter::getTraceContext() {
 
 void AbbrevAssignWriter::forwardAbbrevValue(IntType Value) {
   flushDefaultValues();
-  writeTypedValue(Value, AbbrevFormat);
+  Writer.writeTypedValue(Value, AbbrevFormat);
 }
 
 void AbbrevAssignWriter::forwardOtherValue(IntType Value) {
@@ -170,16 +170,18 @@ void AbbrevAssignWriter::flushDefaultValues() {
     return;
 
   if (DefaultValues.size() == 1) {
-    writeTypedValue(Root->getDefaultSingle()->getAbbrevIndex(), AbbrevFormat);
-    writeTypedValue(DefaultValues[0], DefaultFormat);
+    Writer.writeTypedValue(Root->getDefaultSingle()->getAbbrevIndex(),
+                           AbbrevFormat);
+    Writer.writeTypedValue(DefaultValues[0], DefaultFormat);
     DefaultValues.clear();
     return;
   }
 
-  writeTypedValue(Root->getDefaultMultiple()->getAbbrevIndex(), AbbrevFormat);
-  writeTypedValue(DefaultValues.size(), LoopSizeFormat);
+  Writer.writeTypedValue(Root->getDefaultMultiple()->getAbbrevIndex(),
+                         AbbrevFormat);
+  Writer.writeTypedValue(DefaultValues.size(), LoopSizeFormat);
   for (const auto V : DefaultValues)
-    writeTypedValue(V, DefaultFormat);
+    Writer.writeTypedValue(V, DefaultFormat);
   DefaultValues.clear();
 }
 
