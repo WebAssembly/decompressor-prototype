@@ -65,6 +65,26 @@ bool Writer::writeFreezeEof() {
   return true;
 }
 
+bool Writer::writeTypedValue(IntType Value, IntTypeFormat Format) {
+  switch (Format) {
+    case IntTypeFormat::Uint8:
+      return writeUint8(Value);
+    case IntTypeFormat::Uint32:
+      return writeUint32(Value);
+    case IntTypeFormat::Uint64:
+      return writeUint64(Value);
+    case IntTypeFormat::Varint32:
+      return writeVarint32(Value);
+    case IntTypeFormat::Varint64:
+      return writeVarint64(Value);
+    case IntTypeFormat::Varuint32:
+      return writeVaruint32(Value);
+    case IntTypeFormat::Varuint64:
+      return writeVaruint64(Value);
+  }
+  WASM_RETURN_UNREACHABLE(false);
+}
+
 void Writer::describeState(FILE* File) {
 }
 

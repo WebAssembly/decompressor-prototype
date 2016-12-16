@@ -50,6 +50,7 @@ int comparePointers(std::shared_ptr<T> V1, std::shared_ptr<T> V2) {
 namespace wasm {
 
 using namespace decode;
+using namespace interp;
 
 namespace intcomp {
 

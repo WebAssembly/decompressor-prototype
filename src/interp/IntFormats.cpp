@@ -17,15 +17,15 @@
 // Implements possible formats (and the number of bytes needed) for
 // Implementseach integer value.
 
-#include "intcomp/IntFormats.h"
+#include "interp/IntFormats.h"
+
 #include "interp/FormatHelpers.h"
 
 namespace wasm {
 
 using namespace decode;
-using namespace interp;
 
-namespace intcomp {
+namespace interp {
 
 namespace {
 
@@ -179,6 +179,6 @@ IntTypeFormat IntTypeFormats::getNextMatchingFormat(IntTypeFormat Fmt) const {
   return Fmt;
 }
 
-}  // end of namespace intcomp
+}  // end of namespace interp
 
 }  // end of namespace wasm

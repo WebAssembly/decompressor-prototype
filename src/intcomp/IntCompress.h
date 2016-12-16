@@ -21,7 +21,7 @@
 
 #include "intcomp/CompressionFlags.h"
 #include "intcomp/IntCountNode.h"
-#include "intcomp/IntFormats.h"
+#include "interp/IntFormats.h"
 #include "interp/IntStream.h"
 #include "interp/StreamReader.h"
 #include "interp/StreamWriter.h"
@@ -74,8 +74,8 @@ class IntCompressor FINAL {
 
   void setMinimizeBlockSize(bool NewValue) { (void)NewValue; }
 
-  IntTypeFormat getAbbrevFormat() const { return AbbrevFormat; }
-  void setAbbrevFormat(IntTypeFormat Fmt) { AbbrevFormat = Fmt; }
+  interp::IntTypeFormat getAbbrevFormat() const { return AbbrevFormat; }
+  void setAbbrevFormat(interp::IntTypeFormat Fmt) { AbbrevFormat = Fmt; }
 
   void describe(FILE* Out, CollectionFlags = makeFlags(CollectionFlag::All));
 
@@ -90,7 +90,7 @@ class IntCompressor FINAL {
   uint64_t CountCutoff;
   uint64_t WeightCutoff;
   size_t LengthLimit;
-  IntTypeFormat AbbrevFormat;
+  interp::IntTypeFormat AbbrevFormat;
   bool ErrorsFound;
   void readInput(bool Trace = false);
   const decode::WriteCursor writeCodeOutput(

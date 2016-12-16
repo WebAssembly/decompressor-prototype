@@ -17,14 +17,14 @@
 // Defines possible formats (and the number of bytes needed) for each
 // integer value.
 
-#ifndef DECOMPRESSOR_SRC_INTCOMP_INTFORMATS_H
-#define DECOMPRESSOR_SRC_INTCOMP_INTFORMATS_H
+#ifndef DECOMPRESSOR_SRC_INTERP_INTFORMATS_H
+#define DECOMPRESSOR_SRC_INTERP_INTFORMATS_H
 
 #include "utils/Defs.h"
 
 namespace wasm {
 
-namespace intcomp {
+namespace interp {
 
 enum class IntTypeFormat {
   // Note: Sizes are listed in order of preference, if they contain the
@@ -83,8 +83,8 @@ class IntTypeFormats {
   void installValidByteSizes(decode::IntType Value);
 };
 
-}  // end of namespace intcomp
+}  // end of namespace interp
 
 }  // end of namespace wasm
 
-#endif  // DECOMPRESSOR_SRC_INTCOMP_INTFORMATS_H
+#endif  // DECOMPRESSOR_SRC_INTERP_INTFORMATS_H

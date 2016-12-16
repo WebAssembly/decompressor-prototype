@@ -20,7 +20,7 @@
 #ifndef DEcOMPRESSOR_SRC_INTCOMP_INTCOUNTNODE_H
 #define DEcOMPRESSOR_SRC_INTCOMP_INTCOUNTNODE_H
 
-#include "intcomp/IntFormats.h"
+#include "interp/IntFormats.h"
 #include "utils/Casting.h"
 #include "utils/Defs.h"
 #include "utils/heap.h"

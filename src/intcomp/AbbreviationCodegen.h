@@ -33,7 +33,7 @@ class AbbreviationCodegen {
 
  public:
   AbbreviationCodegen(CountNode::RootPtr Root,
-                      IntTypeFormat AbbrevFormat,
+                      interp::IntTypeFormat AbbrevFormat,
                       CountNode::PtrVector& Assignments);
   ~AbbreviationCodegen();
 
@@ -42,7 +42,7 @@ class AbbreviationCodegen {
  private:
   std::shared_ptr<filt::SymbolTable> Symtab;
   CountNode::RootPtr Root;
-  IntTypeFormat AbbrevFormat;
+  interp::IntTypeFormat AbbrevFormat;
   CountNode::PtrVector& Assignments;
   bool ToRead;
   void generateFile();
@@ -60,7 +60,7 @@ class AbbreviationCodegen {
   filt::Node* generateIntLitAction(IntCountNode* Nd);
   filt::Node* generateIntLitActionRead(IntCountNode* Nd);
   filt::Node* generateIntLitActionWrite(IntCountNode* Nd);
-  filt::Node* generateAbbrevFormat(IntTypeFormat AbbrevFormat);
+  filt::Node* generateAbbrevFormat(interp::IntTypeFormat AbbrevFormat);
 };
 
 }  // end of namespace intcomp
