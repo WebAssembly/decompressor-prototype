@@ -425,8 +425,6 @@ boot: $(EXECS_BOOT)
 
 ###### Cleaning Rules #######
 
-## TODO(karlschimpf): Fix clean to handle sources!
-
 clean: clean-wabt
 	rm -rf $(BUILDDIR) $(BUILDDIR_BOOT) $(GENDIR)
 
@@ -795,11 +793,9 @@ $(TEST_EXECS): $(TEST_EXECDIR)/%$(EXE): $(TEST_OBJDIR)/%.o $(LIBS)
 ###### Testing ######
 
 test: build-all test-parser test-raw-streams test-byte-queues \
-	test-decompsexp-wasm test-decompwasm-sexp test-decompress
+	test-decompsexp-wasm test-decompwasm-sexp test-decompress \
+	test-compress
 	@echo "*** all tests passed ***"
-
-# TODO: Turn this back on.
-#	test-compress
 
 .PHONY: test
 
