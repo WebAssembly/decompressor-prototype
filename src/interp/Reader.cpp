@@ -177,6 +177,25 @@ Reader::Reader(Writer& Output, std::shared_ptr<filt::SymbolTable> Symtab)
 Reader::~Reader() {
 }
 
+IntType Reader::readHeaderValue(IntTypeFormat Format) {
+  switch (Format) {
+    case IntTypeFormat::Uint8:
+      return readUint8();
+    case IntTypeFormat::Uint32:
+      return readUint32();
+    case IntTypeFormat::Uint64:
+      return readUint64();
+    case IntTypeFormat::Varint32:
+      return readVarint32();
+    case IntTypeFormat::Varint64:
+      return readVarint64();
+    case IntTypeFormat::Varuint32:
+      return readVaruint32();
+    case IntTypeFormat::Varuint64:
+      return readVaruint64();
+  }
+}
+
 void Reader::traceEnterFrameInternal() {
   // Note: Enclosed in TRACE_BLOCK so that g++ will not complain when
   // compiled in release mode.
@@ -449,9 +468,6 @@ void Reader::algorithmResume() {
 #endif
         switch (Frame.Nd->getType()) {
           case NO_SUCH_NODETYPE:
-          case OpHeader:
-          case OpInputHeader:
-          case OpOutputHeader:
           case OpConvert:
           case OpParams:
           case OpFilter:  // Method::Eval
@@ -472,6 +488,84 @@ void Reader::algorithmResume() {
             return failNotImplemented();
           case OpError:  // Method::Eval
             return fail("Algorithm error!");
+          case OpHeader:
+            switch (Frame.CallState) {
+              case State::Enter:
+                Frame.CallState = State::Step2;
+                call(Method::Eval, MethodModifier::ReadOnly,
+                     Frame.Nd->getKid(0));
+                break;
+              case State::Step2:
+                Frame.CallState = State::Exit;
+                call(Method::Eval, MethodModifier::WriteOnly,
+                     Frame.Nd->getKid(1));
+                break;
+              case State::Exit:
+                popAndReturn();
+                break;
+              default:
+                return failBadState();
+            }
+            break;
+          case OpInputHeader:
+            // TODO: Verify input matches, and then generate output_header
+            // if matches.
+            switch (Frame.CallState) {
+              case State::Enter:
+                LoopCounterStack.push(0);
+                Frame.CallState = State::Loop;
+                break;
+              case State::Loop: {
+                if (LoopCounter == size_t(Frame.Nd->getNumKids())) {
+                  Frame.CallState = State::Exit;
+                  break;
+                }
+                Node* Elmt = Frame.Nd->getKid(LoopCounter++);
+                if (!definesLitIntTypeFormat(Elmt)) {
+                  TRACE_SEXP("Literal", Elmt);
+                  return fail("Malformed header input literal");
+                }
+                auto* Lit = dyn_cast<IntegerNode>(Elmt);
+                assert(Lit);
+                IntType Value = readHeaderValue(getIntTypeFormat(Lit));
+                if (Lit->getValue() != Value) {
+                  TRACE_SEXP("Literal", Lit);
+                  return fail("Expected header literal not found: found " +
+                              std::to_string(Value));
+                }
+                break;
+              }
+              case State::Exit:
+                popAndReturn();
+                break;
+              default:
+                return failBadState();
+            }
+            break;
+          case OpOutputHeader:
+            switch (Frame.CallState) {
+              case State::Enter: {
+                for (int i = 0, e = Frame.Nd->getNumKids(); i < e; ++i) {
+                  Node* Elmt = Frame.Nd->getKid(i);
+                  if (!definesLitIntTypeFormat(Elmt)) {
+                    TRACE_SEXP("Literal", Elmt);
+                    return fail("Malformed header output literal");
+                  }
+                  auto* Lit = dyn_cast<IntegerNode>(Elmt);
+                  assert(Lit);
+                  Output.writeHeaderValue(Lit->getValue(),
+                                          getIntTypeFormat(Lit));
+                }
+                Frame.CallState = State::Exit;
+                break;
+              }
+              case State::Exit:
+                popAndReturn();
+                break;
+              default:
+                return failBadState();
+            }
+            break;
           case OpBitwiseAnd:
             switch (Frame.CallState) {
               case State::Enter:
@@ -704,6 +798,7 @@ void Reader::algorithmResume() {
                      Frame.Nd->getKid(0));
                 break;
               case State::Exit:
+                LoopCounterStack.pop();
                 popAndReturn(Frame.ReturnValue);
                 break;
               default:
@@ -1082,9 +1177,22 @@ void Reader::algorithmResume() {
         break;
       case Method::GetFile:
         switch (Frame.CallState) {
-          case State::Enter:
+          case State::Enter: {
+            TRACE(bool, "ReadHeaderFile", ReadFileHeader);
+            if (Frame.Nd == nullptr) {
+              Frame.Nd = Symtab->getInstalledRoot();
+              assert(Frame.Nd);
+              assert(isa<FileNode>(Frame.Nd));
+            }
+            const Node* Header = Frame.Nd->getKid(0);
+            if (Header->getType() == OpHeader) {
+              Frame.CallState = State::Step4;
+              call(Method::Eval, Frame.CallModifier, Header);
+              break;
+            }
             Frame.CallState = ReadFileHeader ? State::Step2 : State::Step3;
             break;
+          }
           case State::Step2:
             MagicNumber = readUint32();
             Version = readUint32();

@@ -39,9 +39,6 @@ class ByteWriteStream FINAL : public WriteStream {
       (BitsInWord + ChunkSize - 1) / ChunkSize;
   ByteWriteStream() : WriteStream(decode::StreamType::Byte) {}
 
-  bool writeValue(decode::IntType Value,
-                  decode::WriteCursor& Pos,
-                  const filt::Node* Format) OVERRIDE;
   bool writeAction(decode::WriteCursor& Pos,
                    const filt::CallbackNode* Action) OVERRIDE;
   size_t getStreamAddress(decode::WriteCursor& Pos) OVERRIDE;

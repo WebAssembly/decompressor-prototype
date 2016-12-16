@@ -51,11 +51,6 @@ class WriteStream : public std::enable_shared_from_this<WriteStream> {
   void writeVaruint32(uint32_t Value, decode::WriteCursor& Pos);
   void writeVaruint64(uint64_t Value, decode::WriteCursor& Pos);
   void writeFixedVaruint32(uint32_t Value, decode::WriteCursor& Pos);
-
-  virtual bool writeValue(decode::IntType Value,
-                          decode::WriteCursor& Pos,
-                          const filt::Node* Format) = 0;
-
   virtual bool writeAction(decode::WriteCursor& Pos,
                            const filt::CallbackNode* Action) = 0;
 
