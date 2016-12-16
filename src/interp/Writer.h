@@ -51,7 +51,8 @@ class Writer {
   virtual bool writeMagicNumber(uint32_t MagicNumber);
   virtual bool writeVersionNumber(uint32_t VersionNumber);
   virtual bool writeValue(decode::IntType Value, const filt::Node* Format) = 0;
-  virtual bool writeTypedValue(decode::IntType Value, interp::IntTypeFormat Format);
+  virtual bool writeTypedValue(decode::IntType Value,
+                               interp::IntTypeFormat Format);
   virtual bool writeAction(const filt::CallbackNode* Action) = 0;
 
   void setMinimizeBlockSize(bool NewValue) { MinimizeBlockSize = NewValue; }

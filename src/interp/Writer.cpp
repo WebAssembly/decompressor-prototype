@@ -82,6 +82,7 @@ bool Writer::writeTypedValue(IntType Value, IntTypeFormat Format) {
     case IntTypeFormat::Varuint64:
       return writeVaruint64(Value);
   }
+  WASM_RETURN_UNREACHABLE(false);
 }
 
 void Writer::describeState(FILE* File) {
