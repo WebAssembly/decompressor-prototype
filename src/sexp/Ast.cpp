@@ -555,7 +555,7 @@ bool NaryNode::implementsClass(NodeType Type) {
   }
 }
 
-void NaryNode::append(Node* Kid) FINAL {
+void NaryNode::append(Node* Kid) {
   Kids.emplace_back(Kid);
 }
 
