@@ -194,6 +194,7 @@ IntType Reader::readHeaderValue(IntTypeFormat Format) {
     case IntTypeFormat::Varuint64:
       return readVaruint64();
   }
+  WASM_RETURN_UNREACHABLE(0);
 }
 
 void Reader::traceEnterFrameInternal() {
