@@ -203,18 +203,27 @@ void BinaryReader::resume() {
             TRACE(hex_uint32_t, "Casm magic number", MagicNumber);
             uint32_t CasmVersion = Reader->readUint32(ReadPos);
             TRACE(hex_uint32_t, "Casm version number", CasmVersion);
+            // TODO(karlschimpf) Clean this up when only OpFileHeader is used.
             uint8_t Form = Reader->readUint8(ReadPos);
-            WASM_IGNORE(Form);
-            TRACE(uint8_t, "Form", Form);
-            uint32_t WasmVersion = Reader->readUint32(ReadPos);
-            TRACE(hex_uint32_t, "Wasm version number", WasmVersion);
-            CurFile->append(Symtab->create<FileVersionNode>(
-                Symtab->getCasmMagicDefinition(MagicNumber,
-                                               ValueFormat::Hexidecimal),
-                Symtab->getCasmVersionDefinition(CasmVersion,
+            TRACE(hex_uint8_t, "Form", Form);
+            if (Form == OpFileHeader) {
+              auto* Header = Symtab->create<FileHeaderNode>();
+              Header->append(Symtab->getCasmMagicDefinition(
+                  MagicNumber, ValueFormat::Hexidecimal));
+              Header->append(Symtab->getCasmVersionDefinition(
+                  CasmVersion, ValueFormat::Hexidecimal));
+              CurFile->append(Header);
+            } else {
+              uint32_t WasmVersion = Reader->readUint32(ReadPos);
+              TRACE(hex_uint32_t, "Wasm version number", WasmVersion);
+              CurFile->append(Symtab->create<FileVersionNode>(
+                  Symtab->getCasmMagicDefinition(MagicNumber,
                                                  ValueFormat::Hexidecimal),
-                Symtab->getWasmVersionDefinition(WasmVersion,
-                                                 ValueFormat::Hexidecimal)));
+                  Symtab->getCasmVersionDefinition(CasmVersion,
+                                                   ValueFormat::Hexidecimal),
+                  Symtab->getWasmVersionDefinition(WasmVersion,
+                                                   ValueFormat::Hexidecimal)));
+            }
             uint8_t SectionFlag = Reader->readUint8(ReadPos);
             assert(SectionFlag <= 1);
             if (SectionFlag) {
@@ -430,6 +439,7 @@ void BinaryReader::resume() {
                 AST_VERSION_INTEGERNODE_TABLE
 #undef X
               case NO_SUCH_NODETYPE:
+              case OpFileHeader:
               case OpFile:
               case OpHeader:
               case OpInputHeader:

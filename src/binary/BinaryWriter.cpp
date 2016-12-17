@@ -189,6 +189,13 @@ void BinaryWriter::writeNode(const Node* Nd) {
         writeNode(Header->getKid(i));
       break;
     }
+    case OpFileHeader: {
+      for (int i = 0; i < Nd->getNumKids(); ++i)
+        writeLiteral(Nd->getKid(i));
+      // TODO: Remove this field. Temporary until FileVersion removed.
+      Writer->writeUint8(OpFileHeader, WritePos);
+      break;
+    }
     case OpInputHeader: {
       // Note: The input header appears at the beginning of the file, and hence,
       // isn't labeled.
@@ -211,6 +218,10 @@ void BinaryWriter::writeNode(const Node* Nd) {
     }
     case OpFile: {
       // TODO: remove once we are only using HeaderNode's for preamble.
+      if (const auto* Header = dyn_cast<FileHeaderNode>(Nd->getKid(0))) {
+        writeNode(Header);
+        break;
+      }
       writePreamble(cast<FileNode>(Nd));
       int NumKids = Nd->getNumKids();
       assert(NumKids <= 2);

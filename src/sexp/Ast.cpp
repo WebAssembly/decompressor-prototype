@@ -555,6 +555,10 @@ bool NaryNode::implementsClass(NodeType Type) {
   }
 }
 
+void NaryNode::append(Node* Kid) {
+  Kids.emplace_back(Kid);
+}
+
 #define X(tag, NODE_DECLS) \
   void tag##Node::forceCompilation() {}
 AST_NARYNODE_TABLE

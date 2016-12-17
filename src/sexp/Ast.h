@@ -615,7 +615,7 @@ class NaryNode : public Node {
 
   void setKid(int Index, Node* N) OVERRIDE FINAL { Kids[Index] = N; }
 
-  void append(Node* Kid) FINAL { Kids.emplace_back(Kid); }
+  void append(Node* Kid) FINAL OVERRIDE;
   ~NaryNode() OVERRIDE {}
 
   static bool implementsClass(NodeType Type);
