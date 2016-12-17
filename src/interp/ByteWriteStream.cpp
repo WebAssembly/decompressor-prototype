@@ -31,36 +31,6 @@ namespace interp {
 ByteWriteStream::~ByteWriteStream() {
 }
 
-bool ByteWriteStream::writeValue(IntType Value,
-                                 WriteCursor& Pos,
-                                 const Node* Format) {
-  switch (Format->getType()) {
-    case OpUint8:
-      writeUint8(Value, Pos);
-      return true;
-    case OpUint32:
-      writeUint32(Value, Pos);
-      return true;
-    case OpUint64:
-      writeUint64(Value, Pos);
-      return true;
-    case OpVarint32:
-      writeVarint32(Value, Pos);
-      return true;
-    case OpVarint64:
-      writeVarint64(Value, Pos);
-      return true;
-    case OpVaruint32:
-      writeVaruint32(Value, Pos);
-      return true;
-    case OpVaruint64:
-      writeVaruint64(Value, Pos);
-      return true;
-    default:
-      return false;
-  }
-}
-
 bool ByteWriteStream::writeAction(WriteCursor& Pos,
                                   const CallbackNode* Action) {
   return true;

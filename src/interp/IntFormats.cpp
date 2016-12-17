@@ -20,10 +20,12 @@
 #include "interp/IntFormats.h"
 
 #include "interp/FormatHelpers.h"
+#include "sexp/Ast.h"
 
 namespace wasm {
 
 using namespace decode;
+using namespace filt;
 
 namespace interp {
 
@@ -84,12 +86,62 @@ class TestBuffer {
   size_t Index;
 };
 
+bool extractIntTypeFormat(const Node* Nd, IntTypeFormat& Format) {
+  Format = IntTypeFormat::Uint8;
+  if (Nd == nullptr)
+    return false;
+  switch (Nd->getType()) {
+    case OpU8Const:
+      Format = IntTypeFormat::Uint8;
+      return true;
+    case OpI32Const:
+      Format = IntTypeFormat::Varint32;
+      return true;
+    case OpU32Const:
+      Format = IntTypeFormat::Uint32;
+      return true;
+    case OpI64Const:
+      Format = IntTypeFormat::Varint64;
+      return true;
+    case OpU64Const:
+      Format = IntTypeFormat::Uint64;
+      return true;
+    default:
+      return false;
+  }
+}
+
 }  // end of anonymous namespace
 
 const char* getName(IntTypeFormat Fmt) {
   size_t Index = size_t(Fmt);
   assert(Index < NumIntTypeFormats);
   return IntTypeFormatName[Index];
+}
+
+bool definesIntTypeFormat(const Node* Nd) {
+  IntTypeFormat Format;
+  return extractIntTypeFormat(Nd, Format);
+}
+
+bool definesLitIntTypeFormat(const Node* Nd) {
+  if (!definesIntTypeFormat(Nd))
+    return false;
+  switch (Nd->getType()) {
+    case OpU8Const:
+    case OpU32Const:
+    case OpU64Const:
+      return true;
+    default:
+      break;
+  }
+  return false;
+}
+
+IntTypeFormat getIntTypeFormat(const Node* Nd) {
+  IntTypeFormat Format;
+  extractIntTypeFormat(Nd, Format);
+  return Format;
 }
 
 IntTypeFormats::IntTypeFormats(IntType Value) : Value(Value) {

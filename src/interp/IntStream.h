@@ -21,6 +21,7 @@
 
 #include "utils/Defs.h"
 #include "utils/Trace.h"
+#include "interp/IntFormats.h"
 
 #include <map>
 #include <memory>
@@ -39,6 +40,7 @@ class IntStream : public std::enable_shared_from_this<IntStream> {
   class Cursor;
   class WriteCursor;
   typedef std::vector<decode::IntType> IntVector;
+  typedef std::vector<std::pair<decode::IntType, IntTypeFormat>> HeaderVector;
   typedef std::shared_ptr<Block> BlockPtr;
   typedef std::vector<BlockPtr> BlockVector;
   typedef BlockVector::iterator BlockIterator;
@@ -193,7 +195,13 @@ class IntStream : public std::enable_shared_from_this<IntStream> {
 
   void describe(FILE* File, const char* Name = nullptr);
 
+  const HeaderVector& getHeader() { return Header; }
+  void appendHeader(decode::IntType Value, interp::IntTypeFormat Format) {
+    Header.push_back(std::make_pair(Value, Format));
+  }
+
  private:
+  HeaderVector Header;
   IntVector Values;
   BlockPtr TopBlock;
   bool isFrozenFlag;

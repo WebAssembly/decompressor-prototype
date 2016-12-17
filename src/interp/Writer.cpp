@@ -85,6 +85,39 @@ bool Writer::writeTypedValue(IntType Value, IntTypeFormat Format) {
   WASM_RETURN_UNREACHABLE(false);
 }
 
+bool Writer::writeValue(decode::IntType Value, const filt::Node* Format) {
+  // Note: We pass through virtual functions to force any applicable cast
+  // conversions.
+  switch (Format->getType()) {
+    case OpUint8:
+      writeUint8(Value);
+      return true;
+    case OpUint32:
+      writeUint32(Value);
+      return true;
+    case OpUint64:
+      writeUint64(Value);
+      return true;
+    case OpVarint32:
+      writeVarint32(Value);
+      return true;
+    case OpVarint64:
+      writeVarint64(Value);
+      return true;
+    case OpVaruint32:
+      writeVaruint32(Value);
+      return true;
+    case OpVaruint64:
+      writeVaruint64(Value);
+    default:
+      return false;
+  }
+}
+
+bool Writer::writeHeaderValue(IntType Value, IntTypeFormat Format) {
+  return writeTypedValue(Value, Format);
+}
+
 void Writer::describeState(FILE* File) {
 }
 

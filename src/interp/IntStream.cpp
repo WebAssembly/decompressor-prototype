@@ -182,6 +182,12 @@ void IntStream::describe(FILE* File, const char* Name) {
   if (Name == nullptr)
     Name = "IntStream";
   fprintf(File, "*** %s ***\n", Name);
+  fputs("Header:\n", File);
+  for (auto Pair : Header) {
+    fputs("  ", File);
+    fprint_IntType(File, Pair.first);
+    fprintf(File, " : %s\n", getName(Pair.second));
+  }
   fputs("Blocks:\n", File);
   for (auto BlkIter = Blocks.begin(); BlkIter != Blocks.end(); ++BlkIter) {
     fputs("  ", File);

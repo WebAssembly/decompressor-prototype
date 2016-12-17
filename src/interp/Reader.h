@@ -295,6 +295,7 @@ class Reader {
   virtual uint32_t readVaruint32() = 0;
   virtual uint64_t readVaruint64() = 0;
   virtual decode::IntType readValue(const filt::Node* Format) = 0;
+  virtual decode::IntType readHeaderValue(interp::IntTypeFormat Format);
   virtual const char* getDefaultTraceName() const;
 };
 

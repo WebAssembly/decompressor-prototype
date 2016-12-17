@@ -98,10 +98,6 @@ bool StreamWriter::writeFreezeEof() {
   return Pos.isQueueGood();
 }
 
-bool StreamWriter::writeValue(IntType Value, const Node* Format) {
-  return Stream->writeValue(Value, Pos, Format);
-}
-
 bool StreamWriter::writeAction(const filt::CallbackNode* Action) {
   const auto* Sym = dyn_cast<SymbolNode>(Action->getKid(0));
   if (Sym == nullptr)

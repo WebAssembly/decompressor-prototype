@@ -24,6 +24,10 @@
 
 namespace wasm {
 
+namespace filt {
+class Node;
+}  // end of namespace filt
+
 namespace interp {
 
 enum class IntTypeFormat {
@@ -42,6 +46,10 @@ enum class IntTypeFormat {
 };
 
 const char* getName(IntTypeFormat Fmt);
+
+extern bool definesIntTypeFormat(const filt::Node* Nd);
+extern bool definesLitIntTypeFormat(const filt::Node* Nd);
+extern IntTypeFormat getIntTypeFormat(const filt::Node* Nd);
 
 static constexpr size_t NumIntTypeFormats = size_t(IntTypeFormat::LAST) + 1;
 
