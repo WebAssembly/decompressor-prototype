@@ -37,22 +37,11 @@ AbbreviationCodegen::AbbreviationCodegen(CountNode::RootPtr Root,
 void AbbreviationCodegen::generateFile() {
   auto* File = Symtab->create<FileNode>();
   auto* Header = Symtab->create<FileHeaderNode>();
-  Header->append(
-      Symtab->create<CasmMagicNode>(CasmBinaryMagic,
-                                    decode::ValueFormat::Hexidecimal));
-  Header->append(
-      Symtab->create<CasmVersionNode>(CasmBinaryVersion,
-                                      decode::ValueFormat::Hexidecimal));
+  Header->append(Symtab->create<CasmMagicNode>(
+      CasmBinaryMagic, decode::ValueFormat::Hexidecimal));
+  Header->append(Symtab->create<CasmVersionNode>(
+      CasmBinaryVersion, decode::ValueFormat::Hexidecimal));
   File->append(Header);
-#if 0
-  File->append(Symtab->create<FileVersionNode>(
-      Symtab->create<CasmMagicNode>(CasmBinaryMagic,
-                                    decode::ValueFormat::Hexidecimal),
-      Symtab->create<CasmVersionNode>(CasmBinaryVersion,
-                                      decode::ValueFormat::Hexidecimal),
-      Symtab->create<WasmVersionNode>(WasmBinaryVersionD,
-                                      decode::ValueFormat::Hexidecimal)));
-#endif
   File->append(generateFileBody());
   Symtab->install(File);
 }

@@ -208,12 +208,10 @@ void BinaryReader::resume() {
             TRACE(hex_uint8_t, "Form", Form);
             if (Form == OpFileHeader) {
               auto* Header = Symtab->create<FileHeaderNode>();
-              Header->append(
-                  Symtab->getCasmMagicDefinition(MagicNumber,
-                                                 ValueFormat::Hexidecimal));
-              Header->append(
-                  Symtab->getCasmVersionDefinition(CasmVersion,
-                                                   ValueFormat::Hexidecimal));
+              Header->append(Symtab->getCasmMagicDefinition(
+                  MagicNumber, ValueFormat::Hexidecimal));
+              Header->append(Symtab->getCasmVersionDefinition(
+                  CasmVersion, ValueFormat::Hexidecimal));
               CurFile->append(Header);
             } else {
               uint32_t WasmVersion = Reader->readUint32(ReadPos);

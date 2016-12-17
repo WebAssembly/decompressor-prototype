@@ -555,7 +555,9 @@ bool NaryNode::implementsClass(NodeType Type) {
   }
 }
 
-void NaryNode::append(Node* Kid) FINAL { Kids.emplace_back(Kid); }
+void NaryNode::append(Node* Kid) FINAL {
+  Kids.emplace_back(Kid);
+}
 
 #define X(tag, NODE_DECLS) \
   void tag##Node::forceCompilation() {}

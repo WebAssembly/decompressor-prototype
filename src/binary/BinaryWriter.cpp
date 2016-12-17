@@ -189,7 +189,7 @@ void BinaryWriter::writeNode(const Node* Nd) {
         writeNode(Header->getKid(i));
       break;
     }
-    case OpFileHeader : {
+    case OpFileHeader: {
       for (int i = 0; i < Nd->getNumKids(); ++i)
         writeLiteral(Nd->getKid(i));
       // TODO: Remove this field. Temporary until FileVersion removed.
@@ -218,7 +218,7 @@ void BinaryWriter::writeNode(const Node* Nd) {
     }
     case OpFile: {
       // TODO: remove once we are only using HeaderNode's for preamble.
-      if (const auto *Header = dyn_cast<FileHeaderNode>(Nd->getKid(0))) {
+      if (const auto* Header = dyn_cast<FileHeaderNode>(Nd->getKid(0))) {
         writeNode(Header);
         break;
       }
