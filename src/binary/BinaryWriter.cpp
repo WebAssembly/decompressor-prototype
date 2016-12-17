@@ -148,6 +148,7 @@ void BinaryWriter::writeNode(const Node* Nd) {
   }
       AST_OTHER_INTEGERNODE_TABLE
 #undef X
+    case OpFileHeader:
     case OpAnd:
     case OpBlock:
     case OpBitwiseAnd:

@@ -154,17 +154,18 @@ struct IntValue {
 %type <wasm::filt::Node *> expression
 %type <wasm::filt::Node *> expression_redirect
 %type <wasm::filt::Node *> file
+%type <wasm::filt::Node *> file_header
 %type <wasm::filt::Node *> file_version
+%type <wasm::filt::Node *> input_header
+%type <wasm::filt::Node *> output_header
 %type <wasm::filt::Node *> fixed_format_directive
 %type <wasm::filt::Node *> format_directive
-%type <wasm::filt::Node *> input_header
 %type <wasm::filt::Node *> literal_expression
 %type <wasm::filt::Node *> locals_decl
 %type <wasm::filt::Node *> local_var
 %type <wasm::filt::Node *> loop_body
 %type <wasm::filt::MapNode *> map_args
 %type <wasm::filt::OpcodeNode *> opcode_args
-%type <wasm::filt::Node *> output_header
 %type <wasm::filt::Node *> params_decl
 %type <wasm::filt::Node *> stream
 %type <wasm::filt::Node *> convert
@@ -201,16 +202,31 @@ file_version
         : "(" "file" "." "version" casm_magic casm_version wasm_version ")" {
             $$ = Driver.create<FileVersionNode>($5, $6, $7);
           }
+        | "(" "header" file_header ")" {
+          //             $$ = $2;
+          }
         | "(" "header" "(" "in" input_header ")"
                        "(" "out"  output_header ")"
           ")" {
-            $$ = Driver.create<HeaderNode>($5, $9);
+           $$ = Driver.create<HeaderNode>($5, $9);
         }
+        ;
+
+// TODO: Allow empty file headers once file_version/input_header/output_header removed.
+file_header
+        : literal_expression {
+            $$ = Driver.create<FileHeaderNode>();
+            $$->append($1);
+          }
+        | file_header literal_expression {
+            $$ = $1;
+            $$->append($2);
+          }
         ;
 
 input_header
         : %empty { $$ = Driver.create<InputHeaderNode>(); }
-        | input_header literal_expression {
+        | file_header literal_expression {
             $$ = $1;
             $$->append($2);
           }

@@ -430,6 +430,7 @@ void BinaryReader::resume() {
                 AST_VERSION_INTEGERNODE_TABLE
 #undef X
               case NO_SUCH_NODETYPE:
+              case OpFileHeader:
               case OpFile:
               case OpHeader:
               case OpInputHeader:
