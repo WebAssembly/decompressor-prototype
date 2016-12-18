@@ -482,7 +482,7 @@ void Reader::algorithmResume() {
           case OpSymbol:
           case OpSection:
           case OpUndefine:
-          case OpUnknownSection:   // Method::Eval
+          case OpUnknownSection:  // Method::Eval
             return failNotImplemented();
           case OpError:  // Method::Eval
             return fail("Algorithm error!");
