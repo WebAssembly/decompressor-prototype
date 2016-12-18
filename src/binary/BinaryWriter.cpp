@@ -196,26 +196,6 @@ void BinaryWriter::writeNode(const Node* Nd) {
       Writer->writeUint8(OpFileHeader, WritePos);
       break;
     }
-    case OpInputHeader: {
-      // Note: The input header appears at the beginning of the file, and hence,
-      // isn't labeled.
-      const auto* Header = cast<InputHeaderNode>(Nd);
-      for (int i = 0; i < Header->getNumKids(); ++i)
-        writeLiteral(Header->getKid(i));
-      break;
-    }
-    case OpOutputHeader: {
-      const auto* Header = cast<OutputHeaderNode>(Nd);
-      // TODO: Remove this feild. Temporary until FileVersion is removed.
-      assert(uint8_t(OpOutputHeader) == uint32_t(OpOutputHeader));
-      Writer->writeUint8(OpOutputHeader, WritePos);
-      // Note: The output header appears right after the input header, and
-      // hence, need not be labeled.
-      Writer->writeVaruint32(Header->getNumKids(), WritePos);
-      for (int i = 0; i < Header->getNumKids(); ++i)
-        writeLiteral(Header->getKid(i));
-      break;
-    }
     case OpFile: {
       // TODO: remove once we are only using HeaderNode's for preamble.
       if (const auto* Header = dyn_cast<FileHeaderNode>(Nd->getKid(0))) {

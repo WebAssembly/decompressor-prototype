@@ -93,8 +93,6 @@
   X(File,              0x62, "file",             nullptr,           2, 0)      \
   X(FileVersion,       0x72, "file.version",     nullptr,           0, 0)      \
   X(Header,            0x74, "header",           nullptr,           0, 0)      \
-  X(InputHeader,       0x75, "in",               "input.header",    0, 3)      \
-  X(OutputHeader,      0x76, "out",               "output.header",  0, 3)      \
   X(FileHeader,        0x77, "header",           nullptr,           0, 3)      \
   X(Section,           0x63, "section",          nullptr,           1, 0)      \
   X(Undefine,          0x64, "undefine",         nullptr,           1, 0)      \
@@ -211,8 +209,6 @@
   X(Eval, EVAL_DECLS)                                                          \
   X(FileHeader,)                                                               \
   X(Filter,)                                                                   \
-  X(InputHeader,)                                                              \
-  X(OutputHeader,)                                                             \
   X(Section, SECTION_DECLS)                                                    \
   X(Sequence,)                                                                 \
   X(Write,)                                                                    \
@@ -261,8 +257,6 @@
   X(FileHeader)                                                                \
   X(IfThen)                                                                    \
   X(IfThenElse)                                                                \
-  X(InputHeader)                                                               \
-  X(OutputHeader)                                                              \
   X(Loop)                                                                      \
   X(LoopUnbounded)                                                             \
   X(Opcode)                                                                    \

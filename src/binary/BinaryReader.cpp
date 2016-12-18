@@ -439,8 +439,6 @@ void BinaryReader::resume() {
               case OpFileHeader:
               case OpFile:
               case OpHeader:
-              case OpInputHeader:
-              case OpOutputHeader:
               case OpSection:
               case OpUnknownSection:
                 fprintf(stderr, "Opcode = %u\n", unsigned(Opcode));
