@@ -202,28 +202,12 @@ void BinaryReader::resume() {
             TRACE(hex_uint32_t, "Casm magic number", MagicNumber);
             uint32_t CasmVersion = Reader->readUint32(ReadPos);
             TRACE(hex_uint32_t, "Casm version number", CasmVersion);
-            // TODO(karlschimpf) Clean this up when only OpFileHeader is used.
-            uint8_t Form = Reader->readUint8(ReadPos);
-            TRACE(hex_uint8_t, "Form", Form);
-            if (Form == OpFileHeader) {
-              auto* Header = Symtab->create<FileHeaderNode>();
-              Header->append(Symtab->getCasmMagicDefinition(
-                  MagicNumber, ValueFormat::Hexidecimal));
-              Header->append(Symtab->getCasmVersionDefinition(
-                  CasmVersion, ValueFormat::Hexidecimal));
-              NodeStack.push_back(Header);
-            } else {
-              uint32_t WasmVersion = Reader->readUint32(ReadPos);
-              TRACE(hex_uint32_t, "Wasm version number", WasmVersion);
-              NodeStack.push_back(
-                  Symtab->create<FileVersionNode>(
-                      Symtab->getCasmMagicDefinition(MagicNumber,
-                                                     ValueFormat::Hexidecimal),
-                      Symtab->getCasmVersionDefinition(CasmVersion,
-                                                       ValueFormat::Hexidecimal),
-                      Symtab->getWasmVersionDefinition(WasmVersion,
-                                                       ValueFormat::Hexidecimal)));
-            }
+            auto* Header = Symtab->create<FileHeaderNode>();
+            Header->append(Symtab->getU32ConstDefinition(
+                MagicNumber, ValueFormat::Hexidecimal));
+            Header->append(Symtab->getU32ConstDefinition(
+                CasmVersion, ValueFormat::Hexidecimal));
+            NodeStack.push_back(Header);
             Frame.CallState = State::Step2;
             call(Method::Section);
             break;
@@ -323,9 +307,6 @@ void BinaryReader::resume() {
               case OpEval:
                 readNary<EvalNode>();
                 break;
-              case OpFileVersion:
-                readTernary<FileVersionNode>();
-                break;
               case OpFilter:
                 readNary<FilterNode>();
                 break;
@@ -417,31 +398,11 @@ void BinaryReader::resume() {
     NodeStack.push_back(Nd);                                              \
     break;                                                                \
   }
-                AST_OTHER_INTEGERNODE_TABLE
-#undef X
-// The following read version nodes.
-#define X(tag, format, defval, mergable, NODE_DECLS)                      \
-  case Op##tag: {                                                         \
-    Node* Nd;                                                             \
-    int FormatIndex = Reader->readUint8(ReadPos);                         \
-    if (FormatIndex == 0) {                                               \
-      Nd = Symtab->get##tag##Definition();                                \
-    } else {                                                              \
-      Nd = Symtab->get##tag##Definition(Reader->read##format(ReadPos),    \
-                                        getValueFormat(FormatIndex - 1)); \
-    }                                                                     \
-    TRACE_SEXP(nullptr, Nd);                                              \
-    NodeStack.push_back(Nd);                                              \
-    break;                                                                \
-  }
-                AST_VERSION_INTEGERNODE_TABLE
-#undef X
+                AST_INTEGERNODE_TABLE
               case NO_SUCH_NODETYPE:
               case OpFileHeader:
               case OpFile:
               case OpHeader:
-              case OpInputHeader:
-              case OpOutputHeader:
               case OpSection:
               case OpUnknownSection:
                 fprintf(stderr, "Opcode = %u\n", unsigned(Opcode));

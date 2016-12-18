@@ -91,17 +91,11 @@
   /* Declarations */                                                           \
   X(Define,            0x60, "define",           nullptr,           2, 1)      \
   X(File,              0x62, "file",             nullptr,           2, 0)      \
-  X(FileVersion,       0x72, "file.version",     nullptr,           0, 0)      \
   X(Header,            0x74, "header",           nullptr,           0, 0)      \
-  X(InputHeader,       0x75, "in",               "input.header",    0, 3)      \
-  X(OutputHeader,      0x76, "out",               "output.header",  0, 3)      \
   X(FileHeader,        0x77, "header",           nullptr,           0, 3)      \
   X(Section,           0x63, "section",          nullptr,           1, 0)      \
   X(Undefine,          0x64, "undefine",         nullptr,           1, 0)      \
   X(LiteralDef,        0x65, "literal",          nullptr,           2, 0)      \
-  X(CasmMagic,         0x73, "casm.magic",       nullptr,           1, 0)      \
-  X(CasmVersion,       0x66, "casm.version",     nullptr,           1, 0)      \
-  X(WasmVersion,       0x67, "wasm.version",     nullptr,           1, 0)      \
   X(Rename,            0x68, "rename",           nullptr,           2, 0)      \
   X(Locals,            0x69, "locals",           nullptr,           1, 0)      \
   X(Params,            0x70, "params",           nullptr,           1, 0)      \
@@ -123,19 +117,7 @@
 //   defval: Default value assumed if not provided.
 //   mergable: True if instances can be merged.
 //   NODE_DECLS: Other declarations for the node.
-#define AST_VERSION_INTEGERNODE_TABLE                                          \
-  X(CasmMagic, Uint32, 0, true,)                                               \
-  X(CasmVersion, Uint32, 0, true,)                                             \
-  X(WasmVersion, Uint32, 0, true,)                                             \
-
-//#define X(tag, defval, mergable, NODE_DECLS)
-// where:
-//   tag: enumeration name (less Op prefix).
-//   format: Format for printing out value.
-//   defval: Default value assumed if not provided.
-//   mergable: True if instances can be merged.
-//   NODE_DECLS: Other declarations for the node.
-#define AST_OTHER_INTEGERNODE_TABLE                                            \
+#define AST_INTEGERNODE_TABLE                                                  \
   X(I32Const, Varint32, 0, true,)                                              \
   X(I64Const, Varint64, 0, true,)                                              \
   X(Local, Varuint32, 0, true,)                                                \
@@ -152,17 +134,6 @@
   X(Varint64, Uint8,  8, true,)                                                \
   X(Varuint32, Uint8, 8, true,)                                                \
   X(Varuint64, Uint8, 8, true,)                                                \
-
-//#define X(tag, defval, mergable, NODE_DECLS)
-// where:
-//   tag: enumeration name (less Op prefix).
-//   format: Format for printing out value.
-//   defval: Default value assumed if not provided.
-//   mergable: True if instances can be merged.
-//   NODE_DECLS: Other declarations for the node.
-#define AST_INTEGERNODE_TABLE                                                  \
-  AST_OTHER_INTEGERNODE_TABLE                                                  \
-  AST_VERSION_INTEGERNODE_TABLE                                                \
 
 #define PARAM_DECLS                                                            \
   public:                                                                      \
@@ -211,8 +182,6 @@
   X(Eval, EVAL_DECLS)                                                          \
   X(FileHeader,)                                                               \
   X(Filter,)                                                                   \
-  X(InputHeader,)                                                              \
-  X(OutputHeader,)                                                             \
   X(Section, SECTION_DECLS)                                                    \
   X(Sequence,)                                                                 \
   X(Write,)                                                                    \
@@ -238,7 +207,6 @@
 //#define X(tag, NODE_DECLS)
 #define AST_TERNARYNODE_TABLE                                                  \
   X(Convert,)                                                                  \
-  X(FileVersion,)                                                              \
   X(IfThenElse,)                                                               \
 
 //#define X(tag)
@@ -257,12 +225,9 @@
   X(Block)                                                                     \
   X(Case)                                                                      \
   X(Define)                                                                    \
-  X(FileVersion)                                                               \
   X(FileHeader)                                                                \
   X(IfThen)                                                                    \
   X(IfThenElse)                                                                \
-  X(InputHeader)                                                               \
-  X(OutputHeader)                                                              \
   X(Loop)                                                                      \
   X(LoopUnbounded)                                                             \
   X(Opcode)                                                                    \

@@ -36,9 +36,9 @@ AbbreviationCodegen::AbbreviationCodegen(CountNode::RootPtr Root,
 
 void AbbreviationCodegen::generateFile() {
   auto* Header = Symtab->create<FileHeaderNode>();
-  Header->append(Symtab->create<CasmMagicNode>(
+  Header->append(Symtab->getU32ConstDefinition(
       CasmBinaryMagic, decode::ValueFormat::Hexidecimal));
-  Header->append(Symtab->create<CasmVersionNode>(
+  Header->append(Symtab->getU32ConstDefinition(
       CasmBinaryVersion, decode::ValueFormat::Hexidecimal));
   auto* File = Symtab->create<FileNode>(Header, generateFileBody());
   Symtab->install(File);

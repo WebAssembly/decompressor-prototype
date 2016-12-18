@@ -482,11 +482,7 @@ void Reader::algorithmResume() {
           case OpSymbol:
           case OpSection:
           case OpUndefine:
-          case OpUnknownSection:
-          case OpFileVersion:
-          case OpCasmMagic:
-          case OpCasmVersion:
-          case OpWasmVersion:  // Method::Eval
+          case OpUnknownSection:  // Method::Eval
             return failNotImplemented();
           case OpError:  // Method::Eval
             return fail("Algorithm error!");
@@ -502,65 +498,6 @@ void Reader::algorithmResume() {
                 call(Method::Eval, MethodModifier::WriteOnly,
                      Frame.Nd->getKid(1));
                 break;
-              case State::Exit:
-                popAndReturn();
-                break;
-              default:
-                return failBadState();
-            }
-            break;
-          case OpInputHeader:
-            // TODO: Verify input matches, and then generate output_header
-            // if matches.
-            switch (Frame.CallState) {
-              case State::Enter:
-                LoopCounterStack.push(0);
-                Frame.CallState = State::Loop;
-                break;
-              case State::Loop: {
-                if (LoopCounter == size_t(Frame.Nd->getNumKids())) {
-                  Frame.CallState = State::Exit;
-                  break;
-                }
-                Node* Elmt = Frame.Nd->getKid(LoopCounter++);
-                if (!definesLitIntTypeFormat(Elmt)) {
-                  TRACE_SEXP("Literal", Elmt);
-                  return fail("Malformed header input literal");
-                }
-                auto* Lit = dyn_cast<IntegerNode>(Elmt);
-                assert(Lit);
-                IntType Value = readHeaderValue(getIntTypeFormat(Lit));
-                if (Lit->getValue() != Value) {
-                  TRACE_SEXP("Literal", Lit);
-                  return fail("Expected header literal not found: found " +
-                              std::to_string(Value));
-                }
-                break;
-              }
-              case State::Exit:
-                popAndReturn();
-                break;
-              default:
-                return failBadState();
-            }
-            break;
-          case OpOutputHeader:
-            switch (Frame.CallState) {
-              case State::Enter: {
-                for (int i = 0, e = Frame.Nd->getNumKids(); i < e; ++i) {
-                  Node* Elmt = Frame.Nd->getKid(i);
-                  if (!definesLitIntTypeFormat(Elmt)) {
-                    TRACE_SEXP("Literal", Elmt);
-                    return fail("Malformed header output literal");
-                  }
-                  auto* Lit = dyn_cast<IntegerNode>(Elmt);
-                  assert(Lit);
-                  Output.writeHeaderValue(Lit->getValue(),
-                                          getIntTypeFormat(Lit));
-                }
-                Frame.CallState = State::Exit;
-                break;
-              }
               case State::Exit:
                 popAndReturn();
                 break;

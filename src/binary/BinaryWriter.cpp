@@ -57,29 +57,6 @@ TraceClassSexp& BinaryWriter::getTrace() {
   return *Trace;
 }
 
-void BinaryWriter::writePreamble(const FileNode* File) {
-  Node* Preamble = File->getKid(0);
-  if (const auto* Header = dyn_cast<HeaderNode>(Preamble))
-    return writeNode(Header);
-  TRACE_METHOD("writePreamble");
-  const auto* FileVersion = dyn_cast<FileVersionNode>(Preamble);
-  assert(FileVersion != nullptr);
-  const auto* CasmMagic = dyn_cast<CasmMagicNode>(FileVersion->getKid(0));
-  assert(CasmMagic != nullptr);
-  TRACE_SEXP(nullptr, CasmMagic);
-  Writer->writeUint32(CasmMagic->getValue(), WritePos);
-  const auto* CasmVersion = dyn_cast<CasmVersionNode>(FileVersion->getKid(1));
-  assert(CasmVersion != nullptr);
-  TRACE_SEXP(nullptr, CasmVersion);
-  Writer->writeUint32(CasmVersion->getValue(), WritePos);
-  const auto* WasmVersion = dyn_cast<WasmVersionNode>(FileVersion->getKid(2));
-  assert(WasmVersion != nullptr);
-  TRACE_SEXP(nullptr, WasmVersion);
-  // TODO: Remove this field. Temporary until FileVersion removed.
-  Writer->writeUint8(OpFileVersion, WritePos);
-  Writer->writeUint32(WasmVersion->getValue(), WritePos);
-}
-
 void BinaryWriter::writeLiteral(const Node* Nd) {
   TRACE_METHOD("writeliteral");
   TRACE_SEXP("", Nd);
@@ -113,7 +90,6 @@ void BinaryWriter::writeNode(const Node* Nd) {
   TRACE_SEXP(nullptr, Nd);
   switch (NodeType Opcode = Nd->getType()) {
     case NO_SUCH_NODETYPE:
-    case OpFileVersion:
     case OpUnknownSection: {
       fprintf(stderr, "Misplaced s-expression: %s\n", getNodeTypeName(Opcode));
       fatal("Unable to write filter s-expression");
@@ -132,21 +108,7 @@ void BinaryWriter::writeNode(const Node* Nd) {
     break;                                                     \
   }
 
-      AST_VERSION_INTEGERNODE_TABLE
-#undef X
-#define X(tag, format, defval, mergable, NODE_DECLS)           \
-  case Op##tag: {                                              \
-    Writer->writeUint8(Opcode, WritePos);                      \
-    auto* Int = cast<tag##Node>(Nd);                           \
-    if (Int->isDefaultValue()) {                               \
-      Writer->writeUint8(0, WritePos);                         \
-    } else {                                                   \
-      Writer->writeUint8(int(Int->getFormat()) + 1, WritePos); \
-      Writer->write##format(Int->getValue(), WritePos);        \
-    }                                                          \
-    break;                                                     \
-  }
-      AST_OTHER_INTEGERNODE_TABLE
+      AST_INTEGERNODE_TABLE
 #undef X
     case OpAnd:
     case OpBlock:
@@ -181,50 +143,17 @@ void BinaryWriter::writeNode(const Node* Nd) {
       Writer->writeUint8(Opcode, WritePos);
       break;
     }
+    case OpFile:
     case OpHeader: {
       // Note: The header appears at the beginning of the file, and hence,
       // isn't labeled.
-      const auto* Header = cast<HeaderNode>(Nd);
-      for (int i = 0; i < Header->getNumKids(); ++i)
-        writeNode(Header->getKid(i));
+      for (int i = 0; i < Nd->getNumKids(); ++i)
+        writeNode(Nd->getKid(i));
       break;
     }
     case OpFileHeader: {
       for (int i = 0; i < Nd->getNumKids(); ++i)
         writeLiteral(Nd->getKid(i));
-      // TODO: Remove this field. Temporary until FileVersion removed.
-      Writer->writeUint8(OpFileHeader, WritePos);
-      break;
-    }
-    case OpInputHeader: {
-      // Note: The input header appears at the beginning of the file, and hence,
-      // isn't labeled.
-      const auto* Header = cast<InputHeaderNode>(Nd);
-      for (int i = 0; i < Header->getNumKids(); ++i)
-        writeLiteral(Header->getKid(i));
-      break;
-    }
-    case OpOutputHeader: {
-      const auto* Header = cast<OutputHeaderNode>(Nd);
-      // TODO: Remove this feild. Temporary until FileVersion is removed.
-      assert(uint8_t(OpOutputHeader) == uint32_t(OpOutputHeader));
-      Writer->writeUint8(OpOutputHeader, WritePos);
-      // Note: The output header appears right after the input header, and
-      // hence, need not be labeled.
-      Writer->writeVaruint32(Header->getNumKids(), WritePos);
-      for (int i = 0; i < Header->getNumKids(); ++i)
-        writeLiteral(Header->getKid(i));
-      break;
-    }
-    case OpFile: {
-      // TODO: remove once we are only using HeaderNode's for preamble.
-      if (const auto* Header = dyn_cast<FileHeaderNode>(Nd->getKid(0))) {
-        writeNode(Header);
-        break;
-      } else {
-        writePreamble(cast<FileNode>(Nd));
-      }
-      writeNode(Nd->getKid(1));
       break;
     }
     case OpStream: {
