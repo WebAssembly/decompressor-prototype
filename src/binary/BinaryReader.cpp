@@ -213,6 +213,7 @@ void BinaryReader::resume() {
                   CasmVersion, ValueFormat::Hexidecimal));
               NodeStack.push_back(Header);
             } else {
+#if 0
               uint32_t WasmVersion = Reader->readUint32(ReadPos);
               TRACE(hex_uint32_t, "Wasm version number", WasmVersion);
               NodeStack.push_back(Symtab->create<FileVersionNode>(
@@ -222,6 +223,10 @@ void BinaryReader::resume() {
                                                    ValueFormat::Hexidecimal),
                   Symtab->getWasmVersionDefinition(WasmVersion,
                                                    ValueFormat::Hexidecimal)));
+#else
+              // TODO: simplify code
+              fatal("No longer use preamble");
+#endif
             }
             Frame.CallState = State::Step2;
             call(Method::Section);
@@ -322,9 +327,6 @@ void BinaryReader::resume() {
               case OpEval:
                 readNary<EvalNode>();
                 break;
-              case OpFileVersion:
-                readTernary<FileVersionNode>();
-                break;
               case OpFilter:
                 readNary<FilterNode>();
                 break;
@@ -416,25 +418,7 @@ void BinaryReader::resume() {
     NodeStack.push_back(Nd);                                              \
     break;                                                                \
   }
-                AST_OTHER_INTEGERNODE_TABLE
-#undef X
-// The following read version nodes.
-#define X(tag, format, defval, mergable, NODE_DECLS)                      \
-  case Op##tag: {                                                         \
-    Node* Nd;                                                             \
-    int FormatIndex = Reader->readUint8(ReadPos);                         \
-    if (FormatIndex == 0) {                                               \
-      Nd = Symtab->get##tag##Definition();                                \
-    } else {                                                              \
-      Nd = Symtab->get##tag##Definition(Reader->read##format(ReadPos),    \
-                                        getValueFormat(FormatIndex - 1)); \
-    }                                                                     \
-    TRACE_SEXP(nullptr, Nd);                                              \
-    NodeStack.push_back(Nd);                                              \
-    break;                                                                \
-  }
-                AST_VERSION_INTEGERNODE_TABLE
-#undef X
+                AST_INTEGERNODE_TABLE
               case NO_SUCH_NODETYPE:
               case OpFileHeader:
               case OpFile:

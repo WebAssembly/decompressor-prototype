@@ -58,6 +58,7 @@ TraceClassSexp& BinaryWriter::getTrace() {
 }
 
 void BinaryWriter::writePreamble(const FileNode* File) {
+#if 0
   Node* Preamble = File->getKid(0);
   if (const auto* Header = dyn_cast<HeaderNode>(Preamble))
     return writeNode(Header);
@@ -78,6 +79,9 @@ void BinaryWriter::writePreamble(const FileNode* File) {
   // TODO: Remove this field. Temporary until FileVersion removed.
   Writer->writeUint8(OpFileVersion, WritePos);
   Writer->writeUint32(WasmVersion->getValue(), WritePos);
+#else
+  fatal("Preamble no longer used");
+#endif
 }
 
 void BinaryWriter::writeLiteral(const Node* Nd) {
@@ -113,7 +117,6 @@ void BinaryWriter::writeNode(const Node* Nd) {
   TRACE_SEXP(nullptr, Nd);
   switch (NodeType Opcode = Nd->getType()) {
     case NO_SUCH_NODETYPE:
-    case OpFileVersion:
     case OpUnknownSection: {
       fprintf(stderr, "Misplaced s-expression: %s\n", getNodeTypeName(Opcode));
       fatal("Unable to write filter s-expression");
@@ -132,21 +135,7 @@ void BinaryWriter::writeNode(const Node* Nd) {
     break;                                                     \
   }
 
-      AST_VERSION_INTEGERNODE_TABLE
-#undef X
-#define X(tag, format, defval, mergable, NODE_DECLS)           \
-  case Op##tag: {                                              \
-    Writer->writeUint8(Opcode, WritePos);                      \
-    auto* Int = cast<tag##Node>(Nd);                           \
-    if (Int->isDefaultValue()) {                               \
-      Writer->writeUint8(0, WritePos);                         \
-    } else {                                                   \
-      Writer->writeUint8(int(Int->getFormat()) + 1, WritePos); \
-      Writer->write##format(Int->getValue(), WritePos);        \
-    }                                                          \
-    break;                                                     \
-  }
-      AST_OTHER_INTEGERNODE_TABLE
+      AST_INTEGERNODE_TABLE
 #undef X
     case OpAnd:
     case OpBlock:
@@ -201,6 +190,9 @@ void BinaryWriter::writeNode(const Node* Nd) {
       if (const auto* Header = dyn_cast<FileHeaderNode>(Nd->getKid(0))) {
         writeNode(Header);
       } else {
+#if 0
+        // TODO: simplify code.
+#endif
         writePreamble(cast<FileNode>(Nd));
       }
       writeNode(Nd->getKid(1));
