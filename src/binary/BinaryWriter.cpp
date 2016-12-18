@@ -221,14 +221,10 @@ void BinaryWriter::writeNode(const Node* Nd) {
       if (const auto* Header = dyn_cast<FileHeaderNode>(Nd->getKid(0))) {
         writeNode(Header);
         break;
+      } else {
+        writePreamble(cast<FileNode>(Nd));
       }
-      writePreamble(cast<FileNode>(Nd));
-      int NumKids = Nd->getNumKids();
-      assert(NumKids <= 2);
-      assert(NumKids >= 1);
-      Writer->writeUint8(NumKids - 1, WritePos);
-      if (NumKids == 2)
-        writeNode(Nd->getKid(1));
+      writeNode(Nd->getKid(1));
       break;
     }
     case OpStream: {
