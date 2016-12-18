@@ -224,6 +224,7 @@ void BinaryReader::resume() {
                   Symtab->getWasmVersionDefinition(WasmVersion,
                                                    ValueFormat::Hexidecimal)));
             }
+#if 0
             uint8_t SectionFlag = Reader->readUint8(ReadPos);
             assert(SectionFlag <= 1);
             if (SectionFlag) {
@@ -232,6 +233,10 @@ void BinaryReader::resume() {
               break;
             }
             Frame.CallState = State::Exit;
+#else
+            Frame.CallState = State::Step2;
+            call(Method::Section);
+#endif
             break;
           }
           case State::Step2:

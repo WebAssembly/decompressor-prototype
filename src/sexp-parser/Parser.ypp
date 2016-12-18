@@ -185,12 +185,8 @@ struct IntValue {
 
 %%
 
-file    : file_version {
-            $$ = Driver.create<FileNode>();
-            $$->append($1);
-            Driver.setParsedAst($$);
-          }
-        | file_version section {
+file
+         : file_version section {
             $$ = Driver.create<FileNode>();
             $$->append($1);
             $$->append($2);
@@ -618,9 +614,8 @@ loop_body
         ;
 
 section
-        : declaration {
+        : %empty {
             $$ = Driver.create<SectionNode>();
-            $$->append($1);
           }
           | section declaration { // defines etc.
             $$ = $1;
