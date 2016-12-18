@@ -80,7 +80,6 @@ struct IntValue {
 %token BLOCK         "block"
 %token BYTE          "byte"
 %token CASE          "case"
-%token CASM          "casm"
 %token CLOSEPAREN    ")"
 %token DEFINE        "define"
 %token DOT           "."
@@ -132,7 +131,6 @@ struct IntValue {
 %token VARUINT64     "varuint64"
 %token VERSION       "version"
 %token VOID          "void"
-%token WASM          "wasm"
 %token WRITE         "write"
 %token XOR           "xor"
 
@@ -155,9 +153,7 @@ struct IntValue {
 %type <wasm::filt::Node *> expression_redirect
 %type <wasm::filt::Node *> file
 %type <wasm::filt::Node *> file_header
-%type <wasm::filt::Node *> file_version
-%type <wasm::filt::Node *> input_header
-%type <wasm::filt::Node *> output_header
+%type <wasm::filt::Node *> file_header_args
 %type <wasm::filt::Node *> fixed_format_directive
 %type <wasm::filt::Node *> format_directive
 %type <wasm::filt::Node *> literal_expression
@@ -176,9 +172,6 @@ struct IntValue {
 %type <wasm::filt::Node *> section
 %type <wasm::filt::Node *> sequence_args
 %type <wasm::filt::Node *> symbol
-%type <wasm::filt::Node *> casm_magic
-%type <wasm::filt::Node *> casm_version
-%type <wasm::filt::Node *> wasm_version
 %type <wasm::filt::Node *> write_args
 
 %start file
@@ -186,49 +179,23 @@ struct IntValue {
 %%
 
 file
-         : file_version section {
+         : file_header section {
             $$ = Driver.create<FileNode>($1, $2);
             Driver.setParsedAst($$);
           }
         ;
 
-file_version
-        : "(" "file" "." "version" casm_magic casm_version wasm_version ")" {
-            $$ = Driver.create<FileVersionNode>($5, $6, $7);
-          }
-        | "(" "header" file_header ")" {
-          //             $$ = $2;
-          }
-        | "(" "header" "(" "in" input_header ")"
-                       "(" "out"  output_header ")"
-          ")" {
-           $$ = Driver.create<HeaderNode>($5, $9);
-        }
-        ;
-
-// TODO: Allow empty file headers once file_version/input_header/output_header removed.
 file_header
-        : literal_expression {
+        : "(" "header" file_header_args ")" {
+            $$ = $3;
+          }
+        ;
+
+file_header_args
+        : %empty {
             $$ = Driver.create<FileHeaderNode>();
-            $$->append($1);
           }
-        | file_header literal_expression {
-            $$ = $1;
-            $$->append($2);
-          }
-        ;
-
-input_header
-        : %empty { $$ = Driver.create<InputHeaderNode>(); }
-        | file_header literal_expression {
-            $$ = $1;
-            $$->append($2);
-          }
-        ;
-
-output_header
-        : %empty { $$ = Driver.create<OutputHeaderNode>(); }
-        | output_header literal_expression {
+        | file_header_args literal_expression {
             $$ = $1;
             $$->append($2);
           }
@@ -564,30 +531,6 @@ params_decl
           }
         | "(" "params" ")" {
             $$ = Driver.getParamsDefinition();
-          }
-        ;
-
-casm_magic
-        : "(" "casm" "." "magic" INTEGER ")" {
-            $$ = Driver.getCasmMagicDefinition($5.Value, $5.Format);
-            if ($5.Format != decode::ValueFormat::Hexidecimal)
-              Driver.error("Casm version # not hexidecimal");
-          }
-        ;
-
-casm_version
-        : "(" "casm" "." "version" INTEGER ")" {
-            $$ = Driver.getCasmVersionDefinition($5.Value, $5.Format);
-            if ($5.Format != decode::ValueFormat::Hexidecimal)
-              Driver.error("Casm version # not hexidecimal");
-          }
-        ;
-
-wasm_version
-        : "(" "wasm" "." "version" INTEGER ")" {
-            $$ = Driver.getWasmVersionDefinition($5.Value, $5.Format);
-            if ($5.Format != decode::ValueFormat::Hexidecimal)
-              Driver.error("Wasm version # not hexidecimal");
           }
         ;
 

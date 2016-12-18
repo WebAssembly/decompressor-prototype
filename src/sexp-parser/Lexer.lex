@@ -214,7 +214,6 @@ letter	[a-zA-Z]
 "bitwise"         return Parser::make_BITWISE(Driver.getLoc());
 "byte"            return Parser::make_BYTE(Driver.getLoc());
 "case"            return Parser::make_CASE(Driver.getLoc());
-"casm"            return Parser::make_CASM(Driver.getLoc());
 "define"          return Parser::make_DEFINE(Driver.getLoc());
 "error"           return Parser::make_ERROR(Driver.getLoc());
 "eval"            return Parser::make_EVAL(Driver.getLoc());
@@ -262,7 +261,6 @@ letter	[a-zA-Z]
 "varuint64"       return Parser::make_VARUINT64(Driver.getLoc());
 "version"         return Parser::make_VERSION(Driver.getLoc());
 "void"            return Parser::make_VOID(Driver.getLoc());
-"wasm"            return Parser::make_WASM(Driver.getLoc());
 "write"           return Parser::make_WRITE(Driver.getLoc());
 "xor"             return Parser::make_XOR(Driver.getLoc());
 "=>"              return Parser::make_DOUBLE_ARROW(Driver.getLoc());
