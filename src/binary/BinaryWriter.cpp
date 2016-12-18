@@ -57,33 +57,6 @@ TraceClassSexp& BinaryWriter::getTrace() {
   return *Trace;
 }
 
-void BinaryWriter::writePreamble(const FileNode* File) {
-#if 0
-  Node* Preamble = File->getKid(0);
-  if (const auto* Header = dyn_cast<HeaderNode>(Preamble))
-    return writeNode(Header);
-  TRACE_METHOD("writePreamble");
-  const auto* FileVersion = dyn_cast<FileVersionNode>(Preamble);
-  assert(FileVersion != nullptr);
-  const auto* CasmMagic = dyn_cast<CasmMagicNode>(FileVersion->getKid(0));
-  assert(CasmMagic != nullptr);
-  TRACE_SEXP(nullptr, CasmMagic);
-  Writer->writeUint32(CasmMagic->getValue(), WritePos);
-  const auto* CasmVersion = dyn_cast<CasmVersionNode>(FileVersion->getKid(1));
-  assert(CasmVersion != nullptr);
-  TRACE_SEXP(nullptr, CasmVersion);
-  Writer->writeUint32(CasmVersion->getValue(), WritePos);
-  const auto* WasmVersion = dyn_cast<WasmVersionNode>(FileVersion->getKid(2));
-  assert(WasmVersion != nullptr);
-  TRACE_SEXP(nullptr, WasmVersion);
-  // TODO: Remove this field. Temporary until FileVersion removed.
-  Writer->writeUint8(OpFileVersion, WritePos);
-  Writer->writeUint32(WasmVersion->getValue(), WritePos);
-#else
-  fatal("Preamble no longer used");
-#endif
-}
-
 void BinaryWriter::writeLiteral(const Node* Nd) {
   TRACE_METHOD("writeliteral");
   TRACE_SEXP("", Nd);
@@ -170,32 +143,17 @@ void BinaryWriter::writeNode(const Node* Nd) {
       Writer->writeUint8(Opcode, WritePos);
       break;
     }
+    case OpFile:
     case OpHeader: {
       // Note: The header appears at the beginning of the file, and hence,
       // isn't labeled.
-      const auto* Header = cast<HeaderNode>(Nd);
-      for (int i = 0; i < Header->getNumKids(); ++i)
-        writeNode(Header->getKid(i));
+      for (int i = 0; i < Nd->getNumKids(); ++i)
+        writeNode(Nd->getKid(i));
       break;
     }
     case OpFileHeader: {
       for (int i = 0; i < Nd->getNumKids(); ++i)
         writeLiteral(Nd->getKid(i));
-      // TODO: Remove this field. Temporary until FileVersion removed.
-      Writer->writeUint8(OpFileHeader, WritePos);
-      break;
-    }
-    case OpFile: {
-      // TODO: remove once we are only using HeaderNode's for preamble.
-      if (const auto* Header = dyn_cast<FileHeaderNode>(Nd->getKid(0))) {
-        writeNode(Header);
-      } else {
-#if 0
-        // TODO: simplify code.
-#endif
-        writePreamble(cast<FileNode>(Nd));
-      }
-      writeNode(Nd->getKid(1));
       break;
     }
     case OpStream: {

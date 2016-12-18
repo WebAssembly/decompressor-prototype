@@ -74,7 +74,6 @@ class BinaryWriter {
   void writeNode(const Node* Nd);
   void writeBlock(std::function<void()> ApplyFn);
   void writeSymbol(const Node* Symbol);
-  void writePreamble(const FileNode* File);
   void writeLiteral(const Node* Nd);
 };
 

@@ -202,32 +202,12 @@ void BinaryReader::resume() {
             TRACE(hex_uint32_t, "Casm magic number", MagicNumber);
             uint32_t CasmVersion = Reader->readUint32(ReadPos);
             TRACE(hex_uint32_t, "Casm version number", CasmVersion);
-            // TODO(karlschimpf) Clean this up when only OpFileHeader is used.
-            uint8_t Form = Reader->readUint8(ReadPos);
-            TRACE(hex_uint8_t, "Form", Form);
-            if (Form == OpFileHeader) {
-              auto* Header = Symtab->create<FileHeaderNode>();
-              Header->append(Symtab->getU32ConstDefinition(
-                  MagicNumber, ValueFormat::Hexidecimal));
-              Header->append(Symtab->getU32ConstDefinition(
-                  CasmVersion, ValueFormat::Hexidecimal));
-              NodeStack.push_back(Header);
-            } else {
-#if 0
-              uint32_t WasmVersion = Reader->readUint32(ReadPos);
-              TRACE(hex_uint32_t, "Wasm version number", WasmVersion);
-              NodeStack.push_back(Symtab->create<FileVersionNode>(
-                  Symtab->getCasmMagicDefinition(MagicNumber,
-                                                 ValueFormat::Hexidecimal),
-                  Symtab->getCasmVersionDefinition(CasmVersion,
-                                                   ValueFormat::Hexidecimal),
-                  Symtab->getWasmVersionDefinition(WasmVersion,
-                                                   ValueFormat::Hexidecimal)));
-#else
-              // TODO: simplify code
-              fatal("No longer use preamble");
-#endif
-            }
+            auto* Header = Symtab->create<FileHeaderNode>();
+            Header->append(Symtab->getU32ConstDefinition(
+                MagicNumber, ValueFormat::Hexidecimal));
+            Header->append(Symtab->getU32ConstDefinition(
+                CasmVersion, ValueFormat::Hexidecimal));
+            NodeStack.push_back(Header);
             Frame.CallState = State::Step2;
             call(Method::Section);
             break;
