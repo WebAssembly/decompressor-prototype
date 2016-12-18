@@ -220,7 +220,6 @@ void BinaryWriter::writeNode(const Node* Nd) {
       // TODO: remove once we are only using HeaderNode's for preamble.
       if (const auto* Header = dyn_cast<FileHeaderNode>(Nd->getKid(0))) {
         writeNode(Header);
-        break;
       } else {
         writePreamble(cast<FileNode>(Nd));
       }

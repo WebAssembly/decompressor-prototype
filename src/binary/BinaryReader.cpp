@@ -207,9 +207,9 @@ void BinaryReader::resume() {
             TRACE(hex_uint8_t, "Form", Form);
             if (Form == OpFileHeader) {
               auto* Header = Symtab->create<FileHeaderNode>();
-              Header->append(Symtab->getCasmMagicDefinition(
+              Header->append(Symtab->getU32ConstDefinition(
                   MagicNumber, ValueFormat::Hexidecimal));
-              Header->append(Symtab->getCasmVersionDefinition(
+              Header->append(Symtab->getU32ConstDefinition(
                   CasmVersion, ValueFormat::Hexidecimal));
               NodeStack.push_back(Header);
             } else {
