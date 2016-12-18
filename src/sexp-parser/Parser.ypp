@@ -187,9 +187,7 @@ struct IntValue {
 
 file
          : file_version section {
-            $$ = Driver.create<FileNode>();
-            $$->append($1);
-            $$->append($2);
+            $$ = Driver.create<FileNode>($1, $2);
             Driver.setParsedAst($$);
           }
         ;

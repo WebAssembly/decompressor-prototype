@@ -224,17 +224,7 @@ void BinaryWriter::writeNode(const Node* Nd) {
       } else {
         writePreamble(cast<FileNode>(Nd));
       }
-#if 0
-      int NumKids = Nd->getNumKids();
-      assert(NumKids == 2);
-      assert(NumKids <= 2);
-      assert(NumKids >= 1);
-      Writer->writeUint8(NumKids - 1, WritePos);
-      if (NumKids == 2)
-        writeNode(Nd->getKid(1));
-#else
       writeNode(Nd->getKid(1));
-#endif
       break;
     }
     case OpStream: {

@@ -35,14 +35,12 @@ AbbreviationCodegen::AbbreviationCodegen(CountNode::RootPtr Root,
 }
 
 void AbbreviationCodegen::generateFile() {
-  auto* File = Symtab->create<FileNode>();
   auto* Header = Symtab->create<FileHeaderNode>();
   Header->append(Symtab->create<CasmMagicNode>(
       CasmBinaryMagic, decode::ValueFormat::Hexidecimal));
   Header->append(Symtab->create<CasmVersionNode>(
       CasmBinaryVersion, decode::ValueFormat::Hexidecimal));
-  File->append(Header);
-  File->append(generateFileBody());
+  auto* File = Symtab->create<FileNode>(Header, generateFileBody());
   Symtab->install(File);
 }
 

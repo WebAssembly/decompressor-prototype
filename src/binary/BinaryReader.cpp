@@ -198,7 +198,6 @@ void BinaryReader::resume() {
       case Method::File:
         switch (Frame.CallState) {
           case State::Enter: {
-            CurFile = Symtab->create<FileNode>();
             uint32_t MagicNumber = Reader->readUint32(ReadPos);
             TRACE(hex_uint32_t, "Casm magic number", MagicNumber);
             uint32_t CasmVersion = Reader->readUint32(ReadPos);
@@ -212,38 +211,32 @@ void BinaryReader::resume() {
                   MagicNumber, ValueFormat::Hexidecimal));
               Header->append(Symtab->getCasmVersionDefinition(
                   CasmVersion, ValueFormat::Hexidecimal));
-              CurFile->append(Header);
+              NodeStack.push_back(Header);
             } else {
               uint32_t WasmVersion = Reader->readUint32(ReadPos);
               TRACE(hex_uint32_t, "Wasm version number", WasmVersion);
-              CurFile->append(Symtab->create<FileVersionNode>(
-                  Symtab->getCasmMagicDefinition(MagicNumber,
-                                                 ValueFormat::Hexidecimal),
-                  Symtab->getCasmVersionDefinition(CasmVersion,
-                                                   ValueFormat::Hexidecimal),
-                  Symtab->getWasmVersionDefinition(WasmVersion,
-                                                   ValueFormat::Hexidecimal)));
+              NodeStack.push_back(
+                  Symtab->create<FileVersionNode>(
+                      Symtab->getCasmMagicDefinition(MagicNumber,
+                                                     ValueFormat::Hexidecimal),
+                      Symtab->getCasmVersionDefinition(CasmVersion,
+                                                       ValueFormat::Hexidecimal),
+                      Symtab->getWasmVersionDefinition(WasmVersion,
+                                                       ValueFormat::Hexidecimal)));
             }
-#if 0
-            uint8_t SectionFlag = Reader->readUint8(ReadPos);
-            assert(SectionFlag <= 1);
-            if (SectionFlag) {
-              Frame.CallState = State::Step2;
-              call(Method::Section);
-              break;
-            }
-            Frame.CallState = State::Exit;
-#else
             Frame.CallState = State::Step2;
             call(Method::Section);
-#endif
             break;
           }
-          case State::Step2:
-            CurFile->append(NodeStack.back());
+          case State::Step2: {
+            Node* Section = NodeStack.back();
             NodeStack.pop_back();
+            Node* Header = NodeStack.back();
+            NodeStack.pop_back();
+            CurFile = Symtab->create<FileNode>(Header, Section);
             Frame.CallState = State::Exit;
             break;
+          }
           case State::Exit: {
             TRACE_SEXP("File", CurFile);
             SectionSymtab.install(CurFile);

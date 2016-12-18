@@ -90,7 +90,7 @@
                                                                                \
   /* Declarations */                                                           \
   X(Define,            0x60, "define",           nullptr,           2, 1)      \
-  X(File,              0x62, "file",             nullptr,           0, 0)      \
+  X(File,              0x62, "file",             nullptr,           2, 0)      \
   X(FileVersion,       0x72, "file.version",     nullptr,           0, 0)      \
   X(Header,            0x74, "header",           nullptr,           0, 0)      \
   X(InputHeader,       0x75, "in",               "input.header",    0, 3)      \
@@ -191,6 +191,7 @@
   X(BitwiseOr,)                                                                \
   X(BitwiseXor,)                                                               \
   X(Case,)                                                                     \
+  X(File,)                                                                     \
   X(Header,)                                                                   \
   X(IfThen,)                                                                   \
   X(Loop,)                                                                     \
@@ -208,7 +209,6 @@
 #define AST_NARYNODE_TABLE                                                     \
   X(Define, DEFINE_DECLS)                                                      \
   X(Eval, EVAL_DECLS)                                                          \
-  X(File,)                                                                     \
   X(FileHeader,)                                                               \
   X(Filter,)                                                                   \
   X(InputHeader,)                                                              \
