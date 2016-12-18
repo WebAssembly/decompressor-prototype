@@ -1,0 +1,277 @@
+# Copyright 2015 WebAssembly Community Group participants
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# This file defines the CASM binary form of ASTs.
+
+# TODO(karlschimpf) Remove the last byte when other forms of header removed.
+
+(header (u32.const 0x6d736163) (u32.const 0x0) (u8.const 0x77))
+
+# Control flow operators
+(literal 'block'          (u8.const 0x01))
+(literal 'case'           (u8.const 0x02))
+(literal 'error'          (u8.const 0x03))
+(literal 'eval'           (u8.const 0x04))
+(literal 'filter'         (u8.const 0x06))
+(literal 'loop'           (u8.const 0x07))
+(literal 'loop.unbounded' (u8.const 0x08))
+(literal 'switch'         (u8.const 0x09))
+(literal 'sequence'       (u8.const 0x0a))
+(literal 'if.then'        (u8.const 0x0b))
+(literal 'if.then.else'   (u8.const 0x0c))
+
+# Constants
+(literal 'void'           (u8.const 0x10))
+(literal 'symbol'         (u8.const 0x11))
+(literal 'i32.const'      (u8.const 0x12))
+(literal 'i64.const'      (u8.const 0x13))
+(literal 'u8.const'       (u8.const 0x14))
+(literal 'u32.const'      (u8.const 0x15))
+(literal 'u64.const'      (u8.const 0x16))
+
+# Formatting
+(literal 'uint32'         (u8.const 0x21))
+(literal 'uint64'         (u8.const 0x23))
+(literal 'uint8'          (u8.const 0x25))
+(literal 'varint32'       (u8.const 0x27))
+(literal 'varint64'       (u8.const 0x29))
+(literal 'varuint32'      (u8.const 0x2b))
+(literal 'varuint64'      (u8.const 0x2d))
+(literal 'opcode'         (u8.const 0x2e))
+
+# Boolean expressions
+(literal 'and'            (u8.const 0x30))
+(literal 'or'             (u8.const 0x31))
+(literal 'not'            (u8.const 0x32))
+(literal 'stream'         (u8.const 0x33))
+(literal 'bitwise.and'    (u8.const 0x34))
+(literal 'bitwise.or'     (u8.const 0x35))
+(literal 'bitwise.xor'    (u8.const 0x36))
+(literal 'bitwise.negate' (u8.const 0x37))
+(literal 'last.symbol.is' (u8.const 0x38))
+
+# I/O operations
+(literal 'peek'           (u8.const 0x40))
+(literal 'read'           (u8.const 0x41))
+(literal 'last.read'      (u8.const 0x42))
+(literal 'write'          (u8.const 0x43))
+
+# Other
+(literal 'convert'        (u8.const 0x50))
+(literal 'param'          (u8.const 0x51))
+(literal 'local'          (u8.const 0x53))
+(literal 'set'            (u8.const 0x54))
+(literal 'map'            (u8.const 0x55))
+(literal '=>'             (u8.const 0x56))
+
+# declarations
+(literal 'define'         (u8.const 0x60))
+(literal 'file'           (u8.const 0x62))
+(literal 'header'         (u8.const 0x74))
+(literal 'file.header'    (u8.const 0x77))
+(literal 'section'        (u8.const 0x63))
+(literal 'undefine'       (u8.const 0x64))
+(literal 'literal.define' (u8.const 0x65))
+(literal 'rename'         (u8.const 0x68))
+(literal 'locals'         (u8.const 0x69))
+(literal 'params'         (u8.const 0x70))
+(literal 'literal.use'    (u8.const 0x71))
+
+(define 'file' (params)
+  # Note: Assume the header is read by the reader.
+  (eval 'section')
+)
+
+(define 'int.value' (params 2)
+  (=> 'int.value.begin')
+  (if (uint8)                   # 0 or (decode::ValueFormat+1)
+    (param 0)                   # integer value.
+  )
+  (param 1)
+  (=> 'int.value.end')
+)
+
+(define 'kid.list' (params 1)
+  (loop (param 0)              # number of kids
+    (eval 'node'))             # kid
+)
+
+(define 'nary.node' (params 1)
+  (=> 'nary.node.begin')
+  (loop
+    (seq (varuint32) (=> 'nary.node.numkids'))
+    (eval 'node')
+  )
+  (param 0)
+  (=> 'nary.node.end')
+)
+
+(define 'node' (params)
+  (=> 'node.begin')
+  (switch (uint8)
+    (error)
+    (case 'and'                 (eval 'postorder' (u8.const 2)
+                                                  (=> 'and')))
+    (case 'block'               (eval 'postorder' (u8.const 1)
+                                                  (=> 'block')))
+    (case 'bitwise.and'         (eval 'postorder' (u8.const 2)
+                                                  (=> 'bitwise.and')))
+    (case 'bitwise.negate'      (eval 'postorder' (u8.const 1)
+                                                  (=> 'bitwise.negate')))
+    (case 'bitwise.or'          (eval 'postorder' (u8.const 2)
+                                                  (=> 'bitwise.or')))
+    (case 'bitwise.xor'         (eval 'postorder' (u8.const 2)
+                                                  (=> 'bitwise.xor')))
+    (case 'case'                (eval 'postorder' (u8.const 2)
+                                                  (=> 'case')))
+    (case 'convert'             (eval 'postorder' (u8.const 3)
+                                                  (=> 'convert')))
+    (case 'define'              (eval 'nary.node' (=> 'define')))
+    (case 'error'               (eval 'postorder' (u8.const 0)
+                                                  (=> 'error')))
+    (case 'eval'                (eval 'nary.node' (=> 'eval')))
+    (case 'filter'              (eval 'nary.node' (=> 'filter')))
+    (case 'if.then'             (eval 'postorder' (u8.const 2)
+                                                  (=> 'if.then')))
+    (case 'if.then.else'        (eval 'postorder' (u8.const 3)
+                                                  (=> 'if.then.else')))
+    (case 'i32.const'           (eval 'int.value' (varint32)
+                                                  (=> 'i32.constop')))
+    (case 'i64.const'           (eval 'int.value' (varint64)
+                                                  (=> 'i64.const')))
+    (case 'last.read'           (eval 'postorder' (u8.const 0)
+                                                  (=> 'last.read')))
+    (case 'last.symbol.is'      (eval 'postorder' (u8.const 1)
+                                                  (=> 'last.symbol.is')))
+    (case 'literal.define'      (eval 'postorder' (u8.const 2)
+                                                  (=> 'literal.define')))
+    (case 'literal.use'         (eval 'postorder' (u8.const 1)
+                                                  (=> 'literal.use')))
+    (case 'local'               (eval 'int.value' (varuint32)
+                                                  (=> 'local')))
+    (case 'locals'              (eval 'int.value' (varuint32)
+                                                  (=> 'locals')))
+    (case 'loop'                (eval 'postorder' (u8.const 2)
+                                                  (=> 'loop')))
+    (case 'loop.unbounded'      (eval 'postorder' (u8.const 1)
+                                                  (=> 'loop.unbounded')))
+    (case 'map'                 (eval 'nary.node' (=> 'map')))
+    (case 'not'                 (eval 'postorder' (u8.const 1)
+                                                  (=> 'not')))
+    (case 'opcode'              (eval 'nary.node' (=> 'opcode')))
+    (case 'or'                  (eval 'postorder' (u8.const 2)
+                                                  (=> 'or')))
+    (case 'param'               (eval 'int.value' (varuint32)
+                                                  (=> 'param')))
+    (case 'params'              (eval 'int.value' (varuint32)
+                                                  (=> 'params')))
+    (case 'peek'                (eval 'postorder' (u8.const 1)
+                                                  (=> 'peek')))
+    (case 'read'                (eval 'postorder' (u8.const 1)
+                                                  (=> 'read')))
+    (case 'rename'              (eval 'postorder' (u8.const 2)
+                                                  (=> 'rename')))
+    (case 'sequence'            (eval 'nary.node' (=> 'sequence')))
+    (case 'set'                 (eval 'postorder' (u8.const 2)
+                                                  (=> 'set')))
+    (case 'stream'              (eval 'stream.node'))
+    (case 'switch'              (eval 'nary.node' (=> 'switch')))
+    (case 'symbol'              (eval 'symbol.lookup'))      
+    (case 'undefine'            (eval 'postorder' (u8.const 1)
+                                                  (=> 'undefine')))
+    (case 'uint32'              (eval 'int.value' (uint8)
+                                                  (=> 'uint32')))
+    (case 'uint64'              (eval 'int.value' (uint8)
+                                                  (=> 'uint64')))
+    (case 'uint8'               (eval 'int.value' (uint8)
+                                                  (=> 'uint8')))
+    (case 'u32.const'           (eval 'int.value' (varuint32)
+                                                  (=> 'u32.const')))
+    (case 'u64.const'           (eval 'int.value' (varuint64)
+                                                  (=> 'u64.const')))
+    (case 'u8.const'            (eval 'int.value' (uint8)
+                                                  (=> 'u8.const')))
+    (case 'varint32'            (eval 'int.value' (uint8)
+                                                  (=> 'varint32')))
+    (case 'varint64'            (eval 'int.value' (uint8)
+                                                  (=> 'varint64')))
+    (case 'varuint32'           (eval 'int.value' (uint8)
+                                                  (=> 'varuint32')))
+    (case 'varuint64'           (eval 'int.value' (uint8)
+                                                  (=> 'varuint64')))
+    (case 'void'                (eval 'postorder' (u8.const 0)
+                                                  (=> 'void')))
+    (case 'write'               (eval 'nary.node' (=> 'write')))
+    (case '=>'                  (eval 'postorder' (u8.const 1)
+                                                  (=> '=>')))
+  )
+  (=> 'node.end')
+)
+
+(define 'postorder' (params 2)
+  (=> 'postorder.begin')
+  (eval 'kid.list' (param 0))
+  (uint8)                       # opcode
+  (param 1)                     # construct to build.
+  (=> 'postorder.end')
+)
+
+
+(define 'section' (params)
+  (=> 'section.begin')
+  (eval 'symbol.table')
+  (block
+    (loop.unbounded
+      (eval 'node')
+    )
+  )
+  (=> 'section.end')
+)
+
+(define 'stream.node' (params)
+  # TODO
+  (void)
+)
+
+(define 'symbol.lookup' (params)
+  (=> 'symbol.lookup.begin')
+  (varuint32)
+  (=> 'symbol.lookup.end')
+)
+
+(define 'symbol.name' (params)
+  (=> 'symbol.name.begin')
+  (loop
+    (seq
+      (varuint32)
+      (=> 'symbol.name.size')
+    )
+    (uint8)
+    (=> 'symbol.name.byte')
+  )
+  (=> 'symbol.name.end')
+)
+
+(define 'symbol.table' (params)
+  (=> 'symbol.table.begin')
+  (loop
+    (seq
+      (varuint32)
+      (=> 'symbol.table.size')
+    )
+    (eval 'symbol.name')
+  )
+  (=> 'symbol.table.end')
+)
+

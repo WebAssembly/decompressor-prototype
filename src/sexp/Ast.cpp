@@ -574,7 +574,11 @@ bool EvalNode::validateNode(NodeVectorType& Parents) {
   const auto* Sym = dyn_cast<SymbolNode>(getKid(0));
   assert(Sym);
   const auto* Defn = dyn_cast<DefineNode>(Sym->getDefineDefinition());
-  assert(Defn);
+  if (Defn == nullptr) {
+    fprintf(stderr, "Can't find define for symbol!\n");
+    describeNode("In", this);
+    return false;
+  }
   const auto* Params = dyn_cast<ParamsNode>(Defn->getKid(1));
   assert(Params);
   if (int(Params->getValue()) != getNumKids() - 1) {
