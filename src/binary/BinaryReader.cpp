@@ -215,14 +215,13 @@ void BinaryReader::resume() {
             } else {
               uint32_t WasmVersion = Reader->readUint32(ReadPos);
               TRACE(hex_uint32_t, "Wasm version number", WasmVersion);
-              NodeStack.push_back(
-                  Symtab->create<FileVersionNode>(
-                      Symtab->getCasmMagicDefinition(MagicNumber,
-                                                     ValueFormat::Hexidecimal),
-                      Symtab->getCasmVersionDefinition(CasmVersion,
-                                                       ValueFormat::Hexidecimal),
-                      Symtab->getWasmVersionDefinition(WasmVersion,
-                                                       ValueFormat::Hexidecimal)));
+              NodeStack.push_back(Symtab->create<FileVersionNode>(
+                  Symtab->getCasmMagicDefinition(MagicNumber,
+                                                 ValueFormat::Hexidecimal),
+                  Symtab->getCasmVersionDefinition(CasmVersion,
+                                                   ValueFormat::Hexidecimal),
+                  Symtab->getWasmVersionDefinition(WasmVersion,
+                                                   ValueFormat::Hexidecimal)));
             }
             Frame.CallState = State::Step2;
             call(Method::Section);
