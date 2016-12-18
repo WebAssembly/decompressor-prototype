@@ -35,6 +35,12 @@ namespace filt {
 
 namespace {
 
+void describeNode(const char* Message, const Node* Nd) {
+  TextWriter Writer;
+  fprintf(stderr, "%s:\n", Message);
+  Writer.write(stderr, Nd);
+}
+
 static const char* PredefinedName[NumPredefinedSymbols]{
     "$PredefinedSymbol::Unknown"
 #define X(tag, name) , name
@@ -328,7 +334,7 @@ void SymbolTable::installDefinitions(Node* Root) {
         DefineSymbol->setDefineDefinition(Root);
         return;
       }
-      Trace.printSexp("Malformed", Root);
+      describeNode("Malformed", Root);
       fatal("Malformed define s-expression found!");
       return;
     }
@@ -337,7 +343,7 @@ void SymbolTable::installDefinitions(Node* Root) {
         LiteralSymbol->setLiteralDefinition(Root);
         return;
       }
-      Trace.printSexp("Malformed", Root);
+      describeNode("Malformed", Root);
       fatal("Malformed literal s-expression found!");
       return;
     }
@@ -349,7 +355,7 @@ void SymbolTable::installDefinitions(Node* Root) {
           return;
         }
       }
-      Trace.printSexp("Malformed", Root);
+      describeNode("Malformed", Root);
       fatal("Malformed rename s-expression found!");
       return;
     }
@@ -358,7 +364,7 @@ void SymbolTable::installDefinitions(Node* Root) {
         UndefineSymbol->setDefineDefinition(nullptr);
         return;
       }
-      Trace.printSexp("Can't undefine", Root);
+      describeNode("Can't undefine", Root);
       fatal("Malformed undefine s-expression found!");
     }
   }
@@ -564,6 +570,22 @@ void NaryNode::append(Node* Kid) {
 AST_NARYNODE_TABLE
 #undef X
 
+bool EvalNode::validateNode(NodeVectorType& Parents) {
+  const auto* Sym = dyn_cast<SymbolNode>(getKid(0));
+  assert(Sym);
+  const auto* Defn = dyn_cast<DefineNode>(Sym->getDefineDefinition());
+  assert(Defn);
+  const auto* Params = dyn_cast<ParamsNode>(Defn->getKid(1));
+  assert(Params);
+  if (int(Params->getValue()) != getNumKids() - 1) {
+    fprintf(stderr, "Eval called with wrong number of arguments!\n");
+    describeNode("bad eval", this);
+    describeNode("called define", Defn);
+    return false;
+  }
+  return true;
+}
+
 const CaseNode* SelectBaseNode::getCase(IntType Key) const {
   if (LookupMap.count(Key))
     return LookupMap.at(Key);
@@ -636,7 +658,7 @@ bool getCaseSelectorWidth(const Node* Nd, uint32_t& Width) {
   switch (Nd->getType()) {
     default:
       // Not allowed in opcode cases.
-      Nd->getTrace().printSexp("Non-fixed width opcode format", Nd);
+      describeNode("Non-fixed width opcode format", Nd);
       return false;
     case OpUint8:
     case OpUint32:
@@ -645,7 +667,7 @@ bool getCaseSelectorWidth(const Node* Nd, uint32_t& Width) {
   }
   Width = getIntegerValue(Nd->getKid(0));
   if (Width == 0 || Width >= MaxOpcodeWidth) {
-    Nd->getTrace().printSexp("Bit size not valid", Nd);
+    describeNode("Bit size not valid", Nd);
     return false;
   }
   return true;
@@ -665,7 +687,7 @@ bool collectCaseWidths(IntType Key,
   switch (Nd->getType()) {
     default:
       // Not allowed in opcode cases.
-      Nd->getTrace().printSexp("Non-fixed width opcode format", Nd);
+      describeNode("Non-fixed width opcode format", Nd);
       return false;
     case OpOpcode:
       if (isa<LastReadNode>(Nd->getKid(0))) {
@@ -679,18 +701,18 @@ bool collectCaseWidths(IntType Key,
             // Already handled by outer case.
             continue;
           if (!collectCaseWidths(CaseKey, CaseBody, CaseWidths)) {
-            Nd->getTrace().printSexp("Inside", Nd);
+            describeNode("Inside", Nd);
             return false;
           }
         }
       } else {
         uint32_t Width;
         if (!getCaseSelectorWidth(Nd->getKid(0), Width)) {
-          Nd->getTrace().printSexp("Inside", Nd);
+          describeNode("Inside", Nd);
           return false;
         }
         if (Width >= MaxOpcodeWidth) {
-          Nd->getTrace().printSexp("Bit width(s) too big", Nd);
+          describeNode("Bit width(s) too big", Nd);
           return false;
         }
         CaseWidths.insert(Width);
@@ -702,13 +724,13 @@ bool collectCaseWidths(IntType Key,
           const Node* CaseBody = Case->getKid(1);
           std::unordered_set<uint32_t> LocalCaseWidths;
           if (!collectCaseWidths(CaseKey, CaseBody, LocalCaseWidths)) {
-            Nd->getTrace().printSexp("Inside", Nd);
+            describeNode("Inside", Nd);
             return false;
           }
           for (uint32_t CaseWidth : LocalCaseWidths) {
             uint32_t CombinedWidth = Width + CaseWidth;
             if (CombinedWidth >= MaxOpcodeWidth) {
-              Nd->getTrace().printSexp("Bit width(s) too big", Nd);
+              describeNode("Bit width(s) too big", Nd);
               return false;
             }
             CaseWidths.insert(CombinedWidth);
@@ -738,7 +760,7 @@ void OpcodeNode::clearCaches(NodeVectorType& AdditionalNodes) {
 void OpcodeNode::installCaseRanges() {
   uint32_t InitialWidth;
   if (!getCaseSelectorWidth(getKid(0), InitialWidth)) {
-    getTrace().printSexp("Inside", this);
+    describeNode("Inside", this);
     fatal("Unable to install caches for opcode s-expression");
   }
   for (int i = 1, NumKids = getNumKids(); i < NumKids; ++i) {
@@ -747,14 +769,14 @@ void OpcodeNode::installCaseRanges() {
     std::unordered_set<uint32_t> CaseWidths;
     IntType Key = getIntegerValue(Case->getKid(0));
     if (!collectCaseWidths(Key, Case->getKid(1), CaseWidths)) {
-      getTrace().printSexp("Inside", Case);
-      getTrace().printSexp("Inside ", this);
+      describeNode("Inside", Case);
+      describeNode("Inside ", this);
       fatal("Unable to install caches for opcode s-expression");
     }
     for (uint32_t NestedWidth : CaseWidths) {
       uint32_t Width = InitialWidth + NestedWidth;
       if (Width > MaxOpcodeWidth) {
-        getTrace().printSexp("Bit width(s) too big", this);
+        describeNode("Bit width(s) too big", this);
         fatal("Unable to install caches for opcode s-expression");
       }
       IntType Min = Key << NestedWidth;
@@ -769,9 +791,9 @@ void OpcodeNode::installCaseRanges() {
     const WriteRange& R1 = CaseRangeVector[i];
     const WriteRange& R2 = CaseRangeVector[i + 1];
     if (R1.getMax() >= R2.getMin()) {
-      getTrace().printSexp("Range 1", R1.getCase());
-      getTrace().printSexp("Range 2", R2.getCase());
-      getTrace().printSexp("Inside", this);
+      describeNode("Range 1", R1.getCase());
+      describeNode("Range 2", R2.getCase());
+      describeNode("Inside", this);
       fatal("Opcode case ranges not unique");
     }
   }

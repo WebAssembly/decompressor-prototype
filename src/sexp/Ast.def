@@ -197,6 +197,7 @@
   SymbolNode* getCallName() const {                                            \
     return dyn_cast<SymbolNode>(getKid(0));                                    \
   }                                                                            \
+  bool validateNode(NodeVectorType &Parents) OVERRIDE;                         \
 
 #define SECTION_DECLS                                                          \
  public:                                                                       \
