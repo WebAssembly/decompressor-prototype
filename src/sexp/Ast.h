@@ -29,6 +29,7 @@
 #ifndef DECOMPRESSOR_SRC_SEXP_AST_H
 #define DECOMPRESSOR_SRC_SEXP_AST_H
 
+#include "interp/IntFormats.h"
 #include "sexp/Ast.def"
 #include "sexp/NodeType.h"
 #include "sexp/Strings.def"
@@ -87,6 +88,9 @@ struct AstTraitsType {
 };
 
 extern AstTraitsType AstTraits[NumNodeTypes];
+
+extern bool definesIntTypeFormat(const filt::Node* Nd);
+extern interp::IntTypeFormat getIntTypeFormat(const filt::Node* Nd);
 
 // Models integer values (as used in AST nodes).
 class IntegerValue {
