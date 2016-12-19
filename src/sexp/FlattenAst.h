@@ -33,19 +33,22 @@ class FlattenAst {
   FlattenAst& operator=(const FlattenAst&) = delete;
 
  public:
-  FlattenAst(std::shared_ptr<interp::IntWriter> Writer,
+  FlattenAst(std::shared_ptr<interp::IntStream> Output,
              std::shared_ptr<SymbolTable> Symtab);
 
   ~FlattenAst();
 
-  bool write(const FileNode* File) {
-    writeNode(File);
-    return HasErrors;
+  bool flatten() {
+    fprintf(stderr, "-> flatten\n");
+    flattenNode(Symtab->getInstalledRoot());
+    fprintf(stderr, "<- flatten\n");
+    return !HasErrors;
   }
 
   void setFreezeEofOnDestruct(bool Value) { FreezeEofOnDestruct = Value; }
 
   void setTrace(std::shared_ptr<filt::TraceClassSexp> Trace);
+  void setTraceProgress(bool NewValue);
   std::shared_ptr<filt::TraceClassSexp> getTracePtr();
   filt::TraceClassSexp& getTrace() { return *getTracePtr(); }
 
@@ -57,7 +60,7 @@ class FlattenAst {
   bool HasErrors;
   std::shared_ptr<filt::TraceClassSexp> Trace;
 
-  void writeNode(const Node* Nd);
+  void flattenNode(const Node* Nd);
   void reportError(const char* Message);
   void reportError(const char* Message, const Node* Nd);
 };

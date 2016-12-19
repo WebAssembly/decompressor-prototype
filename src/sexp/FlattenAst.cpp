@@ -19,6 +19,7 @@
 
 #include "sexp/FlattenAst.h"
 #include "sexp/TextWriter.h"
+#include "utils/Trace.h"
 
 namespace wasm {
 
@@ -27,9 +28,9 @@ using namespace interp;
 
 namespace filt {
 
-FlattenAst::FlattenAst(std::shared_ptr<IntWriter> Writer,
+FlattenAst::FlattenAst(std::shared_ptr<IntStream> Output,
                        std::shared_ptr<SymbolTable> Symtab)
-    : Writer(Writer),
+    : Writer(std::make_shared<IntWriter>(Output)),
       Symtab(Symtab),
       SectionSymtab(Symtab),
       FreezeEofOnDestruct(true),
@@ -41,15 +42,26 @@ FlattenAst::~FlattenAst() {
     Writer->writeFreezeEof();
 }
 
+void FlattenAst::setTraceProgress(bool NewValue) {
+  if (!NewValue && !Trace)
+    return;
+  getTrace().setTraceProgress(NewValue);
+}
+
+
 void FlattenAst::setTrace(std::shared_ptr<TraceClassSexp> NewTrace) {
   Trace = NewTrace;
   if (!Trace)
     return;
   Trace->addContext(Writer->getTraceContext());
+  TRACE_MESSAGE("Trace started");
 }
 
 std::shared_ptr<TraceClassSexp> FlattenAst::getTracePtr() {
-  return std::make_shared<TraceClassSexp>("FlattenAst");
+  if (!Trace) {
+    setTrace(std::make_shared<TraceClassSexp>("FlattenAst"));
+  }
+  return Trace;
 }
 
 void FlattenAst::reportError(const char* Message) {
@@ -64,10 +76,10 @@ void FlattenAst::reportError(const char* Label, const Node* Nd) {
   HasErrors = true;
 }
 
-void FlattenAst::writeNode(const Node* Nd) {
+void FlattenAst::flattenNode(const Node* Nd) {
   if (HasErrors)
     return;
-  TRACE_METHOD("writeNode");
+  TRACE_METHOD("flattenNode");
   TRACE_SEXP(nullptr, Nd);
   switch (NodeType Opcode = Nd->getType()) {
     case NO_SUCH_NODETYPE:
@@ -119,7 +131,7 @@ void FlattenAst::writeNode(const Node* Nd) {
       // Operations that are written out in postorder, with a fixed number of
       // arguments.
       for (const auto* Kid : *Nd)
-        writeNode(Kid);
+        flattenNode(Kid);
       Writer->write(Opcode);
       break;
     }
@@ -128,7 +140,7 @@ void FlattenAst::writeNode(const Node* Nd) {
       // Note: The header appears at the beginning of the file, and hence,
       // isn't labeled.
       for (int i = 0; i < Nd->getNumKids(); ++i)
-        writeNode(Nd->getKid(i));
+        flattenNode(Nd->getKid(i));
       break;
     }
     case OpFileHeader: {
@@ -167,7 +179,7 @@ void FlattenAst::writeNode(const Node* Nd) {
           Writer->write(SymName[i]);
       }
       for (int i = 0, len = Nd->getNumKids(); i < len; ++i)
-        writeNode(Nd->getKid(i));
+        flattenNode(Nd->getKid(i));
       Writer->writeAction(Symtab->getBlockExitCallback());
       SectionSymtab.clear();
       break;
@@ -183,7 +195,7 @@ void FlattenAst::writeNode(const Node* Nd) {
       // Operations that are written out in postorder, and have a variable
       // number of arguments.
       for (const auto* Kid : *Nd)
-        writeNode(Kid);
+        flattenNode(Kid);
       Writer->write(Opcode);
       Writer->write(Nd->getNumKids());
       break;
