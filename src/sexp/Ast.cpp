@@ -18,6 +18,8 @@
 /* Implements AST's for modeling filter s-expressions */
 
 #include "sexp/Ast.h"
+
+#include "interp/IntFormats.h"
 #include "sexp/TextWriter.h"
 #include "utils/Defs.h"
 
@@ -29,6 +31,7 @@
 namespace wasm {
 
 using namespace decode;
+using namespace interp;
 using namespace utils;
 
 namespace filt {
@@ -47,6 +50,31 @@ static const char* PredefinedName[NumPredefinedSymbols]{
     PREDEFINED_SYMBOLS_TABLE
 #undef X
 };
+
+bool extractIntTypeFormat(const Node* Nd, IntTypeFormat& Format) {
+  Format = IntTypeFormat::Uint8;
+  if (Nd == nullptr)
+    return false;
+  switch (Nd->getType()) {
+    case OpU8Const:
+      Format = IntTypeFormat::Uint8;
+      return true;
+    case OpI32Const:
+      Format = IntTypeFormat::Varint32;
+      return true;
+    case OpU32Const:
+      Format = IntTypeFormat::Uint32;
+      return true;
+    case OpI64Const:
+      Format = IntTypeFormat::Varint64;
+      return true;
+    case OpU64Const:
+      Format = IntTypeFormat::Uint64;
+      return true;
+    default:
+      return false;
+  }
+}
 
 }  // end of anonymous namespace
 
@@ -105,6 +133,18 @@ const char* getNodeTypeName(NodeType Type) {
   if (Name == nullptr)
     Mapping[static_cast<int>(Type)] = Name = getNodeSexpName(Type);
   return Name;
+}
+
+
+bool definesIntTypeFormat(const Node* Nd) {
+  IntTypeFormat Format;
+  return extractIntTypeFormat(Nd, Format);
+}
+
+IntTypeFormat getIntTypeFormat(const Node* Nd) {
+  IntTypeFormat Format;
+  extractIntTypeFormat(Nd, Format);
+  return Format;
 }
 
 void IntegerValue::describe(FILE* Out) const {

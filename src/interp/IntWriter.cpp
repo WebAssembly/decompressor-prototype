@@ -43,31 +43,31 @@ StreamType IntWriter::getStreamType() const {
 }
 
 bool IntWriter::writeUint8(uint8_t Value) {
-  return Pos.write(Value);
+  return write(Value);
 }
 
 bool IntWriter::writeUint32(uint32_t Value) {
-  return Pos.write(Value);
+  return write(Value);
 }
 
 bool IntWriter::writeUint64(uint64_t Value) {
-  return Pos.write(Value);
+  return write(Value);
 }
 
 bool IntWriter::writeVarint32(int32_t Value) {
-  return Pos.write(Value);
+  return write(Value);
 }
 
 bool IntWriter::writeVarint64(int64_t Value) {
-  return Pos.write(Value);
+  return write(Value);
 }
 
 bool IntWriter::writeVaruint32(uint32_t Value) {
-  return Pos.write(Value);
+  return write(Value);
 }
 
 bool IntWriter::writeVaruint64(uint64_t Value) {
-  return Pos.write(Value);
+  return write(Value);
 }
 
 bool IntWriter::writeFreezeEof() {

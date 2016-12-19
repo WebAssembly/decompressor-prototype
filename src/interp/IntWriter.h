@@ -39,6 +39,7 @@ class IntWriter : public Writer {
   ~IntWriter() OVERRIDE {}
   void reset() OVERRIDE;
   decode::StreamType getStreamType() const OVERRIDE;
+  bool write(decode::IntType Value) { return Pos.write(Value); }
   bool writeUint8(uint8_t Value) OVERRIDE;
   bool writeUint32(uint32_t Value) OVERRIDE;
   bool writeUint64(uint64_t Value) OVERRIDE;
