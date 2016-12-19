@@ -48,7 +48,6 @@ void FlattenAst::setTraceProgress(bool NewValue) {
   getTrace().setTraceProgress(NewValue);
 }
 
-
 void FlattenAst::setTrace(std::shared_ptr<TraceClassSexp> NewTrace) {
   Trace = NewTrace;
   if (!Trace)
