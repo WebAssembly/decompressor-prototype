@@ -135,7 +135,6 @@ const char* getNodeTypeName(NodeType Type) {
   return Name;
 }
 
-
 bool definesIntTypeFormat(const Node* Nd) {
   IntTypeFormat Format;
   return extractIntTypeFormat(Nd, Format);

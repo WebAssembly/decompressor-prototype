@@ -94,7 +94,7 @@ SEXP_OBJDIR = $(OBJDIR)/sexp
 SEXP_OBJDIR_BOOT = $(OBJDIR_BOOT)/sexp
 SEXP_SRCS_BASE = \
 	Ast.cpp \
-	AstToCasm.cpp \
+	FlattenAst.cpp \
 	TextWriter.cpp \
 	TraceSexp.cpp
 
