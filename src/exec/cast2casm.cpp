@@ -64,7 +64,9 @@ void usage(const char* AppName) {
 
 int main(int Argc, char* Argv[]) {
   int Verbose = 0;
+#if 0
   bool MinimizeBlockSize = false;
+#endif
   bool InputSpecified = false;
   bool OutputSpecified = false;
   for (int i = 1; i < Argc; ++i) {
@@ -74,8 +76,10 @@ int main(int Argc, char* Argv[]) {
                Argv[i] == std::string("--help")) {
       usage(Argv[0]);
       return exit_status(EXIT_SUCCESS);
+#if 0
     } else if (Argv[i] == std::string("-m")) {
       MinimizeBlockSize = true;
+#endif
     } else if (Argv[i] == std::string("-o")) {
       if (++i >= Argc) {
         fprintf(stderr, "No file specified after -o option\n");
