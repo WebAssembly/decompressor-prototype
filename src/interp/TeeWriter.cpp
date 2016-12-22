@@ -25,36 +25,25 @@ using namespace utils;
 
 namespace interp {
 
-TeeWriter::TeeWriter() : Writer(), MyContext(nullptr) {
+TeeWriter::TeeWriter()
+    : Writer() {
 }
 
-TeeWriter::~TeeWriter() {
-  if (MyContext)
-    MyContext->MyWriter = nullptr;
-}
+TeeWriter::~TeeWriter() {}
 
 void TeeWriter::add(std::shared_ptr<Writer> NodeWriter,
                     bool DefinesStreamType,
-                    bool TraceNode,
-                    bool DefinesTraceContext) {
+                    bool TraceNode) {
   Writers.push_back(
-      Node(NodeWriter, DefinesStreamType, TraceNode, DefinesTraceContext));
+      Node(NodeWriter, DefinesStreamType, TraceNode));
 }
 
 TeeWriter::Node::Node(std::shared_ptr<Writer> NodeWriter,
-                      bool TraceNode,
-                      bool DefinesTraceContext,
-                      bool DefinesStreamType)
-    : NodeWriter(NodeWriter),
-      TraceNode(TraceNode),
-      DefinesTraceContext(DefinesTraceContext),
-      DefinesStreamType(DefinesStreamType) {
-}
-
-TraceClass::ContextPtr TeeWriter::Node::getTraceContext() {
-  if (!TraceContext && DefinesTraceContext)
-    TraceContext = NodeWriter->getTraceContext();
-  return TraceContext;
+                      bool DefinesStreamType,
+                      bool TraceNode)
+    :NodeWriter(NodeWriter),
+     TraceNode(TraceNode),
+     DefinesStreamType(DefinesStreamType) {
 }
 
 void TeeWriter::reset() {
@@ -90,56 +79,56 @@ bool TeeWriter::writeUint32(uint32_t Value) {
   for (Node& Nd : Writers)
     if (!Nd.getWriter()->writeUint32(Value))
       return false;
-  return false;
+  return true;
 }
 
 bool TeeWriter::writeUint64(uint64_t Value) {
   for (Node& Nd : Writers)
     if (!Nd.getWriter()->writeUint64(Value))
       return false;
-  return false;
+  return true;
 }
 
 bool TeeWriter::writeVarint32(int32_t Value) {
   for (Node& Nd : Writers)
     if (!Nd.getWriter()->writeVarint32(Value))
       return false;
-  return false;
+  return true;
 }
 
 bool TeeWriter::writeVarint64(int64_t Value) {
   for (Node& Nd : Writers)
     if (!Nd.getWriter()->writeVarint64(Value))
       return false;
-  return false;
+  return true;
 }
 
 bool TeeWriter::writeVaruint32(uint32_t Value) {
   for (Node& Nd : Writers)
     if (!Nd.getWriter()->writeVaruint32(Value))
       return false;
-  return false;
+  return true;
 }
 
 bool TeeWriter::writeVaruint64(uint64_t Value) {
   for (Node& Nd : Writers)
     if (!Nd.getWriter()->writeVaruint64(Value))
       return false;
-  return false;
+  return true;
 }
 
 bool TeeWriter::writeFreezeEof() {
   for (Node& Nd : Writers)
     if (!Nd.getWriter()->writeFreezeEof())
       return false;
-  return false;
+  return true;
 }
 
 bool TeeWriter::writeValue(decode::IntType Value, const filt::Node* Format) {
   for (Node& Nd : Writers)
     if (!Nd.getWriter()->writeValue(Value, Format))
       return false;
-  return false;
+  return true;
 }
 
 bool TeeWriter::writeTypedValue(decode::IntType Value,
@@ -147,7 +136,7 @@ bool TeeWriter::writeTypedValue(decode::IntType Value,
   for (Node& Nd : Writers)
     if (!Nd.getWriter()->writeTypedValue(Value, Format))
       return false;
-  return false;
+  return true;
 }
 
 bool TeeWriter::writeHeaderValue(decode::IntType Value,
@@ -155,14 +144,15 @@ bool TeeWriter::writeHeaderValue(decode::IntType Value,
   for (Node& Nd : Writers)
     if (!Nd.getWriter()->writeHeaderValue(Value, Format))
       return false;
-  return false;
+  return true;
 }
 
 bool TeeWriter::writeAction(const filt::CallbackNode* Action) {
-  for (Node& Nd : Writers)
+  for (Node& Nd : Writers) {
     if (!Nd.getWriter()->writeAction(Action))
       return false;
-  return false;
+  }
+  return true;
 }
 
 void TeeWriter::setMinimizeBlockSize(bool NewValue) {
@@ -175,24 +165,10 @@ void TeeWriter::describeState(FILE* File) {
     Nd.getWriter()->describeState(File);
 }
 
-TraceClass::ContextPtr TeeWriter::getTraceContext() {
-  if (!MyContext)
-    MyContext = std::make_shared<Context>(this);
-  return MyContext;
-}
-
-TeeWriter::Context::~Context() {
-}
-
-void TeeWriter::Context::describe(FILE* File) {
-  if (MyWriter)
-    MyWriter->describeContexts(File);
-}
-
-void TeeWriter::describeContexts(FILE* File) {
+void TeeWriter::setTrace(std::shared_ptr<filt::TraceClassSexp> NewTrace) {
   for (Node& Nd : Writers)
-    if (TraceClass::ContextPtr Ptr = Nd.getTraceContext())
-      Ptr->describe(File);
+    if (Nd.getTraceNode())
+      Nd.getWriter()->setTrace(NewTrace);
 }
 
 }  // end of namespace interp

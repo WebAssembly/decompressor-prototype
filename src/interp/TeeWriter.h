@@ -40,32 +40,26 @@ class TeeWriter : public Writer {
 
    public:
     Node(std::shared_ptr<Writer> NodeWriter,
-         bool TraceNode,
-         bool DefinesTraceContext,
-         bool DefinesStreamType);
+         bool DefinesStreamType,
+         bool TraceNode);
 
     std::shared_ptr<Writer> getWriter() { return NodeWriter; }
     const std::shared_ptr<Writer> getWriter() const { return NodeWriter; }
     bool getTraceNode() const { return TraceNode; }
-    bool getDefinesTraceContext() const { return DefinesTraceContext; }
     bool getDefinesStreamType() const { return DefinesStreamType; }
-    utils::TraceClass::ContextPtr getTraceContext();
 
    private:
     std::shared_ptr<Writer> NodeWriter;
     const bool TraceNode;
-    const bool DefinesTraceContext;
     const bool DefinesStreamType;
-    utils::TraceClass::ContextPtr TraceContext;
   };
 
   TeeWriter();
   ~TeeWriter() OVERRIDE;
 
   void add(std::shared_ptr<Writer> NodeWriter,
-           bool DefinesStreamType = false,
-           bool TraceNode = false,
-           bool DefinesTraceContext = false);
+           bool DefinesStreamType,
+           bool TraceNode);
 
   void reset() OVERRIDE;
   decode::StreamType getStreamType() const OVERRIDE;
@@ -89,26 +83,10 @@ class TeeWriter : public Writer {
   void setMinimizeBlockSize(bool NewValue) OVERRIDE;
   void describeState(FILE* File) OVERRIDE;
 
-  utils::TraceClass::ContextPtr getTraceContext() OVERRIDE;
+  void setTrace(std::shared_ptr<filt::TraceClassSexp> Trace) OVERRIDE;
 
  private:
-  class Context : public utils::TraceClass::Context {
-    Context() = delete;
-    Context(const Context&) = delete;
-    Context& operator=(const Context&) = delete;
-
-   public:
-    TeeWriter* MyWriter;
-
-    Context(TeeWriter* MyWriter) : MyWriter(MyWriter) {}
-    ~Context() OVERRIDE;
-    void describe(FILE* File) OVERRIDE;
-  };
-
   std::vector<Node> Writers;
-  std::shared_ptr<Context> MyContext;
-
-  void describeContexts(FILE* File);
 };
 
 }  // end of namespace interp
