@@ -100,7 +100,7 @@ inline void print_IntType(IntType Value) {
 #define PRI_IntType PRIu64
 static constexpr size_t kBitsInIntType = 64;
 
-enum class StreamType : uint8_t { Byte, Int };
+enum class StreamType : uint8_t { Byte, Int, Other };
 const char* getName(StreamType Type);
 Ordering compare(StreamType S1, StreamType S2);
 

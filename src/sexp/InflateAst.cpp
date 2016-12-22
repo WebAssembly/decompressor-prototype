@@ -95,7 +95,7 @@ bool InflateAst::appendArgs(Node* Nd) {
 
 // TODO(karlschimpf) Should we extend StreamType to have other?
 StreamType InflateAst::getStreamType() const {
-  return StreamType::Int;
+  return StreamType::Other;
 }
 
 const char* InflateAst::getDefaultTraceName() const {

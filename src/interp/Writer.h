@@ -55,7 +55,7 @@ class Writer {
                                 interp::IntTypeFormat Format);
   virtual bool writeAction(const filt::CallbackNode* Action) = 0;
 
-  void setMinimizeBlockSize(bool NewValue) { MinimizeBlockSize = NewValue; }
+  virtual void setMinimizeBlockSize(bool NewValue);
   virtual void describeState(FILE* File);
 
   virtual utils::TraceClass::ContextPtr getTraceContext();
