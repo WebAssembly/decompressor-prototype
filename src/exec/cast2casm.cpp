@@ -18,6 +18,7 @@
 
 #include "interp/StreamWriter.h"
 #include "interp/IntReader.h"
+#include "interp/TeeWriter.h"
 #include "sexp/FlattenAst.h"
 #include "sexp/InflateAst.h"
 #include "sexp-parser/Driver.h"
@@ -87,9 +88,7 @@ void usage(const char* AppName) {
 }  // end of anonymous namespace
 
 int main(int Argc, char* Argv[]) {
-#if 0
   bool MinimizeBlockSize = false;
-#endif
   bool InputSpecified = false;
   bool OutputSpecified = false;
   bool AlgorithmSpecified = false;
@@ -113,10 +112,8 @@ int main(int Argc, char* Argv[]) {
                Argv[i] == std::string("--help")) {
       usage(Argv[0]);
       return exit_status(EXIT_SUCCESS);
-#if 0
     } else if (Argv[i] == std::string("-m")) {
       MinimizeBlockSize = true;
-#endif
     } else if (Argv[i] == std::string("-o")) {
       if (++i >= Argc) {
         fprintf(stderr, "No file specified after -o option\n");
@@ -161,7 +158,14 @@ int main(int Argc, char* Argv[]) {
     return exit_status(EXIT_FAILURE);
   }
   auto BackedOutput = std::make_shared<WriteBackedQueue>(Output);
-  auto Writer = std::make_shared<InflateAst>();
+  std::shared_ptr<Writer> Writer = std::make_shared<StreamWriter>(BackedOutput);
+  if (Verbose >= 1) {
+    auto Tee = std::make_shared<TeeWriter>();
+    Tee->add(std::make_shared<InflateAst>(), false, true);
+    Tee->add(Writer, true, false);
+    Writer = Tee;
+  }
+  Writer->setMinimizeBlockSize(MinimizeBlockSize);
   auto Reader = std::make_shared<IntReader>(IntSeq, *Writer, AlgSymtab);
   if (Verbose >= 1) {
     auto Trace = std::make_shared<TraceClassSexp>("writeFile");

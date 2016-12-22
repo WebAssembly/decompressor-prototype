@@ -173,6 +173,7 @@ INTERP_SRCS = \
 	ReadStream.cpp \
 	StreamReader.cpp \
 	StreamWriter.cpp \
+	TeeWriter.cpp \
 	Writer.cpp \
 	WriteStream.cpp \
 	TraceSexpReader.cpp \

@@ -29,6 +29,10 @@ namespace interp {
 Writer::~Writer() {
 }
 
+void Writer::setMinimizeBlockSize(bool NewValue) {
+  MinimizeBlockSize = NewValue;
+}
+
 TraceClass::ContextPtr Writer::getTraceContext() {
   TraceClass::ContextPtr Ptr;
   return Ptr;

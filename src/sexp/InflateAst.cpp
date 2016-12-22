@@ -44,6 +44,21 @@ InflateAst::InflateAst()
 InflateAst::~InflateAst() {
 }
 
+bool InflateAst::failBuild(const char* Method, std::string Message) {
+  TRACE_METHOD(Method);
+  TRACE_MESSAGE(Message);
+  TRACE_MESSAGE("Can't continue");
+  return false;
+}
+
+bool InflateAst::failWriteActionMalformed() {
+  return failBuild("writeAction", "Input malformed");
+}
+
+bool InflateAst::failWriteHeaderMalformed() {
+  return failBuild("writeHeader", "Input malformed");
+}
+
 FileNode* InflateAst::getGeneratedFile() const {
   if (Asts.size() != 1)
     return nullptr;
@@ -95,7 +110,7 @@ bool InflateAst::appendArgs(Node* Nd) {
 
 // TODO(karlschimpf) Should we extend StreamType to have other?
 StreamType InflateAst::getStreamType() const {
-  return StreamType::Int;
+  return StreamType::Other;
 }
 
 const char* InflateAst::getDefaultTraceName() const {
@@ -143,7 +158,7 @@ bool InflateAst::writeHeaderValue(decode::IntType Value,
   if (Asts.empty())
     Asts.push(Symtab->create<FileHeaderNode>());
   if (Asts.size() != 1)
-    return false;
+    return failWriteHeaderMalformed();
   Node* Header = AstsTop;
   switch (Format) {
     case IntTypeFormat::Uint8:
@@ -156,15 +171,13 @@ bool InflateAst::writeHeaderValue(decode::IntType Value,
       Asts.push(Symtab->getU64ConstDefinition(Value, ValueFormat::Hexidecimal));
       break;
     default:
-      return false;
+      return failWriteHeaderMalformed();
   }
   Header->append(Asts.popValue());
   return true;
 }
 
 bool InflateAst::applyOp(IntType Op) {
-  TRACE_METHOD("applyOp");
-  TRACE(IntType, "Op", Op);
   switch (NodeType(Op)) {
     case OpBlock:
       return buildUnary<BlockNode>();
@@ -192,9 +205,9 @@ bool InflateAst::applyOp(IntType Op) {
       return buildUnary<ReadNode>();
     case OpSection:
       // Note: Bottom element is for file.
-      TRACE(size_t, "Stack.size", Asts.size());
+      TRACE(size_t, "Ast stack size", Asts.size());
       if (Asts.empty())
-        return false;
+        return failWriteActionMalformed();
       Values.push(Asts.size() - 1);
       if (!buildNary<SectionNode>())
         return false;
@@ -207,17 +220,17 @@ bool InflateAst::applyOp(IntType Op) {
     case OpSymbol: {
       SymbolNode* Sym = SectionSymtab.getIndexSymbol(Values.popValue());
       Values.pop();
+      if (Sym == nullptr) {
+        return failWriteActionMalformed();
+      }
       TRACE_SEXP("Ast", Sym);
-      if (Sym == nullptr)
-        return false;
       Asts.push(Sym);
       return true;
     }
     default:
-      TRACE_MESSAGE("unknonw");
-      break;
+      return failWriteActionMalformed();
   }
-  return false;
+  return failWriteActionMalformed();
 }
 
 bool InflateAst::writeAction(const filt::CallbackNode* Action) {
@@ -245,7 +258,7 @@ bool InflateAst::writeAction(const filt::CallbackNode* Action) {
 #endif
   const auto* Sym = dyn_cast<SymbolNode>(Action->getKid(0));
   if (Sym == nullptr)
-    return false;
+    return failWriteActionMalformed();
   PredefinedSymbol Name = Sym->getPredefinedSymbol();
   switch (Name) {
     case PredefinedSymbol::Block_enter:
@@ -253,7 +266,7 @@ bool InflateAst::writeAction(const filt::CallbackNode* Action) {
       return true;
     case PredefinedSymbol::Instruction_begin:
       AstMarkers.push(Asts.size());
-      return false;
+      return true;
     case PredefinedSymbol::Int_value_begin:
       ValueMarker = Values.size();
       return true;
@@ -262,11 +275,11 @@ bool InflateAst::writeAction(const filt::CallbackNode* Action) {
       ValueFormat Format = ValueFormat::Decimal;
       IntType Value = 0;
       if (Values.size() < ValueMarker)
-        return false;
+        return failWriteActionMalformed();
       switch (Values.size() - ValueMarker) {
         case 1:
           if (Values.popValue() != 0)
-            return false;
+            return failWriteActionMalformed();
           IsDefault = true;
           break;
         case 2:
@@ -275,10 +288,9 @@ bool InflateAst::writeAction(const filt::CallbackNode* Action) {
           Format = ValueFormat(Values.popValue() - 1);
           break;
         default:
-          return false;
+          return failWriteActionMalformed();
       }
       Node* Nd = nullptr;
-      TRACE(IntType, "Op", ValuesTop);
       switch (Values.popValue()) {
         case OpUint8:
           Nd = IsDefault ? Symtab->getUint8Definition()
@@ -313,28 +325,20 @@ bool InflateAst::writeAction(const filt::CallbackNode* Action) {
                          : Symtab->getVaruint64Definition(Value, Format);
           break;
         default:
-          return false;
+          return failWriteActionMalformed();
       }
+      TRACE_SEXP("Ast", Nd);
       Asts.push(Nd);
       return true;
     }
-    case PredefinedSymbol::Literal_define: {
-      if (Asts.size() < 2)
-        return false;
-      Node* Arg2 = Asts.popValue();
-      Node* Arg1 = Asts.popValue();
-      Asts.push(Symtab->create<LiteralDefNode>(Arg1, Arg2));
-      TRACE_SEXP("Define", AstsTop);
-      return false;
-    }
     case PredefinedSymbol::Symbol_name_begin:
       if (Values.empty())
-        return false;
+        return failWriteActionMalformed();
       SymbolNameSize = Values.popValue();
       return true;
     case PredefinedSymbol::Symbol_name_end: {
       if (Values.size() < SymbolNameSize)
-        return false;
+        return failWriteActionMalformed();
       // TODO(karlschimpf) Can we build the string faster than this.
       std::string Name;
       for (size_t i = Values.size() - SymbolNameSize; i < Values.size(); ++i)
@@ -348,18 +352,17 @@ bool InflateAst::writeAction(const filt::CallbackNode* Action) {
     }
     case PredefinedSymbol::Symbol_lookup:
       if (Values.size() < 2)
-        return false;
+        return failWriteActionMalformed();
       return applyOp(Values[Values.size() - 2]);
     case PredefinedSymbol::Postorder_inst:
       if (Values.size() < 1)
-        return false;
+        return failWriteActionMalformed();
       return applyOp(ValuesTop);
     case PredefinedSymbol::Nary_inst:
       if (Values.size() < 2)
-        return false;
-      TRACE(size_t, "Values.size", Values.size());
+        return failWriteActionMalformed();
+      TRACE(size_t, "nary node size", Values.size());
       return applyOp(Values[Values.size() - 2]);
-      return false;
     default:
       break;
   }
