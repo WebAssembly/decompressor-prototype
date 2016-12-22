@@ -37,6 +37,7 @@ class FdReader : public RawStream {
       : Fd(Fd),
         CurSize(0),
         BytesRemaining(0),
+        FoundErrors(Fd < 0),
         AtEof(false),
         CloseOnExit(CloseOnExit) {}
 
@@ -46,6 +47,7 @@ class FdReader : public RawStream {
   bool write(uint8_t* Buf, size_t Size = 1) OVERRIDE;
   bool freeze() OVERRIDE;
   bool atEof() OVERRIDE;
+  bool hasErrors() OVERRIDE;
 
  protected:
   int Fd;
@@ -53,6 +55,7 @@ class FdReader : public RawStream {
   uint8_t Bytes[kBufSize];
   size_t CurSize;
   size_t BytesRemaining;
+  bool FoundErrors;
   bool AtEof;
   bool CloseOnExit;
 

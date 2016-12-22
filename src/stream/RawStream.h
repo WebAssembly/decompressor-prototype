@@ -55,6 +55,8 @@ class RawStream : public std::enable_shared_from_this<RawStream> {
 
   bool puts(const char* str) { return write((uint8_t*)str, std::strlen(str)); }
 
+  virtual bool hasErrors() = 0;
+
   // Communicates that the stream can no longer be modified. Returns
   // false if unable to freeze.
   virtual bool freeze() = 0;

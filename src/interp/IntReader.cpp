@@ -32,6 +32,7 @@ IntReader::IntReader(IntStream::StreamPtr Input,
     : Reader(Output, Symtab),
       Pos(Input),
       Input(Input),
+      HeaderIndex(0),
       StillAvailable(0),
       PeekPosStack(PeekPos) {
 }
@@ -67,6 +68,8 @@ void IntReader::fastResume() {
       case Method::GetFile:
         switch (Frame.CallState) {
           case State::Enter:
+            for (auto Pair : Input->getHeader())
+              Output.writeHeaderValue(Pair.first, Pair.second);
             LocalValues.push_back(Input->size());
             Frame.CallState = State::Exit;
             call(Method::ReadIntBlock, Frame.CallModifier, nullptr);
@@ -308,6 +311,21 @@ IntType IntReader::readValue(const filt::Node* Format) {
       fatal("readValue not defined for format!");
       return 0;
   }
+}
+
+IntType IntReader::readHeaderValue(IntTypeFormat Format) {
+  const IntStream::HeaderVector& Header = Input->getHeader();
+  if (HeaderIndex >= Header.size()) {
+    fail("Header value expected, but not found");
+    return 0;
+  }
+  auto Pair = Header[HeaderIndex++];
+  if (Pair.second != Format) {
+    fail(std::string("Expected header value of type ") +
+         interp::getName(Format) + " but found " +
+         interp::getName(Pair.second));
+  }
+  return Pair.first;
 }
 
 void IntReader::describePeekPosStack(FILE* File) {

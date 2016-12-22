@@ -16,8 +16,15 @@
 
 // Converts textual compressed algorithm into binary file form.
 
+#include "interp/StreamWriter.h"
+#include "interp/IntReader.h"
 #include "sexp/FlattenAst.h"
+#include "sexp/InflateAst.h"
 #include "sexp-parser/Driver.h"
+#include "stream/FileWriter.h"
+#include "stream/WriteBackedQueue.h"
+
+#include <unistd.h>
 
 using namespace wasm;
 using namespace wasm::decode;
@@ -28,15 +35,30 @@ namespace {
 
 const char* InputFilename = "-";
 const char* OutputFilename = "-";
+const char* AlgorithmFilename = "/dev/null";
+int Verbose = 0;
 
-#if 0
+
 std::shared_ptr<RawStream> getOutput() {
   if (OutputFilename == std::string("-")) {
     return std::make_shared<FdWriter>(STDOUT_FILENO, false);
   }
   return std::make_shared<FileWriter>(OutputFilename);
 }
-#endif
+
+std::shared_ptr<SymbolTable> parseFile(const char* Filename) {
+  auto Symtab = std::make_shared<SymbolTable>();
+  Driver Parser(Symtab);
+  if (Verbose >= 2) {
+    Parser.setTraceParsing(Verbose >= 2);
+    Parser.setTraceLexing(Verbose >= 3);
+  }
+  if (!Parser.parse(Filename)) {
+    fprintf(stderr, "Unable to parse: %s\n", Filename);
+    Symtab.reset();
+  }
+  return Symtab;
+}
 
 void usage(const char* AppName) {
   fprintf(stderr, "usage: %s [options] FILE\n", AppName);
@@ -44,6 +66,8 @@ void usage(const char* AppName) {
   fprintf(stderr, "  Convert CAST FILE to CASM binary.\n");
   fprintf(stderr, "\n");
   fprintf(stderr, "Options:\n");
+  fprintf(stderr,
+          "  -a FILE\t\tFile containing formatting algorithm for output\n");
   fprintf(stderr, "  --expect-fail\t\tSucceed on failure/fail on success\n");
   fprintf(stderr, "  -h\t\t\tPrint this usage message.\n");
   fprintf(stderr, "  -m\t\t\tMinimize block sizes in output stream.\n");
@@ -63,15 +87,28 @@ void usage(const char* AppName) {
 }  // end of anonymous namespace
 
 int main(int Argc, char* Argv[]) {
-  int Verbose = 0;
 #if 0
   bool MinimizeBlockSize = false;
 #endif
   bool InputSpecified = false;
   bool OutputSpecified = false;
+  bool AlgorithmSpecified = false;
   for (int i = 1; i < Argc; ++i) {
     if (Argv[i] == std::string("--expect-fail")) {
       ExpectExitFail = true;
+    } else if (Argv[i] == std::string("-a")) {
+      if (++i == Argc) {
+        fprintf(stderr, "No file specified after -a option\n");
+        usage(Argv[0]);
+        return exit_status(EXIT_FAILURE);
+      }
+      if (AlgorithmSpecified) {
+        fprintf(stderr, "Option -a can't be repeated\n");
+        usage(Argv[0]);
+        return exit_status(EXIT_FAILURE);
+      }
+      AlgorithmFilename = Argv[i];
+      AlgorithmSpecified = true;
     } else if (Argv[i] == std::string("-h") ||
                Argv[i] == std::string("--help")) {
       usage(Argv[0]);
@@ -105,27 +142,38 @@ int main(int Argc, char* Argv[]) {
       return exit_status(EXIT_FAILURE);
     }
   }
-  auto Symtab = std::make_shared<SymbolTable>();
-  Driver Parser(Symtab);
-  if (Verbose >= 2) {
-    Parser.setTraceParsing(Verbose >= 2);
-    Parser.setTraceLexing(Verbose >= 3);
-  }
-  if (!Parser.parse(InputFilename)) {
-    fprintf(stderr, "Unable to parse s-expressions: %s\n", InputFilename);
+  std::shared_ptr<SymbolTable> InputSymtab = parseFile(InputFilename);
+  if (!InputSymtab)
     return exit_status(EXIT_FAILURE);
-  }
   std::shared_ptr<IntStream> IntSeq = std::make_shared<IntStream>();
-  FlattenAst Flattener(IntSeq, Symtab);
+  FlattenAst Flattener(IntSeq, InputSymtab);
   Flattener.setTraceProgress(Verbose >= 1);
   if (!Flattener.flatten()) {
     fprintf(stderr, "Problems flattening CAST ast!\n");
     return exit_status(EXIT_FAILURE);
   }
-#if 0
+  std::shared_ptr<SymbolTable> AlgSymtab = parseFile(AlgorithmFilename);
+  if (!AlgSymtab)
+    return exit_status(EXIT_FAILURE);
   std::shared_ptr<RawStream> Output = getOutput();
-#endif
-  fprintf(stderr,
-          "Conversion from integer stream to byte stream not implemented!\n");
+  if (Output->hasErrors()) {
+    fprintf(stderr, "Problems opening output file: %s", OutputFilename);
+    return exit_status(EXIT_FAILURE);
+  }
+  auto BackedOutput = std::make_shared<WriteBackedQueue>(Output);
+  auto Writer = std::make_shared<InflateAst>();
+  auto Reader = std::make_shared<IntReader>(IntSeq, *Writer, AlgSymtab);
+  if (Verbose >= 1) {
+    auto Trace = std::make_shared<TraceClassSexp>("writeFile");
+    Reader->setTrace(Trace);
+    Writer->setTrace(Trace);
+    Reader->setTraceProgress(true);
+  }
+  Reader->algorithmStart();
+  Reader->algorithmReadBackFilled();
+  if (Reader->errorsFound()) {
+    fprintf(stderr, "Problems while writing: %s\n", OutputFilename);
+    return exit_status(EXIT_FAILURE);
+  }
   return exit_status(EXIT_SUCCESS);
 }

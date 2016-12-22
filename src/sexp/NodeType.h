@@ -37,7 +37,7 @@ namespace wasm {
 
 namespace filt {
 
-enum NodeType {
+enum NodeType : uint32_t {
 #define X(tag, opcode, sexp_name, type_name, text_num_args, text_max_args) \
   Op##tag = opcode,
   AST_OPCODE_TABLE

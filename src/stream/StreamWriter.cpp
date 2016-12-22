@@ -27,7 +27,11 @@ namespace decode {
 
 StreamWriter::~StreamWriter() {
   if (!freeze())
-    fatal("Unable to close ostream!");
+    fprintf(stderr, "WARNING: Unable to close ostream!");
+}
+
+bool StreamWriter::hasErrors() {
+  return !Output.good();
 }
 
 bool StreamWriter::saveBuffer() {

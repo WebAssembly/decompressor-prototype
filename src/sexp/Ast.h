@@ -90,6 +90,7 @@ struct AstTraitsType {
 extern AstTraitsType AstTraits[NumNodeTypes];
 
 extern bool definesIntTypeFormat(const filt::Node* Nd);
+// TODO(karlschimpf): Make method of Nd.
 extern interp::IntTypeFormat getIntTypeFormat(const filt::Node* Nd);
 
 // Models integer values (as used in AST nodes).

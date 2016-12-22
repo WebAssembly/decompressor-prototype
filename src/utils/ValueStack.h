@@ -166,8 +166,18 @@ class ValueStack {
   // Note: Size doesn't include top.
   size_t size() const { return Stack.size(); }
   size_t sizeWithTop() const { return Stack.size() + 1; }
+  // Note: This assumes that the stack includes the original top (and
+  // hence pushed at index zero).
   const T& at(size_t Index) const {
     if (Index < Stack.size())
+      return Stack.at(Index);
+    assert(Index == Stack.size());
+    return Value;
+  }
+  // Note: This assumes that the stack excludes the original top (and
+  // hence, the first real value begins at index 1).
+  const T& operator[](size_t Index) const {
+    if (++Index < Stack.size())
       return Stack.at(Index);
     assert(Index == Stack.size());
     return Value;
@@ -182,6 +192,11 @@ class ValueStack {
     assert(!Stack.empty());
     Value = Stack.back();
     Stack.pop_back();
+  }
+  T popValue() {
+    T Result = Value;
+    pop();
+    return Result;
   }
   void clear() { Stack.clear(); }
   void reserve(size_t Size) { Stack.reserve(Size); }

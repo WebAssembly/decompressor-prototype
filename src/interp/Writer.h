@@ -48,8 +48,6 @@ class Writer {
   virtual bool writeVaruint32(uint32_t Value) = 0;
   virtual bool writeVaruint64(uint64_t Value) = 0;
   virtual bool writeFreezeEof();
-  virtual bool writeMagicNumber(uint32_t MagicNumber);
-  virtual bool writeVersionNumber(uint32_t VersionNumber);
   virtual bool writeValue(decode::IntType Value, const filt::Node* Format);
   virtual bool writeTypedValue(decode::IntType Value,
                                interp::IntTypeFormat Format);

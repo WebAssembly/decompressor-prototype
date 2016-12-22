@@ -34,19 +34,25 @@ class FdWriter : public RawStream {
 
  public:
   FdWriter(int Fd, bool CloseOnExit = true)
-      : Fd(Fd), CurSize(0), IsFrozen(false), CloseOnExit(CloseOnExit) {}
+      : Fd(Fd),
+        CurSize(0),
+        FoundErrors(Fd < 0),
+        IsFrozen(false),
+        CloseOnExit(CloseOnExit) {}
 
   ~FdWriter() OVERRIDE;
   size_t read(uint8_t* Buf, size_t Size = 1) OVERRIDE;
   bool write(uint8_t* Buf, size_t Size = 1) OVERRIDE;
   bool freeze() OVERRIDE;
   bool atEof() OVERRIDE;
+  bool hasErrors() OVERRIDE;
 
  protected:
   int Fd;
   static constexpr size_t kBufSize = 4096;
   uint8_t Bytes[kBufSize];
   size_t CurSize;
+  bool FoundErrors;
   bool IsFrozen;
   bool CloseOnExit;
 

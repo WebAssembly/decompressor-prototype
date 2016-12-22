@@ -91,7 +91,6 @@
   /* Declarations */                                                           \
   X(Define,            0x60, "define",           nullptr,           2, 1)      \
   X(File,              0x62, "file",             nullptr,           2, 0)      \
-  X(Header,            0x74, "header",           nullptr,           0, 0)      \
   X(FileHeader,        0x77, "header",           nullptr,           0, 3)      \
   X(Section,           0x63, "section",          nullptr,           1, 0)      \
   X(Undefine,          0x64, "undefine",         nullptr,           1, 0)      \
@@ -163,7 +162,6 @@
   X(BitwiseXor,)                                                               \
   X(Case,)                                                                     \
   X(File,)                                                                     \
-  X(Header,)                                                                   \
   X(IfThen,)                                                                   \
   X(Loop,)                                                                     \
   X(Or,)                                                                       \

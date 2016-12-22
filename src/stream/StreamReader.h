@@ -41,6 +41,7 @@ class StreamReader : public RawStream {
   bool write(uint8_t* Buf, size_t Size = 1) OVERRIDE;
   bool freeze() OVERRIDE;
   bool atEof() OVERRIDE;
+  bool hasErrors() OVERRIDE;
 
  protected:
   std::istream& Input;

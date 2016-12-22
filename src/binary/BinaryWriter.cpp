@@ -143,8 +143,7 @@ void BinaryWriter::writeNode(const Node* Nd) {
       Writer->writeUint8(Opcode, WritePos);
       break;
     }
-    case OpFile:
-    case OpHeader: {
+    case OpFile: {
       // Note: The header appears at the beginning of the file, and hence,
       // isn't labeled.
       for (int i = 0; i < Nd->getNumKids(); ++i)

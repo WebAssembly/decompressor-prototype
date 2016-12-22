@@ -29,6 +29,10 @@ FdReader::~FdReader() {
   closeFd();
 }
 
+bool FdReader::hasErrors() {
+  return FoundErrors;
+}
+
 void FdReader::fillBuffer() {
   CurSize = ::read(Fd, Bytes, kBufSize);
   BytesRemaining = CurSize;

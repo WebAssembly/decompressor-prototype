@@ -53,14 +53,6 @@ const char* Writer::getDefaultTraceName() const {
 void Writer::reset() {
 }
 
-bool Writer::writeMagicNumber(uint32_t MagicNumber) {
-  return writeUint32(MagicNumber);
-}
-
-bool Writer::writeVersionNumber(uint32_t VersionNumber) {
-  return writeUint32(VersionNumber);
-}
-
 bool Writer::writeFreezeEof() {
   return true;
 }
@@ -109,6 +101,7 @@ bool Writer::writeValue(decode::IntType Value, const filt::Node* Format) {
       return true;
     case OpVaruint64:
       writeVaruint64(Value);
+      return true;
     default:
       return false;
   }
