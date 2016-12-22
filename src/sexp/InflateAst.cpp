@@ -235,7 +235,7 @@ bool InflateAst::writeAction(const filt::CallbackNode* Action) {
           ? Values.size() - WindowSize : 1;
       if (StartIndex > 1)
         fprintf(Out, "...[%" PRIuMAX "]\n", uintmax_t(Values.size() - (StartIndex - 1)));
-      for (IntType Val : Values.iterRange(StartIndex))
+     for (IntType Val : Values.iterRange(StartIndex))
         fprintf(Out, "%" PRIuMAX "\n", uintmax_t(Val));
       fputs("*** Asts   ***\n", Out);
       TextWriter Writer;
@@ -264,8 +264,8 @@ bool InflateAst::writeAction(const filt::CallbackNode* Action) {
       return true;
     case PredefinedSymbol::Int_value_end: {
       bool IsDefault;
-      ValueFormat Format;
-      IntType Value;
+      ValueFormat Format = ValueFormat::Decimal;
+      IntType Value = 0;
       if (Values.size() < ValueMarker)
         return false;
       switch (Values.size() - ValueMarker) {
