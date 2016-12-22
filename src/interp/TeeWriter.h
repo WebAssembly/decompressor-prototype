@@ -48,8 +48,8 @@ class TeeWriter : public Writer {
 
    private:
     std::shared_ptr<Writer> NodeWriter;
-    const bool TraceNode;
-    const bool DefinesStreamType;
+    bool TraceNode;
+    bool DefinesStreamType;
   };
 
   TeeWriter();
