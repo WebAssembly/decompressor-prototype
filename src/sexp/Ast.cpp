@@ -135,14 +135,14 @@ const char* getNodeTypeName(NodeType Type) {
   return Name;
 }
 
-bool definesIntTypeFormat(const Node* Nd) {
+bool Node::definesIntTypeFormat() const {
   IntTypeFormat Format;
-  return extractIntTypeFormat(Nd, Format);
+  return extractIntTypeFormat(this, Format);
 }
 
-IntTypeFormat getIntTypeFormat(const Node* Nd) {
+IntTypeFormat Node::getIntTypeFormat() const {
   IntTypeFormat Format;
-  extractIntTypeFormat(Nd, Format);
+  extractIntTypeFormat(this, Format);
   return Format;
 }
 

@@ -161,7 +161,6 @@ bool InflateAst::writeHeaderValue(decode::IntType Value,
     default:
       return false;
   }
-  TRACE_SEXP("Header", Ast);
   Header->append(AstStack.popValue());
   return true;
 }
@@ -225,7 +224,6 @@ bool InflateAst::applyOp(IntType Op) {
 }
 
 bool InflateAst::writeAction(const filt::CallbackNode* Action) {
-  TRACE_SEXP("Action", Action);
 #if 0
   TRACE_BLOCK({
       constexpr size_t WindowSize = 10;

@@ -161,11 +161,11 @@ void FlattenAst::flattenNode(const Node* Nd) {
           reportError("Unrecognized literal constant", Nd);
           return;
         }
-        if (!definesIntTypeFormat(Const)) {
+        if (!Const->definesIntTypeFormat()) {
           reportError("Bad literal constant", Const);
           return;
         }
-        Writer->writeHeaderValue(Const->getValue(), getIntTypeFormat(Const));
+        Writer->writeHeaderValue(Const->getValue(), Const->getIntTypeFormat());
       }
       break;
     }
