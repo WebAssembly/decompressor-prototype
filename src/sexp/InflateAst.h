@@ -64,13 +64,13 @@ class InflateAst : public interp::Writer {
   SectionSymbolTable SectionSymtab;
   decode::IntType ValuesTop;
   utils::ValueStack<decode::IntType> Values;
-  Node* Ast;
-  utils::ValueStack<Node*> AstStack;
+  Node* AstsTop;
+  utils::ValueStack<Node*> Asts;
   // TODO(karlschimpe) Can we merge the following two fields
   size_t SymbolNameSize;
   size_t ValueMarker;
-  size_t AstMarkerTop;
-  utils::ValueStack<size_t> AstMarkerStack;
+  size_t AstMarkersTop;
+  utils::ValueStack<size_t> AstMarkers;
 
   std::shared_ptr<TraceClassSexp> Trace;
 
