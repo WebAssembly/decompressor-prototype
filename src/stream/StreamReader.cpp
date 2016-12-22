@@ -33,6 +33,10 @@ StreamReader::~StreamReader() {
   close();
 }
 
+bool StreamReader::hasErrors() {
+  return !Input.good();
+}
+
 void StreamReader::fillBuffer() {
   CurSize = Input.readsome(Bytes, kBufSize);
   if (CurSize == 0) {

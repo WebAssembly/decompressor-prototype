@@ -294,7 +294,7 @@ void TextWriter::writeNodeKidsAbbrev(const Node* Nd, bool EmbeddedInParent) {
     }
     if (Count == KidsSameLine) {
       writeSpace();
-      writeNode(Kid, false);
+      writeNodeAbbrev(Kid, false);
       if (!LastKid)
         fprintf(File, " ...[%d]", NumKids - Count);
       return;
@@ -304,7 +304,7 @@ void TextWriter::writeNodeKidsAbbrev(const Node* Nd, bool EmbeddedInParent) {
       return;
     }
     writeSpace();
-    writeNode(Kid, false);
+    writeNodeAbbrev(Kid, false);
     if (!LastKid)
       fprintf(File, " ...[%d]", NumKids - Count);
     return;

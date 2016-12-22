@@ -28,7 +28,7 @@ namespace decode {
 
 FdWriter::~FdWriter() {
   if (!freeze())
-    fatal("Unable to close Fd file!");
+    fprintf(stderr, "WARNING: Unable to close Fd file!\n");
 }
 
 bool FdWriter::saveBuffer() {
@@ -79,6 +79,10 @@ bool FdWriter::freeze() {
 
 bool FdWriter::atEof() {
   return IsFrozen;
+}
+
+bool FdWriter::hasErrors() {
+  return FoundErrors;
 }
 
 FileWriter::FileWriter(const char* Filename)

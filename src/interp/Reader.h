@@ -46,7 +46,7 @@ class Reader {
   void insertFileVersion(uint32_t MagicNumber, uint32_t Version);
 
   // Starts up decompression using a (file) algorithm.
-  void algorithmStart() { callTopLevel(Method::GetFile, nullptr); }
+  void algorithmStart();
 
   // Resumes decompression where it left off. Assumes that more
   // input has been added since the previous start()/resume() call.
@@ -83,6 +83,7 @@ class Reader {
   void fail(const std::string& Message);
 
   // Returns non-null context handler if applicable.
+  void setTraceProgress(bool NewValue);
   virtual utils::TraceClass::ContextPtr getTraceContext();
   virtual void setTrace(std::shared_ptr<filt::TraceClassSexp> Trace);
   std::shared_ptr<filt::TraceClassSexp> getTracePtr();

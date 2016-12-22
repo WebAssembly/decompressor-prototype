@@ -38,12 +38,7 @@ class FlattenAst {
 
   ~FlattenAst();
 
-  bool flatten() {
-    fprintf(stderr, "-> flatten\n");
-    flattenNode(Symtab->getInstalledRoot());
-    fprintf(stderr, "<- flatten\n");
-    return !HasErrors;
-  }
+  bool flatten();
 
   void setFreezeEofOnDestruct(bool Value) { FreezeEofOnDestruct = Value; }
 
@@ -63,6 +58,7 @@ class FlattenAst {
   void flattenNode(const Node* Nd);
   void reportError(const char* Message);
   void reportError(const char* Message, const Node* Nd);
+  void freezeOutput();
 };
 
 }  // end of namespace filt

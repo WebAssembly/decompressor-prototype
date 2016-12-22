@@ -402,7 +402,6 @@ void BinaryReader::resume() {
               case NO_SUCH_NODETYPE:
               case OpFileHeader:
               case OpFile:
-              case OpHeader:
               case OpSection:
               case OpUnknownSection:
                 fprintf(stderr, "Opcode = %u\n", unsigned(Opcode));

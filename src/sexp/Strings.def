@@ -284,7 +284,10 @@ X(Inst_i64_xor, "inst.i64.xor") \
 X(Inst_if, "inst.if") \
 X(Inst_loop, "inst.loop") \
 X(Inst_nop, "inst.nop") \
-X(Inst_return, "inst.return") \
+/*X(Inst_param, "param")*/ \
+/*X(Inst_params, "params")*/ \
+/*X(Inst_return, "inst.return")*/ \
+/*X(Inst_u8_const, "u8.const")*/ \
 X(Instruction, "instruction") \
 X(Instruction_begin, "instruction.begin") \
 X(Instruction_end, "instruction.end") \
@@ -294,6 +297,9 @@ X(Inst_set_global, "inst.set_global") \
 X(Inst_set_local, "inst.set_local") \
 X(Inst_tee_local, "inst.tee_local") \
 X(Inst_unreachable, "inst.unreachable") \
+X(Int_value_begin, "int.value.begin") \
+X(Int_value_end, "int.value.end") \
+X(Literal_define, "literal.define") \
 X(Local_entry, "local_entry") \
 X(Local_entry_begin, "local_entry.begin") \
 X(Local_entry_count, "local_entry.count") \
@@ -330,6 +336,7 @@ X(Skip_section_end, "skip_section.end") \
 X(Start_section, "start.section") \
 X(Start_section_begin, "start.section.begin") \
 X(Start_section_end, "start.section.end") \
+X(Symbol_lookup, "symbol.lookup") \
 X(Symbol_name, "symbol_name") \
 X(Symbol_name_begin, "symbol_name.begin") \
 X(Symbol_name_end, "symbol_name.end") \
@@ -353,6 +360,8 @@ X(Type_section_end, "type.section.end") \
 X(Type_value, "type.value") \
 X(Type_value_begin, "type.value.begin") \
 X(Type_value_end, "type.value.end") \
+X(Nary_inst, "nary.inst") \
+X(Postorder_inst, "postorder.inst") \
 X(Unknown_body, "unknown_body") \
 X(Unknown_section, "unknown.section") \
 X(Unknown_section_begin, "unknown.section.begin") \

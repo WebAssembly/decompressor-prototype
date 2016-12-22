@@ -37,6 +37,10 @@ bool ArrayReader::write(uint8_t* Buf, size_t Size) {
   return false;
 }
 
+bool ArrayReader::hasErrors() {
+  return false;
+}
+
 bool ArrayReader::freeze() {
   // Assume that array should be truncated at current location.
   return false;

@@ -98,6 +98,12 @@ struct {
 
 }  // end of anonymous namespace
 
+void Reader::setTraceProgress(bool NewValue) {
+  if (!NewValue && !Trace)
+    return;
+  getTrace().setTraceProgress(NewValue);
+}
+
 TraceClass::ContextPtr Reader::getTraceContext() {
   TraceClass::ContextPtr Ptr;
   return Ptr;
@@ -344,12 +350,12 @@ void Reader::fail() {
 }
 
 void Reader::fail(const std::string& Message) {
-  FILE* Out = getTrace().getFile();
-  if (Frame.Nd) {
-    fprintf(Out, "Error: ");
-    getTrace().getTextWriter()->writeAbbrev(Out, Frame.Nd);
+  TextWriter Writer;
+  for (const auto& F : FrameStack.riterRange(1)) {
+    fprintf(stderr, "In: ");
+    Writer.writeAbbrev(stderr, F.Nd);
   }
-  fprintf(Out, "Error: (method %s) %s\n", getName(Frame.CallMethod),
+  fprintf(stderr, "Error: (method %s) %s\n", getName(Frame.CallMethod),
           Message.c_str());
   Reader::fail();
 }
@@ -416,6 +422,10 @@ void Reader::insertFileVersion(uint32_t NewMagicNumber, uint32_t NewVersion) {
   Version = NewVersion;
 }
 
+void Reader::algorithmStart() {
+  callTopLevel(Method::GetFile, nullptr);
+}
+
 void Reader::algorithmResume() {
 #if LOG_RUNMETHODS
   TRACE_METHOD("resume");
@@ -469,7 +479,6 @@ void Reader::algorithmResume() {
 #endif
         switch (Frame.Nd->getType()) {
           case NO_SUCH_NODETYPE:
-          case OpFileHeader:
           case OpConvert:
           case OpParams:
           case OpFilter:  // Method::Eval
@@ -486,18 +495,40 @@ void Reader::algorithmResume() {
             return failNotImplemented();
           case OpError:  // Method::Eval
             return fail("Algorithm error!");
-          case OpHeader:
+          case OpFileHeader:
             switch (Frame.CallState) {
               case State::Enter:
-                Frame.CallState = State::Step2;
-                call(Method::Eval, MethodModifier::ReadOnly,
-                     Frame.Nd->getKid(0));
+                LoopCounterStack.push(0);
+                Frame.CallState = State::Loop;
                 break;
-              case State::Step2:
-                Frame.CallState = State::Exit;
-                call(Method::Eval, MethodModifier::WriteOnly,
-                     Frame.Nd->getKid(1));
+              case State::Loop: {
+                if (LoopCounter == size_t(Frame.Nd->getNumKids())) {
+                  Frame.CallState = State::Exit;
+                  break;
+                }
+                auto Lit =
+                    dyn_cast<IntegerNode>(Frame.Nd->getKid(LoopCounter++));
+                TRACE_SEXP("Lit", Lit);
+                if (Lit == nullptr)
+                  return fail("Literal header value expected, but not found");
+                IntType WantedValue = Lit->getValue();
+                // TODO(karlschimpf) Tighten to check lit!
+                IntTypeFormat TypeFormat = getIntTypeFormat(Lit);
+                IntType FoundValue = readHeaderValue(TypeFormat);
+                if (errorsFound())
+                  return;
+                if (WantedValue != FoundValue) {
+                  ValueFormat Format = Lit->getFormat();
+                  fprintf(stderr, "Expected header value ");
+                  writeInt(stderr, WantedValue, Format);
+                  fprintf(stderr, ", but found ");
+                  writeInt(stderr, FoundValue, Format);
+                  fputc('\n', stderr);
+                  fail("Bad header constant found");
+                }
+                Output.writeHeaderValue(FoundValue, TypeFormat);
                 break;
+              }
               case State::Exit:
                 popAndReturn();
                 break;
@@ -598,7 +629,8 @@ void Reader::algorithmResume() {
           case OpCallback:  // Method::Eval
             // TODO(karlschimpf): All virtual calls to class so that derived
             // classes can override.
-            writeAction(cast<CallbackNode>(Frame.Nd));
+            if (!writeAction(cast<CallbackNode>(Frame.Nd)))
+              return failCantWrite();
             popAndReturn(LastReadValue);
             break;
           case OpI32Const:
@@ -998,14 +1030,11 @@ void Reader::algorithmResume() {
                 assert(NumParams);
                 int NumCallArgs = Frame.Nd->getNumKids() - 1;
                 if (NumParams->getValue() != IntType(NumCallArgs)) {
-                  TRACE_BLOCK({
-                    fprintf(getTrace().getFile(),
-                            "Definition %s expects %" PRIuMAX
-                            "parameters, found: %" PRIuMAX "\n",
-                            Sym->getName().c_str(),
-                            uintmax_t(NumParams->getValue()),
-                            uintmax_t(NumCallArgs));
-                  });
+                  fprintf(stderr, "Definition %s expects %" PRIuMAX
+                                  "parameters, found: %" PRIuMAX "\n",
+                          Sym->getName().c_str(),
+                          uintmax_t(NumParams->getValue()),
+                          uintmax_t(NumCallArgs));
                   return fail("Unable to evaluate call");
                 }
                 size_t CallingEvalIndex = CallingEvalStack.size();
@@ -1124,7 +1153,7 @@ void Reader::algorithmResume() {
               assert(isa<FileNode>(Frame.Nd));
             }
             const Node* Header = Frame.Nd->getKid(0);
-            if (Header->getType() == OpHeader) {
+            if (Header->getType() == OpFileHeader) {
               Frame.CallState = State::Step4;
               call(Method::Eval, Frame.CallModifier, Header);
               break;
@@ -1143,12 +1172,12 @@ void Reader::algorithmResume() {
               return fail(
                   "Unable to decompress. Did not find WASM binary "
                   "magic number!");
-            if (!Output.writeMagicNumber(MagicNumber))
+            if (!Output.writeHeaderValue(MagicNumber, IntTypeFormat::Uint32))
               return failCantWrite();
             TRACE(hex_uint32_t, "version", Version);
             if (Version != WasmBinaryVersionD)
               return fail("Unable to decompress. WASM version not known");
-            if (!Output.writeVersionNumber(Version))
+            if (!Output.writeHeaderValue(Version, IntTypeFormat::Uint32))
               return failCantWrite();
             Frame.CallState = State::Step4;
             break;

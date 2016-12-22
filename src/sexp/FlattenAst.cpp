@@ -38,8 +38,20 @@ FlattenAst::FlattenAst(std::shared_ptr<IntStream> Output,
 }
 
 FlattenAst::~FlattenAst() {
-  if (FreezeEofOnDestruct)
-    Writer->writeFreezeEof();
+  freezeOutput();
+}
+
+bool FlattenAst::flatten() {
+  flattenNode(Symtab->getInstalledRoot());
+  freezeOutput();
+  return !HasErrors;
+}
+
+void FlattenAst::freezeOutput() {
+  if (!FreezeEofOnDestruct)
+    return;
+  FreezeEofOnDestruct = false;
+  Writer->writeFreezeEof();
 }
 
 void FlattenAst::setTraceProgress(bool NewValue) {
@@ -134,8 +146,7 @@ void FlattenAst::flattenNode(const Node* Nd) {
       Writer->write(Opcode);
       break;
     }
-    case OpFile:
-    case OpHeader: {
+    case OpFile: {
       // Note: The header appears at the beginning of the file, and hence,
       // isn't labeled.
       for (int i = 0; i < Nd->getNumKids(); ++i)
@@ -154,7 +165,7 @@ void FlattenAst::flattenNode(const Node* Nd) {
           reportError("Bad literal constant", Const);
           return;
         }
-        Writer->writeHeaderValue(Const->getType(), getIntTypeFormat(Const));
+        Writer->writeHeaderValue(Const->getValue(), getIntTypeFormat(Const));
       }
       break;
     }
@@ -171,14 +182,17 @@ void FlattenAst::flattenNode(const Node* Nd) {
       const SectionSymbolTable::IndexLookupType& Vector =
           SectionSymtab.getVector();
       Writer->write(Vector.size());
+      TRACE(size_t, "Number symbols", Vector.size());
       for (const SymbolNode* Symbol : Vector) {
         const std::string& SymName = Symbol->getName();
+        TRACE(string, "Symbol", SymName);
         Writer->write(SymName.size());
         for (size_t i = 0, len = SymName.size(); i < len; ++i)
           Writer->write(SymName[i]);
       }
       for (int i = 0, len = Nd->getNumKids(); i < len; ++i)
         flattenNode(Nd->getKid(i));
+      Writer->writeUint8(Opcode);
       Writer->writeAction(Symtab->getBlockExitCallback());
       SectionSymtab.clear();
       break;

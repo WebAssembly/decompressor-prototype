@@ -64,6 +64,11 @@ FILE* IntStream::Cursor::describe(FILE* File,
   if (IncludeDetail)
     fputs("IntStream::Cursor<", File);
   fprintf(File, "@%" PRIxMAX "", uintmax_t(Index));
+  if (Index == 0 && EnclosingBlocks.size() <= 1) {
+    for (auto Pair : Stream->getHeader())
+      fprintf(File, "{%" PRIxMAX ":%s}", uintmax_t(Pair.first),
+              getName(Pair.second));
+  }
   for (auto Blk : EnclosingBlocks)
     Blk->describe(File);
   if (IncludeDetail)
