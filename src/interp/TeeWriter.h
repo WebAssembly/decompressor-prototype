@@ -36,8 +36,6 @@ class TeeWriter : public Writer {
 
  public:
   class Node {
-    Node() = delete;
-
    public:
     Node(std::shared_ptr<Writer> NodeWriter,
          bool DefinesStreamType,
