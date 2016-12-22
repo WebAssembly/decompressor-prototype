@@ -33,46 +33,46 @@ InflateAst::InflateAst()
       SectionSymtab(Symtab),
       ValuesTop(0),
       Values(ValuesTop),
-      Ast(nullptr),
-      AstStack(Ast),
+      AstsTop(nullptr),
+      Asts(AstsTop),
       SymbolNameSize(0),
       ValueMarker(0),
-      AstMarkerTop(0),
-      AstMarkerStack(AstMarkerTop) {
+      AstMarkersTop(0),
+      AstMarkers(AstMarkersTop) {
 }
 
 InflateAst::~InflateAst() {
 }
 
 FileNode* InflateAst::getGeneratedFile() const {
-  if (AstStack.size() != 1)
+  if (Asts.size() != 1)
     return nullptr;
-  return dyn_cast<FileNode>(Ast);
+  return dyn_cast<FileNode>(AstsTop);
 }
 
 template <class T>
 bool InflateAst::buildNullary() {
   Values.pop();
-  AstStack.push(Symtab->create<T>());
-  TRACE_SEXP(nullptr, Ast);
+  Asts.push(Symtab->create<T>());
+  TRACE_SEXP("Ast", AstsTop);
   return true;
 }
 
 template <class T>
 bool InflateAst::buildUnary() {
   Values.pop();
-  AstStack.push(Symtab->create<T>(AstStack.popValue()));
-  TRACE_SEXP(nullptr, Ast);
+  Asts.push(Symtab->create<T>(Asts.popValue()));
+  TRACE_SEXP("Ast", AstsTop);
   return true;
 }
 
 template <class T>
 bool InflateAst::buildBinary() {
   Values.pop();
-  Node* Arg2 = AstStack.popValue();
-  Node* Arg1 = AstStack.popValue();
-  AstStack.push(Symtab->create<T>(Arg1, Arg2));
-  TRACE_SEXP(nullptr, Ast);
+  Node* Arg2 = Asts.popValue();
+  Node* Arg1 = Asts.popValue();
+  Asts.push(Symtab->create<T>(Arg1, Arg2));
+  TRACE_SEXP("Ast", AstsTop);
   return true;
 }
 
@@ -84,12 +84,12 @@ bool InflateAst::buildNary() {
 bool InflateAst::appendArgs(Node* Nd) {
   size_t NumArgs = Values.popValue();
   Values.pop();
-  for (size_t i = AstStack.size() - NumArgs; i < AstStack.size(); ++i)
-    Nd->append(AstStack[i]);
+  for (size_t i = Asts.size() - NumArgs; i < Asts.size(); ++i)
+    Nd->append(Asts[i]);
   for (size_t i = 0; i < NumArgs; ++i)
-    AstStack.pop();
-  TRACE_SEXP(nullptr, Nd);
-  AstStack.push(Nd);
+    Asts.pop();
+  TRACE_SEXP("Ast", Nd);
+  Asts.push(Nd);
   return true;
 }
 
@@ -140,29 +140,25 @@ bool InflateAst::writeTypedValue(decode::IntType Value, interp::IntTypeFormat) {
 
 bool InflateAst::writeHeaderValue(decode::IntType Value,
                                   interp::IntTypeFormat Format) {
-  if (AstStack.empty())
-    AstStack.push(Symtab->create<FileHeaderNode>());
-  if (AstStack.size() != 1)
+  if (Asts.empty())
+    Asts.push(Symtab->create<FileHeaderNode>());
+  if (Asts.size() != 1)
     return false;
-  Node* Header = Ast;
+  Node* Header = AstsTop;
   switch (Format) {
     case IntTypeFormat::Uint8:
-      AstStack.push(
-          Symtab->getU8ConstDefinition(Value, ValueFormat::Hexidecimal));
+      Asts.push(Symtab->getU8ConstDefinition(Value, ValueFormat::Hexidecimal));
       break;
     case IntTypeFormat::Uint32:
-      AstStack.push(
-          Symtab->getU32ConstDefinition(Value, ValueFormat::Hexidecimal));
+      Asts.push(Symtab->getU32ConstDefinition(Value, ValueFormat::Hexidecimal));
       break;
     case IntTypeFormat::Uint64:
-      AstStack.push(
-          Symtab->getU64ConstDefinition(Value, ValueFormat::Hexidecimal));
+      Asts.push(Symtab->getU64ConstDefinition(Value, ValueFormat::Hexidecimal));
       break;
     default:
       return false;
   }
-  TRACE_SEXP("Header", Ast);
-  Header->append(AstStack.popValue());
+  Header->append(Asts.popValue());
   return true;
 }
 
@@ -196,10 +192,10 @@ bool InflateAst::applyOp(IntType Op) {
       return buildUnary<ReadNode>();
     case OpSection:
       // Note: Bottom element is for file.
-      TRACE(size_t, "Stack.size", AstStack.size());
-      if (AstStack.empty())
+      TRACE(size_t, "Stack.size", Asts.size());
+      if (Asts.empty())
         return false;
-      Values.push(AstStack.size() - 1);
+      Values.push(Asts.size() - 1);
       if (!buildNary<SectionNode>())
         return false;
       Values.push(OpFile);
@@ -211,10 +207,10 @@ bool InflateAst::applyOp(IntType Op) {
     case OpSymbol: {
       SymbolNode* Sym = SectionSymtab.getIndexSymbol(Values.popValue());
       Values.pop();
-      TRACE_SEXP(nullptr, Sym);
+      TRACE_SEXP("Ast", Sym);
       if (Sym == nullptr)
         return false;
-      AstStack.push(Sym);
+      Asts.push(Sym);
       return true;
     }
     default:
@@ -225,7 +221,6 @@ bool InflateAst::applyOp(IntType Op) {
 }
 
 bool InflateAst::writeAction(const filt::CallbackNode* Action) {
-  TRACE_SEXP("Action", Action);
 #if 0
   TRACE_BLOCK({
       constexpr size_t WindowSize = 10;
@@ -239,11 +234,11 @@ bool InflateAst::writeAction(const filt::CallbackNode* Action) {
         fprintf(Out, "%" PRIuMAX "\n", uintmax_t(Val));
       fputs("*** Asts   ***\n", Out);
       TextWriter Writer;
-      StartIndex = AstStack.size() > WindowSize
-          ? AstStack.size() - WindowSize : 1;
+      StartIndex = Asts.size() > WindowSize
+          ? Asts.size() - WindowSize : 1;
       if (StartIndex > 1)
-        fprintf(Out, "...[%" PRIuMAX "]\n", uintmax_t(AstStack.size() - (StartIndex - 1)));
-      for (const Node* Nd : AstStack.iterRange(StartIndex))
+        fprintf(Out, "...[%" PRIuMAX "]\n", uintmax_t(Asts.size() - (StartIndex - 1)));
+      for (const Node* Nd : Asts.iterRange(StartIndex))
         Writer.writeAbbrev(Out, Nd);
       fputs("**************\n", Out);
     });
@@ -257,7 +252,7 @@ bool InflateAst::writeAction(const filt::CallbackNode* Action) {
     case PredefinedSymbol::Block_exit:
       return true;
     case PredefinedSymbol::Instruction_begin:
-      AstMarkerStack.push(AstStack.size());
+      AstMarkers.push(Asts.size());
       return false;
     case PredefinedSymbol::Int_value_begin:
       ValueMarker = Values.size();
@@ -320,16 +315,16 @@ bool InflateAst::writeAction(const filt::CallbackNode* Action) {
         default:
           return false;
       }
-      AstStack.push(Nd);
+      Asts.push(Nd);
       return true;
     }
     case PredefinedSymbol::Literal_define: {
-      if (AstStack.size() < 2)
+      if (Asts.size() < 2)
         return false;
-      Node* Arg2 = AstStack.popValue();
-      Node* Arg1 = AstStack.popValue();
-      AstStack.push(Symtab->create<LiteralDefNode>(Arg1, Arg2));
-      TRACE_SEXP("Define", Ast);
+      Node* Arg2 = Asts.popValue();
+      Node* Arg1 = Asts.popValue();
+      Asts.push(Symtab->create<LiteralDefNode>(Arg1, Arg2));
+      TRACE_SEXP("Define", AstsTop);
       return false;
     }
     case PredefinedSymbol::Symbol_name_begin:

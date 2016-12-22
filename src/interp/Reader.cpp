@@ -512,8 +512,9 @@ void Reader::algorithmResume() {
                 if (Lit == nullptr)
                   return fail("Literal header value expected, but not found");
                 IntType WantedValue = Lit->getValue();
-                // TODO(karlschimpf) Tighten to check lit!
-                IntTypeFormat TypeFormat = getIntTypeFormat(Lit);
+                if (!Lit->definesIntTypeFormat())
+                  return fail("Format header contains badly formed constant");
+                IntTypeFormat TypeFormat = Lit->getIntTypeFormat();
                 IntType FoundValue = readHeaderValue(TypeFormat);
                 if (errorsFound())
                   return;

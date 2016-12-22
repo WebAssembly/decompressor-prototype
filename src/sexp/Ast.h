@@ -89,10 +89,6 @@ struct AstTraitsType {
 
 extern AstTraitsType AstTraits[NumNodeTypes];
 
-extern bool definesIntTypeFormat(const filt::Node* Nd);
-// TODO(karlschimpf): Make method of Nd.
-extern interp::IntTypeFormat getIntTypeFormat(const filt::Node* Nd);
-
 // Models integer values (as used in AST nodes).
 class IntegerValue {
  public:
@@ -302,6 +298,12 @@ class Node {
   Iterator end() const { return Iterator(this, getNumKids()); }
   Iterator rbegin() const { return Iterator(this, getNumKids() - 1); }
   Iterator rend() const { return Iterator(this, -1); }
+
+  // Returns true if the node defines an AST node that corresponds to an
+  // integer format (i.e. IntTypeFormat);
+  bool definesIntTypeFormat() const;
+  // Gets the corresponding format if definesIntTypeFormat() returns true.
+  interp::IntTypeFormat getIntTypeFormat() const;
 
   static bool implementsClass(NodeType /*Type*/) { return true; }
 
