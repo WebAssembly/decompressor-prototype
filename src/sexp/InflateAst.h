@@ -78,10 +78,14 @@ class InflateAst : public interp::Writer {
 
   bool applyOp(decode::IntType Op);
   bool appendArgs(Node* Nd);
-  template <class T> bool buildNullary();
-  template <class T> bool buildUnary();
-  template <class T> bool buildBinary();
-  template <class T> bool buildNary();
+  template <class T>
+  bool buildNullary();
+  template <class T>
+  bool buildUnary();
+  template <class T>
+  bool buildBinary();
+  template <class T>
+  bool buildNary();
 };
 
 }  // end of namespace filt
