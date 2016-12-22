@@ -76,6 +76,11 @@ bool InflateAst::buildBinary() {
   return true;
 }
 
+template <class T>
+bool InflateAst::buildNary() {
+  return appendArgs(Symtab->create<T>());
+}
+
 bool InflateAst::appendArgs(Node* Nd) {
   size_t NumArgs = Values.popValue();
   Values.pop();
@@ -86,11 +91,6 @@ bool InflateAst::appendArgs(Node* Nd) {
   TRACE_SEXP(nullptr, Nd);
   AstStack.push(Nd);
   return true;
-}
-
-template <class T>
-bool InflateAst::buildNary() {
-  return appendArgs(Symtab->create<T>());
 }
 
 // TODO(karlschimpf) Should we extend StreamType to have other?

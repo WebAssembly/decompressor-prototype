@@ -2,6 +2,10 @@
 //
 // Copyright 2016 WebAssembly Community Group participants
 //
+// Licensed under the Apache License, Version 2.0 (the "Licen// -*- C++ -*-
+//
+// Copyright 2016 WebAssembly Community Group participants
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -34,7 +38,7 @@ class InflateAst : public interp::Writer {
 
  public:
   explicit InflateAst();
-  OVERRIDE ~InflateAst();
+  ~InflateAst() OVERRIDE;
   bool write(decode::IntType Value) {
     Values.push(Value);
     return true;
@@ -58,7 +62,7 @@ class InflateAst : public interp::Writer {
  private:
   std::shared_ptr<SymbolTable> Symtab;
   SectionSymbolTable SectionSymtab;
-  size_t ValuesTop;
+  decode::IntType ValuesTop;
   utils::ValueStack<decode::IntType> Values;
   Node* Ast;
   utils::ValueStack<Node*> AstStack;
@@ -74,14 +78,10 @@ class InflateAst : public interp::Writer {
 
   bool applyOp(decode::IntType Op);
   bool appendArgs(Node* Nd);
-  template <class T>
-  bool buildNullary();
-  template <class T>
-  bool buildUnary();
-  template <class T>
-  bool buildBinary();
-  template <class T>
-  bool buildNary();
+  template <class T> bool buildNullary();
+  template <class T> bool buildUnary();
+  template <class T> bool buildBinary();
+  template <class T> bool buildNary();
 };
 
 }  // end of namespace filt
