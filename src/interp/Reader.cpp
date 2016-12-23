@@ -171,7 +171,8 @@ Reader::Reader(Writer& Output, std::shared_ptr<filt::SymbolTable> Symtab)
       LoopCounterStack(LoopCounter),
       LocalsBase(0),
       LocalsBaseStack(LocalsBase),
-      OpcodeLocalsStack(OpcodeLocals) {
+      OpcodeLocalsStack(OpcodeLocals),
+      HeaderOverride(nullptr) {
   CurSectionName.reserve(MaxExpectedSectionNameSize);
   FrameStack.reserve(DefaultStackSize);
   CallingEvalStack.reserve(DefaultStackSize);
@@ -1153,7 +1154,12 @@ void Reader::algorithmResume() {
               assert(Frame.Nd);
               assert(isa<FileNode>(Frame.Nd));
             }
+#if 0
             const Node* Header = Frame.Nd->getKid(0);
+#else
+            const Node* Header =
+                HeaderOverride ? HeaderOverride : Frame.Nd->getKid(0);
+#endif
             if (Header->getType() == OpFileHeader) {
               Frame.CallState = State::Step4;
               call(Method::Eval, Frame.CallModifier, Header);

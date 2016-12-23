@@ -42,8 +42,13 @@ class Reader {
   virtual ~Reader();
 
   // Can be called immediately before algorithmStart() to insert file version
-  // into the output (instead of reading from input).
+  // into the output (instead of reading from input). Deorecated,
+  // TODO: Replace this with useFileHeader().
   void insertFileVersion(uint32_t MagicNumber, uint32_t Version);
+
+  void useFileHeader(const filt::FileHeaderNode* Header) {
+    HeaderOverride = Header;
+  }
 
   // Starts up decompression using a (file) algorithm.
   void algorithmStart();
@@ -233,6 +238,8 @@ class Reader {
   };
   OpcodeLocalsFrame OpcodeLocals;
   utils::ValueStack<OpcodeLocalsFrame> OpcodeLocalsStack;
+
+  const filt::FileHeaderNode* HeaderOverride;
 
   virtual void reset();
 

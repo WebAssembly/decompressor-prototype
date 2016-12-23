@@ -173,6 +173,7 @@ int main(int Argc, char* Argv[]) {
     Writer->setTrace(Trace);
     Reader->setTraceProgress(true);
   }
+  Reader->useFileHeader(InputSymtab->getInstalledFileHeader());
   Reader->algorithmStart();
   Reader->algorithmReadBackFilled();
   if (Reader->errorsFound()) {
