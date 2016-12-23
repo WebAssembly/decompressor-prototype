@@ -85,6 +85,8 @@ class InflateAst : public interp::Writer {
   template <class T>
   bool buildBinary();
   template <class T>
+  bool buildTernary();
+  template <class T>
   bool buildNary();
   bool failBuild(const char* Method, std::string Message);
   bool failWriteActionMalformed();
