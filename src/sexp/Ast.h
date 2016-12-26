@@ -33,11 +33,11 @@
 #include "sexp/Ast.def"
 #include "sexp/NodeType.h"
 #include "sexp/Strings.def"
-#include "sexp/TraceSexp.h"
 #include "stream/WriteUtils.h"
 #include "utils/Casting.h"
 #include "utils/Defs.h"
 #include "utils/initialized_ptr.h"
+#include "utils/Trace.h"
 
 #include <array>
 #include <limits>
@@ -195,11 +195,14 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
   static bool installPredefinedDefaults(std::shared_ptr<SymbolTable> Symtab,
                                         bool Verbose);
 
-  TraceClassSexp& getTrace() { return Trace; }
+  void setTraceProgress(bool NewValue);
+  virtual void setTrace(std::shared_ptr<utils::TraceClass> Trace);
+  std::shared_ptr<utils::TraceClass> getTracePtr();
+  utils::TraceClass& getTrace() { return *getTracePtr(); }
 
  private:
   std::vector<Node*>* Allocated;
-  TraceClassSexp Trace;
+  std::shared_ptr<utils::TraceClass> Trace;
   Node* Root;
   Node* Error;
   int NextCreationIndex;
@@ -264,7 +267,7 @@ class Node {
 
   const char* getNodeName() const { return getNodeTypeName(getType()); }
 
-  TraceClassSexp& getTrace() const { return Symtab.getTrace(); }
+  utils::TraceClass& getTrace() const { return Symtab.getTrace(); }
 
   bool hasKids() const { return getNumKids() > 0; }
 
@@ -713,20 +716,13 @@ class OpcodeNode FINAL : public SelectBaseNode {
     uint32_t getShiftValue() const { return ShiftValue; }
     int compare(const WriteRange& R) const;
     bool operator<(const WriteRange& R) const { return compare(R) < 0; }
-    void trace() const {
-      TRACE_BLOCK({ traceInternal(""); });
-    }
-    void trace(const char* Prefix) const {
-      TRACE_BLOCK({ traceInternal(Prefix); });
-    }
-    TraceClassSexp& getTrace() const { return Case->getTrace(); }
+    utils::TraceClass& getTrace() const { return Case->getTrace(); }
 
    private:
     const CaseNode* Case;
     decode::IntType Min;
     decode::IntType Max;
     uint32_t ShiftValue;
-    void traceInternal(const char* Prefix) const;
   };
   void clearCaches(NodeVectorType& AdditionalNodes) OVERRIDE;
   void installCaches(NodeVectorType& AdditionalNodes) OVERRIDE;

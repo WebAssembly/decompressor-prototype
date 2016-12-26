@@ -31,8 +31,20 @@
 namespace wasm {
 
 using namespace decode;
+using namespace filt;
 using namespace interp;
 using namespace utils;
+
+namespace utils {
+
+
+void TraceClass::trace_node_ptr(const char* Name, const Node* Nd) {
+  indent();
+  TextWriter Writer;
+  Writer.writeAbbrev(File, Nd);
+}
+
+}
 
 namespace filt {
 
@@ -226,7 +238,9 @@ SymbolTable::SymbolTable()
     // TODO(karlschimpf) Switch Alloc to an ArenaAllocator once working.
     // TODO(karlschimpf) Figure out why we can't deallocate Allocated!
     : Allocated(new std::vector<Node*>()),
+#if 0
       Trace("sexp_st"),
+#endif
       NextCreationIndex(0),
       Predefined(new std::vector<SymbolNode*>()) {
   Error = create<ErrorNode>();
@@ -244,6 +258,22 @@ const FileHeaderNode* SymbolTable::getInstalledFileHeader() const {
       if (const auto* Header = dyn_cast<FileHeaderNode>(File->getKid(0)))
         return Header;
   return nullptr;
+}
+
+void SymbolTable::setTraceProgress(bool NewValue) {
+  if (!NewValue && !Trace)
+    return;
+  getTrace().setTraceProgress(NewValue);
+}
+
+void SymbolTable::setTrace(std::shared_ptr<TraceClass> NewTrace) {
+  Trace = NewTrace;
+}
+
+std::shared_ptr<TraceClass> SymbolTable::getTracePtr() {
+  if (!Trace)
+    setTrace(std::make_shared<TraceClass>("SymbolTable"));
+  return Trace;
 }
 
 void SymbolTable::deallocateNodes() {
@@ -343,7 +373,7 @@ void SymbolTable::clearSubtreeCaches(Node* Nd,
   if (VisitedNodes.count(Nd))
     return;
   TRACE_METHOD("clearSubtreeCaches");
-  TRACE_SEXP(nullptr, Nd);
+  TRACE(node_ptr, nullptr, Nd);
   VisitedNodes.insert(Nd);
   Nd->clearCaches(AdditionalNodes);
   for (auto* Kid : *Nd)
@@ -356,7 +386,7 @@ void SymbolTable::installSubtreeCaches(Node* Nd,
   if (VisitedNodes.count(Nd))
     return;
   TRACE_METHOD("installSubtreeCaches");
-  TRACE_SEXP(nullptr, Nd);
+  TRACE(node_ptr, nullptr, Nd);
   VisitedNodes.insert(Nd);
   Nd->installCaches(AdditionalNodes);
   for (auto* Kid : *Nd)
@@ -365,7 +395,7 @@ void SymbolTable::installSubtreeCaches(Node* Nd,
 
 void SymbolTable::installDefinitions(Node* Root) {
   TRACE_METHOD("installDefinitions");
-  TRACE_SEXP(nullptr, Root);
+  TRACE(node_ptr, nullptr, Root);
   if (Root == nullptr)
     return;
   switch (Root->getType()) {
@@ -489,15 +519,15 @@ AST_INTEGERNODE_TABLE
 
 bool ParamNode::validateNode(NodeVectorType& Parents) {
   TRACE_METHOD("validateNode");
-  TRACE_SEXP(nullptr, this);
+  TRACE(node_ptr, nullptr, this);
   for (size_t i = Parents.size(); i > 0; --i) {
     auto* Nd = Parents[i - 1];
     auto* Define = dyn_cast<DefineNode>(Nd);
     if (Define == nullptr) {
-      TRACE_SEXP("parent Nd", Nd);
+      TRACE(node_ptr, "parent Nd", Nd);
       continue;
     }
-    TRACE_SEXP("Enclosing define", Nd);
+    TRACE(node_ptr, "Enclosing define", Nd);
     // Scope found. Check if parameter is legal.
     if (!Define->isValidParam(getValue())) {
       FILE* Out = getTrace().getFile();
@@ -680,16 +710,6 @@ int OpcodeNode::WriteRange::compare(const WriteRange& R) const {
   return 0;
 }
 
-void OpcodeNode::WriteRange::traceInternal(const char* Prefix) const {
-  TRACE_BLOCK({
-    FILE* Out = tracE.getFile();
-    tracE.indent();
-    fprintf(Out, "[%" PRIxMAX "..%" PRIxMAX "](%" PRIuMAX "):\n",
-            uintmax_t(Min), uintmax_t(Max), uintmax_t(ShiftValue));
-    tracE.errorSexp(Case);
-  });
-}
-
 namespace {
 
 constexpr uint32_t MaxOpcodeWidth = 64;
@@ -852,7 +872,7 @@ void OpcodeNode::installCaseRanges() {
 
 void OpcodeNode::installCaches(NodeVectorType& AdditionalNodes) {
   TRACE_METHOD("OpcodeNode::installCaches");
-  TRACE_SEXP(nullptr, this);
+  TRACE(node_ptr, nullptr, this);
   SelectBaseNode::installCaches(AdditionalNodes);
   installCaseRanges();
 }

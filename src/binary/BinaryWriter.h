@@ -22,10 +22,10 @@
 
 #include "binary/SectionSymbolTable.h"
 #include "interp/WriteStream.h"
-#include "sexp/TraceSexp.h"
 #include "stream/Queue.h"
 #include "stream/WriteCursor.h"
 #include "utils/Defs.h"
+#include "utils/Trace.h"
 
 #include <functional>
 
@@ -56,18 +56,16 @@ class BinaryWriter {
 
   void setMinimizeBlockSize(bool NewValue) { MinimizeBlockSize = NewValue; }
 
-  void setTraceProgress(bool NewValue) {
-    getTrace().setTraceProgress(NewValue);
-  }
-
-  void setTrace(std::shared_ptr<filt::TraceClassSexp> Trace);
-  TraceClassSexp& getTrace();
+  void setTraceProgress(bool NewValue);
+  std::shared_ptr<utils::TraceClass> getTracePtr();
+  void setTrace(std::shared_ptr<utils::TraceClass> Trace);
+  utils::TraceClass& getTrace() { return *getTracePtr(); }
 
  private:
   decode::WriteCursorWithTraceContext WritePos;
   std::shared_ptr<interp::WriteStream> Writer;
   SectionSymbolTable SectionSymtab;
-  std::shared_ptr<TraceClassSexp> Trace;
+  std::shared_ptr<utils::TraceClass> Trace;
   bool MinimizeBlockSize;
   bool FreezeEofOnDestruct;
 

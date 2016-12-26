@@ -109,7 +109,7 @@ TraceClass::ContextPtr Reader::getTraceContext() {
   return Ptr;
 }
 
-void Reader::setTrace(std::shared_ptr<TraceClassSexp> NewTrace) {
+void Reader::setTrace(std::shared_ptr<TraceClass> NewTrace) {
   Trace = NewTrace;
   if (Trace) {
     Trace->addContext(getTraceContext());
@@ -121,9 +121,9 @@ const char* Reader::getDefaultTraceName() const {
   return "Reader";
 }
 
-std::shared_ptr<TraceClassSexp> Reader::getTracePtr() {
+std::shared_ptr<TraceClass> Reader::getTracePtr() {
   if (!Trace)
-    setTrace(std::make_shared<TraceClassSexp>(getDefaultTraceName()));
+    setTrace(std::make_shared<TraceClass>(getDefaultTraceName()));
   return Trace;
 }
 
@@ -210,7 +210,7 @@ void Reader::traceEnterFrameInternal() {
   TRACE_BLOCK({
     TRACE_ENTER(getName(Frame.CallMethod));
     if (Frame.Nd)
-      TRACE_SEXP("Nd", Frame.Nd);
+      TRACE(node_ptr, "Nd", Frame.Nd);
     if (Frame.CallModifier != MethodModifier::ReadAndWrite)
       TRACE_MESSAGE(std::string("(") + getName(Frame.CallModifier) + ")");
   });
@@ -243,15 +243,17 @@ void Reader::OpcodeLocalsFrame::describe(FILE* File, TextWriter* Writer) const {
 
 void Reader::describeFrameStack(FILE* File) {
   fprintf(File, "*** Frame Stack ***\n");
+  TextWriter Writer;
   for (auto& Frame : FrameStack)
-    Frame.describe(File, getTrace().getTextWriter());
+    Frame.describe(File, &Writer);
   fprintf(File, "*******************\n");
 }
 
 void Reader::describeCallingEvalStack(FILE* File) {
   fprintf(File, "*** Eval Call Stack ****\n");
+  TextWriter Writer;
   for (const auto& Frame : CallingEvalStack.iterRange(1))
-    Frame.describe(File, getTrace().getTextWriter());
+    Frame.describe(File, &Writer);
   fprintf(File, "************************\n");
 }
 
@@ -279,8 +281,9 @@ void Reader::describeLocalsStack(FILE* File) {
 
 void Reader::describeOpcodeLocalsStack(FILE* File) {
   fprintf(File, "*** Opcode Stack ***\n");
+  TextWriter Writer;
   for (auto& Frame : OpcodeLocalsStack.iterRange(1))
-    Frame.describe(File, getTrace().getTextWriter());
+    Frame.describe(File, &Writer);
   fprintf(File, "********************\n");
 }
 
@@ -509,7 +512,7 @@ void Reader::algorithmResume() {
                 }
                 auto Lit =
                     dyn_cast<IntegerNode>(Frame.Nd->getKid(LoopCounter++));
-                TRACE_SEXP("Lit", Lit);
+                TRACE(node_ptr, "Lit", Lit);
                 if (Lit == nullptr)
                   return fail("Literal header value expected, but not found");
                 IntType WantedValue = Lit->getValue();

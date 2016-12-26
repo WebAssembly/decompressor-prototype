@@ -89,6 +89,10 @@
 
 namespace wasm {
 
+namespace filt {
+class Node;
+} // end of namespace filt
+
 namespace utils {
 
 class TraceClass : public std::enable_shared_from_this<TraceClass> {
@@ -232,6 +236,7 @@ class TraceClass : public std::enable_shared_from_this<TraceClass> {
   void trace_void_ptr(const char* Name, T* Ptr) {
     tracePointerInternal(Name, (void*)Ptr);
   }
+  void trace_node_ptr(const char* Name, const filt::Node* Nd);
   bool getTraceProgress() const { return wasm::isDebug() && TraceProgress; }
   void setTraceProgress(bool NewValue) { TraceProgress = NewValue; }
 

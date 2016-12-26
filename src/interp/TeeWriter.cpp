@@ -164,7 +164,7 @@ void TeeWriter::describeState(FILE* File) {
     Nd.getWriter()->describeState(File);
 }
 
-void TeeWriter::setTrace(std::shared_ptr<filt::TraceClassSexp> NewTrace) {
+void TeeWriter::setTrace(std::shared_ptr<TraceClass> NewTrace) {
   for (Node& Nd : Writers)
     if (Nd.getTraceNode())
       Nd.getWriter()->setTrace(NewTrace);

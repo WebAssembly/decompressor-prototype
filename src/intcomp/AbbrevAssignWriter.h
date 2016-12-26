@@ -63,7 +63,7 @@ class AbbrevAssignWriter : public interp::Writer {
   bool writeAction(const filt::CallbackNode* Action) OVERRIDE;
 
   utils::TraceClass::ContextPtr getTraceContext() OVERRIDE;
-  void setTrace(std::shared_ptr<filt::TraceClassSexp> Trace) OVERRIDE;
+  void setTrace(std::shared_ptr<utils::TraceClass> Trace) OVERRIDE;
 
  private:
   CountNode::RootPtr Root;

@@ -39,11 +39,23 @@ BinaryWriter::BinaryWriter(std::shared_ptr<decode::Queue> Output,
       FreezeEofOnDestruct(true) {
 }
 
-void BinaryWriter::setTrace(std::shared_ptr<TraceClassSexp> NewTrace) {
+void BinaryWriter::setTraceProgress(bool NewValue) {
+  if (!NewValue && !Trace)
+    return;
+  getTrace().setTraceProgress(NewValue);
+}
+
+void BinaryWriter::setTrace(std::shared_ptr<TraceClass> NewTrace) {
   Trace = NewTrace;
   if (!Trace)
     return;
   Trace->addContext(WritePos.getTraceContext());
+}
+
+std::shared_ptr<utils::TraceClass> BinaryWriter::getTracePtr() {
+  if (!Trace)
+    setTrace(std::make_shared<TraceClass>("BinaryWriter"));
+  return Trace;
 }
 
 BinaryWriter::~BinaryWriter() {
@@ -51,15 +63,9 @@ BinaryWriter::~BinaryWriter() {
     WritePos.freezeEof();
 }
 
-TraceClassSexp& BinaryWriter::getTrace() {
-  if (!Trace)
-    setTrace(std::make_shared<TraceClassSexp>("BinaryWriter"));
-  return *Trace;
-}
-
 void BinaryWriter::writeLiteral(const Node* Nd) {
   TRACE_METHOD("writeliteral");
-  TRACE_SEXP("", Nd);
+  TRACE(node_ptr, nullptr, Nd);
   const auto* Const = dyn_cast<IntegerNode>(Nd);
   if (Const == nullptr)
     fatal("Unrecognized literal constant!");
@@ -87,7 +93,7 @@ void BinaryWriter::writeLiteral(const Node* Nd) {
 
 void BinaryWriter::writeNode(const Node* Nd) {
   TRACE_METHOD("writeNode");
-  TRACE_SEXP(nullptr, Nd);
+  TRACE(node_ptr, nullptr, Nd);
   switch (NodeType Opcode = Nd->getType()) {
     case NO_SUCH_NODETYPE:
     case OpUnknownSection: {
@@ -224,7 +230,7 @@ void BinaryWriter::writeBlock(std::function<void()> ApplyFn) {
 
 void BinaryWriter::writeSymbol(const Node* Symbol) {
   TRACE_METHOD("writeSymbol");
-  TRACE_SEXP(nullptr, Symbol);
+  TRACE(node_ptr, nullptr, Symbol);
   assert(isa<SymbolNode>(Symbol) &&
          "BinaryWriter::writeSymbol called on non-symbol");
   const auto* Sym = cast<SymbolNode>(Symbol);

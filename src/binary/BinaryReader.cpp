@@ -222,7 +222,7 @@ void BinaryReader::resume() {
             break;
           }
           case State::Exit: {
-            TRACE_SEXP("File", CurFile);
+            TRACE(node_ptr, "File", CurFile);
             SectionSymtab.install(CurFile);
             returnFromCall();
             break;
@@ -361,7 +361,7 @@ void BinaryReader::resume() {
                 StreamType StrmType;
                 StreamNode::decode(Encoding, StrmKind, StrmType);
                 auto* Node = Symtab->create<StreamNode>(StrmKind, StrmType);
-                TRACE_SEXP(nullptr, Node);
+                TRACE(node_ptr, nullptr, Node);
                 NodeStack.push_back(Node);
                 break;
               }
@@ -394,7 +394,7 @@ void BinaryReader::resume() {
       Nd = Symtab->get##tag##Definition(Reader->read##format(ReadPos),    \
                                         getValueFormat(FormatIndex - 1)); \
     }                                                                     \
-    TRACE_SEXP(nullptr, Nd);                                              \
+    TRACE(node_ptr, nullptr, Nd);                                         \
     NodeStack.push_back(Nd);                                              \
     break;                                                                \
   }
@@ -543,25 +543,30 @@ BinaryReader::BinaryReader(std::shared_ptr<decode::Queue> Input,
       CounterStack(Counter) {
 }
 
-void BinaryReader::setTrace(std::shared_ptr<TraceClassSexp> NewTrace) {
+void BinaryReader::setTraceProgress(bool NewValue) {
+  if (!NewValue && !Trace)
+    return;
+  getTrace().setTraceProgress(NewValue);
+}
+
+void BinaryReader::setTrace(std::shared_ptr<TraceClass> NewTrace) {
   Trace = NewTrace;
   if (!Trace)
     return;
   Trace->addContext(ReadPos.getTraceContext());
 }
 
-TraceClassSexp& BinaryReader::getTrace() const {
+std::shared_ptr<TraceClass> BinaryReader::getTracePtr() {
   if (!Trace) {
-    const_cast<BinaryReader*>(this)
-        ->setTrace(std::make_shared<TraceClassSexp>("BinaryReader"));
+    setTrace(std::make_shared<TraceClass>("BinaryReader"));
   }
-  return *Trace;
+  return Trace;
 }
 
 template <class T>
 void BinaryReader::readNullary() {
   auto* Node = Symtab->create<T>();
-  TRACE_SEXP(nullptr, Node);
+  TRACE(node_ptr, nullptr, Node);
   NodeStack.push_back(Node);
 }
 
@@ -574,42 +579,42 @@ void BinaryReader::readUnary() {
   Node* Arg = NodeStack.back();
   NodeStack.pop_back();
   auto* Node = Symtab->create<T>(Arg);
-  TRACE_SEXP(nullptr, Node);
+  TRACE(node_ptr, nullptr, Node);
   NodeStack.push_back(Node);
 }
 
 template <class T>
 void BinaryReader::readUint8() {
   auto* Node = Symtab->create<T>(Reader->readUint8(ReadPos));
-  TRACE_SEXP(nullptr, Node);
+  TRACE(node_ptr, nullptr, Node);
   NodeStack.push_back(Node);
 }
 
 template <class T>
 void BinaryReader::readVarint32() {
   auto* Node = Symtab->create<T>(Reader->readVarint32(ReadPos));
-  TRACE_SEXP(nullptr, Node);
+  TRACE(node_ptr, nullptr, Node);
   NodeStack.push_back(Node);
 }
 
 template <class T>
 void BinaryReader::readVarint64() {
   auto* Node = Symtab->create<T>(Reader->readVarint64(ReadPos));
-  TRACE_SEXP(nullptr, Node);
+  TRACE(node_ptr, nullptr, Node);
   NodeStack.push_back(Node);
 }
 
 template <class T>
 void BinaryReader::readVaruint32() {
   auto* Node = Symtab->create<T>(Reader->readVaruint32(ReadPos));
-  TRACE_SEXP(nullptr, Node);
+  TRACE(node_ptr, nullptr, Node);
   NodeStack.push_back(Node);
 }
 
 template <class T>
 void BinaryReader::readVaruint64() {
   auto* Node = Symtab->create<T>(Reader->readVarint64(ReadPos));
-  TRACE_SEXP(nullptr, Node);
+  TRACE(node_ptr, nullptr, Node);
   NodeStack.push_back(Node);
 }
 
@@ -624,7 +629,7 @@ void BinaryReader::readBinary() {
   Node* Arg1 = NodeStack.back();
   NodeStack.pop_back();
   auto* Node = Symtab->create<T>(Arg1, Arg2);
-  TRACE_SEXP(nullptr, Node);
+  TRACE(node_ptr, nullptr, Node);
   NodeStack.push_back(Node);
 }
 
@@ -634,7 +639,7 @@ void BinaryReader::readBinarySymbol() {
   auto* Body = NodeStack.back();
   NodeStack.pop_back();
   auto* Node = Symtab->create<T>(Symbol, Body);
-  TRACE_SEXP(nullptr, Node);
+  TRACE(node_ptr, nullptr, Node);
   NodeStack.push_back(Node);
 }
 
@@ -651,7 +656,7 @@ void BinaryReader::readTernary() {
   Node* Arg1 = NodeStack.back();
   NodeStack.pop_back();
   auto* Node = Symtab->create<T>(Arg1, Arg2, Arg3);
-  TRACE_SEXP(nullptr, Node);
+  TRACE(node_ptr, nullptr, Node);
   NodeStack.push_back(Node);
 }
 
@@ -668,7 +673,7 @@ void BinaryReader::readNary() {
     Node->append(NodeStack[i]);
   for (uint32_t i = 0; i < NumKids; ++i)
     NodeStack.pop_back();
-  TRACE_SEXP(nullptr, Node);
+  TRACE(node_ptr, nullptr, Node);
   NodeStack.push_back(Node);
 }
 

@@ -49,13 +49,13 @@ IntCompressor::IntCompressor(std::shared_ptr<decode::Queue> Input,
       ErrorsFound(false) {
 }
 
-void IntCompressor::setTrace(std::shared_ptr<TraceClassSexp> NewTrace) {
+void IntCompressor::setTrace(std::shared_ptr<TraceClass> NewTrace) {
   Trace = NewTrace;
 }
 
-std::shared_ptr<TraceClassSexp> IntCompressor::getTracePtr() {
+std::shared_ptr<TraceClass> IntCompressor::getTracePtr() {
   if (!Trace)
-    setTrace(std::make_shared<TraceClassSexp>("IntCompress"));
+    setTrace(std::make_shared<TraceClass>("IntCompress"));
   return Trace;
 }
 
@@ -70,7 +70,7 @@ void IntCompressor::readInput(bool TraceParsing) {
   IntWriter MyWriter(Contents);
   StreamReader MyReader(Input, MyWriter, Symtab);
   if (TraceParsing) {
-    TraceClassSexp& Trace = MyReader.getTrace();
+    TraceClass& Trace = MyReader.getTrace();
     Trace.addContext(MyReader.getTraceContext());
     Trace.addContext(MyWriter.getTraceContext());
     Trace.setTraceProgress(true);
@@ -102,7 +102,7 @@ void IntCompressor::writeDataOutput(const WriteCursor& StartPos,
   Writer.setPos(StartPos);
   IntReader Reader(IntOutput, Writer, Symtab);
   if (Trace) {
-    TraceClassSexp& Trace = Reader.getTrace();
+    TraceClass& Trace = Reader.getTrace();
     Trace.addContext(Reader.getTraceContext());
     Trace.addContext(Writer.getTraceContext());
     Trace.setTraceProgress(true);
@@ -210,7 +210,7 @@ bool IntCompressor::generateIntOutput(bool TraceParsing) {
   AbbrevAssignWriter Writer(Root, IntOutput, LengthLimit, AbbrevFormat);
   IntReader Reader(Contents, Writer, Symtab);
   if (TraceParsing) {
-    std::shared_ptr<TraceClassSexp> Trace = Writer.getTracePtr();
+    std::shared_ptr<TraceClass> Trace = Writer.getTracePtr();
     Reader.setTrace(Trace);
     Writer.setTrace(Trace);
     Reader.getTrace().setTraceProgress(true);
@@ -228,9 +228,10 @@ std::shared_ptr<SymbolTable> IntCompressor::generateCode(
     bool Trace) {
   AbbreviationCodegen Codegen(Root, AbbrevFormat, Assignments);
   std::shared_ptr<SymbolTable> Symtab = Codegen.getCodeSymtab(ToRead);
-  if (Trace)
-    getTrace().getTextWriter()->write(getTrace().getFile(),
-                                      Symtab->getInstalledRoot());
+  if (Trace) {
+    TextWriter Writer;
+    Writer.write(getTrace().getFile(), Symtab->getInstalledRoot());
+  }
   return Symtab;
 }
 

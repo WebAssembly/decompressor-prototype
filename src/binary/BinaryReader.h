@@ -24,11 +24,11 @@
 #include "interp/ByteReadStream.h"
 #include "interp/ReadStream.h"
 #include "sexp/Ast.h"
-#include "sexp/TraceSexp.h"
 #include "stream/Queue.h"
 #include "stream/ReadCursor.h"
 #include "stream/WriteCursor.h"
 #include "utils/Defs.h"
+#include "utils/Trace.h"
 #include "utils/ValueStack.h"
 
 #include <functional>
@@ -101,11 +101,10 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
 
   FileNode* readFile();
 
-  void setTraceProgress(bool NewValue) {
-    getTrace().setTraceProgress(NewValue);
-  }
-  void setTrace(std::shared_ptr<TraceClassSexp> Trace);
-  TraceClassSexp& getTrace() const;
+  void setTraceProgress(bool NewValue);
+  std::shared_ptr<utils::TraceClass> getTracePtr();
+  void setTrace(std::shared_ptr<utils::TraceClass> Trace);
+  utils::TraceClass& getTrace() { return *getTracePtr(); }
 
  private:
   struct CallFrame {
@@ -133,7 +132,7 @@ class BinaryReader : public std::enable_shared_from_this<BinaryReader> {
   std::shared_ptr<decode::Queue> Input;
   std::shared_ptr<SymbolTable> Symtab;
   SectionSymbolTable SectionSymtab;
-  mutable std::shared_ptr<TraceClassSexp> Trace;
+  std::shared_ptr<utils::TraceClass> Trace;
   std::string Name;
   FileNode* CurFile;
   SectionNode* CurSection;

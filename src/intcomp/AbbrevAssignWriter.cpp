@@ -23,6 +23,7 @@ namespace wasm {
 using namespace decode;
 using namespace filt;
 using namespace interp;
+using namespace utils;
 
 namespace intcomp {
 
@@ -43,7 +44,7 @@ void AbbrevAssignWriter::forwardOtherValue(IntType Value) {
   DefaultValues.push_back(Value);
 }
 
-void AbbrevAssignWriter::setTrace(std::shared_ptr<filt::TraceClassSexp> Trace) {
+void AbbrevAssignWriter::setTrace(std::shared_ptr<TraceClass> Trace) {
   Writer::setTrace(Trace);
   Writer.setTrace(Trace);
 }

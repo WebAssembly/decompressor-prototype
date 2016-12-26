@@ -31,6 +31,7 @@ using namespace wasm;
 using namespace wasm::decode;
 using namespace wasm::filt;
 using namespace wasm::interp;
+using namespace wasm::utils;
 
 namespace {
 
@@ -168,7 +169,7 @@ int main(int Argc, char* Argv[]) {
   Writer->setMinimizeBlockSize(MinimizeBlockSize);
   auto Reader = std::make_shared<IntReader>(IntSeq, *Writer, AlgSymtab);
   if (Verbose >= 1) {
-    auto Trace = std::make_shared<TraceClassSexp>("writeFile");
+    auto Trace = std::make_shared<TraceClass>("writeFile");
     Reader->setTrace(Trace);
     Writer->setTrace(Trace);
     Reader->setTraceProgress(true);

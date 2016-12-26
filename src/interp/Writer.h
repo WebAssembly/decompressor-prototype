@@ -21,6 +21,7 @@
 
 #include "interp/IntFormats.h"
 #include "sexp/Ast.h"
+#include "utils/Trace.h"
 
 namespace wasm {
 
@@ -59,13 +60,13 @@ class Writer {
   virtual void describeState(FILE* File);
 
   virtual utils::TraceClass::ContextPtr getTraceContext();
-  virtual void setTrace(std::shared_ptr<filt::TraceClassSexp> Trace);
-  std::shared_ptr<filt::TraceClassSexp> getTracePtr();
-  filt::TraceClassSexp& getTrace() { return *getTracePtr(); }
+  virtual void setTrace(std::shared_ptr<utils::TraceClass> Trace);
+  std::shared_ptr<utils::TraceClass> getTracePtr();
+  utils::TraceClass& getTrace() { return *getTracePtr(); }
 
  protected:
   bool MinimizeBlockSize;
-  std::shared_ptr<filt::TraceClassSexp> Trace;
+  std::shared_ptr<utils::TraceClass> Trace;
 
   virtual const char* getDefaultTraceName() const;
 };

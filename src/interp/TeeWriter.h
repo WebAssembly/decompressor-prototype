@@ -81,7 +81,7 @@ class TeeWriter : public Writer {
   void setMinimizeBlockSize(bool NewValue) OVERRIDE;
   void describeState(FILE* File) OVERRIDE;
 
-  void setTrace(std::shared_ptr<filt::TraceClassSexp> Trace) OVERRIDE;
+  void setTrace(std::shared_ptr<utils::TraceClass> Trace) OVERRIDE;
 
  private:
   std::vector<Node> Writers;

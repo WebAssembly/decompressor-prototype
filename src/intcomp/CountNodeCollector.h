@@ -22,7 +22,7 @@
 
 #include "intcomp/CompressionFlags.h"
 #include "intcomp/IntCountNode.h"
-#include "sexp/TraceSexp.h"
+#include "utils/Trace.h"
 
 namespace wasm {
 
@@ -40,7 +40,7 @@ class CountNodeCollector {
   uint64_t NumNodesReported;
   uint64_t CountCutoff;
   uint64_t WeightCutoff;
-  std::shared_ptr<filt::TraceClassSexp> Trace;
+  std::shared_ptr<utils::TraceClass> Trace;
 
   explicit CountNodeCollector(CountNode::RootPtr Root)
       : Root(Root),
@@ -71,8 +71,9 @@ class CountNodeCollector {
   void clear();
   void collectNode(CountNode::Ptr Nd, CollectionFlags Flags);
 
-  void setTrace(std::shared_ptr<filt::TraceClassSexp> Trace);
-  filt::TraceClassSexp& getTrace();
+  void setTrace(std::shared_ptr<utils::TraceClass> Trace);
+  std::shared_ptr<utils::TraceClass> getTracePtr();
+  utils::TraceClass& getTrace() { return *getTracePtr(); }
   bool hasTrace() { return bool(Trace); }
   void describe(FILE* Out);
 };
