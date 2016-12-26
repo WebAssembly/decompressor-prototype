@@ -238,6 +238,14 @@ SymbolTable::~SymbolTable() {
   deallocateNodes();
 }
 
+const FileHeaderNode* SymbolTable::getInstalledFileHeader() const {
+  if (Root)
+    if (const auto* File = dyn_cast<FileNode>(Root))
+      if (const auto* Header = dyn_cast<FileHeaderNode>(File->getKid(0)))
+        return Header;
+  return nullptr;
+}
+
 void SymbolTable::deallocateNodes() {
   for (Node* Nd : *Allocated)
     delete Nd;

@@ -62,10 +62,6 @@ class IntReader : public Reader {
   const char* getDefaultTraceName() const OVERRIDE;
   void describePeekPosStack(FILE* Out) OVERRIDE;
 
-#if 0
-  bool fastReadUntil(size_t Eob);
-#endif
-
   decode::IntType read();
 
   bool canProcessMoreInputNow() OVERRIDE;

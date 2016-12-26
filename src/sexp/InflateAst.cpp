@@ -92,6 +92,17 @@ bool InflateAst::buildBinary() {
 }
 
 template <class T>
+bool InflateAst::buildTernary() {
+  Values.pop();
+  Node* Arg3 = Asts.popValue();
+  Node* Arg2 = Asts.popValue();
+  Node* Arg1 = Asts.popValue();
+  Asts.push(Symtab->create<T>(Arg1, Arg2, Arg3));
+  TRACE_SEXP("Ast", AstsTop);
+  return true;
+}
+
+template <class T>
 bool InflateAst::buildNary() {
   return appendArgs(Symtab->create<T>());
 }
@@ -179,20 +190,44 @@ bool InflateAst::writeHeaderValue(decode::IntType Value,
 
 bool InflateAst::applyOp(IntType Op) {
   switch (NodeType(Op)) {
+    case OpAnd:
+      return buildBinary<AndNode>();
+    case OpBitwiseAnd:
+      return buildBinary<BitwiseAndNode>();
+    case OpBitwiseOr:
+      return buildBinary<BitwiseOrNode>();
+    case OpBitwiseNegate:
+      return buildUnary<BitwiseNegateNode>();
+    case OpBitwiseXor:
+      return buildBinary<BitwiseXorNode>();
     case OpBlock:
       return buildUnary<BlockNode>();
     case OpCallback:
       return buildUnary<CallbackNode>();
     case OpCase:
       return buildBinary<CaseNode>();
+    case OpConvert:
+      return buildTernary<ConvertNode>();
     case OpDefine:
       return buildNary<DefineNode>();
     case OpError:
       return buildNullary<ErrorNode>();
     case OpEval:
       return buildNary<EvalNode>();
+    case OpFile:
+      return buildBinary<FileNode>();
+    case OpFileHeader:
+      return buildNary<FileHeaderNode>();
+    case OpFilter:
+      return buildNary<FilterNode>();
     case OpIfThen:
       return buildBinary<IfThenNode>();
+    case OpIfThenElse:
+      return buildTernary<IfThenElseNode>();
+    case OpLastRead:
+      return buildNullary<LastReadNode>();
+    case OpLastSymbolIs:
+      return buildUnary<LastSymbolIsNode>();
     case OpLiteralDef:
       return buildBinary<LiteralDefNode>();
     case OpLiteralUse:
@@ -201,8 +236,18 @@ bool InflateAst::applyOp(IntType Op) {
       return buildBinary<LoopNode>();
     case OpLoopUnbounded:
       return buildUnary<LoopUnboundedNode>();
+    case OpMap:
+      return buildNary<MapNode>();
+    case OpNot:
+      return buildUnary<NotNode>();
+    case OpOr:
+      return buildBinary<OrNode>();
+    case OpPeek:
+      return buildUnary<PeekNode>();
     case OpRead:
       return buildUnary<ReadNode>();
+    case OpRename:
+      return buildBinary<RenameNode>();
     case OpSection:
       // Note: Bottom element is for file.
       TRACE(size_t, "Ast stack size", Asts.size());
@@ -215,6 +260,8 @@ bool InflateAst::applyOp(IntType Op) {
       return buildBinary<FileNode>();
     case OpSequence:
       return buildNary<SequenceNode>();
+    case OpSet:
+      return buildBinary<SetNode>();
     case OpSwitch:
       return buildNary<SwitchNode>();
     case OpSymbol: {
@@ -227,6 +274,14 @@ bool InflateAst::applyOp(IntType Op) {
       Asts.push(Sym);
       return true;
     }
+    case OpUndefine:
+      return buildUnary<UndefineNode>();
+    case OpUnknownSection:
+      return buildUnary<UnknownSectionNode>();
+    case OpVoid:
+      return buildNullary<VoidNode>();
+    case OpWrite:
+      return buildNary<WriteNode>();
     default:
       return failWriteActionMalformed();
   }
@@ -292,9 +347,21 @@ bool InflateAst::writeAction(const filt::CallbackNode* Action) {
       }
       Node* Nd = nullptr;
       switch (Values.popValue()) {
-        case OpUint8:
-          Nd = IsDefault ? Symtab->getUint8Definition()
-                         : Symtab->getUint8Definition(Value, Format);
+        case OpI32Const:
+          Nd = IsDefault ? Symtab->getI32ConstDefinition()
+                         : Symtab->getI32ConstDefinition(Value, Format);
+          break;
+        case OpI64Const:
+          Nd = IsDefault ? Symtab->getI64ConstDefinition()
+                         : Symtab->getI64ConstDefinition(Value, Format);
+          break;
+        case OpLocal:
+          Nd = IsDefault ? Symtab->getLocalDefinition()
+                         : Symtab->getLocalDefinition(Value, Format);
+          break;
+        case OpLocals:
+          Nd = IsDefault ? Symtab->getLocalsDefinition()
+                         : Symtab->getLocalsDefinition(Value, Format);
           break;
         case OpParam:
           Nd = IsDefault ? Symtab->getParamDefinition()
@@ -307,6 +374,26 @@ bool InflateAst::writeAction(const filt::CallbackNode* Action) {
         case OpU8Const:
           Nd = IsDefault ? Symtab->getU8ConstDefinition()
                          : Symtab->getU8ConstDefinition(Value, Format);
+          break;
+        case OpU32Const:
+          Nd = IsDefault ? Symtab->getU32ConstDefinition()
+                         : Symtab->getU32ConstDefinition(Value, Format);
+          break;
+        case OpU64Const:
+          Nd = IsDefault ? Symtab->getU64ConstDefinition()
+                         : Symtab->getU64ConstDefinition(Value, Format);
+          break;
+        case OpUint8:
+          Nd = IsDefault ? Symtab->getUint8Definition()
+                         : Symtab->getUint8Definition(Value, Format);
+          break;
+        case OpUint32:
+          Nd = IsDefault ? Symtab->getUint32Definition()
+                         : Symtab->getUint32Definition(Value, Format);
+          break;
+        case OpUint64:
+          Nd = IsDefault ? Symtab->getUint64Definition()
+                         : Symtab->getUint64Definition(Value, Format);
           break;
         case OpVarint32:
           Nd = IsDefault ? Symtab->getVarint32Definition()

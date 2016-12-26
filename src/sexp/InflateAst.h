@@ -66,7 +66,6 @@ class InflateAst : public interp::Writer {
   utils::ValueStack<decode::IntType> Values;
   Node* AstsTop;
   utils::ValueStack<Node*> Asts;
-  // TODO(karlschimpe) Can we merge the following two fields
   size_t SymbolNameSize;
   size_t ValueMarker;
   size_t AstMarkersTop;
@@ -84,6 +83,8 @@ class InflateAst : public interp::Writer {
   bool buildUnary();
   template <class T>
   bool buildBinary();
+  template <class T>
+  bool buildTernary();
   template <class T>
   bool buildNary();
   bool failBuild(const char* Method, std::string Message);

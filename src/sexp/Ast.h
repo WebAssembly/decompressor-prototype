@@ -52,6 +52,7 @@ namespace wasm {
 
 namespace filt {
 
+class FileHeaderNode;
 class IntegerNode;
 class Node;
 class SymbolNode;
@@ -180,6 +181,7 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
   // Install definitions in tree defined by root.
   void install(Node* Root);
   const Node* getInstalledRoot() const { return Root; }
+  const FileHeaderNode* getInstalledFileHeader() const;
   void clear() { SymbolMap.clear(); }
   int getNextCreationIndex() { return ++NextCreationIndex; }
 
