@@ -25,7 +25,6 @@
 #include "interp/IntStream.h"
 #include "interp/StreamReader.h"
 #include "interp/StreamWriter.h"
-#include "sexp/TraceSexp.h"
 
 namespace wasm {
 
@@ -63,9 +62,9 @@ class IntCompressor FINAL {
     // TODO: Don't force creation of trace object if not needed.
     return getTrace().getTraceProgress();
   }
-  void setTrace(std::shared_ptr<filt::TraceClassSexp> Trace);
-  filt::TraceClassSexp& getTrace() { return *getTracePtr(); }
-  std::shared_ptr<filt::TraceClassSexp> getTracePtr();
+  void setTrace(std::shared_ptr<utils::TraceClass> Trace);
+  utils::TraceClass& getTrace() { return *getTracePtr(); }
+  std::shared_ptr<utils::TraceClass> getTracePtr();
   bool hasTrace() { return bool(Trace); }
 
   void setCountCutoff(uint64_t NewCutoff) { CountCutoff = NewCutoff; }
@@ -86,7 +85,7 @@ class IntCompressor FINAL {
   std::shared_ptr<filt::SymbolTable> Symtab;
   std::shared_ptr<interp::IntStream> Contents;
   std::shared_ptr<interp::IntStream> IntOutput;
-  std::shared_ptr<filt::TraceClassSexp> Trace;
+  std::shared_ptr<utils::TraceClass> Trace;
   uint64_t CountCutoff;
   uint64_t WeightCutoff;
   size_t LengthLimit;

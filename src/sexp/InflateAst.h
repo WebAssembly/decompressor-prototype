@@ -71,7 +71,7 @@ class InflateAst : public interp::Writer {
   size_t AstMarkersTop;
   utils::ValueStack<size_t> AstMarkers;
 
-  std::shared_ptr<TraceClassSexp> Trace;
+  std::shared_ptr<utils::TraceClass> Trace;
 
   virtual const char* getDefaultTraceName() const;
 

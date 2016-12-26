@@ -22,17 +22,18 @@
 namespace wasm {
 
 using namespace filt;
+using namespace utils;
 
 namespace intcomp {
 
-void CountNodeCollector::setTrace(std::shared_ptr<TraceClassSexp> NewTrace) {
+void CountNodeCollector::setTrace(std::shared_ptr<TraceClass> NewTrace) {
   Trace = NewTrace;
 }
 
-filt::TraceClassSexp& CountNodeCollector::getTrace() {
+std::shared_ptr<TraceClass> CountNodeCollector::getTracePtr() {
   if (!Trace)
-    setTrace(std::make_shared<TraceClassSexp>("IntCompress"));
-  return *Trace;
+    setTrace(std::make_shared<TraceClass>("IntCompress"));
+  return Trace;
 }
 
 void CountNodeCollector::clearHeap() {

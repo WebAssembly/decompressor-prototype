@@ -24,11 +24,17 @@
 #include "stream/ReadCursor.h"
 #include "interp/Interpreter.def"
 #include "interp/ReadStream.h"
-#include "sexp/TraceSexp.h"
 #include "interp/Writer.h"
+#include "utils/Trace.h"
 #include "utils/ValueStack.h"
 
 namespace wasm {
+
+namespace filt {
+
+class TextWriter;
+
+} // end of namespace filt.
 
 namespace interp {
 
@@ -90,9 +96,9 @@ class Reader {
   // Returns non-null context handler if applicable.
   void setTraceProgress(bool NewValue);
   virtual utils::TraceClass::ContextPtr getTraceContext();
-  virtual void setTrace(std::shared_ptr<filt::TraceClassSexp> Trace);
-  std::shared_ptr<filt::TraceClassSexp> getTracePtr();
-  filt::TraceClassSexp& getTrace() { return *getTracePtr(); }
+  virtual void setTrace(std::shared_ptr<utils::TraceClass> Trace);
+  std::shared_ptr<utils::TraceClass> getTracePtr();
+  utils::TraceClass& getTrace() { return *getTracePtr(); }
 
   enum class SectionCode : uint32_t {
 #define X(code, value) code = value,
@@ -206,7 +212,7 @@ class Reader {
   // Holds the method to call (i.e. dispatch) if code expects a method to be
   // provided by the caller.
   Method DispatchedMethod;
-  std::shared_ptr<filt::TraceClassSexp> Trace;
+  std::shared_ptr<utils::TraceClass> Trace;
 
   // The stack of called methods.
   CallFrame Frame;

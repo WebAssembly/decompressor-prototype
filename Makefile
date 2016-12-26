@@ -96,8 +96,7 @@ SEXP_SRCS_BASE = \
 	Ast.cpp \
 	FlattenAst.cpp \
 	InflateAst.cpp \
-	TextWriter.cpp \
-	TraceSexp.cpp
+	TextWriter.cpp
 
 SEXP_SRCS = $(SEXP_SRCS_BASE) Ast-boot.cpp
 SEXP_SRCS_BOOT = $(SEXP_SRCS_BASE)
@@ -175,10 +174,7 @@ INTERP_SRCS = \
 	StreamWriter.cpp \
 	TeeWriter.cpp \
 	Writer.cpp \
-	WriteStream.cpp \
-	TraceSexpReader.cpp \
-	TraceSexpReaderWriter.cpp \
-	TraceSexpWriter.cpp
+	WriteStream.cpp
 
 INTERP_OBJS = $(patsubst %.cpp, $(INTERP_OBJDIR)/%.o, $(INTERP_SRCS))
 INTERP_OBJS_BOOT = $(patsubst %.cpp, $(INTERP_OBJDIR_BOOT)/%.o, $(INTERP_SRCS))

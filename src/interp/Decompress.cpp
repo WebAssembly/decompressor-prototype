@@ -24,6 +24,7 @@ namespace wasm {
 
 using namespace decode;
 using namespace filt;
+using namespace utils;
 
 namespace interp {
 
@@ -52,7 +53,7 @@ struct Decompressor {
   int32_t getOutputSize() {
     return OutputPipe.getOutput()->fillSize() - OutputPos->getCurByteAddress();
   }
-  TraceClassSexp& getTrace() { return Interp->getTrace(); }
+  TraceClass& getTrace() { return Interp->getTrace(); }
   void setTraceProgress(bool NewValue) { Interp->setTraceProgress(NewValue); }
 
  private:

@@ -25,6 +25,7 @@ namespace wasm {
 
 using namespace decode;
 using namespace interp;
+using namespace utils;
 
 namespace filt {
 
@@ -60,7 +61,7 @@ void FlattenAst::setTraceProgress(bool NewValue) {
   getTrace().setTraceProgress(NewValue);
 }
 
-void FlattenAst::setTrace(std::shared_ptr<TraceClassSexp> NewTrace) {
+void FlattenAst::setTrace(std::shared_ptr<TraceClass> NewTrace) {
   Trace = NewTrace;
   if (!Trace)
     return;
@@ -68,9 +69,9 @@ void FlattenAst::setTrace(std::shared_ptr<TraceClassSexp> NewTrace) {
   TRACE_MESSAGE("Trace started");
 }
 
-std::shared_ptr<TraceClassSexp> FlattenAst::getTracePtr() {
+std::shared_ptr<TraceClass> FlattenAst::getTracePtr() {
   if (!Trace) {
-    setTrace(std::make_shared<TraceClassSexp>("FlattenAst"));
+    setTrace(std::make_shared<TraceClass>("FlattenAst"));
   }
   return Trace;
 }
@@ -91,7 +92,7 @@ void FlattenAst::flattenNode(const Node* Nd) {
   if (HasErrors)
     return;
   TRACE_METHOD("flattenNode");
-  TRACE_SEXP(nullptr, Nd);
+  TRACE(node_ptr, nullptr, Nd);
   switch (NodeType Opcode = Nd->getType()) {
     case NO_SUCH_NODETYPE:
     case OpUnknownSection: {
@@ -155,7 +156,7 @@ void FlattenAst::flattenNode(const Node* Nd) {
     }
     case OpFileHeader: {
       for (const auto* Kid : *Nd) {
-        TRACE_SEXP("Const", Kid);
+        TRACE(node_ptr, "Const", Kid);
         const auto* Const = dyn_cast<IntegerNode>(Kid);
         if (Const == nullptr) {
           reportError("Unrecognized literal constant", Nd);

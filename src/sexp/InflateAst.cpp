@@ -69,7 +69,7 @@ template <class T>
 bool InflateAst::buildNullary() {
   Values.pop();
   Asts.push(Symtab->create<T>());
-  TRACE_SEXP("Ast", AstsTop);
+  TRACE(node_ptr, "Ast", AstsTop);
   return true;
 }
 
@@ -77,7 +77,7 @@ template <class T>
 bool InflateAst::buildUnary() {
   Values.pop();
   Asts.push(Symtab->create<T>(Asts.popValue()));
-  TRACE_SEXP("Ast", AstsTop);
+  TRACE(node_ptr, "Ast", AstsTop);
   return true;
 }
 
@@ -87,7 +87,7 @@ bool InflateAst::buildBinary() {
   Node* Arg2 = Asts.popValue();
   Node* Arg1 = Asts.popValue();
   Asts.push(Symtab->create<T>(Arg1, Arg2));
-  TRACE_SEXP("Ast", AstsTop);
+  TRACE(node_ptr, "Ast", AstsTop);
   return true;
 }
 
@@ -98,7 +98,7 @@ bool InflateAst::buildTernary() {
   Node* Arg2 = Asts.popValue();
   Node* Arg1 = Asts.popValue();
   Asts.push(Symtab->create<T>(Arg1, Arg2, Arg3));
-  TRACE_SEXP("Ast", AstsTop);
+  TRACE(node_ptr, "Ast", AstsTop);
   return true;
 }
 
@@ -114,7 +114,7 @@ bool InflateAst::appendArgs(Node* Nd) {
     Nd->append(Asts[i]);
   for (size_t i = 0; i < NumArgs; ++i)
     Asts.pop();
-  TRACE_SEXP("Ast", Nd);
+  TRACE(node_ptr, "Ast", Nd);
   Asts.push(Nd);
   return true;
 }
@@ -270,7 +270,7 @@ bool InflateAst::applyOp(IntType Op) {
       if (Sym == nullptr) {
         return failWriteActionMalformed();
       }
-      TRACE_SEXP("Ast", Sym);
+      TRACE(node_ptr, "Ast", Sym);
       Asts.push(Sym);
       return true;
     }
@@ -414,7 +414,7 @@ bool InflateAst::writeAction(const filt::CallbackNode* Action) {
         default:
           return failWriteActionMalformed();
       }
-      TRACE_SEXP("Ast", Nd);
+      TRACE(node_ptr, "Ast", Nd);
       Asts.push(Nd);
       return true;
     }

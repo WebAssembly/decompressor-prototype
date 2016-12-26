@@ -21,10 +21,17 @@
 namespace wasm {
 
 using namespace filt;
+using namespace utils;
 
 namespace interp {
 
-void Interpreter::setTrace(std::shared_ptr<TraceClassSexp> NewTrace) {
+void Interpreter::setTraceProgress(bool NewValue) {
+  if (!NewValue && !Trace)
+    return;
+  return getTrace().setTraceProgress(NewValue);
+}
+
+void Interpreter::setTrace(std::shared_ptr<TraceClass> NewTrace) {
   Trace = NewTrace;
   if (Trace) {
     Input.setTrace(Trace);
@@ -32,10 +39,10 @@ void Interpreter::setTrace(std::shared_ptr<TraceClassSexp> NewTrace) {
   }
 }
 
-TraceClassSexp& Interpreter::getTrace() {
+std::shared_ptr<TraceClass> Interpreter::getTracePtr() {
   if (!Trace)
-    setTrace(std::make_shared<TraceClassSexp>("InterpSexp"));
-  return *Trace;
+    setTrace(std::make_shared<TraceClass>("InterpSexp"));
+  return Trace;
 }
 
 }  // end of namespace interp.

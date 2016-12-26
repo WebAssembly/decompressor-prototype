@@ -42,10 +42,10 @@ class FlattenAst {
 
   void setFreezeEofOnDestruct(bool Value) { FreezeEofOnDestruct = Value; }
 
-  void setTrace(std::shared_ptr<filt::TraceClassSexp> Trace);
+  void setTrace(std::shared_ptr<utils::TraceClass> Trace);
   void setTraceProgress(bool NewValue);
-  std::shared_ptr<filt::TraceClassSexp> getTracePtr();
-  filt::TraceClassSexp& getTrace() { return *getTracePtr(); }
+  std::shared_ptr<utils::TraceClass> getTracePtr();
+  utils::TraceClass& getTrace() { return *getTracePtr(); }
 
  private:
   std::shared_ptr<interp::IntWriter> Writer;
@@ -53,7 +53,7 @@ class FlattenAst {
   SectionSymbolTable SectionSymtab;
   bool FreezeEofOnDestruct;
   bool HasErrors;
-  std::shared_ptr<filt::TraceClassSexp> Trace;
+  std::shared_ptr<utils::TraceClass> Trace;
 
   void flattenNode(const Node* Nd);
   void reportError(const char* Message);
