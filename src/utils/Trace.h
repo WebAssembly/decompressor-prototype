@@ -91,7 +91,7 @@ namespace wasm {
 
 namespace filt {
 class Node;
-} // end of namespace filt
+}  // end of namespace filt
 
 namespace utils {
 

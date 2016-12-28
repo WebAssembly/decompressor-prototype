@@ -102,57 +102,48 @@ int main(int Argc, const char* Argv[]) {
     ArgsParser Args("Converts compression algorithm from text to binary");
 
     ArgsParser::OptionalCharstring AlgorithmFlag(AlgorithmFilename);
-    Args.add(AlgorithmFlag
-             .setShortName('a')
-             .setOptionName("ALG")
-             .setDescription("Use algorithm to parse text file"));
+    Args.add(AlgorithmFlag.setShortName('a')
+                 .setOptionName("ALG")
+                 .setDescription("Use algorithm to parse text file"));
 
     ArgsParser::Bool ExpectFailFlag(ExpectExitFail);
-    ExpectFailFlag
-        .setDefault(false)
+    ExpectFailFlag.setDefault(false)
         .setLongName("expect-fail")
         .setDescription("Succeed on failure/fail on success");
     Args.add(ExpectFailFlag);
 
     ArgsParser::Bool MinimizeBlockFlag(MinimizeBlockSize);
-    Args.add(MinimizeBlockFlag
-             .setShortName('m')
-             .setDescription("Minimize size in binary file "
-                             "(note: runs slower)"));
-
+    Args.add(MinimizeBlockFlag.setShortName('m').setDescription(
+        "Minimize size in binary file "
+        "(note: runs slower)"));
 
     ArgsParser::RequiredCharstring InputFlag(InputFilename);
-    Args.add(InputFlag
-             .setOptionName("INPUT")
-             .setDescription("Text file to convert to binary"));
+    Args.add(InputFlag.setOptionName("INPUT")
+                 .setDescription("Text file to convert to binary"));
 
     ArgsParser::OptionalCharstring OutputFlag(OutputFilename);
-    Args.add(OutputFlag
-             .setShortName('o')
-             .setOptionName("OUTPUT")
-             .setDescription("Generated binary file"));
+    Args.add(OutputFlag.setShortName('o')
+                 .setOptionName("OUTPUT")
+                 .setDescription("Generated binary file"));
 
     ArgsParser::Bool VerboseFlag(Verbose);
-    Args.add(VerboseFlag
-             .setShortName('v')
-             .setLongName("verbose")
-             .setDescription("Show progress of writing binary file"));
+    Args.add(VerboseFlag.setShortName('v')
+                 .setLongName("verbose")
+                 .setDescription("Show progress of writing binary file"));
 
     ArgsParser::Bool TraceFlattenerFlag(TraceFlattener);
-    Args.add(TraceFlattenerFlag
-             .setLongName("trace=flattener")
-             .setDescription("Trace how algorithms are flattened"));
+    Args.add(TraceFlattenerFlag.setLongName("trace=flattener")
+                 .setDescription("Trace how algorithms are flattened"));
 
     ArgsParser::Bool TraceWriteFlag(TraceWrite);
-    Args.add(TraceWriteFlag
-             .setLongName("trace=write")
-             .setDescription("Trace writing of binary file"));
+    Args.add(TraceWriteFlag.setLongName("trace=write")
+                 .setDescription("Trace writing of binary file"));
 
     ArgsParser::Bool TraceTreeFlag(TraceTree);
-    Args.add(TraceTreeFlag
-             .setLongName("trace=tree")
-             .setDescription("Trace tree being written while writing "
-                             "(implies --trace=write)"));
+    Args.add(TraceTreeFlag.setLongName("trace=tree")
+                 .setDescription(
+                     "Trace tree being written while writing "
+                     "(implies --trace=write)"));
 
     switch (Args.parse(Argc, Argv)) {
       case ArgsParser::State::Good:

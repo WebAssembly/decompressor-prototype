@@ -68,7 +68,6 @@ class Interpreter FINAL {
     Output.setMinimizeBlockSize(NewValue);
   }
 
-
   void setTraceProgress(bool NewValue);
   void setTrace(std::shared_ptr<utils::TraceClass> Trace);
   std::shared_ptr<utils::TraceClass> getTracePtr();

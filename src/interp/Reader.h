@@ -34,7 +34,7 @@ namespace filt {
 
 class TextWriter;
 
-} // end of namespace filt.
+}  // end of namespace filt.
 
 namespace interp {
 
