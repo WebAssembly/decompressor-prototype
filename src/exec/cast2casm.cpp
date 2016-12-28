@@ -24,7 +24,9 @@
 #include "sexp-parser/Driver.h"
 #include "stream/FileWriter.h"
 #include "stream/WriteBackedQueue.h"
+#include "utils/ArgsParse.h"
 
+#include <memory>
 #include <unistd.h>
 
 using namespace wasm;
@@ -38,8 +40,9 @@ namespace {
 const char* InputFilename = "-";
 const char* OutputFilename = "-";
 const char* AlgorithmFilename = "/dev/null";
-int Verbose = 0;
 
+bool TraceParser = false;
+bool TraceLexer = false;
 
 std::shared_ptr<RawStream> getOutput() {
   if (OutputFilename == std::string("-")) {
@@ -51,10 +54,10 @@ std::shared_ptr<RawStream> getOutput() {
 std::shared_ptr<SymbolTable> parseFile(const char* Filename) {
   auto Symtab = std::make_shared<SymbolTable>();
   Driver Parser(Symtab);
-  if (Verbose >= 2) {
-    Parser.setTraceParsing(Verbose >= 2);
-    Parser.setTraceLexing(Verbose >= 3);
-  }
+  if (TraceParser)
+    Parser.setTraceParsing(true);
+  if (TraceLexer)
+    Parser.setTraceLexing(true);
   if (!Parser.parse(Filename)) {
     fprintf(stderr, "Unable to parse: %s\n", Filename);
     Symtab.reset();
@@ -62,6 +65,7 @@ std::shared_ptr<SymbolTable> parseFile(const char* Filename) {
   return Symtab;
 }
 
+#if 0
 void usage(const char* AppName) {
   fprintf(stderr, "usage: %s [options] FILE\n", AppName);
   fprintf(stderr, "\n");
@@ -84,68 +88,96 @@ void usage(const char* AppName) {
     fprintf(stderr, "\t\t\t-v -v -v : Add tracing of lexing s-expressions.\n");
   }
 }
-
+#endif
 
 }  // end of anonymous namespace
 
-int main(int Argc, char* Argv[]) {
+int main(int Argc, const char* Argv[]) {
   bool MinimizeBlockSize = false;
-  bool InputSpecified = false;
-  bool OutputSpecified = false;
-  bool AlgorithmSpecified = false;
-  for (int i = 1; i < Argc; ++i) {
-    if (Argv[i] == std::string("--expect-fail")) {
-      ExpectExitFail = true;
-    } else if (Argv[i] == std::string("-a")) {
-      if (++i == Argc) {
-        fprintf(stderr, "No file specified after -a option\n");
-        usage(Argv[0]);
+  bool Verbose = false;
+  bool TraceFlattener = false;
+  bool TraceWrite = false;
+  bool TraceTree = false;
+  {
+    ArgsParser Args("Converts compression algorithm from text to binary");
+
+    ArgsParser::OptionalCharstring AlgorithmFlag(AlgorithmFilename);
+    Args.add(AlgorithmFlag
+             .setShortName('a')
+             .setOptionName("ALG")
+             .setDescription("Use algorithm to parse text file"));
+
+    ArgsParser::Bool ExpectFailFlag(ExpectExitFail);
+    ExpectFailFlag
+        .setDefault(false)
+        .setLongName("expect-fail")
+        .setDescription("Succeed on failure/fail on success");
+    Args.add(ExpectFailFlag);
+
+    ArgsParser::Bool MinimizeBlockFlag(MinimizeBlockSize);
+    Args.add(MinimizeBlockFlag
+             .setShortName('m')
+             .setDescription("Minimize size in binary file "
+                             "(note: runs slower)"));
+
+
+    ArgsParser::RequiredCharstring InputFlag(InputFilename);
+    Args.add(InputFlag
+             .setOptionName("INPUT")
+             .setDescription("Text file to convert to binary"));
+
+    ArgsParser::OptionalCharstring OutputFlag(OutputFilename);
+    Args.add(OutputFlag
+             .setShortName('o')
+             .setOptionName("OUTPUT")
+             .setDescription("Generated binary file"));
+
+    ArgsParser::Bool VerboseFlag(Verbose);
+    Args.add(VerboseFlag
+             .setShortName('v')
+             .setLongName("verbose")
+             .setDescription("Show progress of writing binary file"));
+
+    ArgsParser::Bool TraceFlattenerFlag(TraceFlattener);
+    Args.add(TraceFlattenerFlag
+             .setLongName("trace=flattener")
+             .setDescription("Trace how algorithms are flattened"));
+
+    ArgsParser::Bool TraceWriteFlag(TraceWrite);
+    Args.add(TraceWriteFlag
+             .setLongName("trace=write")
+             .setDescription("Trace writing of binary file"));
+
+    ArgsParser::Bool TraceTreeFlag(TraceTree);
+    Args.add(TraceTreeFlag
+             .setLongName("trace=tree")
+             .setDescription("Trace tree being written while writing "
+                             "(implies --trace=write)"));
+
+    switch (Args.parse(Argc, Argv)) {
+      case ArgsParser::State::Good:
+        break;
+      case ArgsParser::State::Usage:
+        return exit_status(EXIT_SUCCESS);
+      default:
+        fprintf(stderr, "Unable to parse command line arguments!\n");
         return exit_status(EXIT_FAILURE);
-      }
-      if (AlgorithmSpecified) {
-        fprintf(stderr, "Option -a can't be repeated\n");
-        usage(Argv[0]);
-        return exit_status(EXIT_FAILURE);
-      }
-      AlgorithmFilename = Argv[i];
-      AlgorithmSpecified = true;
-    } else if (Argv[i] == std::string("-h") ||
-               Argv[i] == std::string("--help")) {
-      usage(Argv[0]);
-      return exit_status(EXIT_SUCCESS);
-    } else if (Argv[i] == std::string("-m")) {
-      MinimizeBlockSize = true;
-    } else if (Argv[i] == std::string("-o")) {
-      if (++i >= Argc) {
-        fprintf(stderr, "No file specified after -o option\n");
-        usage(Argv[0]);
-        return exit_status(EXIT_FAILURE);
-      }
-      if (OutputSpecified) {
-        fprintf(stderr, "-i <output> option can't be repeated\n");
-        usage(Argv[0]);
-        return exit_status(EXIT_FAILURE);
-      }
-      OutputFilename = Argv[i];
-      OutputSpecified = true;
-    } else if (isDebug() && (Argv[i] == std::string("-v") ||
-                             (Argv[i] == std::string("--verbose")))) {
-      ++Verbose;
-    } else if (!InputSpecified) {
-      InputFilename = Argv[i];
-      InputSpecified = true;
-    } else {
-      fprintf(stderr, "Unrecognized option: %s\n", Argv[i]);
-      usage(Argv[0]);
-      return exit_status(EXIT_FAILURE);
     }
+
+    // Be sure to update implications!
+    if (TraceTree)
+      TraceWrite = true;
   }
   std::shared_ptr<SymbolTable> InputSymtab = parseFile(InputFilename);
   if (!InputSymtab)
     return exit_status(EXIT_FAILURE);
   std::shared_ptr<IntStream> IntSeq = std::make_shared<IntStream>();
   FlattenAst Flattener(IntSeq, InputSymtab);
-  Flattener.setTraceProgress(Verbose >= 1);
+  if (TraceFlattener) {
+    auto Trace = std::make_shared<TraceClass>("flattener");
+    Flattener.setTrace(Trace);
+    Flattener.setTraceProgress(true);
+  }
   if (!Flattener.flatten()) {
     fprintf(stderr, "Problems flattening CAST ast!\n");
     return exit_status(EXIT_FAILURE);
@@ -160,7 +192,7 @@ int main(int Argc, char* Argv[]) {
   }
   auto BackedOutput = std::make_shared<WriteBackedQueue>(Output);
   std::shared_ptr<Writer> Writer = std::make_shared<StreamWriter>(BackedOutput);
-  if (Verbose >= 1) {
+  if (TraceTree) {
     auto Tee = std::make_shared<TeeWriter>();
     Tee->add(std::make_shared<InflateAst>(), false, true);
     Tee->add(Writer, true, false);
@@ -168,8 +200,8 @@ int main(int Argc, char* Argv[]) {
   }
   Writer->setMinimizeBlockSize(MinimizeBlockSize);
   auto Reader = std::make_shared<IntReader>(IntSeq, *Writer, AlgSymtab);
-  if (Verbose >= 1) {
-    auto Trace = std::make_shared<TraceClass>("writeFile");
+  if (TraceWrite) {
+    auto Trace = std::make_shared<TraceClass>("write");
     Reader->setTrace(Trace);
     Writer->setTrace(Trace);
     Reader->setTraceProgress(true);

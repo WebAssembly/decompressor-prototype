@@ -26,6 +26,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <memory>
 #include <string>
 
 namespace wasm {
@@ -127,6 +128,16 @@ struct Utils {
 };
 
 }  // end of namespace decode
+
+namespace utils {
+
+template<typename T, typename... Args>
+std::unique_ptr<T> make_unique(Args&&... args)
+{
+    return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+}
+
+}  // end of namespace utils.
 
 }  // end of namespace wasm
 
