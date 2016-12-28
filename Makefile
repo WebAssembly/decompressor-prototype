@@ -210,6 +210,7 @@ BUILD_EXECDIR = $(BUILDDIR)/bin
 BUILD_EXECDIR_BOOT = $(BUILDDIR_BOOT)/bin
 
 EXEC_SRCS_BASE = \
+	casm2cast.cpp \
 	cast2casm.cpp \
 	compress-int.cpp \
 	decompress.cpp \

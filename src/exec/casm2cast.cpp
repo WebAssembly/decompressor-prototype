@@ -14,20 +14,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Converts textual algorithm into binary file form.
+// Converts binary algorithm file back to textual form.
 
-#include "interp/StreamWriter.h"
-#include "interp/IntReader.h"
-#include "interp/TeeWriter.h"
-#include "sexp/FlattenAst.h"
+#include "interp/StreamReader.h"
 #include "sexp/InflateAst.h"
 #include "sexp/TextWriter.h"
 #include "sexp-parser/Driver.h"
-#include "stream/FileWriter.h"
-#include "stream/WriteBackedQueue.h"
+#include "stream/FileReader.h"
+#include "stream/RawStream.h"
+#include "stream/ReadBackedQueue.h"
 #include "utils/ArgsParse.h"
 
 #include <memory>
+
 #include <unistd.h>
 
 using namespace wasm;
@@ -45,12 +44,36 @@ const char* AlgorithmFilename = "/dev/null";
 bool TraceParser = false;
 bool TraceLexer = false;
 
-std::shared_ptr<RawStream> getOutput() {
-  if (OutputFilename == std::string("-")) {
-    return std::make_shared<FdWriter>(STDOUT_FILENO, false);
+std::shared_ptr<RawStream> getInput() {
+  if (InputFilename == std::string("-")) {
+    return std::make_shared<FdReader>(STDIN_FILENO, false);
   }
-  return std::make_shared<FileWriter>(OutputFilename);
+  return std::make_shared<FileReader>(InputFilename);
 }
+
+class OutputHandler {
+  OutputHandler(const OutputHandler&) = delete;
+  OutputHandler& operator=(const OutputHandler&) = delete;
+
+ public:
+  OutputHandler() : Out(stdout) {
+    if (strcmp("-", OutputFilename) == 0)
+      return;
+    Out = fopen(OutputFilename, "w");
+    if (Out == nullptr) {
+      fprintf(stderr, "Unable to open: %s\n", OutputFilename);
+      exit(exit_status(EXIT_FAILURE));
+    }
+  }
+  ~OutputHandler() {
+    if (Out != stdout)
+      fclose(Out);
+  }
+  FILE* getFile() { return Out; }
+
+ private:
+  FILE* Out;
+};
 
 std::shared_ptr<SymbolTable> parseFile(const char* Filename) {
   auto Symtab = std::make_shared<SymbolTable>();
@@ -69,58 +92,49 @@ std::shared_ptr<SymbolTable> parseFile(const char* Filename) {
 }  // end of anonymous namespace
 
 int main(int Argc, const char* Argv[]) {
-  bool MinimizeBlockSize = false;
   bool Verbose = false;
-  bool TraceFlatten = false;
-  bool TraceWrite = false;
+  bool TraceRead = false;
   bool TraceTree = false;
+
   {
-    ArgsParser Args("Converts compression algorithm from text to binary");
+    ArgsParser Args("Converts compression algorithm from binary fto text");
 
     ArgsParser::RequiredCharstring AlgorithmFlag(AlgorithmFilename);
     Args.add(AlgorithmFlag.setShortName('a')
                  .setOptionName("ALG")
-                 .setDescription("Use algorithm to parse text file"));
+                 .setDescription("Usage algorithm to parse binary file"));
 
     ArgsParser::Bool ExpectFailFlag(ExpectExitFail);
     Args.add(ExpectFailFlag.setDefault(false)
                  .setLongName("expect-fail")
                  .setDescription("Succeed on failure/fail on success"));
 
-    ArgsParser::Bool MinimizeBlockFlag(MinimizeBlockSize);
-    Args.add(MinimizeBlockFlag.setShortName('m').setDescription(
-        "Minimize size in binary file "
-        "(note: runs slower)"));
-
     ArgsParser::RequiredCharstring InputFlag(InputFilename);
     Args.add(InputFlag.setOptionName("INPUT")
-                 .setDescription("Text file to convert to binary"));
+                 .setDescription("BInary file to convert to text"));
 
     ArgsParser::OptionalCharstring OutputFlag(OutputFilename);
     Args.add(OutputFlag.setShortName('o')
                  .setOptionName("OUTPUT")
-                 .setDescription("Generated binary file"));
+                 .setDescription("Generated text file"));
 
     ArgsParser::Bool VerboseFlag(Verbose);
     Args.add(
         VerboseFlag.setToggle(true)
             .setShortName('v')
             .setLongName("verbose")
-            .setDescription("Show progress and tree written to binary file"));
+            .setDescription("Show progress of conversion from binary to text"));
 
-    ArgsParser::Bool TraceFlattenFlag(TraceFlatten);
-    Args.add(TraceFlattenFlag.setLongName("verbose=flatten")
-                 .setDescription("Show how algorithms are flattened"));
-
-    ArgsParser::Bool TraceWriteFlag(TraceWrite);
-    Args.add(TraceWriteFlag.setLongName("verbose=write")
-                 .setDescription("Show how binary file is encoded"));
+    ArgsParser::Bool TraceReadFlag(TraceRead);
+    Args.add(
+        TraceReadFlag.setLongName("verbose=read")
+            .setDescription("Show how tree is constructed from binary file"));
 
     ArgsParser::Bool TraceTreeFlag(TraceTree);
     Args.add(TraceTreeFlag.setLongName("verbose=tree")
                  .setDescription(
-                     "Show tree being written while writing "
-                     "(implies --verbose=write)"));
+                     "Show tree being built while reading"
+                     "(implies --verbose=read)"));
 
     ArgsParser::Bool TraceParserFlag(TraceParser);
     Args.add(TraceParserFlag.setLongName("verbose=parser")
@@ -142,67 +156,42 @@ int main(int Argc, const char* Argv[]) {
         return exit_status(EXIT_FAILURE);
     }
 
-    // Be sure to update implications!
     if (TraceTree)
-      TraceWrite = true;
+      TraceRead = true;
   }
+
   if (Verbose)
-    fprintf(stderr, "Reading input: %s\n", InputFilename);
-  std::shared_ptr<SymbolTable> InputSymtab = parseFile(InputFilename);
-  if (!InputSymtab)
-    return exit_status(EXIT_FAILURE);
-  if (Verbose) {
-    fprintf(stderr, "Read tree:\n");
-    TextWriter Writer;
-    Writer.write(stderr, InputSymtab.get());
-  }
-  std::shared_ptr<IntStream> IntSeq = std::make_shared<IntStream>();
-  FlattenAst Flattener(IntSeq, InputSymtab);
-  if (TraceFlatten) {
-    auto Trace = std::make_shared<TraceClass>("flatten");
-    Flattener.setTrace(Trace);
-    Flattener.setTraceProgress(true);
-  }
-  if (!Flattener.flatten()) {
-    fprintf(stderr, "Problems flattening read tree!\n");
-    return exit_status(EXIT_FAILURE);
-  }
-  if (Verbose)
-    fprintf(stderr, "Reading algorithms file: %s\n", AlgorithmFilename);
+    fprintf(stderr, "Reading algorithm file: %s\n", AlgorithmFilename);
   std::shared_ptr<SymbolTable> AlgSymtab = parseFile(AlgorithmFilename);
   if (!AlgSymtab)
     return exit_status(EXIT_FAILURE);
-  if (Verbose && strcmp(OutputFilename, "-") != 0)
-    fprintf(stderr, "Opening output file: %s\n", OutputFilename);
-  std::shared_ptr<RawStream> Output = getOutput();
-  if (Output->hasErrors()) {
-    fprintf(stderr, "Problems opening output file: %s", OutputFilename);
-    return exit_status(EXIT_FAILURE);
-  }
+
   if (Verbose)
-    fprintf(stderr, "Writing file: %s\n", OutputFilename);
-  auto BackedOutput = std::make_shared<WriteBackedQueue>(Output);
-  std::shared_ptr<Writer> Writer = std::make_shared<StreamWriter>(BackedOutput);
-  if (TraceTree) {
-    auto Tee = std::make_shared<TeeWriter>();
-    Tee->add(std::make_shared<InflateAst>(), false, true, false);
-    Tee->add(Writer, true, false, true);
-    Writer = Tee;
-  }
-  Writer->setMinimizeBlockSize(MinimizeBlockSize);
-  auto Reader = std::make_shared<IntReader>(IntSeq, *Writer, AlgSymtab);
-  if (TraceWrite) {
-    auto Trace = std::make_shared<TraceClass>("write");
+    fprintf(stderr, "Reading input: %s\n", InputFilename);
+
+  auto RawInput = getInput();
+  auto Input = std::make_shared<ReadBackedQueue>(RawInput);
+  InflateAst Inflator;
+  auto StrmReader = std::make_shared<StreamReader>(Input, Inflator, AlgSymtab);
+  if (TraceRead) {
+    auto Trace = std::make_shared<TraceClass>("read");
     Trace->setTraceProgress(true);
-    Reader->setTrace(Trace);
-    Writer->setTrace(Trace);
+    StrmReader->setTrace(Trace);
+    if (TraceTree)
+      Inflator.setTrace(Trace);
   }
-  Reader->useFileHeader(InputSymtab->getInstalledFileHeader());
-  Reader->algorithmStart();
-  Reader->algorithmReadBackFilled();
-  if (Reader->errorsFound()) {
+  StrmReader->algorithmStart();
+  StrmReader->algorithmReadBackFilled();
+  if (StrmReader->errorsFound()) {
     fprintf(stderr, "Problems while reading: %s\n", InputFilename);
     return exit_status(EXIT_FAILURE);
   }
+
+  if (Verbose && strcmp(OutputFilename, "-") != 0)
+    fprintf(stderr, "Writing file: %s\n", OutputFilename);
+
+  OutputHandler Output;
+  TextWriter Writer;
+  Writer.write(Output.getFile(), Inflator.getGeneratedFile());
   return exit_status(EXIT_SUCCESS);
 }
