@@ -51,16 +51,16 @@ int compareNameCh(const char* Name, char Ch) {
 }
 
 constexpr size_t TabWidth = 8;
-constexpr size_t MaxLine = 79; // allow for trailing space character.
+constexpr size_t MaxLine = 79;  // allow for trailing space character.
 
-void endLineIfOver(const size_t TabSize, FILE* Out, size_t &Indent) {
+void endLineIfOver(const size_t TabSize, FILE* Out, size_t& Indent) {
   if (Indent >= TabSize) {
     fputc('\n', Out);
     Indent = 0;
   }
 }
 
-void indentTo(const size_t TabSize, FILE* Out, size_t &Indent) {
+void indentTo(const size_t TabSize, FILE* Out, size_t& Indent) {
   while (Indent < TabSize) {
     fputc(' ', Out);
     ++Indent;
@@ -69,7 +69,8 @@ void indentTo(const size_t TabSize, FILE* Out, size_t &Indent) {
 
 void printDescriptionContinue(const size_t TabSize,
                               FILE* Out,
-                              size_t& Indent, const char* Description) {
+                              size_t& Indent,
+                              const char* Description) {
   const char* Whitespace = " \t\n\0";
   while (Description && *Description != '\0') {
     while (Indent < MaxLine) {
@@ -110,22 +111,25 @@ void printDescriptionContinue(const size_t TabSize,
 
 void printDescription(const size_t TabSize,
                       FILE* Out,
-                      size_t& Indent, const char* Description) {
+                      size_t& Indent,
+                      const char* Description) {
   if (Description && *Description != '\0')
     endLineIfOver(TabSize, Out, Indent);
   printDescriptionContinue(TabSize, Out, Indent, Description);
 }
 
-} // end of anonymous namespace
+}  // end of anonymous namespace
 
 namespace wasm {
 
 namespace utils {
 
-ArgsParser::Arg::~Arg() {}
+ArgsParser::Arg::~Arg() {
+}
 
-void ArgsParser::Arg::describeDefault(FILE* Out, size_t TabSize,
-                                      size_t& Indent)  const {
+void ArgsParser::Arg::describeDefault(FILE* Out,
+                                      size_t TabSize,
+                                      size_t& Indent) const {
 }
 
 int ArgsParser::Arg::compare(const Arg& A) const {
@@ -137,11 +141,11 @@ int ArgsParser::Arg::compare(const Arg& A) const {
 }
 
 ArgsParser::Optional::Optional(charstring Description)
-    : Arg(ArgKind::Optional, Description),
-      ShortName(0),
-      LongName(nullptr) {}
+    : Arg(ArgKind::Optional, Description), ShortName(0), LongName(nullptr) {
+}
 
-ArgsParser::Optional::~Optional() {}
+ArgsParser::Optional::~Optional() {
+}
 
 int ArgsParser::Optional::compare(const Arg& A) const {
   if (isa<Required>(&A))
@@ -157,8 +161,8 @@ int ArgsParser::Optional::compare(const Arg& A) const {
   if (LongName != nullptr && Opt->ShortName != 0)
     return ::compareNameCh(LongName, Opt->ShortName);
 
-  if (ShortName != 0  && Opt->LongName != nullptr)
-    return - ::compareNameCh(Opt->LongName, ShortName);
+  if (ShortName != 0 && Opt->LongName != nullptr)
+    return -::compareNameCh(Opt->LongName, ShortName);
 
   return Arg::compare(A);
 }
@@ -166,13 +170,13 @@ int ArgsParser::Optional::compare(const Arg& A) const {
 int ArgsParser::Optional::compareWithRequired(const Required& R) const {
   charstring ReqName = R.getOptionName();
   if (ReqName == nullptr)
-    return  Arg::compare(R);
+    return Arg::compare(R);
 
   if (LongName != nullptr)
     return compareNames(LongName, ReqName);
 
   if (ShortName != 0)
-    return - ::compareNameCh(ReqName, ShortName);
+    return -::compareNameCh(ReqName, ShortName);
 
   return Arg::compare(R);
 }
@@ -203,7 +207,8 @@ void ArgsParser::Optional::describe(FILE* Out, size_t TabSize) const {
   fputc('\n', Out);
 }
 
-ArgsParser::Bool::~Bool() {}
+ArgsParser::Bool::~Bool() {
+}
 
 bool ArgsParser::Bool::select(charstring OptionValue) {
   // TODO(karlschimpf): All OptionValue to define value?
@@ -211,7 +216,8 @@ bool ArgsParser::Bool::select(charstring OptionValue) {
   return false;
 }
 
-void ArgsParser::Bool::describeDefault(FILE* Out, size_t TabSize,
+void ArgsParser::Bool::describeDefault(FILE* Out,
+                                       size_t TabSize,
                                        size_t& Indent) const {
   printDescriptionContinue(TabSize, Out, Indent, " (default is ");
   printDescriptionContinue(TabSize, Out, Indent,
@@ -219,15 +225,17 @@ void ArgsParser::Bool::describeDefault(FILE* Out, size_t TabSize,
   printDescriptionContinue(TabSize, Out, Indent, ")");
 }
 
-ArgsParser::OptionalCharstring::~OptionalCharstring() {}
+ArgsParser::OptionalCharstring::~OptionalCharstring() {
+}
 
 bool ArgsParser::OptionalCharstring::select(charstring OptionValue) {
   Value = OptionValue;
   return true;
 }
 
-void ArgsParser::OptionalCharstring::
-describeDefault(FILE* Out, size_t TabSize, size_t& Indent) const {
+void ArgsParser::OptionalCharstring::describeDefault(FILE* Out,
+                                                     size_t TabSize,
+                                                     size_t& Indent) const {
   printDescriptionContinue(TabSize, Out, Indent, " (default is ");
   printDescriptionContinue(TabSize, Out, Indent,
                            strlen(DefaultValue) == 0 ? "''" : DefaultValue);
@@ -236,7 +244,7 @@ describeDefault(FILE* Out, size_t TabSize, size_t& Indent) const {
 
 int ArgsParser::Required::compare(const Arg& A) const {
   if (isa<Optional>(A))
-    return - cast<Optional>(&A)->compareWithRequired(*this);
+    return -cast<Optional>(&A)->compareWithRequired(*this);
 
   return Arg::compare(A);
 }
@@ -251,7 +259,8 @@ void ArgsParser::Required::describe(FILE* Out, size_t TabSize) const {
   fputc('\n', Out);
 }
 
-ArgsParser::RequiredCharstring::~RequiredCharstring() {}
+ArgsParser::RequiredCharstring::~RequiredCharstring() {
+}
 
 bool ArgsParser::RequiredCharstring::select(charstring OptionValue) {
   Value = OptionValue;
@@ -416,9 +425,7 @@ void ArgsParser::showUsage() {
   }
   fputs("\nArguments:\n", stderr);
   std::sort(Args.begin(), Args.end(),
-            [](Arg* Arg1, Arg* Arg2) {
-              return Arg1->compare(*Arg2) < 0;
-            });
+            [](Arg* Arg1, Arg* Arg2) { return Arg1->compare(*Arg2) < 0; });
   for (Arg* A : Args) {
     fputc('\n', stderr);
     A->describe(stderr, TabWidth);
