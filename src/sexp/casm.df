@@ -102,7 +102,7 @@
 (define 'kid.list' (params 1)
   (loop
     (seq                       # number of kids.
-      (read (param 0))
+      (param 0)
       (=> 'instruction.begin')
     )
     (eval 'node'))             # kid
@@ -204,7 +204,7 @@
 
 (define 'symbol.table' (params)
   (loop
-    (read (varuint32))
+    (varuint32)
     (eval 'symbol_name')
   )
 )

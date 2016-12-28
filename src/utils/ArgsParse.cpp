@@ -441,13 +441,13 @@ void ArgsParser::parseNextArg() {
     if (!Placement->select(Argument)) {
       fprintf(stderr, "Can't assign option:\n");
       Placement->describe(stderr, TabWidth);
-      showUsage();
+      Status = State::Bad;
       return;
     }
     return;
   }
   fprintf(stderr, "Argument '%s' not understood\n", Argument);
-  showUsage();
+  Status = State::Bad;
   return;
 }
 
@@ -468,8 +468,6 @@ ArgsParser::State ArgsParser::parse(int Argc, const char* Argv[]) {
         Status = State::Bad;
       }
   }
-  if (Status == State::Bad)
-    showUsage();
   return Status;
 }
 
@@ -477,8 +475,8 @@ void ArgsParser::showUsage() {
   Status = State::Usage;
   bool HasOptions = !(Shorts.empty() && Longs.empty());
   size_t Indent = 0;
+  printDescriptionContinue(0, stderr, Indent, "Usage:");
   writeNewline(stderr, Indent);
-  printDescription(0, stderr, Indent, "Usage:");
   writeNewline(stderr, Indent);
   printDescription(TabWidth, stderr, Indent, ExecName);
   if (HasOptions)
