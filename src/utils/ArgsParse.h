@@ -45,12 +45,22 @@ class ArgsParser {
 
    public:
     virtual ~Arg();
-    virtual void describe(FILE* Out, size_t TabSize) const = 0;
+    void describe(FILE* Out, size_t TabSize) const;
     virtual void describeDefault(FILE* out,
                                  size_t TabSize,
                                  size_t& Indent) const;
     virtual bool select(charstring OptionValue) = 0;
     virtual int compare(const Arg& A) const;
+    char getShortName() const { return ShortName; }
+    Arg& setShortName(char Name) {
+      ShortName = Name;
+      return *this;
+    }
+    charstring getLongName() const { return LongName; }
+    Arg& setLongName(charstring Name) {
+      LongName = Name;
+      return *this;
+    }
     charstring getOptionName() const { return OptionName; }
     Arg& setOptionName(charstring Name) {
       OptionName = Name;
@@ -60,6 +70,8 @@ class ArgsParser {
       Description = NewValue;
       return *this;
     }
+    bool getOptionFound() const { return OptionFound; }
+    void setOptionFound(bool Value) { OptionFound = Value; }
     size_t getAddIndex() const { return AddIndex; }
     void setAddIndex(size_t Value) { AddIndex = Value; }
     ArgKind getRtClassId() const { return Kind; }
@@ -68,12 +80,18 @@ class ArgsParser {
    protected:
     explicit Arg(ArgKind Kind, charstring Description)
         : Kind(Kind),
+          ShortName(0),
+          LongName(nullptr),
           Description(Description),
           OptionName(nullptr),
+          OptionFound(false),
           AddIndex(0) {}
     ArgKind Kind;
+    char ShortName;
+    charstring LongName;
     charstring Description;
     mutable charstring OptionName;
+    bool OptionFound;
     size_t AddIndex;
   };
 
@@ -87,23 +105,10 @@ class ArgsParser {
    public:
     ~Optional() OVERRIDE;
     static bool implementsClass(ArgKind Id) { return Id == ArgKind::Optional; }
-    char getShortName() const { return ShortName; }
-    Optional& setShortName(char Name) {
-      ShortName = Name;
-      return *this;
-    }
-    charstring getLongName() const { return LongName; }
-    Optional& setLongName(charstring Name) {
-      LongName = Name;
-      return *this;
-    }
-    virtual void describe(FILE* Out, size_t TabSize) const OVERRIDE;
     int compare(const Arg& A) const OVERRIDE;
     int compareWithRequired(const Required& R) const;
 
    protected:
-    char ShortName;
-    charstring LongName;
     explicit Optional(charstring Description);
   };
 
@@ -114,10 +119,17 @@ class ArgsParser {
 
    public:
     explicit Bool(bool& Value, charstring Description = nullptr)
-        : Optional(Description), Value(Value), DefaultValue(Value) {}
+        : Optional(Description),
+          Value(Value),
+          DefaultValue(Value),
+          Toggle(false) {}
     ~Bool() OVERRIDE;
     Bool& setDefault(bool NewDefault) {
       Value = DefaultValue = NewDefault;
+      return *this;
+    }
+    Bool& setToggle(bool Value) {
+      Toggle = Value;
       return *this;
     }
     bool select(charstring OptionValue) OVERRIDE;
@@ -128,6 +140,7 @@ class ArgsParser {
    private:
     bool& Value;
     bool DefaultValue;
+    bool Toggle;
   };
 
   class OptionalCharstring : public Optional {
@@ -161,7 +174,7 @@ class ArgsParser {
 
    public:
     ~Required() OVERRIDE {}
-    virtual void describe(FILE* Out, size_t TabSize) const OVERRIDE;
+
     int compare(const Arg& A) const OVERRIDE;
     static bool implementsClass(ArgKind Id) { return Id == ArgKind::Required; }
 
@@ -194,10 +207,10 @@ class ArgsParser {
   ArgsParser& add(Arg& A);
 
   State parse(int Argc, charstring Argv[]);
-  bool parseShortName(const Optional* A,
+  bool parseShortName(const Arg* A,
                       charstring Argument,
                       charstring& Leftover) const;
-  bool parseLongName(const Optional* A,
+  bool parseLongName(const Arg* A,
                      charstring Argument,
                      charstring& Leftover) const;
 
@@ -209,16 +222,17 @@ class ArgsParser {
   bool Help;
   Bool HelpFlag;
   std::vector<Arg*> Args;
-  std::vector<Optional*> OptionalsShort;
-  std::vector<Optional*> OptionalsLong;
+  std::vector<Arg*> Shorts;
+  std::vector<Arg*> Longs;
+  std::vector<Arg*> Placements;
   std::vector<Required*> Requireds;
   int CurArg;
-  size_t CurRequired;
+  size_t CurPlacement;
   State Status;
 
   void parseNextArg();
-  Optional* parseNextShort(charstring Argument, charstring& Leftover);
-  Optional* parseNextLong(charstring Argument, charstring& Leftover);
+  Arg* parseNextShort(charstring Argument, charstring& Leftover);
+  Arg* parseNextLong(charstring Argument, charstring& Leftover);
   void showUsage();
 };
 

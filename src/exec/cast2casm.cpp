@@ -21,6 +21,7 @@
 #include "interp/TeeWriter.h"
 #include "sexp/FlattenAst.h"
 #include "sexp/InflateAst.h"
+#include "sexp/TextWriter.h"
 #include "sexp-parser/Driver.h"
 #include "stream/FileWriter.h"
 #include "stream/WriteBackedQueue.h"
@@ -65,52 +66,26 @@ std::shared_ptr<SymbolTable> parseFile(const char* Filename) {
   return Symtab;
 }
 
-#if 0
-void usage(const char* AppName) {
-  fprintf(stderr, "usage: %s [options] FILE\n", AppName);
-  fprintf(stderr, "\n");
-  fprintf(stderr, "  Convert CAST FILE to CASM binary.\n");
-  fprintf(stderr, "\n");
-  fprintf(stderr, "Options:\n");
-  fprintf(stderr,
-          "  -a FILE\t\tFile containing formatting algorithm for output\n");
-  fprintf(stderr, "  --expect-fail\t\tSucceed on failure/fail on success\n");
-  fprintf(stderr, "  -h\t\t\tPrint this usage message.\n");
-  fprintf(stderr, "  -m\t\t\tMinimize block sizes in output stream.\n");
-  fprintf(stderr, "  -o File\t\tGenerated CASM binary ('-' implies stdout).\n");
-  if (isDebug()) {
-    fprintf(stderr,
-            "  -v | --verbose\t"
-            "Show progress (can be repeated for more detail).\n");
-    fprintf(stderr,
-            "\t\t\t-v       : Show progress of writing out CASM file.\n");
-    fprintf(stderr, "\t\t\t-v -v    : Add tracing of parsing s-expressions.\n");
-    fprintf(stderr, "\t\t\t-v -v -v : Add tracing of lexing s-expressions.\n");
-  }
-}
-#endif
-
 }  // end of anonymous namespace
 
 int main(int Argc, const char* Argv[]) {
   bool MinimizeBlockSize = false;
   bool Verbose = false;
-  bool TraceFlattener = false;
+  bool TraceFlatten = false;
   bool TraceWrite = false;
   bool TraceTree = false;
   {
     ArgsParser Args("Converts compression algorithm from text to binary");
 
-    ArgsParser::OptionalCharstring AlgorithmFlag(AlgorithmFilename);
+    ArgsParser::RequiredCharstring AlgorithmFlag(AlgorithmFilename);
     Args.add(AlgorithmFlag.setShortName('a')
                  .setOptionName("ALG")
                  .setDescription("Use algorithm to parse text file"));
 
     ArgsParser::Bool ExpectFailFlag(ExpectExitFail);
-    ExpectFailFlag.setDefault(false)
-        .setLongName("expect-fail")
-        .setDescription("Succeed on failure/fail on success");
-    Args.add(ExpectFailFlag);
+    Args.add(ExpectFailFlag.setDefault(false)
+                 .setLongName("expect-fail")
+                 .setDescription("Succeed on failure/fail on success"));
 
     ArgsParser::Bool MinimizeBlockFlag(MinimizeBlockSize);
     Args.add(MinimizeBlockFlag.setShortName('m').setDescription(
@@ -127,23 +102,25 @@ int main(int Argc, const char* Argv[]) {
                  .setDescription("Generated binary file"));
 
     ArgsParser::Bool VerboseFlag(Verbose);
-    Args.add(VerboseFlag.setShortName('v')
-                 .setLongName("verbose")
-                 .setDescription("Show progress of writing binary file"));
+    Args.add(
+        VerboseFlag.setToggle(true)
+            .setShortName('v')
+            .setLongName("verbose")
+            .setDescription("Show progress and tree written to binary file"));
 
-    ArgsParser::Bool TraceFlattenerFlag(TraceFlattener);
-    Args.add(TraceFlattenerFlag.setLongName("trace=flattener")
-                 .setDescription("Trace how algorithms are flattened"));
+    ArgsParser::Bool TraceFlattenFlag(TraceFlatten);
+    Args.add(TraceFlattenFlag.setLongName("verbose=flatten")
+                 .setDescription("Show how algorithms are flattened"));
 
     ArgsParser::Bool TraceWriteFlag(TraceWrite);
-    Args.add(TraceWriteFlag.setLongName("trace=write")
-                 .setDescription("Trace writing of binary file"));
+    Args.add(TraceWriteFlag.setLongName("verbose=write")
+                 .setDescription("Show how binary file is encoded"));
 
     ArgsParser::Bool TraceTreeFlag(TraceTree);
-    Args.add(TraceTreeFlag.setLongName("trace=tree")
+    Args.add(TraceTreeFlag.setLongName("verbose=tree")
                  .setDescription(
-                     "Trace tree being written while writing "
-                     "(implies --trace=write)"));
+                     "Show tree being written while writing "
+                     "(implies --verbose=write)"));
 
     switch (Args.parse(Argc, Argv)) {
       case ArgsParser::State::Good:
@@ -159,20 +136,29 @@ int main(int Argc, const char* Argv[]) {
     if (TraceTree)
       TraceWrite = true;
   }
+  if (Verbose)
+    fprintf(stderr, "Reading input: %s\n", InputFilename);
   std::shared_ptr<SymbolTable> InputSymtab = parseFile(InputFilename);
   if (!InputSymtab)
     return exit_status(EXIT_FAILURE);
+  if (Verbose) {
+    fprintf(stderr, "Read tree:\n");
+    TextWriter Writer;
+    Writer.write(stderr, InputSymtab.get());
+  }
   std::shared_ptr<IntStream> IntSeq = std::make_shared<IntStream>();
   FlattenAst Flattener(IntSeq, InputSymtab);
-  if (TraceFlattener) {
-    auto Trace = std::make_shared<TraceClass>("flattener");
+  if (TraceFlatten) {
+    auto Trace = std::make_shared<TraceClass>("flatten");
     Flattener.setTrace(Trace);
     Flattener.setTraceProgress(true);
   }
   if (!Flattener.flatten()) {
-    fprintf(stderr, "Problems flattening CAST ast!\n");
+    fprintf(stderr, "Problems flattening read tree!\n");
     return exit_status(EXIT_FAILURE);
   }
+  if (Verbose)
+    fprintf(stderr, "Reading algorithms file: %s\n", AlgorithmFilename);
   std::shared_ptr<SymbolTable> AlgSymtab = parseFile(AlgorithmFilename);
   if (!AlgSymtab)
     return exit_status(EXIT_FAILURE);
@@ -181,6 +167,8 @@ int main(int Argc, const char* Argv[]) {
     fprintf(stderr, "Problems opening output file: %s", OutputFilename);
     return exit_status(EXIT_FAILURE);
   }
+  if (Verbose)
+    fprintf(stderr, "Writing file: %s\n", OutputFilename);
   auto BackedOutput = std::make_shared<WriteBackedQueue>(Output);
   std::shared_ptr<Writer> Writer = std::make_shared<StreamWriter>(BackedOutput);
   if (TraceTree) {
