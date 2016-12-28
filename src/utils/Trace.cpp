@@ -111,6 +111,12 @@ FILE* TraceClass::indent() {
   return File;
 }
 
+void TraceClass::trace_value_label(const char* Label) {
+  if (Label == nullptr)
+    return;
+  fprintf(File, "%s = ", Label);
+}
+
 void TraceClass::traceMessageInternal(const std::string& Message) {
   indent();
   fprintf(File, "%s\n", Message.c_str());
@@ -118,44 +124,51 @@ void TraceClass::traceMessageInternal(const std::string& Message) {
 
 void TraceClass::traceBoolInternal(const char* Name, bool Value) {
   indent();
-  fprintf(File, "%s = %s\n", Name, Value ? "t" : "f");
+  trace_value_label(Name);
+  fprintf(File, "%s\n", Value ? "t" : "f");
 }
 
 void TraceClass::traceCharInternal(const char* Name, char Ch) {
   indent();
-  fprintf(File, "%s = '%c'\n", Name, Ch);
+  trace_value_label(Name);
+  fprintf(File, "'%c'\n", Ch);
 }
 
 void TraceClass::traceStringInternal(const char* Name, const char* Value) {
   indent();
-  fprintf(File, "%s = '%s'\n", Name, Value);
+  trace_value_label(Name);
+  fprintf(File, "'%s'\n", Value);
 }
 
 void TraceClass::traceIntInternal(const char* Name, intmax_t Value) {
   indent();
-  fprintf(File, "%s = %" PRIiMAX "\n", Name, Value);
+  trace_value_label(Name);
+  fprintf(File, "%" PRIiMAX "\n", Value);
 }
 
 void TraceClass::traceUintInternal(const char* Name, uintmax_t Value) {
   indent();
-  fprintf(File, "%s = %" PRIuMAX "\n", Name, Value);
+  trace_value_label(Name);
+  fprintf(File, "%" PRIuMAX "\n", Value);
 }
 
 void TraceClass::traceIntTypeInternal(const char* Name, IntType Value) {
   indent();
-  fprintf(File, "%s = ", Name);
+  trace_value_label(Name);
   fprint_IntType(File, Value);
   fputc('\n', File);
 }
 
 void TraceClass::traceHexInternal(const char* Name, uintmax_t Value) {
   indent();
-  fprintf(File, "%s = %" PRIxMAX "\n", Name, uintmax_t(Value));
+  trace_value_label(Name);
+  fprintf(File, "%" PRIxMAX "\n", uintmax_t(Value));
 }
 
 void TraceClass::tracePointerInternal(const char* Name, void* Value) {
   indent();
-  fprintf(File, "%s = %p\n", Name, Value);
+  trace_value_label(Name);
+  fprintf(File, "%p\n", Value);
 }
 
 }  // end of namespace utils

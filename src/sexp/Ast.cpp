@@ -40,6 +40,7 @@ namespace utils {
 
 void TraceClass::trace_node_ptr(const char* Name, const Node* Nd) {
   indent();
+  trace_value_label(Name);
   TextWriter Writer;
   Writer.writeAbbrev(File, Nd);
 }

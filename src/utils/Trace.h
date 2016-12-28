@@ -147,6 +147,7 @@ class TraceClass : public std::enable_shared_from_this<TraceClass> {
 
   // Prints trace prefix only.
   FILE* indent();
+  void trace_value_label(const char* Label);
   void trace_message(const char* Message) { traceMessageInternal(Message); }
   void trace_message(std::string Message) { traceMessageInternal(Message); }
   void trace_bool(const char* Name, bool Value) {

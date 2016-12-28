@@ -69,7 +69,7 @@ template <class T>
 bool InflateAst::buildNullary() {
   Values.pop();
   Asts.push(Symtab->create<T>());
-  TRACE(node_ptr, "Ast", AstsTop);
+  TRACE(node_ptr, "Tree", AstsTop);
   return true;
 }
 
@@ -77,7 +77,7 @@ template <class T>
 bool InflateAst::buildUnary() {
   Values.pop();
   Asts.push(Symtab->create<T>(Asts.popValue()));
-  TRACE(node_ptr, "Ast", AstsTop);
+  TRACE(node_ptr, "Tree", AstsTop);
   return true;
 }
 
@@ -87,7 +87,7 @@ bool InflateAst::buildBinary() {
   Node* Arg2 = Asts.popValue();
   Node* Arg1 = Asts.popValue();
   Asts.push(Symtab->create<T>(Arg1, Arg2));
-  TRACE(node_ptr, "Ast", AstsTop);
+  TRACE(node_ptr, "Tree", AstsTop);
   return true;
 }
 
@@ -98,7 +98,7 @@ bool InflateAst::buildTernary() {
   Node* Arg2 = Asts.popValue();
   Node* Arg1 = Asts.popValue();
   Asts.push(Symtab->create<T>(Arg1, Arg2, Arg3));
-  TRACE(node_ptr, "Ast", AstsTop);
+  TRACE(node_ptr, "Tree", AstsTop);
   return true;
 }
 
@@ -114,7 +114,7 @@ bool InflateAst::appendArgs(Node* Nd) {
     Nd->append(Asts[i]);
   for (size_t i = 0; i < NumArgs; ++i)
     Asts.pop();
-  TRACE(node_ptr, "Ast", Nd);
+  TRACE(node_ptr, "Tree", Nd);
   Asts.push(Nd);
   return true;
 }
@@ -250,7 +250,7 @@ bool InflateAst::applyOp(IntType Op) {
       return buildBinary<RenameNode>();
     case OpSection:
       // Note: Bottom element is for file.
-      TRACE(size_t, "Ast stack size", Asts.size());
+      TRACE(size_t, "Tree stack size", Asts.size());
       if (Asts.empty())
         return failWriteActionMalformed();
       Values.push(Asts.size() - 1);
@@ -270,7 +270,7 @@ bool InflateAst::applyOp(IntType Op) {
       if (Sym == nullptr) {
         return failWriteActionMalformed();
       }
-      TRACE(node_ptr, "Ast", Sym);
+      TRACE(node_ptr, "Tree", Sym);
       Asts.push(Sym);
       return true;
     }
@@ -414,7 +414,7 @@ bool InflateAst::writeAction(const filt::CallbackNode* Action) {
         default:
           return failWriteActionMalformed();
       }
-      TRACE(node_ptr, "Ast", Nd);
+      TRACE(node_ptr, "Tree", Nd);
       Asts.push(Nd);
       return true;
     }

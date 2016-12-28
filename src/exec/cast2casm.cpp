@@ -194,8 +194,8 @@ int main(int Argc, const char* Argv[]) {
   std::shared_ptr<Writer> Writer = std::make_shared<StreamWriter>(BackedOutput);
   if (TraceTree) {
     auto Tee = std::make_shared<TeeWriter>();
-    Tee->add(std::make_shared<InflateAst>(), false, true);
-    Tee->add(Writer, true, false);
+    Tee->add(std::make_shared<InflateAst>(), false, true, false);
+    Tee->add(Writer, true, false, true);
     Writer = Tee;
   }
   Writer->setMinimizeBlockSize(MinimizeBlockSize);

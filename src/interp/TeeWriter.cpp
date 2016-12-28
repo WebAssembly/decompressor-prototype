@@ -33,8 +33,11 @@ TeeWriter::~TeeWriter() {
 
 void TeeWriter::add(std::shared_ptr<Writer> NodeWriter,
                     bool DefinesStreamType,
-                    bool TraceNode) {
+                    bool TraceNode,
+                    bool TraceContext) {
   Writers.push_back(Node(NodeWriter, DefinesStreamType, TraceNode));
+  if (TraceContext && !ContextWriter)
+    ContextWriter = NodeWriter;
 }
 
 TeeWriter::Node::Node(std::shared_ptr<Writer> NodeWriter,
@@ -162,6 +165,12 @@ void TeeWriter::setMinimizeBlockSize(bool NewValue) {
 void TeeWriter::describeState(FILE* File) {
   for (Node& Nd : Writers)
     Nd.getWriter()->describeState(File);
+}
+
+TraceClass::ContextPtr TeeWriter::getTraceContext() {
+  if (ContextWriter)
+    return ContextWriter->getTraceContext();
+  return TraceClass::ContextPtr();
 }
 
 void TeeWriter::setTrace(std::shared_ptr<TraceClass> NewTrace) {
