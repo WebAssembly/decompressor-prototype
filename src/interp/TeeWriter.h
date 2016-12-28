@@ -55,9 +55,12 @@ class TeeWriter : public Writer {
   TeeWriter();
   ~TeeWriter() OVERRIDE;
 
+  // Warning: The first writer with TraceContext will be used as the
+  // trace context of the TeeWriter.
   void add(std::shared_ptr<Writer> NodeWriter,
            bool DefinesStreamType,
-           bool TraceNode);
+           bool TraceNode,
+           bool TraceContext);
 
   void reset() OVERRIDE;
   decode::StreamType getStreamType() const OVERRIDE;
@@ -81,10 +84,12 @@ class TeeWriter : public Writer {
   void setMinimizeBlockSize(bool NewValue) OVERRIDE;
   void describeState(FILE* File) OVERRIDE;
 
+  utils::TraceClass::ContextPtr getTraceContext() OVERRIDE;
   void setTrace(std::shared_ptr<utils::TraceClass> Trace) OVERRIDE;
 
  private:
   std::vector<Node> Writers;
+  std::shared_ptr<Writer> ContextWriter;
 };
 
 }  // end of namespace interp
