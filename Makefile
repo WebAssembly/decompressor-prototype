@@ -27,6 +27,7 @@ UTILS_OBJDIR = $(OBJDIR)/utils
 UTILS_OBJDIR_BOOT = $(OBJDIR_BOOT)/utils
 UTILS_SRCS = \
 	Allocator.cpp \
+	ArgsParse.cpp \
 	Defs.cpp \
 	Trace.cpp
 
