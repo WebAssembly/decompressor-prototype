@@ -63,6 +63,11 @@ class TextWriter {
   static bool UseNodeTypeNames;
   TextWriter();
 
+  // Pretty prints s-expression installed in symbol table.
+  void write(FILE* File, SymbolTable* Symtab) {
+    write(File, Symtab->getInstalledRoot());
+  }
+
   // Pretty prints s-expression (defined by Root) to File.
   void write(FILE* File, const Node* Root);
 

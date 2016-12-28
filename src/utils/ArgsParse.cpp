@@ -67,44 +67,81 @@ void indentTo(const size_t TabSize, FILE* Out, size_t& Indent) {
   }
 }
 
+void writeNewline(FILE* Out, size_t& Indent) {
+  fputc('\n', Out);
+  Indent = 0;
+}
+
+void writeChar(const size_t TabSize, FILE* Out, size_t& Indent, char Ch) {
+  if (Indent >= MaxLine) {
+    writeNewline(Out, Indent);
+  }
+  switch (Ch) {
+    case '\t': {
+      indentTo(TabSize, Out, Indent);
+      size_t Spaces = TabWidth - (Indent % TabWidth);
+      for (size_t i = 0; i < Spaces; ++i)
+        writeChar(TabSize, Out, Indent, ' ');
+      break;
+    }
+    case '\n':
+      writeNewline(Out, Indent);
+      break;
+    case ' ':
+      if (Indent > TabSize) {
+        fputc(' ', Out);
+        ++Indent;
+      }
+      break;
+    default:
+      fputc(Ch, Out);
+      ++Indent;
+      break;
+  }
+}
+
+void writeChunk(const size_t TabSize,
+                FILE* Out,
+                size_t& Indent,
+                const char* string,
+                size_t Chunk) {
+  for (size_t i = 0; i < Chunk; ++i)
+    writeChar(TabSize, Out, Indent, string[i]);
+}
+
+void writeCharstring(const size_t TabSize,
+                     FILE* Out,
+                     size_t& Indent,
+                     const char* string) {
+  writeChunk(TabSize, Out, Indent, string, strlen(string));
+}
+
 void printDescriptionContinue(const size_t TabSize,
                               FILE* Out,
                               size_t& Indent,
                               const char* Description) {
-  const char* Whitespace = " \t\n\0";
+  const char* Whitespace = " \t\n";
   while (Description && *Description != '\0') {
+    bool LoopApplied = false;
     while (Indent < MaxLine) {
+      LoopApplied = true;
       size_t Chunk = strcspn(Description, Whitespace);
       if (Chunk == 0) {
         if (*Description == '\0')
           return;
-        if (Indent + 1 < MaxLine) {
-          fputc(*(Description++), Out);
-          ++Indent;
-        } else {
-          fputc('\n', Out);
-          Indent = 0;
-          ++Description;
-        }
+        writeChar(TabSize, Out, Indent, *(Description++));
         continue;
       }
       if (!(Indent + Chunk < MaxLine || Indent == TabSize)) {
-        fputc('\n', Out);
-        Indent = 0;
+        writeNewline(Out, Indent);
         continue;
       }
       indentTo(TabSize, Out, Indent);
-      for (size_t i = 0; i < Chunk; ++i) {
-        fputc(*(Description++), Out);
-        ++Indent;
-      }
-      if (*Description == '\0')
-        break;
-      if (strchr(Whitespace, *Description) != nullptr) {
-        fputc(*(Description++), Out);
-        ++Indent;
-      }
+      writeChunk(TabSize, Out, Indent, Description, Chunk);
+      Description += Chunk;
     }
+    if (!LoopApplied)
+      writeNewline(Out, Indent);
   }
   return;
 }
@@ -127,6 +164,33 @@ namespace utils {
 ArgsParser::Arg::~Arg() {
 }
 
+void ArgsParser::Arg::describe(FILE* Out, size_t TabSize) const {
+  size_t Indent = 0;
+  indentTo(TabSize, Out, Indent);
+  if (ShortName != 0) {
+    writeChar(TabSize, Out, Indent, '-');
+    writeChar(TabSize, Out, Indent, ShortName);
+  }
+  if (LongName != nullptr) {
+    if (Indent > TabSize) {
+      writeCharstring(TabSize, Out, Indent, " |");
+    }
+    writeCharstring(TabSize, Out, Indent, " --");
+    writeCharstring(TabSize, Out, Indent, LongName);
+  }
+  if (OptionName != nullptr) {
+    writeChar(TabSize, Out, Indent, ' ');
+    writeCharstring(TabSize, Out, Indent, OptionName);
+  }
+  TabSize += TabWidth;
+  printDescription(TabSize, Out, Indent,
+                   Description == nullptr ? "" : Description);
+  describeDefault(Out, TabSize, Indent);
+  if (isa<Required>(this))
+    printDescriptionContinue(TabSize, Out, Indent, " (required)");
+  writeNewline(Out, Indent);
+}
+
 void ArgsParser::Arg::describeDefault(FILE* Out,
                                       size_t TabSize,
                                       size_t& Indent) const {
@@ -141,7 +205,7 @@ int ArgsParser::Arg::compare(const Arg& A) const {
 }
 
 ArgsParser::Optional::Optional(charstring Description)
-    : Arg(ArgKind::Optional, Description), ShortName(0), LongName(nullptr) {
+    : Arg(ArgKind::Optional, Description) {
 }
 
 ArgsParser::Optional::~Optional() {
@@ -181,38 +245,15 @@ int ArgsParser::Optional::compareWithRequired(const Required& R) const {
   return Arg::compare(R);
 }
 
-void ArgsParser::Optional::describe(FILE* Out, size_t TabSize) const {
-  size_t Indent = 0;
-  indentTo(TabSize, Out, Indent);
-  if (ShortName != 0) {
-    fprintf(Out, "-%c", ShortName);
-    Indent += 2;
-  }
-  if (LongName != nullptr) {
-    if (ShortName != 0) {
-      fputs(" | ", Out);
-      Indent += 3;
-    }
-    fprintf(Out, "--%s", LongName);
-    Indent += strlen(LongName) + 2;
-  }
-  if (OptionName != nullptr) {
-    fprintf(stderr, " <%s>", OptionName);
-    Indent += strlen(OptionName) + 1;
-  }
-  TabSize += TabWidth;
-  printDescription(TabSize, Out, Indent,
-                   Description == nullptr ? "" : Description);
-  describeDefault(Out, TabSize, Indent);
-  fputc('\n', Out);
-}
-
 ArgsParser::Bool::~Bool() {
 }
 
 bool ArgsParser::Bool::select(charstring OptionValue) {
   // TODO(karlschimpf): All OptionValue to define value?
-  Value = !DefaultValue;
+  if (Toggle)
+    Value = !Value;
+  else
+    Value = !DefaultValue;
   return false;
 }
 
@@ -223,6 +264,9 @@ void ArgsParser::Bool::describeDefault(FILE* Out,
   printDescriptionContinue(TabSize, Out, Indent,
                            DefaultValue ? "true" : "false");
   printDescriptionContinue(TabSize, Out, Indent, ")");
+  if (Toggle)
+    printDescriptionContinue(TabSize, Out, Indent,
+                             " (each occurrence toggles vaue)");
 }
 
 ArgsParser::OptionalCharstring::~OptionalCharstring() {
@@ -247,16 +291,6 @@ int ArgsParser::Required::compare(const Arg& A) const {
     return -cast<Optional>(&A)->compareWithRequired(*this);
 
   return Arg::compare(A);
-}
-
-void ArgsParser::Required::describe(FILE* Out, size_t TabSize) const {
-  size_t Indent = 0;
-  indentTo(TabSize, Out, Indent);
-  fprintf(Out, "<%s>", OptionName);
-  Indent += strlen(OptionName) + 2;
-  printDescription(TabSize + TabWidth, Out, Indent,
-                   Description == nullptr ? "" : Description);
-  fputc('\n', Out);
 }
 
 ArgsParser::RequiredCharstring::~RequiredCharstring() {
@@ -287,21 +321,31 @@ ArgsParser& ArgsParser::add(Arg& A) {
       A.describe(stderr, TabWidth);
       Status = State::Bad;
     }
-    if (Opt->getShortName() != 0)
-      OptionalsShort.push_back(Opt);
-    if (Opt->getLongName() != nullptr)
-      OptionalsLong.push_back(Opt);
-  } else if (auto* Req = dyn_cast<Required>(&A)) {
-    Requireds.push_back(Req);
-  } else {
-    fprintf(stderr, "Option not understood:\n");
-    A.describe(stderr, TabWidth);
-    Status = State::Bad;
   }
+  bool IsPlacement = true;  // until proven otherwise.
+  if (A.getShortName() != 0) {
+    Shorts.push_back(&A);
+    IsPlacement = false;
+  }
+  if (A.getLongName() != nullptr) {
+    Longs.push_back(&A);
+    IsPlacement = false;
+  }
+  if (IsPlacement) {
+    if (A.getOptionName() != nullptr) {
+      Placements.push_back(&A);
+    } else {
+      fprintf(stderr, "Can't categorize option:\n");
+      A.describe(stderr, TabWidth);
+      Status = State::Bad;
+    }
+  }
+  if (auto* R = dyn_cast<Required>(&A))
+    Requireds.push_back(R);
   return *this;
 }
 
-bool ArgsParser::parseShortName(const Optional* A,
+bool ArgsParser::parseShortName(const Arg* A,
                                 charstring Argument,
                                 charstring& Leftover) const {
   size_t ArgSize = strlen(Argument);
@@ -319,11 +363,13 @@ bool ArgsParser::parseShortName(const Optional* A,
   }
   if (Argument[2] != '=')
     return false;
+  if (A->getOptionName() == nullptr)
+    return false;
   Leftover = Argument + 3;
   return true;
 }
 
-bool ArgsParser::parseLongName(const Optional* A,
+bool ArgsParser::parseLongName(const Arg* A,
                                charstring Argument,
                                charstring& Leftover) const {
   size_t ArgSize = strlen(Argument);
@@ -331,25 +377,33 @@ bool ArgsParser::parseLongName(const Optional* A,
     return false;
   if (Argument != strstr(Argument, "--"))
     return false;
+  size_t NameSize = strlen(A->getLongName()) + 2;
   if (Argument + 2 != strstr(Argument, A->getLongName()))
     return false;
-  size_t NameSize = strlen(A->getLongName());
-  Leftover = (ArgSize == NameSize + 2) ? nullptr : Argument + NameSize + 1;
+  if (ArgSize == NameSize) {
+    Leftover = nullptr;
+    return true;
+  }
+  if (Argument[NameSize] != '=')
+    return false;
+  if (A->getOptionName() == nullptr)
+    return false;
+  Leftover = Argument + NameSize + 1;
   return true;
 }
 
-ArgsParser::Optional* ArgsParser::parseNextShort(charstring Argument,
-                                                 charstring& Leftover) {
-  for (auto* A : OptionalsShort) {
+ArgsParser::Arg* ArgsParser::parseNextShort(charstring Argument,
+                                            charstring& Leftover) {
+  for (auto* A : Shorts) {
     if (parseShortName(A, Argument, Leftover))
       return A;
   }
   return nullptr;
 }
 
-ArgsParser::Optional* ArgsParser::parseNextLong(charstring Argument,
-                                                charstring& Leftover) {
-  for (auto* A : OptionalsLong) {
+ArgsParser::Arg* ArgsParser::parseNextLong(charstring Argument,
+                                           charstring& Leftover) {
+  for (auto* A : Longs) {
     if (parseLongName(A, Argument, Leftover))
       return A;
   }
@@ -365,10 +419,11 @@ void ArgsParser::parseNextArg() {
   if (Argument == nullptr || strlen(Argument) == 0)
     return;
   charstring Leftover = nullptr;
-  Optional* MatchingOption = parseNextShort(Argument, Leftover);
+  Arg* MatchingOption = parseNextShort(Argument, Leftover);
   if (MatchingOption == nullptr)
     MatchingOption = parseNextLong(Argument, Leftover);
   if (MatchingOption) {
+    MatchingOption->setOptionFound(true);
     bool MaybeUseNextArg = false;
     if (Leftover == nullptr && CurArg < Argc) {
       MaybeUseNextArg = true;
@@ -380,10 +435,12 @@ void ArgsParser::parseNextArg() {
       showUsage();
     return;
   }
-  if (CurRequired < Requireds.size()) {
-    if (!Requireds[CurRequired++]->select(Argument)) {
+  if (CurPlacement < Placements.size()) {
+    Arg* Placement = Placements[CurPlacement++];
+    Placement->setOptionFound(true);
+    if (!Placement->select(Argument)) {
       fprintf(stderr, "Can't assign option:\n");
-      Requireds[CurRequired - 1]->describe(stderr, TabWidth);
+      Placement->describe(stderr, TabWidth);
       showUsage();
       return;
     }
@@ -400,9 +457,17 @@ ArgsParser::State ArgsParser::parse(int Argc, const char* Argv[]) {
   if (ExecName == nullptr && Argc)
     ExecName = Argv[0];
   CurArg = 1;
-  CurRequired = 0;
+  CurPlacement = 0;
   while (Status == State::Good && CurArg < Argc)
     parseNextArg();
+  if (Status == State::Good) {
+    for (Arg* A : Requireds)
+      if (!A->getOptionFound()) {
+        fprintf(stderr, "Required option not found:\n");
+        A->describe(stderr, TabWidth);
+        Status = State::Bad;
+      }
+  }
   if (Status == State::Bad)
     showUsage();
   return Status;
@@ -410,26 +475,36 @@ ArgsParser::State ArgsParser::parse(int Argc, const char* Argv[]) {
 
 void ArgsParser::showUsage() {
   Status = State::Usage;
-  bool HasOptions = !(OptionalsShort.empty() && OptionalsLong.empty());
-  fprintf(stderr, "\nUsage: %s", ExecName);
+  bool HasOptions = !(Shorts.empty() && Longs.empty());
+  size_t Indent = 0;
+  writeNewline(stderr, Indent);
+  printDescription(0, stderr, Indent, "Usage:");
+  writeNewline(stderr, Indent);
+  printDescription(TabWidth, stderr, Indent, ExecName);
   if (HasOptions)
-    fprintf(stderr, " [Options]");
-  for (Required* A : Requireds)
-    fprintf(stderr, " <%s>", A->getOptionName());
-  fprintf(stderr, "\n");
-  if (Description != nullptr) {
-    fputc('\n', stderr);
-    size_t Indent = 0;
-    printDescription(TabWidth, stderr, Indent, Description);
-    fputc('\n', stderr);
+    printDescriptionContinue(TabWidth, stderr, Indent, " [Options]");
+  for (Arg* A : Placements) {
+    printDescriptionContinue(TabWidth, stderr, Indent, " ");
+    printDescriptionContinue(TabWidth, stderr, Indent, A->getOptionName());
   }
-  fputs("\nArguments:\n", stderr);
+  writeNewline(stderr, Indent);
+  if (Description != nullptr) {
+    writeNewline(stderr, Indent);
+    printDescription(TabWidth, stderr, Indent, Description);
+    writeNewline(stderr, Indent);
+  }
+  if (Args.empty())
+    return;
+  writeNewline(stderr, Indent);
+  printDescription(0, stderr, Indent, "Arguments:");
+  writeNewline(stderr, Indent);
   std::sort(Args.begin(), Args.end(),
             [](Arg* Arg1, Arg* Arg2) { return Arg1->compare(*Arg2) < 0; });
   for (Arg* A : Args) {
-    fputc('\n', stderr);
+    writeNewline(stderr, Indent);
     A->describe(stderr, TabWidth);
   }
+  writeNewline(stderr, Indent);
 }
 
 }  // end of namespace utils
