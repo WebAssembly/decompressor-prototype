@@ -251,7 +251,7 @@ bool InflateAst::applyOp(IntType Op) {
     case OpSection:
       // Note: Bottom element is for file.
       TRACE(size_t, "Tree stack size", Asts.size());
-      if (Asts.size() < 1)
+      if (Asts.size() < 2)
         return failWriteActionMalformed();
       Values.push(Asts.size() - 2);
       if (!buildNary<SectionNode>())
