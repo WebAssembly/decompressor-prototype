@@ -157,6 +157,20 @@ IntTypeFormat Node::getIntTypeFormat() const {
   return Format;
 }
 
+size_t Node::getTreeSize() const {
+  size_t Count = 0;
+  std::vector<const Node*> ToVisit;
+  ToVisit.push_back(this);
+  while (!ToVisit.empty()) {
+    const Node* Nd = ToVisit.back();
+    ToVisit.pop_back();
+    ++Count;
+    for (const Node* Kid : *Nd)
+      ToVisit.push_back(Kid);
+  }
+  return Count;
+}
+
 void IntegerValue::describe(FILE* Out) const {
   fprintf(Out, "%s<", getNodeSexpName(Type));
   writeInt(Out, Value, Format);

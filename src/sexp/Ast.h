@@ -279,6 +279,9 @@ class Node {
 
   virtual void setKid(int Index, Node* N) = 0;
 
+  // Counts number of nodes in tree defined by this.
+  size_t getTreeSize() const;
+
   // Validates the node, based on the parents.
   virtual bool validateNode(NodeVectorType& Parents);
 

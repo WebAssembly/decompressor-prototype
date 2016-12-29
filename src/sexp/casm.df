@@ -88,9 +88,14 @@
 (literal 'literal.use'    (u8.const 0x71))
 
 (define 'file' (params)
-  # Note: Assume the first header is read by the reader.
   (eval 'header')
   (eval 'section')
+)
+
+(define 'header' (params)
+  (loop (varuint32)
+    (eval 'node')
+  )
 )
 
 (define 'int.value' (params 1)
