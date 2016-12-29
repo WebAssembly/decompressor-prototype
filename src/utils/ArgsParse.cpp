@@ -280,10 +280,13 @@ bool ArgsParser::OptionalCharstring::select(charstring OptionValue) {
 void ArgsParser::OptionalCharstring::describeDefault(FILE* Out,
                                                      size_t TabSize,
                                                      size_t& Indent) const {
-  printDescriptionContinue(TabSize, Out, Indent, " (default is ");
-  printDescriptionContinue(TabSize, Out, Indent,
-                           strlen(DefaultValue) == 0 ? "''" : DefaultValue);
-  printDescriptionContinue(TabSize, Out, Indent, ")");
+  if (DefaultValue == nullptr) {
+    printDescriptionContinue(TabSize, Out, Indent, " (has no default value)");
+    return;
+  }
+  printDescriptionContinue(TabSize, Out, Indent, " (default is '");
+  printDescriptionContinue(TabSize, Out, Indent, DefaultValue);
+  printDescriptionContinue(TabSize, Out, Indent, "')");
 }
 
 int ArgsParser::Required::compare(const Arg& A) const {

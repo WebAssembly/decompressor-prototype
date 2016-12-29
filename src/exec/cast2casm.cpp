@@ -66,6 +66,138 @@ std::shared_ptr<SymbolTable> parseFile(const char* Filename) {
   return Symtab;
 }
 
+#define BYTES_PER_LINE_IN_WASM_DEFAULTS 16
+
+void generateHeader(const char* Filename, std::shared_ptr<RawStream> Output) {
+  Output->puts(
+      "// -*- C++ -*- \n"
+      "\n"
+      "// *** AUTOMATICALLY GENERATED FILE (DO NOT EDIT)! ***\n"
+      "\n"
+      "// Copyright 2016 WebAssembly Community Group participants\n"
+      "//\n"
+      "// Licensed under the Apache License, Version 2.0 (the \"License\");\n"
+      "// you may not use this file except in compliance with the License.\n"
+      "// You may obtain a copy of the License at\n"
+      "//\n"
+      "//     http://www.apache.org/licenses/LICENSE-2.0\n"
+      "//\n"
+      "// Unless required by applicable law or agreed to in writing, software\n"
+      "// distributed under the License is distributed on an \"AS IS\" BASIS,\n"
+      "// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or "
+      "implied.\n"
+      "// See the License for the specific language governing permissions and\n"
+      "// limitations under the License.\n"
+      "\n"
+      "// Geneated from: \"");
+  Output->puts(InputFilename);
+  Output->puts(
+      "\"\n"
+      "\n");
+}
+
+void generateEnterNamespaces(std::vector<const char*>& Namespaces,
+                             std::shared_ptr<RawStream> Output) {
+  for (const char* Name : Namespaces) {
+    Output->puts("namespace ");
+    Output->puts(Name);
+    Output->puts(
+        " {\n"
+        "\n");
+  }
+}
+
+void generateExitNamespaces(std::vector<const char*>& Namespaces,
+                            std::shared_ptr<RawStream> Output) {
+  for (const char* Name : Namespaces) {
+    Output->puts("}  // end of namespace ");
+    Output->puts(Name);
+    Output->puts(
+        "\n"
+        "\n");
+  }
+}
+
+void generateArrayAccessorHeader(const char* FunctionName,
+                                 std::shared_ptr<RawStream> Output) {
+  Output->puts("const uint8_t* ");
+  Output->puts(FunctionName);
+  Output->puts("()");
+}
+
+void generateArraySizeAccessorHeader(const char* FunctionName,
+                                     std::shared_ptr<RawStream> Output) {
+  Output->puts("size_t ");
+  Output->puts(FunctionName);
+  Output->puts("Size()");
+}
+
+void generateArrayDecl(const char* InputFilename,
+                       std::vector<const char*>& Namespaces,
+                       const char* FunctionName,
+                       std::shared_ptr<ReadCursor> ReadPos,
+                       std::shared_ptr<RawStream> Output) {
+  generateHeader(InputFilename, Output);
+  generateEnterNamespaces(Namespaces, Output);
+  generateArrayAccessorHeader(FunctionName, Output);
+  Output->puts(
+      ";\n"
+      "\n");
+  generateArraySizeAccessorHeader(FunctionName, Output);
+  Output->puts(
+      ";\n"
+      "\n");
+  generateExitNamespaces(Namespaces, Output);
+  Output->freeze();
+}
+
+void generateArrayImpl(const char* InputFilename,
+                       std::vector<const char*>& Namespaces,
+                       const char* FunctionName,
+                       std::shared_ptr<ReadCursor> ReadPos,
+                       std::shared_ptr<RawStream> Output) {
+  generateHeader(InputFilename, Output);
+  Output->puts(
+      "#include \"utils/Defs.h\"\n"
+      "\n"
+      "namespace {\n"
+      "\n"
+      "const uint8_t ");
+  Output->puts(FunctionName);
+  Output->puts("Array[] = {\n");
+  char Buffer[256];
+  while (!ReadPos->atEof()) {
+    uint8_t Byte = ReadPos->readByte();
+    size_t Address = ReadPos->getCurByteAddress();
+    if (Address > 0 && Address % BYTES_PER_LINE_IN_WASM_DEFAULTS == 0)
+      Output->putc('\n');
+    sprintf(Buffer, " %u", Byte);
+    Output->puts(Buffer);
+    if (!ReadPos->atEof())
+      Output->putc(',');
+  }
+  Output->puts(
+      "};\n"
+      "\n"
+      "}  // end of anonymous namespace\n"
+      "\n");
+  generateEnterNamespaces(Namespaces, Output);
+  generateArrayAccessorHeader(FunctionName, Output);
+  Output->puts(" { return ");
+  Output->puts(FunctionName);
+  Output->puts(
+      "Array; }\n"
+      "\n");
+  generateArraySizeAccessorHeader(FunctionName, Output);
+  Output->puts(" { return size(");
+  Output->puts(FunctionName);
+  Output->puts(
+      "Array); }\n"
+      "\n");
+  generateExitNamespaces(Namespaces, Output);
+  Output->freeze();
+}
+
 }  // end of anonymous namespace
 
 int main(int Argc, const char* Argv[]) {
@@ -74,13 +206,17 @@ int main(int Argc, const char* Argv[]) {
   bool TraceFlatten = false;
   bool TraceWrite = false;
   bool TraceTree = false;
+  const char* FunctionName = nullptr;
+  bool HeaderFile;
   {
     ArgsParser Args("Converts compression algorithm from text to binary");
 
     ArgsParser::RequiredCharstring AlgorithmFlag(AlgorithmFilename);
     Args.add(AlgorithmFlag.setShortName('a')
-                 .setOptionName("ALG")
-                 .setDescription("Use algorithm to parse text file"));
+                 .setLongName("algorithm")
+                 .setOptionName("ALGORITHM")
+                 .setDescription("Use algorithm in ALGORITHM file "
+                                 "to parse text file"));
 
     ArgsParser::Bool ExpectFailFlag(ExpectExitFail);
     Args.add(ExpectFailFlag.setDefault(false)
@@ -88,9 +224,11 @@ int main(int Argc, const char* Argv[]) {
                  .setDescription("Succeed on failure/fail on success"));
 
     ArgsParser::Bool MinimizeBlockFlag(MinimizeBlockSize);
-    Args.add(MinimizeBlockFlag.setShortName('m').setDescription(
-        "Minimize size in binary file "
-        "(note: runs slower)"));
+    Args.add(MinimizeBlockFlag
+             .setShortName('m')
+             .setLongName("minimize")
+             .setDescription("Minimize size in binary file "
+                             "(note: runs slower)"));
 
     ArgsParser::RequiredCharstring InputFlag(InputFilename);
     Args.add(InputFlag.setOptionName("INPUT")
@@ -98,6 +236,7 @@ int main(int Argc, const char* Argv[]) {
 
     ArgsParser::OptionalCharstring OutputFlag(OutputFilename);
     Args.add(OutputFlag.setShortName('o')
+                 .setLongName("output")
                  .setOptionName("OUTPUT")
                  .setDescription("Generated binary file"));
 
@@ -131,6 +270,22 @@ int main(int Argc, const char* Argv[]) {
     Args.add(
         TraceLexerFlag.setLongName("verbose=lexer")
             .setDescription("Show lexing of algorithm (defined by option -a)"));
+
+    ArgsParser::OptionalCharstring FunctionNameFlag(FunctionName);
+    Args.add(FunctionNameFlag
+             .setShortName('f')
+             .setLongName("function")
+             .setOptionName("Name")
+             .setDescription("Generate c++ source code to implement an array "
+                             "containing the binary encoding, with accessors "
+                             "Name() and NameSize()"));
+
+    ArgsParser::Bool HeaderFileFlag(HeaderFile);
+    Args.add(HeaderFileFlag
+             .setLongName("header")
+             .setDescription("Generate header version of c++ source instead "
+                             "of implementatoin file (only applies when "
+                             "'--function Name' is specified)"));
 
     switch (Args.parse(Argc, Argv)) {
       case ArgsParser::State::Good:
@@ -181,8 +336,15 @@ int main(int Argc, const char* Argv[]) {
   }
   if (Verbose)
     fprintf(stderr, "Writing file: %s\n", OutputFilename);
-  auto BackedOutput = std::make_shared<WriteBackedQueue>(Output);
-  std::shared_ptr<Writer> Writer = std::make_shared<StreamWriter>(BackedOutput);
+  std::shared_ptr<decode::Queue> OutputStream;
+  std::shared_ptr<ReadCursor> ReadPos;
+  if (FunctionName == nullptr)
+    OutputStream = std::make_shared<WriteBackedQueue>(Output);
+  else {
+    OutputStream = std::make_shared<Queue>();
+    ReadPos = std::make_shared<ReadCursor>(StreamType::Byte, OutputStream);
+  }
+  std::shared_ptr<Writer> Writer = std::make_shared<StreamWriter>(OutputStream);
   if (TraceTree) {
     auto Tee = std::make_shared<TeeWriter>();
     Tee->add(std::make_shared<InflateAst>(), false, true, false);
@@ -203,6 +365,15 @@ int main(int Argc, const char* Argv[]) {
   if (Reader->errorsFound()) {
     fprintf(stderr, "Problems while reading: %s\n", InputFilename);
     return exit_status(EXIT_FAILURE);
+  }
+  if (FunctionName != nullptr) {
+    std::vector<const char*> Namespaces;
+    Namespaces.push_back("wasm");
+    Namespaces.push_back("decode");
+    if (HeaderFile)
+      generateArrayDecl(InputFilename, Namespaces, FunctionName, ReadPos, Output);
+    else
+      generateArrayImpl(InputFilename, Namespaces, FunctionName, ReadPos, Output);
   }
   return exit_status(EXIT_SUCCESS);
 }
