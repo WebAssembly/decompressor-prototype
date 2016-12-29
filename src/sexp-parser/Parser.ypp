@@ -173,15 +173,25 @@ struct IntValue {
 %type <wasm::filt::Node *> sequence_args
 %type <wasm::filt::Node *> symbol
 %type <wasm::filt::Node *> write_args
+%type <wasm::filt::Node *> write_file_header
 
 %start file
 
 %%
 
 file
-         : file_header section {
-            $$ = Driver.create<FileNode>($1, $2);
+         : file_header write_file_header section {
+            $$ = Driver.create<FileNode>($1, $2, $3);
             Driver.setParsedAst($$);
+          }
+        ;
+
+write_file_header
+        : file_header {
+            $$ = $1;
+          }
+        | "(" "void" ")" {
+            $$ = Driver.create<VoidNode>();
           }
         ;
 

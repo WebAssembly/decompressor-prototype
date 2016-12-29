@@ -35,7 +35,8 @@ FlattenAst::FlattenAst(std::shared_ptr<IntStream> Output,
       Symtab(Symtab),
       SectionSymtab(Symtab),
       FreezeEofOnDestruct(true),
-      HasErrors(false) {
+      HasErrors(false),
+      WrotePrimaryHeader(false) {
 }
 
 FlattenAst::~FlattenAst() {
@@ -155,6 +156,16 @@ void FlattenAst::flattenNode(const Node* Nd) {
       break;
     }
     case OpFileHeader: {
+      if (WrotePrimaryHeader) {
+        // Must be write header. Treat as ordinary n-ary node.
+        for (const auto* Kid : *Nd)
+          flattenNode(Kid);
+        Writer->write(Opcode);
+        Writer->write(Nd->getNumKids());
+        break;
+      }
+      // The primary header is special in that the size is defined by the
+      // reading algorithm, and no "FileHeader" opcode is generated.
       for (const auto* Kid : *Nd) {
         TRACE(node_ptr, "Const", Kid);
         const auto* Const = dyn_cast<IntegerNode>(Kid);
@@ -168,6 +179,7 @@ void FlattenAst::flattenNode(const Node* Nd) {
         }
         Writer->writeHeaderValue(Const->getValue(), Const->getIntTypeFormat());
       }
+      WrotePrimaryHeader = true;
       break;
     }
     case OpStream: {

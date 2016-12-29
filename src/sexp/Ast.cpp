@@ -237,9 +237,9 @@ SymbolTable::SymbolTable()
     // TODO(karlschimpf) Switch Alloc to an ArenaAllocator once working.
     // TODO(karlschimpf) Figure out why we can't deallocate Allocated!
     : Allocated(new std::vector<Node*>()),
-#if 0
-      Trace("sexp_st"),
-#endif
+      Root(nullptr),
+      InstalledHeader(nullptr),
+      Error(nullptr),
       NextCreationIndex(0),
       Predefined(new std::vector<SymbolNode*>()) {
   Error = create<ErrorNode>();
@@ -249,14 +249,6 @@ SymbolTable::SymbolTable()
 SymbolTable::~SymbolTable() {
   clear();
   deallocateNodes();
-}
-
-const FileHeaderNode* SymbolTable::getInstalledFileHeader() const {
-  if (Root)
-    if (const auto* File = dyn_cast<FileNode>(Root))
-      if (const auto* Header = dyn_cast<FileHeaderNode>(File->getKid(0)))
-        return Header;
-  return nullptr;
 }
 
 void SymbolTable::setTraceProgress(bool NewValue) {
@@ -401,6 +393,12 @@ void SymbolTable::installDefinitions(Node* Root) {
     default:
       return;
     case OpFile:
+      if (InstalledHeader == nullptr) {
+        InstalledHeader = dyn_cast<FileHeaderNode>(Root->getKid(1));
+        if (InstalledHeader == nullptr)
+          InstalledHeader = dyn_cast<FileHeaderNode>(Root->getKid(0));
+      }
+    // intentionally fall to next case.
     case OpSection:
       for (Node* Kid : *Root)
         installDefinitions(Kid);

@@ -15,6 +15,7 @@
 # This file defines the CASM binary form of ASTs.
 
 (header (u32.const 0x6d736163) (u32.const 0x0))
+(void)
 
 # Control flow operators
 (literal 'block'          (u8.const 0x01))
@@ -87,7 +88,8 @@
 (literal 'literal.use'    (u8.const 0x71))
 
 (define 'file' (params)
-  # Note: Assume the header is read by the reader.
+  # Note: Assume the first header is read by the reader.
+  (eval 'header')
   (eval 'section')
 )
 

@@ -215,7 +215,7 @@ bool InflateAst::applyOp(IntType Op) {
     case OpEval:
       return buildNary<EvalNode>();
     case OpFile:
-      return buildBinary<FileNode>();
+      return buildTernary<FileNode>();
     case OpFileHeader:
       return buildNary<FileHeaderNode>();
     case OpFilter:
@@ -257,7 +257,7 @@ bool InflateAst::applyOp(IntType Op) {
       if (!buildNary<SectionNode>())
         return false;
       Values.push(OpFile);
-      return buildBinary<FileNode>();
+      return buildTernary<FileNode>();
     case OpSequence:
       return buildNary<SequenceNode>();
     case OpSet:

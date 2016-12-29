@@ -68,6 +68,7 @@ class BinaryWriter {
   std::shared_ptr<utils::TraceClass> Trace;
   bool MinimizeBlockSize;
   bool FreezeEofOnDestruct;
+  bool WrotePrimaryHeader;
 
   void writeNode(const Node* Nd);
   void writeBlock(std::function<void()> ApplyFn);

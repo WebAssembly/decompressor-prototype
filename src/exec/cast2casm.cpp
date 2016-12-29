@@ -215,8 +215,9 @@ int main(int Argc, const char* Argv[]) {
     Args.add(AlgorithmFlag.setShortName('a')
                  .setLongName("algorithm")
                  .setOptionName("ALGORITHM")
-                 .setDescription("Use algorithm in ALGORITHM file "
-                                 "to parse text file"));
+                 .setDescription(
+                     "Use algorithm in ALGORITHM file "
+                     "to parse text file"));
 
     ArgsParser::Bool ExpectFailFlag(ExpectExitFail);
     Args.add(ExpectFailFlag.setDefault(false)
@@ -224,11 +225,11 @@ int main(int Argc, const char* Argv[]) {
                  .setDescription("Succeed on failure/fail on success"));
 
     ArgsParser::Bool MinimizeBlockFlag(MinimizeBlockSize);
-    Args.add(MinimizeBlockFlag
-             .setShortName('m')
-             .setLongName("minimize")
-             .setDescription("Minimize size in binary file "
-                             "(note: runs slower)"));
+    Args.add(MinimizeBlockFlag.setShortName('m')
+                 .setLongName("minimize")
+                 .setDescription(
+                     "Minimize size in binary file "
+                     "(note: runs slower)"));
 
     ArgsParser::RequiredCharstring InputFlag(InputFilename);
     Args.add(InputFlag.setOptionName("INPUT")
@@ -272,20 +273,19 @@ int main(int Argc, const char* Argv[]) {
             .setDescription("Show lexing of algorithm (defined by option -a)"));
 
     ArgsParser::OptionalCharstring FunctionNameFlag(FunctionName);
-    Args.add(FunctionNameFlag
-             .setShortName('f')
-             .setLongName("function")
-             .setOptionName("Name")
-             .setDescription("Generate c++ source code to implement an array "
-                             "containing the binary encoding, with accessors "
-                             "Name() and NameSize()"));
+    Args.add(FunctionNameFlag.setShortName('f')
+                 .setLongName("function")
+                 .setOptionName("Name")
+                 .setDescription(
+                     "Generate c++ source code to implement an array "
+                     "containing the binary encoding, with accessors "
+                     "Name() and NameSize()"));
 
     ArgsParser::Bool HeaderFileFlag(HeaderFile);
-    Args.add(HeaderFileFlag
-             .setLongName("header")
-             .setDescription("Generate header version of c++ source instead "
-                             "of implementatoin file (only applies when "
-                             "'--function Name' is specified)"));
+    Args.add(HeaderFileFlag.setLongName("header").setDescription(
+        "Generate header version of c++ source instead "
+        "of implementatoin file (only applies when "
+        "'--function Name' is specified)"));
 
     switch (Args.parse(Argc, Argv)) {
       case ArgsParser::State::Good:
@@ -359,7 +359,7 @@ int main(int Argc, const char* Argv[]) {
     Reader->setTrace(Trace);
     Writer->setTrace(Trace);
   }
-  Reader->useFileHeader(InputSymtab->getInstalledFileHeader());
+  Reader->useFileHeader(InputSymtab->getInstalledHeader());
   Reader->algorithmStart();
   Reader->algorithmReadBackFilled();
   if (Reader->errorsFound()) {
@@ -371,9 +371,11 @@ int main(int Argc, const char* Argv[]) {
     Namespaces.push_back("wasm");
     Namespaces.push_back("decode");
     if (HeaderFile)
-      generateArrayDecl(InputFilename, Namespaces, FunctionName, ReadPos, Output);
+      generateArrayDecl(InputFilename, Namespaces, FunctionName, ReadPos,
+                        Output);
     else
-      generateArrayImpl(InputFilename, Namespaces, FunctionName, ReadPos, Output);
+      generateArrayImpl(InputFilename, Namespaces, FunctionName, ReadPos,
+                        Output);
   }
   return exit_status(EXIT_SUCCESS);
 }

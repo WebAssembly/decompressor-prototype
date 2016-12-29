@@ -181,7 +181,7 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
   // Install definitions in tree defined by root.
   void install(Node* Root);
   const Node* getInstalledRoot() const { return Root; }
-  const FileHeaderNode* getInstalledFileHeader() const;
+  const FileHeaderNode* getInstalledHeader() const { return InstalledHeader; }
   void clear() { SymbolMap.clear(); }
   int getNextCreationIndex() { return ++NextCreationIndex; }
 
@@ -204,6 +204,7 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
   std::vector<Node*>* Allocated;
   std::shared_ptr<utils::TraceClass> Trace;
   Node* Root;
+  FileHeaderNode* InstalledHeader;
   Node* Error;
   int NextCreationIndex;
   std::map<std::string, SymbolNode*> SymbolMap;

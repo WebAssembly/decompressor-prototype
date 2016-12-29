@@ -161,7 +161,6 @@
   X(BitwiseOr,)                                                                \
   X(BitwiseXor,)                                                               \
   X(Case,)                                                                     \
-  X(File,)                                                                     \
   X(IfThen,)                                                                   \
   X(Loop,)                                                                     \
   X(Or,)                                                                       \
@@ -206,6 +205,7 @@
 //#define X(tag, NODE_DECLS)
 #define AST_TERNARYNODE_TABLE                                                  \
   X(Convert,)                                                                  \
+  X(File,)                                                                     \
   X(IfThenElse,)                                                               \
 
 //#define X(tag)

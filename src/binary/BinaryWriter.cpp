@@ -36,7 +36,8 @@ BinaryWriter::BinaryWriter(std::shared_ptr<decode::Queue> Output,
       Writer(std::make_shared<ByteWriteStream>()),
       SectionSymtab(Symtab),
       MinimizeBlockSize(false),
-      FreezeEofOnDestruct(true) {
+      FreezeEofOnDestruct(true),
+      WrotePrimaryHeader(false) {
 }
 
 void BinaryWriter::setTraceProgress(bool NewValue) {
@@ -157,8 +158,19 @@ void BinaryWriter::writeNode(const Node* Nd) {
       break;
     }
     case OpFileHeader: {
+      if (WrotePrimaryHeader) {
+        // Must be write header. Treat as ordinary n-ary node.
+        for (const auto* Kid : *Nd)
+          writeNode(Kid);
+        Writer->writeUint8(Opcode, WritePos);
+        Writer->writeVaruint32(Nd->getNumKids(), WritePos);
+        break;
+      }
+      // The primary header is special in that the size is defined by the
+      // reading algorithm, and no "FileHeader" opcode is generated.
       for (int i = 0; i < Nd->getNumKids(); ++i)
         writeLiteral(Nd->getKid(i));
+      WrotePrimaryHeader = true;
       break;
     }
     case OpStream: {

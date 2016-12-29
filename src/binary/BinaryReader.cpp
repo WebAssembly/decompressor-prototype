@@ -208,16 +208,35 @@ void BinaryReader::resume() {
             Header->append(Symtab->getU32ConstDefinition(
                 CasmVersion, ValueFormat::Hexidecimal));
             NodeStack.push_back(Header);
-            Frame.CallState = State::Step2;
-            call(Method::Section);
+            Frame.CallState = State::Loop;
+            call(Method::Node);
             break;
           }
-          case State::Step2: {
+          case State::Loop:
+            // Reads the write file header, which are a sequence of
+            // ordinary nodes, rooted as either Void or FileHeader.
+            switch (NodeStack.back()->getType()) {
+              case OpFileHeader:
+              case OpVoid:
+                Frame.CallState = State::Step2;
+                break;
+              default:
+                call(Method::Node);
+                break;
+            }
+            break;
+          case State::Step2:
+            Frame.CallState = State::Step3;
+            call(Method::Section);
+            break;
+          case State::Step3: {
             Node* Section = NodeStack.back();
             NodeStack.pop_back();
-            Node* Header = NodeStack.back();
+            Node* Header2 = NodeStack.back();
             NodeStack.pop_back();
-            CurFile = Symtab->create<FileNode>(Header, Section);
+            Node* Header1 = NodeStack.back();
+            NodeStack.pop_back();
+            CurFile = Symtab->create<FileNode>(Header1, Header2, Section);
             Frame.CallState = State::Exit;
             break;
           }
@@ -306,6 +325,9 @@ void BinaryReader::resume() {
                 break;
               case OpEval:
                 readNary<EvalNode>();
+                break;
+              case OpFileHeader:
+                readNary<FileHeaderNode>();
                 break;
               case OpFilter:
                 readNary<FilterNode>();
@@ -400,7 +422,6 @@ void BinaryReader::resume() {
   }
                 AST_INTEGERNODE_TABLE
               case NO_SUCH_NODETYPE:
-              case OpFileHeader:
               case OpFile:
               case OpSection:
               case OpUnknownSection:

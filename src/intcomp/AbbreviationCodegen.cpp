@@ -40,7 +40,8 @@ void AbbreviationCodegen::generateFile() {
       CasmBinaryMagic, decode::ValueFormat::Hexidecimal));
   Header->append(Symtab->getU32ConstDefinition(
       CasmBinaryVersion, decode::ValueFormat::Hexidecimal));
-  auto* File = Symtab->create<FileNode>(Header, generateFileBody());
+  auto* File = Symtab->create<FileNode>(Header, Symtab->create<VoidNode>(),
+                                        generateFileBody());
   Symtab->install(File);
 }
 
