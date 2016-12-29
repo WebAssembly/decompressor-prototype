@@ -149,15 +149,20 @@ void FlattenAst::flattenNode(const Node* Nd) {
       break;
     }
     case OpFile: {
-      // Note: The header appears at the beginning of the file, and hence,
-      // isn't labeled.
-      for (int i = 0; i < Nd->getNumKids(); ++i)
-        flattenNode(Nd->getKid(i));
+      assert(Nd->getNumKids() == 3);
+      // Write primary heder.
+      flattenNode(Nd->getKid(0));
+      // Before secondary header, write out tree size so that reader knows
+      // how many nodes to read.
+      TRACE(size_t, "TreeSize", Nd->getKid(1)->getTreeSize());
+      Writer->write(Nd->getKid(1)->getTreeSize());
+      flattenNode(Nd->getKid(1));
+      flattenNode(Nd->getKid(2));
       break;
     }
     case OpFileHeader: {
       if (WrotePrimaryHeader) {
-        // Must be write header. Treat as ordinary n-ary node.
+        // Must be secondary header. write out as ordinary nary node.
         for (const auto* Kid : *Nd)
           flattenNode(Kid);
         Writer->write(Opcode);
