@@ -53,6 +53,7 @@ class FlattenAst {
   SectionSymbolTable SectionSymtab;
   bool FreezeEofOnDestruct;
   bool HasErrors;
+  bool WrotePrimaryHeader;
   std::shared_ptr<utils::TraceClass> Trace;
 
   void flattenNode(const Node* Nd);
