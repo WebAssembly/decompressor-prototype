@@ -398,6 +398,12 @@ void SymbolTable::installSubtreeCaches(Node* Nd,
     AdditionalNodes.push_back(Kid);
 }
 
+const FileHeaderNode* SymbolTable::getRootHeader() const {
+  if (Root == nullptr)
+    return nullptr;
+  return dyn_cast<FileHeaderNode>(Root->getKid(0));
+}
+
 void SymbolTable::installDefinitions(Node* Root) {
   TRACE_METHOD("installDefinitions");
   TRACE(node_ptr, nullptr, Root);
@@ -410,7 +416,7 @@ void SymbolTable::installDefinitions(Node* Root) {
       if (InstalledHeader == nullptr) {
         InstalledHeader = dyn_cast<FileHeaderNode>(Root->getKid(1));
         if (InstalledHeader == nullptr)
-          InstalledHeader = dyn_cast<FileHeaderNode>(Root->getKid(0));
+          InstalledHeader = getRootHeader();
       }
     // intentionally fall to next case.
     case OpSection:

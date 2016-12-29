@@ -135,6 +135,7 @@
     (case 'error'               (=> 'postorder.inst'))
     (case 'eval'                (eval 'nary.node'))
     #    (case 'file'                (=> 'postorder.inst'))
+    (case 'file.header'         (eval 'nary.node'))
     (case 'filter'              (eval 'nary.node'))
     (case 'if.then'             (=> 'postorder.inst'))
     (case 'if.then.else'        (=> 'postorder.inst'))

@@ -359,7 +359,10 @@ int main(int Argc, const char* Argv[]) {
     Reader->setTrace(Trace);
     Writer->setTrace(Trace);
   }
-  Reader->useFileHeader(InputSymtab->getInstalledHeader());
+  // Note: By default, the reader uses the installed header, which corresponds
+  // to the target header (not the header for compressed algorithms). Fix
+  // by overriding to use the root header.
+  Reader->useFileHeader(InputSymtab->getRootHeader());
   Reader->algorithmStart();
   Reader->algorithmReadBackFilled();
   if (Reader->errorsFound()) {
