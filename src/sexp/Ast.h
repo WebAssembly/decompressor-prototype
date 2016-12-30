@@ -194,7 +194,9 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
   }
 
   static bool installPredefinedDefaults(std::shared_ptr<SymbolTable> Symtab,
-                                        bool Verbose);
+                                        const uint8_t* AlgArray,
+                                        size_t AlgArraySize,
+                                        bool Trace);
 
   void setTraceProgress(bool NewValue);
   virtual void setTrace(std::shared_ptr<utils::TraceClass> Trace);

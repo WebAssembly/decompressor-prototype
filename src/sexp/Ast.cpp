@@ -265,6 +265,24 @@ SymbolTable::~SymbolTable() {
   deallocateNodes();
 }
 
+bool SymbolTable::installPredefinedDefaults(std::shared_ptr<SymbolTable> Symtab,
+                                            const uint8_t AlgArray,
+                                            size_t AlgArraySize,
+                                            bool Trace) {
+  std::shared_ptr<ArrayReader> Stream =
+      std::make_shared<ArayReader>(AlgArray, AlgArraySize);
+  if (!Stream)
+    return false;
+  BinaryReader Reader(std::make_shared<ReadBackedQueue>(std::move(Stream)),
+                      Symtab);
+  if (Trace) {
+    TraceClass& Trace = Reader.getTrace();
+    Trace.setTraceProgress(true);
+    TRACE_MESSAGE_USING(Trace,  "Loading predefined decompression rules\n");
+  }
+  return Reader.readFile() != nullptr;
+}
+
 void SymbolTable::setTraceProgress(bool NewValue) {
   if (!NewValue && !Trace)
     return;

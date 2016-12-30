@@ -14,6 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "algorithms/wasm0xd.h"
 #include "binary/BinaryReader.h"
 #include "intcomp/IntCompress.h"
 #include "sexp-parser/Driver.h"
@@ -22,6 +23,7 @@
 #include "stream/RawStream.h"
 #include "stream/ReadBackedQueue.h"
 #include "stream/WriteBackedQueue.h"
+#include "utils/ArgsParse.h"
 #include "utils/Defs.h"
 
 #include <cstring>
@@ -32,8 +34,8 @@ using namespace wasm::decode;
 using namespace wasm::filt;
 using namespace wasm::intcomp;
 
-const char* InputFilename = "-";
-const char* OutputFilename = "-";
+charstring InputFilename = "-";
+charstring OutputFilename = "-";
 
 std::shared_ptr<RawStream> getInput() {
   if (InputFilename == std::string("-")) {
@@ -49,6 +51,7 @@ std::shared_ptr<RawStream> getOutput() {
   return std::make_shared<FileWriter>(OutputFilename);
 }
 
+#if 0
 void usage(const char* AppName) {
   fprintf(stderr, "usage: %s [options]\n", AppName);
   fprintf(stderr, "\n");
@@ -95,12 +98,130 @@ void usage(const char* AppName) {
             "\t\t\t\tAdd progress of lexing default files.\n");
   }
 }
+#endif
 
 int main(int Argc, char* Argv[]) {
+  charstring AlgorithmFilename = nullptr;
+  bool Verbose = false;
+#if 0
   unsigned Verbose = 0;
   bool MinimizeBlockSize = false;
   bool InstallPredefinedRules = true;
   std::vector<int> DefaultIndices;
+#endif
+  IntCompressor::Flags CompressionFlags;
+
+  {
+    ArgsParser Args("Compress integer sequences in a WASM file");
+
+    ArgsParser::Required<charstring> InputFilenameFlag(InputFilename);
+    Args.add(InputFilenameFlag
+             .setOptionName("INPUT")
+             .setDescription("WASM file to compress"));
+
+    ArgsParser::Optional<charstring> OutputFilenameFlag(OutputFilename);
+    Args.add(OutputFilename
+             .setShortName('o')
+             .setLongName("output")
+             .setOptionName("OUTPUT")
+             .setDescription("Place to put resulting compressed WASM binary"));
+
+    ArgsParser::Optional<charstring> AlgorithmFilenameFlag(AlgorithmFile);
+    Args.add(AlgorithmFilenameFlag
+             .setShortName('a')
+             .setLongName("algorithm")
+             .setOptionName("ALGORITHM")
+             .setDescription("File containing algorithm to parse WASM file "
+                             "(rather than using builting algorithm)"));
+
+    ArgsParser::Optional<size_t> CountCutoffFlag(CompressionFlags.CountCutoff);
+    Args.add(CountCutoffFlag
+             .setDefault(10)
+             .setLongName('min-int-count')
+             .setOptionName("INTEGER")
+             .setDescription("Minimum number of times an integer must appear to "
+                             "be considered for compression"));
+
+    ArgsParser::Optional<size_t>
+        WeightCutoffFlag(CompressionFlags.WeightCutoff);
+    Args.add(WeightCutoffFlag
+             .setDefault(100)
+             .setLongName("min-weight")
+             .setOptionName("INTEGER")
+             .setDescription("Minimum number of integers (single and/or "
+                             "sequences) that are needed to be considered a "
+                             "compression pattern"));
+
+    ArgsParser::Optional<size_t> LenghtLimitfFlag(CompressionFlags.LengthLimit);
+    Args.add(LengthLimitFlag
+             .setDefault(5)
+             .setLongName("max-length")
+             .setOptionName("INTEGER")
+             .setDescription("Maximum integer sequence length that will be "
+                             "considered for compression patterns ("
+                             "execution time grows non-linearly when this value "
+                             " is increased)"));
+
+    ArgsParser::Toggle VerboseFlag(Verbose);
+    Args.add(VerboseFlag
+             .setShortName('v')
+             .setLongName("verbose");
+             .setDescription("Show progress of compression"));
+
+    ArgsParser::Optional<bool> TracedReadingInputFlag(MyFlags.TraceReadingInput);
+    Args.add(TraceReadingInputFlag
+             .setLongName("verbose=read")
+             .setDescription("Show trace of initial read of the WASM file"));
+
+    ArgsParser::Optional<bool> TraceReadingIntStreamFlag(MyFlags.TraceReadingIntStream);
+    Args.add(TraceReadingIntStreamFlag
+             .setLongName("verbose=reread")
+             .setDescription("Show trace of subsequent reads of the integer "
+                             "stream produced by the intial read"));
+
+    ArgsParser::Optional<bool> TraceWritingCodeOutputFlag(MyFlags.TracewritingCodeOutput);
+    Args.add(TraceWritingCodeOutputFlag
+             .setLongName("verbose=code")
+             .setDescription("Show trace of generated compression algorithm"));
+
+    ArgsParser::Optional<bool> TraceCodeGenerationForReadingFlag(
+        MyFlags.TraceCodeGenerationForReading);
+    Args.add(TraceCodeGenerationForReading
+             .setLongName("verbose=read-code")
+             .setDescription("Show trace of generating code to compress the "
+                             "integer stream produced by the initial read, to "
+                             "the corresponding compressed integer stream"));
+
+    ArgsParser::Optional<bool> TraceCodeGenerationForWritingFlag(
+        MyFlags.TraceCodeGenerationForWriting);
+    Args.add(TraceCodeGenerationForWriting
+             .setLongName("verbose=write-code")
+             .setDescription("Show trace of generating code to write out the "
+                             "generated compressed integer stream"));
+
+    ArgsParser::Optional<bool> TraceWritingDataOutputFlag(MyFlags.TraceWritingDataOutput);
+    Args.add(TraceWritingDataOutputFlag
+             .setLongName("verbose=data")
+             .setDescription("Show trace of how data is compressed in the "
+                             "output file"));
+
+    ArgsParser::Optional<bool> TraceCompressionFlag(MyFlags.TraceCompression);
+    Args.add(TraceCompressionFlag
+             .setLongName("verbose=compress")
+             .setDescription("Show details on how patterns are detected for "
+                             "compressing the (input) integer sequence"));
+
+    switch (Args.parse(Argc, Argv)) {
+      case ArgsParser::State::Good:
+        break;
+      case ArgsParser::State::Usage:
+        return exit_status(EXIT_SUCCESS);
+      default:
+        fprintf(stderr, "Unable to parse command line arguments!\n");
+        return exit_status(EXIT_FAILURE);
+    }
+  }
+#if 0
   size_t CountCutoff = 10;
   size_t WeightCutoff = 100;
   size_t LengthLimit = 5;
@@ -165,11 +286,13 @@ int main(int Argc, char* Argv[]) {
       return exit_status(EXIT_FAILURE);
     }
   }
+
   // Define defaults if only one cutoff provided.
   if (WeightCutoff == 0)
     WeightCutoff = CountCutoff;
   if (CountCutoff == 0)
     CountCutoff = WeightCutoff;
+
   // Extract compression detail level from verbose, and adjust, so
   // that remaining verbose checks need not be changed if detail level
   // changes.
@@ -207,6 +330,7 @@ int main(int Argc, char* Argv[]) {
       return exit_status(EXIT_FAILURE);
     }
   }
+
   IntCompressor::DetailLevel DetailLevel;
   switch (CompressVerbose) {
     case 0:
@@ -222,6 +346,14 @@ int main(int Argc, char* Argv[]) {
       DetailLevel = IntCompressor::AllDetail;
       break;
   }
+#endif
+
+  auto Symtab = std::make_shared<SymbolTable>();
+  if (AlgorithmFilename == nullptr) {
+
+  } else {
+  }
+
   IntCompressor Compressor(std::make_shared<ReadBackedQueue>(getInput()),
                            std::make_shared<WriteBackedQueue>(getOutput()),
                            Symtab);

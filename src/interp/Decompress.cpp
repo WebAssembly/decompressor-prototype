@@ -16,6 +16,7 @@
 
 // Implementation of the C API to the decompressor interpreter.
 
+#include "algorithms/wasm0xd.h"
 #include "interp/Decompress.h"
 #include "interp/Interpreter.h"
 #include "stream/Pipe.h"
@@ -167,8 +168,8 @@ extern "C" {
 
 void* create_decompressor() {
   auto* Decomp = new Decompressor();
-  bool InstalledDefaults =
-      SymbolTable::installPredefinedDefaults(Decomp->Symtab, false);
+  bool InstalledDefaults = SymbolTable::installPredefinedDefaults(
+      Decomp->Symtab, Algwasm0xd(), Algwasm0xdSize(), false);
   Decomp->Interp = std::make_shared<Interpreter>(
       Decomp->Input, Decomp->OutputPipe.getInput(), Decomp->Symtab);
   // Decomp->Interp->setTraceProgress(true);
