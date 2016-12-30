@@ -405,7 +405,7 @@ LIBS = $(PARSER_LIB) $(BINARY_LIB) $(INTERP_LIB) $(SEXP_LIB) \
        $(ALG_LIB)
 
 LIBS_BOOT = $(PARSER_LIB_BOOT) $(BINARY_LIB_BOOT) $(INTERP_LIB_BOOT) \
-       $(SEXP_LIB_BOOT) $(STRM_LIB_BOOT) $(UTILS_LIB_BOOT) $(INTERP_LIB) \
+       $(SEXP_LIB_BOOT) $(STRM_LIB_BOOT) $(UTILS_LIB_BOOT) $(INTERP_LIB_BOOT) \
        $(BINARY_LIB_BOOT)
 
 ##### Track additional important variable definitions not in Makefile.common
