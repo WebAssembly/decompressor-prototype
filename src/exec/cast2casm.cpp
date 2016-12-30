@@ -211,7 +211,7 @@ int main(int Argc, const char* Argv[]) {
   {
     ArgsParser Args("Converts compression algorithm from text to binary");
 
-    ArgsParser::RequiredCharstring AlgorithmFlag(AlgorithmFilename);
+    ArgsParser::Required<charstring> AlgorithmFlag(AlgorithmFilename);
     Args.add(AlgorithmFlag.setShortName('a')
                  .setLongName("algorithm")
                  .setOptionName("ALGORITHM")
@@ -219,60 +219,58 @@ int main(int Argc, const char* Argv[]) {
                      "Use algorithm in ALGORITHM file "
                      "to parse text file"));
 
-    ArgsParser::Bool ExpectFailFlag(ExpectExitFail);
+    ArgsParser::Optional<bool> ExpectFailFlag(ExpectExitFail);
     Args.add(ExpectFailFlag.setDefault(false)
                  .setLongName("expect-fail")
                  .setDescription("Succeed on failure/fail on success"));
 
-    ArgsParser::Bool MinimizeBlockFlag(MinimizeBlockSize);
+    ArgsParser::Optional<bool> MinimizeBlockFlag(MinimizeBlockSize);
     Args.add(MinimizeBlockFlag.setShortName('m')
                  .setLongName("minimize")
                  .setDescription(
                      "Minimize size in binary file "
                      "(note: runs slower)"));
 
-    ArgsParser::RequiredCharstring InputFlag(InputFilename);
+    ArgsParser::Required<charstring> InputFlag(InputFilename);
     Args.add(InputFlag.setOptionName("INPUT")
                  .setDescription("Text file to convert to binary"));
 
-    ArgsParser::OptionalCharstring OutputFlag(OutputFilename);
+    ArgsParser::Optional<charstring> OutputFlag(OutputFilename);
     Args.add(OutputFlag.setShortName('o')
                  .setLongName("output")
                  .setOptionName("OUTPUT")
                  .setDescription("Generated binary file"));
 
-    ArgsParser::Bool VerboseFlag(Verbose);
+    ArgsParser::Toggle VerboseFlag(Verbose);
     Args.add(
-        VerboseFlag.setToggle(true)
-            .setShortName('v')
-            .setLongName("verbose")
-            .setDescription("Show progress and tree written to binary file"));
+        VerboseFlag.setShortName('v').setLongName("verbose").setDescription(
+            "Show progress and tree written to binary file"));
 
-    ArgsParser::Bool TraceFlattenFlag(TraceFlatten);
+    ArgsParser::Optional<bool> TraceFlattenFlag(TraceFlatten);
     Args.add(TraceFlattenFlag.setLongName("verbose=flatten")
                  .setDescription("Show how algorithms are flattened"));
 
-    ArgsParser::Bool TraceWriteFlag(TraceWrite);
+    ArgsParser::Optional<bool> TraceWriteFlag(TraceWrite);
     Args.add(TraceWriteFlag.setLongName("verbose=write")
                  .setDescription("Show how binary file is encoded"));
 
-    ArgsParser::Bool TraceTreeFlag(TraceTree);
+    ArgsParser::Optional<bool> TraceTreeFlag(TraceTree);
     Args.add(TraceTreeFlag.setLongName("verbose=tree")
                  .setDescription(
                      "Show tree being written while writing "
                      "(implies --verbose=write)"));
 
-    ArgsParser::Bool TraceParserFlag(TraceParser);
+    ArgsParser::Optional<bool> TraceParserFlag(TraceParser);
     Args.add(TraceParserFlag.setLongName("verbose=parser")
                  .setDescription(
                      "Show parsing of algorithm (defined by option -a)"));
 
-    ArgsParser::Bool TraceLexerFlag(TraceLexer);
+    ArgsParser::Optional<bool> TraceLexerFlag(TraceLexer);
     Args.add(
         TraceLexerFlag.setLongName("verbose=lexer")
             .setDescription("Show lexing of algorithm (defined by option -a)"));
 
-    ArgsParser::OptionalCharstring FunctionNameFlag(FunctionName);
+    ArgsParser::Optional<charstring> FunctionNameFlag(FunctionName);
     Args.add(FunctionNameFlag.setShortName('f')
                  .setLongName("function")
                  .setOptionName("Name")
@@ -281,7 +279,7 @@ int main(int Argc, const char* Argv[]) {
                      "containing the binary encoding, with accessors "
                      "Name() and NameSize()"));
 
-    ArgsParser::Bool HeaderFileFlag(HeaderFile);
+    ArgsParser::Optional<bool> HeaderFileFlag(HeaderFile);
     Args.add(HeaderFileFlag.setLongName("header").setDescription(
         "Generate header version of c++ source instead "
         "of implementatoin file (only applies when "

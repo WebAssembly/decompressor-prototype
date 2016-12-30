@@ -20,6 +20,7 @@
 #define DECOMPRESSOR_SRC_UTILS_ARGSPARSE_H
 
 #include "utils/Casting.h"
+#include "utils/Defs.h"
 
 #include <string>
 #include <set>
@@ -36,7 +37,6 @@ class ArgsParser {
  public:
   enum class State { Bad, Usage, Good };
   enum class ArgKind { Optional, Required };
-  typedef const char* charstring;
 
   class Arg {
     Arg() = delete;
@@ -44,11 +44,7 @@ class ArgsParser {
     Arg& operator=(const Arg&) = delete;
 
    public:
-    virtual ~Arg();
     void describe(FILE* Out, size_t TabSize) const;
-    virtual void describeDefault(FILE* out,
-                                 size_t TabSize,
-                                 size_t& Indent) const;
     virtual bool select(charstring OptionValue) = 0;
     virtual int compare(const Arg& A) const;
     char getShortName() const { return ShortName; }
@@ -77,6 +73,8 @@ class ArgsParser {
     ArgKind getRtClassId() const { return Kind; }
     static bool implementsClass(ArgKind) { return true; }
 
+    virtual ~Arg() {}
+
    protected:
     explicit Arg(ArgKind Kind, charstring Description)
         : Kind(Kind),
@@ -93,112 +91,107 @@ class ArgsParser {
     mutable charstring OptionName;
     bool OptionFound;
     size_t AddIndex;
+
+    virtual void describeDefault(FILE* Out,
+                                 size_t TabSize,
+                                 size_t& Indent) const;
+    virtual void describeOptionName(FILE* Out,
+                                    size_t TabSize,
+                                    size_t& Indent) const;
   };
 
-  class Required;
+  class RequiredArg;
 
-  class Optional : public Arg {
+  class OptionalArg : public Arg {
+    OptionalArg() = delete;
+    OptionalArg(const OptionalArg&) = delete;
+    OptionalArg& operator=(const OptionalArg&) = delete;
+
+   public:
+    int compare(const Arg& A) const OVERRIDE;
+    int compareWithRequired(const RequiredArg& R) const;
+    static bool implementsClass(ArgKind Id) { return Id == ArgKind::Optional; }
+
+    ~OptionalArg() OVERRIDE {}
+
+   protected:
+    explicit OptionalArg(charstring Description);
+  };
+
+  template <class T>
+  class Optional : public OptionalArg {
     Optional() = delete;
     Optional(const Optional&) = delete;
     Optional& operator=(const Optional&) = delete;
 
    public:
-    ~Optional() OVERRIDE;
-    static bool implementsClass(ArgKind Id) { return Id == ArgKind::Optional; }
-    int compare(const Arg& A) const OVERRIDE;
-    int compareWithRequired(const Required& R) const;
+    explicit Optional(T& Value, charstring Description = nullptr)
+        : OptionalArg(Description), Value(Value), DefaultValue(Value) {}
+    Optional& setDefault(T NewDefault) {
+      Value = DefaultValue = NewDefault;
+      return *this;
+    }
+    bool select(charstring NewDefault) OVERRIDE;
+    void describeDefault(FILE* Out,
+                         size_t TabSize,
+                         size_t& Indent) const OVERRIDE;
+
+    ~Optional() OVERRIDE {}
 
    protected:
-    explicit Optional(charstring Description);
+    T& Value;
+    T DefaultValue;
   };
 
-  class Bool : public Optional {
-    Bool() = delete;
-    Bool(const Bool&) = delete;
-    Bool& operator=(const Bool&) = delete;
+  class Toggle : public Optional<bool> {
+    Toggle() = delete;
+    Toggle(const Toggle&) = delete;
+    Toggle& operator=(const Toggle&) = delete;
 
    public:
-    explicit Bool(bool& Value, charstring Description = nullptr)
-        : Optional(Description),
-          Value(Value),
-          DefaultValue(Value),
-          Toggle(false) {}
-    ~Bool() OVERRIDE;
-    Bool& setDefault(bool NewDefault) {
-      Value = DefaultValue = NewDefault;
-      return *this;
-    }
-    Bool& setToggle(bool Value) {
-      Toggle = Value;
-      return *this;
-    }
+    explicit Toggle(bool& Value, charstring Description = nullptr)
+        : Optional<bool>(Value, Description) {}
     bool select(charstring OptionValue) OVERRIDE;
     void describeDefault(FILE* Out,
                          size_t TabSize,
                          size_t& Indent) const OVERRIDE;
 
-   private:
-    bool& Value;
-    bool DefaultValue;
-    bool Toggle;
+    ~Toggle() OVERRIDE {}
   };
 
-  class OptionalCharstring : public Optional {
-    OptionalCharstring() = delete;
-    OptionalCharstring(const OptionalCharstring&) = delete;
-    OptionalCharstring& operator=(const OptionalCharstring&) = delete;
+  class RequiredArg : public Arg {
+    RequiredArg() = delete;
+    RequiredArg(const RequiredArg&) = delete;
+    RequiredArg& operator=(const RequiredArg&) = delete;
 
    public:
-    explicit OptionalCharstring(charstring& Value,
-                                charstring Description = nullptr)
-        : Optional(Description), Value(Value), DefaultValue(Value) {}
-    ~OptionalCharstring() OVERRIDE;
-    OptionalCharstring& setDefault(charstring NewDefault) {
-      Value = DefaultValue = NewDefault;
-      return *this;
-    }
-    bool select(charstring OptionValue) OVERRIDE;
-    void describeDefault(FILE* Out,
-                         size_t TabSize,
-                         size_t& Indent) const OVERRIDE;
-
-   private:
-    charstring& Value;
-    charstring DefaultValue;
-  };
-
-  class Required : public Arg {
-    Required() = delete;
-    Required(const Required&) = delete;
-    Required& operator=(const Required&) = delete;
-
-   public:
-    ~Required() OVERRIDE {}
-
     int compare(const Arg& A) const OVERRIDE;
     static bool implementsClass(ArgKind Id) { return Id == ArgKind::Required; }
 
+    ~RequiredArg() OVERRIDE {}
+
    protected:
-    Required(charstring Description) : Arg(ArgKind::Required, Description) {
+    RequiredArg(charstring Description) : Arg(ArgKind::Required, Description) {
       // Force a default name.
       OptionName = "ARG";
     }
   };
 
-  class RequiredCharstring : public Required {
-    RequiredCharstring() = delete;
-    RequiredCharstring(const RequiredCharstring&) = delete;
-    RequiredCharstring& operator=(const RequiredCharstring&) = delete;
+  template <class T>
+  class Required : public RequiredArg {
+    Required() = delete;
+    Required(const Required&) = delete;
+    Required& operator=(const Required&) = delete;
 
    public:
-    explicit RequiredCharstring(charstring& Value,
-                                charstring Description = nullptr)
-        : Required(Description), Value(Value) {}
-    ~RequiredCharstring() OVERRIDE;
+    explicit Required(T& Value, charstring Description = nullptr)
+        : RequiredArg(Description), Value(Value) {}
     bool select(charstring OptionValue) OVERRIDE;
 
+    ~Required() OVERRIDE {}
+
    private:
-    charstring& Value;
+    T& Value;
   };
 
   explicit ArgsParser(const char* Description = nullptr);
@@ -220,12 +213,12 @@ class ArgsParser {
   int Argc;
   charstring* Argv;
   bool Help;
-  Bool HelpFlag;
+  Optional<bool> HelpFlag;
   std::vector<Arg*> Args;
-  std::vector<Arg*> Shorts;
-  std::vector<Arg*> Longs;
-  std::vector<Arg*> Placements;
-  std::vector<Required*> Requireds;
+  std::vector<Arg*> ShortArgs;
+  std::vector<Arg*> LongArgs;
+  std::vector<Arg*> PlacementArgs;
+  std::vector<RequiredArg*> RequiredArgs;
   int CurArg;
   size_t CurPlacement;
   State Status;

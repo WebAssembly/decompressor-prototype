@@ -88,6 +88,8 @@ enum class Ordering : int {
   NotComparable = 2
 };
 
+typedef const char* charstring;
+
 namespace decode {
 
 typedef uint64_t IntType;
