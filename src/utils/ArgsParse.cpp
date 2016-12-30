@@ -53,14 +53,14 @@ int compareNameCh(const char* Name, char Ch) {
 constexpr size_t TabWidth = 8;
 constexpr size_t MaxLine = 79;  // allow for trailing space character.
 
-void endLineIfOver(const size_t TabSize, FILE* Out, size_t& Indent) {
+void endLineIfOver(FILE* Out, const size_t TabSize, size_t& Indent) {
   if (Indent >= TabSize) {
     fputc('\n', Out);
     Indent = 0;
   }
 }
 
-void indentTo(const size_t TabSize, FILE* Out, size_t& Indent) {
+void indentTo(FILE* Out, const size_t TabSize, size_t& Indent) {
   while (Indent < TabSize) {
     fputc(' ', Out);
     ++Indent;
@@ -72,16 +72,16 @@ void writeNewline(FILE* Out, size_t& Indent) {
   Indent = 0;
 }
 
-void writeChar(const size_t TabSize, FILE* Out, size_t& Indent, char Ch) {
+void writeChar(FILE* Out, const size_t TabSize, size_t& Indent, char Ch) {
   if (Indent >= MaxLine) {
     writeNewline(Out, Indent);
   }
   switch (Ch) {
     case '\t': {
-      indentTo(TabSize, Out, Indent);
+      indentTo(Out, TabSize, Indent);
       size_t Spaces = TabWidth - (Indent % TabWidth);
       for (size_t i = 0; i < Spaces; ++i)
-        writeChar(TabSize, Out, Indent, ' ');
+        writeChar(Out, TabSize, Indent, ' ');
       break;
     }
     case '\n':
@@ -100,24 +100,24 @@ void writeChar(const size_t TabSize, FILE* Out, size_t& Indent, char Ch) {
   }
 }
 
-void writeChunk(const size_t TabSize,
-                FILE* Out,
+void writeChunk(FILE* Out,
+                const size_t TabSize,
                 size_t& Indent,
                 const char* string,
                 size_t Chunk) {
   for (size_t i = 0; i < Chunk; ++i)
-    writeChar(TabSize, Out, Indent, string[i]);
+    writeChar(Out, TabSize, Indent, string[i]);
 }
 
-void writeCharstring(const size_t TabSize,
-                     FILE* Out,
+void writeCharstring(FILE* Out,
+                     const size_t TabSize,
                      size_t& Indent,
                      const char* string) {
-  writeChunk(TabSize, Out, Indent, string, strlen(string));
+  writeChunk(Out, TabSize, Indent, string, strlen(string));
 }
 
-void printDescriptionContinue(const size_t TabSize,
-                              FILE* Out,
+void printDescriptionContinue(FILE* Out,
+                              const size_t TabSize,
                               size_t& Indent,
                               const char* Description) {
   const char* Whitespace = " \t\n";
@@ -129,15 +129,15 @@ void printDescriptionContinue(const size_t TabSize,
       if (Chunk == 0) {
         if (*Description == '\0')
           return;
-        writeChar(TabSize, Out, Indent, *(Description++));
+        writeChar(Out, TabSize, Indent, *(Description++));
         continue;
       }
       if (!(Indent + Chunk < MaxLine || Indent == TabSize)) {
         writeNewline(Out, Indent);
         continue;
       }
-      indentTo(TabSize, Out, Indent);
-      writeChunk(TabSize, Out, Indent, Description, Chunk);
+      indentTo(Out, TabSize, Indent);
+      writeChunk(Out, TabSize, Indent, Description, Chunk);
       Description += Chunk;
     }
     if (!LoopApplied)
@@ -146,13 +146,13 @@ void printDescriptionContinue(const size_t TabSize,
   return;
 }
 
-void printDescription(const size_t TabSize,
-                      FILE* Out,
+void printDescription(FILE* Out,
+                      const size_t TabSize,
                       size_t& Indent,
                       const char* Description) {
   if (Description && *Description != '\0')
-    endLineIfOver(TabSize, Out, Indent);
-  printDescriptionContinue(TabSize, Out, Indent, Description);
+    endLineIfOver(Out, TabSize, Indent);
+  printDescriptionContinue(Out, TabSize, Indent, Description);
 }
 
 }  // end of anonymous namespace
@@ -161,39 +161,48 @@ namespace wasm {
 
 namespace utils {
 
-ArgsParser::Arg::~Arg() {
-}
-
 void ArgsParser::Arg::describe(FILE* Out, size_t TabSize) const {
   size_t Indent = 0;
-  indentTo(TabSize, Out, Indent);
+  indentTo(Out, TabSize, Indent);
+  bool HasName = false;
   if (ShortName != 0) {
-    writeChar(TabSize, Out, Indent, '-');
-    writeChar(TabSize, Out, Indent, ShortName);
+    writeChar(Out, TabSize, Indent, '-');
+    writeChar(Out, TabSize, Indent, ShortName);
+    describeOptionName(Out, TabSize, Indent);
+    HasName = true;
   }
   if (LongName != nullptr) {
-    if (Indent > TabSize) {
-      writeCharstring(TabSize, Out, Indent, " |");
-    }
-    writeCharstring(TabSize, Out, Indent, " --");
-    writeCharstring(TabSize, Out, Indent, LongName);
+    if (HasName)
+      writeCharstring(Out, TabSize, Indent, " |");
+    writeCharstring(Out, TabSize, Indent, " --");
+    writeCharstring(Out, TabSize, Indent, LongName);
+    describeOptionName(Out, TabSize, Indent);
+    HasName = true;
   }
-  if (OptionName != nullptr) {
-    writeChar(TabSize, Out, Indent, ' ');
-    writeCharstring(TabSize, Out, Indent, OptionName);
-  }
+  if (!HasName)
+    describeOptionName(Out, TabSize, Indent);
   TabSize += TabWidth;
-  printDescription(TabSize, Out, Indent,
+  printDescription(Out, TabSize, Indent,
                    Description == nullptr ? "" : Description);
   describeDefault(Out, TabSize, Indent);
-  if (isa<Required>(this))
-    printDescriptionContinue(TabSize, Out, Indent, " (required)");
+  if (isa<RequiredArg>(this))
+    printDescriptionContinue(Out, TabSize, Indent, " (required)");
+  writeChar(Out, TabSize, Indent, '.');
   writeNewline(Out, Indent);
 }
 
 void ArgsParser::Arg::describeDefault(FILE* Out,
                                       size_t TabSize,
                                       size_t& Indent) const {
+}
+
+void ArgsParser::Arg::describeOptionName(FILE* Out,
+                                         size_t TabSize,
+                                         size_t& Indent) const {
+  if (OptionName != nullptr) {
+    writeChar(Out, TabSize, Indent, ' ');
+    writeCharstring(Out, TabSize, Indent, OptionName);
+  }
 }
 
 int ArgsParser::Arg::compare(const Arg& A) const {
@@ -204,18 +213,15 @@ int ArgsParser::Arg::compare(const Arg& A) const {
   return 0;
 }
 
-ArgsParser::Optional::Optional(charstring Description)
+ArgsParser::OptionalArg::OptionalArg(charstring Description)
     : Arg(ArgKind::Optional, Description) {
 }
 
-ArgsParser::Optional::~Optional() {
-}
+int ArgsParser::OptionalArg::compare(const Arg& A) const {
+  if (isa<RequiredArg>(&A))
+    return compareWithRequired(*cast<RequiredArg>(&A));
 
-int ArgsParser::Optional::compare(const Arg& A) const {
-  if (isa<Required>(&A))
-    return compareWithRequired(*cast<Required>(&A));
-
-  const Optional* Opt = cast<Optional>(&A);
+  const OptionalArg* Opt = cast<OptionalArg>(&A);
   if (LongName != nullptr && Opt->LongName != nullptr)
     return compareNames(LongName, Opt->LongName);
 
@@ -231,7 +237,7 @@ int ArgsParser::Optional::compare(const Arg& A) const {
   return Arg::compare(A);
 }
 
-int ArgsParser::Optional::compareWithRequired(const Required& R) const {
+int ArgsParser::OptionalArg::compareWithRequired(const RequiredArg& R) const {
   charstring ReqName = R.getOptionName();
   if (ReqName == nullptr)
     return Arg::compare(R);
@@ -245,61 +251,63 @@ int ArgsParser::Optional::compareWithRequired(const Required& R) const {
   return Arg::compare(R);
 }
 
-ArgsParser::Bool::~Bool() {
-}
-
-bool ArgsParser::Bool::select(charstring OptionValue) {
-  // TODO(karlschimpf): All OptionValue to define value?
-  if (Toggle)
-    Value = !Value;
-  else
-    Value = !DefaultValue;
+template <>
+bool ArgsParser::Optional<bool>::select(charstring OptionValue) {
+  Value = !DefaultValue;
   return false;
 }
 
-void ArgsParser::Bool::describeDefault(FILE* Out,
-                                       size_t TabSize,
-                                       size_t& Indent) const {
-  printDescriptionContinue(TabSize, Out, Indent, " (default is ");
-  printDescriptionContinue(TabSize, Out, Indent,
+template <>
+void ArgsParser::Optional<bool>::describeDefault(FILE* Out,
+                                                 size_t TabSize,
+                                                 size_t& Indent) const {
+  printDescriptionContinue(Out, TabSize, Indent, " (default is ");
+  printDescriptionContinue(Out, TabSize, Indent,
                            DefaultValue ? "true" : "false");
-  printDescriptionContinue(TabSize, Out, Indent, ")");
-  if (Toggle)
-    printDescriptionContinue(TabSize, Out, Indent,
-                             " (each occurrence toggles vaue)");
+  printDescriptionContinue(Out, TabSize, Indent, ")");
 }
 
-ArgsParser::OptionalCharstring::~OptionalCharstring() {
+bool ArgsParser::Toggle::select(charstring OptionValue) {
+  Value = !Value;
+  return false;
 }
 
-bool ArgsParser::OptionalCharstring::select(charstring OptionValue) {
+void ArgsParser::Toggle::describeDefault(FILE* Out,
+                                         size_t TabSize,
+                                         size_t& Indent) const {
+  Optional<bool>::describeDefault(Out, TabSize, Indent);
+  printDescriptionContinue(Out, TabSize, Indent,
+                           " (each occurrence toggles vaue)");
+}
+
+template <>
+bool ArgsParser::Optional<charstring>::select(charstring OptionValue) {
   Value = OptionValue;
   return true;
 }
 
-void ArgsParser::OptionalCharstring::describeDefault(FILE* Out,
-                                                     size_t TabSize,
-                                                     size_t& Indent) const {
+template <>
+void ArgsParser::Optional<charstring>::describeDefault(FILE* Out,
+                                                       size_t TabSize,
+                                                       size_t& Indent) const {
   if (DefaultValue == nullptr) {
-    printDescriptionContinue(TabSize, Out, Indent, " (has no default value)");
+    printDescriptionContinue(Out, TabSize, Indent, " (has no default value)");
     return;
   }
-  printDescriptionContinue(TabSize, Out, Indent, " (default is '");
-  printDescriptionContinue(TabSize, Out, Indent, DefaultValue);
-  printDescriptionContinue(TabSize, Out, Indent, "')");
+  printDescriptionContinue(Out, TabSize, Indent, " (default is '");
+  printDescriptionContinue(Out, TabSize, Indent, DefaultValue);
+  printDescriptionContinue(Out, TabSize, Indent, "')");
 }
 
-int ArgsParser::Required::compare(const Arg& A) const {
-  if (isa<Optional>(A))
-    return -cast<Optional>(&A)->compareWithRequired(*this);
+int ArgsParser::RequiredArg::compare(const Arg& A) const {
+  if (isa<OptionalArg>(A))
+    return -cast<OptionalArg>(&A)->compareWithRequired(*this);
 
   return Arg::compare(A);
 }
 
-ArgsParser::RequiredCharstring::~RequiredCharstring() {
-}
-
-bool ArgsParser::RequiredCharstring::select(charstring OptionValue) {
+template <>
+bool ArgsParser::Required<charstring>::select(charstring OptionValue) {
   Value = OptionValue;
   return true;
 }
@@ -318,7 +326,7 @@ ArgsParser::ArgsParser(charstring Description)
 ArgsParser& ArgsParser::add(Arg& A) {
   A.setAddIndex(Args.size());
   Args.push_back(&A);
-  if (auto* Opt = dyn_cast<Optional>(&A)) {
+  if (auto* Opt = dyn_cast<OptionalArg>(&A)) {
     if (Opt->getShortName() == 0 && Opt->getLongName() == nullptr) {
       fprintf(stderr, "Can't add option without Name:\n");
       A.describe(stderr, TabWidth);
@@ -327,24 +335,24 @@ ArgsParser& ArgsParser::add(Arg& A) {
   }
   bool IsPlacement = true;  // until proven otherwise.
   if (A.getShortName() != 0) {
-    Shorts.push_back(&A);
+    ShortArgs.push_back(&A);
     IsPlacement = false;
   }
   if (A.getLongName() != nullptr) {
-    Longs.push_back(&A);
+    LongArgs.push_back(&A);
     IsPlacement = false;
   }
   if (IsPlacement) {
     if (A.getOptionName() != nullptr) {
-      Placements.push_back(&A);
+      PlacementArgs.push_back(&A);
     } else {
       fprintf(stderr, "Can't categorize option:\n");
       A.describe(stderr, TabWidth);
       Status = State::Bad;
     }
   }
-  if (auto* R = dyn_cast<Required>(&A))
-    Requireds.push_back(R);
+  if (auto* R = dyn_cast<RequiredArg>(&A))
+    RequiredArgs.push_back(R);
   return *this;
 }
 
@@ -397,7 +405,7 @@ bool ArgsParser::parseLongName(const Arg* A,
 
 ArgsParser::Arg* ArgsParser::parseNextShort(charstring Argument,
                                             charstring& Leftover) {
-  for (auto* A : Shorts) {
+  for (auto* A : ShortArgs) {
     if (parseShortName(A, Argument, Leftover))
       return A;
   }
@@ -406,7 +414,7 @@ ArgsParser::Arg* ArgsParser::parseNextShort(charstring Argument,
 
 ArgsParser::Arg* ArgsParser::parseNextLong(charstring Argument,
                                            charstring& Leftover) {
-  for (auto* A : Longs) {
+  for (auto* A : LongArgs) {
     if (parseLongName(A, Argument, Leftover))
       return A;
   }
@@ -438,8 +446,8 @@ void ArgsParser::parseNextArg() {
       showUsage();
     return;
   }
-  if (CurPlacement < Placements.size()) {
-    Arg* Placement = Placements[CurPlacement++];
+  if (CurPlacement < PlacementArgs.size()) {
+    Arg* Placement = PlacementArgs[CurPlacement++];
     Placement->setOptionFound(true);
     if (!Placement->select(Argument)) {
       fprintf(stderr, "Can't assign option:\n");
@@ -464,7 +472,7 @@ ArgsParser::State ArgsParser::parse(int Argc, const char* Argv[]) {
   while (Status == State::Good && CurArg < Argc)
     parseNextArg();
   if (Status == State::Good) {
-    for (Arg* A : Requireds)
+    for (Arg* A : RequiredArgs)
       if (!A->getOptionFound()) {
         fprintf(stderr, "Required option not found:\n");
         A->describe(stderr, TabWidth);
@@ -476,28 +484,29 @@ ArgsParser::State ArgsParser::parse(int Argc, const char* Argv[]) {
 
 void ArgsParser::showUsage() {
   Status = State::Usage;
-  bool HasOptions = !(Shorts.empty() && Longs.empty());
+  bool HasOptions = !(ShortArgs.empty() && LongArgs.empty());
   size_t Indent = 0;
-  printDescriptionContinue(0, stderr, Indent, "Usage:");
+  printDescriptionContinue(stderr, 0, Indent, "Usage:");
   writeNewline(stderr, Indent);
   writeNewline(stderr, Indent);
-  printDescription(TabWidth, stderr, Indent, ExecName);
+  printDescription(stderr, TabWidth, Indent, ExecName);
   if (HasOptions)
-    printDescriptionContinue(TabWidth, stderr, Indent, " [Options]");
-  for (Arg* A : Placements) {
-    printDescriptionContinue(TabWidth, stderr, Indent, " ");
-    printDescriptionContinue(TabWidth, stderr, Indent, A->getOptionName());
+    printDescriptionContinue(stderr, TabWidth, Indent, " [Options]");
+  for (Arg* A : PlacementArgs) {
+    printDescriptionContinue(stderr, TabWidth, Indent, " ");
+    printDescriptionContinue(stderr, TabWidth, Indent, A->getOptionName());
   }
   writeNewline(stderr, Indent);
   if (Description != nullptr) {
     writeNewline(stderr, Indent);
-    printDescription(TabWidth, stderr, Indent, Description);
+    printDescription(stderr, TabWidth, Indent, Description);
+    writeChar(stderr, TabWidth, Indent, '.');
     writeNewline(stderr, Indent);
   }
   if (Args.empty())
     return;
   writeNewline(stderr, Indent);
-  printDescription(0, stderr, Indent, "Arguments:");
+  printDescription(stderr, 0, Indent, "Arguments:");
   writeNewline(stderr, Indent);
   std::sort(Args.begin(), Args.end(),
             [](Arg* Arg1, Arg* Arg2) { return Arg1->compare(*Arg2) < 0; });

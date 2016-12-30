@@ -99,49 +99,47 @@ int main(int Argc, const char* Argv[]) {
   {
     ArgsParser Args("Converts compression algorithm from binary fto text");
 
-    ArgsParser::RequiredCharstring AlgorithmFlag(AlgorithmFilename);
+    ArgsParser::Required<charstring> AlgorithmFlag(AlgorithmFilename);
     Args.add(AlgorithmFlag.setShortName('a')
                  .setOptionName("ALG")
                  .setDescription("Usage algorithm to parse binary file"));
 
-    ArgsParser::Bool ExpectFailFlag(ExpectExitFail);
+    ArgsParser::Optional<bool> ExpectFailFlag(ExpectExitFail);
     Args.add(ExpectFailFlag.setDefault(false)
                  .setLongName("expect-fail")
                  .setDescription("Succeed on failure/fail on success"));
 
-    ArgsParser::RequiredCharstring InputFlag(InputFilename);
+    ArgsParser::Required<charstring> InputFlag(InputFilename);
     Args.add(InputFlag.setOptionName("INPUT")
                  .setDescription("BInary file to convert to text"));
 
-    ArgsParser::OptionalCharstring OutputFlag(OutputFilename);
+    ArgsParser::Optional<charstring> OutputFlag(OutputFilename);
     Args.add(OutputFlag.setShortName('o')
                  .setOptionName("OUTPUT")
                  .setDescription("Generated text file"));
 
-    ArgsParser::Bool VerboseFlag(Verbose);
+    ArgsParser::Toggle VerboseFlag(Verbose);
     Args.add(
-        VerboseFlag.setToggle(true)
-            .setShortName('v')
-            .setLongName("verbose")
-            .setDescription("Show progress of conversion from binary to text"));
+        VerboseFlag.setShortName('v').setLongName("verbose").setDescription(
+            "Show progress of conversion from binary to text"));
 
-    ArgsParser::Bool TraceReadFlag(TraceRead);
+    ArgsParser::Optional<bool> TraceReadFlag(TraceRead);
     Args.add(
         TraceReadFlag.setLongName("verbose=read")
             .setDescription("Show how tree is constructed from binary file"));
 
-    ArgsParser::Bool TraceTreeFlag(TraceTree);
+    ArgsParser::Optional<bool> TraceTreeFlag(TraceTree);
     Args.add(TraceTreeFlag.setLongName("verbose=tree")
                  .setDescription(
                      "Show tree being built while reading"
                      "(implies --verbose=read)"));
 
-    ArgsParser::Bool TraceParserFlag(TraceParser);
+    ArgsParser::Optional<bool> TraceParserFlag(TraceParser);
     Args.add(TraceParserFlag.setLongName("verbose=parser")
                  .setDescription(
                      "Show parsing of algorithm (defined by option -a)"));
 
-    ArgsParser::Bool TraceLexerFlag(TraceLexer);
+    ArgsParser::Optional<bool> TraceLexerFlag(TraceLexer);
     Args.add(
         TraceLexerFlag.setLongName("verbose=lexer")
             .setDescription("Show lexing of algorithm (defined by option -a)"));
