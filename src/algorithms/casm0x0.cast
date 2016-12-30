@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This file defines the CASM binary form of ASTs.
+# This file defines the CAST algorithm for reading/writing CASM files.
 
 (header (u32.const 0x6d736163) (u32.const 0x0))
 (void)

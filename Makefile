@@ -122,6 +122,32 @@ TEST_DEFAULT_DF = $(TEST_SRCS_DIR)/defaults-0xd.df
 TEST_DEFAULT_WASM = $(TEST_SRCS_DIR)/defaults-0xd.wasm
 TEST_DEFAULT_WASM_W = $(TEST_SRCS_DIR)/defaults-0xd.wasm-w
 
+###### Default algorithms ######
+
+ALG_SRCDIR = $(SRCDIR)/algorithms
+ALG_GENDIR = $(GENDIR)/algorithms
+ALG_OBJDIR = $(OBJDIR)/algorithms
+
+ALG_SRCS = wasm0xd.cast casm0x0.cast
+
+ALG_GEN_SRCS = $(patsubst %.cast, $(ALG_GENDIR)/%.cast, $(ALG_SRCS))
+
+ALG_GEN_CPP_SRCS = $(patsubst %.cast, $(ALG_GENDIR)/%.cpp, $(ALG_SRCS))
+ALG_GEN_H_SRCS = $(patsubst %.cast, $(ALG_GENDIR)/%.h, $(ALG_SRCS))
+
+ALG_OBJS = $(patsubst %.cast, $(ALG_OBJDIR)/%.o, $(ALG_SRCS))
+
+ALG_LIB = $(LIBDIR)/$(LIBPREFIX)alg.a
+
+ALG_GENDIR_ALG = $(ALG_GENDIR)/casm0x0.cast
+
+$(info Using ALG_SRCS = $(ALG_SRCS))
+$(info Using ALG_GEN_SRCS = $(ALG_GEN_SRCS))
+$(info Using ALG_GEN_CPP_SRCS = $(ALG_GEN_CPP_SRCS))
+$(info Using ALG_GEN_H_SRCS = $(ALG_GEN_H_SRCS))
+$(info Using ALG_OBJS = $(ALG_OBJS))
+$(info Using ALG_LIB = $(ALG_LIB))
+
 ###### Stream handlers ######
 
 STRM_SRCDIR = $(SRCDIR)/stream
@@ -211,12 +237,12 @@ BUILD_EXECDIR_BOOT = $(BUILDDIR_BOOT)/bin
 
 EXEC_SRCS_BASE = \
 	casm2cast.cpp \
-	cast2casm.cpp \
 	compress-int.cpp \
 	decompress.cpp \
 	decompwasm-sexp.cpp
 
 EXEC_SRCS_BOOT = \
+	cast2casm.cpp \
 	decompsexp-wasm.cpp
 
 EXEC_SRCS = $(EXEC_SRCS_BASE)  $(EXEC_SRCS_BOOT)
@@ -227,7 +253,11 @@ EXEC_OBJS_BOOT = $(patsubst %.cpp, $(EXEC_OBJDIR_BOOT)/%.o, $(EXEC_SRCS_BOOT))
 
 EXECS = $(patsubst %.cpp, $(BUILD_EXECDIR)/%$(EXE), $(EXEC_SRCS))
 
+
 EXECS_BOOT = $(patsubst %.cpp, $(BUILD_EXECDIR_BOOT)/%$(EXE_BOOT), $(EXEC_SRCS_BOOT))
+
+$(info Using EXECS = $(EXECS))
+$(info Using EXECS_BOOT = $(EXECS_BOOT))
 
 ###### Test executables and locations ######
 
@@ -371,10 +401,12 @@ TEST_CASM_DF_GEN_FILES = $(patsubst %.df, $(TEST_0XD_GENDIR)/%.df-out, \
 #       $(STRM_LIB) $(UTILS_LIB) $(INTCOMP_LIB) $(INTERP_LIB)
 
 LIBS = $(PARSER_LIB) $(BINARY_LIB) $(INTERP_LIB) $(SEXP_LIB) \
-       $(STRM_LIB) $(UTILS_LIB) $(INTCOMP_LIB) $(INTERP_LIB) $(BINARY_LIB)
+       $(STRM_LIB) $(UTILS_LIB) $(INTCOMP_LIB) $(INTERP_LIB) $(BINARY_LIB) \
+       $(ALG_LIB)
 
 LIBS_BOOT = $(PARSER_LIB_BOOT) $(BINARY_LIB_BOOT) $(INTERP_LIB_BOOT) \
-       $(SEXP_LIB_BOOT) $(STRM_LIB_BOOT) $(UTILS_LIB_BOOT)
+       $(SEXP_LIB_BOOT) $(STRM_LIB_BOOT) $(UTILS_LIB_BOOT) $(INTERP_LIB_BOOT) \
+       $(BINARY_LIB_BOOT)
 
 ##### Track additional important variable definitions not in Makefile.common
 
@@ -388,9 +420,9 @@ CXXFLAGS_BASE := -Wall -Wextra -O2 -g -pedantic -MP -MD \
 	    -Werror -Wno-unused-parameter -fno-omit-frame-pointer -fPIC \
 	    -Isrc -I$(SRC_GENDIR)
 CXXFLAGS := $(TARGET_CXXFLAGS) $(PLATFORM_CXXFLAGS) \
-	    $(CXXFLAGS_BASE)
+	    $(CXXFLAGS_BASE) -DWASM_BOOT=0
 
-CXXFLAGS_BOOT := $(PLATFORM_CXXFLAGS_DEFAULT) $(CXXFLAGS_BASE)
+CXXFLAGS_BOOT := $(PLATFORM_CXXFLAGS_DEFAULT) $(CXXFLAGS_BASE) -DWASM_BOOT=1
 
 ifneq ($(RELEASE), 0)
   CXXFLAGS += -DNDEBUG
@@ -472,6 +504,40 @@ $(SEXP_GENDIR)/defaults-0xd.cpp: $(SEXP_GENDIR)/defaults-0xd.df \
 
 
 ###### Compiliing binary generation Sources ######
+
+$(ALG_OBJS): | $(ALG_OBJDIR)
+
+$(ALG_OBJDIR):
+	mkdir -p $@
+
+$(ALG_GENDIR):
+	mkdir -p $@
+
+$(ALG_LIB): $(ALG_OBJS)
+	ar -rs $@ $(ALG_OBJS)
+	ranlib $@
+
+$(ALG_GEN_SRCS): | $(ALG_GENDIR)
+
+$(ALG_GEN_SRCS): $(ALG_GENDIR)/%.cast: $(ALG_SRCDIR)/%.cast
+	cp $< $@
+
+$(ALG_GEN_H_SRCS): $(ALG_GENDIR)/%.h: $(ALG_GENDIR)/%.cast \
+		$(BUILD_EXECDIR_BOOT)/cast2casm
+	$(BUILD_EXECDIR_BOOT)/cast2casm -a $(ALG_GENDIR_ALG) -m \
+		$< -o $@ --header --function \
+		$(patsubst $(ALG_GENDIR)/%.cast, Alg%, $<)
+
+$(ALG_GEN_CPP_SRCS): $(ALG_GENDIR)/%.cpp: $(ALG_GENDIR)/%.cast \
+		$(BUILD_EXECDIR_BOOT)/cast2casm $(ALG_GENDIR_ALG)
+	$(BUILD_EXECDIR_BOOT)/cast2casm -a $(ALG_GENDIR_ALG) -m \
+		$< -o $@ --function \
+		$(patsubst $(ALG_GENDIR)/%.cast, Alg%, $<)
+
+-include $(foreach dep,$(ALG_GEN_CPP_SRCS:.cpp=.d),$(ALG_OBJDIR)/$(dep))
+
+$(ALG_OBJS): $(ALG_OBJDIR)/%.o: $(ALG_GENDIR)/%.cpp $(ALG_GENDIR)/%.h
+	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
 $(BINARY_OBJS): | $(BINARY_OBJDIR)
 
@@ -725,7 +791,7 @@ $(LIBS_BOOT): | $(LIBDIR_BOOT)
 
 ###### Compiling executables ######
 
-execs: $(LIBS_BOOT) $(EXECS_BOOT) $(LIBS) $(EXECS)
+execs: $(LIBS_BOOT) $(EXECS_BOOT) $(LIBS) $(EXECS) $(EXECS_BOOT)
 
 .PHONY: execs
 
