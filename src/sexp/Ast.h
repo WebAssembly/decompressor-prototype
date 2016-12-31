@@ -55,6 +55,7 @@ namespace filt {
 class FileHeaderNode;
 class IntegerNode;
 class Node;
+class StreamNode;
 class SymbolNode;
 class SymbolTable;
 class CallbackNode;
@@ -186,12 +187,16 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
   void clear() { SymbolMap.clear(); }
   int getNextCreationIndex() { return ++NextCreationIndex; }
 
-  template <typename T, typename... Args>
-  T* create(Args&&... args) {
-    T* Nd = new T(*this, std::forward<Args>(args)...);
-    Allocated->push_back(Nd);
-    return Nd;
-  }
+  template <typename T>
+  T* create();
+  template <typename T>
+  T* create(Node* Nd);
+  template <typename T>
+  T* create(Node* Nd1, Node* Nd2);
+  template <typename T>
+  T* create(Node* Nd1, Node* Nd2, Node* Nd3);
+  StreamNode* getStreamDefinition(decode::StreamKind Kind,
+                                  decode::StreamType Type);
 
   static bool installPredefinedDefaults(std::shared_ptr<SymbolTable> Symtab,
                                         const uint8_t* AlgArray,

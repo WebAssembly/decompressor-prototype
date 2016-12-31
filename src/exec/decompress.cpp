@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#include "algorithms/wasm0xd.h"
 #include "binary/BinaryReader.h"
 #include "interp/Decompress.h"
 #include "interp/Interpreter.h"
@@ -54,7 +55,7 @@ std::shared_ptr<RawStream> getInput() {
 std::shared_ptr<RawStream> getOutput() {
   if (OutputFilename == std::string("-")) {
     if (UseFileStreams)
-      return std::make_shared<FdWriter>(STDOUT_FILENO, false);
+      return std::make_shared<FileWriter>(stdout, false);
     return std::make_shared<decode::StreamWriter>(std::cout);
   }
   if (UseFileStreams)
@@ -222,11 +223,8 @@ int main(int Argc, char* Argv[]) {
   }
   auto Symtab = std::make_shared<SymbolTable>();
   Symtab->getTrace().setTraceProgress(Verbose >= 4);
-  if (InstallPredefinedRules &&
-      !SymbolTable::installPredefinedDefaults(Symtab, Verbose >= 2)) {
-    fprintf(stderr, "Unable to load compiled in default rules!\n");
-    return exit_status(EXIT_FAILURE);
-  }
+  if (InstallPredefinedRules)
+    install_Algwasm0xd(Symtab);
   for (int i : DefaultIndices) {
     if (Verbose)
       fprintf(stderr, "Loading default: %s\n", Argv[i]);

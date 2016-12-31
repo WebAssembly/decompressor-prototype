@@ -382,7 +382,7 @@ void BinaryReader::resume() {
                 StreamKind StrmKind;
                 StreamType StrmType;
                 StreamNode::decode(Encoding, StrmKind, StrmType);
-                auto* Node = Symtab->create<StreamNode>(StrmKind, StrmType);
+                auto* Node = Symtab->getStreamDefinition(StrmKind, StrmType);
                 TRACE(node_ptr, nullptr, Node);
                 NodeStack.push_back(Node);
                 break;

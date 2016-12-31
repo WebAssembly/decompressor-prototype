@@ -248,7 +248,7 @@ bool InflateAst::applyOp(IntType Op) {
       return buildUnary<ReadNode>();
     case OpRename:
       return buildBinary<RenameNode>();
-    case OpSection:
+    case OpSection: {
       // Note: Bottom element is for file.
       TRACE(size_t, "Tree stack size", Asts.size());
       if (Asts.size() < 2)
@@ -257,7 +257,14 @@ bool InflateAst::applyOp(IntType Op) {
       if (!buildNary<SectionNode>())
         return false;
       Values.push(OpFile);
-      return buildTernary<FileNode>();
+      if (!buildTernary<FileNode>())
+        return false;
+      FileNode* File = getGeneratedFile();
+      if (File == nullptr)
+        return failBuild("InflateAst", "Did not generate a file node");
+      Symtab->install(File);
+      return true;
+    }
     case OpSequence:
       return buildNary<SequenceNode>();
     case OpSet:

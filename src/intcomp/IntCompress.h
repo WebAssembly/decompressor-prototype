@@ -84,17 +84,6 @@ class IntCompressor FINAL {
   std::shared_ptr<utils::TraceClass> getTracePtr();
   bool hasTrace() { return bool(MyFlags.Trace); }
 
-#if 0
-  void setCountCutoff(uint64_t NewCutoff) { CountCutoff = NewCutoff; }
-  void setWeightCutoff(uint64_t NewCutoff) { WeightCutoff = NewCutoff; }
-  void setLengthLimit(size_t NewLimit) { LengthLimit = NewLimit; }
-
-  void setMinimizeBlockSize(bool NewValue) { (void)NewValue; }
-
-  interp::IntTypeFormat getAbbrevFormat() const { return AbbrevFormat; }
-  void setAbbrevFormat(interp::IntTypeFormat Fmt) { AbbrevFormat = Fmt; }
-#endif
-
   void describe(FILE* Out, CollectionFlags = makeFlags(CollectionFlag::All));
 
  private:

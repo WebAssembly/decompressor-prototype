@@ -168,14 +168,11 @@ extern "C" {
 
 void* create_decompressor() {
   auto* Decomp = new Decompressor();
-  bool InstalledDefaults = SymbolTable::installPredefinedDefaults(
-      Decomp->Symtab, Algwasm0xd(), Algwasm0xdSize(), false);
+  install_Algwasm0xd(Decomp->Symtab);
   Decomp->Interp = std::make_shared<Interpreter>(
       Decomp->Input, Decomp->OutputPipe.getInput(), Decomp->Symtab);
   // Decomp->Interp->setTraceProgress(true);
   Decomp->Interp->start();
-  if (!InstalledDefaults)
-    Decomp->Interp->fail("Unable to install decompression rules!");
   return Decomp;
 }
 

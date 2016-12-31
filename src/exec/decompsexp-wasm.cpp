@@ -44,7 +44,7 @@ const char* OutputFilename = "-";
 std::shared_ptr<RawStream> getOutput() {
   if (OutputFilename == std::string("-")) {
     if (UseFileStreams)
-      return std::make_shared<FdWriter>(STDOUT_FILENO, false);
+      return std::make_shared<FileWriter>(stderr, false);
     return std::make_shared<StreamWriter>(std::cout);
   }
   if (UseFileStreams)

@@ -606,7 +606,7 @@ control_flow
 
 stream
         : stream_kind "." stream_type {
-            $$ = Driver.create<StreamNode>($1, $3);
+            $$ = Driver.getStreamDefinition($1, $3);
           }
         ;
 
