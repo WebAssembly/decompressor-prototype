@@ -312,15 +312,60 @@ void ArgsParser::Optional<charstring>::describeDefault(FILE* Out,
 }
 
 template <>
-bool ArgsParser::Optional<size_t>::select(charstring OptionValue) {
+bool ArgsParser::Optional<uint32_t>::select(charstring OptionValue) {
   Value = size_t(atoll(OptionValue));
   return true;
 }
 
 template <>
-void ArgsParser::Optional<size_t>::describeDefault(FILE* Out,
-                                                   size_t TabSize,
-                                                   size_t& Indent) const {
+void ArgsParser::Optional<uint32_t>::describeDefault(FILE* Out,
+                                                     size_t TabSize,
+                                                     size_t& Indent) const {
+  printDescriptionContinue(Out, TabSize, Indent, " (default is ");
+  writeSize_t(Out, TabSize, Indent, DefaultValue);
+  printDescriptionContinue(Out, TabSize, Indent, ")");
+}
+
+template <>
+bool ArgsParser::Optional<int32_t>::select(charstring OptionValue) {
+  Value = size_t(atoll(OptionValue));
+  return true;
+}
+
+template <>
+void ArgsParser::Optional<int32_t>::describeDefault(FILE* Out,
+                                                    size_t TabSize,
+                                                    size_t& Indent) const {
+  printDescriptionContinue(Out, TabSize, Indent, " (default is ");
+  writeSize_t(Out, TabSize, Indent, DefaultValue);
+  printDescriptionContinue(Out, TabSize, Indent, ")");
+}
+
+template <>
+bool ArgsParser::Optional<uint64_t>::select(charstring OptionValue) {
+  Value = size_t(atoll(OptionValue));
+  return true;
+}
+
+template <>
+void ArgsParser::Optional<uint64_t>::describeDefault(FILE* Out,
+                                                     size_t TabSize,
+                                                     size_t& Indent) const {
+  printDescriptionContinue(Out, TabSize, Indent, " (default is ");
+  writeSize_t(Out, TabSize, Indent, DefaultValue);
+  printDescriptionContinue(Out, TabSize, Indent, ")");
+}
+
+template <>
+bool ArgsParser::Optional<int64_t>::select(charstring OptionValue) {
+  Value = size_t(atoll(OptionValue));
+  return true;
+}
+
+template <>
+void ArgsParser::Optional<int64_t>::describeDefault(FILE* Out,
+                                                    size_t TabSize,
+                                                    size_t& Indent) const {
   printDescriptionContinue(Out, TabSize, Indent, " (default is ");
   writeSize_t(Out, TabSize, Indent, DefaultValue);
   printDescriptionContinue(Out, TabSize, Indent, ")");

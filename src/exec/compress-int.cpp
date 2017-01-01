@@ -80,7 +80,8 @@ int main(int Argc, const char* Argv[]) {
                      "File containing algorithm to parse WASM file "
                      "(rather than using builting algorithm)"));
 
-    ArgsParser::Optional<size_t> CountCutoffFlag(CompressionFlags.CountCutoff);
+    ArgsParser::Optional<uint64_t> CountCutoffFlag(
+        CompressionFlags.CountCutoff);
     Args.add(CountCutoffFlag.setDefault(10)
                  .setLongName("min-int-count")
                  .setOptionName("INTEGER")
@@ -88,7 +89,7 @@ int main(int Argc, const char* Argv[]) {
                      "Minimum number of times an integer must appear "
                      "to be considered for compression"));
 
-    ArgsParser::Optional<size_t> WeightCutoffFlag(
+    ArgsParser::Optional<uint64_t> WeightCutoffFlag(
         CompressionFlags.WeightCutoff);
     Args.add(WeightCutoffFlag.setDefault(100)
                  .setLongName("min-weight")
