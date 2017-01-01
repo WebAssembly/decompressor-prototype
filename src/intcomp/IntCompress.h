@@ -104,16 +104,17 @@ class IntCompressor FINAL {
   void removeSmallUsageCounts();
   void assignInitialAbbreviations(CountNode::PtrVector& Assignments);
   bool generateIntOutput();
-  std::shared_ptr<filt::SymbolTable> generateCode(
-      CountNode::PtrVector& Assignments,
-      bool ToRead, bool Trace);
+  std::shared_ptr<filt::SymbolTable>
+  generateCode(CountNode::PtrVector& Assignments, bool ToRead, bool Trace);
   std::shared_ptr<filt::SymbolTable> generateCodeForReading(
       CountNode::PtrVector& Assignments) {
-    return generateCode(Assignments, true, MyFlags.TraceCodeGenerationForReading);
+    return generateCode(Assignments, true,
+                        MyFlags.TraceCodeGenerationForReading);
   }
   std::shared_ptr<filt::SymbolTable> generateCodeForWriting(
       CountNode::PtrVector& Assignments) {
-    return generateCode(Assignments, false, MyFlags.TraceCodeGenerationForWriting);
+    return generateCode(Assignments, false,
+                        MyFlags.TraceCodeGenerationForWriting);
   }
 };
 

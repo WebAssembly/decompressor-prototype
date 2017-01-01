@@ -89,8 +89,7 @@ class CodeGenerator {
         Namespaces(Namespaces),
         FunctionName(FunctionName),
         FoundErrors(false),
-        NextIndex(1)
-  {}
+        NextIndex(1) {}
   ~CodeGenerator() {}
   bool generateDeclFile();
   bool generateImplFile();
@@ -193,8 +192,8 @@ void CodeGenerator::generateEnterNamespaces() {
 }
 
 void CodeGenerator::generateExitNamespaces() {
-  for (std::vector<charstring>::reverse_iterator
-           Iter = Namespaces.rbegin(), IterEnd = Namespaces.rend();
+  for (std::vector<charstring>::reverse_iterator Iter = Namespaces.rbegin(),
+                                                 IterEnd = Namespaces.rend();
        Iter != IterEnd; ++Iter) {
     Output->puts("}  // end of namespace ");
     Output->puts(*Iter);
@@ -249,10 +248,10 @@ void CodeGenerator::generateFunctionHeader(std::string NodeType, size_t Index) {
 }
 
 void CodeGenerator::generateFunctionFooter() {
-  Output->puts("}\n"
-               "\n");
+  Output->puts(
+      "}\n"
+      "\n");
 }
-
 
 void CodeGenerator::generateCloseFunctionFooter() {
   Output->puts(");\n");
@@ -448,7 +447,7 @@ size_t CodeGenerator::generateNode(const Node* Nd) {
     case OpRead:
       return generateUnaryNode("ReadNode", Nd);
     case OpRename:
-      return  generateBinaryNode("RenameNode", Nd);
+      return generateBinaryNode("RenameNode", Nd);
     case OpSection:
       return generateNaryNode("SectionNode", Nd);
     case OpSequence:
@@ -503,17 +502,20 @@ bool CodeGenerator::generateDeclFile() {
 bool CodeGenerator::generateImplFile() {
   generateHeader();
   generateEnterNamespaces();
-  Output->puts("using namespace wasm::filt;\n"
-               "\n"
-               "namespace {\n"
-               "\n");
+  Output->puts(
+      "using namespace wasm::filt;\n"
+      "\n"
+      "namespace {\n"
+      "\n");
   size_t Index = generateNode(Symtab->getInstalledRoot());
-  Output->puts("}  // end of anonymous namespace\n"
-               "\n");
+  Output->puts(
+      "}  // end of anonymous namespace\n"
+      "\n");
   generateAlgorithmHeader();
-  Output->puts(" {\n"
-               "  SymbolTable* Symtab = Symtable.get();\n"
-               "  Symtab->install(");
+  Output->puts(
+      " {\n"
+      "  SymbolTable* Symtab = Symtable.get();\n"
+      "  Symtab->install(");
   generateFunctionCall(Index);
   generateCloseFunctionFooter();
   generateExitNamespaces();
@@ -692,7 +694,8 @@ int main(int Argc, charstring Argv[]) {
     Namespaces.push_back("decode");
     CodeGenerator Generator(InputFilename, Output, InputSymtab, Namespaces,
                             FunctionName);
-    if (HeaderFile ? Generator.generateDeclFile() : Generator.generateImplFile()) {
+    if (HeaderFile ? Generator.generateDeclFile()
+                   : Generator.generateImplFile()) {
       fprintf(stderr, "Unable to generate valid C++ source!");
       return exit_status(EXIT_FAILURE);
     }

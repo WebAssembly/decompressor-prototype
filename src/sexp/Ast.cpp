@@ -52,7 +52,7 @@ void TraceClass::trace_node_ptr(const char* Name, const Node* Nd) {
 namespace filt {
 
 #define X(tag, NODE_DECLS)                      \
-  template<>                                    \
+  template <>                                   \
   tag##Node* SymbolTable::create<tag##Node>() { \
     tag##Node* tag##Nd = new tag##Node(*this);  \
     Allocated->push_back(tag##Nd);              \
@@ -61,40 +61,39 @@ namespace filt {
 AST_NULLARYNODE_TABLE
 #undef X
 
-#define X(tag, NODE_DECLS)                              \
-  template<>                                            \
-  tag##Node* SymbolTable::create<tag##Node>(Node* Nd) { \
-    tag##Node* tag##Nd = new tag##Node(*this, Nd);      \
-    Allocated->push_back(tag##Nd);                      \
-    return tag##Nd;                                     \
+#define X(tag, NODE_DECLS)                               \
+  template <>                                            \
+  tag##Node* SymbolTable::create<tag##Node>(Node * Nd) { \
+    tag##Node* tag##Nd = new tag##Node(*this, Nd);       \
+    Allocated->push_back(tag##Nd);                       \
+    return tag##Nd;                                      \
   }
 AST_UNARYNODE_TABLE
 #undef X
 
-#define X(tag, NODE_DECLS)                                          \
-  template<>                                                        \
-  tag##Node* SymbolTable::create<tag##Node>(Node* Nd1, Node* Nd2) { \
-    tag##Node* tag##Nd = new tag##Node(*this, Nd1, Nd2);            \
-    Allocated->push_back(tag##Nd);                                  \
-    return tag##Nd;                                                 \
+#define X(tag, NODE_DECLS)                                            \
+  template <>                                                         \
+  tag##Node* SymbolTable::create<tag##Node>(Node * Nd1, Node * Nd2) { \
+    tag##Node* tag##Nd = new tag##Node(*this, Nd1, Nd2);              \
+    Allocated->push_back(tag##Nd);                                    \
+    return tag##Nd;                                                   \
   }
 AST_BINARYNODE_TABLE
 #undef X
 
-#define X(tag, NODE_DECLS)                                     \
-  template<>                                                   \
-  tag##Node* SymbolTable::create<tag##Node>(Node* Nd1,         \
-                                            Node* Nd2,         \
-                                            Node* Nd3) {       \
-    tag##Node* tag##Nd = new tag##Node(*this, Nd1, Nd2, Nd3);  \
-    Allocated->push_back(tag##Nd);                             \
-    return tag##Nd;                                            \
+#define X(tag, NODE_DECLS)                                          \
+  template <>                                                       \
+  tag##Node* SymbolTable::create<tag##Node>(Node * Nd1, Node * Nd2, \
+                                            Node * Nd3) {           \
+    tag##Node* tag##Nd = new tag##Node(*this, Nd1, Nd2, Nd3);       \
+    Allocated->push_back(tag##Nd);                                  \
+    return tag##Nd;                                                 \
   }
 AST_TERNARYNODE_TABLE
 #undef X
 
 #define X(tag, NODE_DECLS)                      \
-  template<>                                    \
+  template <>                                   \
   tag##Node* SymbolTable::create<tag##Node>() { \
     tag##Node* tag##Nd = new tag##Node(*this);  \
     Allocated->push_back(tag##Nd);              \
@@ -104,7 +103,7 @@ AST_NARYNODE_TABLE
 #undef X
 
 #define X(tag, NODE_DECLS)                      \
-  template<>                                    \
+  template <>                                   \
   tag##Node* SymbolTable::create<tag##Node>() { \
     tag##Node* tag##Nd = new tag##Node(*this);  \
     Allocated->push_back(tag##Nd);              \
@@ -113,7 +112,7 @@ AST_NARYNODE_TABLE
 AST_SELECTNODE_TABLE
 #undef X
 
-template<>
+template <>
 OpcodeNode* SymbolTable::create<OpcodeNode>() {
   OpcodeNode* Nd = new OpcodeNode(*this);
   Allocated->push_back(Nd);
@@ -440,8 +439,7 @@ SymbolNode* SymbolTable::getSymbolDefinition(const std::string& Name) {
 AST_INTEGERNODE_TABLE
 #undef X
 
-StreamNode* SymbolTable::getStreamDefinition(StreamKind Kind,
-                                             StreamType Type) {
+StreamNode* SymbolTable::getStreamDefinition(StreamKind Kind, StreamType Type) {
   StreamNode* Nd = new StreamNode(*this, Kind, Type);
   Allocated->push_back(Nd);
   return Nd;
@@ -622,7 +620,7 @@ bool UnaryNode::implementsClass(NodeType Type) {
   }
 }
 
-#define X(tag, NODE_DECLS)                    \
+#define X(tag, NODE_DECLS) \
   void tag##Node::forceCompilation() {}
 AST_UNARYNODE_TABLE
 #undef X

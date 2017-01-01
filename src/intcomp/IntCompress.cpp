@@ -49,8 +49,8 @@ IntCompressor::Flags::Flags()
       TraceCompression(false),
       TraceIntStreamGeneration(false),
       TraceCodeGenerationForReading(false),
-      TraceCodeGenerationForWriting(false)
-{}
+      TraceCodeGenerationForWriting(false) {
+}
 
 IntCompressor::IntCompressor(std::shared_ptr<decode::Queue> Input,
                              std::shared_ptr<decode::Queue> Output,
@@ -229,7 +229,8 @@ bool IntCompressor::generateIntOutput() {
 
 std::shared_ptr<SymbolTable> IntCompressor::generateCode(
     CountNode::PtrVector& Assignments,
-    bool ToRead, bool Trace) {
+    bool ToRead,
+    bool Trace) {
   AbbreviationCodegen Codegen(Root, MyFlags.AbbrevFormat, Assignments);
   std::shared_ptr<SymbolTable> Symtab = Codegen.getCodeSymtab(ToRead);
   if (Trace) {

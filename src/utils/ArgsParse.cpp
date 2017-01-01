@@ -311,13 +311,13 @@ void ArgsParser::Optional<charstring>::describeDefault(FILE* Out,
   printDescriptionContinue(Out, TabSize, Indent, "')");
 }
 
-template<>
+template <>
 bool ArgsParser::Optional<size_t>::select(charstring OptionValue) {
   Value = size_t(atoll(OptionValue));
   return true;
 }
 
-template<>
+template <>
 void ArgsParser::Optional<size_t>::describeDefault(FILE* Out,
                                                    size_t TabSize,
                                                    size_t& Indent) const {
