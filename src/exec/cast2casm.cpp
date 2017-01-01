@@ -19,10 +19,10 @@
 #include "interp/StreamWriter.h"
 #include "interp/IntReader.h"
 #include "interp/TeeWriter.h"
+#include "sexp/CasmReader.h"
 #include "sexp/FlattenAst.h"
 #include "sexp/InflateAst.h"
 #include "sexp/TextWriter.h"
-#include "sexp-parser/Driver.h"
 #include "stream/FileWriter.h"
 #include "stream/WriteBackedQueue.h"
 #include "utils/ArgsParse.h"
@@ -43,28 +43,8 @@ charstring InputFilename = "-";
 charstring OutputFilename = "-";
 charstring AlgorithmFilename = "/dev/null";
 
-bool TraceParser = false;
-bool TraceLexer = false;
-
 std::shared_ptr<RawStream> getOutput() {
-  if (OutputFilename == std::string("-")) {
-    return std::make_shared<FileWriter>(stdout, false);
-  }
   return std::make_shared<FileWriter>(OutputFilename);
-}
-
-std::shared_ptr<SymbolTable> parseFile(charstring Filename) {
-  auto Symtab = std::make_shared<SymbolTable>();
-  Driver Parser(Symtab);
-  if (TraceParser)
-    Parser.setTraceParsing(true);
-  if (TraceLexer)
-    Parser.setTraceLexing(true);
-  if (!Parser.parse(Filename)) {
-    fprintf(stderr, "Unable to parse: %s\n", Filename);
-    Symtab.reset();
-  }
-  return Symtab;
 }
 
 #define BYTES_PER_LINE_IN_WASM_DEFAULTS 16
@@ -528,6 +508,8 @@ int main(int Argc, charstring Argv[]) {
   bool MinimizeBlockSize = false;
   bool Verbose = false;
   bool TraceFlatten = false;
+  bool TraceLexer = false;
+  bool TraceParser = false;
   bool TraceWrite = false;
   bool TraceTree = false;
   charstring FunctionName = nullptr;
@@ -625,7 +607,8 @@ int main(int Argc, charstring Argv[]) {
   }
   if (Verbose)
     fprintf(stderr, "Reading input: %s\n", InputFilename);
-  std::shared_ptr<SymbolTable> InputSymtab = parseFile(InputFilename);
+  std::shared_ptr<SymbolTable> InputSymtab
+      = readAlgorithmText(InputFilename, TraceParser, TraceLexer);
   if (!InputSymtab)
     return exit_status(EXIT_FAILURE);
   if (Verbose) {
@@ -646,7 +629,8 @@ int main(int Argc, charstring Argv[]) {
   }
   if (Verbose)
     fprintf(stderr, "Reading algorithms file: %s\n", AlgorithmFilename);
-  std::shared_ptr<SymbolTable> AlgSymtab = parseFile(AlgorithmFilename);
+  std::shared_ptr<SymbolTable> AlgSymtab
+      = readAlgorithmText(AlgorithmFilename, TraceParser, TraceLexer);
   if (!AlgSymtab)
     return exit_status(EXIT_FAILURE);
   if (Verbose && strcmp(OutputFilename, "-") != 0)

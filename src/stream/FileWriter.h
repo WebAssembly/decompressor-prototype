@@ -34,12 +34,6 @@ class FileWriter : public RawStream {
   FileWriter& operator=(const FileWriter&) = delete;
 
  public:
-  FileWriter(FILE* File, bool CloseOnExit = true)
-      : File(File),
-        CurSize(0),
-        FoundErrors(false),
-        IsFrozen(false),
-        CloseOnExit(CloseOnExit) {}
 
   explicit FileWriter(const char* Filename);
 

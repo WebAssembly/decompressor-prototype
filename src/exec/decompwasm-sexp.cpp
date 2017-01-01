@@ -41,13 +41,10 @@ const char* InputFilename = "-";
 const char* OutputFilename = "-";
 
 std::shared_ptr<RawStream> getInput() {
-  if (InputFilename == std::string("-")) {
-    if (UseFileStreams)
-      return std::make_shared<FileReader>(stdin, false);
-    return std::make_shared<StreamReader>(std::cin);
-  }
   if (UseFileStreams)
     return std::make_shared<FileReader>(InputFilename);
+  if (InputFilename == std::string("-"))
+    return std::make_shared<StreamReader>(std::cin);
   return std::make_shared<FstreamReader>(InputFilename);
 }
 

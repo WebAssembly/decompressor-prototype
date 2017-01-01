@@ -102,6 +102,7 @@ SEXP_OBJDIR = $(OBJDIR)/sexp
 SEXP_OBJDIR_BOOT = $(OBJDIR_BOOT)/sexp
 SEXP_SRCS_BASE = \
 	Ast.cpp \
+	CasmReader.cpp \
 	FlattenAst.cpp \
 	InflateAst.cpp \
 	TextWriter.cpp
@@ -399,13 +400,13 @@ TEST_CASM_DF_GEN_FILES = $(patsubst %.df, $(TEST_0XD_GENDIR)/%.df-out, \
 
 ###### General compilation definitions ######
 
-LIBS = $(PARSER_LIB) $(BINARY_LIB) $(INTERP_LIB) $(SEXP_LIB) \
+LIBS = $(BINARY_LIB) $(INTERP_LIB) $(SEXP_LIB) $(PARSER_LIB) \
        $(STRM_LIB) $(INTCOMP_LIB) $(INTERP_LIB) $(BINARY_LIB) \
        $(ALG_LIB) $(STRM_LIB) $(UTILS_LIB) 
 
-LIBS_BOOT = $(PARSER_LIB_BOOT) $(BINARY_LIB_BOOT) $(INTERP_LIB_BOOT) \
-       $(SEXP_LIB_BOOT) $(STRM_LIB_BOOT) $(UTILS_LIB_BOOT) $(INTERP_LIB_BOOT) \
-       $(BINARY_LIB_BOOT)
+LIBS_BOOT = $(BINARY_LIB_BOOT) $(INTERP_LIB_BOOT) \
+	$(SEXP_LIB_BOOT) $(PARSER_LIB_BOOT) $(STRM_LIB_BOOT) $(UTILS_LIB_BOOT) \
+	$(INTERP_LIB_BOOT) $(BINARY_LIB_BOOT)
 
 ##### Track additional important variable definitions not in Makefile.common
 
