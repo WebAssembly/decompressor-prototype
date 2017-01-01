@@ -25,6 +25,95 @@ namespace wasm {
 
 namespace decode {
 
+#if 1
+
+FileReader::FileReader(const char* Filename)
+    : File(fopen(Filename, "r")),
+      CurSize(0),
+      BytesRemaining(0),
+      FoundErrors(false),
+      AtEof(false),
+      CloseOnExit(true) {
+  if (File == nullptr || ferror(File)) {
+    FoundErrors = true;
+    File = fopen("/dev/null", "r");
+  }
+}
+
+FileReader::~FileReader() {
+  closeFile();
+}
+
+bool FileReader::hasErrors() {
+  return FoundErrors;
+}
+
+void FileReader::fillBuffer() {
+  CurSize = fread(Bytes, sizeof(uint8_t), kBufSize, File);
+  BytesRemaining = CurSize;
+  if (CurSize < kBufSize) {
+    if (ferror(File)) {
+      FoundErrors = true;
+      AtEof = true;
+    }
+    if (CurSize == 0 && feof(File))
+      AtEof = true;
+  }
+}
+
+void FileReader::closeFile() {
+  if (CloseOnExit) {
+    fclose(File);
+    CloseOnExit = false;
+    File = nullptr;
+  }
+}
+
+size_t FileReader::read(uint8_t* Buf, size_t Size) {
+  size_t Count = 0;
+  while (Size) {
+    if (BytesRemaining >= Size) {
+      const size_t Index = CurSize - BytesRemaining;
+      memcpy(Buf, Bytes + Index, Size);
+      BytesRemaining -= Size;
+      return Count + Size;
+    } else if (BytesRemaining) {
+      const size_t Index = CurSize - BytesRemaining;
+      memcpy(Buf, Bytes + Index, BytesRemaining);
+      Buf += BytesRemaining;
+      Count += BytesRemaining;
+      Size -= BytesRemaining;
+      BytesRemaining = 0;
+    }
+    if (AtEof)
+      return Count;
+    fillBuffer();
+  }
+  return Count;
+}
+
+bool FileReader::write(uint8_t* Buf, size_t Size) {
+  (void)Buf;
+  (void)Size;
+  return false;
+}
+
+bool FileReader::freeze() {
+  closeFile();
+  return false;
+}
+
+bool FileReader::atEof() {
+  if (AtEof)
+    return true;
+  if (BytesRemaining)
+    return false;
+  fillBuffer();
+  return AtEof;
+}
+
+#else
+
 FdReader::~FdReader() {
   closeFd();
 }
@@ -96,6 +185,8 @@ FileReader::FileReader(const char* Filename)
 
 FileReader::~FileReader() {
 }
+
+#endif
 
 }  // end of namespace decode
 

@@ -46,7 +46,7 @@ bool TraceLexer = false;
 
 std::shared_ptr<RawStream> getInput() {
   if (InputFilename == std::string("-")) {
-    return std::make_shared<FdReader>(STDIN_FILENO, false);
+    return std::make_shared<FileReader>(stdin, false);
   }
   return std::make_shared<FileReader>(InputFilename);
 }

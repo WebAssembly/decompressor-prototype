@@ -419,7 +419,7 @@ CXXFLAGS_BASE := -Wall -Wextra -O2 -g -pedantic -MP -MD \
 	    -Werror -Wno-unused-parameter -fno-omit-frame-pointer -fPIC \
 	    -Isrc -I$(SRC_GENDIR)
 CXXFLAGS := $(TARGET_CXXFLAGS) $(PLATFORM_CXXFLAGS) \
-	    $(CXXFLAGS_BASE) -DWASM_BOOT=0
+	    $(CXXFLAGS_BASE)
 
 CXXFLAGS_BOOT := $(PLATFORM_CXXFLAGS_DEFAULT) $(CXXFLAGS_BASE) -DWASM_BOOT=1
 

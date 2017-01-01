@@ -39,6 +39,16 @@ namespace wasm {
 #define WASM_RETURN_UNREACHABLE(V)
 #endif
 
+inline bool isBoot() {
+  return
+#ifdef BOOT
+      BOOT
+#else
+      false
+#endif
+      ;
+}
+
 #ifdef NDEBUG
 inline bool isRelease() {
   return true;
