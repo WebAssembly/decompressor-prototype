@@ -29,6 +29,10 @@
 #include <memory>
 #include <string>
 
+#ifndef WASM_BOOT
+#define WASM_BOOT 0
+#endif
+
 namespace wasm {
 
 #define WASM_IGNORE(V) (void)(V);
@@ -38,16 +42,6 @@ namespace wasm {
 #else
 #define WASM_RETURN_UNREACHABLE(V)
 #endif
-
-inline bool isBoot() {
-  return
-#ifdef BOOT
-      BOOT
-#else
-      false
-#endif
-      ;
-}
 
 #ifdef NDEBUG
 inline bool isRelease() {
