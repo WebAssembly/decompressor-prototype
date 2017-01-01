@@ -20,7 +20,11 @@
 #include "sexp/Ast.h"
 
 #include "interp/IntFormats.h"
+#include "interp/StreamReader.h"
+#include "sexp/InflateAst.h"
 #include "sexp/TextWriter.h"
+#include "stream/ArrayReader.h"
+#include "stream/ReadBackedQueue.h"
 #include "utils/Defs.h"
 
 #include <algorithm>
@@ -46,6 +50,74 @@ void TraceClass::trace_node_ptr(const char* Name, const Node* Nd) {
 }
 
 namespace filt {
+
+#define X(tag, NODE_DECLS)                      \
+  template <>                                   \
+  tag##Node* SymbolTable::create<tag##Node>() { \
+    tag##Node* tag##Nd = new tag##Node(*this);  \
+    Allocated->push_back(tag##Nd);              \
+    return tag##Nd;                             \
+  }
+AST_NULLARYNODE_TABLE
+#undef X
+
+#define X(tag, NODE_DECLS)                               \
+  template <>                                            \
+  tag##Node* SymbolTable::create<tag##Node>(Node * Nd) { \
+    tag##Node* tag##Nd = new tag##Node(*this, Nd);       \
+    Allocated->push_back(tag##Nd);                       \
+    return tag##Nd;                                      \
+  }
+AST_UNARYNODE_TABLE
+#undef X
+
+#define X(tag, NODE_DECLS)                                            \
+  template <>                                                         \
+  tag##Node* SymbolTable::create<tag##Node>(Node * Nd1, Node * Nd2) { \
+    tag##Node* tag##Nd = new tag##Node(*this, Nd1, Nd2);              \
+    Allocated->push_back(tag##Nd);                                    \
+    return tag##Nd;                                                   \
+  }
+AST_BINARYNODE_TABLE
+#undef X
+
+#define X(tag, NODE_DECLS)                                          \
+  template <>                                                       \
+  tag##Node* SymbolTable::create<tag##Node>(Node * Nd1, Node * Nd2, \
+                                            Node * Nd3) {           \
+    tag##Node* tag##Nd = new tag##Node(*this, Nd1, Nd2, Nd3);       \
+    Allocated->push_back(tag##Nd);                                  \
+    return tag##Nd;                                                 \
+  }
+AST_TERNARYNODE_TABLE
+#undef X
+
+#define X(tag, NODE_DECLS)                      \
+  template <>                                   \
+  tag##Node* SymbolTable::create<tag##Node>() { \
+    tag##Node* tag##Nd = new tag##Node(*this);  \
+    Allocated->push_back(tag##Nd);              \
+    return tag##Nd;                             \
+  }
+AST_NARYNODE_TABLE
+#undef X
+
+#define X(tag, NODE_DECLS)                      \
+  template <>                                   \
+  tag##Node* SymbolTable::create<tag##Node>() { \
+    tag##Node* tag##Nd = new tag##Node(*this);  \
+    Allocated->push_back(tag##Nd);              \
+    return tag##Nd;                             \
+  }
+AST_SELECTNODE_TABLE
+#undef X
+
+template <>
+OpcodeNode* SymbolTable::create<OpcodeNode>() {
+  OpcodeNode* Nd = new OpcodeNode(*this);
+  Allocated->push_back(Nd);
+  return Nd;
+}
 
 namespace {
 
@@ -265,6 +337,29 @@ SymbolTable::~SymbolTable() {
   deallocateNodes();
 }
 
+bool SymbolTable::installPredefinedDefaults(std::shared_ptr<SymbolTable> Symtab,
+                                            const uint8_t* AlgArray,
+                                            size_t AlgArraySize,
+                                            bool TraceInstallation) {
+  std::shared_ptr<ArrayReader> Stream =
+      std::make_shared<ArrayReader>(AlgArray, AlgArraySize);
+  if (!Stream)
+    return false;
+  InflateAst Inflator;
+  StreamReader Reader(std::make_shared<ReadBackedQueue>(std::move(Stream)),
+                      Inflator, Symtab);
+  std::shared_ptr<TraceClass> Trace;
+  if (TraceInstallation) {
+    Trace = std::make_shared<TraceClass>("predefined");
+    Reader.setTrace(Trace);
+    Inflator.setTrace(Trace);
+    Trace->setTraceProgress(true);
+  }
+  Reader.algorithmStart();
+  Reader.algorithmReadBackFilled();
+  return !Reader.errorsFound();
+}
+
 void SymbolTable::setTraceProgress(bool NewValue) {
   if (!NewValue && !Trace)
     return;
@@ -302,7 +397,8 @@ void SymbolTable::init() {
 SymbolNode* SymbolTable::getSymbolDefinition(const std::string& Name) {
   SymbolNode* Node = SymbolMap[Name];
   if (Node == nullptr) {
-    Node = create<SymbolNode>(Name);
+    Node = new SymbolNode(*this, Name);
+    Allocated->push_back(Node);
     SymbolMap[Name] = Node;
   }
   return Node;
@@ -315,27 +411,39 @@ SymbolNode* SymbolTable::getSymbolDefinition(const std::string& Name) {
       IntegerValue I(Op##tag, Value, Format, false);                 \
       IntegerNode* Node = IntMap[I];                                 \
       if (Node == nullptr) {                                         \
-        Node = create<tag##Node>(Value, Format);                     \
+        Node = new tag##Node(*this, Value, Format);                  \
+        Allocated->push_back(Node);                                  \
         IntMap[I] = Node;                                            \
       }                                                              \
       return dyn_cast<tag##Node>(Node);                              \
     }                                                                \
-    return create<tag##Node>(Value, Format);                         \
+    tag##Node* Node = new tag##Node(*this, Value, Format);           \
+    Allocated->push_back(Node);                                      \
+    return Node;                                                     \
   }                                                                  \
   tag##Node* SymbolTable::get##tag##Definition() {                   \
     if (mergable) {                                                  \
       IntegerValue I(Op##tag, (defval), ValueFormat::Decimal, true); \
       IntegerNode* Node = IntMap[I];                                 \
       if (Node == nullptr) {                                         \
-        Node = create<tag##Node>();                                  \
+        Node = new tag##Node(*this);                                 \
+        Allocated->push_back(Node);                                  \
         IntMap[I] = Node;                                            \
       }                                                              \
       return dyn_cast<tag##Node>(Node);                              \
     }                                                                \
-    return create<tag##Node>();                                      \
+    tag##Node* Node = new tag##Node(*this);                          \
+    Allocated->push_back(Node);                                      \
+    return Node;                                                     \
   }
 AST_INTEGERNODE_TABLE
 #undef X
+
+StreamNode* SymbolTable::getStreamDefinition(StreamKind Kind, StreamType Type) {
+  StreamNode* Nd = new StreamNode(*this, Kind, Type);
+  Allocated->push_back(Nd);
+  return Nd;
+}
 
 void SymbolTable::install(Node* Root) {
   TRACE_METHOD("install");

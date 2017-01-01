@@ -26,32 +26,46 @@ namespace wasm {
 
 namespace decode {
 
-FdWriter::~FdWriter() {
-  if (!freeze())
-    fprintf(stderr, "WARNING: Unable to close Fd file!\n");
+FileWriter::FileWriter(const char* Filename)
+    : File(fopen(Filename, "w")),
+      CurSize(0),
+      FoundErrors(false),
+      IsFrozen(false),
+      CloseOnExit(true) {
+  if (File == nullptr) {
+    FoundErrors = true;
+    File = fopen("/dev/null", "w");
+  }
 }
 
-bool FdWriter::saveBuffer() {
+FileWriter::~FileWriter() {
+  if (!freeze())
+    fprintf(stderr, "WARNING: Unable to close file!\n");
+}
+
+bool FileWriter::saveBuffer() {
   if (CurSize == 0)
     return true;
+  size_t BufSize = CurSize;
+  CurSize = 0;
   uint8_t* Buf = Bytes;
-  while (CurSize) {
-    size_t BytesWritten = ::write(Fd, Buf, CurSize);
+  while (BufSize) {
+    size_t BytesWritten = fwrite(Buf, 1, BufSize, File);
     if (BytesWritten <= 0)
       return false;
     Buf += BytesWritten;
-    CurSize -= BytesWritten;
+    BufSize -= BytesWritten;
   }
   return true;
 }
 
-size_t FdWriter::read(uint8_t* Buf, size_t Size) {
+size_t FileWriter::read(uint8_t* Buf, size_t Size) {
   (void)Buf;
   (void)Size;
   return 0;
 }
 
-bool FdWriter::write(uint8_t* Buf, size_t Size) {
+bool FileWriter::write(uint8_t* Buf, size_t Size) {
   while (Size) {
     if (CurSize == kBufSize) {
       if (!saveBuffer())
@@ -66,30 +80,23 @@ bool FdWriter::write(uint8_t* Buf, size_t Size) {
   return true;
 }
 
-bool FdWriter::freeze() {
+bool FileWriter::freeze() {
   IsFrozen = true;
   if (!saveBuffer())
     return false;
   if (CloseOnExit) {
-    close(Fd);
+    fclose(File);
     CloseOnExit = false;
   }
   return true;
 }
 
-bool FdWriter::atEof() {
+bool FileWriter::atEof() {
   return IsFrozen;
 }
 
-bool FdWriter::hasErrors() {
+bool FileWriter::hasErrors() {
   return FoundErrors;
-}
-
-FileWriter::FileWriter(const char* Filename)
-    : FdWriter(open(Filename, O_WRONLY | O_CREAT | O_TRUNC, S_IRWXU)) {
-}
-
-FileWriter::~FileWriter() {
 }
 
 }  // end of namespace decode

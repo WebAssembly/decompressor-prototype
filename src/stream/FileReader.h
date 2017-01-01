@@ -21,12 +21,14 @@
 
 #include "stream/RawStream.h"
 
+#include <cstdio>
 #include <memory>
 
 namespace wasm {
 
 namespace decode {
 
+#if 0
 class FdReader : public RawStream {
   FdReader() = delete;
   FdReader(const FdReader&) = delete;
@@ -72,6 +74,48 @@ class FileReader FINAL : public FdReader {
   FileReader(const char* Filename);
   ~FileReader() OVERRIDE;
 };
+
+#else
+
+class FileReader : public RawStream {
+  FileReader() = delete;
+  FileReader(const FileReader&) = delete;
+  FileReader& operator=(const FileReader*) = delete;
+
+ public:
+  FileReader(FILE* File, bool CloseOnExit)
+      : File(File),
+        CurSize(0),
+        BytesRemaining(0),
+        FoundErrors(false),
+        AtEof(false),
+        CloseOnExit(CloseOnExit) {}
+
+  FileReader(const char*);
+
+  ~FileReader() OVERRIDE;
+
+  size_t read(uint8_t* Buf, size_t Size = 1) OVERRIDE;
+  bool write(uint8_t* Buf, size_t Size = 1) OVERRIDE;
+  bool freeze() OVERRIDE;
+  bool atEof() OVERRIDE;
+  bool hasErrors() OVERRIDE;
+
+ protected:
+  FILE* File;
+  static constexpr size_t kBufSize = 4096;
+  uint8_t Bytes[kBufSize];
+  size_t CurSize;
+  size_t BytesRemaining;
+  bool FoundErrors;
+  bool AtEof;
+  bool CloseOnExit;
+
+  void closeFile();
+  void fillBuffer();
+};
+
+#endif
 
 }  // end of namespace decode
 

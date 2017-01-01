@@ -38,9 +38,28 @@ class IntCompressor FINAL {
   IntCompressor& operator=(const IntCompressor&) = delete;
 
  public:
+  struct Flags {
+    uint64_t CountCutoff;
+    uint64_t WeightCutoff;
+    size_t LengthLimit;
+    interp::IntTypeFormat AbbrevFormat;
+    bool MinimizeCodeSize;
+    bool TraceReadingInput;
+    bool TraceReadingIntStream;
+    bool TraceWritingCodeOutput;
+    bool TraceWritingDataOutput;
+    bool TraceCompression;
+    bool TraceIntStreamGeneration;
+    bool TraceCodeGenerationForReading;
+    bool TraceCodeGenerationForWriting;
+    std::shared_ptr<utils::TraceClass> Trace;
+    Flags();
+  };
+
   IntCompressor(std::shared_ptr<decode::Queue> InputStream,
                 std::shared_ptr<decode::Queue> OutputStream,
-                std::shared_ptr<filt::SymbolTable> Symtab);
+                std::shared_ptr<filt::SymbolTable> Symtab,
+                Flags& MyFlags);
 
   ~IntCompressor();
 
@@ -50,9 +69,7 @@ class IntCompressor FINAL {
 
   std::shared_ptr<RootCountNode> getRoot();
 
-  void compress(DetailLevel Level = NoDetail,
-                bool TraceParsing = false,
-                bool TraceFirstPassOnly = true);
+  void compress(DetailLevel Level = NoDetail);
 
   void setTraceProgress(bool NewValue) {
     // TODO: Don't force creation of trace object if not needed.
@@ -65,16 +82,7 @@ class IntCompressor FINAL {
   void setTrace(std::shared_ptr<utils::TraceClass> Trace);
   utils::TraceClass& getTrace() { return *getTracePtr(); }
   std::shared_ptr<utils::TraceClass> getTracePtr();
-  bool hasTrace() { return bool(Trace); }
-
-  void setCountCutoff(uint64_t NewCutoff) { CountCutoff = NewCutoff; }
-  void setWeightCutoff(uint64_t NewCutoff) { WeightCutoff = NewCutoff; }
-  void setLengthLimit(size_t NewLimit) { LengthLimit = NewLimit; }
-
-  void setMinimizeBlockSize(bool NewValue) { (void)NewValue; }
-
-  interp::IntTypeFormat getAbbrevFormat() const { return AbbrevFormat; }
-  void setAbbrevFormat(interp::IntTypeFormat Fmt) { AbbrevFormat = Fmt; }
+  bool hasTrace() { return bool(MyFlags.Trace); }
 
   void describe(FILE* Out, CollectionFlags = makeFlags(CollectionFlag::All));
 
@@ -82,39 +90,31 @@ class IntCompressor FINAL {
   std::shared_ptr<RootCountNode> Root;
   std::shared_ptr<decode::Queue> Input;
   std::shared_ptr<decode::Queue> Output;
+  Flags& MyFlags;
   std::shared_ptr<filt::SymbolTable> Symtab;
   std::shared_ptr<interp::IntStream> Contents;
   std::shared_ptr<interp::IntStream> IntOutput;
-  std::shared_ptr<utils::TraceClass> Trace;
-  uint64_t CountCutoff;
-  uint64_t WeightCutoff;
-  size_t LengthLimit;
-  interp::IntTypeFormat AbbrevFormat;
   bool ErrorsFound;
-  void readInput(bool Trace = false);
+  void readInput();
   const decode::WriteCursor writeCodeOutput(
-      std::shared_ptr<filt::SymbolTable> Symtab,
-      bool Trace = false);
+      std::shared_ptr<filt::SymbolTable> Symtab);
   void writeDataOutput(const decode::WriteCursor& StartPos,
-                       std::shared_ptr<filt::SymbolTable> Symtab,
-                       bool Trace = false);
-  bool compressUpToSize(size_t Size, bool TraceParsing);
+                       std::shared_ptr<filt::SymbolTable> Symtab);
+  bool compressUpToSize(size_t Size);
   void removeSmallUsageCounts();
   void assignInitialAbbreviations(CountNode::PtrVector& Assignments);
-  bool generateIntOutput(bool Trace = false);
-  std::shared_ptr<filt::SymbolTable> generateCode(
-      CountNode::PtrVector& Assignments,
-      bool ToRead,
-      bool Trace = false);
+  bool generateIntOutput();
+  std::shared_ptr<filt::SymbolTable>
+  generateCode(CountNode::PtrVector& Assignments, bool ToRead, bool Trace);
   std::shared_ptr<filt::SymbolTable> generateCodeForReading(
-      CountNode::PtrVector& Assignments,
-      bool Trace = false) {
-    return generateCode(Assignments, true, Trace);
+      CountNode::PtrVector& Assignments) {
+    return generateCode(Assignments, true,
+                        MyFlags.TraceCodeGenerationForReading);
   }
   std::shared_ptr<filt::SymbolTable> generateCodeForWriting(
-      CountNode::PtrVector& Assignments,
-      bool Trace = false) {
-    return generateCode(Assignments, false, Trace);
+      CountNode::PtrVector& Assignments) {
+    return generateCode(Assignments, false,
+                        MyFlags.TraceCodeGenerationForWriting);
   }
 };
 

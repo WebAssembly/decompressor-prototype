@@ -16,6 +16,12 @@
 
 // Converts binary algorithm file back to textual form.
 
+#include "utils/Defs.h"
+
+#if WASM_BOOT == 0
+#include "algorithms/casm0x0.h"
+#endif
+
 #include "interp/StreamReader.h"
 #include "sexp/InflateAst.h"
 #include "sexp/TextWriter.h"
@@ -39,14 +45,14 @@ namespace {
 
 const char* InputFilename = "-";
 const char* OutputFilename = "-";
-const char* AlgorithmFilename = "/dev/null";
+const char* AlgorithmFilename = nullptr;
 
 bool TraceParser = false;
 bool TraceLexer = false;
 
 std::shared_ptr<RawStream> getInput() {
   if (InputFilename == std::string("-")) {
-    return std::make_shared<FdReader>(STDIN_FILENO, false);
+    return std::make_shared<FileReader>(stdin, false);
   }
   return std::make_shared<FileReader>(InputFilename);
 }
@@ -99,10 +105,16 @@ int main(int Argc, const char* Argv[]) {
   {
     ArgsParser Args("Converts compression algorithm from binary fto text");
 
-    ArgsParser::Required<charstring> AlgorithmFlag(AlgorithmFilename);
-    Args.add(AlgorithmFlag.setShortName('a')
-                 .setOptionName("ALG")
-                 .setDescription("Usage algorithm to parse binary file"));
+#if WASM_BOOT
+    ArgsParser::Required<charstring>
+#else
+    ArgsParser::Optional<charstring>
+#endif
+        AlgorithmFlag(AlgorithmFilename);
+    Args.add(
+        AlgorithmFlag.setShortName('a').setOptionName("ALG").setDescription(
+            "File containing algorithm defining binary "
+            "format"));
 
     ArgsParser::Optional<bool> ExpectFailFlag(ExpectExitFail);
     Args.add(ExpectFailFlag.setDefault(false)
@@ -158,11 +170,19 @@ int main(int Argc, const char* Argv[]) {
       TraceRead = true;
   }
 
-  if (Verbose)
-    fprintf(stderr, "Reading algorithm file: %s\n", AlgorithmFilename);
-  std::shared_ptr<SymbolTable> AlgSymtab = parseFile(AlgorithmFilename);
-  if (!AlgSymtab)
-    return exit_status(EXIT_FAILURE);
+  assert(!(WASM_BOOT && AlgorithmFilename == nullptr));
+
+  std::shared_ptr<SymbolTable> AlgSymtab;
+  if (AlgorithmFilename) {
+    if (Verbose)
+      fprintf(stderr, "Reading algorithm file: %s\n", AlgorithmFilename);
+    AlgSymtab = parseFile(AlgorithmFilename);
+    if (!AlgSymtab)
+      return exit_status(EXIT_FAILURE);
+  } else {
+    AlgSymtab = std::make_shared<SymbolTable>();
+    install_Algcasm0x0(AlgSymtab);
+  }
 
   if (Verbose)
     fprintf(stderr, "Reading input: %s\n", InputFilename);

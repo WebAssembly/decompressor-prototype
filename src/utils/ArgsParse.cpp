@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cctype>
+#include <cstdlib>
 #include <cstring>
 
 namespace {
@@ -114,6 +115,17 @@ void writeCharstring(FILE* Out,
                      size_t& Indent,
                      const char* string) {
   writeChunk(Out, TabSize, Indent, string, strlen(string));
+}
+
+void writeSize_t(FILE* Out,
+                 const size_t TabSize,
+                 size_t& Indent,
+                 size_t Value) {
+  if (Indent + sizeof(size_t) >= MaxLine) {
+    writeNewline(Out, Indent);
+    indentTo(Out, TabSize, Indent);
+  }
+  fprintf(stderr, "%" PRIuMAX "", uintmax_t(Value));
 }
 
 void printDescriptionContinue(FILE* Out,
@@ -297,6 +309,66 @@ void ArgsParser::Optional<charstring>::describeDefault(FILE* Out,
   printDescriptionContinue(Out, TabSize, Indent, " (default is '");
   printDescriptionContinue(Out, TabSize, Indent, DefaultValue);
   printDescriptionContinue(Out, TabSize, Indent, "')");
+}
+
+template <>
+bool ArgsParser::Optional<uint32_t>::select(charstring OptionValue) {
+  Value = size_t(atoll(OptionValue));
+  return true;
+}
+
+template <>
+void ArgsParser::Optional<uint32_t>::describeDefault(FILE* Out,
+                                                     size_t TabSize,
+                                                     size_t& Indent) const {
+  printDescriptionContinue(Out, TabSize, Indent, " (default is ");
+  writeSize_t(Out, TabSize, Indent, DefaultValue);
+  printDescriptionContinue(Out, TabSize, Indent, ")");
+}
+
+template <>
+bool ArgsParser::Optional<int32_t>::select(charstring OptionValue) {
+  Value = size_t(atoll(OptionValue));
+  return true;
+}
+
+template <>
+void ArgsParser::Optional<int32_t>::describeDefault(FILE* Out,
+                                                    size_t TabSize,
+                                                    size_t& Indent) const {
+  printDescriptionContinue(Out, TabSize, Indent, " (default is ");
+  writeSize_t(Out, TabSize, Indent, DefaultValue);
+  printDescriptionContinue(Out, TabSize, Indent, ")");
+}
+
+template <>
+bool ArgsParser::Optional<uint64_t>::select(charstring OptionValue) {
+  Value = size_t(atoll(OptionValue));
+  return true;
+}
+
+template <>
+void ArgsParser::Optional<uint64_t>::describeDefault(FILE* Out,
+                                                     size_t TabSize,
+                                                     size_t& Indent) const {
+  printDescriptionContinue(Out, TabSize, Indent, " (default is ");
+  writeSize_t(Out, TabSize, Indent, DefaultValue);
+  printDescriptionContinue(Out, TabSize, Indent, ")");
+}
+
+template <>
+bool ArgsParser::Optional<int64_t>::select(charstring OptionValue) {
+  Value = size_t(atoll(OptionValue));
+  return true;
+}
+
+template <>
+void ArgsParser::Optional<int64_t>::describeDefault(FILE* Out,
+                                                    size_t TabSize,
+                                                    size_t& Indent) const {
+  printDescriptionContinue(Out, TabSize, Indent, " (default is ");
+  writeSize_t(Out, TabSize, Indent, DefaultValue);
+  printDescriptionContinue(Out, TabSize, Indent, ")");
 }
 
 int ArgsParser::RequiredArg::compare(const Arg& A) const {

@@ -44,9 +44,25 @@ class Driver {
 
   ~Driver() {}
 
-  template <typename T, typename... Args>
-  T* create(Args&&... args) {
-    return Table->create<T>(std::forward<Args>(args)...);
+  template <typename T>
+  T* create() {
+    return Table->create<T>();
+  }
+  template <typename T>
+  T* create(Node* Nd) {
+    return Table->create<T>(Nd);
+  }
+  template <typename T>
+  T* create(Node* Nd1, Node* Nd2) {
+    return Table->create<T>(Nd1, Nd2);
+  }
+  template <typename T>
+  T* create(Node* Nd1, Node* Nd2, Node* Nd3) {
+    return Table->create<T>(Nd1, Nd2, Nd3);
+  }
+  StreamNode* getStreamDefinition(decode::StreamKind Kind,
+                                  decode::StreamType Type) {
+    return Table->getStreamDefinition(Kind, Type);
   }
 
 #define X(tag, format, defval, mergable, NODE_DECLS)               \

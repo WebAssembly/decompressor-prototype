@@ -22,25 +22,28 @@
 
 #include "stream/RawStream.h"
 
+#include <cstdio>
 #include <memory>
 
 namespace wasm {
 
 namespace decode {
 
-class FdWriter : public RawStream {
-  FdWriter(const FdWriter&) = delete;
-  FdWriter& operator=(const FdWriter&) = delete;
+class FileWriter : public RawStream {
+  FileWriter(const FileWriter&) = delete;
+  FileWriter& operator=(const FileWriter&) = delete;
 
  public:
-  FdWriter(int Fd, bool CloseOnExit = true)
-      : Fd(Fd),
+  FileWriter(FILE* File, bool CloseOnExit = true)
+      : File(File),
         CurSize(0),
-        FoundErrors(Fd < 0),
+        FoundErrors(false),
         IsFrozen(false),
         CloseOnExit(CloseOnExit) {}
 
-  ~FdWriter() OVERRIDE;
+  explicit FileWriter(const char* Filename);
+
+  ~FileWriter() OVERRIDE;
   size_t read(uint8_t* Buf, size_t Size = 1) OVERRIDE;
   bool write(uint8_t* Buf, size_t Size = 1) OVERRIDE;
   bool freeze() OVERRIDE;
@@ -48,7 +51,7 @@ class FdWriter : public RawStream {
   bool hasErrors() OVERRIDE;
 
  protected:
-  int Fd;
+  FILE* File;
   static constexpr size_t kBufSize = 4096;
   uint8_t Bytes[kBufSize];
   size_t CurSize;
@@ -57,15 +60,6 @@ class FdWriter : public RawStream {
   bool CloseOnExit;
 
   bool saveBuffer();
-};
-
-class FileWriter FINAL : public FdWriter {
-  FileWriter(const FileWriter&) = delete;
-  FileWriter& operator=(const FileWriter&) = delete;
-
- public:
-  FileWriter(const char* Filename);
-  ~FileWriter() OVERRIDE;
 };
 
 }  // end of namespace decode

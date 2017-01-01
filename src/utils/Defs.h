@@ -29,6 +29,10 @@
 #include <memory>
 #include <string>
 
+#ifndef WASM_BOOT
+#define WASM_BOOT 0
+#endif
+
 namespace wasm {
 
 #define WASM_IGNORE(V) (void)(V);

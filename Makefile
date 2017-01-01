@@ -1,4 +1,4 @@
-# Copyright 2016 WebAssembly Community Group participants
+	# Copyright 2016 WebAssembly Community Group participants
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,6 +19,9 @@
 # Note: If using -jN, be sure to run "make gen" first.
 
 include Makefile.common
+
+GENSRCS =
+GENSRCS_BOOT =
 
 ###### Utilities ######
 
@@ -71,17 +74,21 @@ PARSER_GENSRCS = \
 PARSER_SRCS = \
 	Driver.cpp
 
-PARSER_GENSRCS = \
+PARSER_CPP_GENSRCS = \
 	Lexer.cpp \
 	Parser.tab.cpp
 
+PARSER_GEN_SRCS = $(patsubst %, $(PARSER_GENDIR)/%, $(PARSER_GENSRCS))
+
+GENSRCS += $(PARSER_GEN_SRCS)
+GENSRCS_BOOT += $(PARSER_GEN_SRCS)
 
 PARSER_STD_OBJS=$(patsubst %.cpp, $(PARSER_OBJDIR)/%.o, $(PARSER_SRCS))
-PARSER_GEN_OBJS=$(patsubst %.cpp, $(PARSER_OBJDIR)/%.o, $(PARSER_GENSRCS))
+PARSER_GEN_OBJS=$(patsubst %.cpp, $(PARSER_OBJDIR)/%.o, $(PARSER_CPP_GENSRCS))
 PARSER_OBJS=$(PARSER_STD_OBJS) $(PARSER_GEN_OBJS)
 
 PARSER_STD_OBJS_BOOT=$(patsubst %.cpp, $(PARSER_OBJDIR_BOOT)/%.o, $(PARSER_SRCS))
-PARSER_GEN_OBJS_BOOT=$(patsubst %.cpp, $(PARSER_OBJDIR_BOOT)/%.o, $(PARSER_GENSRCS))
+PARSER_GEN_OBJS_BOOT=$(patsubst %.cpp, $(PARSER_OBJDIR_BOOT)/%.o, $(PARSER_CPP_GENSRCS))
 PARSER_OBJS_BOOT=$(PARSER_STD_OBJS_BOOT) $(PARSER_GEN_OBJS_BOOT)
 
 PARSER_LIB = $(LIBDIR)/$(LIBPREFIX)parser.a
@@ -99,7 +106,7 @@ SEXP_SRCS_BASE = \
 	InflateAst.cpp \
 	TextWriter.cpp
 
-SEXP_SRCS = $(SEXP_SRCS_BASE) Ast-boot.cpp
+SEXP_SRCS = $(SEXP_SRCS_BASE)
 SEXP_SRCS_BOOT = $(SEXP_SRCS_BASE)
 
 SEXP_OBJS = $(patsubst %.cpp, $(SEXP_OBJDIR)/%.o, $(SEXP_SRCS))
@@ -111,6 +118,8 @@ SEXP_DEFAULT_ORIGSRCS = $(patsubst %.df, $(SEXP_SRCDIR)/%.df, $(SEXP_DEFAULT_DFS
 SEXP_DEFAULT_GENSRCS = $(patsubst %.df, $(SEXP_GENDIR)/%.df, $(SEXP_DEFAULT_DFS))
 SEXP_DEFAULT_SRCS = $(patsubst %.df, $(SEXP_GENDIR)/%.cpp, $(SEXP_DEFAULT_DFS))
 SEXP_DEFAULT_OBJS = $(patsubst %.df, $(SEXP_OBJDIR)/%.o, $(SEXP_DEFAULT_DFS))
+
+GENSRCS += $(SEXP_DEFAULT_SRCS)
 
 SEXP_LIB = $(LIBDIR)/$(LIBPREFIX)sexp.a
 SEXP_LIB_BOOT = $(LIBDIR_BOOT)/$(LIBPREFIX)sexp.a
@@ -135,18 +144,13 @@ ALG_GEN_SRCS = $(patsubst %.cast, $(ALG_GENDIR)/%.cast, $(ALG_SRCS))
 ALG_GEN_CPP_SRCS = $(patsubst %.cast, $(ALG_GENDIR)/%.cpp, $(ALG_SRCS))
 ALG_GEN_H_SRCS = $(patsubst %.cast, $(ALG_GENDIR)/%.h, $(ALG_SRCS))
 
+GENSRCS += $(ALG_GEN_CPP_SRCS) $(ALG_GEN_H_SRCS)
+
 ALG_OBJS = $(patsubst %.cast, $(ALG_OBJDIR)/%.o, $(ALG_SRCS))
 
 ALG_LIB = $(LIBDIR)/$(LIBPREFIX)alg.a
 
 ALG_GENDIR_ALG = $(ALG_GENDIR)/casm0x0.cast
-
-$(info Using ALG_SRCS = $(ALG_SRCS))
-$(info Using ALG_GEN_SRCS = $(ALG_GEN_SRCS))
-$(info Using ALG_GEN_CPP_SRCS = $(ALG_GEN_CPP_SRCS))
-$(info Using ALG_GEN_H_SRCS = $(ALG_GEN_H_SRCS))
-$(info Using ALG_OBJS = $(ALG_OBJS))
-$(info Using ALG_LIB = $(ALG_LIB))
 
 ###### Stream handlers ######
 
@@ -186,10 +190,9 @@ INTERP_SRCDIR = $(SRCDIR)/interp
 INTERP_OBJDIR = $(OBJDIR)/interp
 INTERP_OBJDIR_BOOT = $(OBJDIR_BOOT)/interp
 
-INTERP_SRCS = \
+INTERP_SRCS_BASE = \
 	ByteReadStream.cpp \
 	ByteWriteStream.cpp \
-	Decompress.cpp \
 	Interpreter.cpp \
 	IntFormats.cpp \
 	IntReader.cpp \
@@ -203,8 +206,10 @@ INTERP_SRCS = \
 	Writer.cpp \
 	WriteStream.cpp
 
+INTERP_SRCS = $(INTERP_SRCS_BASE) Decompress.cpp
+
 INTERP_OBJS = $(patsubst %.cpp, $(INTERP_OBJDIR)/%.o, $(INTERP_SRCS))
-INTERP_OBJS_BOOT = $(patsubst %.cpp, $(INTERP_OBJDIR_BOOT)/%.o, $(INTERP_SRCS))
+INTERP_OBJS_BOOT = $(patsubst %.cpp, $(INTERP_OBJDIR_BOOT)/%.o, $(INTERP_SRCS_BASE))
 
 INTERP_LIB = $(LIBDIR)/$(LIBPREFIX)interp.a
 INTERP_LIB_BOOT = $(LIBDIR_BOOT)/$(LIBPREFIX)interp.a
@@ -255,9 +260,6 @@ EXECS = $(patsubst %.cpp, $(BUILD_EXECDIR)/%$(EXE), $(EXEC_SRCS))
 
 
 EXECS_BOOT = $(patsubst %.cpp, $(BUILD_EXECDIR_BOOT)/%$(EXE_BOOT), $(EXEC_SRCS_BOOT))
-
-$(info Using EXECS = $(EXECS))
-$(info Using EXECS_BOOT = $(EXECS_BOOT))
 
 ###### Test executables and locations ######
 
@@ -397,12 +399,9 @@ TEST_CASM_DF_GEN_FILES = $(patsubst %.df, $(TEST_0XD_GENDIR)/%.df-out, \
 
 ###### General compilation definitions ######
 
-#LIBS = $(PARSER_LIB) $(BINARY_LIB) $(INTERP_LIB) $(SEXP_LIB) \
-#       $(STRM_LIB) $(UTILS_LIB) $(INTCOMP_LIB) $(INTERP_LIB)
-
 LIBS = $(PARSER_LIB) $(BINARY_LIB) $(INTERP_LIB) $(SEXP_LIB) \
-       $(STRM_LIB) $(UTILS_LIB) $(INTCOMP_LIB) $(INTERP_LIB) $(BINARY_LIB) \
-       $(ALG_LIB)
+       $(STRM_LIB) $(INTCOMP_LIB) $(INTERP_LIB) $(BINARY_LIB) \
+       $(ALG_LIB) $(STRM_LIB) $(UTILS_LIB) 
 
 LIBS_BOOT = $(PARSER_LIB_BOOT) $(BINARY_LIB_BOOT) $(INTERP_LIB_BOOT) \
        $(SEXP_LIB_BOOT) $(STRM_LIB_BOOT) $(UTILS_LIB_BOOT) $(INTERP_LIB_BOOT) \
@@ -420,7 +419,7 @@ CXXFLAGS_BASE := -Wall -Wextra -O2 -g -pedantic -MP -MD \
 	    -Werror -Wno-unused-parameter -fno-omit-frame-pointer -fPIC \
 	    -Isrc -I$(SRC_GENDIR)
 CXXFLAGS := $(TARGET_CXXFLAGS) $(PLATFORM_CXXFLAGS) \
-	    $(CXXFLAGS_BASE) -DWASM_BOOT=0
+	    $(CXXFLAGS_BASE)
 
 CXXFLAGS_BOOT := $(PLATFORM_CXXFLAGS_DEFAULT) $(CXXFLAGS_BASE) -DWASM_BOOT=1
 
@@ -502,7 +501,6 @@ $(SEXP_GENDIR)/defaults-0xd.cpp: $(SEXP_GENDIR)/defaults-0xd.df \
 		 $(BUILD_EXECDIR_BOOT)/decompsexp-wasm
 	$(BUILD_EXECDIR_BOOT)/decompsexp-wasm -d -i $< -o $@
 
-
 ###### Compiliing binary generation Sources ######
 
 $(ALG_OBJS): | $(ALG_OBJDIR)
@@ -526,17 +524,16 @@ $(ALG_GEN_H_SRCS): $(ALG_GENDIR)/%.h: $(ALG_GENDIR)/%.cast \
 		$(BUILD_EXECDIR_BOOT)/cast2casm
 	$(BUILD_EXECDIR_BOOT)/cast2casm -a $(ALG_GENDIR_ALG) -m \
 		$< -o $@ --header --function \
-		$(patsubst $(ALG_GENDIR)/%.cast, Alg%, $<)
+		$(patsubst $(ALG_GENDIR)/%.cast, install_Alg%, $<)
 
 $(ALG_GEN_CPP_SRCS): $(ALG_GENDIR)/%.cpp: $(ALG_GENDIR)/%.cast \
 		$(BUILD_EXECDIR_BOOT)/cast2casm $(ALG_GENDIR_ALG)
 	$(BUILD_EXECDIR_BOOT)/cast2casm -a $(ALG_GENDIR_ALG) -m \
 		$< -o $@ --function \
-		$(patsubst $(ALG_GENDIR)/%.cast, Alg%, $<)
-
+		$(patsubst $(ALG_GENDIR)/%.cast, install_Alg%, $<)
 -include $(foreach dep,$(ALG_GEN_CPP_SRCS:.cpp=.d),$(ALG_OBJDIR)/$(dep))
 
-$(ALG_OBJS): $(ALG_OBJDIR)/%.o: $(ALG_GENDIR)/%.cpp $(ALG_GENDIR)/%.h
+$(ALG_OBJS): $(ALG_OBJDIR)/%.o: $(ALG_GENDIR)/%.cpp $(GENSRCS)
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
 $(BINARY_OBJS): | $(BINARY_OBJDIR)
@@ -551,12 +548,12 @@ $(BINARY_OBJDIR_BOOT):
 
 -include $(foreach dep,$(BINARY_SRCS:.cpp=.d),$(BINARY_OBJDIR)/$(dep))
 
-$(BINARY_OBJS): $(BINARY_OBJDIR)/%.o: $(BINARY_DIR)/%.cpp
+$(BINARY_OBJS): $(BINARY_OBJDIR)/%.o: $(BINARY_DIR)/%.cpp $(GENSRCS)
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
 -include $(foreach dep,$(BINARY_SRCS:.cpp=.d),$(BINARY_OBJDIR_BOOT)/$(dep))
 
-$(BINARY_OBJS_BOOT): $(BINARY_OBJDIR_BOOT)/%.o: $(BINARY_DIR)/%.cpp
+$(BINARY_OBJS_BOOT): $(BINARY_OBJDIR_BOOT)/%.o: $(BINARY_DIR)/%.cpp $(GENSRCS_BOOT)
 	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
 
 $(BINARY_LIB): $(BINARY_OBJS)
@@ -581,12 +578,12 @@ $(UTILS_OBJDIR_BOOT):
 
 -include $(foreach dep,$(UTILS_SRCS:.cpp=.d),$(OBJDIR)/$(dep))
 
-$(UTILS_OBJS): $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
+$(UTILS_OBJS): $(OBJDIR)/%.o: $(SRCDIR)/%.cpp $(GENSRCS)
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
 -include $(foreach dep,$(UTILS_SRCS:.cpp=.d),$(OBJDIR_BOOT)/$(dep))
 
-$(UTILS_OBJS_BOOT): $(OBJDIR_BOOT)/%.o: $(SRCDIR)/%.cpp
+$(UTILS_OBJS_BOOT): $(OBJDIR_BOOT)/%.o: $(SRCDIR)/%.cpp $(GENSRCS_BOOT)
 	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
 
 $(UTILS_LIB): $(UTILS_OBJS)
@@ -611,12 +608,12 @@ $(INTERP_OBJDIR_BOOT):
 
 -include $(foreach dep,$(INTERP_SRCS:.cpp=.d),$(INTERP_OBJDIR)/$(dep))
 
-$(INTERP_OBJS): $(INTERP_OBJDIR)/%.o: $(INTERP_SRCDIR)/%.cpp
+$(INTERP_OBJS): $(INTERP_OBJDIR)/%.o: $(INTERP_SRCDIR)/%.cpp $(GENSRCS)
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
 -include $(foreach dep,$(INTERP_SRCS:.cpp=.d),$(INTERP_OBJDIR_BOOT)/$(dep))
 
-$(INTERP_OBJS_BOOT): $(INTERP_OBJDIR_BOOT)/%.o: $(INTERP_SRCDIR)/%.cpp
+$(INTERP_OBJS_BOOT): $(INTERP_OBJDIR_BOOT)/%.o: $(INTERP_SRCDIR)/%.cpp $(GENSRCS_BOOT)
 	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
 
 $(INTERP_LIB): $(INTERP_OBJS)
@@ -636,7 +633,7 @@ $(INTCOMP_OBJDIR):
 
 -include $(foreach dep,$(INTCOMP_SRCS:.cpp=.d),$(INTCOMP_OBJDIR)/$(dep))
 
-$(INTCOMP_OBJS): $(INTCOMP_OBJDIR)/%.o: $(INTCOMP_SRCDIR)/%.cpp
+$(INTCOMP_OBJS): $(INTCOMP_OBJDIR)/%.o: $(INTCOMP_SRCDIR)/%.cpp $(GENSRCS)
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
 
@@ -658,17 +655,17 @@ $(SEXP_OBJDIR_BOOT):
 
 -include $(foreach dep,$(SEXP_SRCS:.cpp=.d),$(SEXP_OBJDIR)/$(dep))
 
-$(SEXP_OBJS): $(SEXP_OBJDIR)/%.o: $(SEXP_SRCDIR)/%.cpp
+$(SEXP_OBJS): $(SEXP_OBJDIR)/%.o: $(SEXP_SRCDIR)/%.cpp $(GENSRCS)
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
 -include $(foreach dep,$(SEXP_SRCS:.cpp=.d),$(SEXP_OBJDIR_BOOT)/$(dep))
 
-$(SEXP_OBJS_BOOT): $(SEXP_OBJDIR_BOOT)/%.o: $(SEXP_SRCDIR)/%.cpp
+$(SEXP_OBJS_BOOT): $(SEXP_OBJDIR_BOOT)/%.o: $(SEXP_SRCDIR)/%.cpp $(GENSRCS_BOOT)
 	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
 
 -include $(foreach dep,$(SEXP_DEFAULT_SRCS:.cpp=.d),$(SEXP_OBJDIR)/$(dep))
 
-$(SEXP_DEFAULT_OBJS): $(SEXP_OBJDIR)/%.o: $(SEXP_GENDIR)/%.cpp
+$(SEXP_DEFAULT_OBJS): $(SEXP_OBJDIR)/%.o: $(SEXP_GENDIR)/%.cpp $(GENSRCS)
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
 $(SEXP_LIB): $(SEXP_OBJS) $(SEXP_DEFAULT_OBJS)
@@ -693,13 +690,13 @@ $(STRM_OBJDIR_BOOT):
 
 -include $(foreach dep,$(STRM_SRCS:.cpp=.d),$(STRM_OBJDIR)/$(dep))
 
-$(STRM_OBJS): $(STRM_OBJDIR)/%.o: $(STRM_SRCDIR)/%.cpp
+$(STRM_OBJS): $(STRM_OBJDIR)/%.o: $(STRM_SRCDIR)/%.cpp $(GENSRCS)
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
 
 -include $(foreach dep,$(STRM_SRCS:.cpp=.d),$(STRM_OBJDIR_BOOT)/$(dep))
 
-$(STRM_OBJS_BOOT): $(STRM_OBJDIR_BOOT)/%.o: $(STRM_SRCDIR)/%.cpp
+$(STRM_OBJS_BOOT): $(STRM_OBJDIR_BOOT)/%.o: $(STRM_SRCDIR)/%.cpp $(GENSRCS_BOOT)
 	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
 
 $(STRM_LIB): $(STRM_OBJS)
@@ -731,6 +728,22 @@ $(PARSER_GENDIR)/Parser.ypp: $(PARSER_DIR)/Parser.ypp $(PARSER_GENDIR)
 $(PARSER_GENDIR)/Parser.tab.cpp: $(PARSER_GENDIR)/Parser.ypp
 	cd $(PARSER_GENDIR); bison -d -r all Parser.ypp
 
+$(PARSER_GENDIR)/location.hh: $(PARSER_GENDIR)/Parser.tab.cpp
+	touch $@
+
+$(PARSER_GENDIR)/Parser.output: $(PARSER_GENDIR)/Parser.tab.cpp
+	touch $@
+
+$(PARSER_GENDIR)/Parser.tab.hpp: $(PARSER_GENDIR)/Parser.tab.cpp
+	touch $@
+
+
+$(PARSER_GENDIR)/position.hh: $(PARSER_GENDIR)/Parser.tab.cpp
+	touch $@
+
+$(PARSER_GENDIR)/stack.hh: $(PARSER_GENDIR)/Parser.tab.cpp
+	touch $@
+
 $(PARSER_OBJS): | $(PARSER_OBJDIR)
 
 $(PARSER_OBJDIR):
@@ -743,26 +756,25 @@ $(PARSER_OBJDIR_BOOT):
 
 -include $(foreach dep,$(PARSER_SRCS:.cpp=.d),$(PARSER_OBJDIR)/$(dep))
 
-$(PARSER_STD_OBJS): $(PARSER_OBJDIR)/%.o: $(PARSER_DIR)/%.cpp \
-		$(PARSER_GENDIR)/Lexer.cpp $(PARSER_GENDIR)/Parser.tab.cpp
+$(PARSER_STD_OBJS): $(PARSER_OBJDIR)/%.o: $(PARSER_DIR)/%.cpp $(GENSRCS)
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
--include $(foreach dep,$(PARSER_GENSRCS:.cpp=.d),$(PARSER_OBJDIR)/$(dep))
+-include $(foreach dep,$(PARSER_CPP_GENSRCS:.cpp=.d),$(PARSER_OBJDIR)/$(dep))
 
 $(PARSER_GEN_OBJS): $(PARSER_OBJDIR)/%.o: $(PARSER_GENDIR)/%.cpp \
-		$(PARSER_GENDIR)/Lexer.cpp   $(PARSER_GENDIR)/Parser.tab.cpp
+		$(GENSRCS)
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
 -include $(foreach dep,$(PARSER_SRCS:.cpp=.d),$(PARSER_OBJDIR_BOOT)/$(dep))
 
 $(PARSER_STD_OBJS_BOOT): $(PARSER_OBJDIR_BOOT)/%.o: $(PARSER_DIR)/%.cpp \
-	        $(PARSER_GENDIR)/Lexer.cpp $(PARSER_GENDIR)/Parser.tab.cpp
+		$(GENSRCS_BOOT)
 	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
 
--include $(foreach dep,$(PARSER_GENSRCS:.cpp=.d),$(PARSER_OBJDIR_BOOT)/$(dep))
+-include $(foreach dep,$(PARSER_CPP_GENSRCS:.cpp=.d),$(PARSER_OBJDIR_BOOT)/$(dep))
 
 $(PARSER_GEN_OBJS_BOOT): $(PARSER_OBJDIR_BOOT)/%.o: $(PARSER_GENDIR)/%.cpp \
-	        $(PARSER_GENDIR)/Lexer.cpp $(PARSER_GENDIR)/Parser.tab.cpp
+		$(GENSRCS_BOOT)
 	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
 
 $(PARSER_LIB): $(PARSER_OBJS)
@@ -807,14 +819,13 @@ $(EXEC_OBJS_BOOT): | $(EXEC_OBJDIR_BOOT)
 
 -include $(foreach dep,$(EXEC_SRCS:.cpp=.d),$(EXEC_OBJDIR)/$(dep))
 
-$(EXEC_OBJS): $(EXEC_OBJDIR)/%.o: $(EXEC_DIR)/%.cpp \
-		$(PARSER_GENDIR)/Parser.tab.cpp
+$(EXEC_OBJS): $(EXEC_OBJDIR)/%.o: $(EXEC_DIR)/%.cpp $(GENSRCS)
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
 -include $(foreach dep,$(EXEC_SRCS:.cpp=.d),$(EXEC_OBJDIR_BOOT)/$(dep))
 
 $(EXEC_OBJS_BOOT): $(EXEC_OBJDIR_BOOT)/%.o: $(EXEC_DIR)/%.cpp \
-		$(PARSER_GENDIR)/Parser.tab.cpp
+		$(GENSRCS_BOOT)
 	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
 
 $(BUILD_EXECDIR):
@@ -846,8 +857,7 @@ $(TEST_OBJS): | $(TEST_OBJDIR)
 
 -include $(foreach dep,$(TEST_SRCS:.cpp=.d),$(TEST_OBJDIR)/$(dep))
 
-$(TEST_OBJS): $(TEST_OBJDIR)/%.o: $(TEST_DIR)/%.cpp \
-		$(PARSER_GENDIR)/Lexer.cpp $(PARSER_GENDIR)/Parser.tab.cpp
+$(TEST_OBJS): $(TEST_OBJDIR)/%.o: $(TEST_DIR)/%.cpp $(GENSRCS)
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
 $(TEST_EXECDIR):
@@ -861,9 +871,12 @@ $(TEST_EXECS): $(TEST_EXECDIR)/%$(EXE): $(TEST_OBJDIR)/%.o $(LIBS)
 ###### Testing ######
 
 test: build-all test-parser test-raw-streams test-byte-queues \
-	test-decompsexp-wasm test-decompwasm-sexp test-decompress
+	test-decompress
 	@echo "*** all tests passed ***"
 
+# TODO: FInish removing the following since cast2casm and casm2cast replace
+# the following deprecated tests (now broken).
+#	test-decompsexp-wasm test-decompwasm-sexp
 # TODO: Add this back to the set of tests.
 #	test-compress
 
@@ -1063,7 +1076,7 @@ $(UNITTEST_EXECDIR):
 
 -include $(foreach dep,$(UNITTEST_SRCS:.cpp=.d),$(UNITTEST_EXECDIR)/$(dep))
 
-$(UNITTEST_EXECS): $(UNITTEST_EXECDIR)/%$(EXE): $(UNITTEST_DIR)/%.cpp $(LIBS)
+$(UNITTEST_EXECS): $(UNITTEST_EXECDIR)/%$(EXE): $(UNITTEST_DIR)/%.cpp $(GENSRCS) $(LIBS)
 	$(CPP_COMPILER) $(CXXFLAGS) -I$(GTEST_INCLUDE) $< $(LIBS) \
 		$(GTEST_LIB) -lpthread -o $@
 
@@ -1114,3 +1127,4 @@ $(TEST_CASM_DF_OUT_FILES): $(TEST_SRCS_DIR)/%.df-out: $(TEST_SRCS_DIR)/%.wasm \
 	rm -rf $@; $(BUILD_EXECDIR)/decompwasm-sexp -i $< -o $@
 
 endif
+

@@ -36,7 +36,7 @@ const char* OutputFilename = "-";
 std::shared_ptr<RawStream> getInput() {
   if (InputFilename == std::string("-")) {
     if (UseFileStreams)
-      return std::make_shared<FdReader>(STDIN_FILENO, false);
+      return std::make_shared<FileReader>(stdin, false);
     return std::make_shared<StreamReader>(std::cin);
   }
   if (UseFileStreams)
@@ -47,7 +47,7 @@ std::shared_ptr<RawStream> getInput() {
 std::shared_ptr<RawStream> getOutput() {
   if (OutputFilename == std::string("-")) {
     if (UseFileStreams)
-      return std::make_shared<FdWriter>(STDOUT_FILENO, false);
+      return std::make_shared<FileWriter>(stdout, false);
     return std::make_shared<StreamWriter>(std::cout);
   }
   if (UseFileStreams)

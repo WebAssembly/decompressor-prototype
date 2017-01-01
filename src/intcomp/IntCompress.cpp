@@ -36,27 +36,41 @@ using namespace utils;
 
 namespace intcomp {
 
-IntCompressor::IntCompressor(std::shared_ptr<decode::Queue> Input,
-                             std::shared_ptr<decode::Queue> Output,
-                             std::shared_ptr<filt::SymbolTable> Symtab)
-    : Input(Input),
-      Output(Output),
-      Symtab(Symtab),
-      CountCutoff(0),
+IntCompressor::Flags::Flags()
+    : CountCutoff(0),
       WeightCutoff(0),
       LengthLimit(1),
       AbbrevFormat(IntTypeFormat::Varuint64),
+      MinimizeCodeSize(true),
+      TraceReadingInput(false),
+      TraceReadingIntStream(false),
+      TraceWritingCodeOutput(false),
+      TraceWritingDataOutput(false),
+      TraceCompression(false),
+      TraceIntStreamGeneration(false),
+      TraceCodeGenerationForReading(false),
+      TraceCodeGenerationForWriting(false) {
+}
+
+IntCompressor::IntCompressor(std::shared_ptr<decode::Queue> Input,
+                             std::shared_ptr<decode::Queue> Output,
+                             std::shared_ptr<filt::SymbolTable> Symtab,
+                             Flags& MyFlags)
+    : Input(Input),
+      Output(Output),
+      MyFlags(MyFlags),
+      Symtab(Symtab),
       ErrorsFound(false) {
 }
 
 void IntCompressor::setTrace(std::shared_ptr<TraceClass> NewTrace) {
-  Trace = NewTrace;
+  MyFlags.Trace = NewTrace;
 }
 
 std::shared_ptr<TraceClass> IntCompressor::getTracePtr() {
-  if (!Trace)
+  if (!MyFlags.Trace)
     setTrace(std::make_shared<TraceClass>("IntCompress"));
-  return Trace;
+  return MyFlags.Trace;
 }
 
 CountNode::RootPtr IntCompressor::getRoot() {
@@ -65,16 +79,12 @@ CountNode::RootPtr IntCompressor::getRoot() {
   return Root;
 }
 
-void IntCompressor::readInput(bool TraceParsing) {
+void IntCompressor::readInput() {
   Contents = std::make_shared<IntStream>();
   IntWriter MyWriter(Contents);
   StreamReader MyReader(Input, MyWriter, Symtab);
-  if (TraceParsing) {
-    TraceClass& Trace = MyReader.getTrace();
-    Trace.addContext(MyReader.getTraceContext());
-    Trace.addContext(MyWriter.getTraceContext());
-    Trace.setTraceProgress(true);
-  }
+  if (MyFlags.TraceReadingInput)
+    MyReader.getTrace().setTraceProgress(true);
   MyReader.fastStart();
   MyReader.fastReadBackFilled();
   bool Successful = MyReader.isFinished() && MyReader.isSuccessful();
@@ -85,28 +95,23 @@ void IntCompressor::readInput(bool TraceParsing) {
 }
 
 const WriteCursor IntCompressor::writeCodeOutput(
-    std::shared_ptr<SymbolTable> Symtab,
-    bool Trace) {
+    std::shared_ptr<SymbolTable> Symtab) {
   BinaryWriter Writer(Output, Symtab);
   Writer.setFreezeEofOnDestruct(false);
-  Writer.setTraceProgress(Trace);
-  Writer.setMinimizeBlockSize(true);
+  if (MyFlags.TraceWritingCodeOutput)
+    Writer.getTrace().setTraceProgress(true);
+  Writer.setMinimizeBlockSize(MyFlags.MinimizeCodeSize);
   Writer.write(dyn_cast<FileNode>(Symtab->getInstalledRoot()));
   return Writer.getWritePos();
 }
 
 void IntCompressor::writeDataOutput(const WriteCursor& StartPos,
-                                    std::shared_ptr<SymbolTable> Symtab,
-                                    bool Trace) {
+                                    std::shared_ptr<SymbolTable> Symtab) {
   StreamWriter Writer(Output);
   Writer.setPos(StartPos);
   IntReader Reader(IntOutput, Writer, Symtab);
-  if (Trace) {
-    TraceClass& Trace = Reader.getTrace();
-    Trace.addContext(Reader.getTraceContext());
-    Trace.addContext(Writer.getTraceContext());
-    Trace.setTraceProgress(true);
-  }
+  if (MyFlags.TraceWritingDataOutput)
+    Reader.getTrace().setTraceProgress(true);
   Reader.insertFileVersion(WasmBinaryMagic, WasmBinaryVersionD);
   Reader.algorithmStart();
   Reader.algorithmReadBackFilled();
@@ -119,7 +124,7 @@ void IntCompressor::writeDataOutput(const WriteCursor& StartPos,
 IntCompressor::~IntCompressor() {
 }
 
-bool IntCompressor::compressUpToSize(size_t Size, bool TraceParsing) {
+bool IntCompressor::compressUpToSize(size_t Size) {
   TRACE_BLOCK({
     if (Size == 1)
       TRACE_MESSAGE("Collecting integer sequences of length: 1");
@@ -128,10 +133,10 @@ bool IntCompressor::compressUpToSize(size_t Size, bool TraceParsing) {
                     std::to_string(Size));
   });
   CountWriter Writer(getRoot());
-  Writer.setCountCutoff(CountCutoff);
+  Writer.setCountCutoff(MyFlags.CountCutoff);
   Writer.setUpToSize(Size);
   IntReader Reader(Contents, Writer, Symtab);
-  if (TraceParsing)
+  if (MyFlags.TraceReadingIntStream)
     Reader.getTrace().setTraceProgress(true);
   Reader.fastStart();
   Reader.fastReadBackFilled();
@@ -143,15 +148,13 @@ void IntCompressor::removeSmallUsageCounts() {
   // the trie to (a) recover memory and (b) make remaining analysis
   // faster.  It does this by removing int count nodes that are not
   // not useful (See case RemoveFrame::State::Exit for details).
-  RemoveNodesVisitor Visitor(Root, CountCutoff);
+  RemoveNodesVisitor Visitor(Root, MyFlags.CountCutoff);
   Visitor.walk();
 }
 
-void IntCompressor::compress(DetailLevel Level,
-                             bool TraceParsing,
-                             bool TraceFirstPassOnly) {
+void IntCompressor::compress(DetailLevel Level) {
   TRACE_METHOD("compress");
-  readInput(TraceParsing);
+  readInput();
   if (errorsFound()) {
     fprintf(stderr, "Unable to decompress, input malformed");
     return;
@@ -162,13 +165,13 @@ void IntCompressor::compress(DetailLevel Level,
   // Start by collecting number of occurrences of each integer, so
   // that we can use as a filter on integer sequence inclusion into the
   // trie.
-  if (!compressUpToSize(1, TraceParsing && !TraceFirstPassOnly))
+  if (!compressUpToSize(1))
     return;
   if (Level >= DetailLevel::MoreDetail)
     describe(stderr, makeFlags(CollectionFlag::TopLevel));
   removeSmallUsageCounts();
-  if (LengthLimit > 1) {
-    if (!compressUpToSize(LengthLimit, TraceParsing && !TraceFirstPassOnly))
+  if (MyFlags.LengthLimit > 1) {
+    if (!compressUpToSize(MyFlags.LengthLimit))
       return;
     removeSmallUsageCounts();
   }
@@ -179,7 +182,7 @@ void IntCompressor::compress(DetailLevel Level,
   if (Level >= DetailLevel::MoreDetail)
     describe(stderr, makeFlags(CollectionFlag::All));
   IntOutput = std::make_shared<IntStream>();
-  if (!generateIntOutput(TraceParsing && !TraceFirstPassOnly))
+  if (!generateIntOutput())
     return;
   TRACE(size_t, "Number of integers in compressed output",
         IntOutput->getNumIntegers());
@@ -200,16 +203,18 @@ void IntCompressor::compress(DetailLevel Level,
 
 void IntCompressor::assignInitialAbbreviations(
     CountNode::PtrVector& Assignments) {
-  AbbreviationsCollector Collector(getRoot(), AbbrevFormat, Assignments);
-  Collector.CountCutoff = CountCutoff;
-  Collector.WeightCutoff = WeightCutoff;
+  AbbreviationsCollector Collector(getRoot(), MyFlags.AbbrevFormat,
+                                   Assignments);
+  Collector.CountCutoff = MyFlags.CountCutoff;
+  Collector.WeightCutoff = MyFlags.WeightCutoff;
   Collector.assignAbbreviations();
 }
 
-bool IntCompressor::generateIntOutput(bool TraceParsing) {
-  AbbrevAssignWriter Writer(Root, IntOutput, LengthLimit, AbbrevFormat);
+bool IntCompressor::generateIntOutput() {
+  AbbrevAssignWriter Writer(Root, IntOutput, MyFlags.LengthLimit,
+                            MyFlags.AbbrevFormat);
   IntReader Reader(Contents, Writer, Symtab);
-  if (TraceParsing) {
+  if (MyFlags.TraceIntStreamGeneration) {
     std::shared_ptr<TraceClass> Trace = Writer.getTracePtr();
     Reader.setTrace(Trace);
     Writer.setTrace(Trace);
@@ -226,7 +231,7 @@ std::shared_ptr<SymbolTable> IntCompressor::generateCode(
     CountNode::PtrVector& Assignments,
     bool ToRead,
     bool Trace) {
-  AbbreviationCodegen Codegen(Root, AbbrevFormat, Assignments);
+  AbbreviationCodegen Codegen(Root, MyFlags.AbbrevFormat, Assignments);
   std::shared_ptr<SymbolTable> Symtab = Codegen.getCodeSymtab(ToRead);
   if (Trace) {
     TextWriter Writer;
@@ -239,8 +244,8 @@ void IntCompressor::describe(FILE* Out, CollectionFlags Flags) {
   CountNodeCollector Collector(getRoot());
   if (hasTrace())
     Collector.setTrace(getTracePtr());
-  Collector.CountCutoff = CountCutoff;
-  Collector.WeightCutoff = WeightCutoff;
+  Collector.CountCutoff = MyFlags.CountCutoff;
+  Collector.WeightCutoff = MyFlags.WeightCutoff;
   Collector.collect(Flags);
   TRACE_BLOCK({ Collector.describe(getTrace().getFile()); });
 }
