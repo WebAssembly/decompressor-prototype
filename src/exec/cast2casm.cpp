@@ -607,8 +607,8 @@ int main(int Argc, charstring Argv[]) {
   }
   if (Verbose)
     fprintf(stderr, "Reading input: %s\n", InputFilename);
-  std::shared_ptr<SymbolTable> InputSymtab
-      = readAlgorithmText(InputFilename, TraceParser, TraceLexer);
+  std::shared_ptr<SymbolTable> InputSymtab =
+      readAlgorithmText(InputFilename, TraceParser, TraceLexer);
   if (!InputSymtab)
     return exit_status(EXIT_FAILURE);
   if (Verbose) {
@@ -629,8 +629,8 @@ int main(int Argc, charstring Argv[]) {
   }
   if (Verbose)
     fprintf(stderr, "Reading algorithms file: %s\n", AlgorithmFilename);
-  std::shared_ptr<SymbolTable> AlgSymtab
-      = readAlgorithmText(AlgorithmFilename, TraceParser, TraceLexer);
+  std::shared_ptr<SymbolTable> AlgSymtab =
+      readAlgorithmText(AlgorithmFilename, TraceParser, TraceLexer);
   if (!AlgSymtab)
     return exit_status(EXIT_FAILURE);
   if (Verbose && strcmp(OutputFilename, "-") != 0)

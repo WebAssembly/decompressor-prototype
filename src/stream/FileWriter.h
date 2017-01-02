@@ -34,7 +34,6 @@ class FileWriter : public RawStream {
   FileWriter& operator=(const FileWriter&) = delete;
 
  public:
-
   explicit FileWriter(const char* Filename);
 
   ~FileWriter() OVERRIDE;

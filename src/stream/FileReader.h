@@ -34,7 +34,6 @@ class FileReader : public RawStream {
   FileReader& operator=(const FileReader*) = delete;
 
  public:
-
   FileReader(const char* Filename);
 
   ~FileReader() OVERRIDE;
