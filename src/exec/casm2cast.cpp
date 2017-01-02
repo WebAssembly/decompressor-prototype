@@ -26,6 +26,8 @@
 #include "sexp/TextWriter.h"
 #include "utils/ArgsParse.h"
 
+#include <cstdlib>
+
 using namespace wasm;
 using namespace wasm::decode;
 using namespace wasm::filt;
