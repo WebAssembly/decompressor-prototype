@@ -609,8 +609,10 @@ int main(int Argc, charstring Argv[]) {
   std::shared_ptr<SymbolTable> InputSymtab;
   {
     CasmReader Reader;
-    Reader.setTraceRead(TraceParser).setTraceLexer(TraceLexer)
-        .setTraceTree(Verbose).readText(InputFilename);
+    Reader.setTraceRead(TraceParser)
+        .setTraceLexer(TraceLexer)
+        .setTraceTree(Verbose)
+        .readText(InputFilename);
     if (Reader.hasErrors()) {
       fprintf(stderr, "Unable to parse: %s\n", InputFilename);
       return exit_status(EXIT_FAILURE);
@@ -633,8 +635,10 @@ int main(int Argc, charstring Argv[]) {
   std::shared_ptr<SymbolTable> AlgSymtab;
   {
     CasmReader Reader;
-    Reader.setTraceRead(TraceParser).setTraceLexer(TraceLexer)
-        .setTraceTree(Verbose).readText(AlgorithmFilename);
+    Reader.setTraceRead(TraceParser)
+        .setTraceLexer(TraceLexer)
+        .setTraceTree(Verbose)
+        .readText(AlgorithmFilename);
     if (Reader.hasErrors()) {
       fprintf(stderr, "Unable to parse: %s\n", InputFilename);
       return exit_status(EXIT_FAILURE);

@@ -23,6 +23,7 @@
 #endif
 
 #include "interp/StreamReader.h"
+#include "sexp/CasmReader.h"
 #include "sexp/InflateAst.h"
 #include "sexp/TextWriter.h"
 #include "sexp-parser/Driver.h"
@@ -46,13 +47,6 @@ namespace {
 const char* InputFilename = "-";
 const char* OutputFilename = "-";
 const char* AlgorithmFilename = nullptr;
-
-bool TraceParser = false;
-bool TraceLexer = false;
-
-std::shared_ptr<RawStream> getInput() {
-  return std::make_shared<FileReader>(InputFilename);
-}
 
 class OutputHandler {
   OutputHandler(const OutputHandler&) = delete;
@@ -78,24 +72,12 @@ class OutputHandler {
   FILE* Out;
 };
 
-std::shared_ptr<SymbolTable> parseFile(const char* Filename) {
-  auto Symtab = std::make_shared<SymbolTable>();
-  Driver Parser(Symtab);
-  if (TraceParser)
-    Parser.setTraceParsing(true);
-  if (TraceLexer)
-    Parser.setTraceLexing(true);
-  if (!Parser.parse(Filename)) {
-    fprintf(stderr, "Unable to parse: %s\n", Filename);
-    Symtab.reset();
-  }
-  return Symtab;
-}
-
 }  // end of anonymous namespace
 
 int main(int Argc, const char* Argv[]) {
   bool Verbose = false;
+  bool TraceParser = false;
+  bool TraceLexer = false;
   bool TraceRead = false;
   bool TraceTree = false;
 
@@ -171,11 +153,16 @@ int main(int Argc, const char* Argv[]) {
 
   std::shared_ptr<SymbolTable> AlgSymtab;
   if (AlgorithmFilename) {
-    if (Verbose)
-      fprintf(stderr, "Reading algorithm file: %s\n", AlgorithmFilename);
-    AlgSymtab = parseFile(AlgorithmFilename);
-    if (!AlgSymtab)
+    CasmReader Reader;
+    Reader.setTraceRead(TraceParser)
+        .setTraceLexer(TraceLexer)
+        .setTraceTree(TraceParser)
+        .readText(AlgorithmFilename);
+    if (Reader.hasErrors()) {
+      fprintf(stderr, "Problems reading file: %s\n", AlgorithmFilename);
       return exit_status(EXIT_FAILURE);
+    }
+    AlgSymtab = Reader.getReadSymtab();
   } else {
     AlgSymtab = std::make_shared<SymbolTable>();
     install_Algcasm0x0(AlgSymtab);
@@ -184,29 +171,17 @@ int main(int Argc, const char* Argv[]) {
   if (Verbose)
     fprintf(stderr, "Reading input: %s\n", InputFilename);
 
-  auto RawInput = getInput();
-  auto Input = std::make_shared<ReadBackedQueue>(RawInput);
-  InflateAst Inflator;
-  auto StrmReader = std::make_shared<StreamReader>(Input, Inflator, AlgSymtab);
-  if (TraceRead) {
-    auto Trace = std::make_shared<TraceClass>("read");
-    Trace->setTraceProgress(true);
-    StrmReader->setTrace(Trace);
-    if (TraceTree)
-      Inflator.setTrace(Trace);
-  }
-  StrmReader->algorithmStart();
-  StrmReader->algorithmReadBackFilled();
-  if (StrmReader->errorsFound()) {
-    fprintf(stderr, "Problems while reading: %s\n", InputFilename);
+  CasmReader Reader;
+  Reader.setTraceRead(TraceRead).setTraceTree(TraceTree).readBinary(
+      InputFilename, AlgSymtab);
+  if (Reader.hasErrors()) {
+    fprintf(stderr, "Problems reading: %s\n", InputFilename);
     return exit_status(EXIT_FAILURE);
   }
-
   if (Verbose && strcmp(OutputFilename, "-") != 0)
     fprintf(stderr, "Writing file: %s\n", OutputFilename);
-
   OutputHandler Output;
   TextWriter Writer;
-  Writer.write(Output.getFile(), Inflator.getGeneratedFile());
+  Writer.write(Output.getFile(), Reader.getReadSymtab().get());
   return exit_status(EXIT_SUCCESS);
 }

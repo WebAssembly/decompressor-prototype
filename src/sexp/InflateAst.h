@@ -44,6 +44,7 @@ class InflateAst : public interp::Writer {
     return true;
   }
   FileNode* getGeneratedFile() const;
+  std::shared_ptr<SymbolTable> getSymtab() { return Symtab; }
   decode::StreamType getStreamType() const OVERRIDE;
   bool writeUint8(uint8_t Value) OVERRIDE;
   bool writeUint32(uint32_t Value) OVERRIDE;
