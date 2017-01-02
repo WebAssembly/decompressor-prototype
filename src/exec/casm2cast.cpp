@@ -22,19 +22,9 @@
 #include "algorithms/casm0x0.h"
 #endif
 
-#include "interp/StreamReader.h"
 #include "sexp/CasmReader.h"
-#include "sexp/InflateAst.h"
 #include "sexp/TextWriter.h"
-#include "sexp-parser/Driver.h"
-#include "stream/FileReader.h"
-#include "stream/RawStream.h"
-#include "stream/ReadBackedQueue.h"
 #include "utils/ArgsParse.h"
-
-#include <memory>
-
-#include <unistd.h>
 
 using namespace wasm;
 using namespace wasm::decode;
