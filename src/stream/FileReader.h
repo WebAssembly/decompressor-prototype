@@ -28,70 +28,13 @@ namespace wasm {
 
 namespace decode {
 
-#if 0
-class FdReader : public RawStream {
-  FdReader() = delete;
-  FdReader(const FdReader&) = delete;
-  FdReader& operator=(const FdReader*) = delete;
-
- public:
-  FdReader(int Fd, bool CloseOnExit)
-      : Fd(Fd),
-        CurSize(0),
-        BytesRemaining(0),
-        FoundErrors(Fd < 0),
-        AtEof(false),
-        CloseOnExit(CloseOnExit) {}
-
-  ~FdReader() OVERRIDE;
-
-  size_t read(uint8_t* Buf, size_t Size = 1) OVERRIDE;
-  bool write(uint8_t* Buf, size_t Size = 1) OVERRIDE;
-  bool freeze() OVERRIDE;
-  bool atEof() OVERRIDE;
-  bool hasErrors() OVERRIDE;
-
- protected:
-  int Fd;
-  static constexpr size_t kBufSize = 4096;
-  uint8_t Bytes[kBufSize];
-  size_t CurSize;
-  size_t BytesRemaining;
-  bool FoundErrors;
-  bool AtEof;
-  bool CloseOnExit;
-
-  void closeFd();
-  void fillBuffer();
-};
-
-// Defines a file reader.
-class FileReader FINAL : public FdReader {
-  FileReader(const FileReader&) = delete;
-  FileReader& operator=(const FileReader&) = delete;
-
- public:
-  FileReader(const char* Filename);
-  ~FileReader() OVERRIDE;
-};
-
-#else
-
 class FileReader : public RawStream {
   FileReader() = delete;
   FileReader(const FileReader&) = delete;
   FileReader& operator=(const FileReader*) = delete;
 
  public:
-  FileReader(FILE* File, bool CloseOnExit)
-      : File(File),
-        CurSize(0),
-        BytesRemaining(0),
-        FoundErrors(false),
-        AtEof(false),
-        CloseOnExit(CloseOnExit) {}
-
-  FileReader(const char*);
+  FileReader(const char* Filename);
 
   ~FileReader() OVERRIDE;
 
@@ -114,8 +57,6 @@ class FileReader : public RawStream {
   void closeFile();
   void fillBuffer();
 };
-
-#endif
 
 }  // end of namespace decode
 

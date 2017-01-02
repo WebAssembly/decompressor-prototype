@@ -27,7 +27,7 @@ namespace wasm {
 namespace decode {
 
 FileWriter::FileWriter(const char* Filename)
-    : File(fopen(Filename, "w")),
+    : File((strcmp(Filename, "-") == 0) ? stdout : fopen(Filename, "w")),
       CurSize(0),
       FoundErrors(false),
       IsFrozen(false),

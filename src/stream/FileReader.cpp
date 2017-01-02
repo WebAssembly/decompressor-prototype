@@ -25,10 +25,8 @@ namespace wasm {
 
 namespace decode {
 
-#if 1
-
 FileReader::FileReader(const char* Filename)
-    : File(fopen(Filename, "r")),
+    : File((strcmp(Filename, "-") == 0) ? stdin : fopen(Filename, "r")),
       CurSize(0),
       BytesRemaining(0),
       FoundErrors(false),
@@ -111,82 +109,6 @@ bool FileReader::atEof() {
   fillBuffer();
   return AtEof;
 }
-
-#else
-
-FdReader::~FdReader() {
-  closeFd();
-}
-
-bool FdReader::hasErrors() {
-  return FoundErrors;
-}
-
-void FdReader::fillBuffer() {
-  CurSize = ::read(Fd, Bytes, kBufSize);
-  BytesRemaining = CurSize;
-  if (CurSize == 0) {
-    AtEof = true;
-  }
-}
-
-void FdReader::closeFd() {
-  if (CloseOnExit) {
-    close(Fd);
-    CloseOnExit = false;
-  }
-}
-
-size_t FdReader::read(uint8_t* Buf, size_t Size) {
-  size_t Count = 0;
-  while (Size) {
-    if (BytesRemaining >= Size) {
-      const size_t Index = CurSize - BytesRemaining;
-      memcpy(Buf, Bytes + Index, Size);
-      BytesRemaining -= Size;
-      return Count + Size;
-    } else if (BytesRemaining) {
-      const size_t Index = CurSize - BytesRemaining;
-      memcpy(Buf, Bytes + Index, BytesRemaining);
-      Buf += BytesRemaining;
-      Count += BytesRemaining;
-      Size -= BytesRemaining;
-      BytesRemaining = 0;
-    }
-    if (AtEof)
-      return Count;
-    fillBuffer();
-  }
-  return Count;
-}
-
-bool FdReader::write(uint8_t* Buf, size_t Size) {
-  (void)Buf;
-  (void)Size;
-  return false;
-}
-
-bool FdReader::freeze() {
-  return false;
-}
-
-bool FdReader::atEof() {
-  if (AtEof)
-    return true;
-  if (BytesRemaining)
-    return false;
-  fillBuffer();
-  return AtEof;
-}
-
-FileReader::FileReader(const char* Filename)
-    : FdReader(open(Filename, O_RDONLY), true) {
-}
-
-FileReader::~FileReader() {
-}
-
-#endif
 
 }  // end of namespace decode
 

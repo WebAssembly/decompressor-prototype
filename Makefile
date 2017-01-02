@@ -102,6 +102,7 @@ SEXP_OBJDIR = $(OBJDIR)/sexp
 SEXP_OBJDIR_BOOT = $(OBJDIR_BOOT)/sexp
 SEXP_SRCS_BASE = \
 	Ast.cpp \
+	CasmReader.cpp \
 	FlattenAst.cpp \
 	InflateAst.cpp \
 	TextWriter.cpp
@@ -399,13 +400,13 @@ TEST_CASM_DF_GEN_FILES = $(patsubst %.df, $(TEST_0XD_GENDIR)/%.df-out, \
 
 ###### General compilation definitions ######
 
-LIBS = $(PARSER_LIB) $(BINARY_LIB) $(INTERP_LIB) $(SEXP_LIB) \
+LIBS = $(BINARY_LIB) $(INTERP_LIB) $(SEXP_LIB) $(PARSER_LIB) \
        $(STRM_LIB) $(INTCOMP_LIB) $(INTERP_LIB) $(BINARY_LIB) \
        $(ALG_LIB) $(STRM_LIB) $(UTILS_LIB) 
 
-LIBS_BOOT = $(PARSER_LIB_BOOT) $(BINARY_LIB_BOOT) $(INTERP_LIB_BOOT) \
-       $(SEXP_LIB_BOOT) $(STRM_LIB_BOOT) $(UTILS_LIB_BOOT) $(INTERP_LIB_BOOT) \
-       $(BINARY_LIB_BOOT)
+LIBS_BOOT = $(BINARY_LIB_BOOT) $(INTERP_LIB_BOOT) \
+	$(SEXP_LIB_BOOT) $(PARSER_LIB_BOOT) $(STRM_LIB_BOOT) $(UTILS_LIB_BOOT) \
+	$(INTERP_LIB_BOOT) $(BINARY_LIB_BOOT)
 
 ##### Track additional important variable definitions not in Makefile.common
 
@@ -522,13 +523,13 @@ $(ALG_GEN_SRCS): $(ALG_GENDIR)/%.cast: $(ALG_SRCDIR)/%.cast
 
 $(ALG_GEN_H_SRCS): $(ALG_GENDIR)/%.h: $(ALG_GENDIR)/%.cast \
 		$(BUILD_EXECDIR_BOOT)/cast2casm
-	$(BUILD_EXECDIR_BOOT)/cast2casm -a $(ALG_GENDIR_ALG) -m \
+	$(BUILD_EXECDIR_BOOT)/cast2casm -a $(ALG_GENDIR_ALG) \
 		$< -o $@ --header --function \
 		$(patsubst $(ALG_GENDIR)/%.cast, install_Alg%, $<)
 
 $(ALG_GEN_CPP_SRCS): $(ALG_GENDIR)/%.cpp: $(ALG_GENDIR)/%.cast \
 		$(BUILD_EXECDIR_BOOT)/cast2casm $(ALG_GENDIR_ALG)
-	$(BUILD_EXECDIR_BOOT)/cast2casm -a $(ALG_GENDIR_ALG) -m \
+	$(BUILD_EXECDIR_BOOT)/cast2casm -a $(ALG_GENDIR_ALG) \
 		$< -o $@ --function \
 		$(patsubst $(ALG_GENDIR)/%.cast, install_Alg%, $<)
 -include $(foreach dep,$(ALG_GEN_CPP_SRCS:.cpp=.d),$(ALG_OBJDIR)/$(dep))
