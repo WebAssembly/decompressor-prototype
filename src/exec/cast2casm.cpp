@@ -18,6 +18,8 @@
 
 #include "utils/Defs.h"
 
+#include <cstdlib>
+
 #if WASM_BOOT == 0
 #include "algorithms/casm0x0.h"
 #endif
