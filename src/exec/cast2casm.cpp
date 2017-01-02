@@ -16,6 +16,12 @@
 
 // Converts textual algorithm into binary file form.
 
+#include "utils/Defs.h"
+
+#if WASM_BOOT == 0
+#include "algorithms/casm0x0.h"
+#endif
+
 #include "interp/StreamWriter.h"
 #include "interp/IntReader.h"
 #include "interp/TeeWriter.h"
@@ -37,16 +43,6 @@ using namespace wasm::interp;
 using namespace wasm::utils;
 
 namespace {
-
-charstring InputFilename = "-";
-charstring OutputFilename = "-";
-charstring AlgorithmFilename = "/dev/null";
-
-std::shared_ptr<RawStream> getOutput() {
-  return std::make_shared<FileWriter>(OutputFilename);
-}
-
-#define BYTES_PER_LINE_IN_WASM_DEFAULTS 16
 
 static charstring LocalName = "Local_";
 static charstring FuncName = "Func_";
@@ -504,6 +500,9 @@ bool CodeGenerator::generateImplFile() {
 }  // end of anonymous namespace
 
 int main(int Argc, charstring Argv[]) {
+  charstring InputFilename = "-";
+  charstring OutputFilename = "-";
+  charstring AlgorithmFilename = nullptr;
   bool MinimizeBlockSize = false;
   bool Verbose = false;
   bool TraceFlatten = false;
@@ -516,7 +515,12 @@ int main(int Argc, charstring Argv[]) {
   {
     ArgsParser Args("Converts compression algorithm from text to binary");
 
-    ArgsParser::Required<charstring> AlgorithmFlag(AlgorithmFilename);
+#if WASM_BOOT
+    ArgsParser::Required<charstring>
+#else
+    ArgsParser::Optional<charstring>
+#endif
+        AlgorithmFlag(AlgorithmFilename);
     Args.add(AlgorithmFlag.setShortName('a')
                  .setLongName("algorithm")
                  .setOptionName("ALGORITHM")
@@ -529,8 +533,9 @@ int main(int Argc, charstring Argv[]) {
                  .setLongName("expect-fail")
                  .setDescription("Succeed on failure/fail on success"));
 
-    ArgsParser::Optional<bool> MinimizeBlockFlag(MinimizeBlockSize);
-    Args.add(MinimizeBlockFlag.setShortName('m')
+    ArgsParser::Toggle MinimizeBlockFlag(MinimizeBlockSize);
+    Args.add(MinimizeBlockFlag.setDefault(true)
+                 .setShortName('m')
                  .setLongName("minimize")
                  .setDescription(
                      "Minimize size in binary file "
@@ -603,7 +608,10 @@ int main(int Argc, charstring Argv[]) {
     // Be sure to update implications!
     if (TraceTree)
       TraceWrite = true;
+
+    assert(!(WASM_BOOT && AlgorithmFilename == nullptr));
   }
+
   if (Verbose)
     fprintf(stderr, "Reading input: %s\n", InputFilename);
   std::shared_ptr<SymbolTable> InputSymtab;
@@ -619,21 +627,22 @@ int main(int Argc, charstring Argv[]) {
     }
     InputSymtab = Reader.getReadSymtab();
   }
+
   std::shared_ptr<IntStream> IntSeq = std::make_shared<IntStream>();
   FlattenAst Flattener(IntSeq, InputSymtab);
   if (TraceFlatten) {
-    auto Trace = std::make_shared<TraceClass>("flatten");
+    auto Trace = std::make_shared<TraceClass>("Flatten");
     Flattener.setTrace(Trace);
     Flattener.setTraceProgress(true);
   }
   if (!Flattener.flatten()) {
-    fprintf(stderr, "Problems flattening read tree!\n");
+    fprintf(stderr, "Problems flattening tree, unable to continue!\n");
     return exit_status(EXIT_FAILURE);
   }
   if (Verbose)
     fprintf(stderr, "Reading algorithms file: %s\n", AlgorithmFilename);
   std::shared_ptr<SymbolTable> AlgSymtab;
-  {
+  if (AlgorithmFilename) {
     CasmReader Reader;
     Reader.setTraceRead(TraceParser)
         .setTraceLexer(TraceLexer)
@@ -644,10 +653,17 @@ int main(int Argc, charstring Argv[]) {
       return exit_status(EXIT_FAILURE);
     }
     AlgSymtab = Reader.getReadSymtab();
+#if WASM_BOOT == 0
+  } else {
+    AlgSymtab = std::make_shared<SymbolTable>();
+    install_Algcasm0x0(AlgSymtab);
+#endif
   }
+
   if (Verbose && strcmp(OutputFilename, "-") != 0)
     fprintf(stderr, "Opening output file: %s\n", OutputFilename);
-  std::shared_ptr<RawStream> Output = getOutput();
+
+  auto Output = std::make_shared<FileWriter>(OutputFilename);
   if (Output->hasErrors()) {
     fprintf(stderr, "Problems opening output file: %s", OutputFilename);
     return exit_status(EXIT_FAILURE);

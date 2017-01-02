@@ -34,21 +34,17 @@ using namespace wasm::utils;
 
 namespace {
 
-const char* InputFilename = "-";
-const char* OutputFilename = "-";
-const char* AlgorithmFilename = nullptr;
-
 class OutputHandler {
   OutputHandler(const OutputHandler&) = delete;
   OutputHandler& operator=(const OutputHandler&) = delete;
 
  public:
-  OutputHandler() : Out(stdout) {
-    if (strcmp("-", OutputFilename) == 0)
+  OutputHandler(charstring Filename) : Out(stdout) {
+    if (strcmp("-", Filename) == 0)
       return;
-    Out = fopen(OutputFilename, "w");
+    Out = fopen(Filename, "w");
     if (Out == nullptr) {
-      fprintf(stderr, "Unable to open: %s\n", OutputFilename);
+      fprintf(stderr, "Unable to open: %s\n", Filename);
       exit(exit_status(EXIT_FAILURE));
     }
   }
@@ -65,6 +61,9 @@ class OutputHandler {
 }  // end of anonymous namespace
 
 int main(int Argc, const char* Argv[]) {
+  const char* InputFilename = "-";
+  const char* OutputFilename = "-";
+  const char* AlgorithmFilename = nullptr;
   bool Verbose = false;
   bool TraceParser = false;
   bool TraceLexer = false;
@@ -137,9 +136,9 @@ int main(int Argc, const char* Argv[]) {
 
     if (TraceTree)
       TraceRead = true;
-  }
 
-  assert(!(WASM_BOOT && AlgorithmFilename == nullptr));
+    assert(!(WASM_BOOT && AlgorithmFilename == nullptr));
+  }
 
   std::shared_ptr<SymbolTable> AlgSymtab;
   if (AlgorithmFilename) {
@@ -153,9 +152,11 @@ int main(int Argc, const char* Argv[]) {
       return exit_status(EXIT_FAILURE);
     }
     AlgSymtab = Reader.getReadSymtab();
+#if WASM_BOOT == 0
   } else {
     AlgSymtab = std::make_shared<SymbolTable>();
     install_Algcasm0x0(AlgSymtab);
+#endif
   }
 
   if (Verbose)
@@ -170,7 +171,7 @@ int main(int Argc, const char* Argv[]) {
   }
   if (Verbose && strcmp(OutputFilename, "-") != 0)
     fprintf(stderr, "Writing file: %s\n", OutputFilename);
-  OutputHandler Output;
+  OutputHandler Output(OutputFilename);
   TextWriter Writer;
   Writer.write(Output.getFile(), Reader.getReadSymtab().get());
   return exit_status(EXIT_SUCCESS);
