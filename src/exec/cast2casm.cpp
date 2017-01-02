@@ -18,8 +18,6 @@
 
 #include "utils/Defs.h"
 
-#include <cstdlib>
-
 #if WASM_BOOT == 0
 #include "algorithms/casm0x0.h"
 #endif
@@ -35,6 +33,7 @@
 #include "utils/ArgsParse.h"
 
 #include <cstdio>
+#include <cstdlib>
 #include <memory>
 #include <unistd.h>
 
@@ -663,15 +662,13 @@ int main(int Argc, charstring Argv[]) {
   }
 
   if (Verbose && strcmp(OutputFilename, "-") != 0)
-    fprintf(stderr, "Opening output file: %s\n", OutputFilename);
+    fprintf(stderr, "Opening file: %s\n", OutputFilename);
 
   auto Output = std::make_shared<FileWriter>(OutputFilename);
   if (Output->hasErrors()) {
     fprintf(stderr, "Problems opening output file: %s", OutputFilename);
     return exit_status(EXIT_FAILURE);
   }
-  if (Verbose)
-    fprintf(stderr, "Writing file: %s\n", OutputFilename);
   std::shared_ptr<decode::Queue> OutputStream;
   if (FunctionName == nullptr)
     OutputStream = std::make_shared<WriteBackedQueue>(Output);

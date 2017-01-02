@@ -18,6 +18,10 @@
 
 #include "sexp/CasmReader.h"
 
+#if WASM_BOOT == 0
+#include "algorithms/casm0x0.h"
+#endif
+
 #include "interp/StreamReader.h"
 #include "sexp/Ast.h"
 #include "sexp/InflateAst.h"
@@ -95,6 +99,20 @@ void CasmReader::readBinary(charstring Filename,
       std::make_shared<ReadBackedQueue>(std::make_shared<FileReader>(Filename)),
       AlgSymtab);
 }
+
+#if WASM_BOOT == 0
+void CasmReader::readBinary(std::shared_ptr<Queue> Binary) {
+  std::shared_ptr<SymbolTable> AlgSymtab;
+  install_Algcasm0x0(AlgSymtab);
+  readBinary(Binary, AlgSymtab);
+}
+
+void CasmReader::readBinary(charstring Filename) {
+  std::shared_ptr<SymbolTable> AlgSymtab;
+  install_Algcasm0x0(AlgSymtab);
+  readBinary(Filename, AlgSymtab);
+}
+#endif
 
 }  // end of namespace filt
 

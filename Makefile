@@ -103,6 +103,7 @@ SEXP_OBJDIR_BOOT = $(OBJDIR_BOOT)/sexp
 SEXP_SRCS_BASE = \
 	Ast.cpp \
 	CasmReader.cpp \
+	CasmWriter.cpp \
 	FlattenAst.cpp \
 	InflateAst.cpp \
 	TextWriter.cpp

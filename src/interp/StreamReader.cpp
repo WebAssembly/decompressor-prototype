@@ -18,6 +18,8 @@
 
 #include "interp/StreamReader.h"
 
+#include "interp/ByteReadStream.h"
+
 namespace wasm {
 
 using namespace decode;
