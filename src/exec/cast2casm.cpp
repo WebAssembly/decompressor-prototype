@@ -22,7 +22,6 @@
 #include "sexp/CasmReader.h"
 #include "sexp/FlattenAst.h"
 #include "sexp/InflateAst.h"
-#include "sexp/TextWriter.h"
 #include "stream/FileWriter.h"
 #include "stream/WriteBackedQueue.h"
 #include "utils/ArgsParse.h"
@@ -607,14 +606,16 @@ int main(int Argc, charstring Argv[]) {
   }
   if (Verbose)
     fprintf(stderr, "Reading input: %s\n", InputFilename);
-  std::shared_ptr<SymbolTable> InputSymtab =
-      readAlgorithmText(InputFilename, TraceParser, TraceLexer);
-  if (!InputSymtab)
-    return exit_status(EXIT_FAILURE);
-  if (Verbose) {
-    fprintf(stderr, "Read tree:\n");
-    TextWriter Writer;
-    Writer.write(stderr, InputSymtab.get());
+  std::shared_ptr<SymbolTable> InputSymtab;
+  {
+    CasmReader Reader;
+    Reader.setTraceRead(TraceParser).setTraceLexer(TraceLexer)
+        .setTraceTree(Verbose).readText(InputFilename);
+    if (Reader.hasErrors()) {
+      fprintf(stderr, "Unable to parse: %s\n", InputFilename);
+      return exit_status(EXIT_FAILURE);
+    }
+    InputSymtab = Reader.getReadSymtab();
   }
   std::shared_ptr<IntStream> IntSeq = std::make_shared<IntStream>();
   FlattenAst Flattener(IntSeq, InputSymtab);
@@ -629,10 +630,17 @@ int main(int Argc, charstring Argv[]) {
   }
   if (Verbose)
     fprintf(stderr, "Reading algorithms file: %s\n", AlgorithmFilename);
-  std::shared_ptr<SymbolTable> AlgSymtab =
-      readAlgorithmText(AlgorithmFilename, TraceParser, TraceLexer);
-  if (!AlgSymtab)
-    return exit_status(EXIT_FAILURE);
+  std::shared_ptr<SymbolTable> AlgSymtab;
+  {
+    CasmReader Reader;
+    Reader.setTraceRead(TraceParser).setTraceLexer(TraceLexer)
+        .setTraceTree(Verbose).readText(AlgorithmFilename);
+    if (Reader.hasErrors()) {
+      fprintf(stderr, "Unable to parse: %s\n", InputFilename);
+      return exit_status(EXIT_FAILURE);
+    }
+    AlgSymtab = Reader.getReadSymtab();
+  }
   if (Verbose && strcmp(OutputFilename, "-") != 0)
     fprintf(stderr, "Opening output file: %s\n", OutputFilename);
   std::shared_ptr<RawStream> Output = getOutput();
