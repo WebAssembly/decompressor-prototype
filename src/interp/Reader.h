@@ -19,11 +19,7 @@
 #ifndef DECOMPRESSOR_SRC_INTERP_READER_H
 #define DECOMPRESSOR_SRC_INTERP_READER_H
 
-#include "stream/Queue.h"
-#include "interp/ByteReadStream.h"
-#include "stream/ReadCursor.h"
 #include "interp/Interpreter.def"
-#include "interp/ReadStream.h"
 #include "interp/Writer.h"
 #include "utils/Trace.h"
 #include "utils/ValueStack.h"

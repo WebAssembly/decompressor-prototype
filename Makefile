@@ -1,4 +1,4 @@
-	# Copyright 2016 WebAssembly Community Group participants
+# Copyright 2016 WebAssembly Community Group participants
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -103,6 +103,7 @@ SEXP_OBJDIR_BOOT = $(OBJDIR_BOOT)/sexp
 SEXP_SRCS_BASE = \
 	Ast.cpp \
 	CasmReader.cpp \
+	CasmWriter.cpp \
 	FlattenAst.cpp \
 	InflateAst.cpp \
 	TextWriter.cpp
@@ -405,8 +406,8 @@ LIBS = $(BINARY_LIB) $(INTERP_LIB) $(SEXP_LIB) $(PARSER_LIB) \
        $(ALG_LIB) $(STRM_LIB) $(UTILS_LIB) 
 
 LIBS_BOOT = $(BINARY_LIB_BOOT) $(INTERP_LIB_BOOT) \
-	$(SEXP_LIB_BOOT) $(PARSER_LIB_BOOT) $(STRM_LIB_BOOT) $(UTILS_LIB_BOOT) \
-	$(INTERP_LIB_BOOT) $(BINARY_LIB_BOOT)
+	$(SEXP_LIB_BOOT) $(PARSER_LIB_BOOT) \
+	$(INTERP_LIB_BOOT) $(BINARY_LIB_BOOT) $(STRM_LIB_BOOT) $(UTILS_LIB_BOOT)
 
 ##### Track additional important variable definitions not in Makefile.common
 

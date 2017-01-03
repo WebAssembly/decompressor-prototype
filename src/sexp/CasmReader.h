@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Declare functions to read in a CASM (binary compressed) algorithm file.
+// Declare a class to read in a CASM (binary compressed) algorithm file.
 
 // NOTE: In the methods below, if argument Filename == '-', then stdin will
 // be used.
@@ -24,6 +24,7 @@
 
 #include "sexp/Ast.h"
 #include "stream/Queue.h"
+#include "utils/Defs.h"
 
 #include <memory>
 
@@ -40,10 +41,20 @@ class CasmReader {
   ~CasmReader();
 
   void readText(charstring Filename);
+
   void readBinary(std::shared_ptr<Queue> Binary,
                   std::shared_ptr<filt::SymbolTable> AlgSymtab);
+
   void readBinary(charstring Filename,
                   std::shared_ptr<filt::SymbolTable> AlgSymtab);
+
+#if WASM_BOOT == 0
+  // The following two methods call the above methods using the algorithm
+  // casm0x0.
+  void readBinary(std::shared_ptr<Queue> Binary);
+
+  void readBinary(charstring Filename);
+#endif
 
   bool hasErrors() const { return ErrorsFound; }
   CasmReader& setTraceRead(bool Value) {

@@ -18,30 +18,21 @@
 
 #include "utils/Defs.h"
 
-#include <cstdlib>
-
 #if WASM_BOOT == 0
 #include "algorithms/casm0x0.h"
 #endif
 
-#include "interp/StreamWriter.h"
-#include "interp/IntReader.h"
-#include "interp/TeeWriter.h"
 #include "sexp/CasmReader.h"
-#include "sexp/FlattenAst.h"
-#include "sexp/InflateAst.h"
+#include "sexp/CasmWriter.h"
 #include "stream/FileWriter.h"
 #include "stream/WriteBackedQueue.h"
 #include "utils/ArgsParse.h"
 
-#include <cstdio>
-#include <memory>
-#include <unistd.h>
+#include <cstdlib>
 
 using namespace wasm;
 using namespace wasm::decode;
 using namespace wasm::filt;
-using namespace wasm::interp;
 using namespace wasm::utils;
 
 namespace {
@@ -630,19 +621,12 @@ int main(int Argc, charstring Argv[]) {
     InputSymtab = Reader.getReadSymtab();
   }
 
-  std::shared_ptr<IntStream> IntSeq = std::make_shared<IntStream>();
-  FlattenAst Flattener(IntSeq, InputSymtab);
-  if (TraceFlatten) {
-    auto Trace = std::make_shared<TraceClass>("Flatten");
-    Flattener.setTrace(Trace);
-    Flattener.setTraceProgress(true);
+  if (Verbose) {
+    if (AlgorithmFilename)
+      fprintf(stderr, "Reading algorithms file: %s\n", AlgorithmFilename);
+    else
+      fprintf(stderr, "Using prebuilt casm algorithm\n");
   }
-  if (!Flattener.flatten()) {
-    fprintf(stderr, "Problems flattening tree, unable to continue!\n");
-    return exit_status(EXIT_FAILURE);
-  }
-  if (Verbose)
-    fprintf(stderr, "Reading algorithms file: %s\n", AlgorithmFilename);
   std::shared_ptr<SymbolTable> AlgSymtab;
   if (AlgorithmFilename) {
     CasmReader Reader;
@@ -651,7 +635,7 @@ int main(int Argc, charstring Argv[]) {
         .setTraceTree(Verbose)
         .readText(AlgorithmFilename);
     if (Reader.hasErrors()) {
-      fprintf(stderr, "Unable to parse: %s\n", InputFilename);
+      fprintf(stderr, "Problems reading file: %s\n", InputFilename);
       return exit_status(EXIT_FAILURE);
     }
     AlgSymtab = Reader.getReadSymtab();
@@ -663,46 +647,15 @@ int main(int Argc, charstring Argv[]) {
   }
 
   if (Verbose && strcmp(OutputFilename, "-") != 0)
-    fprintf(stderr, "Opening output file: %s\n", OutputFilename);
-
+    fprintf(stderr, "Opening file: %s\n", OutputFilename);
   auto Output = std::make_shared<FileWriter>(OutputFilename);
   if (Output->hasErrors()) {
     fprintf(stderr, "Problems opening output file: %s", OutputFilename);
     return exit_status(EXIT_FAILURE);
   }
-  if (Verbose)
-    fprintf(stderr, "Writing file: %s\n", OutputFilename);
-  std::shared_ptr<decode::Queue> OutputStream;
-  if (FunctionName == nullptr)
-    OutputStream = std::make_shared<WriteBackedQueue>(Output);
-  else
-    OutputStream = std::make_shared<Queue>();
-  std::shared_ptr<Writer> Writer = std::make_shared<StreamWriter>(OutputStream);
-  if (TraceTree) {
-    auto Tee = std::make_shared<TeeWriter>();
-    Tee->add(std::make_shared<InflateAst>(), false, true, false);
-    Tee->add(Writer, true, false, true);
-    Writer = Tee;
-  }
-  Writer->setMinimizeBlockSize(MinimizeBlockSize);
-  auto Reader = std::make_shared<IntReader>(IntSeq, *Writer, AlgSymtab);
-  if (TraceWrite) {
-    auto Trace = std::make_shared<TraceClass>("write");
-    Trace->setTraceProgress(true);
-    Reader->setTrace(Trace);
-    Writer->setTrace(Trace);
-  }
-  // Note: By default, the reader uses the installed header, which corresponds
-  // to the target header (not the header for compressed algorithms). Fix
-  // by overriding to use the root header.
-  Reader->useFileHeader(InputSymtab->getRootHeader());
-  Reader->algorithmStart();
-  Reader->algorithmReadBackFilled();
-  if (Reader->errorsFound()) {
-    fprintf(stderr, "Problems while reading: %s\n", InputFilename);
-    return exit_status(EXIT_FAILURE);
-  }
+
   if (FunctionName != nullptr) {
+    // Generate C++ code.
     std::vector<charstring> Namespaces;
     Namespaces.push_back("wasm");
     Namespaces.push_back("decode");
@@ -713,6 +666,22 @@ int main(int Argc, charstring Argv[]) {
       fprintf(stderr, "Unable to generate valid C++ source!");
       return exit_status(EXIT_FAILURE);
     }
+    return exit_status(EXIT_SUCCESS);
+  }
+
+  // If reached, geneate binary CASM file.
+  std::shared_ptr<decode::Queue> OutputStream =
+      std::make_shared<WriteBackedQueue>(Output);
+
+  CasmWriter Writer;
+  Writer.setTraceWriter(TraceWrite)
+      .setTraceFlatten(TraceFlatten)
+      .setTraceTree(TraceTree)
+      .setMinimizeBlockSize(MinimizeBlockSize);
+  Writer.writeBinary(InputSymtab, OutputStream, AlgSymtab);
+  if (Writer.hasErrors()) {
+    fprintf(stderr, "Problems writing: %s\n", OutputFilename);
+    return exit_status(EXIT_FAILURE);
   }
   return exit_status(EXIT_SUCCESS);
 }
