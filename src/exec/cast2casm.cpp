@@ -25,6 +25,7 @@
 #include "sexp/CasmReader.h"
 #include "sexp/CasmWriter.h"
 #include "stream/FileWriter.h"
+#include "stream/ReadCursor.h"
 #include "stream/WriteBackedQueue.h"
 #include "utils/ArgsParse.h"
 
@@ -56,21 +57,28 @@ class CodeGenerator {
         Symtab(Symtab),
         Namespaces(Namespaces),
         FunctionName(FunctionName),
-        FoundErrors(false),
+        ErrorsFound(false),
         NextIndex(1) {}
   ~CodeGenerator() {}
-  bool generateDeclFile();
-  bool generateImplFile();
+  void generateDeclFile();
+  void generateImplFile(bool UseArrayImpl);
+  bool foundErrors() const { return ErrorsFound; }
+  void setStartPos(std::shared_ptr<ReadCursor> StartPos) {
+    ReadPos = StartPos;
+  }
 
  private:
   charstring Filename;
   std::shared_ptr<RawStream> Output;
   std::shared_ptr<SymbolTable> Symtab;
+  std::shared_ptr<ReadCursor> ReadPos;
   std::vector<charstring>& Namespaces;
   charstring FunctionName;
-  bool FoundErrors;
+  bool ErrorsFound;
   size_t NextIndex;
 
+  void generateArrayImplFile();
+  void generateFunctionImplFile();
   void generateHeader();
   void generateEnterNamespaces();
   void generateExitNamespaces();
@@ -95,6 +103,10 @@ class CodeGenerator {
   void generateCreate(charstring NodeType);
   void generateReturnCreate(charstring NodeType);
   size_t generateBadLocal();
+  void generateArrayName() {
+    Output->puts(FunctionName);
+    Output->puts("Array");
+  }
 };
 
 void CodeGenerator::generateInt(IntType Value) {
@@ -179,7 +191,7 @@ void CodeGenerator::generateAlgorithmHeader() {
 
 size_t CodeGenerator::generateBadLocal() {
   size_t Index = NextIndex++;
-  FoundErrors = true;
+  ErrorsFound = true;
   generateLocalVar("Node", Index);
   Output->puts("nullptr;\n");
   return Index;
@@ -458,23 +470,50 @@ size_t CodeGenerator::generateNode(const Node* Nd) {
   WASM_RETURN_UNREACHABLE(0);
 }
 
-bool CodeGenerator::generateDeclFile() {
+void CodeGenerator::generateDeclFile() {
   generateHeader();
   generateEnterNamespaces();
   generateAlgorithmHeader();
   Output->puts(";\n\n");
   generateExitNamespaces();
-  return FoundErrors;
 }
 
-bool CodeGenerator::generateImplFile() {
-  generateHeader();
-  generateEnterNamespaces();
-  Output->puts(
-      "using namespace wasm::filt;\n"
-      "\n"
-      "namespace {\n"
-      "\n");
+void CodeGenerator::generateArrayImplFile() {
+  char Buffer[256];
+  constexpr size_t BytesPerLine = 15;
+  Output->puts("static const uint8_t ");
+  generateArrayName();
+  Output->puts("[] = {\n");
+  while (!ReadPos->atEof()) {
+    uint8_t Byte = ReadPos->readByte();
+    size_t Address = ReadPos->getCurByteAddress();
+    if (Address > 0 && Address % BytesPerLine == 0)
+      Output->putc('\n');
+    sprintf(Buffer, " %u", Byte);
+    Output->puts(Buffer);
+    if (!ReadPos->atEof())
+      Output->putc(',');
+  }
+  Output->puts("};\n"
+               "\n"
+               "}  // end of anonymous namespace\n"
+               "\n");
+  generateAlgorithmHeader();
+  Output->puts(" {\n"
+               "  auto ArrayInput = std::make_shared<ArrayReader>(\n"
+               "    ");
+  generateArrayName();
+  Output->puts(", size(");
+  generateArrayName();
+  Output->puts("));\n"
+               "  auto Input = std::make_shared<ReadBackedQueue>(ArrayInput);\n"
+               "  CasmReader Reader;\n"
+               "  Reader.readBinary(Input, Symtable);\n"
+               "  assert(!Reader.hasErrors());\n");
+  generateFunctionFooter();
+}
+
+void CodeGenerator::generateFunctionImplFile() {
   size_t Index = generateNode(Symtab->getInstalledRoot());
   Output->puts(
       "}  // end of anonymous namespace\n"
@@ -486,8 +525,28 @@ bool CodeGenerator::generateImplFile() {
       "  Symtab->install(");
   generateFunctionCall(Index);
   generateCloseFunctionFooter();
+}
+
+void CodeGenerator::generateImplFile(bool UseArrayImpl) {
+  generateHeader();
+  if (UseArrayImpl)
+    Output->puts("#include \"sexp/CasmReader.h\"\n"
+                 "#include \"stream/ArrayReader.h\"\n"
+                 "#include \"stream/ReadBackedQueue.h\"\n"
+                 "\n"
+                 "#include <cassert>\n"
+                 "\n");
+  generateEnterNamespaces();
+  Output->puts(
+      "using namespace wasm::filt;\n"
+      "\n"
+      "namespace {\n"
+      "\n");
+  if (UseArrayImpl)
+    generateArrayImplFile();
+  else
+    generateFunctionImplFile();
   generateExitNamespaces();
-  return FoundErrors;
 }
 
 }  // end of anonymous namespace
@@ -504,6 +563,7 @@ int main(int Argc, charstring Argv[]) {
   bool TraceWrite = false;
   bool TraceTree = false;
   charstring FunctionName = nullptr;
+  bool UseArrayImpl = false;
   bool HeaderFile;
   {
     ArgsParser Args("Converts compression algorithm from text to binary");
@@ -523,6 +583,7 @@ int main(int Argc, charstring Argv[]) {
 
     ArgsParser::Optional<bool> ExpectFailFlag(ExpectExitFail);
     Args.add(ExpectFailFlag.setDefault(false)
+
                  .setLongName("expect-fail")
                  .setDescription("Succeed on failure/fail on success"));
 
@@ -576,11 +637,18 @@ int main(int Argc, charstring Argv[]) {
     ArgsParser::Optional<charstring> FunctionNameFlag(FunctionName);
     Args.add(FunctionNameFlag.setShortName('f')
                  .setLongName("function")
-                 .setOptionName("Name")
+                 .setOptionName("NAME")
                  .setDescription(
-                     "Generate c++ source code to implement an array "
-                     "containing the binary encoding, with accessors "
-                     "Name() and NameSize()"));
+                     "Generate c++ source code to implement a function "
+                     "'void NAME(std::shared_ptr<SymbolTable>) to install "
+                     "the INPUT cast algorithm"));
+
+    ArgsParser::Optional<bool> UseArrayImplFlag(UseArrayImpl);
+    Args.add(UseArrayImplFlag.setLongName("array")
+             .setDescription(
+                 "Internally implement function NAME() using an "
+                 "array implementation, rather than the default that "
+                 "uses direct code"));
 
     ArgsParser::Optional<bool> HeaderFileFlag(HeaderFile);
     Args.add(HeaderFileFlag.setLongName("header").setDescription(
@@ -601,6 +669,18 @@ int main(int Argc, charstring Argv[]) {
     // Be sure to update implications!
     if (TraceTree)
       TraceWrite = true;
+
+    // TODO(karlschimpf) Extend ArgsParser to be able to return option
+    // name so that we don't have hard-coded dependency.
+    if (UseArrayImpl && FunctionName == nullptr) {
+      fprintf(stderr, "Option --array can't be used without option -f\n");
+      return exit_status(EXIT_FAILURE);
+    }
+
+    if (UseArrayImpl && HeaderFile) {
+      fprintf(stderr, "Opition --array can't be used with option --header\n");
+      return exit_status(EXIT_FAILURE);
+    }
 
     assert(!(WASM_BOOT && AlgorithmFilename == nullptr));
   }
@@ -654,21 +734,55 @@ int main(int Argc, charstring Argv[]) {
     return exit_status(EXIT_FAILURE);
   }
 
+  std::shared_ptr<Queue> OutputStream;
+  std::shared_ptr<ReadCursor> OutputStartPos;
   if (FunctionName != nullptr) {
-    // Generate C++ code.
-    std::vector<charstring> Namespaces;
-    Namespaces.push_back("wasm");
-    Namespaces.push_back("decode");
-    CodeGenerator Generator(InputFilename, Output, InputSymtab, Namespaces,
-                            FunctionName);
-    if (HeaderFile ? Generator.generateDeclFile()
-                   : Generator.generateImplFile()) {
-      fprintf(stderr, "Unable to generate valid C++ source!");
-      return exit_status(EXIT_FAILURE);
+    if (UseArrayImpl) {
+      OutputStream = std::make_shared<Queue>();
+      OutputStartPos
+          = std::make_shared<ReadCursor>(StreamType::Byte, OutputStream);
     }
-    return exit_status(EXIT_SUCCESS);
+  } else {
+   OutputStream = std::make_shared<WriteBackedQueue>(Output);
   }
 
+  if (OutputStream) {
+    // Generate binary stream
+    CasmWriter Writer;
+    Writer.setTraceWriter(TraceWrite)
+        .setTraceFlatten(TraceFlatten)
+        .setTraceTree(TraceTree)
+        .setMinimizeBlockSize(MinimizeBlockSize);
+    Writer.writeBinary(InputSymtab, OutputStream, AlgSymtab);
+    if (Writer.hasErrors()) {
+      fprintf(stderr, "Problems writing: %s\n", OutputFilename);
+      return exit_status(EXIT_FAILURE);
+    }
+  }
+
+  if (FunctionName == nullptr)
+    return exit_status(EXIT_SUCCESS);
+
+  // Generate C++ code.
+  std::vector<charstring> Namespaces;
+  Namespaces.push_back("wasm");
+  Namespaces.push_back("decode");
+  CodeGenerator Generator(InputFilename, Output, InputSymtab, Namespaces,
+                          FunctionName);
+  if (HeaderFile)
+    Generator.generateDeclFile();
+  else {
+    if (UseArrayImpl)
+      Generator.setStartPos(OutputStartPos);
+    Generator.generateImplFile(UseArrayImpl);
+  }
+  if (Generator.foundErrors()) {
+    fprintf(stderr, "Unable to generate valid C++ source!\n");
+    return exit_status(EXIT_FAILURE);
+  }
+  return exit_status(EXIT_SUCCESS);
+
+#if 0
   // If reached, geneate binary CASM file.
   std::shared_ptr<decode::Queue> OutputStream =
       std::make_shared<WriteBackedQueue>(Output);
@@ -684,4 +798,5 @@ int main(int Argc, charstring Argv[]) {
     return exit_status(EXIT_FAILURE);
   }
   return exit_status(EXIT_SUCCESS);
+#endif
 }

@@ -18,6 +18,9 @@
 
 # Note: If using -jN, be sure to run "make gen" first.
 
+# helper eq comparison function.
+eq = $(and $(findstring $(1),$(2)),$(findstring $(2),$(1)))
+
 include Makefile.common
 
 GENSRCS =
@@ -532,7 +535,9 @@ $(ALG_GEN_CPP_SRCS): $(ALG_GENDIR)/%.cpp: $(ALG_GENDIR)/%.cast \
 		$(BUILD_EXECDIR_BOOT)/cast2casm $(ALG_GENDIR_ALG)
 	$(BUILD_EXECDIR_BOOT)/cast2casm -a $(ALG_GENDIR_ALG) \
 		$< -o $@ --function \
-		$(patsubst $(ALG_GENDIR)/%.cast, install_Alg%, $<)
+		$(patsubst $(ALG_GENDIR)/%.cast, install_Alg%, $<) \
+		$(if $(call eq, "$(ALG_GENDIR)/casm0x0.cast", "$<") ,  , --array)
+
 -include $(foreach dep,$(ALG_GEN_CPP_SRCS:.cpp=.d),$(ALG_OBJDIR)/$(dep))
 
 $(ALG_OBJS): $(ALG_OBJDIR)/%.o: $(ALG_GENDIR)/%.cpp $(GENSRCS)
