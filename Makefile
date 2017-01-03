@@ -18,6 +18,9 @@
 
 # Note: If using -jN, be sure to run "make gen" first.
 
+# helper eq comparison function.
+eq = $(and $(findstring $(1),$(2)),$(findstring $(2),$(1)))
+
 include Makefile.common
 
 GENSRCS =
@@ -403,7 +406,7 @@ TEST_CASM_DF_GEN_FILES = $(patsubst %.df, $(TEST_0XD_GENDIR)/%.df-out, \
 
 LIBS = $(BINARY_LIB) $(INTERP_LIB) $(SEXP_LIB) $(PARSER_LIB) \
        $(STRM_LIB) $(INTCOMP_LIB) $(INTERP_LIB) $(BINARY_LIB) \
-       $(ALG_LIB) $(STRM_LIB) $(UTILS_LIB) 
+       $(ALG_LIB) $(SEXP_LIB) $(ALG_LIB) $(STRM_LIB) $(UTILS_LIB) 
 
 LIBS_BOOT = $(BINARY_LIB_BOOT) $(INTERP_LIB_BOOT) \
 	$(SEXP_LIB_BOOT) $(PARSER_LIB_BOOT) \
@@ -533,6 +536,10 @@ $(ALG_GEN_CPP_SRCS): $(ALG_GENDIR)/%.cpp: $(ALG_GENDIR)/%.cast \
 	$(BUILD_EXECDIR_BOOT)/cast2casm -a $(ALG_GENDIR_ALG) \
 		$< -o $@ --function \
 		$(patsubst $(ALG_GENDIR)/%.cast, install_Alg%, $<)
+
+
+#		$(if $(call eq, "$(ALG_GENDIR)/casm0x0.cast", "$<") ,  , --array)
+
 -include $(foreach dep,$(ALG_GEN_CPP_SRCS:.cpp=.d),$(ALG_OBJDIR)/$(dep))
 
 $(ALG_OBJS): $(ALG_OBJDIR)/%.o: $(ALG_GENDIR)/%.cpp $(GENSRCS)
