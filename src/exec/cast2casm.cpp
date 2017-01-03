@@ -28,6 +28,8 @@
 #include "stream/WriteBackedQueue.h"
 #include "utils/ArgsParse.h"
 
+#include <cstdlib>
+
 using namespace wasm;
 using namespace wasm::decode;
 using namespace wasm::filt;
