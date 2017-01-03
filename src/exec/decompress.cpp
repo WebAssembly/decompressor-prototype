@@ -215,10 +215,11 @@ int main(int Argc, char* Argv[]) {
       fprintf(stderr, "--c-api ignores -m option\n");
     return exit_status(runUsingCApi(Verbose >= 1));
   }
-  auto Symtab = std::make_shared<SymbolTable>();
-  Symtab->getTrace().setTraceProgress(Verbose >= 4);
+  std::shared_ptr<SymbolTable> Symtab;
   if (InstallPredefinedRules)
-    install_Algwasm0xd(Symtab);
+    Symtab = getAlgwasm0xdSymtab();
+  else
+    Symtab = std::make_shared<SymbolTable>();
   for (int i : DefaultIndices) {
     if (Verbose)
       fprintf(stderr, "Loading default: %s\n", Argv[i]);

@@ -184,9 +184,9 @@ void CodeGenerator::generateExitNamespaces() {
 }
 
 void CodeGenerator::generateAlgorithmHeader() {
-  Output->puts("void ");
+  Output->puts("std::shared_ptr<filt::SymbolTable> ");
   Output->puts(FunctionName);
-  Output->puts("(std::shared_ptr<filt::SymbolTable> Symtable)");
+  Output->puts("()");
 }
 
 size_t CodeGenerator::generateBadLocal() {
@@ -527,10 +527,13 @@ void CodeGenerator::generateFunctionImplFile() {
   generateAlgorithmHeader();
   Output->puts(
       " {\n"
+      "  auto Symtable = std::make_shared<SymbolTable>();\n"
       "  SymbolTable* Symtab = Symtable.get();\n"
       "  Symtab->install(");
   generateFunctionCall(Index);
-  generateCloseFunctionFooter();
+  Output->puts(");\n"
+               "  return Symtable;\n");
+  generateFunctionFooter();
 }
 
 void CodeGenerator::generateImplFile(bool UseArrayImpl) {
@@ -727,8 +730,7 @@ int main(int Argc, charstring Argv[]) {
     AlgSymtab = Reader.getReadSymtab();
 #if WASM_BOOT == 0
   } else {
-    AlgSymtab = std::make_shared<SymbolTable>();
-    install_Algcasm0x0(AlgSymtab);
+    AlgSymtab = getAlgcasm0x0Symtab();
 #endif
   }
 

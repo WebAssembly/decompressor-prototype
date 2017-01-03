@@ -162,8 +162,7 @@ int main(int Argc, const char* Argv[]) {
     AlgSymtab = Reader.getReadSymtab();
 #if WASM_BOOT == 0
   } else {
-    AlgSymtab = std::make_shared<SymbolTable>();
-    install_Algcasm0x0(AlgSymtab);
+    AlgSymtab = getAlgcasm0x0Symtab();
 #endif
   }
 

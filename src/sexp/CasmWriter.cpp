@@ -87,9 +87,7 @@ void CasmWriter::writeBinary(std::shared_ptr<SymbolTable> Symtab,
 #if WASM_BOOT == 0
 void CasmWriter::writeBinary(std::shared_ptr<filt::SymbolTable> Symtab,
                              std::shared_ptr<Queue> Output) {
-  std::shared_ptr<SymbolTable> AlgSymtab;
-  install_Algcasm0x0(AlgSymtab);
-  writeBinary(Symtab, Output, AlgSymtab);
+  writeBinary(Symtab, Output, getAlgcasm0x0Symtab());
 }
 #endif
 

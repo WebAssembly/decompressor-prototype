@@ -102,15 +102,11 @@ void CasmReader::readBinary(charstring Filename,
 
 #if WASM_BOOT == 0
 void CasmReader::readBinary(std::shared_ptr<Queue> Binary) {
-  std::shared_ptr<SymbolTable> AlgSymtab;
-  install_Algcasm0x0(AlgSymtab);
-  readBinary(Binary, AlgSymtab);
+  readBinary(Binary, getAlgcasm0x0Symtab());
 }
 
 void CasmReader::readBinary(charstring Filename) {
-  std::shared_ptr<SymbolTable> AlgSymtab;
-  install_Algcasm0x0(AlgSymtab);
-  readBinary(Filename, AlgSymtab);
+  readBinary(Filename, getAlgcasm0x0Symtab());
 }
 #endif
 

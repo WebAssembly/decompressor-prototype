@@ -67,7 +67,6 @@ struct Decompressor {
 
 Decompressor::Decompressor()
     : BufferSize(0),
-      Symtab(std::make_shared<SymbolTable>()),
       Input(std::make_shared<Queue>()),
       MyState(State::NeedsMoreInput) {
   InputPos = std::make_shared<WriteCursor2ReadQueue>(Input);
@@ -168,7 +167,7 @@ extern "C" {
 
 void* create_decompressor() {
   auto* Decomp = new Decompressor();
-  install_Algwasm0xd(Decomp->Symtab);
+  Decomp->Symtab = getAlgwasm0xdSymtab();
   Decomp->Interp = std::make_shared<Interpreter>(
       Decomp->Input, Decomp->OutputPipe.getInput(), Decomp->Symtab);
   // Decomp->Interp->setTraceProgress(true);
