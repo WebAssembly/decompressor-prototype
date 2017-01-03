@@ -508,9 +508,15 @@ void CodeGenerator::generateArrayImplFile() {
   Output->puts("));\n"
                "  auto Input = std::make_shared<ReadBackedQueue>(ArrayInput);\n"
                "  CasmReader Reader;\n"
-               "  Reader.readBinary(Input, Symtable);\n"
-               "  assert(!Reader.hasErrors());\n");
+#if 1
+               " Reader.setTraceRead(true).setTraceTree(true);\n"
+#endif
+               "  Reader.readBinary(Input);\n"
+               "  assert(!Reader.hasErrors());\n"
+               "  assert(false && \"Need to rewrite code\");\n");
   generateFunctionFooter();
+  fprintf(stderr, "Error: --array option not functional!\n");
+  ErrorsFound = true;
 }
 
 void CodeGenerator::generateFunctionImplFile() {
