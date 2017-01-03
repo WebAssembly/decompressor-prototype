@@ -63,9 +63,7 @@ class CodeGenerator {
   void generateDeclFile();
   void generateImplFile(bool UseArrayImpl);
   bool foundErrors() const { return ErrorsFound; }
-  void setStartPos(std::shared_ptr<ReadCursor> StartPos) {
-    ReadPos = StartPos;
-  }
+  void setStartPos(std::shared_ptr<ReadCursor> StartPos) { ReadPos = StartPos; }
 
  private:
   charstring Filename;
@@ -494,23 +492,26 @@ void CodeGenerator::generateArrayImplFile() {
     if (!ReadPos->atEof())
       Output->putc(',');
   }
-  Output->puts("};\n"
-               "\n"
-               "}  // end of anonymous namespace\n"
-               "\n");
+  Output->puts(
+      "};\n"
+      "\n"
+      "}  // end of anonymous namespace\n"
+      "\n");
   generateAlgorithmHeader();
-  Output->puts(" {\n"
-               "  auto ArrayInput = std::make_shared<ArrayReader>(\n"
-               "    ");
+  Output->puts(
+      " {\n"
+      "  auto ArrayInput = std::make_shared<ArrayReader>(\n"
+      "    ");
   generateArrayName();
   Output->puts(", size(");
   generateArrayName();
-  Output->puts("));\n"
-               "  auto Input = std::make_shared<ReadBackedQueue>(ArrayInput);\n"
-               "  CasmReader Reader;\n"
-               "  Reader.readBinary(Input);\n"
-               "  assert(!Reader.hasErrors());\n"
-               "  return Reader.getReadSymtab();\n");
+  Output->puts(
+      "));\n"
+      "  auto Input = std::make_shared<ReadBackedQueue>(ArrayInput);\n"
+      "  CasmReader Reader;\n"
+      "  Reader.readBinary(Input);\n"
+      "  assert(!Reader.hasErrors());\n"
+      "  return Reader.getReadSymtab();\n");
   generateFunctionFooter();
 }
 
@@ -526,20 +527,22 @@ void CodeGenerator::generateFunctionImplFile() {
       "  SymbolTable* Symtab = Symtable.get();\n"
       "  Symtab->install(");
   generateFunctionCall(Index);
-  Output->puts(");\n"
-               "  return Symtable;\n");
+  Output->puts(
+      ");\n"
+      "  return Symtable;\n");
   generateFunctionFooter();
 }
 
 void CodeGenerator::generateImplFile(bool UseArrayImpl) {
   generateHeader();
   if (UseArrayImpl)
-    Output->puts("#include \"sexp/CasmReader.h\"\n"
-                 "#include \"stream/ArrayReader.h\"\n"
-                 "#include \"stream/ReadBackedQueue.h\"\n"
-                 "\n"
-                 "#include <cassert>\n"
-                 "\n");
+    Output->puts(
+        "#include \"sexp/CasmReader.h\"\n"
+        "#include \"stream/ArrayReader.h\"\n"
+        "#include \"stream/ReadBackedQueue.h\"\n"
+        "\n"
+        "#include <cassert>\n"
+        "\n");
   generateEnterNamespaces();
   Output->puts(
       "using namespace wasm::filt;\n"
@@ -648,11 +651,10 @@ int main(int Argc, charstring Argv[]) {
                      "the INPUT cast algorithm"));
 
     ArgsParser::Optional<bool> UseArrayImplFlag(UseArrayImpl);
-    Args.add(UseArrayImplFlag.setLongName("array")
-             .setDescription(
-                 "Internally implement function NAME() using an "
-                 "array implementation, rather than the default that "
-                 "uses direct code"));
+    Args.add(UseArrayImplFlag.setLongName("array").setDescription(
+        "Internally implement function NAME() using an "
+        "array implementation, rather than the default that "
+        "uses direct code"));
 
     ArgsParser::Optional<bool> HeaderFileFlag(HeaderFile);
     Args.add(HeaderFileFlag.setLongName("header").setDescription(
@@ -742,11 +744,11 @@ int main(int Argc, charstring Argv[]) {
   if (FunctionName != nullptr) {
     if (UseArrayImpl) {
       OutputStream = std::make_shared<Queue>();
-      OutputStartPos
-          = std::make_shared<ReadCursor>(StreamType::Byte, OutputStream);
+      OutputStartPos =
+          std::make_shared<ReadCursor>(StreamType::Byte, OutputStream);
     }
   } else {
-   OutputStream = std::make_shared<WriteBackedQueue>(Output);
+    OutputStream = std::make_shared<WriteBackedQueue>(Output);
   }
 
   if (OutputStream) {

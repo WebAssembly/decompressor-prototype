@@ -27,6 +27,7 @@
 #include "stream/StreamWriter.h"
 #include "stream/WriteBackedQueue.h"
 #include "utils/Defs.h"
+#include "utils/ArgsParse.h"
 
 #include <cstring>
 #include <unistd.h>
@@ -36,6 +37,7 @@ using namespace wasm;
 using namespace wasm::filt;
 using namespace wasm::decode;
 using namespace wasm::interp;
+using namespace wasm::utils;
 
 bool UseFileStreams = true;
 const char* InputFilename = "-";
@@ -99,6 +101,7 @@ int runUsingCApi(bool TraceProgress) {
   return Result;
 }
 
+#if 0
 void usage(const char* AppName) {
   fprintf(stderr, "usage: %s [options]\n", AppName);
   fprintf(stderr, "\n");
@@ -135,14 +138,80 @@ void usage(const char* AppName) {
             "Add progress of installing filter sections.\n");
   }
 }
+#endif
 
-int main(int Argc, char* Argv[]) {
-  int Verbose = 0;
+int main(const int Argc, const char* Argv[]) {
+  // TODO(karlschimpf) Add other default algorithms.
+  bool Verbose = false;
+  bool VerboseTrace = false;
   bool MinimizeBlockSize = false;
   bool InstallPredefinedRules = true;
   bool UseCApi = false;
-  std::vector<int> DefaultIndices;
   size_t NumTries = 1;
+#if 1
+  {
+    ArgsParser Args("Decompress WASM binary file");
+
+    ArgsParser::Optional<bool> UseCApiFlag(UseCApi);
+    Args.add(UseCApiFlag.setLongName("c-api")
+                 .setDescription("Use C API to decompress"));
+
+    ArgsParser::Optional<bool> ExpectExitFailFlag(ExpectExitFail);
+    Args.add(ExpectExitFailFlag.setLongName("expect-fail")
+                 .setDescription(
+                     "Negate the exit status. That is, when true, "
+                     "Succeed on failure exit and fail on success"));
+
+    ArgsParser::Required<charstring> InputFilenameFlag(InputFilename);
+    Args.add(InputFilenameFlag.setOptionName("INPUT")
+                 .setDescription("INPUT is the File to decompress"));
+
+    ArgsParser::Optional<charstring> OutputFilenameFlag(OutputFilename);
+    Args.add(
+        OutputFilenameFlag.setShortName('o')
+            .setOptionName("OUTPUT")
+            .setDescription("Puts the decompressed input into file OUTPUT"));
+
+    ArgsParser::Toggle UseFileStreamsFlag(UseFileStreams);
+    Args.add(
+        UseFileStreamsFlag.setDefault(true).setShortName('s').setDescription(
+            "Toggles to use file streams (when true) "
+            "instead of C++ streams"));
+
+    ArgsParser::Toggle MinimizeBlockSizeFlag(MinimizeBlockSize);
+    Args.add(MinimizeBlockSizeFlag.setDefault(true)
+                 .setShortName('m')
+                 .setLongName("minimize")
+                 .setDescription(
+                     "Toggle minimizing decompressed size (rather than "
+                     "conanical size)"));
+
+    ArgsParser::Optional<size_t> NumTriesFlag(NumTries);
+    Args.add(
+        NumTriesFlag.setLongName("tries").setOptionName("N").setDescription(
+            "Decompress N times (used to test performance "
+            "when N!=1)"));
+
+    ArgsParser::Toggle VerboseFlag(Verbose);
+    Args.add(VerboseFlag.setShortName('v')
+                 .setLongName("verbose")
+                 .setDescription("Show progress of decompression"));
+
+    ArgsParser::Optional<bool> VerboseTraceFlag(VerboseTrace);
+    Args.add(VerboseTraceFlag.setLongName("verbose=trace")
+                 .setDescription("Show trace of each pass in decompression"));
+
+    switch (Args.parse(Argc, Argv)) {
+      case ArgsParser::State::Good:
+        break;
+      case ArgsParser::State::Usage:
+        return exit_status(EXIT_SUCCESS);
+      default:
+        fprintf(stderr, "Unable to parse command line arguments!\n");
+        return exit_status(EXIT_FAILURE);
+    }
+  }
+#else
   for (int i = 1; i < Argc; ++i) {
     std::string Arg(Argv[i]);
     if (Arg == "--c-api") {
@@ -194,21 +263,14 @@ int main(int Argc, char* Argv[]) {
       return exit_status(EXIT_FAILURE);
     }
   }
-
+#endif
   if (UseCApi) {
     if (!InstallPredefinedRules) {
       fprintf(stderr, "-p and --c-api options not allowed");
-      usage(Argv[0]);
-      return exit_status(EXIT_FAILURE);
-    }
-    if (!DefaultIndices.empty()) {
-      fprintf(stderr, "-d and --c-api options not allowed");
-      usage(Argv[0]);
       return exit_status(EXIT_FAILURE);
     }
     if (NumTries != 1) {
       fprintf(stderr, "-t and --c-api options not allowed");
-      usage(Argv[0]);
       return exit_status(EXIT_FAILURE);
     }
     if (MinimizeBlockSize)
@@ -220,6 +282,7 @@ int main(int Argc, char* Argv[]) {
     Symtab = getAlgwasm0xdSymtab();
   else
     Symtab = std::make_shared<SymbolTable>();
+#if 0
   for (int i : DefaultIndices) {
     if (Verbose)
       fprintf(stderr, "Loading default: %s\n", Argv[i]);
@@ -240,17 +303,39 @@ int main(int Argc, char* Argv[]) {
       return exit_status(EXIT_FAILURE);
     }
   }
+#endif
+  bool Succeeded = true;  // until proven otherwise.
   for (size_t i = 0; i < NumTries; ++i) {
-    Interpreter Decompressor(std::make_shared<ReadBackedQueue>(getInput()),
-                             std::make_shared<WriteBackedQueue>(getOutput()),
+    if (Verbose)
+      fprintf(stderr, "Opening input file: %s\n", InputFilename);
+    std::shared_ptr<RawStream> Input = getInput();
+    if (Input->hasErrors()) {
+      fprintf(stderr, "Problems opening %s!\n", InputFilename);
+      return exit_status(EXIT_SUCCESS);
+    }
+    if (Verbose)
+      fprintf(stderr, "Opening output file: %s\n", OutputFilename);
+    std::shared_ptr<RawStream> Output = getOutput();
+    if (Output->hasErrors()) {
+      fprintf(stderr, "Problems opening %s!\n", OutputFilename);
+      return exit_status(EXIT_SUCCESS);
+    }
+    if (Verbose)
+      fprintf(stderr, "Decompressing...\n");
+    Interpreter Decompressor(std::make_shared<ReadBackedQueue>(Input),
+                             std::make_shared<WriteBackedQueue>(Output),
                              Symtab);
-    Decompressor.setTraceProgress(Verbose >= 1);
     Decompressor.setMinimizeBlockSize(MinimizeBlockSize);
+    if (VerboseTrace) {
+      auto Trace = std::make_shared<TraceClass>("Decompress");
+      Trace->setTraceProgress(true);
+      Decompressor.setTrace(Trace);
+    }
     Decompressor.decompress();
     if (Decompressor.errorsFound()) {
       fatal("Failed to decompress due to errors!");
-      exit_status(EXIT_FAILURE);
+      Succeeded = false;
     }
   }
-  return exit_status(EXIT_SUCCESS);
+  return exit_status(Succeeded ? EXIT_SUCCESS : EXIT_FAILURE);
 }
