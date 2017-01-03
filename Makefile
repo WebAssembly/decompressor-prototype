@@ -365,12 +365,6 @@ TEST_WASM_WS_GEN_FILES = $(patsubst %.wast, $(TEST_0XD_GENDIR)/%.wasm-ws, \
 TEST_WASM_SW_GEN_FILES = $(patsubst %.wast, $(TEST_0XD_GENDIR)/%.wasm-sw, \
                        $(TEST_WASM_SRCS))
 
-TEST_WASM_PD_GEN_FILES = $(patsubst %.wast, $(TEST_0XD_GENDIR)/%.wasm-pd, \
-                       $(TEST_WASM_SRCS))
-
-TEST_WASM_WPD_GEN_FILES = $(patsubst %.wast, $(TEST_0XD_GENDIR)/%.wasm-wpd, \
-                        $(TEST_WASM_SRCS))
-
 TEST_WASM_CAPI_GEN_FILES = $(patsubst %.wast, $(TEST_0XD_GENDIR)/%.wasm-capi, \
                         $(TEST_WASM_SRCS))
 
@@ -406,7 +400,8 @@ TEST_CASM_DF_GEN_FILES = $(patsubst %.df, $(TEST_0XD_GENDIR)/%.df-out, \
 
 LIBS = $(BINARY_LIB) $(INTERP_LIB) $(SEXP_LIB) $(PARSER_LIB) \
        $(STRM_LIB) $(INTCOMP_LIB) $(INTERP_LIB) $(BINARY_LIB) \
-       $(ALG_LIB) $(SEXP_LIB) $(ALG_LIB) $(STRM_LIB) $(UTILS_LIB) 
+       $(ALG_LIB) $(SEXP_LIB) $(ALG_LIB) $(STRM_LIB) $(UTILS_LIB) \
+       $(PARSER_LIB)
 
 LIBS_BOOT = $(BINARY_LIB_BOOT) $(INTERP_LIB_BOOT) \
 	$(SEXP_LIB_BOOT) $(PARSER_LIB_BOOT) \
@@ -914,8 +909,6 @@ presubmit:
 test-decompress: \
 	$(TEST_WASM_GEN_FILES) \
 	$(TEST_WASM_W_GEN_FILES) \
-	$(TEST_WASM_PD_GEN_FILES) \
-	$(TEST_WASM_WPD_GEN_FILES) \
 	$(TEST_WASM_CAPI_GEN_FILES) \
 	$(TEST_WASM_WS_GEN_FILES) \
 	$(TEST_WASM_SW_GEN_FILES)
@@ -961,49 +954,42 @@ $(TEST_WASM_COMP_FILES): $(TEST_0XD_GENDIR)/%.wasm-comp: $(TEST_0XD_SRCDIR)/%.wa
 
 $(TEST_WASM_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm: $(TEST_0XD_SRCDIR)/%.wasm \
 		$(BUILD_EXECDIR)/decompress
-	$(BUILD_EXECDIR)/decompress -m -i $< | cmp - $<
+	$(BUILD_EXECDIR)/decompress $< | cmp - $<
 
 .PHONY: $(TEST_WASM_GEN_FILES)
 
 $(TEST_WASM_W_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm-w: \
 		$(TEST_0XD_SRCDIR)/%.wasm-w $(BUILD_EXECDIR)/decompress
-	$(BUILD_EXECDIR)/decompress -i $< | cmp - $<
+	$(BUILD_EXECDIR)/decompress -m $< | cmp - $<
 
 .PHONY: $(TEST_WASM_W_GEN_FILES)
 
 
 $(TEST_WASM_WS_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm-ws: \
 		$(TEST_0XD_SRCDIR)/%.wasm $(BUILD_EXECDIR)/decompress
-	$(BUILD_EXECDIR)/decompress -m -i $<-w | cmp - $<
+	$(BUILD_EXECDIR)/decompress $<-w | cmp - $<
 
 .PHONY: $(TEST_WASM_WS_GEN_FILES)
 
 
 $(TEST_WASM_SW_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm-sw: \
 		$(TEST_0XD_SRCDIR)/%.wasm $(BUILD_EXECDIR)/decompress
-	$(BUILD_EXECDIR)/decompress -i $< | cmp - $<-w
+	$(BUILD_EXECDIR)/decompress -m $< | cmp - $<-w
 
 .PHONY: $(TEST_WASM_WS_GEN_FILES)
-
-$(TEST_WASM_PD_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm-pd: $(TEST_0XD_SRCDIR)/%.wasm \
-		$(BUILD_EXECDIR)/decompress $(SEXP_DEFAULT_GENSRCS)
-	$(BUILD_EXECDIR)/decompress -m -p -d $(SEXP_GENDIR)/defaults-0xd.df \
-		 -i $< | cmp - $<
-
-.PHOHY: $(TEST_WASM_PD_GEN_FILES)
 
 $(TEST_WASM_WPD_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm-wpd: \
 		$(TEST_0XD_SRCDIR)/%.wasm-w \
 		$(BUILD_EXECDIR)/decompress $(SEXP_DEFAULT_GENSRCS)
 	$(BUILD_EXECDIR)/decompress -p -d $(SEXP_GENDIR)/defaults-0xd.df \
-		 -i $< | cmp - $<
+		 $< | cmp - $<
 
 .PHOHY: $(TEST_WASM_WPD_GEN_FILES)
 
 
 $(TEST_WASM_CAPI_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm-capi: \
 		$(TEST_0XD_SRCDIR)/%.wasm-w $(BUILD_EXECDIR)/decompress
-	$(BUILD_EXECDIR)/decompress --c-api -i $< | cmp - $<
+	$(BUILD_EXECDIR)/decompress --c-api $< | cmp - $<
 
 .PHOHY: $(TEST_WASM_WPD_GEN_FILES)
 
