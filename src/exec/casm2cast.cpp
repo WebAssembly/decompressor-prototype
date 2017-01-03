@@ -31,7 +31,7 @@
 using namespace wasm;
 using namespace wasm::decode;
 using namespace wasm::filt;
-using namespace wasm::interp;
+// using namespace wasm::interp;
 using namespace wasm::utils;
 
 namespace {
@@ -142,6 +142,12 @@ int main(int Argc, const char* Argv[]) {
     assert(!(WASM_BOOT && AlgorithmFilename == nullptr));
   }
 
+  if (Verbose) {
+    if (AlgorithmFilename)
+      fprintf(stderr, "Reading algorithms file: %s\n", AlgorithmFilename);
+    else
+      fprintf(stderr, "Using prebuilt casm algorithm\n");
+  }
   std::shared_ptr<SymbolTable> AlgSymtab;
   if (AlgorithmFilename) {
     CasmReader Reader;
@@ -171,6 +177,7 @@ int main(int Argc, const char* Argv[]) {
     fprintf(stderr, "Problems reading: %s\n", InputFilename);
     return exit_status(EXIT_FAILURE);
   }
+
   if (Verbose && strcmp(OutputFilename, "-") != 0)
     fprintf(stderr, "Writing file: %s\n", OutputFilename);
   OutputHandler Output(OutputFilename);
