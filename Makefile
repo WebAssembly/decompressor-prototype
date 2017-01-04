@@ -936,10 +936,10 @@ $(TEST_CASM_W_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm-w: $(TEST_SRCS_DIR)/%.df \
 .PHONY: $(TEST_CASM_W_GEN_FILES)
 
 $(TEST_CASM_DF_GEN_FILES): $(TEST_0XD_GENDIR)/%.df-out: $(TEST_SRCS_DIR)/%.wasm \
-		$(TEST_SRCS_DIR)/%.wasm $(BUILD_EXECDIR)/decompwasm-sexp
-	$(BUILD_EXECDIR)/decompwasm-sexp -i $< | \
+		$(TEST_SRCS_DIR)/%.wasm $(BUILD_EXECDIR)/casm2cast
+	$(BUILD_EXECDIR)/casm2cast $< | \
 		cmp - $(patsubst %.wasm, %.df-out, $<)
-	$(BUILD_EXECDIR)/decompwasm-sexp -i \
+	$(BUILD_EXECDIR)/casm2cast -m \
 		$(patsubst %.wasm, %.wasm-w, $<) | \
 		cmp - $(patsubst %.wasm, %.df-out, $<)
 
@@ -1010,6 +1010,10 @@ test-decompwasm-sexp: $(BUILD_EXECDIR)/decompwasm-sexp $(TEST_CASM_DF_GEN_FILES)
 	@echo "*** wasm2sexp tests passed ***"
 
 .PHONY: test-decompwasm-sexp
+
+test-casm2cast: $(BUILD_EXECDIR)/casm2cast $(TEST_CASM_DF_GEN_FILES)
+	$< -i $(TEST_DEFAULT_WASM) \
+		| diff - $(TEST_DEFAULT_DF)
 
 test-parser: $(TEST_EXECDIR)/TestParser
 	$< -w $(SEXP_DEFAULT_DF) | diff - $(TEST_DEFAULT_DF)
