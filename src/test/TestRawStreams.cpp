@@ -22,6 +22,7 @@
 #include "stream/StreamReader.h"
 #include "stream/StreamWriter.h"
 
+#include <cstdlib>
 #include <iostream>
 #include <unistd.h>
 

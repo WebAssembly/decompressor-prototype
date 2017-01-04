@@ -23,6 +23,7 @@
 
 #include "utils/Defs.h"
 
+#include <cstdlib>
 #include <cstring>
 #include <unistd.h>
 
