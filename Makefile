@@ -120,9 +120,6 @@ SEXP_OBJS_BOOT = $(patsubst %.cpp, $(SEXP_OBJDIR_BOOT)/%.o, $(SEXP_SRCS_BOOT))
 SEXP_DEFAULT_DFS = defaults-0xd.df
 
 SEXP_DEFAULT_ORIGSRCS = $(patsubst %.df, $(SEXP_SRCDIR)/%.df, $(SEXP_DEFAULT_DFS))
-SEXP_DEFAULT_GENSRCS = $(patsubst %.df, $(SEXP_GENDIR)/%.df, $(SEXP_DEFAULT_DFS))
-SEXP_DEFAULT_SRCS = $(patsubst %.df, $(SEXP_GENDIR)/%.cpp, $(SEXP_DEFAULT_DFS))
-SEXP_DEFAULT_OBJS = $(patsubst %.df, $(SEXP_OBJDIR)/%.o, $(SEXP_DEFAULT_DFS))
 
 GENSRCS += $(SEXP_DEFAULT_SRCS)
 
@@ -248,12 +245,10 @@ BUILD_EXECDIR_BOOT = $(BUILDDIR_BOOT)/bin
 EXEC_SRCS_BASE = \
 	casm2cast.cpp \
 	compress-int.cpp \
-	decompress.cpp \
-	decompwasm-sexp.cpp
+	decompress.cpp
 
 EXEC_SRCS_BOOT = \
-	cast2casm.cpp \
-	decompsexp-wasm.cpp
+	cast2casm.cpp
 
 EXEC_SRCS = $(EXEC_SRCS_BASE)  $(EXEC_SRCS_BOOT)
 
@@ -496,10 +491,6 @@ $(SEXP_DEFAULT_GENSRCS): $(SEXP_GENDIR)/%.df: $(SEXP_SRCDIR)/%.df
 	cp $< $@
 
 $(SEXP_DEFAULT_GENSRCS): | $(SEXP_GENDIR)
-
-$(SEXP_GENDIR)/defaults-0xd.cpp: $(SEXP_GENDIR)/defaults-0xd.df \
-		 $(BUILD_EXECDIR_BOOT)/decompsexp-wasm
-	$(BUILD_EXECDIR_BOOT)/decompsexp-wasm -d -i $< -o $@
 
 ###### Compiliing binary generation Sources ######
 
@@ -989,11 +980,6 @@ $(TEST_WASM_CAPI_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm-capi: \
 	$(BUILD_EXECDIR)/decompress --c-api $< | cmp - $<
 
 .PHOHY: $(TEST_WASM_WPD_GEN_FILES)
-
-test-decompsexp-wasm: $(TEST_CASM_GEN_FILES) $(TEST_CASM_W_GEN_FILES)
-	@echo "*** sexp2wasm tests passed ***"
-
-.PHONY: test-decompsexp-wasm
 
 test-cast2casm: $(TEST_CASM_GEN_FILES) $(TEST_CASM_W_GEN_FILES)
 	@echo "*** cast2casm tests passed ***"
