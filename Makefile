@@ -873,12 +873,9 @@ $(TEST_EXECS): $(TEST_EXECDIR)/%$(EXE): $(TEST_OBJDIR)/%.o $(LIBS)
 ###### Testing ######
 
 test: build-all test-parser test-raw-streams test-byte-queues \
-	test-decompress
+	test-decompress test-casm2cast test-cast2casm
 	@echo "*** all tests passed ***"
 
-# TODO: FInish removing the following since cast2casm and casm2cast replace
-# the following deprecated tests (now broken).
-#	test-decompsexp-wasm test-decompwasm-sexp
 # TODO: Add this back to the set of tests.
 #	test-compress
 
@@ -922,15 +919,15 @@ test-compress: $(TEST_WASM_COMP_FILES)
 .PHONY: test-compress
 
 $(TEST_CASM_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm: $(TEST_SRCS_DIR)/%.df \
-		$(BUILD_EXECDIR)/decompsexp-wasm
-	$(BUILD_EXECDIR)/decompsexp-wasm -m -i $< | \
+		$(BUILD_EXECDIR)/cast2casm
+	$(BUILD_EXECDIR)/cast2casm $< | \
 		cmp - $(patsubst %.df, %.wasm, $<)
 
 .PHONY: $(TEST_CASM_GEN_FILES)
 
 $(TEST_CASM_W_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm-w: $(TEST_SRCS_DIR)/%.df \
-		$(BUILD_EXECDIR)/decompsexp-wasm
-	$(BUILD_EXECDIR)/decompsexp-wasm -i $< | \
+		$(BUILD_EXECDIR)/cast2casm
+	$(BUILD_EXECDIR)/cast2casm -m $< | \
 		cmp - $(patsubst %.df, %.wasm-w, $<)
 
 .PHONY: $(TEST_CASM_W_GEN_FILES)
@@ -939,7 +936,7 @@ $(TEST_CASM_DF_GEN_FILES): $(TEST_0XD_GENDIR)/%.df-out: $(TEST_SRCS_DIR)/%.wasm 
 		$(TEST_SRCS_DIR)/%.wasm $(BUILD_EXECDIR)/casm2cast
 	$(BUILD_EXECDIR)/casm2cast $< | \
 		cmp - $(patsubst %.wasm, %.df-out, $<)
-	$(BUILD_EXECDIR)/casm2cast -m \
+	$(BUILD_EXECDIR)/casm2cast \
 		$(patsubst %.wasm, %.wasm-w, $<) | \
 		cmp - $(patsubst %.wasm, %.df-out, $<)
 
@@ -998,22 +995,17 @@ test-decompsexp-wasm: $(TEST_CASM_GEN_FILES) $(TEST_CASM_W_GEN_FILES)
 
 .PHONY: test-decompsexp-wasm
 
-test-decompwasm-sexp: $(BUILD_EXECDIR)/decompwasm-sexp $(TEST_CASM_DF_GEN_FILES)
-	$< -i $(TEST_DEFAULT_WASM) \
-		| diff - $(TEST_DEFAULT_DF)
-	$< -i $(TEST_DEFAULT_WASM_W) \
-		| diff - $(TEST_DEFAULT_DF)
-	$< -r 5 -i $(TEST_DEFAULT_WASM) \
-		| diff - $(TEST_DEFAULT_DF)
-	$< -r 5 -i $(TEST_DEFAULT_WASM_W) \
-		| diff - $(TEST_DEFAULT_DF)
-	@echo "*** wasm2sexp tests passed ***"
+test-cast2casm: $(TEST_CASM_GEN_FILES) $(TEST_CASM_W_GEN_FILES)
+	@echo "*** cast2casm tests passed ***"
 
-.PHONY: test-decompwasm-sexp
+.PHONY: test-cast2cast
 
 test-casm2cast: $(BUILD_EXECDIR)/casm2cast $(TEST_CASM_DF_GEN_FILES)
-	$< -i $(TEST_DEFAULT_WASM) \
-		| diff - $(TEST_DEFAULT_DF)
+	$< $(TEST_DEFAULT_WASM) | diff - $(TEST_DEFAULT_DF)
+	$< $(TEST_DEFAULT_WASM_W) | diff - $(TEST_DEFAULT_DF)
+	@echo "*** casm2cast tests passed ***"
+
+.PHONY: test-casm2cast
 
 test-parser: $(TEST_EXECDIR)/TestParser
 	$< -w $(SEXP_DEFAULT_DF) | diff - $(TEST_DEFAULT_DF)
@@ -1112,16 +1104,16 @@ $(TEST_DEFAULT_DF): $(TEST_SRCS_DIR)/%.df: $(SEXP_SRCDIR)/%.df \
 	rm -rf $@; $(TEST_EXECDIR)/TestParser -w $< > $@
 
 $(TEST_CASM_WASM_FILES): $(TEST_SRCS_DIR)/%.wasm: $(TEST_SRCS_DIR)/%.df \
-		$(BUILD_EXECDIR)/decompsexp-wasm
-	rm -rf $@; $(BUILD_EXECDIR)/decompsexp-wasm -m -i $< -o $@
+		$(BUILD_EXECDIR)/cast2casm
+	rm -rf $@; $(BUILD_EXECDIR)/cast2casm $< -o $@
 
 $(TEST_CASM_WASM_W_FILES): $(TEST_SRCS_DIR)/%.wasm-w: $(TEST_SRCS_DIR)/%.df \
-		$(BUILD_EXECDIR)/decompsexp-wasm
-	rm -rf $@; $(BUILD_EXECDIR)/decompsexp-wasm -i $< -o $@
+		$(BUILD_EXECDIR)/cast2casm
+	rm -rf $@; $(BUILD_EXECDIR)/cast2casm -m $< -o $@
 
 $(TEST_CASM_DF_OUT_FILES): $(TEST_SRCS_DIR)/%.df-out: $(TEST_SRCS_DIR)/%.wasm \
-		$(BUILD_EXECDIR)/decompwasm-sexp
-	rm -rf $@; $(BUILD_EXECDIR)/decompwasm-sexp -i $< -o $@
+		$(BUILD_EXECDIR)/casm2cast
+	rm -rf $@; $(BUILD_EXECDIR)/casm2cast $< -o $@
 
 endif
 
