@@ -16,10 +16,8 @@
  */
 
 #include "algorithms/wasm0xd.h"
-#include "binary/BinaryReader.h"
 #include "interp/Decompress.h"
 #include "interp/Interpreter.h"
-#include "sexp-parser/Driver.h"
 #include "stream/FileReader.h"
 #include "stream/FileWriter.h"
 #include "stream/ReadBackedQueue.h"
@@ -101,54 +99,14 @@ int runUsingCApi(bool TraceProgress) {
   return Result;
 }
 
-#if 0
-void usage(const char* AppName) {
-  fprintf(stderr, "usage: %s [options]\n", AppName);
-  fprintf(stderr, "\n");
-  fprintf(stderr, "  Decompress WASM binary file.\n");
-  fprintf(stderr, "\n");
-  fprintf(stderr, "Options:\n");
-  fprintf(stderr, "  --c-api\t\tUse C API to decompress.\n");
-  fprintf(stderr, "  -d File\t\tFile containing default algorithms.\n");
-  fprintf(stderr, "  --expect-fail\t\tSucceed on failure/fail on success\n");
-  fprintf(stderr, "  -h\t\t\tPrint this usage message.\n");
-  fprintf(stderr, "  -i File\t\tFile to decompress ('-' implies stdin).\n");
-  fprintf(stderr, "  -m\t\t\tMinimize block sizes in output stream.\n");
-  fprintf(stderr,
-          "  -o File\t\tGenerated Decompressed File ('-' implies stdout).\n");
-  fprintf(stderr, "  -p\t\t\tDon't install predefined decompression rules.\n");
-  fprintf(stderr, "  -s\t\t\tUse C++ streams instead of C file descriptors.\n");
-  fprintf(stderr,
-          "  -t N\t\t\tDecompress N times (used to test performance).\n");
-  if (isDebug()) {
-    fprintf(stderr,
-            "  -v | --verbose\t"
-            "Show progress (can be repeated for more detail).\n");
-    fprintf(stderr,
-            "\t\t\t-v          : "
-            "Trace progress of decompression.\n");
-    fprintf(stderr,
-            "\t\t\t-v -v       : "
-            "Add progress of parsing default files.\n");
-    fprintf(stderr,
-            "\t\t\t-v -v -v    : "
-            "Add progress of lexing default files.\n");
-    fprintf(stderr,
-            "\t\t\t-v -v -v -v : "
-            "Add progress of installing filter sections.\n");
-  }
-}
-#endif
-
 int main(const int Argc, const char* Argv[]) {
   // TODO(karlschimpf) Add other default algorithms.
   bool Verbose = false;
   bool VerboseTrace = false;
   bool MinimizeBlockSize = false;
-  bool InstallPredefinedRules = true;
   bool UseCApi = false;
   size_t NumTries = 1;
-#if 1
+
   {
     ArgsParser Args("Decompress WASM binary file");
 
@@ -211,64 +169,8 @@ int main(const int Argc, const char* Argv[]) {
         return exit_status(EXIT_FAILURE);
     }
   }
-#else
-  for (int i = 1; i < Argc; ++i) {
-    std::string Arg(Argv[i]);
-    if (Arg == "--c-api") {
-      UseCApi = true;
-    } else if (Arg == "-d") {
-      if (++i >= Argc) {
-        fprintf(stderr, "No file specified after -d option\n");
-        usage(Argv[0]);
-        return exit_status(EXIT_FAILURE);
-      }
-      DefaultIndices.push_back(i);
-    } else if (Arg == "--expect-fail") {
-      ExpectExitFail = true;
-    } else if (Arg == "-h" || Arg == "--help") {
-      usage(Argv[0]);
-      return exit_status(EXIT_SUCCESS);
-    } else if (Arg == "-i") {
-      if (++i >= Argc) {
-        fprintf(stderr, "No file specified after -i option\n");
-        usage(Argv[0]);
-        return exit_status(EXIT_FAILURE);
-      }
-      InputFilename = Argv[i];
-    } else if (Arg == "-m") {
-      MinimizeBlockSize = true;
-    } else if (Arg == "-o") {
-      if (++i >= Argc) {
-        fprintf(stderr, "No file specified after -o option\n");
-        usage(Argv[0]);
-        return exit_status(EXIT_FAILURE);
-      }
-      OutputFilename = Argv[i];
-    } else if (Arg == "-p") {
-      InstallPredefinedRules = false;
-    } else if (Arg == "-s") {
-      UseFileStreams = true;
-    } else if (Arg == "-t") {
-      if (++i >= Argc) {
-        fprintf(stderr, "No count N specified after -t option\n");
-        usage(Argv[0]);
-        return exit_status(EXIT_FAILURE);
-      }
-      NumTries += atol(Argv[i]);
-    } else if (isDebug() && (Arg == "-v" || Arg == "--verbose")) {
-      ++Verbose;
-    } else {
-      fprintf(stderr, "Unrecognized option: %s\n", Argv[i]);
-      usage(Argv[0]);
-      return exit_status(EXIT_FAILURE);
-    }
-  }
-#endif
+
   if (UseCApi) {
-    if (!InstallPredefinedRules) {
-      fprintf(stderr, "-p and --c-api options not allowed");
-      return exit_status(EXIT_FAILURE);
-    }
     if (NumTries != 1) {
       fprintf(stderr, "-t and --c-api options not allowed");
       return exit_status(EXIT_FAILURE);
@@ -277,33 +179,8 @@ int main(const int Argc, const char* Argv[]) {
       fprintf(stderr, "--c-api ignores -m option\n");
     return exit_status(runUsingCApi(Verbose >= 1));
   }
-  std::shared_ptr<SymbolTable> Symtab;
-  if (InstallPredefinedRules)
-    Symtab = getAlgwasm0xdSymtab();
-  else
-    Symtab = std::make_shared<SymbolTable>();
-#if 0
-  for (int i : DefaultIndices) {
-    if (Verbose)
-      fprintf(stderr, "Loading default: %s\n", Argv[i]);
-    if (BinaryReader::isBinary(Argv[i])) {
-      std::shared_ptr<RawStream> Stream = std::make_shared<FileReader>(Argv[i]);
-      BinaryReader Reader(std::make_shared<ReadBackedQueue>(std::move(Stream)),
-                          Symtab);
-      Reader.getTrace().setTraceProgress(Verbose >= 2);
-      if (Reader.readFile()) {
-        continue;
-      }
-    }
-    Driver Parser(Symtab);
-    Parser.setTraceParsing(Verbose >= 2);
-    Parser.setTraceLexing(Verbose >= 3);
-    if (!Parser.parse(Argv[i])) {
-      fprintf(stderr, "Unable to parse default algorithms: %s\n", Argv[i]);
-      return exit_status(EXIT_FAILURE);
-    }
-  }
-#endif
+
+  std::shared_ptr<SymbolTable> Symtab = getAlgwasm0xdSymtab();
   bool Succeeded = true;  // until proven otherwise.
   for (size_t i = 0; i < NumTries; ++i) {
     if (Verbose)

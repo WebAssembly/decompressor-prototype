@@ -14,19 +14,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "algorithms/wasm0xd.h"
-#include "binary/BinaryReader.h"
 #include "intcomp/IntCompress.h"
-#include "sexp-parser/Driver.h"
 #include "stream/FileReader.h"
 #include "stream/FileWriter.h"
-#include "stream/RawStream.h"
 #include "stream/ReadBackedQueue.h"
 #include "stream/WriteBackedQueue.h"
 #include "utils/ArgsParse.h"
 
 #include "utils/Defs.h"
 
+#include <cstdlib>
 #include <cstring>
 #include <unistd.h>
 
