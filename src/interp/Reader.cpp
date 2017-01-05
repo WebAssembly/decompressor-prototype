@@ -172,7 +172,8 @@ Reader::Reader(Writer& Output, std::shared_ptr<filt::SymbolTable> Symtab)
       LocalsBase(0),
       LocalsBaseStack(LocalsBase),
       OpcodeLocalsStack(OpcodeLocals),
-      HeaderOverride(Symtab->getInstalledHeader()) {
+      HeaderOverride(Symtab->getInstalledHeader()),
+      FreezeEofAtExit(true) {
   CurSectionName.reserve(MaxExpectedSectionNameSize);
   FrameStack.reserve(DefaultStackSize);
   CallingEvalStack.reserve(DefaultStackSize);
@@ -1205,7 +1206,7 @@ void Reader::algorithmResume() {
             break;
           }
           case State::Exit:
-            if (!Output.writeFreezeEof())
+            if (FreezeEofAtExit && !Output.writeFreezeEof())
               return failFreezingEof();
             popAndReturn();
             break;

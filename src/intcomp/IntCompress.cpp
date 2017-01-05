@@ -18,7 +18,6 @@
 
 #include "intcomp/IntCompress.h"
 
-//#include "binary/BinaryWriter.h"
 #include "intcomp/AbbrevAssignWriter.h"
 #include "intcomp/AbbreviationCodegen.h"
 #include "intcomp/AbbreviationsCollector.h"
