@@ -14,6 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "algorithms/wasm0xd.h"
 #include "intcomp/IntCompress.h"
 #include "stream/FileReader.h"
 #include "stream/FileWriter.h"
@@ -164,14 +165,13 @@ int main(int Argc, const char* Argv[]) {
     }
   }
 
-  auto Symtab = std::make_shared<SymbolTable>();
-
   // TODO(karlschimpf) Fill in code here to get default algorithm if not
   // explicitly defined.
 
   IntCompressor Compressor(std::make_shared<ReadBackedQueue>(getInput()),
                            std::make_shared<WriteBackedQueue>(getOutput()),
-                           Symtab, CompressionFlags);
+                           getAlgwasm0xdSymtab(),
+                           CompressionFlags);
   Compressor.compress(Verbose ? IntCompressor::DetailLevel::SomeDetail
                               : IntCompressor::DetailLevel::NoDetail);
   if (Compressor.errorsFound()) {

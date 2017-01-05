@@ -181,8 +181,8 @@ class IntStream : public std::enable_shared_from_this<IntStream> {
   };
 
   // WARNING: Don't call constructor directly. Call std::make_shared().
-  IntStream() : TopBlock(std::make_shared<Block>()), isFrozenFlag(false) {}
-  void reset() { TopBlock.reset(); }
+  IntStream() { reset(); }
+  void reset();
   ~IntStream() {}
 
   size_t size() const { return Values.size(); }
@@ -206,7 +206,7 @@ class IntStream : public std::enable_shared_from_this<IntStream> {
   BlockPtr TopBlock;
   bool isFrozenFlag;
 
-  // The following fields is defined by openWriteBlock(), and defines the
+  // The following fields is defined by openBlock(), and defines the
   // sequence of written blocks.
   BlockVector Blocks;
 };

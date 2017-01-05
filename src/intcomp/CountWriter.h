@@ -67,6 +67,8 @@ class CountWriter : public interp::Writer {
   bool writeVaruint32(uint32_t Value) OVERRIDE;
   bool writeVaruint64(uint64_t Value) OVERRIDE;
   bool writeValue(decode::IntType Value, const filt::Node* Format) OVERRIDE;
+  bool writeHeaderValue(decode::IntType Value,
+                        interp::IntTypeFormat Format) OVERRIDE;
   bool writeAction(const filt::CallbackNode* Action) OVERRIDE;
 
  private:

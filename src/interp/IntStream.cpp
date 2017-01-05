@@ -183,6 +183,14 @@ IntStream::ReadCursorWithTraceContext::getTraceContext() {
   return TraceContext;
 }
 
+void IntStream::reset() {
+  Header.clear();
+  Values.clear();
+  TopBlock = std::make_shared<Block>();
+  isFrozenFlag = false;
+  Blocks.clear();
+}
+
 void IntStream::describe(FILE* File, const char* Name) {
   if (Name == nullptr)
     Name = "IntStream";

@@ -36,7 +36,7 @@
 #define LOG_SECTIONS LOG_DEFAULT_VALUE
 #define LOG_FUNCTIONS LOG_DEFAULT_VALUE
 // The following logs lookahead on each call to eval.
-#define LOG_EVAL_LOOKAHEAD LOG_DEFAULT_VALUE
+#define LOG_EVAL_LOOKAHEAD LOG_FALSE_VALUE
 
 // The following two defines allows turning on tracing for the nth (zero based)
 // function.
@@ -385,6 +385,18 @@ void Reader::failInWriteOnlyMode() {
   fail("Method can only be processed in read mode");
 }
 
+void Reader::failBadHeaderValue(IntType WantedValue, IntType FoundValue,
+                                ValueFormat Format) {
+  if (WantedValue != FoundValue) {
+    fprintf(stderr, "Expected header value ");
+    writeInt(stderr, WantedValue, Format);
+    fprintf(stderr, ", but found ");
+    writeInt(stderr, FoundValue, Format);
+    fputc('\n', stderr);
+    fail("Bad header constant found");
+  }
+}
+
 void Reader::handleOtherMethods() {
   while (1) {
     switch (Frame.CallMethod) {
@@ -522,15 +534,9 @@ void Reader::algorithmResume() {
                 IntType FoundValue = readHeaderValue(TypeFormat);
                 if (errorsFound())
                   return;
-                if (WantedValue != FoundValue) {
-                  ValueFormat Format = Lit->getFormat();
-                  fprintf(stderr, "Expected header value ");
-                  writeInt(stderr, WantedValue, Format);
-                  fprintf(stderr, ", but found ");
-                  writeInt(stderr, FoundValue, Format);
-                  fputc('\n', stderr);
-                  fail("Bad header constant found");
-                }
+                if (WantedValue != FoundValue)
+                  return failBadHeaderValue(WantedValue, FoundValue,
+                                            Lit->getFormat());
                 Output.writeHeaderValue(FoundValue, TypeFormat);
                 break;
               }

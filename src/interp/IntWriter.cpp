@@ -26,8 +26,13 @@ using namespace utils;
 
 namespace interp {
 
+IntWriter::IntWriter(std::shared_ptr<IntStream> Output)
+    : Output(Output), Pos(Output) {}
+
 void IntWriter::reset() {
-  Output.reset();
+  Output->reset();
+  IntStream::WriteCursorWithTraceContext StartPos(Output);
+  Pos = StartPos;
 }
 
 TraceClass::ContextPtr IntWriter::getTraceContext() {
@@ -89,8 +94,16 @@ bool IntWriter::writeAction(const filt::CallbackNode* Action) {
     case PredefinedSymbol::Block_exit:
       return Pos.closeBlock();
     default:
-      return false;
+      // Ignore all other actions, since they do not involve
+      // changing the integer sequence.
+      return true;
   }
+}
+
+void IntWriter::describeState(FILE* File) {
+  fprintf(stderr, "Pos = ");
+  Pos.describe(File);
+  fputc('\n', File);
 }
 
 }  // end of namespace interp

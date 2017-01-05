@@ -265,6 +265,9 @@ class Reader {
   void failFreezingEof();
   void failInWriteOnlyMode();
   void failNotImplemented();
+  void failBadHeaderValue(decode::IntType WantedValue,
+                          decode::IntType FoundValue,
+                          decode::ValueFormat Format);
 
   // For debugging only.
 

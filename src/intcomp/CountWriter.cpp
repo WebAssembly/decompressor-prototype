@@ -111,6 +111,11 @@ bool CountWriter::writeAction(const filt::CallbackNode* Action) {
   }
 }
 
+bool CountWriter::writeHeaderValue(decode::IntType Value,
+                                   interp::IntTypeFormat Format) {
+  return true;
+}
+
 }  // end of namespace intcomp
 
 }  // end of namespace wasm
