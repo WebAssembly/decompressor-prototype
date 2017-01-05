@@ -98,6 +98,42 @@ class ArgsParser {
     virtual void describeOptionName(FILE* Out,
                                     size_t TabSize,
                                     size_t& Indent) const;
+
+    // The following are support writing routines for parser arguments.
+    static void endLineIfOver(FILE* Out, const size_t TabSize, size_t& Indent) {
+      ArgsParser::endLineIfOver(Out, TabSize, Indent);
+    }
+    static void indentTo(FILE* Out, const size_t TabSize, size_t& Indent) {
+      ArgsParser::indentTo(Out, TabSize, Indent);
+    }
+    static void writeNewline(FILE* Out, size_t& Indent) {
+      ArgsParser::writeNewline(Out, Indent);
+    }
+    static void writeChar(FILE* Out, const size_t TabSize,
+                          size_t& Indent, char Ch) {
+      ArgsParser::writeChar(Out, TabSize, Indent, Ch);
+    }
+    static void writeChunk(FILE* Out, const size_t TabSize, size_t& Indent,
+                           charstring String, size_t Chunk) {
+      ArgsParser::writeChunk(Out, TabSize, Indent, String, Chunk);
+    }
+    static void writeCharstring(FILE* Out, const size_t TabSize, size_t& Indent,
+                                charstring String) {
+      ArgsParser::writeCharstring(Out, TabSize, Indent, String);
+    }
+    static void writeSize_t(FILE* Out, const size_t TabSize, size_t& Indent,
+                            size_t Value) {
+      ArgsParser::writeSize_t(Out, TabSize, Indent, Value);
+    }
+    static void printDescriptionContinue(FILE* Out,
+                                         const size_t TabSize, size_t& Indent,
+                                         charstring Description) {
+      ArgsParser::printDescriptionContinue(Out, TabSize, Indent, Description);
+    }
+    static void printDescription(FILE* Out, size_t TabSize, size_t& Indent,
+                                 charstring Description) {
+      ArgsParser::printDescription(Out, TabSize, Indent, Description);
+    }
   };
 
   class RequiredArg;
@@ -157,6 +193,27 @@ class ArgsParser {
                          size_t& Indent) const OVERRIDE;
 
     ~Toggle() OVERRIDE {}
+  };
+
+  template <class T>
+  class SetValue : public Optional<T> {
+    SetValue() = delete;
+    SetValue(const SetValue&) = delete;
+    SetValue& operator=(const SetValue&) = delete;
+
+   public:
+    SetValue(T& Value, T SelectValue, charstring Description = nullptr)
+        : Optional<T>(Value, Description) {}
+
+    bool select(charstring OptionValue) OVERRIDE;
+    void describeDefault(FILE* Out,
+                         size_t TabSize,
+                         size_t& Indent) const OVERRIDE;
+
+    ~SetValue() OVERRIDE {}
+
+   protected:
+    T SelectValue;
   };
 
   class RequiredArg : public Arg {
@@ -227,6 +284,28 @@ class ArgsParser {
   Arg* parseNextShort(charstring Argument, charstring& Leftover);
   Arg* parseNextLong(charstring Argument, charstring& Leftover);
   void showUsage();
+
+  friend class Arg;
+
+  // The following are support writing routines for parser arguments.
+  static const size_t TabWidth;
+  static const size_t MaxLine;
+
+  static void endLineIfOver(FILE* Out, const size_t TabSize, size_t& Indent);
+  static void indentTo(FILE* Out, const size_t TabSize, size_t& Indent);
+  static void writeNewline(FILE* Out, size_t& Indent);
+  static void writeChar(FILE* Out, const size_t TabSize, size_t& Indent, char Ch);
+  static void writeChunk(FILE* Out, const size_t TabSize, size_t& Indent,
+                         charstring String, size_t Chunk);
+  static void writeCharstring(FILE* Out, const size_t TabSize, size_t& Indent,
+                              charstring String);
+  static void writeSize_t(FILE* Out, const size_t TabSize, size_t& Indent,
+                          size_t Value);
+  static void printDescriptionContinue(FILE* Out,
+                                       const size_t TabSize, size_t& Indent,
+                                       charstring Description);
+  static void printDescription(FILE* Out, size_t TabSize, size_t& Indent,
+                               charstring Description);
 };
 
 }  // end of namespace utils

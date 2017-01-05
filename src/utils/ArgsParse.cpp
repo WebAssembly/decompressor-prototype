@@ -26,9 +26,11 @@
 #include <cstdlib>
 #include <cstring>
 
+namespace wasm {
+
 namespace {
 
-int compareNames(const char* Name1, const char* Name2) {
+int compareNames(charstring Name1, charstring Name2) {
   while (*Name1 && *Name2) {
     int Diff = tolower(*Name1) - tolower(*Name2);
     if (Diff != 0)
@@ -44,36 +46,41 @@ int compareNames(const char* Name1, const char* Name2) {
   return 0;
 }
 
-int compareNameCh(const char* Name, char Ch) {
+int compareNameCh(charstring Name, char Ch) {
   char Buffer[2];
   Buffer[0] = Ch;
   Buffer[1] = '\0';
   return compareNames(Name, Buffer);
 }
 
-constexpr size_t TabWidth = 8;
-constexpr size_t MaxLine = 79;  // allow for trailing space character.
+}  // end of anonymous namespace
 
-void endLineIfOver(FILE* Out, const size_t TabSize, size_t& Indent) {
+namespace utils {
+
+const size_t ArgsParser::TabWidth = 8;
+const size_t ArgsParser::MaxLine = 79;  // allow for trailing space character.
+
+void ArgsParser::endLineIfOver(FILE* Out, const size_t TabSize, size_t& Indent) {
   if (Indent >= TabSize) {
     fputc('\n', Out);
     Indent = 0;
   }
 }
 
-void indentTo(FILE* Out, const size_t TabSize, size_t& Indent) {
+void ArgsParser::indentTo(FILE* Out, const size_t TabSize, size_t& Indent) {
   while (Indent < TabSize) {
     fputc(' ', Out);
     ++Indent;
   }
 }
 
-void writeNewline(FILE* Out, size_t& Indent) {
+void ArgsParser::writeNewline(FILE* Out, size_t& Indent) {
   fputc('\n', Out);
   Indent = 0;
 }
 
-void writeChar(FILE* Out, const size_t TabSize, size_t& Indent, char Ch) {
+void ArgsParser::writeChar(FILE* Out, const size_t TabSize, size_t& Indent,
+                            char Ch) {
   if (Indent >= MaxLine) {
     writeNewline(Out, Indent);
   }
@@ -101,23 +108,23 @@ void writeChar(FILE* Out, const size_t TabSize, size_t& Indent, char Ch) {
   }
 }
 
-void writeChunk(FILE* Out,
+void ArgsParser::writeChunk(FILE* Out,
                 const size_t TabSize,
                 size_t& Indent,
-                const char* string,
+                charstring String,
                 size_t Chunk) {
   for (size_t i = 0; i < Chunk; ++i)
-    writeChar(Out, TabSize, Indent, string[i]);
+    writeChar(Out, TabSize, Indent, String[i]);
 }
 
-void writeCharstring(FILE* Out,
+void ArgsParser::writeCharstring(FILE* Out,
                      const size_t TabSize,
                      size_t& Indent,
-                     const char* string) {
-  writeChunk(Out, TabSize, Indent, string, strlen(string));
+                     charstring String) {
+  writeChunk(Out, TabSize, Indent, String, strlen(String));
 }
 
-void writeSize_t(FILE* Out,
+void ArgsParser::writeSize_t(FILE* Out,
                  const size_t TabSize,
                  size_t& Indent,
                  size_t Value) {
@@ -128,11 +135,11 @@ void writeSize_t(FILE* Out,
   fprintf(stderr, "%" PRIuMAX "", uintmax_t(Value));
 }
 
-void printDescriptionContinue(FILE* Out,
+void ArgsParser::printDescriptionContinue(FILE* Out,
                               const size_t TabSize,
                               size_t& Indent,
-                              const char* Description) {
-  const char* Whitespace = " \t\n";
+                              charstring Description) {
+  charstring Whitespace = " \t\n";
   while (Description && *Description != '\0') {
     bool LoopApplied = false;
     while (Indent < MaxLine) {
@@ -158,20 +165,14 @@ void printDescriptionContinue(FILE* Out,
   return;
 }
 
-void printDescription(FILE* Out,
+void ArgsParser::printDescription(FILE* Out,
                       const size_t TabSize,
                       size_t& Indent,
-                      const char* Description) {
+                      charstring Description) {
   if (Description && *Description != '\0')
     endLineIfOver(Out, TabSize, Indent);
   printDescriptionContinue(Out, TabSize, Indent, Description);
 }
-
-}  // end of anonymous namespace
-
-namespace wasm {
-
-namespace utils {
 
 void ArgsParser::Arg::describe(FILE* Out, size_t TabSize) const {
   size_t Indent = 0;
@@ -241,10 +242,10 @@ int ArgsParser::OptionalArg::compare(const Arg& A) const {
     return ShortName - Opt->ShortName;
 
   if (LongName != nullptr && Opt->ShortName != 0)
-    return ::compareNameCh(LongName, Opt->ShortName);
+    return compareNameCh(LongName, Opt->ShortName);
 
   if (ShortName != 0 && Opt->LongName != nullptr)
-    return -::compareNameCh(Opt->LongName, ShortName);
+    return -compareNameCh(Opt->LongName, ShortName);
 
   return Arg::compare(A);
 }
@@ -258,7 +259,7 @@ int ArgsParser::OptionalArg::compareWithRequired(const RequiredArg& R) const {
     return compareNames(LongName, ReqName);
 
   if (ShortName != 0)
-    return -::compareNameCh(ReqName, ShortName);
+    return -compareNameCh(ReqName, ShortName);
 
   return Arg::compare(R);
 }
@@ -271,8 +272,8 @@ bool ArgsParser::Optional<bool>::select(charstring OptionValue) {
 
 template <>
 void ArgsParser::Optional<bool>::describeDefault(FILE* Out,
-                                                 size_t TabSize,
-                                                 size_t& Indent) const {
+                                                    size_t TabSize,
+                                                    size_t& Indent) const {
   printDescriptionContinue(Out, TabSize, Indent, " (default is ");
   printDescriptionContinue(Out, TabSize, Indent,
                            DefaultValue ? "true" : "false");
@@ -326,10 +327,10 @@ void ArgsParser::Optional<uint32_t>::describeDefault(FILE* Out,
   printDescriptionContinue(Out, TabSize, Indent, ")");
 }
 
-template <>
-bool ArgsParser::Optional<int32_t>::select(charstring OptionValue) {
-  Value = size_t(atoll(OptionValue));
-  return true;
+template<>
+bool ArgsParser::SetValue<uint32_t>::select(charstring OptionValue) {
+  Value = SelectValue;
+  return false;
 }
 
 template <>
@@ -498,7 +499,7 @@ void ArgsParser::parseNextArg() {
     return;
   if (Status == State::Usage)
     return;
-  const char* Argument = Argv[CurArg++];
+  charstring Argument = Argv[CurArg++];
   if (Argument == nullptr || strlen(Argument) == 0)
     return;
   charstring Leftover = nullptr;
@@ -534,7 +535,7 @@ void ArgsParser::parseNextArg() {
   return;
 }
 
-ArgsParser::State ArgsParser::parse(int Argc, const char* Argv[]) {
+ArgsParser::State ArgsParser::parse(int Argc, charstring Argv[]) {
   this->Argc = Argc;
   this->Argv = Argv;
   if (ExecName == nullptr && Argc)
