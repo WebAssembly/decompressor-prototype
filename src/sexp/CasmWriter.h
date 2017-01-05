@@ -23,6 +23,7 @@
 #include "utils/Defs.h"
 #include "sexp/Ast.h"
 #include "stream/Queue.h"
+#include "stream/WriteCursor.h"
 #include "utils/Defs.h"
 
 #include <memory>
@@ -43,14 +44,17 @@ class CasmWriter {
                    std::shared_ptr<interp::IntStream> Output);
 
   // Write aglorithm in Symtab to Output, using CASM algorithm in AlgSymtab.
-  void writeBinary(std::shared_ptr<filt::SymbolTable> Symtab,
-                   std::shared_ptr<Queue> Output,
-                   std::shared_ptr<filt::SymbolTable> AlgSymtab);
+  // Returns final write position.
+  const decode::WriteCursor& writeBinary(
+      std::shared_ptr<filt::SymbolTable> Symtab,
+      std::shared_ptr<Queue> Output,
+      std::shared_ptr<filt::SymbolTable> AlgSymtab);
 
 #if WASM_BOOT == 0
   // Same as above, but using default aglorithm casm0x0.
-  void writeBinary(std::shared_ptr<filt::SymbolTable> Symtab,
-                   std::shared_ptr<Queue> Output);
+  const decode::WriteCursor& writeBinary(
+      std::shared_ptr<filt::SymbolTable> Symtab,
+      std::shared_ptr<Queue> Output);
 #endif
 
   bool hasErrors() const { return ErrorsFound; }

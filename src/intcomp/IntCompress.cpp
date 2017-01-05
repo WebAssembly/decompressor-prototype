@@ -117,32 +117,12 @@ void IntCompressor::readInput() {
 
 const WriteCursor IntCompressor::writeCodeOutput(
     std::shared_ptr<SymbolTable> Symtab) {
-#if 1
   CasmWriter Writer;
-  Writer.setTraceWriter(MyFlags.TraceWritingCodeOutput)
+  return Writer.setTraceWriter(MyFlags.TraceWritingCodeOutput)
       .setTraceTree(MyFlags.TraceWritingCodeOutput)
       .setMinimizeBlockSize(MyFlags.MinimizeCodeSize)
       .setFreezeEofAtExit(false)
       .writeBinary(Symtab, Output);
-  assert(false && "Still need extensions to CasmWriter!");
-  WriteCursor Pos(Output);
-  return Pos;
-#else
-  BinaryWriter Writer(Output, Symtab);
-  Writer.setFreezeEofOnDestruct(false);
-  bool OldTraceProgress = false;
-  if (MyFlags.TraceWritingCodeOutput) {
-    auto Trace = getTracePtr();
-    OldTraceProgress = Trace->getTraceProgress();
-    Trace->setTraceProgress(true);
-    Writer.setTrace(Trace);
-  }
-  Writer.setMinimizeBlockSize(MyFlags.MinimizeCodeSize);
-  Writer.write(dyn_cast<FileNode>(Symtab->getInstalledRoot()));
-  if (MyFlags.TraceWritingCodeOutput)
-    getTracePtr()->setTraceProgress(OldTraceProgress);
-  return Writer.getWritePos();
-#endif
 }
 
 void IntCompressor::writeDataOutput(const WriteCursor& StartPos,

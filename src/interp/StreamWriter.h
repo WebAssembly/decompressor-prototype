@@ -41,6 +41,8 @@ class StreamWriter : public Writer {
 
   void setPos(const decode::WriteCursor& NewPos) { Pos = NewPos; }
 
+  const decode::WriteCursor& getWritePos() const { return Pos; }
+
   void reset() OVERRIDE;
   decode::StreamType getStreamType() const OVERRIDE;
   bool writeUint8(uint8_t Value) OVERRIDE;

@@ -59,12 +59,14 @@ void CasmWriter::writeBinary(std::shared_ptr<SymbolTable> Symtab,
     ErrorsFound = true;
 }
 
-void CasmWriter::writeBinary(std::shared_ptr<SymbolTable> Symtab,
-                             std::shared_ptr<Queue> Output,
-                             std::shared_ptr<SymbolTable> AlgSymtab) {
+const WriteCursor& CasmWriter::writeBinary(
+    std::shared_ptr<SymbolTable> Symtab,
+    std::shared_ptr<Queue> Output,
+    std::shared_ptr<SymbolTable> AlgSymtab) {
   std::shared_ptr<IntStream> IntSeq = std::make_shared<IntStream>();
   writeBinary(Symtab, IntSeq);
-  std::shared_ptr<Writer> Writer = std::make_shared<StreamWriter>(Output);
+  auto StrmWriter = std::make_shared<StreamWriter>(Output);
+  std::shared_ptr<Writer> Writer = StrmWriter;
   Writer->setMinimizeBlockSize(MinimizeBlockSize);
   if (TraceTree) {
     auto Tee = std::make_shared<TeeWriter>();
@@ -84,12 +86,14 @@ void CasmWriter::writeBinary(std::shared_ptr<SymbolTable> Symtab,
   Reader->algorithmReadBackFilled();
   if (Reader->errorsFound())
     ErrorsFound = true;
+  return StrmWriter->getWritePos();
 }
 
 #if WASM_BOOT == 0
-void CasmWriter::writeBinary(std::shared_ptr<filt::SymbolTable> Symtab,
-                             std::shared_ptr<Queue> Output) {
-  writeBinary(Symtab, Output, getAlgcasm0x0Symtab());
+const WriteCursor& CasmWriter::writeBinary(
+    std::shared_ptr<filt::SymbolTable> Symtab,
+    std::shared_ptr<Queue> Output) {
+  return writeBinary(Symtab, Output, getAlgcasm0x0Symtab());
 }
 #endif
 
