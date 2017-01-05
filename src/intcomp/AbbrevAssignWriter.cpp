@@ -99,6 +99,11 @@ bool AbbrevAssignWriter::writeValue(decode::IntType Value, const filt::Node*) {
   return true;
 }
 
+bool AbbrevAssignWriter::writeHeaderValue(decode::IntType Value,
+                                          interp::IntTypeFormat Format) {
+  return Writer.writeHeaderValue(Value, Format);
+}
+
 bool AbbrevAssignWriter::writeAction(const filt::CallbackNode* Action) {
   const auto* Sym = dyn_cast<SymbolNode>(Action->getKid(0));
   if (Sym == nullptr)

@@ -45,7 +45,11 @@ class AbbreviationCodegen {
   interp::IntTypeFormat AbbrevFormat;
   CountNode::PtrVector& Assignments;
   bool ToRead;
-  void generateFile();
+  filt::Node* generateCasmFileHeader();
+  filt::Node* generateWasmFileHeader();
+  filt::Node* generateVoidFileHeader();
+  void generateFile(filt::Node* SourceHeader,
+                    filt::Node* TargetHeader);
   filt::Node* generateFileBody();
   filt::Node* generateFileFcn();
   filt::Node* generateAbbreviationRead();

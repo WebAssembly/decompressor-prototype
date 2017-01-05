@@ -121,6 +121,12 @@ void IntCompressor::readInput() {
 
 const WriteCursor IntCompressor::writeCodeOutput(
     std::shared_ptr<SymbolTable> Symtab) {
+#if 0
+  {
+    TextWriter Writer;
+    Writer.write(stderr, Symtab.get());
+  }
+#endif
   BinaryWriter Writer(Output, Symtab);
   Writer.setFreezeEofOnDestruct(false);
   bool OldTraceProgress = false;
@@ -139,12 +145,18 @@ const WriteCursor IntCompressor::writeCodeOutput(
 
 void IntCompressor::writeDataOutput(const WriteCursor& StartPos,
                                     std::shared_ptr<SymbolTable> Symtab) {
+#if 0
+  {
+    TextWriter Writer;
+    Writer.write(stderr, Symtab.get());
+  }
+#endif
   StreamWriter Writer(Output);
   Writer.setPos(StartPos);
   IntReader Reader(IntOutput, Writer, Symtab);
   if (MyFlags.TraceWritingDataOutput)
     Reader.getTrace().setTraceProgress(true);
-  Reader.insertFileVersion(WasmBinaryMagic, WasmBinaryVersionD);
+  Reader.useFileHeader(Symtab->getInstalledHeader());
   Reader.algorithmStart();
   Reader.algorithmReadBackFilled();
   bool Successful = Reader.isFinished() && Reader.isSuccessful();
@@ -223,7 +235,7 @@ void IntCompressor::compress() {
   TRACE(size_t, "Number of integers in compressed output",
         IntOutput->getNumIntegers());
   if (MyFlags.TraceCompressedIntOutput)
-    IntOutput->describe(stderr, "Input int stream");
+    IntOutput->describe(stderr, "Output int stream");
   TRACE_MESSAGE("Appending compression algorithm to output");
   const WriteCursor Pos =
       writeCodeOutput(generateCodeForReading(AbbrevAssignments));
