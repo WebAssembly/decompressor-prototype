@@ -35,7 +35,7 @@ class IntWriter : public Writer {
   IntWriter& operator=(const IntWriter&) = delete;
 
  public:
-  IntWriter(std::shared_ptr<IntStream> Output) : Output(Output), Pos(Output) {}
+  IntWriter(std::shared_ptr<IntStream> Output);
   ~IntWriter() OVERRIDE {}
   void reset() OVERRIDE;
   decode::StreamType getStreamType() const OVERRIDE;
@@ -53,6 +53,8 @@ class IntWriter : public Writer {
   bool writeAction(const filt::CallbackNode* Action) OVERRIDE;
 
   utils::TraceClass::ContextPtr getTraceContext() OVERRIDE;
+
+  virtual void describeState(FILE* File);
 
  private:
   std::shared_ptr<IntStream> Output;

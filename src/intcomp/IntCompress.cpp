@@ -61,6 +61,8 @@ IntCompressor::IntCompressor(std::shared_ptr<decode::Queue> Input,
       MyFlags(MyFlags),
       Symtab(Symtab),
       ErrorsFound(false) {
+  if (MyFlags.TraceCompression)
+    setTraceProgress(true);
 }
 
 void IntCompressor::setTrace(std::shared_ptr<TraceClass> NewTrace) {
@@ -98,10 +100,17 @@ const WriteCursor IntCompressor::writeCodeOutput(
     std::shared_ptr<SymbolTable> Symtab) {
   BinaryWriter Writer(Output, Symtab);
   Writer.setFreezeEofOnDestruct(false);
-  if (MyFlags.TraceWritingCodeOutput)
-    Writer.getTrace().setTraceProgress(true);
+  bool OldTraceProgress = false;
+  if (MyFlags.TraceWritingCodeOutput) {
+    auto Trace = getTracePtr();
+    OldTraceProgress = Trace->getTraceProgress();
+    Trace->setTraceProgress(true);
+    Writer.setTrace(Trace);
+  }
   Writer.setMinimizeBlockSize(MyFlags.MinimizeCodeSize);
   Writer.write(dyn_cast<FileNode>(Symtab->getInstalledRoot()));
+  if (MyFlags.TraceWritingCodeOutput)
+    getTracePtr()->setTraceProgress(OldTraceProgress);
   return Writer.getWritePos();
 }
 
@@ -135,6 +144,7 @@ bool IntCompressor::compressUpToSize(size_t Size) {
   CountWriter Writer(getRoot());
   Writer.setCountCutoff(MyFlags.CountCutoff);
   Writer.setUpToSize(Size);
+
   IntReader Reader(Contents, Writer, Symtab);
   if (MyFlags.TraceReadingIntStream)
     Reader.getTrace().setTraceProgress(true);
@@ -154,6 +164,7 @@ void IntCompressor::removeSmallUsageCounts() {
 
 void IntCompressor::compress(DetailLevel Level) {
   TRACE_METHOD("compress");
+  TRACE_MESSAGE("Reading input");
   readInput();
   if (errorsFound()) {
     fprintf(stderr, "Unable to decompress, input malformed");
@@ -177,23 +188,27 @@ void IntCompressor::compress(DetailLevel Level) {
   }
   if (Level >= DetailLevel::MoreDetail)
     describe(stderr, makeFlags(CollectionFlag::IntPaths));
+  TRACE_MESSAGE("Assigning (initial) abbreviations to integer sequences");
   CountNode::PtrVector AbbrevAssignments;
   assignInitialAbbreviations(AbbrevAssignments);
   if (Level >= DetailLevel::MoreDetail)
     describe(stderr, makeFlags(CollectionFlag::All));
   IntOutput = std::make_shared<IntStream>();
+  TRACE_MESSAGE("Generating compressed integer stream");
   if (!generateIntOutput())
     return;
   TRACE(size_t, "Number of integers in compressed output",
         IntOutput->getNumIntegers());
   if (Level >= DetailLevel::MoreDetail)
     IntOutput->describe(stderr, "Input int stream");
+  TRACE_MESSAGE("Appending compression algorithm to output");
   const WriteCursor Pos =
       writeCodeOutput(generateCodeForReading(AbbrevAssignments));
   if (errorsFound()) {
     fprintf(stderr, "Unable to compress, output malformed\n");
     return;
   }
+  TRACE_MESSAGE("Appending compressed WASM file to output");
   writeDataOutput(Pos, generateCodeForWriting(AbbrevAssignments));
   if (errorsFound()) {
     fprintf(stderr, "Unable to compress, output malformed\n");
@@ -214,13 +229,8 @@ bool IntCompressor::generateIntOutput() {
   AbbrevAssignWriter Writer(Root, IntOutput, MyFlags.LengthLimit,
                             MyFlags.AbbrevFormat);
   IntReader Reader(Contents, Writer, Symtab);
-  if (MyFlags.TraceIntStreamGeneration) {
-    std::shared_ptr<TraceClass> Trace = Writer.getTracePtr();
-    Reader.setTrace(Trace);
-    Writer.setTrace(Trace);
+  if (MyFlags.TraceIntStreamGeneration)
     Reader.getTrace().setTraceProgress(true);
-    Writer.getTrace().setTraceProgress(true);
-  }
   Reader.fastStart();
   Reader.fastReadBackFilled();
   assert(IntOutput->isFrozen());
@@ -235,7 +245,7 @@ std::shared_ptr<SymbolTable> IntCompressor::generateCode(
   std::shared_ptr<SymbolTable> Symtab = Codegen.getCodeSymtab(ToRead);
   if (Trace) {
     TextWriter Writer;
-    Writer.write(getTrace().getFile(), Symtab->getInstalledRoot());
+    Writer.write(stderr, Symtab->getInstalledRoot());
   }
   return Symtab;
 }

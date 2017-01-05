@@ -68,8 +68,12 @@ void IntReader::fastResume() {
       case Method::GetFile:
         switch (Frame.CallState) {
           case State::Enter:
-            for (auto Pair : Input->getHeader())
+            for (auto Pair : Input->getHeader()) {
+              IntType Value = readHeaderValue(Pair.second);
+              if (Value != Pair.first)
+                return failBadHeaderValue(Pair.first, Value, ValueFormat::Hexidecimal);
               Output.writeHeaderValue(Pair.first, Pair.second);
+            }
             LocalValues.push_back(Input->size());
             Frame.CallState = State::Exit;
             call(Method::ReadIntBlock, Frame.CallModifier, nullptr);
@@ -232,6 +236,8 @@ StreamType IntReader::getStreamType() {
 }
 
 bool IntReader::processedInputCorrectly() {
+  TRACE_METHOD("processedInputCurrectly");
+  TRACE(bool, "Return", Pos.atEnd());
   return Pos.atEnd();
 }
 
@@ -325,6 +331,7 @@ IntType IntReader::readHeaderValue(IntTypeFormat Format) {
          interp::getName(Format) + " but found " +
          interp::getName(Pair.second));
   }
+  TRACE(hex_IntType, "Value", Pair.first);
   return Pair.first;
 }
 

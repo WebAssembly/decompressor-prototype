@@ -159,6 +159,12 @@ void TraceClass::traceIntTypeInternal(const char* Name, IntType Value) {
   fputc('\n', File);
 }
 
+void TraceClass::traceHexIntTypeInternal(const char* Name, IntType Value) {
+  indent();
+  trace_value_label(Name);
+  fprintf(File, "%" PRIxMAX "\n", uintmax_t(Value));
+}
+
 void TraceClass::traceHexInternal(const char* Name, uintmax_t Value) {
   indent();
   trace_value_label(Name);
