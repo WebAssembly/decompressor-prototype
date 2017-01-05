@@ -172,7 +172,8 @@ Reader::Reader(Writer& Output, std::shared_ptr<filt::SymbolTable> Symtab)
       LocalsBase(0),
       LocalsBaseStack(LocalsBase),
       OpcodeLocalsStack(OpcodeLocals),
-      HeaderOverride(Symtab->getInstalledHeader()) {
+      HeaderOverride(Symtab->getInstalledHeader()),
+      FreezeEofAtExit(true) {
   CurSectionName.reserve(MaxExpectedSectionNameSize);
   FrameStack.reserve(DefaultStackSize);
   CallingEvalStack.reserve(DefaultStackSize);
@@ -385,7 +386,8 @@ void Reader::failInWriteOnlyMode() {
   fail("Method can only be processed in read mode");
 }
 
-void Reader::failBadHeaderValue(IntType WantedValue, IntType FoundValue,
+void Reader::failBadHeaderValue(IntType WantedValue,
+                                IntType FoundValue,
                                 ValueFormat Format) {
   if (WantedValue != FoundValue) {
     fprintf(stderr, "Expected header value ");
@@ -1205,7 +1207,7 @@ void Reader::algorithmResume() {
             break;
           }
           case State::Exit:
-            if (!Output.writeFreezeEof())
+            if (FreezeEofAtExit && !Output.writeFreezeEof())
               return failFreezingEof();
             popAndReturn();
             break;

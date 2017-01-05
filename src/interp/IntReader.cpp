@@ -71,7 +71,8 @@ void IntReader::fastResume() {
             for (auto Pair : Input->getHeader()) {
               IntType Value = readHeaderValue(Pair.second);
               if (Value != Pair.first)
-                return failBadHeaderValue(Pair.first, Value, ValueFormat::Hexidecimal);
+                return failBadHeaderValue(Pair.first, Value,
+                                          ValueFormat::Hexidecimal);
               Output.writeHeaderValue(Pair.first, Pair.second);
             }
             LocalValues.push_back(Input->size());
@@ -79,7 +80,7 @@ void IntReader::fastResume() {
             call(Method::ReadIntBlock, Frame.CallModifier, nullptr);
             break;
           case State::Exit:
-            if (!Output.writeFreezeEof())
+            if (FreezeEofAtExit && !Output.writeFreezeEof())
               return failFreezingEof();
             popAndReturn();
             break;
@@ -236,8 +237,6 @@ StreamType IntReader::getStreamType() {
 }
 
 bool IntReader::processedInputCorrectly() {
-  TRACE_METHOD("processedInputCurrectly");
-  TRACE(bool, "Return", Pos.atEnd());
   return Pos.atEnd();
 }
 

@@ -48,8 +48,7 @@ class AbbreviationCodegen {
   filt::Node* generateCasmFileHeader();
   filt::Node* generateWasmFileHeader();
   filt::Node* generateVoidFileHeader();
-  void generateFile(filt::Node* SourceHeader,
-                    filt::Node* TargetHeader);
+  void generateFile(filt::Node* SourceHeader, filt::Node* TargetHeader);
   filt::Node* generateFileBody();
   filt::Node* generateFileFcn();
   filt::Node* generateAbbreviationRead();

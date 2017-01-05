@@ -52,6 +52,8 @@ class Reader {
     HeaderOverride = Header;
   }
 
+  void setFreezeEofAtExit(bool NewValue) { FreezeEofAtExit = NewValue; }
+
   // Starts up decompression using a (file) algorithm.
   void algorithmStart();
 
@@ -242,6 +244,7 @@ class Reader {
   utils::ValueStack<OpcodeLocalsFrame> OpcodeLocalsStack;
 
   const filt::FileHeaderNode* HeaderOverride;
+  bool FreezeEofAtExit;
 
   virtual void reset();
 

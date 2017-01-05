@@ -60,6 +60,11 @@ class CasmWriter {
     return *this;
   }
 
+  CasmWriter& setFreezeEofAtExit(bool Value) {
+    FreezeEofAtExit = Value;
+    return *this;
+  }
+
   CasmWriter& setTraceWriter(bool Value) {
     TraceWriter = Value;
     return *this;
@@ -77,6 +82,7 @@ class CasmWriter {
 
  private:
   bool MinimizeBlockSize;
+  bool FreezeEofAtExit;
   bool ErrorsFound;
   bool TraceWriter;
   bool TraceFlatten;

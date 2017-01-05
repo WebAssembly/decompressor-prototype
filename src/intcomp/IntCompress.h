@@ -38,7 +38,6 @@ class IntCompressor FINAL {
   IntCompressor& operator=(const IntCompressor&) = delete;
 
  public:
-
   struct Flags {
     uint64_t CountCutoff;
     uint64_t WeightCutoff;

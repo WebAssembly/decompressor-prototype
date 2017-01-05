@@ -60,7 +60,9 @@ namespace utils {
 const size_t ArgsParser::TabWidth = 8;
 const size_t ArgsParser::MaxLine = 79;  // allow for trailing space character.
 
-void ArgsParser::endLineIfOver(FILE* Out, const size_t TabSize, size_t& Indent) {
+void ArgsParser::endLineIfOver(FILE* Out,
+                               const size_t TabSize,
+                               size_t& Indent) {
   if (Indent >= TabSize) {
     fputc('\n', Out);
     Indent = 0;
@@ -79,8 +81,10 @@ void ArgsParser::writeNewline(FILE* Out, size_t& Indent) {
   Indent = 0;
 }
 
-void ArgsParser::writeChar(FILE* Out, const size_t TabSize, size_t& Indent,
-                            char Ch) {
+void ArgsParser::writeChar(FILE* Out,
+                           const size_t TabSize,
+                           size_t& Indent,
+                           char Ch) {
   if (Indent >= MaxLine) {
     writeNewline(Out, Indent);
   }
@@ -109,25 +113,25 @@ void ArgsParser::writeChar(FILE* Out, const size_t TabSize, size_t& Indent,
 }
 
 void ArgsParser::writeChunk(FILE* Out,
-                const size_t TabSize,
-                size_t& Indent,
-                charstring String,
-                size_t Chunk) {
+                            const size_t TabSize,
+                            size_t& Indent,
+                            charstring String,
+                            size_t Chunk) {
   for (size_t i = 0; i < Chunk; ++i)
     writeChar(Out, TabSize, Indent, String[i]);
 }
 
 void ArgsParser::writeCharstring(FILE* Out,
-                     const size_t TabSize,
-                     size_t& Indent,
-                     charstring String) {
+                                 const size_t TabSize,
+                                 size_t& Indent,
+                                 charstring String) {
   writeChunk(Out, TabSize, Indent, String, strlen(String));
 }
 
 void ArgsParser::writeSize_t(FILE* Out,
-                 const size_t TabSize,
-                 size_t& Indent,
-                 size_t Value) {
+                             const size_t TabSize,
+                             size_t& Indent,
+                             size_t Value) {
   if (Indent + sizeof(size_t) >= MaxLine) {
     writeNewline(Out, Indent);
     indentTo(Out, TabSize, Indent);
@@ -136,9 +140,9 @@ void ArgsParser::writeSize_t(FILE* Out,
 }
 
 void ArgsParser::printDescriptionContinue(FILE* Out,
-                              const size_t TabSize,
-                              size_t& Indent,
-                              charstring Description) {
+                                          const size_t TabSize,
+                                          size_t& Indent,
+                                          charstring Description) {
   charstring Whitespace = " \t\n";
   while (Description && *Description != '\0') {
     bool LoopApplied = false;
@@ -166,9 +170,9 @@ void ArgsParser::printDescriptionContinue(FILE* Out,
 }
 
 void ArgsParser::printDescription(FILE* Out,
-                      const size_t TabSize,
-                      size_t& Indent,
-                      charstring Description) {
+                                  const size_t TabSize,
+                                  size_t& Indent,
+                                  charstring Description) {
   if (Description && *Description != '\0')
     endLineIfOver(Out, TabSize, Indent);
   printDescriptionContinue(Out, TabSize, Indent, Description);
@@ -272,8 +276,8 @@ bool ArgsParser::Optional<bool>::select(charstring OptionValue) {
 
 template <>
 void ArgsParser::Optional<bool>::describeDefault(FILE* Out,
-                                                    size_t TabSize,
-                                                    size_t& Indent) const {
+                                                 size_t TabSize,
+                                                 size_t& Indent) const {
   printDescriptionContinue(Out, TabSize, Indent, " (default is ");
   printDescriptionContinue(Out, TabSize, Indent,
                            DefaultValue ? "true" : "false");
@@ -327,7 +331,7 @@ void ArgsParser::Optional<uint32_t>::describeDefault(FILE* Out,
   printDescriptionContinue(Out, TabSize, Indent, ")");
 }
 
-template<>
+template <>
 bool ArgsParser::SetValue<uint32_t>::select(charstring OptionValue) {
   Value = SelectValue;
   return false;
