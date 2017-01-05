@@ -109,28 +109,40 @@ class ArgsParser {
     static void writeNewline(FILE* Out, size_t& Indent) {
       ArgsParser::writeNewline(Out, Indent);
     }
-    static void writeChar(FILE* Out, const size_t TabSize,
-                          size_t& Indent, char Ch) {
+    static void writeChar(FILE* Out,
+                          const size_t TabSize,
+                          size_t& Indent,
+                          char Ch) {
       ArgsParser::writeChar(Out, TabSize, Indent, Ch);
     }
-    static void writeChunk(FILE* Out, const size_t TabSize, size_t& Indent,
-                           charstring String, size_t Chunk) {
+    static void writeChunk(FILE* Out,
+                           const size_t TabSize,
+                           size_t& Indent,
+                           charstring String,
+                           size_t Chunk) {
       ArgsParser::writeChunk(Out, TabSize, Indent, String, Chunk);
     }
-    static void writeCharstring(FILE* Out, const size_t TabSize, size_t& Indent,
+    static void writeCharstring(FILE* Out,
+                                const size_t TabSize,
+                                size_t& Indent,
                                 charstring String) {
       ArgsParser::writeCharstring(Out, TabSize, Indent, String);
     }
-    static void writeSize_t(FILE* Out, const size_t TabSize, size_t& Indent,
+    static void writeSize_t(FILE* Out,
+                            const size_t TabSize,
+                            size_t& Indent,
                             size_t Value) {
       ArgsParser::writeSize_t(Out, TabSize, Indent, Value);
     }
     static void printDescriptionContinue(FILE* Out,
-                                         const size_t TabSize, size_t& Indent,
+                                         const size_t TabSize,
+                                         size_t& Indent,
                                          charstring Description) {
       ArgsParser::printDescriptionContinue(Out, TabSize, Indent, Description);
     }
-    static void printDescription(FILE* Out, size_t TabSize, size_t& Indent,
+    static void printDescription(FILE* Out,
+                                 size_t TabSize,
+                                 size_t& Indent,
                                  charstring Description) {
       ArgsParser::printDescription(Out, TabSize, Indent, Description);
     }
@@ -294,17 +306,30 @@ class ArgsParser {
   static void endLineIfOver(FILE* Out, const size_t TabSize, size_t& Indent);
   static void indentTo(FILE* Out, const size_t TabSize, size_t& Indent);
   static void writeNewline(FILE* Out, size_t& Indent);
-  static void writeChar(FILE* Out, const size_t TabSize, size_t& Indent, char Ch);
-  static void writeChunk(FILE* Out, const size_t TabSize, size_t& Indent,
-                         charstring String, size_t Chunk);
-  static void writeCharstring(FILE* Out, const size_t TabSize, size_t& Indent,
+  static void writeChar(FILE* Out,
+                        const size_t TabSize,
+                        size_t& Indent,
+                        char Ch);
+  static void writeChunk(FILE* Out,
+                         const size_t TabSize,
+                         size_t& Indent,
+                         charstring String,
+                         size_t Chunk);
+  static void writeCharstring(FILE* Out,
+                              const size_t TabSize,
+                              size_t& Indent,
                               charstring String);
-  static void writeSize_t(FILE* Out, const size_t TabSize, size_t& Indent,
+  static void writeSize_t(FILE* Out,
+                          const size_t TabSize,
+                          size_t& Indent,
                           size_t Value);
   static void printDescriptionContinue(FILE* Out,
-                                       const size_t TabSize, size_t& Indent,
+                                       const size_t TabSize,
+                                       size_t& Indent,
                                        charstring Description);
-  static void printDescription(FILE* Out, size_t TabSize, size_t& Indent,
+  static void printDescription(FILE* Out,
+                               size_t TabSize,
+                               size_t& Indent,
                                charstring Description);
 };
 

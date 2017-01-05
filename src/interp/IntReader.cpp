@@ -71,7 +71,8 @@ void IntReader::fastResume() {
             for (auto Pair : Input->getHeader()) {
               IntType Value = readHeaderValue(Pair.second);
               if (Value != Pair.first)
-                return failBadHeaderValue(Pair.first, Value, ValueFormat::Hexidecimal);
+                return failBadHeaderValue(Pair.first, Value,
+                                          ValueFormat::Hexidecimal);
               Output.writeHeaderValue(Pair.first, Pair.second);
             }
             LocalValues.push_back(Input->size());

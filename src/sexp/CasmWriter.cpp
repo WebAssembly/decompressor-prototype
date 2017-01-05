@@ -40,6 +40,7 @@ namespace decode {
 
 CasmWriter::CasmWriter()
     : MinimizeBlockSize(true),
+      FreezeEofAtExit(true),
       ErrorsFound(false),
       TraceWriter(false),
       TraceFlatten(false),
@@ -72,6 +73,7 @@ void CasmWriter::writeBinary(std::shared_ptr<SymbolTable> Symtab,
     Writer = Tee;
   }
   auto Reader = std::make_shared<IntReader>(IntSeq, *Writer, AlgSymtab);
+  Reader->setFreezeEofAtExit(FreezeEofAtExit);
   if (TraceWriter || TraceTree) {
     auto Trace = std::make_shared<TraceClass>("CasmWriter");
     Trace->setTraceProgress(true);

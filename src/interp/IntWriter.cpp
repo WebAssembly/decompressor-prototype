@@ -27,7 +27,8 @@ using namespace utils;
 namespace interp {
 
 IntWriter::IntWriter(std::shared_ptr<IntStream> Output)
-    : Output(Output), Pos(Output) {}
+    : Output(Output), Pos(Output) {
+}
 
 void IntWriter::reset() {
   Output->reset();

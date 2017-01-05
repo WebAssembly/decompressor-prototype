@@ -38,12 +38,7 @@ using namespace wasm;
 
 namespace {
 
-charstring CollectionFlagsName[] = {
-  "None",
-  "TopLevel",
-  "IntPaths",
-  "All"
-};
+charstring CollectionFlagsName[] = {"None", "TopLevel", "IntPaths", "All"};
 
 }  // end of anonymous namespace
 
@@ -73,7 +68,8 @@ IntCompressor::Flags::Flags()
       TraceIntCounts(false),
       TraceSequenceCounts(false),
       TraceAbbreviationAssignments(false),
-      TraceCompressedIntOutput(false) {}
+      TraceCompressedIntOutput(false) {
+}
 
 IntCompressor::IntCompressor(std::shared_ptr<decode::Queue> Input,
                              std::shared_ptr<decode::Queue> Output,
@@ -126,6 +122,7 @@ const WriteCursor IntCompressor::writeCodeOutput(
   Writer.setTraceWriter(MyFlags.TraceWritingCodeOutput)
       .setTraceTree(MyFlags.TraceWritingCodeOutput)
       .setMinimizeBlockSize(MyFlags.MinimizeCodeSize)
+      .setFreezeEofAtExit(false)
       .writeBinary(Symtab, Output);
   assert(false && "Still need extensions to CasmWriter!");
   WriteCursor Pos(Output);

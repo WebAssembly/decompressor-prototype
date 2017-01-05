@@ -386,7 +386,8 @@ void Reader::failInWriteOnlyMode() {
   fail("Method can only be processed in read mode");
 }
 
-void Reader::failBadHeaderValue(IntType WantedValue, IntType FoundValue,
+void Reader::failBadHeaderValue(IntType WantedValue,
+                                IntType FoundValue,
                                 ValueFormat Format) {
   if (WantedValue != FoundValue) {
     fprintf(stderr, "Expected header value ");
