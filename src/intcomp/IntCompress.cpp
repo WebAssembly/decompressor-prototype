@@ -18,13 +18,14 @@
 
 #include "intcomp/IntCompress.h"
 
-#include "binary/BinaryWriter.h"
+//#include "binary/BinaryWriter.h"
 #include "intcomp/AbbrevAssignWriter.h"
 #include "intcomp/AbbreviationCodegen.h"
 #include "intcomp/AbbreviationsCollector.h"
 #include "intcomp/CountWriter.h"
 #include "intcomp/RemoveNodesVisitor.h"
 #include "interp/IntReader.h"
+#include "sexp/CasmWriter.h"
 #include "sexp/TextWriter.h"
 #include "utils/ArgsParse.h"
 
@@ -121,12 +122,16 @@ void IntCompressor::readInput() {
 
 const WriteCursor IntCompressor::writeCodeOutput(
     std::shared_ptr<SymbolTable> Symtab) {
-#if 0
-  {
-    TextWriter Writer;
-    Writer.write(stderr, Symtab.get());
-  }
-#endif
+#if 1
+  CasmWriter Writer;
+  Writer.setTraceWriter(MyFlags.TraceWritingCodeOutput)
+      .setTraceTree(MyFlags.TraceWritingCodeOutput)
+      .setMinimizeBlockSize(MyFlags.MinimizeCodeSize)
+      .writeBinary(Symtab, Output);
+  assert(false && "Still need extensions to CasmWriter!");
+  WriteCursor Pos(Output);
+  return Pos;
+#else
   BinaryWriter Writer(Output, Symtab);
   Writer.setFreezeEofOnDestruct(false);
   bool OldTraceProgress = false;
@@ -141,16 +146,11 @@ const WriteCursor IntCompressor::writeCodeOutput(
   if (MyFlags.TraceWritingCodeOutput)
     getTracePtr()->setTraceProgress(OldTraceProgress);
   return Writer.getWritePos();
+#endif
 }
 
 void IntCompressor::writeDataOutput(const WriteCursor& StartPos,
                                     std::shared_ptr<SymbolTable> Symtab) {
-#if 0
-  {
-    TextWriter Writer;
-    Writer.write(stderr, Symtab.get());
-  }
-#endif
   StreamWriter Writer(Output);
   Writer.setPos(StartPos);
   IntReader Reader(IntOutput, Writer, Symtab);
