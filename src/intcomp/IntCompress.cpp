@@ -26,6 +26,7 @@
 #include "intcomp/RemoveNodesVisitor.h"
 #include "interp/IntReader.h"
 #include "sexp/TextWriter.h"
+#include "utils/ArgsParse.h"
 
 namespace wasm {
 
@@ -33,8 +34,26 @@ using namespace decode;
 using namespace filt;
 using namespace interp;
 using namespace utils;
+using namespace wasm;
+
+namespace {
+
+charstring CollectionFlagsName[] = {
+  "None",
+  "TopLevel",
+  "IntPaths",
+  "All"
+};
+
+}  // end of anonymous namespace
 
 namespace intcomp {
+
+charstring getName(CollectionFlags Flags) {
+  if (Flags < size(CollectionFlagsName))
+    return CollectionFlagsName[Flags];
+  return "UnknownCollectionFlags";
+}
 
 IntCompressor::Flags::Flags()
     : CountCutoff(0),
@@ -49,8 +68,12 @@ IntCompressor::Flags::Flags()
       TraceCompression(false),
       TraceIntStreamGeneration(false),
       TraceCodeGenerationForReading(false),
-      TraceCodeGenerationForWriting(false) {
-}
+      TraceCodeGenerationForWriting(false),
+      TraceInputIntStream(false),
+      TraceIntCounts(false),
+      TraceSequenceCounts(false),
+      TraceAbbreviationAssignments(false),
+      TraceCompressedIntOutput(false) {}
 
 IntCompressor::IntCompressor(std::shared_ptr<decode::Queue> Input,
                              std::shared_ptr<decode::Queue> Output,
@@ -98,6 +121,12 @@ void IntCompressor::readInput() {
 
 const WriteCursor IntCompressor::writeCodeOutput(
     std::shared_ptr<SymbolTable> Symtab) {
+#if 0
+  {
+    TextWriter Writer;
+    Writer.write(stderr, Symtab.get());
+  }
+#endif
   BinaryWriter Writer(Output, Symtab);
   Writer.setFreezeEofOnDestruct(false);
   bool OldTraceProgress = false;
@@ -116,12 +145,18 @@ const WriteCursor IntCompressor::writeCodeOutput(
 
 void IntCompressor::writeDataOutput(const WriteCursor& StartPos,
                                     std::shared_ptr<SymbolTable> Symtab) {
+#if 0
+  {
+    TextWriter Writer;
+    Writer.write(stderr, Symtab.get());
+  }
+#endif
   StreamWriter Writer(Output);
   Writer.setPos(StartPos);
   IntReader Reader(IntOutput, Writer, Symtab);
   if (MyFlags.TraceWritingDataOutput)
     Reader.getTrace().setTraceProgress(true);
-  Reader.insertFileVersion(WasmBinaryMagic, WasmBinaryVersionD);
+  Reader.useFileHeader(Symtab->getInstalledHeader());
   Reader.algorithmStart();
   Reader.algorithmReadBackFilled();
   bool Successful = Reader.isFinished() && Reader.isSuccessful();
@@ -162,7 +197,7 @@ void IntCompressor::removeSmallUsageCounts() {
   Visitor.walk();
 }
 
-void IntCompressor::compress(DetailLevel Level) {
+void IntCompressor::compress() {
   TRACE_METHOD("compress");
   TRACE_MESSAGE("Reading input");
   readInput();
@@ -171,14 +206,14 @@ void IntCompressor::compress(DetailLevel Level) {
     return;
   }
   TRACE(size_t, "Number of integers in input", Contents->getNumIntegers());
-  if (Level == DetailLevel::AllDetail)
+  if (MyFlags.TraceInputIntStream)
     Contents->describe(stderr, "Input int stream");
   // Start by collecting number of occurrences of each integer, so
   // that we can use as a filter on integer sequence inclusion into the
   // trie.
   if (!compressUpToSize(1))
     return;
-  if (Level >= DetailLevel::MoreDetail)
+  if (MyFlags.TraceIntCounts)
     describe(stderr, makeFlags(CollectionFlag::TopLevel));
   removeSmallUsageCounts();
   if (MyFlags.LengthLimit > 1) {
@@ -186,12 +221,12 @@ void IntCompressor::compress(DetailLevel Level) {
       return;
     removeSmallUsageCounts();
   }
-  if (Level >= DetailLevel::MoreDetail)
+  if (MyFlags.TraceSequenceCounts)
     describe(stderr, makeFlags(CollectionFlag::IntPaths));
   TRACE_MESSAGE("Assigning (initial) abbreviations to integer sequences");
   CountNode::PtrVector AbbrevAssignments;
   assignInitialAbbreviations(AbbrevAssignments);
-  if (Level >= DetailLevel::MoreDetail)
+  if (MyFlags.TraceAbbreviationAssignments)
     describe(stderr, makeFlags(CollectionFlag::All));
   IntOutput = std::make_shared<IntStream>();
   TRACE_MESSAGE("Generating compressed integer stream");
@@ -199,8 +234,8 @@ void IntCompressor::compress(DetailLevel Level) {
     return;
   TRACE(size_t, "Number of integers in compressed output",
         IntOutput->getNumIntegers());
-  if (Level >= DetailLevel::MoreDetail)
-    IntOutput->describe(stderr, "Input int stream");
+  if (MyFlags.TraceCompressedIntOutput)
+    IntOutput->describe(stderr, "Output int stream");
   TRACE_MESSAGE("Appending compression algorithm to output");
   const WriteCursor Pos =
       writeCodeOutput(generateCodeForReading(AbbrevAssignments));

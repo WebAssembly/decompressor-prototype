@@ -38,6 +38,7 @@ class IntCompressor FINAL {
   IntCompressor& operator=(const IntCompressor&) = delete;
 
  public:
+
   struct Flags {
     uint64_t CountCutoff;
     uint64_t WeightCutoff;
@@ -52,6 +53,11 @@ class IntCompressor FINAL {
     bool TraceIntStreamGeneration;
     bool TraceCodeGenerationForReading;
     bool TraceCodeGenerationForWriting;
+    bool TraceInputIntStream;
+    bool TraceIntCounts;
+    bool TraceSequenceCounts;
+    bool TraceAbbreviationAssignments;
+    bool TraceCompressedIntOutput;
     std::shared_ptr<utils::TraceClass> Trace;
     Flags();
   };
@@ -65,11 +71,9 @@ class IntCompressor FINAL {
 
   bool errorsFound() const { return ErrorsFound; }
 
-  enum DetailLevel { NoDetail, SomeDetail, MoreDetail, AllDetail };
-
   std::shared_ptr<RootCountNode> getRoot();
 
-  void compress(DetailLevel Level = NoDetail);
+  void compress();
 
   void setTraceProgress(bool NewValue) {
     // TODO: Don't force creation of trace object if not needed.

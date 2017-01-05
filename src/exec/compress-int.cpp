@@ -47,7 +47,6 @@ std::shared_ptr<RawStream> getOutput() {
 
 int main(int Argc, const char* Argv[]) {
   charstring AlgorithmFilename = nullptr;
-  bool Verbose = false;
   IntCompressor::Flags CompressionFlags;
 
   {
@@ -101,11 +100,6 @@ int main(int Argc, const char* Argv[]) {
                      "execution time grows non-linearly when this value "
                      " is increased)"));
 
-    ArgsParser::Toggle VerboseFlag(Verbose);
-    Args.add(VerboseFlag.setShortName('v')
-                 .setLongName("verbose")
-                 .setDescription("Show progress of compression"));
-
     ArgsParser::Optional<bool> TraceReadingInputFlag(
         CompressionFlags.TraceReadingInput);
     Args.add(
@@ -149,10 +143,36 @@ int main(int Argc, const char* Argv[]) {
 
     ArgsParser::Optional<bool> TraceCompressionFlag(
         CompressionFlags.TraceCompression);
-    Args.add(TraceCompressionFlag.setLongName("verbose=compress")
+    Args.add(TraceCompressionFlag.setShortName('v').setLongName("verbose")
                  .setDescription(
-                     "Show details on how patterns are detected for "
-                     "compressing the (input) integer sequence"));
+                     "Show basic details on how the input is comverted to "
+                     "the corresponding compressed output"));
+
+    ArgsParser::Optional<bool>
+        TraceInputIntStreamFlag(CompressionFlags.TraceInputIntStream);
+    Args.add(TraceInputIntStreamFlag.setLongName("verbose=int-input")
+             .setDescription("Show initial parsed integer stream"));
+
+    ArgsParser::Optional<bool>
+        TraceIntCountsFlag(CompressionFlags.TraceIntCounts);
+    Args.add(TraceIntCountsFlag.setLongName("verbose=int-counts")
+             .setDescription("Show frequency of integers in the input stream"));
+
+    ArgsParser::Optional<bool>
+        TraceSequenceCountsFlag(CompressionFlags.TraceSequenceCounts);
+    Args.add(TraceSequenceCountsFlag.setLongName("verbose=seq-counts")
+             .setDescription("Show frequency of integer sequences in the "
+                             "input stream"));
+
+    ArgsParser::Optional<bool> TraceAbbreviationAssignmentsFlag(
+        CompressionFlags.TraceAbbreviationAssignments);
+    Args.add(TraceAbbreviationAssignmentsFlag.setLongName("verbose=abbrev")
+             .setDescription("Show (initial) abbreviation assignments"));
+
+    ArgsParser::Optional<bool> TraceCompressedIntOutputFlag(
+        CompressionFlags.TraceCompressedIntOutput);
+    Args.add(TraceCompressedIntOutputFlag.setLongName("verbose=int-output")
+             .setDescription("Show generated compressed integer stream"));
 
     switch (Args.parse(Argc, Argv)) {
       case ArgsParser::State::Good:
@@ -172,8 +192,8 @@ int main(int Argc, const char* Argv[]) {
                            std::make_shared<WriteBackedQueue>(getOutput()),
                            getAlgwasm0xdSymtab(),
                            CompressionFlags);
-  Compressor.compress(Verbose ? IntCompressor::DetailLevel::SomeDetail
-                              : IntCompressor::DetailLevel::NoDetail);
+  Compressor.compress();
+
   if (Compressor.errorsFound()) {
     fatal("Failed to compress due to errors!");
     exit_status(EXIT_FAILURE);
