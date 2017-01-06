@@ -27,32 +27,6 @@ using namespace utils;
 
 namespace interp {
 
-SymbolTableSelector::SymbolTableSelector(std::shared_ptr<SymbolTable> Symtab,
-                                         bool DataSelector)
-    : AlgorithmSelector(Symtab->getTargetHeader(), DataSelector),
-      Symtab(Symtab),
-      StillGood(true)
-{}
-
-SymbolTableSelector::~SymbolTableSelector() {}
-
-std::shared_ptr<SymbolTable> SymbolTableSelector::getAlgorithm() {
-  assert(StillGood && "SymbolTableSelector getAlgorithm called more than once!");
-  StillGood = false;
-  return Symtab;
-}
-
-void Interpreter::addSelector(std::shared_ptr<AlgorithmSelector> Selector) {
-  Selectors.push_back(Selector);
-}
-
-void Interpreter::start() {
-  assert(!Selectors.empty());
-  // TODO(karlschimpf) Find correct symbol table to use.
-  Input.setSymbolTable(Selectors.front()->getAlgorithm());
-  Input.algorithmStart();
-}
-
 void Interpreter::setTraceProgress(bool NewValue) {
   if (!NewValue && !Trace)
     return;

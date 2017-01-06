@@ -98,6 +98,25 @@ struct {
 
 }  // end of anonymous namespace
 
+SymbolTableSelector::SymbolTableSelector(std::shared_ptr<SymbolTable> Symtab,
+                                         bool DataSelector)
+    : AlgorithmSelector(Symtab->getTargetHeader(), DataSelector),
+      Symtab(Symtab),
+      StillGood(true)
+{}
+
+SymbolTableSelector::~SymbolTableSelector() {}
+
+std::shared_ptr<SymbolTable> SymbolTableSelector::getAlgorithm() {
+  assert(StillGood && "SymbolTableSelector getAlgorithm called more than once!");
+  StillGood = false;
+  return Symtab;
+}
+
+void Reader::addSelector(std::shared_ptr<AlgorithmSelector> Selector) {
+  Selectors.push_back(Selector);
+}
+
 void Reader::setTraceProgress(bool NewValue) {
   if (!NewValue && !Trace)
     return;
@@ -441,6 +460,11 @@ void Reader::insertFileVersion(uint32_t NewMagicNumber, uint32_t NewVersion) {
 }
 
 void Reader::algorithmStart() {
+  if (!Symtab) {
+    assert(!Selectors.empty());
+    // TODO(karlschimpf) Find correct symbol table to use.
+    setSymbolTable(Selectors.front()->getAlgorithm());
+  }
   callTopLevel(Method::GetFile, nullptr);
   if (!Symtab)
     fail("Unable to read, no symbol table defined!");

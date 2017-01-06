@@ -35,45 +35,6 @@ class SymbolTable;
 
 namespace interp {
 
-class AlgorithmSelector
-    : public std::enable_shared_from_this<AlgorithmSelector> {
-  AlgorithmSelector() = delete;
-  AlgorithmSelector(const AlgorithmSelector&) = delete;
-  AlgorithmSelector& operator=(const AlgorithmSelector&) = delete;
-
- public:
-  explicit AlgorithmSelector(const filt::FileHeaderNode* TargetHeader,
-                             bool DataSelector = false)
-      : TargetHeader(TargetHeader), DataSelector(DataSelector) {}
-  virtual ~AlgorithmSelector() {}
-
-  const filt::FileHeaderNode* getTargetHeader() { return TargetHeader; }
-  virtual std::shared_ptr<filt::SymbolTable> getAlgorithm() = 0;
-  bool IsDataSelector() const { return DataSelector; }
-
- protected:
-  const filt::FileHeaderNode* TargetHeader;
-  bool DataSelector;
-};
-
-// TODO(karlschimpf): Replace this  with a better solution,  since This selector
-// can only be used once, since there is no symbol table copy.
-class SymbolTableSelector : public AlgorithmSelector {
-  SymbolTableSelector() = delete;
-  SymbolTableSelector(const SymbolTableSelector&) = delete;
-  SymbolTableSelector& operator=(const SymbolTableSelector&) = delete;
-
- public:
-  explicit SymbolTableSelector(std::shared_ptr<filt::SymbolTable> Symtab,
-                               bool DataSelector = false);
-  ~SymbolTableSelector() OVERRIDE;
-  std::shared_ptr<filt::SymbolTable> getAlgorithm() OVERRIDE;
-
- private:
-  std::shared_ptr<filt::SymbolTable> Symtab;
-  bool StillGood;
-};
-
 // Defines the algorithm interpreter for filter sections, and the
 // corresponding state associated with the interpreter.
 //
@@ -92,14 +53,16 @@ class Interpreter FINAL {
 
   ~Interpreter() {}
 
-  void start();
+  void start() { Input.algorithmStart(); }
   void resume() { Input.algorithmResume(); }
   void fail(const std::string& Message) { Input.fail(Message); }
   bool isFinished() const { return Input.isFinished(); }
   bool isSuccessful() const { return Input.isSuccessful(); }
   bool errorsFound() const { return Input.errorsFound(); }
 
-  void addSelector(std::shared_ptr<AlgorithmSelector> Selector);
+  void addSelector(std::shared_ptr<AlgorithmSelector> Selector) {
+    Input.addSelector(Selector);
+  }
 
   // Processes each section in input, and decompresses it (if applicable)
   // to the corresponding output.
@@ -122,7 +85,6 @@ class Interpreter FINAL {
   StreamReader Input;
   StreamWriter Output;
   std::shared_ptr<utils::TraceClass> Trace;
-  std::vector<std::shared_ptr<AlgorithmSelector>> Selectors;
 };
 
 }  // end of namespace interp.

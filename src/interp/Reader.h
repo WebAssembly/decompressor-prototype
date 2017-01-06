@@ -34,6 +34,45 @@ class TextWriter;
 
 namespace interp {
 
+class AlgorithmSelector
+    : public std::enable_shared_from_this<AlgorithmSelector> {
+  AlgorithmSelector() = delete;
+  AlgorithmSelector(const AlgorithmSelector&) = delete;
+  AlgorithmSelector& operator=(const AlgorithmSelector&) = delete;
+
+ public:
+  explicit AlgorithmSelector(const filt::FileHeaderNode* TargetHeader,
+                             bool DataSelector = false)
+      : TargetHeader(TargetHeader), DataSelector(DataSelector) {}
+  virtual ~AlgorithmSelector() {}
+
+  const filt::FileHeaderNode* getTargetHeader() { return TargetHeader; }
+  virtual std::shared_ptr<filt::SymbolTable> getAlgorithm() = 0;
+  bool IsDataSelector() const { return DataSelector; }
+
+ protected:
+  const filt::FileHeaderNode* TargetHeader;
+  bool DataSelector;
+};
+
+// TODO(karlschimpf): Replace this  with a better solution,  since This selector
+// can only be used once, since there is no symbol table copy.
+class SymbolTableSelector : public AlgorithmSelector {
+  SymbolTableSelector() = delete;
+  SymbolTableSelector(const SymbolTableSelector&) = delete;
+  SymbolTableSelector& operator=(const SymbolTableSelector&) = delete;
+
+ public:
+  explicit SymbolTableSelector(std::shared_ptr<filt::SymbolTable> Symtab,
+                               bool DataSelector = false);
+  ~SymbolTableSelector() OVERRIDE;
+  std::shared_ptr<filt::SymbolTable> getAlgorithm() OVERRIDE;
+
+ private:
+  std::shared_ptr<filt::SymbolTable> Symtab;
+  bool StillGood;
+};
+
 class Reader {
   Reader() = delete;
   Reader(const Reader&) = delete;
@@ -57,6 +96,8 @@ class Reader {
   }
 
   void setFreezeEofAtExit(bool NewValue) { FreezeEofAtExit = NewValue; }
+
+  void addSelector(std::shared_ptr<AlgorithmSelector> Selector);
 
   // Starts up decompression using a (file) algorithm.
   void algorithmStart();
@@ -190,6 +231,7 @@ class Reader {
 
   Writer& Output;
   std::shared_ptr<filt::SymbolTable> Symtab;
+  std::vector<std::shared_ptr<AlgorithmSelector>> Selectors;
   // True if magic number/file header should be read.
   bool ReadFileHeader;
   // The magic number of the input.
