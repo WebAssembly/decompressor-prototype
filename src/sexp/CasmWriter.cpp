@@ -81,7 +81,7 @@ const WriteCursor& CasmWriter::writeBinary(
     Trace->setTraceProgress(true);
     Reader->setTrace(Trace);
   }
-  Reader->useFileHeader(Symtab->getRootHeader());
+  Reader->useFileHeader(Symtab->getSourceHeader());
   Reader->algorithmStart();
   Reader->algorithmReadBackFilled();
   if (Reader->errorsFound())

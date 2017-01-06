@@ -172,7 +172,7 @@ Reader::Reader(Writer& Output, std::shared_ptr<filt::SymbolTable> Symtab)
       LocalsBase(0),
       LocalsBaseStack(LocalsBase),
       OpcodeLocalsStack(OpcodeLocals),
-      HeaderOverride(Symtab->getInstalledHeader()),
+      HeaderOverride(Symtab->getTargetHeader()),
       FreezeEofAtExit(true) {
   CurSectionName.reserve(MaxExpectedSectionNameSize);
   FrameStack.reserve(DefaultStackSize);

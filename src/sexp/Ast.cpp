@@ -324,7 +324,7 @@ SymbolTable::SymbolTable()
     // TODO(karlschimpf) Figure out why we can't deallocate Allocated!
     : Allocated(new std::vector<Node*>()),
       Root(nullptr),
-      InstalledHeader(nullptr),
+      TargetHeader(nullptr),
       Error(nullptr),
       NextCreationIndex(0),
       Predefined(new std::vector<SymbolNode*>()) {
@@ -506,7 +506,7 @@ void SymbolTable::installSubtreeCaches(Node* Nd,
     AdditionalNodes.push_back(Kid);
 }
 
-const FileHeaderNode* SymbolTable::getRootHeader() const {
+const FileHeaderNode* SymbolTable::getSourceHeader() const {
   if (Root == nullptr)
     return nullptr;
   return dyn_cast<FileHeaderNode>(Root->getKid(0));
@@ -521,10 +521,10 @@ void SymbolTable::installDefinitions(Node* Root) {
     default:
       return;
     case OpFile:
-      if (InstalledHeader == nullptr) {
-        InstalledHeader = dyn_cast<FileHeaderNode>(Root->getKid(1));
-        if (InstalledHeader == nullptr)
-          InstalledHeader = getRootHeader();
+      if (TargetHeader == nullptr) {
+        TargetHeader = dyn_cast<FileHeaderNode>(Root->getKid(1));
+        if (TargetHeader == nullptr)
+          TargetHeader = getSourceHeader();
       }
     // intentionally fall to next case.
     case OpSection:
