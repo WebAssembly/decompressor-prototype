@@ -167,10 +167,9 @@ extern "C" {
 
 void* create_decompressor() {
   auto* Decomp = new Decompressor();
-  Decomp->Symtab = getAlgwasm0xdSymtab();
   Decomp->Interp = std::make_shared<Interpreter>(
-      Decomp->Input, Decomp->OutputPipe.getInput(), Decomp->Symtab);
-  // Decomp->Interp->setTraceProgress(true);
+      Decomp->Input, Decomp->OutputPipe.getInput());
+  Decomp->Interp->addSelector(std::make_shared<SymbolTableSelector>(getAlgwasm0xdSymtab()));
   Decomp->Interp->start();
   return Decomp;
 }
