@@ -1320,25 +1320,6 @@ void Reader::algorithmReadBackFilled() {
   }
 }
 
-bool Reader::canFastRead() const {
-  return false;
-}
-
-void Reader::fastStart() {
-  // Default to non-fast read.
-  algorithmStart();
-}
-
-void Reader::fastResume() {
-  // Default to non-fast read.
-  algorithmResume();
-}
-
-void Reader::fastReadBackFilled() {
-  // Default to non-fast read.
-  algorithmReadBackFilled();
-}
-
 }  // end of namespace interp
 
 }  // end of namespace wasm

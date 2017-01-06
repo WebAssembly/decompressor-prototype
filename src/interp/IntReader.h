@@ -41,10 +41,15 @@ class IntReader : public Reader {
             std::shared_ptr<filt::SymbolTable> Symtab);
   ~IntReader() OVERRIDE;
 
-  bool canFastRead() const OVERRIDE;
-  virtual void fastStart() OVERRIDE;
-  virtual void fastResume() OVERRIDE;
-  virtual void fastReadBackFilled() OVERRIDE;
+  // Read based on structure of input integer stream.
+  void structuralStart();
+  void structuralResume();
+  void structuralReadBackFilled();
+
+  void structuralRead() {
+    structuralStart();
+    structuralReadBackFilled();
+  }
 
   utils::TraceClass::ContextPtr getTraceContext() OVERRIDE;
 
@@ -85,8 +90,6 @@ class IntReader : public Reader {
   uint64_t readVaruint64() OVERRIDE;
   decode::IntType readValue(const filt::Node* Format) OVERRIDE;
   decode::IntType readHeaderValue(interp::IntTypeFormat Format) OVERRIDE;
-
-  void fastReadBlock();
 };
 
 }  // end of namespace interp

@@ -70,17 +70,6 @@ class Reader {
     algorithmReadBackFilled();
   }
 
-  // Reads fast, if possible. Otherwise use algorithm read.
-  virtual bool canFastRead() const;
-  virtual void fastStart();
-  virtual void fastResume();
-  virtual void fastReadBackFilled();
-
-  void fastRead() {
-    fastStart();
-    fastReadBackFilled();
-  }
-
   // Check status of read.
   bool isFinished() const { return Frame.CallMethod == Method::Finished; }
   bool isSuccessful() const { return Frame.CallState == State::Succeeded; }

@@ -106,8 +106,7 @@ void IntCompressor::readInput() {
   StreamReader MyReader(Input, MyWriter, Symtab);
   if (MyFlags.TraceReadingInput)
     MyReader.getTrace().setTraceProgress(true);
-  MyReader.fastStart();
-  MyReader.fastReadBackFilled();
+  MyReader.algorithmRead();
   bool Successful = MyReader.isFinished() && MyReader.isSuccessful();
   if (!Successful)
     ErrorsFound = true;
@@ -159,8 +158,7 @@ bool IntCompressor::compressUpToSize(size_t Size) {
   IntReader Reader(Contents, Writer, Symtab);
   if (MyFlags.TraceReadingIntStream)
     Reader.getTrace().setTraceProgress(true);
-  Reader.fastStart();
-  Reader.fastReadBackFilled();
+  Reader.structuralRead();
   return !Reader.errorsFound();
 }
 
@@ -242,8 +240,7 @@ bool IntCompressor::generateIntOutput() {
   IntReader Reader(Contents, Writer, Symtab);
   if (MyFlags.TraceIntStreamGeneration)
     Reader.getTrace().setTraceProgress(true);
-  Reader.fastStart();
-  Reader.fastReadBackFilled();
+  Reader.structuralRead();
   assert(IntOutput->isFrozen());
   return !Reader.errorsFound();
 }
