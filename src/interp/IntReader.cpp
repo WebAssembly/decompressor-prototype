@@ -48,15 +48,11 @@ const char* IntReader::getDefaultTraceName() const {
   return "IntReader";
 }
 
-bool IntReader::canFastRead() const {
-  return true;
-}
-
-void IntReader::fastStart() {
+void IntReader::structuralStart() {
   algorithmStart();
 }
 
-void IntReader::fastResume() {
+void IntReader::structuralResume() {
   if (!canProcessMoreInputNow())
     return;
   while (stillMoreInputToProcessNow()) {
@@ -184,11 +180,11 @@ void IntReader::fastResume() {
   }
 }
 
-void IntReader::fastReadBackFilled() {
+void IntReader::structuralReadBackFilled() {
   readFillStart();
   while (!isFinished()) {
     readFillMoreInput();
-    fastResume();
+    structuralResume();
   }
 }
 
