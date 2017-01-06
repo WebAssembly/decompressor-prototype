@@ -18,7 +18,8 @@
 
 #include "algorithms/wasm0xd.h"
 #include "interp/Decompress.h"
-#include "interp/Interpreter.h"
+#include "interp/StreamReader.h"
+#include "interp/StreamWriter.h"
 #include "stream/Pipe.h"
 
 namespace wasm {
@@ -44,7 +45,8 @@ struct Decompressor {
   std::shared_ptr<WriteCursor2ReadQueue> InputPos;
   Pipe OutputPipe;
   std::shared_ptr<ReadCursor> OutputPos;
-  std::shared_ptr<Interpreter> Interp;
+  std::shared_ptr<StreamReader> Reader;
+  std::shared_ptr<StreamWriter> Writer;
   State MyState;
   Decompressor();
   uint8_t* getBuffer(int32_t Size);
@@ -54,8 +56,8 @@ struct Decompressor {
   int32_t getOutputSize() {
     return OutputPipe.getOutput()->fillSize() - OutputPos->getCurByteAddress();
   }
-  TraceClass& getTrace() { return Interp->getTrace(); }
-  void setTraceProgress(bool NewValue) { Interp->setTraceProgress(NewValue); }
+  TraceClass& getTrace() { return Reader->getTrace(); }
+  void setTraceProgress(bool NewValue) { Reader->setTraceProgress(NewValue); }
 
  private:
   int32_t flushOutput();
@@ -103,12 +105,12 @@ int32_t Decompressor::resume(int32_t Size) {
         }
       } else {
         if (InputPos->atEof()) {
-          Interp->fail("resume_decompression(" + std::to_string(Size) +
+          Reader->fail("resume_decompression(" + std::to_string(Size) +
                        "): can't add bytes when input closed");
           return fail();
         }
         if (Size > BufferSize) {
-          Interp->fail("resume_decompression(" + std::to_string(Size) +
+          Reader->fail("resume_decompression(" + std::to_string(Size) +
                        "): illegal size");
           return fail();
         }
@@ -117,13 +119,13 @@ int32_t Decompressor::resume(int32_t Size) {
         for (int32_t i = 0; i < Size; ++i)
           InputPos->writeByte(Buf[i]);
       }
-      Interp->resume();
-      if (Interp->errorsFound())
+      Reader->algorithmResume();
+      if (Reader->errorsFound())
         return fail();
-      if (!Interp->isFinished())
+      if (!Reader->isFinished())
         return getOutputSize();
       OutputPipe.getInput()->close();
-      if (!Interp->isSuccessful())
+      if (!Reader->isSuccessful())
         return fail();
       MyState = State::FlushingOutput;
       return flushOutput();
@@ -132,7 +134,7 @@ int32_t Decompressor::resume(int32_t Size) {
     case State::Succeeded:
       if (Size == 0)
         return DECOMPRESSOR_SUCCESS;
-      Interp->fail("resume_decompression(" + std::to_string(Size) +
+      Reader->fail("resume_decompression(" + std::to_string(Size) +
                    "): can't add bytes when input closed");
       break;
     case State::Failed:
@@ -167,10 +169,10 @@ extern "C" {
 
 void* create_decompressor() {
   auto* Decomp = new Decompressor();
-  Decomp->Interp = std::make_shared<Interpreter>(
-      Decomp->Input, Decomp->OutputPipe.getInput());
-  Decomp->Interp->addSelector(std::make_shared<SymbolTableSelector>(getAlgwasm0xdSymtab()));
-  Decomp->Interp->start();
+  Decomp->Writer = std::make_shared<StreamWriter>(Decomp->OutputPipe.getInput());
+  Decomp->Reader = std::make_shared<StreamReader>(Decomp->Input, *Decomp->Writer);
+  Decomp->Reader->addSelector(std::make_shared<SymbolTableSelector>(getAlgwasm0xdSymtab()));
+  Decomp->Reader->algorithmStart();
   return Decomp;
 }
 

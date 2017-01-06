@@ -23,6 +23,8 @@
 #include "interp/StreamWriter.h"
 #include "utils/Trace.h"
 
+#error("No longer supported");
+
 #include <memory>
 
 namespace wasm {

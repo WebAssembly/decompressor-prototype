@@ -17,7 +17,8 @@
 
 #include "algorithms/wasm0xd.h"
 #include "interp/Decompress.h"
-#include "interp/Interpreter.h"
+#include "interp/StreamReader.h"
+#include "interp/StreamWriter.h"
 #include "stream/FileReader.h"
 #include "stream/FileWriter.h"
 #include "stream/ReadBackedQueue.h"
@@ -175,8 +176,6 @@ int main(const int Argc, const char* Argv[]) {
       fprintf(stderr, "-t and --c-api options not allowed");
       return exit_status(EXIT_FAILURE);
     }
-    if (MinimizeBlockSize)
-      fprintf(stderr, "--c-api ignores -m option\n");
     return exit_status(runUsingCApi(Verbose >= 1));
   }
 
@@ -198,16 +197,18 @@ int main(const int Argc, const char* Argv[]) {
     }
     if (Verbose)
       fprintf(stderr, "Decompressing...\n");
-    Interpreter Decompressor(std::make_shared<ReadBackedQueue>(Input),
-                             std::make_shared<WriteBackedQueue>(Output));
-    Decompressor.addSelector(std::make_shared<SymbolTableSelector>(getAlgwasm0xdSymtab()));
-    Decompressor.setMinimizeBlockSize(MinimizeBlockSize);
+    std::shared_ptr<Queue> BackedOutput = std::make_shared<WriteBackedQueue>(Output);
+    interp::StreamWriter Writer(BackedOutput);
+    interp::StreamReader Decompressor(std::make_shared<ReadBackedQueue>(Input), Writer);
+    Decompressor.addSelector(
+        std::make_shared<SymbolTableSelector>(getAlgwasm0xdSymtab()));
+    Writer.setMinimizeBlockSize(MinimizeBlockSize);
     if (VerboseTrace) {
       auto Trace = std::make_shared<TraceClass>("Decompress");
       Trace->setTraceProgress(true);
       Decompressor.setTrace(Trace);
     }
-    Decompressor.decompress();
+    Decompressor.algorithmRead();
     if (Decompressor.errorsFound()) {
       fatal("Failed to decompress due to errors!");
       Succeeded = false;
