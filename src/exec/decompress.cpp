@@ -197,9 +197,11 @@ int main(const int Argc, const char* Argv[]) {
     }
     if (Verbose)
       fprintf(stderr, "Decompressing...\n");
-    std::shared_ptr<Queue> BackedOutput = std::make_shared<WriteBackedQueue>(Output);
+    std::shared_ptr<Queue> BackedOutput =
+        std::make_shared<WriteBackedQueue>(Output);
     interp::StreamWriter Writer(BackedOutput);
-    interp::StreamReader Decompressor(std::make_shared<ReadBackedQueue>(Input), Writer);
+    interp::StreamReader Decompressor(std::make_shared<ReadBackedQueue>(Input),
+                                      Writer);
     Decompressor.addSelector(
         std::make_shared<SymbolTableSelector>(getAlgwasm0xdSymtab()));
     Writer.setMinimizeBlockSize(MinimizeBlockSize);

@@ -35,8 +35,8 @@ class StreamReader : public Reader {
  public:
   StreamReader(std::shared_ptr<decode::Queue> Input,
                Writer& Output,
-               std::shared_ptr<filt::SymbolTable> Symtab
-               = std::shared_ptr<filt::SymbolTable>());
+               std::shared_ptr<filt::SymbolTable> Symtab =
+                   std::shared_ptr<filt::SymbolTable>());
   ~StreamReader() OVERRIDE;
   void startUsing(const decode::ReadCursor& ReadPos);
   decode::ReadCursor& getPos();

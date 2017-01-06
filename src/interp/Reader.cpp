@@ -102,13 +102,15 @@ SymbolTableSelector::SymbolTableSelector(std::shared_ptr<SymbolTable> Symtab,
                                          bool DataSelector)
     : AlgorithmSelector(Symtab->getTargetHeader(), DataSelector),
       Symtab(Symtab),
-      StillGood(true)
-{}
+      StillGood(true) {
+}
 
-SymbolTableSelector::~SymbolTableSelector() {}
+SymbolTableSelector::~SymbolTableSelector() {
+}
 
 std::shared_ptr<SymbolTable> SymbolTableSelector::getAlgorithm() {
-  assert(StillGood && "SymbolTableSelector getAlgorithm called more than once!");
+  assert(StillGood &&
+         "SymbolTableSelector getAlgorithm called more than once!");
   StillGood = false;
   return Symtab;
 }

@@ -169,9 +169,12 @@ extern "C" {
 
 void* create_decompressor() {
   auto* Decomp = new Decompressor();
-  Decomp->Writer = std::make_shared<StreamWriter>(Decomp->OutputPipe.getInput());
-  Decomp->Reader = std::make_shared<StreamReader>(Decomp->Input, *Decomp->Writer);
-  Decomp->Reader->addSelector(std::make_shared<SymbolTableSelector>(getAlgwasm0xdSymtab()));
+  Decomp->Writer =
+      std::make_shared<StreamWriter>(Decomp->OutputPipe.getInput());
+  Decomp->Reader =
+      std::make_shared<StreamReader>(Decomp->Input, *Decomp->Writer);
+  Decomp->Reader->addSelector(
+      std::make_shared<SymbolTableSelector>(getAlgwasm0xdSymtab()));
   Decomp->Reader->algorithmStart();
   return Decomp;
 }

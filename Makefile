@@ -207,8 +207,6 @@ INTERP_SRCS_BASE = \
 	Writer.cpp \
 	WriteStream.cpp
 
-#	Interpreter.cpp
-
 INTERP_SRCS = $(INTERP_SRCS_BASE) Decompress.cpp
 
 INTERP_OBJS = $(patsubst %.cpp, $(INTERP_OBJDIR)/%.o, $(INTERP_SRCS))
