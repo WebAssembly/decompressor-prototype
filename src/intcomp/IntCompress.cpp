@@ -102,7 +102,7 @@ CountNode::RootPtr IntCompressor::getRoot() {
 
 void IntCompressor::readInput() {
   Contents = std::make_shared<IntStream>();
-  IntWriter MyWriter(Contents);
+  auto MyWriter = std::make_shared<IntWriter>(Contents);
   StreamReader MyReader(Input, MyWriter, Symtab);
   if (MyFlags.TraceReadingInput)
     MyReader.getTrace().setTraceProgress(true);
@@ -126,8 +126,8 @@ const WriteCursor IntCompressor::writeCodeOutput(
 
 void IntCompressor::writeDataOutput(const WriteCursor& StartPos,
                                     std::shared_ptr<SymbolTable> Symtab) {
-  StreamWriter Writer(Output);
-  Writer.setPos(StartPos);
+  auto Writer = std::make_shared<StreamWriter>(Output);
+  Writer->setPos(StartPos);
   IntReader Reader(IntOutput, Writer, Symtab);
   if (MyFlags.TraceWritingDataOutput)
     Reader.getTrace().setTraceProgress(true);
@@ -151,9 +151,9 @@ bool IntCompressor::compressUpToSize(size_t Size) {
       TRACE_MESSAGE("Collecting integer sequences of (up to) length: " +
                     std::to_string(Size));
   });
-  CountWriter Writer(getRoot());
-  Writer.setCountCutoff(MyFlags.CountCutoff);
-  Writer.setUpToSize(Size);
+  auto Writer = std::make_shared<CountWriter>(getRoot());
+  Writer->setCountCutoff(MyFlags.CountCutoff);
+  Writer->setUpToSize(Size);
 
   IntReader Reader(Contents, Writer, Symtab);
   if (MyFlags.TraceReadingIntStream)
@@ -235,8 +235,8 @@ void IntCompressor::assignInitialAbbreviations(
 }
 
 bool IntCompressor::generateIntOutput() {
-  AbbrevAssignWriter Writer(Root, IntOutput, MyFlags.LengthLimit,
-                            MyFlags.AbbrevFormat);
+  auto Writer = std::make_shared<AbbrevAssignWriter>(
+      Root, IntOutput, MyFlags.LengthLimit, MyFlags.AbbrevFormat);
   IntReader Reader(Contents, Writer, Symtab);
   if (MyFlags.TraceIntStreamGeneration)
     Reader.getTrace().setTraceProgress(true);

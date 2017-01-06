@@ -134,7 +134,7 @@ void Reader::setTrace(std::shared_ptr<TraceClass> NewTrace) {
   Trace = NewTrace;
   if (Trace) {
     Trace->addContext(getTraceContext());
-    Trace->addContext(Output.getTraceContext());
+    Trace->addContext(Output->getTraceContext());
   }
 }
 
@@ -178,7 +178,8 @@ const char* Reader::getName(SectionCode Code) {
   return SectionCodeName[Index];
 }
 
-Reader::Reader(Writer& Output, std::shared_ptr<filt::SymbolTable> Symtab)
+Reader::Reader(std::shared_ptr<Writer> Output,
+               std::shared_ptr<filt::SymbolTable> Symtab)
     : Output(Output),
       Symtab(Symtab),
       ReadFileHeader(true),
@@ -320,7 +321,7 @@ void Reader::describeState(FILE* File) {
     describeLocalsStack(File);
   if (!OpcodeLocalsStack.empty())
     describeOpcodeLocalsStack(File);
-  Output.describeState(File);
+  Output->describeState(File);
 }
 
 void Reader::reset() {
@@ -333,7 +334,7 @@ void Reader::reset() {
   LocalValues.clear();
   OpcodeLocals.reset();
   OpcodeLocalsStack.clear();
-  Output.reset();
+  Output->reset();
 }
 
 void Reader::call(Method Method,
@@ -364,7 +365,7 @@ void Reader::callTopLevel(Method Method, const filt::Node* Nd) {
 }
 
 bool Reader::writeAction(const filt::CallbackNode* Action) {
-  return Output.writeAction(Action);
+  return Output->writeAction(Action);
 }
 
 void Reader::fail() {
@@ -499,7 +500,7 @@ void Reader::algorithmResume() {
               break;
             }
             LastReadValue = readUint8();
-            Output.writeUint8(LastReadValue);
+            Output->writeUint8(LastReadValue);
             break;
           case State::Exit:
             popAndReturn();
@@ -567,7 +568,7 @@ void Reader::algorithmResume() {
                 if (WantedValue != FoundValue)
                   return failBadHeaderValue(WantedValue, FoundValue,
                                             Lit->getFormat());
-                Output.writeHeaderValue(FoundValue, TypeFormat);
+                Output->writeHeaderValue(FoundValue, TypeFormat);
                 break;
               }
               case State::Exit:
@@ -737,7 +738,7 @@ void Reader::algorithmResume() {
             if (hasReadMode())
               LastReadValue = readValue(Frame.Nd);
             if (hasWriteMode()) {
-              if (!Output.writeValue(LastReadValue, Frame.Nd))
+              if (!Output->writeValue(LastReadValue, Frame.Nd))
                 return failCantWrite();
             }
             popAndReturn(LastReadValue);
@@ -1139,14 +1140,14 @@ void Reader::algorithmResume() {
           case State::Enter: {
             if (!enterBlock())
               break;
-            if (!Output.writeAction(Symtab->getBlockEnterCallback()))
+            if (!Output->writeAction(Symtab->getBlockEnterCallback()))
               break;
             Frame.CallState = State::Exit;
             call(DispatchedMethod, Frame.CallModifier, Frame.Nd);
             break;
           }
           case State::Exit:
-            if (!Output.writeAction(Symtab->getBlockExitCallback()))
+            if (!Output->writeAction(Symtab->getBlockExitCallback()))
               break;
             if (!exitBlock())
               break;
@@ -1214,12 +1215,12 @@ void Reader::algorithmResume() {
               return fail(
                   "Unable to decompress. Did not find WASM binary "
                   "magic number!");
-            if (!Output.writeHeaderValue(MagicNumber, IntTypeFormat::Uint32))
+            if (!Output->writeHeaderValue(MagicNumber, IntTypeFormat::Uint32))
               return failCantWrite();
             TRACE(hex_uint32_t, "version", Version);
             if (Version != WasmBinaryVersionD)
               return fail("Unable to decompress. WASM version not known");
-            if (!Output.writeHeaderValue(Version, IntTypeFormat::Uint32))
+            if (!Output->writeHeaderValue(Version, IntTypeFormat::Uint32))
               return failCantWrite();
             Frame.CallState = State::Step4;
             break;
@@ -1235,7 +1236,7 @@ void Reader::algorithmResume() {
             break;
           }
           case State::Exit:
-            if (FreezeEofAtExit && !Output.writeFreezeEof())
+            if (FreezeEofAtExit && !Output->writeFreezeEof())
               return failFreezingEof();
             popAndReturn();
             break;

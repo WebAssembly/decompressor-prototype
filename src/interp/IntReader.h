@@ -37,7 +37,7 @@ class IntReader : public Reader {
 
  public:
   IntReader(std::shared_ptr<IntStream> Input,
-            Writer& Output,
+            std::shared_ptr<Writer> Output,
             std::shared_ptr<filt::SymbolTable> Symtab);
   ~IntReader() OVERRIDE;
 

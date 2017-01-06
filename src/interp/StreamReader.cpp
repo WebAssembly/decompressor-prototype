@@ -29,7 +29,7 @@ using namespace utils;
 namespace interp {
 
 StreamReader::StreamReader(std::shared_ptr<decode::Queue> StrmInput,
-                           Writer& Output,
+                           std::shared_ptr<Writer> Output,
                            std::shared_ptr<filt::SymbolTable> Symtab)
     : Reader(Output, Symtab),
       ReadPos(StreamType::Byte, StrmInput),

@@ -27,7 +27,7 @@ using namespace utils;
 namespace interp {
 
 IntReader::IntReader(IntStream::StreamPtr Input,
-                     Writer& Output,
+                     std::shared_ptr<Writer> Output,
                      std::shared_ptr<filt::SymbolTable> Symtab)
     : Reader(Output, Symtab),
       Pos(Input),
@@ -69,14 +69,14 @@ void IntReader::structuralResume() {
               if (Value != Pair.first)
                 return failBadHeaderValue(Pair.first, Value,
                                           ValueFormat::Hexidecimal);
-              Output.writeHeaderValue(Pair.first, Pair.second);
+              Output->writeHeaderValue(Pair.first, Pair.second);
             }
             LocalValues.push_back(Input->size());
             Frame.CallState = State::Exit;
             call(Method::ReadIntBlock, Frame.CallModifier, nullptr);
             break;
           case State::Exit:
-            if (FreezeEofAtExit && !Output.writeFreezeEof())
+            if (FreezeEofAtExit && !Output->writeFreezeEof())
               return failFreezingEof();
             popAndReturn();
             break;
@@ -124,7 +124,7 @@ void IntReader::structuralResume() {
                 { TRACE(hex_size_t, "block.open", Blk->getBeginIndex()); });
             if (!enterBlock())
               return fail("Unable to open block");
-            if (!Output.writeAction(Symtab->getBlockEnterCallback()))
+            if (!Output->writeAction(Symtab->getBlockEnterCallback()))
               break;
             Frame.CallState = State::Step3;
             LocalValues.push_back(Blk->getEndIndex());
@@ -135,7 +135,7 @@ void IntReader::structuralResume() {
             // At the end of a nested block.
             TRACE_BLOCK(
                 { TRACE(hex_size_t, "block.close", LocalValues.back()); });
-            if (!Output.writeAction(Symtab->getBlockExitCallback()))
+            if (!Output->writeAction(Symtab->getBlockExitCallback()))
               break;
             if (!exitBlock())
               return fail("Unable to close block");
@@ -164,7 +164,7 @@ void IntReader::structuralResume() {
             }
             IntType Value = read();
             TRACE(IntType, "value", Value);
-            if (!Output.writeVarint64(Value))
+            if (!Output->writeVarint64(Value))
               return fail("Unable to write last value");
             break;
           }

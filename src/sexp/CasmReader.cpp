@@ -75,14 +75,14 @@ void CasmReader::readText(charstring Filename) {
 
 void CasmReader::readBinary(std::shared_ptr<Queue> Binary,
                             std::shared_ptr<SymbolTable> AlgSymtab) {
-  InflateAst Inflator;
+  auto Inflator = std::make_shared<InflateAst>();
   auto Reader = std::make_shared<StreamReader>(Binary, Inflator, AlgSymtab);
   if (TraceRead || TraceTree) {
     auto Trace = std::make_shared<TraceClass>("CasmReader");
     Trace->setTraceProgress(true);
     Reader->setTrace(Trace);
     if (TraceTree)
-      Inflator.setTrace(Trace);
+      Inflator->setTrace(Trace);
   }
   Reader->algorithmStart();
   Reader->algorithmReadBackFilled();
@@ -90,7 +90,7 @@ void CasmReader::readBinary(std::shared_ptr<Queue> Binary,
     foundErrors();
     return;
   }
-  Symtab = Inflator.getSymtab();
+  Symtab = Inflator->getSymtab();
 }
 
 void CasmReader::readBinary(charstring Filename,
