@@ -180,7 +180,6 @@ int main(const int Argc, const char* Argv[]) {
     return exit_status(runUsingCApi(Verbose >= 1));
   }
 
-  std::shared_ptr<SymbolTable> Symtab = getAlgwasm0xdSymtab();
   bool Succeeded = true;  // until proven otherwise.
   for (size_t i = 0; i < NumTries; ++i) {
     if (Verbose)
@@ -200,8 +199,8 @@ int main(const int Argc, const char* Argv[]) {
     if (Verbose)
       fprintf(stderr, "Decompressing...\n");
     Interpreter Decompressor(std::make_shared<ReadBackedQueue>(Input),
-                             std::make_shared<WriteBackedQueue>(Output),
-                             Symtab);
+                             std::make_shared<WriteBackedQueue>(Output));
+    Decompressor.addSelector(std::make_shared<SymbolTableSelector>(getAlgwasm0xdSymtab()));
     Decompressor.setMinimizeBlockSize(MinimizeBlockSize);
     if (VerboseTrace) {
       auto Trace = std::make_shared<TraceClass>("Decompress");

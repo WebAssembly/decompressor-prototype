@@ -172,7 +172,7 @@ Reader::Reader(Writer& Output, std::shared_ptr<filt::SymbolTable> Symtab)
       LocalsBase(0),
       LocalsBaseStack(LocalsBase),
       OpcodeLocalsStack(OpcodeLocals),
-      HeaderOverride(Symtab->getTargetHeader()),
+      HeaderOverride(nullptr),
       FreezeEofAtExit(true) {
   CurSectionName.reserve(MaxExpectedSectionNameSize);
   FrameStack.reserve(DefaultStackSize);
@@ -442,6 +442,8 @@ void Reader::insertFileVersion(uint32_t NewMagicNumber, uint32_t NewVersion) {
 
 void Reader::algorithmStart() {
   callTopLevel(Method::GetFile, nullptr);
+  if (!Symtab)
+    fail("Unable to read, no symbol table defined!");
 }
 
 void Reader::algorithmResume() {
@@ -1166,7 +1168,7 @@ void Reader::algorithmResume() {
               assert(isa<FileNode>(Frame.Nd));
             }
             const Node* Header =
-                HeaderOverride ? HeaderOverride : Frame.Nd->getKid(0);
+                HeaderOverride ? HeaderOverride : Symtab->getTargetHeader();
             if (Header->getType() == OpFileHeader) {
               Frame.CallState = State::Step4;
               call(Method::Eval, Frame.CallModifier, Header);

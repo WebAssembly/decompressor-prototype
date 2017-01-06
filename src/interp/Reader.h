@@ -52,6 +52,10 @@ class Reader {
     HeaderOverride = Header;
   }
 
+  void setSymbolTable(std::shared_ptr<filt::SymbolTable> NewSymtab) {
+    Symtab = NewSymtab;
+  }
+
   void setFreezeEofAtExit(bool NewValue) { FreezeEofAtExit = NewValue; }
 
   // Starts up decompression using a (file) algorithm.
