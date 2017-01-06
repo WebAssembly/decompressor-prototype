@@ -199,12 +199,12 @@ int main(const int Argc, const char* Argv[]) {
       fprintf(stderr, "Decompressing...\n");
     std::shared_ptr<Queue> BackedOutput =
         std::make_shared<WriteBackedQueue>(Output);
-    interp::StreamWriter Writer(BackedOutput);
+    auto Writer = std::make_shared<interp::StreamWriter>(BackedOutput);
     interp::StreamReader Decompressor(std::make_shared<ReadBackedQueue>(Input),
                                       Writer);
     Decompressor.addSelector(
         std::make_shared<SymbolTableSelector>(getAlgwasm0xdSymtab()));
-    Writer.setMinimizeBlockSize(MinimizeBlockSize);
+    Writer->setMinimizeBlockSize(MinimizeBlockSize);
     if (VerboseTrace) {
       auto Trace = std::make_shared<TraceClass>("Decompress");
       Trace->setTraceProgress(true);

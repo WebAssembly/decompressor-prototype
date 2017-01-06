@@ -79,7 +79,8 @@ class Reader {
   Reader& operator=(const Reader&) = delete;
 
  public:
-  Reader(Writer& Output, std::shared_ptr<filt::SymbolTable> Symtab);
+  Reader(std::shared_ptr<Writer> Output,
+         std::shared_ptr<filt::SymbolTable> Symtab);
   virtual ~Reader();
 
   // Can be called immediately before algorithmStart() to insert file version
@@ -229,7 +230,7 @@ class Reader {
     size_t CallingEvalIndex;
   };
 
-  Writer& Output;
+  std::shared_ptr<Writer> Output;
   std::shared_ptr<filt::SymbolTable> Symtab;
   std::vector<std::shared_ptr<AlgorithmSelector>> Selectors;
   // True if magic number/file header should be read.

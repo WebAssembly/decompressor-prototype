@@ -74,7 +74,7 @@ const WriteCursor& CasmWriter::writeBinary(
     Tee->add(Writer, true, false, true);
     Writer = Tee;
   }
-  auto Reader = std::make_shared<IntReader>(IntSeq, *Writer, AlgSymtab);
+  auto Reader = std::make_shared<IntReader>(IntSeq, Writer, AlgSymtab);
   Reader->setFreezeEofAtExit(FreezeEofAtExit);
   if (TraceWriter || TraceTree) {
     auto Trace = std::make_shared<TraceClass>("CasmWriter");

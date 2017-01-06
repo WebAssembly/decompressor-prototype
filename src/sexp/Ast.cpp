@@ -345,14 +345,14 @@ bool SymbolTable::installPredefinedDefaults(std::shared_ptr<SymbolTable> Symtab,
       std::make_shared<ArrayReader>(AlgArray, AlgArraySize);
   if (!Stream)
     return false;
-  InflateAst Inflator;
+  auto Inflator = std::make_shared<InflateAst>();
   StreamReader Reader(std::make_shared<ReadBackedQueue>(std::move(Stream)),
                       Inflator, Symtab);
   std::shared_ptr<TraceClass> Trace;
   if (TraceInstallation) {
     Trace = std::make_shared<TraceClass>("predefined");
     Reader.setTrace(Trace);
-    Inflator.setTrace(Trace);
+    Inflator->setTrace(Trace);
     Trace->setTraceProgress(true);
   }
   Reader.algorithmStart();
