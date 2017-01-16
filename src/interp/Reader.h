@@ -34,43 +34,73 @@ class TextWriter;
 
 namespace interp {
 
+class Reader;
+
 class AlgorithmSelector
     : public std::enable_shared_from_this<AlgorithmSelector> {
-  AlgorithmSelector() = delete;
   AlgorithmSelector(const AlgorithmSelector&) = delete;
   AlgorithmSelector& operator=(const AlgorithmSelector&) = delete;
 
  public:
-  explicit AlgorithmSelector(const filt::FileHeaderNode* TargetHeader,
-                             bool DataSelector = false)
-      : TargetHeader(TargetHeader), DataSelector(DataSelector) {}
+  explicit AlgorithmSelector() {}
   virtual ~AlgorithmSelector() {}
 
-  const filt::FileHeaderNode* getTargetHeader() { return TargetHeader; }
-  virtual std::shared_ptr<filt::SymbolTable> getAlgorithm() = 0;
-  bool IsDataSelector() const { return DataSelector; }
+  // Returns the header to match.
+  virtual const filt::FileHeaderNode* getTargetHeader() = 0;
 
- protected:
-  const filt::FileHeaderNode* TargetHeader;
-  bool DataSelector;
+  // Called if header matches. Allows selector to reconfigure the reader.
+  // Will read from input if symbol table (i.e. algorith) is set.
+  virtual bool configure(Reader* R) = 0;
+
+  // Called after reading from file using the symbol table. Allows one
+  // to restore/reconfigure the reader.
+  virtual bool reset(Reader* R) = 0;
 };
 
-// TODO(karlschimpf): Replace this  with a better solution,  since This selector
-// can only be used once, since there is no symbol table copy.
-class SymbolTableSelector : public AlgorithmSelector {
-  SymbolTableSelector() = delete;
-  SymbolTableSelector(const SymbolTableSelector&) = delete;
-  SymbolTableSelector& operator=(const SymbolTableSelector&) = delete;
+class InputReader : public std::enable_shared_from_this<InputReader> {
+  InputReader(const InputReader&) = delete;
+  InputReader& operator=(const InputReader&) = delete;
 
  public:
-  explicit SymbolTableSelector(std::shared_ptr<filt::SymbolTable> Symtab,
-                               bool DataSelector = false);
-  ~SymbolTableSelector() OVERRIDE;
-  std::shared_ptr<filt::SymbolTable> getAlgorithm() OVERRIDE;
+  InputReader() {}
+  virtual ~InputReader() {}
+  virtual utils::TraceClass::ContextPtr getTraceContext();
+  void setTraceProgress(bool NewValue);
+  void setTrace(std::shared_ptr<utils::TraceClass> Trace);
+  std::shared_ptr<utils::TraceClass> getTracePtr();
+  utils::TraceClass& getTrace() { return *getTracePtr(); }
+  virtual const char* getDefaultTraceName() const;
 
- private:
-  std::shared_ptr<filt::SymbolTable> Symtab;
-  bool StillGood;
+  virtual void reset();
+  virtual void describePeekPosStack(FILE* Out) = 0;
+  virtual bool canProcessMoreInputNow() = 0;
+  virtual bool stillMoreInputToProcessNow() = 0;
+  virtual bool atInputEof() = 0;
+  virtual bool atInputEob() = 0;
+  virtual void resetPeekPosStack() = 0;
+  virtual void pushPeekPos() = 0;
+  virtual void popPeekPos() = 0;
+  virtual size_t sizePeekPosStack() = 0;
+  virtual decode::StreamType getStreamType() = 0;
+  virtual bool processedInputCorrectly() = 0;
+  virtual bool enterBlock() = 0;
+  virtual bool exitBlock() = 0;
+  virtual void readFillStart() = 0;
+  virtual void readFillMoreInput() = 0;
+  // Hard coded reads.
+  virtual uint8_t readUint8() = 0;
+  virtual uint32_t readUint32() = 0;
+  virtual uint64_t readUint64() = 0;
+  virtual int32_t readVarint32() = 0;
+  virtual int64_t readVarint64() = 0;
+  virtual uint32_t readVaruint32() = 0;
+  virtual uint64_t readVaruint64() = 0;
+  virtual bool readValue(const filt::Node* Format, decode::IntType& Value);
+  virtual bool readHeaderValue(interp::IntTypeFormat Format,
+                               decode::IntType& Value);
+
+ protected:
+  std::shared_ptr<utils::TraceClass> Trace;
 };
 
 class Reader {
@@ -79,8 +109,10 @@ class Reader {
   Reader& operator=(const Reader&) = delete;
 
  public:
-  Reader(std::shared_ptr<Writer> Output,
-         std::shared_ptr<filt::SymbolTable> Symtab);
+  Reader(std::shared_ptr<InputReader> Input,
+         std::shared_ptr<Writer> Output,
+         std::shared_ptr<filt::SymbolTable> Symtab =
+             std::shared_ptr<filt::SymbolTable>());
   virtual ~Reader();
 
   // Can be called immediately before algorithmStart() to insert file version
@@ -92,10 +124,18 @@ class Reader {
     HeaderOverride = Header;
   }
 
+  std::shared_ptr<InputReader> getInput() { return Input; }
+  void setInput(std::shared_ptr<InputReader> Value);
+
+  std::shared_ptr<Writer> getWriter() { return Output; }
+  void setWriter(std::shared_ptr<Writer> Value);
+
+  std::shared_ptr<filt::SymbolTable> getSymbolTable() { return Symtab; }
   void setSymbolTable(std::shared_ptr<filt::SymbolTable> NewSymtab) {
     Symtab = NewSymtab;
   }
 
+  bool getFreezeEofAtExit() { return FreezeEofAtExit; }
   void setFreezeEofAtExit(bool NewValue) { FreezeEofAtExit = NewValue; }
 
   void addSelector(std::shared_ptr<AlgorithmSelector> Selector);
@@ -123,13 +163,18 @@ class Reader {
   bool hasReadMode() const { return isReadModifier(Frame.CallModifier); }
   bool hasWriteMode() const { return isWriteModifier(Frame.CallModifier); }
 
-  // Force interpretation to fail.
+  // Force reader to fail with possible catches.
   void fail(const std::string& Message);
 
+  // Force reader to fail with no catches.
+  void failFatal(const std::string& Message);
+
+  void rethrow();
+
   // Returns non-null context handler if applicable.
+  utils::TraceClass::ContextPtr getTraceContext();
   void setTraceProgress(bool NewValue);
-  virtual utils::TraceClass::ContextPtr getTraceContext();
-  virtual void setTrace(std::shared_ptr<utils::TraceClass> Trace);
+  void setTrace(std::shared_ptr<utils::TraceClass> Trace);
   std::shared_ptr<utils::TraceClass> getTracePtr();
   utils::TraceClass& getTrace() { return *getTracePtr(); }
 
@@ -230,6 +275,7 @@ class Reader {
     size_t CallingEvalIndex;
   };
 
+  std::shared_ptr<InputReader> Input;
   std::shared_ptr<Writer> Output;
   std::shared_ptr<filt::SymbolTable> Symtab;
   std::vector<std::shared_ptr<AlgorithmSelector>> Selectors;
@@ -248,6 +294,15 @@ class Reader {
   Method DispatchedMethod;
   std::shared_ptr<utils::TraceClass> Trace;
 
+  // Defines method to fail back to (defaults to
+  // NO_SUCH_METHOD). Allows equivalent of simple throws.
+  Method Catch;
+  utils::ValueStack<Method> CatchStack;
+  // Holds the state before modified to state.
+  State CatchState;
+  // Fatal override that causes reader to fail, even wth the presence of
+  // catches.
+  bool IsFatalFailure;
   // The stack of called methods.
   CallFrame Frame;
   utils::ValueStack<CallFrame> FrameStack;
@@ -282,7 +337,7 @@ class Reader {
   const filt::FileHeaderNode* HeaderOverride;
   bool FreezeEofAtExit;
 
-  virtual void reset();
+  void reset();
 
   void handleOtherMethods();
 
@@ -300,6 +355,7 @@ class Reader {
 
   void fail();
   void failBadState();
+  void failCantRead();
   void failCantWrite();
   void failFreezingEof();
   void failInWriteOnlyMode();
@@ -319,35 +375,41 @@ class Reader {
 
   void describeFrameStack(FILE* Out);
   void describeCallingEvalStack(FILE* Out);
-  virtual void describePeekPosStack(FILE* Out) = 0;
+  void describePeekPosStack(FILE* Out) { Input->describePeekPosStack(Out); }
   void describeLoopCounterStack(FILE* Out);
   void describeLocalsStack(FILE* Out);
   void describeOpcodeLocalsStack(FILE* Out);
   virtual void describeState(FILE* Out);
 
- protected:
-  virtual bool canProcessMoreInputNow() = 0;
-  virtual bool stillMoreInputToProcessNow() = 0;
-  virtual bool atInputEob() = 0;
-  virtual void resetPeekPosStack() = 0;
-  virtual void pushPeekPos() = 0;
-  virtual void popPeekPos() = 0;
-  virtual decode::StreamType getStreamType() = 0;
-  virtual bool processedInputCorrectly() = 0;
-  virtual bool enterBlock() = 0;
-  virtual bool exitBlock() = 0;
-  virtual void readFillStart() = 0;
-  virtual void readFillMoreInput() = 0;
+  bool canProcessMoreInputNow() { return Input->canProcessMoreInputNow(); }
+  bool stillMoreInputToProcessNow() {
+    return Input->stillMoreInputToProcessNow();
+  }
+  bool atInputEob() { return Input->atInputEob(); }
+  void resetPeekPosStack() { Input->resetPeekPosStack(); }
+  void pushPeekPos() { Input->pushPeekPos(); }
+  void popPeekPos() { Input->popPeekPos(); }
+  size_t sizePeekPosStack() { return Input->sizePeekPosStack(); }
+  decode::StreamType getStreamType() { return Input->getStreamType(); }
+  bool processedInputCorrectly() { return Input->processedInputCorrectly(); }
+  bool enterBlock() { return Input->enterBlock(); }
+  bool exitBlock() { return Input->exitBlock(); }
+  void readFillStart() { Input->readFillStart(); }
+  void readFillMoreInput() { Input->readFillMoreInput(); }
   // Hard coded reads.
-  virtual uint8_t readUint8() = 0;
-  virtual uint32_t readUint32() = 0;
-  virtual uint64_t readUint64() = 0;
-  virtual int32_t readVarint32() = 0;
-  virtual int64_t readVarint64() = 0;
-  virtual uint32_t readVaruint32() = 0;
-  virtual uint64_t readVaruint64() = 0;
-  virtual decode::IntType readValue(const filt::Node* Format) = 0;
-  virtual decode::IntType readHeaderValue(interp::IntTypeFormat Format);
+  uint8_t readUint8() { return Input->readUint8(); }
+  uint32_t readUint32() { return Input->readUint32(); }
+  uint64_t readUint64() { return Input->readUint64(); }
+  int32_t readVarint32() { return Input->readVarint32(); }
+  int64_t readVarint64() { return Input->readVarint64(); }
+  uint32_t readVaruint32() { return Input->readVaruint32(); }
+  uint64_t readVaruint64() { return Input->readVaruint64(); }
+  bool readValue(const filt::Node* Format, decode::IntType& Value) {
+    return Input->readValue(Format, Value);
+  }
+  bool readHeaderValue(interp::IntTypeFormat Format, decode::IntType& Value) {
+    return Input->readHeaderValue(Format, Value);
+  }
   virtual const char* getDefaultTraceName() const;
 };
 

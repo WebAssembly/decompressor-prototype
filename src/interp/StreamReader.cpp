@@ -19,6 +19,9 @@
 #include "interp/StreamReader.h"
 
 #include "interp/ByteReadStream.h"
+#if 1
+#include "sexp/TextWriter.h"
+#endif
 
 namespace wasm {
 
@@ -28,11 +31,8 @@ using namespace utils;
 
 namespace interp {
 
-StreamReader::StreamReader(std::shared_ptr<decode::Queue> StrmInput,
-                           std::shared_ptr<Writer> Output,
-                           std::shared_ptr<filt::SymbolTable> Symtab)
-    : Reader(Output, Symtab),
-      ReadPos(StreamType::Byte, StrmInput),
+StreamReader::StreamReader(std::shared_ptr<decode::Queue> StrmInput)
+    : ReadPos(StreamType::Byte, StrmInput),
       Input(std::make_shared<ByteReadStream>()),
       FillPos(0),
       PeekPosStack(PeekPos) {
@@ -41,13 +41,8 @@ StreamReader::StreamReader(std::shared_ptr<decode::Queue> StrmInput,
 StreamReader::~StreamReader() {
 }
 
-const char* StreamReader::getDefaultTraceName() const {
-  return "StreamReader";
-}
-
-void StreamReader::startUsing(const decode::ReadCursor& StartPos) {
+void StreamReader::setReadPos(const decode::ReadCursor& StartPos) {
   ReadPos = StartPos;
-  algorithmStart();
 }
 
 TraceClass::ContextPtr StreamReader::getTraceContext() {
@@ -84,6 +79,10 @@ bool StreamReader::atInputEob() {
   return ReadPos.atByteEob();
 }
 
+bool StreamReader::atInputEof() {
+  return ReadPos.atEof();
+}
+
 void StreamReader::resetPeekPosStack() {
   PeekPos = ReadCursor();
   PeekPosStack.clear();
@@ -98,6 +97,10 @@ void StreamReader::popPeekPos() {
   PeekPosStack.pop();
 }
 
+size_t StreamReader::sizePeekPosStack() {
+  return PeekPosStack.size();
+}
+
 decode::StreamType StreamReader::getStreamType() {
   return Input->getType();
 }
@@ -108,7 +111,9 @@ bool StreamReader::processedInputCorrectly() {
 
 bool StreamReader::enterBlock() {
   const uint32_t OldSize = Input->readBlockSize(ReadPos);
+#if 0
   TRACE(uint32_t, "block size", OldSize);
+#endif
   Input->pushEobAddress(ReadPos, OldSize);
   return true;
 }
@@ -154,10 +159,6 @@ uint32_t StreamReader::readVaruint32() {
 
 uint64_t StreamReader::readVaruint64() {
   return Input->readVaruint64(ReadPos);
-}
-
-IntType StreamReader::readValue(const filt::Node* Format) {
-  return Input->readValue(ReadPos, Frame.Nd);
 }
 
 void StreamReader::describePeekPosStack(FILE* File) {

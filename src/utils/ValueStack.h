@@ -144,7 +144,7 @@ class ValueStack {
     assert(EndIndex <= sizeWithTop());
     return IteratorRange(this, BeginIndex, EndIndex);
   }
-  IteratorRange iterRange(size_t BeginIndex) const {
+  IteratorRange iterRange(size_t BeginIndex = 0) const {
     assert(BeginIndex <= sizeWithTop());
     return IteratorRange(this, BeginIndex);
   }
@@ -155,7 +155,7 @@ class ValueStack {
     assert(EndIndex <= sizeWithTop());
     return BackwardIteratorRange(this, BeginIndex, EndIndex);
   }
-  BackwardIteratorRange riterRange(size_t BeginIndex) const {
+  BackwardIteratorRange riterRange(size_t BeginIndex = 0) const {
     assert(BeginIndex <= sizeWithTop());
     return BackwardIteratorRange(this, BeginIndex);
   }

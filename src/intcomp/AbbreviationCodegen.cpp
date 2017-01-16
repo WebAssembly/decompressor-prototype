@@ -52,10 +52,6 @@ Node* AbbreviationCodegen::generateWasmFileHeader() {
   return Header;
 }
 
-Node* AbbreviationCodegen::generateVoidFileHeader() {
-  return Symtab->create<VoidNode>();
-}
-
 void AbbreviationCodegen::generateFile(Node* SourceHeader, Node* TargetHeader) {
   auto* File =
       Symtab->create<FileNode>(SourceHeader, TargetHeader, generateFileBody());
@@ -125,8 +121,10 @@ Node* AbbreviationCodegen::generateDefaultAction(DefaultCountNode* Default) {
 }
 
 Node* AbbreviationCodegen::generateDefaultMultipleAction() {
-  return Symtab->create<LoopNode>(Symtab->getVaruint64Definition(),
-                                  generateDefaultSingleAction());
+  Node* LoopSize = Symtab->getVaruint64Definition();
+  if (ToRead)
+    LoopSize = Symtab->create<ReadNode>(LoopSize);
+  return Symtab->create<LoopNode>(LoopSize, generateDefaultSingleAction());
 }
 
 Node* AbbreviationCodegen::generateDefaultSingleAction() {
@@ -164,8 +162,7 @@ Node* AbbreviationCodegen::generateIntLitActionWrite(IntCountNode* Nd) {
 std::shared_ptr<SymbolTable> AbbreviationCodegen::getCodeSymtab(bool ToRead) {
   this->ToRead = ToRead;
   Symtab = std::make_shared<SymbolTable>();
-  generateFile(generateCasmFileHeader(),
-               ToRead ? generateVoidFileHeader() : generateWasmFileHeader());
+  generateFile(generateCasmFileHeader(), generateWasmFileHeader());
   return Symtab;
 }
 

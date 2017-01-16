@@ -16,8 +16,10 @@
 
 // Implementation of the C API to the decompressor interpreter.
 
+#include "algorithms/casm0x0.h"
 #include "algorithms/wasm0xd.h"
 #include "interp/Decompress.h"
+#include "interp/DecompressSelector.h"
 #include "interp/StreamReader.h"
 #include "interp/StreamWriter.h"
 #include "stream/Pipe.h"
@@ -45,8 +47,9 @@ struct Decompressor {
   std::shared_ptr<WriteCursor2ReadQueue> InputPos;
   Pipe OutputPipe;
   std::shared_ptr<ReadCursor> OutputPos;
-  std::shared_ptr<StreamReader> Reader;
+  std::shared_ptr<Reader> MyReader;
   std::shared_ptr<StreamWriter> Writer;
+  std::shared_ptr<DecompAlgState> AlgState;
   State MyState;
   Decompressor();
   uint8_t* getBuffer(int32_t Size);
@@ -56,8 +59,8 @@ struct Decompressor {
   int32_t getOutputSize() {
     return OutputPipe.getOutput()->fillSize() - OutputPos->getCurByteAddress();
   }
-  TraceClass& getTrace() { return Reader->getTrace(); }
-  void setTraceProgress(bool NewValue) { Reader->setTraceProgress(NewValue); }
+  TraceClass& getTrace() { return MyReader->getTrace(); }
+  void setTraceProgress(bool NewValue) { MyReader->setTraceProgress(NewValue); }
 
  private:
   int32_t flushOutput();
@@ -70,6 +73,7 @@ struct Decompressor {
 Decompressor::Decompressor()
     : BufferSize(0),
       Input(std::make_shared<Queue>()),
+      AlgState(std::make_shared<DecompAlgState>()),
       MyState(State::NeedsMoreInput) {
   InputPos = std::make_shared<WriteCursor2ReadQueue>(Input);
   OutputPos = std::make_shared<ReadCursor>(OutputPipe.getOutput());
@@ -105,13 +109,13 @@ int32_t Decompressor::resume(int32_t Size) {
         }
       } else {
         if (InputPos->atEof()) {
-          Reader->fail("resume_decompression(" + std::to_string(Size) +
-                       "): can't add bytes when input closed");
+          MyReader->fail("resume_decompression(" + std::to_string(Size) +
+                         "): can't add bytes when input closed");
           return fail();
         }
         if (Size > BufferSize) {
-          Reader->fail("resume_decompression(" + std::to_string(Size) +
-                       "): illegal size");
+          MyReader->fail("resume_decompression(" + std::to_string(Size) +
+                         "): illegal size");
           return fail();
         }
         // TODO(karlschimpf) Speed up this copy.
@@ -119,13 +123,13 @@ int32_t Decompressor::resume(int32_t Size) {
         for (int32_t i = 0; i < Size; ++i)
           InputPos->writeByte(Buf[i]);
       }
-      Reader->algorithmResume();
-      if (Reader->errorsFound())
+      MyReader->algorithmResume();
+      if (MyReader->errorsFound())
         return fail();
-      if (!Reader->isFinished())
+      if (!MyReader->isFinished())
         return getOutputSize();
       OutputPipe.getInput()->close();
-      if (!Reader->isSuccessful())
+      if (!MyReader->isSuccessful())
         return fail();
       MyState = State::FlushingOutput;
       return flushOutput();
@@ -134,8 +138,8 @@ int32_t Decompressor::resume(int32_t Size) {
     case State::Succeeded:
       if (Size == 0)
         return DECOMPRESSOR_SUCCESS;
-      Reader->fail("resume_decompression(" + std::to_string(Size) +
-                   "): can't add bytes when input closed");
+      MyReader->fail("resume_decompression(" + std::to_string(Size) +
+                     "): can't add bytes when input closed");
       break;
     case State::Failed:
       break;
@@ -171,11 +175,13 @@ void* create_decompressor() {
   auto* Decomp = new Decompressor();
   Decomp->Writer =
       std::make_shared<StreamWriter>(Decomp->OutputPipe.getInput());
-  Decomp->Reader =
-      std::make_shared<StreamReader>(Decomp->Input, Decomp->Writer);
-  Decomp->Reader->addSelector(
-      std::make_shared<SymbolTableSelector>(getAlgwasm0xdSymtab()));
-  Decomp->Reader->algorithmStart();
+  Decomp->MyReader = std::make_shared<Reader>(
+      std::make_shared<StreamReader>(Decomp->Input), Decomp->Writer);
+  Decomp->MyReader->addSelector(std::make_shared<DecompressSelector>(
+      getAlgwasm0xdSymtab(), Decomp->AlgState, false));
+  Decomp->MyReader->addSelector(std::make_shared<DecompressSelector>(
+      getAlgcasm0x0Symtab(), Decomp->AlgState, true));
+  Decomp->MyReader->algorithmStart();
   return Decomp;
 }
 

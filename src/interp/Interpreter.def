@@ -36,6 +36,7 @@ X(Data, 11)
 
 //#define X(tag)
 #define INTERPRETER_METHODS_TABLE                             \
+X(GetAlgorithm)                                               \
 X(CopyBlock)                                                  \
 X(Eval)                                                       \
 X(EvalBlock)                                                  \
@@ -49,6 +50,7 @@ X(Started)                                                    \
 
 //#define X(tag)
 #define INTERPRETER_STATES_TABLE                              \
+X(Catch)                                                      \
 X(Enter)                                                      \
 X(Exit)                                                       \
 X(Loop)                                                       \

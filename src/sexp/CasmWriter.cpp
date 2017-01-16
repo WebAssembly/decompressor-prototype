@@ -74,17 +74,17 @@ const WriteCursor& CasmWriter::writeBinary(
     Tee->add(Writer, true, false, true);
     Writer = Tee;
   }
-  auto Reader = std::make_shared<IntReader>(IntSeq, Writer, AlgSymtab);
-  Reader->setFreezeEofAtExit(FreezeEofAtExit);
+  Reader MyReader(std::make_shared<IntReader>(IntSeq), Writer, AlgSymtab);
+  MyReader.setFreezeEofAtExit(FreezeEofAtExit);
   if (TraceWriter || TraceTree) {
     auto Trace = std::make_shared<TraceClass>("CasmWriter");
     Trace->setTraceProgress(true);
-    Reader->setTrace(Trace);
+    MyReader.setTrace(Trace);
   }
-  Reader->useFileHeader(Symtab->getSourceHeader());
-  Reader->algorithmStart();
-  Reader->algorithmReadBackFilled();
-  if (Reader->errorsFound())
+  MyReader.useFileHeader(Symtab->getSourceHeader());
+  MyReader.algorithmStart();
+  MyReader.algorithmReadBackFilled();
+  if (MyReader.errorsFound())
     ErrorsFound = true;
   return StrmWriter->getWritePos();
 }

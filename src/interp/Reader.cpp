@@ -98,24 +98,102 @@ struct {
 
 }  // end of anonymous namespace
 
-SymbolTableSelector::SymbolTableSelector(std::shared_ptr<SymbolTable> Symtab,
-                                         bool DataSelector)
-    : AlgorithmSelector(Symtab->getTargetHeader(), DataSelector),
-      Symtab(Symtab),
-      StillGood(true) {
+TraceClass::ContextPtr InputReader::getTraceContext() {
+  TraceClass::ContextPtr Ptr;
+  return Ptr;
 }
 
-SymbolTableSelector::~SymbolTableSelector() {
+void InputReader::setTraceProgress(bool NewValue) {
+  if (!NewValue && !Trace)
+    return;
+  getTrace().setTraceProgress(NewValue);
 }
 
-std::shared_ptr<SymbolTable> SymbolTableSelector::getAlgorithm() {
-  assert(StillGood &&
-         "SymbolTableSelector getAlgorithm called more than once!");
-  StillGood = false;
-  return Symtab;
+void InputReader::setTrace(std::shared_ptr<TraceClass> NewTrace) {
+  Trace = NewTrace;
+  if (Trace) {
+    Trace->addContext(getTraceContext());
+  }
+}
+
+const char* InputReader::getDefaultTraceName() const {
+  return "InputReader";
+}
+
+std::shared_ptr<TraceClass> InputReader::getTracePtr() {
+  if (!Trace)
+    setTrace(std::make_shared<TraceClass>(getDefaultTraceName()));
+  return Trace;
+}
+
+void InputReader::reset() {
+}
+
+bool InputReader::readValue(const filt::Node* Format, IntType& Value) {
+  switch (Format->getType()) {
+    case OpUint8:
+      Value = readUint8();
+      return true;
+    case OpUint32:
+      Value = readUint32();
+      return true;
+    case OpUint64:
+      Value = readUint64();
+      return true;
+    case OpVarint32:
+      Value = readVarint32();
+      return true;
+    case OpVarint64:
+      Value = readVarint64();
+      return true;
+    case OpVaruint32:
+      Value = readVaruint32();
+      return true;
+    case OpVaruint64:
+      Value = readVaruint64();
+      return true;
+    default:
+      Value = 0;
+      return false;
+  }
+}
+
+bool InputReader::readHeaderValue(IntTypeFormat Format, IntType& Value) {
+  switch (Format) {
+    case IntTypeFormat::Uint8:
+      Value = readUint8();
+      return true;
+    case IntTypeFormat::Uint32:
+      Value = readUint32();
+      return true;
+    case IntTypeFormat::Uint64:
+      Value = readUint64();
+      return true;
+    default:
+      Value = 0;
+      return false;
+  }
+}
+
+void Reader::setInput(std::shared_ptr<InputReader> Value) {
+  Input = Value;
+  if (Trace) {
+    Trace->clearContexts();
+    setTrace(Trace);
+  }
+}
+
+void Reader::setWriter(std::shared_ptr<Writer> Value) {
+  Output = Value;
+  if (Trace) {
+    Trace->clearContexts();
+    setTrace(Trace);
+  }
 }
 
 void Reader::addSelector(std::shared_ptr<AlgorithmSelector> Selector) {
+  assert(!Symtab &&
+         "Can't add selectors if symbol table defined at construction");
   Selectors.push_back(Selector);
 }
 
@@ -126,15 +204,14 @@ void Reader::setTraceProgress(bool NewValue) {
 }
 
 TraceClass::ContextPtr Reader::getTraceContext() {
-  TraceClass::ContextPtr Ptr;
-  return Ptr;
+  return Input->getTraceContext();
 }
 
 void Reader::setTrace(std::shared_ptr<TraceClass> NewTrace) {
   Trace = NewTrace;
   if (Trace) {
-    Trace->addContext(getTraceContext());
-    Trace->addContext(Output->getTraceContext());
+    Input->setTrace(Trace);
+    Output->setTrace(Trace);
   }
 }
 
@@ -178,15 +255,21 @@ const char* Reader::getName(SectionCode Code) {
   return SectionCodeName[Index];
 }
 
-Reader::Reader(std::shared_ptr<Writer> Output,
+Reader::Reader(std::shared_ptr<InputReader> Input,
+               std::shared_ptr<Writer> Output,
                std::shared_ptr<filt::SymbolTable> Symtab)
-    : Output(Output),
+    : Input(Input),
+      Output(Output),
       Symtab(Symtab),
       ReadFileHeader(true),
       MagicNumber(0),
       Version(0),
       LastReadValue(0),
       DispatchedMethod(Method::NO_SUCH_METHOD),
+      Catch(Method::NO_SUCH_METHOD),
+      CatchStack(Catch),
+      CatchState(State::NO_SUCH_STATE),
+      IsFatalFailure(false),
       FrameStack(Frame),
       CallingEvalStack(CallingEval),
       LoopCounter(0),
@@ -205,26 +288,6 @@ Reader::Reader(std::shared_ptr<Writer> Output,
 }
 
 Reader::~Reader() {
-}
-
-IntType Reader::readHeaderValue(IntTypeFormat Format) {
-  switch (Format) {
-    case IntTypeFormat::Uint8:
-      return readUint8();
-    case IntTypeFormat::Uint32:
-      return readUint32();
-    case IntTypeFormat::Uint64:
-      return readUint64();
-    case IntTypeFormat::Varint32:
-      return readVarint32();
-    case IntTypeFormat::Varint64:
-      return readVarint64();
-    case IntTypeFormat::Varuint32:
-      return readVaruint32();
-    case IntTypeFormat::Varuint64:
-      return readVaruint64();
-  }
-  WASM_RETURN_UNREACHABLE(0);
 }
 
 void Reader::traceEnterFrameInternal() {
@@ -334,6 +397,7 @@ void Reader::reset() {
   LocalValues.clear();
   OpcodeLocals.reset();
   OpcodeLocalsStack.clear();
+  Input->reset();
   Output->reset();
 }
 
@@ -368,57 +432,91 @@ bool Reader::writeAction(const filt::CallbackNode* Action) {
   return Output->writeAction(Action);
 }
 
+// TODO: Add concept of "finally" clause that allows clean up on fail,
+// but doesn't assume a catch if performed.
 void Reader::fail() {
   TRACE_MESSAGE("method failed");
-  while (!FrameStack.empty())
+  while (!FrameStack.empty()) {
+    if (!IsFatalFailure && Frame.CallMethod == Catch) {
+      CatchState = Frame.CallState;
+      TRACE(string, "Catch method", getName(Catch));
+      TRACE(string, "Catch state", getName(CatchState));
+      Frame.CallState = State::Catch;
+      if (!CatchStack.empty())
+        CatchStack.pop();
+      return;
+    }
     popAndReturn();
+  }
   reset();
   Frame.fail();
 }
 
+void Reader::rethrow() {
+  return fail("Rethrowing exception");
+}
+
+void Reader::failFatal(const std::string& Message) {
+  IsFatalFailure = true;
+  fail(Message);
+}
+
 void Reader::fail(const std::string& Message) {
-  TextWriter Writer;
-  for (const auto& F : FrameStack.riterRange(1)) {
-    fprintf(stderr, "In: ");
-    Writer.writeAbbrev(stderr, F.Nd);
+  TRACE_MESSAGE(Message);
+  bool CanBeCaught = false;
+  if (!IsFatalFailure) {
+    for (auto CallFrame : FrameStack.riterRange()) {
+      if (CallFrame.CallMethod == Catch) {
+#if 0
+        CanBeCaught = true;
+#endif
+        break;
+      }
+    }
   }
-  fprintf(stderr, "Error: (method %s) %s\n", getName(Frame.CallMethod),
-          Message.c_str());
+  if (!CanBeCaught) {
+    // Fail not throw, show context.
+    TextWriter Writer;
+    for (const auto& F : FrameStack.riterRange(1)) {
+      fprintf(stderr, "In: ");
+      Writer.writeAbbrev(stderr, F.Nd);
+    }
+    fprintf(stderr, "Error: (method %s) %s\n", getName(Frame.CallMethod),
+            Message.c_str());
+  }
   Reader::fail();
 }
 
 void Reader::failBadState() {
-  fail(std::string("Bad internal decompressor state: ") +
-       getName(Frame.CallState));
+  failFatal(std::string("Bad internal decompressor state: ") +
+            getName(Frame.CallState));
 }
 
 void Reader::failNotImplemented() {
-  fail("Method not implemented!");
+  failFatal("Method not implemented!");
+}
+
+void Reader::failCantRead() {
+  fail("Unable to read value");
 }
 
 void Reader::failCantWrite() {
-  fail("Unable to write value");
+  failFatal("Unable to write value");
 }
 
 void Reader::failFreezingEof() {
-  fail("Unable to set eof on output");
+  failFatal("Unable to set eof on output");
 }
 
 void Reader::failInWriteOnlyMode() {
-  fail("Method can only be processed in read mode");
+  failFatal("Method can only be processed in read mode");
 }
 
 void Reader::failBadHeaderValue(IntType WantedValue,
                                 IntType FoundValue,
                                 ValueFormat Format) {
-  if (WantedValue != FoundValue) {
-    fprintf(stderr, "Expected header value ");
-    writeInt(stderr, WantedValue, Format);
-    fprintf(stderr, ", but found ");
-    writeInt(stderr, FoundValue, Format);
-    fputc('\n', stderr);
-    fail("Bad header constant found");
-  }
+  fail("Wanted header value " + std::to_string(WantedValue) + " but found " +
+       std::to_string(FoundValue));
 }
 
 void Reader::handleOtherMethods() {
@@ -463,17 +561,16 @@ void Reader::insertFileVersion(uint32_t NewMagicNumber, uint32_t NewVersion) {
 }
 
 void Reader::algorithmStart() {
-  if (!Symtab) {
-    assert(!Selectors.empty());
-    // TODO(karlschimpf) Find correct symbol table to use.
-    setSymbolTable(Selectors.front()->getAlgorithm());
-  }
-  callTopLevel(Method::GetFile, nullptr);
-  if (!Symtab)
-    fail("Unable to read, no symbol table defined!");
+  if (Symtab.get() != nullptr)
+    return callTopLevel(Method::GetFile, nullptr);
+  assert(!Selectors.empty());
+  // TODO(karlschimpf) Find correct symbol table to use.
+  callTopLevel(Method::GetAlgorithm, nullptr);
 }
 
 void Reader::algorithmResume() {
+// TODO(karlschimpf) Add catches for methods that modify local statcks, so
+// that state is correctly cleaned up on a throw.
 #if LOG_RUNMETHODS
   TRACE_METHOD("resume");
   TRACE_BLOCK({ describeState(tracE.getFile()); });
@@ -545,6 +642,9 @@ void Reader::algorithmResume() {
           case OpFileHeader:
             switch (Frame.CallState) {
               case State::Enter:
+                if (!CatchStack.empty()) {
+                  CatchStack.push(Method::Eval);
+                }
                 LoopCounterStack.push(0);
                 Frame.CallState = State::Loop;
                 break;
@@ -562,16 +662,28 @@ void Reader::algorithmResume() {
                 if (!Lit->definesIntTypeFormat())
                   return fail("Format header contains badly formed constant");
                 IntTypeFormat TypeFormat = Lit->getIntTypeFormat();
-                IntType FoundValue = readHeaderValue(TypeFormat);
+                IntType FoundValue;
+                if (!readHeaderValue(TypeFormat, FoundValue)) {
+                  TRACE(IntType, "Found", FoundValue);
+                  return fail("Unable to read header value");
+                }
                 if (errorsFound())
                   return;
                 if (WantedValue != FoundValue)
                   return failBadHeaderValue(WantedValue, FoundValue,
                                             Lit->getFormat());
-                Output->writeHeaderValue(FoundValue, TypeFormat);
+                if (hasWriteMode())
+                  Output->writeHeaderValue(FoundValue, TypeFormat);
                 break;
               }
+              case State::Catch:
+                LoopCounterStack.pop();
+                popAndReturn();
+                return fail();
               case State::Exit:
+                if (!CatchStack.empty())
+                  CatchStack.pop();
+                LoopCounterStack.pop();
                 popAndReturn();
                 break;
               default:
@@ -736,7 +848,8 @@ void Reader::algorithmResume() {
           case OpVaruint32:
           case OpVaruint64: {
             if (hasReadMode())
-              LastReadValue = readValue(Frame.Nd);
+              if (!readValue(Frame.Nd, LastReadValue))
+                return failCantRead();
             if (hasWriteMode()) {
               if (!Output->writeValue(LastReadValue, Frame.Nd))
                 return failCantWrite();
@@ -1180,6 +1293,107 @@ void Reader::algorithmResume() {
           case State::Exit:
             CallingEvalStack.pop();
             popAndReturn(Frame.ReturnValue);
+            break;
+          default:
+            return failBadState();
+        }
+        break;
+      case Method::GetAlgorithm:
+        TRACE(string, "GetAlgorithm state", getName(Frame.CallState));
+        switch (Frame.CallState) {
+          case State::Enter:
+            assert(CatchStack.empty());
+            assert(sizePeekPosStack() == 0);
+            assert(LoopCounterStack.empty());
+            CatchStack.push(Method::GetAlgorithm);
+            pushPeekPos();
+            LoopCounterStack.push(0);
+            Frame.CallState = State::Loop;
+            break;
+          case State::Loop:
+            assert(CatchStack.size() == 1);
+            assert(sizePeekPosStack() == 1);
+            assert(LoopCounterStack.size() == 1);
+            if (LoopCounter >= Selectors.size()) {
+              CatchStack.pop();
+              popPeekPos();
+              LoopCounterStack.pop();
+              return fail("Unable to find algorithm to apply!");
+            }
+            Frame.CallState = State::Step2;
+            call(Method::Eval, MethodModifier::ReadOnly,
+                 Selectors[LoopCounter]->getTargetHeader());
+            break;
+          case State::Step2:
+            assert(CatchStack.size() == 1);
+            assert(sizePeekPosStack() == 1);
+            assert(LoopCounterStack.size() == 1);
+            // Found algorithm. Install and then use.
+            CatchStack.pop();
+            popPeekPos();
+            TRACE(size_t, "Select counter", LoopCounter);
+            if (!Selectors[LoopCounter]->configure(this))
+              return failFatal("Problems configuring reader for found header");
+            if (!Symtab)
+              return failFatal("No algorithm defined for selected algorithm!");
+            Frame.CallState = State::Step3;
+            break;
+          case State::Step3:
+            assert(CatchStack.empty());
+            assert(sizePeekPosStack() == 0);
+            assert(LoopCounterStack.size() == 1);
+            Frame.CallState = State::Step4;
+            call(Method::GetFile, Frame.CallModifier, Frame.Nd);
+            break;
+          case State::Step4:
+            assert(CatchStack.empty());
+            assert(sizePeekPosStack() == 0);
+            assert(LoopCounterStack.size() == 1);
+            // Parsed data associated with algorithm. Now process rest of input.
+            TRACE(size_t, "Select counter", LoopCounter);
+            if (Selectors[LoopCounter]->reset(this)) {
+              if (Symtab) {
+                TRACE_MESSAGE("Reset with symtab");
+                // Defined a symbol table to apply next, so process it without
+                // changing the selector.
+                Frame.CallState = State::Step3;
+                break;
+              }
+            } else
+              return fail("Unable to reset state after appplying algorithm");
+            TRACE_MESSAGE("Reset did not specify any more symtabs");
+            TRACE(bool, "atEof", Input->atInputEof());
+            if (Input->atInputEof()) {
+              LoopCounterStack.pop();
+              Frame.CallState = State::Exit;
+              break;
+            }
+            CatchStack.push(Method::GetAlgorithm);
+            pushPeekPos();
+            LoopCounter = 0;
+            Frame.CallState = State::Loop;
+            break;
+          case State::Catch:
+            assert(CatchStack.empty());
+            switch (CatchState) {
+              default:
+                return rethrow();
+              case State::Step2:
+                assert(sizePeekPosStack() == 1);
+                assert(LoopCounterStack.size() == 1);
+                CatchStack.push(Method::GetAlgorithm);
+                popPeekPos();
+                pushPeekPos();
+                LoopCounter++;
+                Frame.CallState = State::Loop;
+                break;
+            }
+            break;
+          case State::Exit:
+            assert(CatchStack.empty());
+            assert(sizePeekPosStack() == 0);
+            assert(LoopCounterStack.empty());
+            popAndReturn();
             break;
           default:
             return failBadState();

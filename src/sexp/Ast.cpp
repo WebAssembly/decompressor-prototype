@@ -337,6 +337,7 @@ SymbolTable::~SymbolTable() {
   deallocateNodes();
 }
 
+#if 0
 bool SymbolTable::installPredefinedDefaults(std::shared_ptr<SymbolTable> Symtab,
                                             const uint8_t* AlgArray,
                                             size_t AlgArraySize,
@@ -359,6 +360,7 @@ bool SymbolTable::installPredefinedDefaults(std::shared_ptr<SymbolTable> Symtab,
   Reader.algorithmReadBackFilled();
   return !Reader.errorsFound();
 }
+#endif
 
 void SymbolTable::setTraceProgress(bool NewValue) {
   if (!NewValue && !Trace)

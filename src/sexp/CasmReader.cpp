@@ -76,17 +76,17 @@ void CasmReader::readText(charstring Filename) {
 void CasmReader::readBinary(std::shared_ptr<Queue> Binary,
                             std::shared_ptr<SymbolTable> AlgSymtab) {
   auto Inflator = std::make_shared<InflateAst>();
-  auto Reader = std::make_shared<StreamReader>(Binary, Inflator, AlgSymtab);
+  Reader MyReader(std::make_shared<StreamReader>(Binary), Inflator, AlgSymtab);
   if (TraceRead || TraceTree) {
     auto Trace = std::make_shared<TraceClass>("CasmReader");
     Trace->setTraceProgress(true);
-    Reader->setTrace(Trace);
+    MyReader.setTrace(Trace);
     if (TraceTree)
       Inflator->setTrace(Trace);
   }
-  Reader->algorithmStart();
-  Reader->algorithmReadBackFilled();
-  if (Reader->errorsFound()) {
+  MyReader.algorithmStart();
+  MyReader.algorithmReadBackFilled();
+  if (MyReader.errorsFound()) {
     foundErrors();
     return;
   }
