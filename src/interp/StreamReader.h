@@ -49,8 +49,7 @@ class StreamReader : public InputReader {
   size_t sizePeekPosStack() OVERRIDE;
   decode::StreamType getStreamType() OVERRIDE;
   bool processedInputCorrectly() OVERRIDE;
-  bool enterBlock() OVERRIDE;
-  bool exitBlock() OVERRIDE;
+  virtual bool readAction(const filt::SymbolNode* Action) OVERRIDE;
   void readFillStart() OVERRIDE;
   void readFillMoreInput() OVERRIDE;
   uint8_t readUint8() OVERRIDE;

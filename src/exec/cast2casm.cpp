@@ -786,22 +786,4 @@ int main(int Argc, charstring Argv[]) {
     return exit_status(EXIT_FAILURE);
   }
   return exit_status(EXIT_SUCCESS);
-
-#if 0
-  // If reached, geneate binary CASM file.
-  std::shared_ptr<decode::Queue> OutputStream =
-      std::make_shared<WriteBackedQueue>(Output);
-
-  CasmWriter Writer;
-  Writer.setTraceWriter(TraceWrite)
-      .setTraceFlatten(TraceFlatten)
-      .setTraceTree(TraceTree)
-      .setMinimizeBlockSize(MinimizeBlockSize);
-  Writer.writeBinary(InputSymtab, OutputStream, AlgSymtab);
-  if (Writer.hasErrors()) {
-    fprintf(stderr, "Problems writing: %s\n", OutputFilename);
-    return exit_status(EXIT_FAILURE);
-  }
-  return exit_status(EXIT_SUCCESS);
-#endif
 }

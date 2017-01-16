@@ -294,7 +294,7 @@ void ArgsParser::Toggle::describeDefault(FILE* Out,
                                          size_t& Indent) const {
   Optional<bool>::describeDefault(Out, TabSize, Indent);
   printDescriptionContinue(Out, TabSize, Indent,
-                           " (each occurrence toggles vaue)");
+                           " (each occurrence toggles value)");
 }
 
 template <>

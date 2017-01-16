@@ -104,11 +104,8 @@ bool AbbrevAssignWriter::writeHeaderValue(decode::IntType Value,
   return Writer.writeHeaderValue(Value, Format);
 }
 
-bool AbbrevAssignWriter::writeAction(const filt::CallbackNode* Action) {
-  const auto* Sym = dyn_cast<SymbolNode>(Action->getKid(0));
-  if (Sym == nullptr)
-    return false;
-  switch (Sym->getPredefinedSymbol()) {
+bool AbbrevAssignWriter::writeAction(const filt::SymbolNode* Action) {
+  switch (Action->getPredefinedSymbol()) {
     case PredefinedSymbol::Block_enter:
       writeUntilBufferEmpty();
       flushDefaultValues();

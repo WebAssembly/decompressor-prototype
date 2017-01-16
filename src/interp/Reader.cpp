@@ -428,10 +428,6 @@ void Reader::callTopLevel(Method Method, const filt::Node* Nd) {
   call(Method, MethodModifier::ReadAndWrite, Nd);
 }
 
-bool Reader::writeAction(const filt::CallbackNode* Action) {
-  return Output->writeAction(Action);
-}
-
 // TODO: Add concept of "finally" clause that allows clean up on fail,
 // but doesn't assume a catch if performed.
 void Reader::fail() {
@@ -780,13 +776,13 @@ void Reader::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpCallback:  // Method::Eval
-            // TODO(karlschimpf): All virtual calls to class so that derived
-            // classes can override.
-            if (!writeAction(cast<CallbackNode>(Frame.Nd)))
-              return failCantWrite();
+          case OpCallback: {  // Method::Eval
+            SymbolNode* Action = dyn_cast<SymbolNode>(Frame.Nd->getKid(0));
+            if (!readAction(Action) || !writeAction(Action))
+              return fail("Unable to apply action: " + Action->getName());
             popAndReturn(LastReadValue);
             break;
+          }
           case OpI32Const:
           case OpI64Const:
           case OpU8Const:
@@ -1251,21 +1247,20 @@ void Reader::algorithmResume() {
       case Method::EvalBlock:
         switch (Frame.CallState) {
           case State::Enter: {
-            if (!enterBlock())
-              break;
-            if (!Output->writeAction(Symtab->getBlockEnterCallback()))
-              break;
+            SymbolNode* EnterBlock = Symtab->getPredefined(PredefinedSymbol::Block_enter);
+            if (!Input->readAction(EnterBlock) || !Output->writeAction(EnterBlock))
+              return fatal("Unable to enter block");
             Frame.CallState = State::Exit;
             call(DispatchedMethod, Frame.CallModifier, Frame.Nd);
             break;
           }
-          case State::Exit:
-            if (!Output->writeAction(Symtab->getBlockExitCallback()))
-              break;
-            if (!exitBlock())
-              break;
+          case State::Exit: {
+            SymbolNode* ExitBlock = Symtab->getPredefined(PredefinedSymbol::Block_exit);
+            if (!Input->readAction(ExitBlock) || !Output->writeAction(ExitBlock))
+              return fatal("unable to close block");
             popAndReturn();
             break;
+          }
           default:
             return failBadState();
         }

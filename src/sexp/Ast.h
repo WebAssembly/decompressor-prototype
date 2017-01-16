@@ -198,13 +198,6 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
   StreamNode* getStreamDefinition(decode::StreamKind Kind,
                                   decode::StreamType Type);
 
-#if 0
-  static bool installPredefinedDefaults(std::shared_ptr<SymbolTable> Symtab,
-                                        const uint8_t* AlgArray,
-                                        size_t AlgArraySize,
-                                        bool Trace);
-#endif
-
   void setTraceProgress(bool NewValue);
   virtual void setTrace(std::shared_ptr<utils::TraceClass> Trace);
   std::shared_ptr<utils::TraceClass> getTracePtr();

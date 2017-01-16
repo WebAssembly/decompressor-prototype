@@ -99,12 +99,17 @@ bool IntReader::processedInputCorrectly() {
   return Pos.atEnd();
 }
 
-bool IntReader::enterBlock() {
-  return Pos.openBlock();
-}
-
-bool IntReader::exitBlock() {
-  return Pos.closeBlock();
+bool IntReader::readAction(const SymbolNode* Action) {
+  switch (Action->getPredefinedSymbol()) {
+    case PredefinedSymbol::Block_enter:
+    case PredefinedSymbol::Block_enter_readonly:
+      return Pos.openBlock();
+    case PredefinedSymbol::Block_exit:
+    case PredefinedSymbol::Block_exit_readonly:
+      return Pos.closeBlock();
+    default:
+      return true;
+  }
 }
 
 void IntReader::readFillStart() {
@@ -264,10 +269,9 @@ void IntStructureReader::structuralResume() {
             IntStream::BlockPtr Blk = IntInput->getNextBlock();
             TRACE_BLOCK(
                 { TRACE(hex_size_t, "block.open", Blk->getBeginIndex()); });
-            if (!enterBlock())
-              return fail("Unable to open block");
-            if (!Output->writeAction(Symtab->getBlockEnterCallback()))
-              break;
+            SymbolNode* EnterBlock = Symtab->getPredefined(PredefinedSymbol::Block_enter);
+            if (!Input->readAction(EnterBlock) || !Output->writeAction(EnterBlock))
+              return fatal("Unable to enter block");
             Frame.CallState = State::Step3;
             LocalValues.push_back(Blk->getEndIndex());
             call(Method::ReadIntBlock, Frame.CallModifier, nullptr);
@@ -277,10 +281,9 @@ void IntStructureReader::structuralResume() {
             // At the end of a nested block.
             TRACE_BLOCK(
                 { TRACE(hex_size_t, "block.close", LocalValues.back()); });
-            if (!Output->writeAction(Symtab->getBlockExitCallback()))
-              break;
-            if (!exitBlock())
-              return fail("Unable to close block");
+            SymbolNode* ExitBlock = Symtab->getPredefined(PredefinedSymbol::Block_exit);
+            if (!Input->readAction(ExitBlock) || !Output->writeAction(ExitBlock))
+              return fatal("unable to close block");
             // Continue to process rest of block.
             Frame.CallState = State::Loop;
             break;

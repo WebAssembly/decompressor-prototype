@@ -149,7 +149,7 @@ bool TeeWriter::writeHeaderValue(decode::IntType Value,
   return true;
 }
 
-bool TeeWriter::writeAction(const filt::CallbackNode* Action) {
+bool TeeWriter::writeAction(const filt::SymbolNode* Action) {
   for (Node& Nd : Writers) {
     if (!Nd.getWriter()->writeAction(Action))
       return false;

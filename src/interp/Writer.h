@@ -54,7 +54,7 @@ class Writer {
                                interp::IntTypeFormat Format);
   virtual bool writeHeaderValue(decode::IntType Value,
                                 interp::IntTypeFormat Format);
-  virtual bool writeAction(const filt::CallbackNode* Action) = 0;
+  virtual bool writeAction(const filt::SymbolNode* Action) = 0;
 
   virtual void setMinimizeBlockSize(bool NewValue);
   virtual void describeState(FILE* File);

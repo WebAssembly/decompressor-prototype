@@ -110,9 +110,15 @@ Node* AbbreviationCodegen::generateAction(CountNode::Ptr Nd) {
 }
 
 Node* AbbreviationCodegen::generateBlockAction(BlockCountNode* Blk) {
-  return Symtab->create<CallbackNode>(
-      Symtab->getPredefined(Blk->isEnter() ? PredefinedSymbol::Block_enter
-                                           : PredefinedSymbol::Block_exit));
+  PredefinedSymbol Sym;
+  if (Blk->isEnter()) {
+    Sym = ToRead ? PredefinedSymbol::Block_enter
+        : PredefinedSymbol::Block_enter_writeonly;
+  } else {
+    Sym = ToRead ? PredefinedSymbol::Block_exit
+        : PredefinedSymbol::Block_exit_writeonly;
+  }
+  return Symtab->create<CallbackNode>(Symtab->getPredefined(Sym));
 }
 
 Node* AbbreviationCodegen::generateDefaultAction(DefaultCountNode* Default) {

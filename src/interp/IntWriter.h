@@ -50,7 +50,7 @@ class IntWriter : public Writer {
   bool writeFreezeEof() OVERRIDE;
   bool writeHeaderValue(decode::IntType Value,
                         interp::IntTypeFormat Format) OVERRIDE;
-  bool writeAction(const filt::CallbackNode* Action) OVERRIDE;
+  bool writeAction(const filt::SymbolNode* Action) OVERRIDE;
 
   utils::TraceClass::ContextPtr getTraceContext() OVERRIDE;
 

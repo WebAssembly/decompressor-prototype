@@ -83,8 +83,7 @@ class InputReader : public std::enable_shared_from_this<InputReader> {
   virtual size_t sizePeekPosStack() = 0;
   virtual decode::StreamType getStreamType() = 0;
   virtual bool processedInputCorrectly() = 0;
-  virtual bool enterBlock() = 0;
-  virtual bool exitBlock() = 0;
+  virtual bool readAction(const filt::SymbolNode* Action) = 0;
   virtual void readFillStart() = 0;
   virtual void readFillMoreInput() = 0;
   // Hard coded reads.
@@ -351,7 +350,9 @@ class Reader {
 
   // Dispatches writeAction to Output. Captures special cases if needed by the
   // reader.
-  bool writeAction(const filt::CallbackNode* Action);
+  bool writeAction(const filt::SymbolNode* Action) {
+    return Output->writeAction(Action);
+  }
 
   void fail();
   void failBadState();
@@ -392,8 +393,9 @@ class Reader {
   size_t sizePeekPosStack() { return Input->sizePeekPosStack(); }
   decode::StreamType getStreamType() { return Input->getStreamType(); }
   bool processedInputCorrectly() { return Input->processedInputCorrectly(); }
-  bool enterBlock() { return Input->enterBlock(); }
-  bool exitBlock() { return Input->exitBlock(); }
+  bool readAction(const filt::SymbolNode* Action) {
+    return Input->readAction(Action);
+  }
   void readFillStart() { Input->readFillStart(); }
   void readFillMoreInput() { Input->readFillMoreInput(); }
   // Hard coded reads.
