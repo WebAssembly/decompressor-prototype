@@ -295,7 +295,7 @@ bool InflateAst::applyOp(IntType Op) {
   return failWriteActionMalformed();
 }
 
-bool InflateAst::writeAction(const filt::CallbackNode* Action) {
+bool InflateAst::writeAction(const filt::SymbolNode* Action) {
 #if 0
   TRACE_BLOCK({
       constexpr size_t WindowSize = 10;
@@ -318,10 +318,7 @@ bool InflateAst::writeAction(const filt::CallbackNode* Action) {
       fputs("**************\n", Out);
     });
 #endif
-  const auto* Sym = dyn_cast<SymbolNode>(Action->getKid(0));
-  if (Sym == nullptr)
-    return failWriteActionMalformed();
-  PredefinedSymbol Name = Sym->getPredefinedSymbol();
+  PredefinedSymbol Name = Action->getPredefinedSymbol();
   switch (Name) {
     case PredefinedSymbol::Block_enter:
     case PredefinedSymbol::Block_exit:

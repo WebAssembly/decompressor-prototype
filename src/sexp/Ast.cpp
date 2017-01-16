@@ -337,31 +337,6 @@ SymbolTable::~SymbolTable() {
   deallocateNodes();
 }
 
-#if 0
-bool SymbolTable::installPredefinedDefaults(std::shared_ptr<SymbolTable> Symtab,
-                                            const uint8_t* AlgArray,
-                                            size_t AlgArraySize,
-                                            bool TraceInstallation) {
-  std::shared_ptr<ArrayReader> Stream =
-      std::make_shared<ArrayReader>(AlgArray, AlgArraySize);
-  if (!Stream)
-    return false;
-  auto Inflator = std::make_shared<InflateAst>();
-  StreamReader Reader(std::make_shared<ReadBackedQueue>(std::move(Stream)),
-                      Inflator, Symtab);
-  std::shared_ptr<TraceClass> Trace;
-  if (TraceInstallation) {
-    Trace = std::make_shared<TraceClass>("predefined");
-    Reader.setTrace(Trace);
-    Inflator->setTrace(Trace);
-    Trace->setTraceProgress(true);
-  }
-  Reader.algorithmStart();
-  Reader.algorithmReadBackFilled();
-  return !Reader.errorsFound();
-}
-#endif
-
 void SymbolTable::setTraceProgress(bool NewValue) {
   if (!NewValue && !Trace)
     return;

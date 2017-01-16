@@ -62,7 +62,7 @@ class AbbrevAssignWriter : public interp::Writer {
   bool writeValue(decode::IntType Value, const filt::Node* Format) OVERRIDE;
   bool writeHeaderValue(decode::IntType Value,
                         interp::IntTypeFormat Format) OVERRIDE;
-  bool writeAction(const filt::CallbackNode* Action) OVERRIDE;
+  bool writeAction(const filt::SymbolNode* Action) OVERRIDE;
 
   utils::TraceClass::ContextPtr getTraceContext() OVERRIDE;
   void setTrace(std::shared_ptr<utils::TraceClass> Trace) OVERRIDE;

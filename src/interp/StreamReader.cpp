@@ -19,9 +19,6 @@
 #include "interp/StreamReader.h"
 
 #include "interp/ByteReadStream.h"
-#if 1
-#include "sexp/TextWriter.h"
-#endif
 
 namespace wasm {
 
@@ -109,18 +106,22 @@ bool StreamReader::processedInputCorrectly() {
   return ReadPos.atEof() && ReadPos.isQueueGood();
 }
 
-bool StreamReader::enterBlock() {
-  const uint32_t OldSize = Input->readBlockSize(ReadPos);
-#if 0
-  TRACE(uint32_t, "block size", OldSize);
-#endif
-  Input->pushEobAddress(ReadPos, OldSize);
-  return true;
-}
-
-bool StreamReader::exitBlock() {
-  ReadPos.popEobAddress();
-  return true;
+bool StreamReader::readAction(const SymbolNode* Action) {
+  switch (Action->getPredefinedSymbol()) {
+    case PredefinedSymbol::Block_enter:
+    case PredefinedSymbol::Block_enter_readonly: {
+      const uint32_t OldSize = Input->readBlockSize(ReadPos);
+      TRACE(uint32_t, "block size", OldSize);
+      Input->pushEobAddress(ReadPos, OldSize);
+      return true;
+    }
+    case PredefinedSymbol::Block_exit:
+    case PredefinedSymbol::Block_exit_readonly:
+      ReadPos.popEobAddress();
+      return true;
+    default:
+      return true;
+  }
 }
 
 void StreamReader::readFillStart() {

@@ -85,14 +85,13 @@ bool IntWriter::writeHeaderValue(IntType Value, IntTypeFormat Format) {
   return true;
 }
 
-bool IntWriter::writeAction(const filt::CallbackNode* Action) {
-  const auto* Sym = dyn_cast<SymbolNode>(Action->getKid(0));
-  if (Sym == nullptr)
-    return false;
-  switch (Sym->getPredefinedSymbol()) {
+bool IntWriter::writeAction(const filt::SymbolNode* Action) {
+  switch (Action->getPredefinedSymbol()) {
     case PredefinedSymbol::Block_enter:
+    case PredefinedSymbol::Block_enter_writeonly:
       return Pos.openBlock();
     case PredefinedSymbol::Block_exit:
+    case PredefinedSymbol::Block_exit_writeonly:
       return Pos.closeBlock();
     default:
       // Ignore all other actions, since they do not involve

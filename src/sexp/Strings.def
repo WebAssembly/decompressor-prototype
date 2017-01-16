@@ -18,7 +18,11 @@
 //#define X(tag, name)
 #define PREDEFINED_SYMBOLS_TABLE                                               \
 X(Block_enter, "block.enter") \
+X(Block_enter_readonly, "block.enter.readonly") \
+X(Block_enter_writeonly, "block.enter.writeonly") \
 X(Block_exit, "block.exit") \
+X(Block_exit_readonly, "block.exit.readonly") \
+X(Block_exit_writeonly, "block.exit.writeonly") \
 X(Br_table, "br_table") \
 X(Br_table_begin, "br_table.begin") \
 X(Br_table_count, "br_table.count") \

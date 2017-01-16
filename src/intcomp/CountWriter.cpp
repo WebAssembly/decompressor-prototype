@@ -93,11 +93,8 @@ bool CountWriter::writeValue(decode::IntType Value, const filt::Node*) {
   return true;
 }
 
-bool CountWriter::writeAction(const filt::CallbackNode* Action) {
-  const auto* Sym = dyn_cast<SymbolNode>(Action->getKid(0));
-  if (Sym == nullptr)
-    return false;
-  switch (Sym->getPredefinedSymbol()) {
+bool CountWriter::writeAction(const filt::SymbolNode* Action) {
+  switch (Action->getPredefinedSymbol()) {
     case PredefinedSymbol::Block_enter:
       Frontier.clear();
       Root->getBlockEnter()->increment();

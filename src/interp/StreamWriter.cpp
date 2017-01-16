@@ -98,17 +98,16 @@ bool StreamWriter::writeFreezeEof() {
   return Pos.isQueueGood();
 }
 
-bool StreamWriter::writeAction(const filt::CallbackNode* Action) {
-  const auto* Sym = dyn_cast<SymbolNode>(Action->getKid(0));
-  if (Sym == nullptr)
-    return false;
-  switch (Sym->getPredefinedSymbol()) {
+bool StreamWriter::writeAction(const filt::SymbolNode* Action) {
+  switch (Action->getPredefinedSymbol()) {
     case PredefinedSymbol::Block_enter:
+    case PredefinedSymbol::Block_enter_writeonly:
       BlockStartStack.push(Pos);
       Stream->writeFixedBlockSize(Pos, 0);
       BlockStartStack.push(Pos);
       return true;
     case PredefinedSymbol::Block_exit:
+    case  PredefinedSymbol::Block_exit_writeonly:
       if (MinimizeBlockSize) {
         // Mimimized block. Backpatch new size of block. If needed, move
         // block to fill gap between fixed and variable widths for block
