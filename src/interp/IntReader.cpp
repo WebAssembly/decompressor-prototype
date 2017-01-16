@@ -18,6 +18,8 @@
 
 #include "interp/IntReader.h"
 
+#include "interp/IntFormats.h"
+
 namespace wasm {
 
 using namespace decode;
@@ -26,11 +28,8 @@ using namespace utils;
 
 namespace interp {
 
-IntReader::IntReader(IntStream::StreamPtr Input,
-                     std::shared_ptr<Writer> Output,
-                     std::shared_ptr<filt::SymbolTable> Symtab)
-    : Reader(Output, Symtab),
-      Pos(Input),
+IntReader::IntReader(std::shared_ptr<IntStream> Input)
+    : Pos(Input),
       Input(Input),
       HeaderIndex(0),
       StillAvailable(0),
@@ -42,150 +41,6 @@ IntReader::~IntReader() {
 
 TraceClass::ContextPtr IntReader::getTraceContext() {
   return Pos.getTraceContext();
-}
-
-const char* IntReader::getDefaultTraceName() const {
-  return "IntReader";
-}
-
-void IntReader::structuralStart() {
-  algorithmStart();
-}
-
-void IntReader::structuralResume() {
-  if (!canProcessMoreInputNow())
-    return;
-  while (stillMoreInputToProcessNow()) {
-    if (errorsFound())
-      break;
-    switch (Frame.CallMethod) {
-      default:
-        return handleOtherMethods();
-      case Method::GetFile:
-        switch (Frame.CallState) {
-          case State::Enter:
-            for (auto Pair : Input->getHeader()) {
-              IntType Value = readHeaderValue(Pair.second);
-              if (Value != Pair.first)
-                return failBadHeaderValue(Pair.first, Value,
-                                          ValueFormat::Hexidecimal);
-              Output->writeHeaderValue(Pair.first, Pair.second);
-            }
-            LocalValues.push_back(Input->size());
-            Frame.CallState = State::Exit;
-            call(Method::ReadIntBlock, Frame.CallModifier, nullptr);
-            break;
-          case State::Exit:
-            if (FreezeEofAtExit && !Output->writeFreezeEof())
-              return failFreezingEof();
-            popAndReturn();
-            break;
-          default:
-            return failBadState();
-        }
-        break;
-      case Method::ReadIntBlock:
-        switch (Frame.CallState) {
-          case State::Enter:
-            Frame.CallState = State::Loop;
-            break;
-          case State::Loop: {
-            // Check if end of current (enclosing) block has been reached.
-            size_t Eob = LocalValues.back();
-            if (Pos.getIndex() >= Eob) {
-              Frame.CallState = State::Exit;
-              break;
-            }
-            // Check if any nested blocks.
-            bool hasNestedBlocks = Pos.hasMoreBlocks();
-            if (hasNestedBlocks) {
-              IntStream::BlockPtr Blk = Pos.getNextBlock();
-              if (Blk->getBeginIndex() >= Eob)
-                hasNestedBlocks = false;
-            }
-            if (!hasNestedBlocks) {
-              // Only top-level values left. Read until all processed.
-              LocalValues.push_back(Eob);
-              Frame.CallState = State::Exit;
-              call(Method::ReadIntValues, Frame.CallModifier, nullptr);
-              break;
-            }
-            // Read to beginning of nested block.
-            IntStream::BlockPtr Blk = Pos.getNextBlock();
-            LocalValues.push_back(Blk->getBeginIndex());
-            Frame.CallState = State::Step2;
-            call(Method::ReadIntValues, Frame.CallModifier, nullptr);
-            break;
-          }
-          case State::Step2: {
-            // At the beginning of a nested block.
-            IntStream::BlockPtr Blk = Pos.getNextBlock();
-            TRACE_BLOCK(
-                { TRACE(hex_size_t, "block.open", Blk->getBeginIndex()); });
-            if (!enterBlock())
-              return fail("Unable to open block");
-            if (!Output->writeAction(Symtab->getBlockEnterCallback()))
-              break;
-            Frame.CallState = State::Step3;
-            LocalValues.push_back(Blk->getEndIndex());
-            call(Method::ReadIntBlock, Frame.CallModifier, nullptr);
-            break;
-          }
-          case State::Step3: {
-            // At the end of a nested block.
-            TRACE_BLOCK(
-                { TRACE(hex_size_t, "block.close", LocalValues.back()); });
-            if (!Output->writeAction(Symtab->getBlockExitCallback()))
-              break;
-            if (!exitBlock())
-              return fail("Unable to close block");
-            // Continue to process rest of block.
-            Frame.CallState = State::Loop;
-            break;
-          }
-          case State::Exit:
-            LocalValues.pop_back();
-            popAndReturn();
-            break;
-          default:
-            return failBadState();
-        }
-        break;
-      case Method::ReadIntValues:
-        switch (Frame.CallState) {
-          case State::Enter:
-            Frame.CallState = State::Loop;
-            break;
-          case State::Loop: {
-            size_t EndIndex = LocalValues.back();
-            if (Pos.getIndex() >= EndIndex) {
-              Frame.CallState = State::Exit;
-              break;
-            }
-            IntType Value = read();
-            TRACE(IntType, "value", Value);
-            if (!Output->writeVarint64(Value))
-              return fail("Unable to write last value");
-            break;
-          }
-          case State::Exit:
-            LocalValues.pop_back();
-            popAndReturn();
-            break;
-          default:
-            return failBadState();
-        }
-        break;
-    }
-  }
-}
-
-void IntReader::structuralReadBackFilled() {
-  readFillStart();
-  while (!isFinished()) {
-    readFillMoreInput();
-    structuralResume();
-  }
 }
 
 namespace {
@@ -214,6 +69,10 @@ bool IntReader::atInputEob() {
   return Pos.atEob();
 }
 
+bool IntReader::atInputEof() {
+  return Pos.atEof();
+}
+
 void IntReader::resetPeekPosStack() {
   PeekPos = IntStream::ReadCursor();
   PeekPosStack.clear();
@@ -228,6 +87,10 @@ void IntReader::popPeekPos() {
   PeekPosStack.pop();
 }
 
+size_t IntReader::sizePeekPosStack() {
+  return PeekPosStack.size();
+}
+
 StreamType IntReader::getStreamType() {
   return StreamType::Int;
 }
@@ -237,19 +100,11 @@ bool IntReader::processedInputCorrectly() {
 }
 
 bool IntReader::enterBlock() {
-  if (!Pos.openBlock()) {
-    fail("Unable to enter block while reading");
-    return false;
-  }
-  return true;
+  return Pos.openBlock();
 }
 
 bool IntReader::exitBlock() {
-  if (!Pos.closeBlock()) {
-    fail("Unable to exit block while reading");
-    return false;
-  }
-  return true;
+  return Pos.closeBlock();
 }
 
 void IntReader::readFillStart() {
@@ -290,44 +145,16 @@ uint64_t IntReader::readVaruint64() {
   return read();
 }
 
-IntType IntReader::readValue(const filt::Node* Format) {
-  // Note: We pass through virtual functions to force any applicable cast
-  // conversions.
-  switch (Format->getType()) {
-    case OpUint32:
-      return readUint32();
-    case OpUint64:
-      return readUint64();
-    case OpUint8:
-      return readUint8();
-    case OpVarint32:
-      return readVarint32();
-    case OpVarint64:
-      return readVarint64();
-    case OpVaruint32:
-      return readVaruint32();
-    case OpVaruint64:
-      return readVaruint64();
-    default:
-      fatal("readValue not defined for format!");
-      return 0;
-  }
-}
-
-IntType IntReader::readHeaderValue(IntTypeFormat Format) {
+bool IntReader::readHeaderValue(IntTypeFormat Format, IntType& Value) {
   const IntStream::HeaderVector& Header = Input->getHeader();
-  if (HeaderIndex >= Header.size()) {
-    fail("Header value expected, but not found");
-    return 0;
-  }
+  Value = 0;  // Default value for failure.
+  if (HeaderIndex >= Header.size())
+    return false;
   auto Pair = Header[HeaderIndex++];
-  if (Pair.second != Format) {
-    fail(std::string("Expected header value of type ") +
-         interp::getName(Format) + " but found " +
-         interp::getName(Pair.second));
-  }
-  TRACE(hex_IntType, "Value", Pair.first);
-  return Pair.first;
+  if (Pair.second != Format)
+    return false;
+  Value = Pair.first;
+  return true;
 }
 
 void IntReader::describePeekPosStack(FILE* File) {
@@ -338,6 +165,169 @@ void IntReader::describePeekPosStack(FILE* File) {
   for (const auto& Pos : PeekPosStack.iterRange(1))
     fprintf(File, "@%" PRIxMAX "\n", uintmax_t(Pos.getIndex()));
   fprintf(File, "**********************\n");
+}
+
+IntStructureReader::IntStructureReader(
+    std::shared_ptr<IntReader> Input,
+    std::shared_ptr<Writer> Output,
+    std::shared_ptr<filt::SymbolTable> Symtab)
+    : Reader(Input, Output, Symtab), IntInput(Input) {
+  // TODO(karlschimpf) Modify structuralStart() to mimic algorithmStart(),
+  // except that it calls structuralResume() to remove this assertion.
+  assert(Symtab &&
+         "IntStructureReader must be given algorithm at construction");
+}
+
+IntStructureReader::~IntStructureReader() {
+}
+
+const char* IntStructureReader::getDefaultTraceName() const {
+  return "IntReader";
+}
+
+void IntStructureReader::structuralStart() {
+  algorithmStart();
+}
+
+void IntStructureReader::structuralResume() {
+  if (!canProcessMoreInputNow())
+    return;
+  while (stillMoreInputToProcessNow()) {
+    if (errorsFound())
+      break;
+    switch (Frame.CallMethod) {
+      default:
+        return handleOtherMethods();
+      case Method::GetFile:
+        switch (Frame.CallState) {
+          case State::Enter:
+            for (auto Pair : IntInput->getStream()->getHeader()) {
+              IntType Value;
+              if (!readHeaderValue(Pair.second, Value)) {
+                TRACE(IntType, "Lit Value", Pair.first);
+                TRACE(string, "Lit format", wasm::interp::getName(Pair.second));
+                return fail("unable to read header literal");
+              }
+              if (Value != Pair.first)
+                return failBadHeaderValue(Pair.first, Value,
+                                          ValueFormat::Hexidecimal);
+              Output->writeHeaderValue(Pair.first, Pair.second);
+            }
+            LocalValues.push_back(IntInput->getStream()->size());
+            Frame.CallState = State::Exit;
+            call(Method::ReadIntBlock, Frame.CallModifier, nullptr);
+            break;
+          case State::Exit:
+            if (FreezeEofAtExit && !Output->writeFreezeEof())
+              return failFreezingEof();
+            popAndReturn();
+            break;
+          default:
+            return failBadState();
+        }
+        break;
+      case Method::ReadIntBlock:
+        switch (Frame.CallState) {
+          case State::Enter:
+            Frame.CallState = State::Loop;
+            break;
+          case State::Loop: {
+            // Check if end of current (enclosing) block has been reached.
+            size_t Eob = LocalValues.back();
+            if (Input->atInputEob()) {
+              Frame.CallState = State::Exit;
+              break;
+            }
+            // Check if any nested blocks.
+            bool hasNestedBlocks = IntInput->hasMoreBlocks();
+            if (hasNestedBlocks) {
+              IntStream::BlockPtr Blk = IntInput->getNextBlock();
+              if (Blk->getBeginIndex() >= Eob)
+                hasNestedBlocks = false;
+            }
+            if (!hasNestedBlocks) {
+              // Only top-level values left. Read until all processed.
+              LocalValues.push_back(Eob);
+              Frame.CallState = State::Exit;
+              call(Method::ReadIntValues, Frame.CallModifier, nullptr);
+              break;
+            }
+            // Read to beginning of nested block.
+            IntStream::BlockPtr Blk = IntInput->getNextBlock();
+            LocalValues.push_back(Blk->getBeginIndex());
+            Frame.CallState = State::Step2;
+            call(Method::ReadIntValues, Frame.CallModifier, nullptr);
+            break;
+          }
+          case State::Step2: {
+            // At the beginning of a nested block.
+            IntStream::BlockPtr Blk = IntInput->getNextBlock();
+            TRACE_BLOCK(
+                { TRACE(hex_size_t, "block.open", Blk->getBeginIndex()); });
+            if (!enterBlock())
+              return fail("Unable to open block");
+            if (!Output->writeAction(Symtab->getBlockEnterCallback()))
+              break;
+            Frame.CallState = State::Step3;
+            LocalValues.push_back(Blk->getEndIndex());
+            call(Method::ReadIntBlock, Frame.CallModifier, nullptr);
+            break;
+          }
+          case State::Step3: {
+            // At the end of a nested block.
+            TRACE_BLOCK(
+                { TRACE(hex_size_t, "block.close", LocalValues.back()); });
+            if (!Output->writeAction(Symtab->getBlockExitCallback()))
+              break;
+            if (!exitBlock())
+              return fail("Unable to close block");
+            // Continue to process rest of block.
+            Frame.CallState = State::Loop;
+            break;
+          }
+          case State::Exit:
+            LocalValues.pop_back();
+            popAndReturn();
+            break;
+          default:
+            return failBadState();
+        }
+        break;
+      case Method::ReadIntValues:
+        switch (Frame.CallState) {
+          case State::Enter:
+            Frame.CallState = State::Loop;
+            break;
+          case State::Loop: {
+            size_t EndIndex = LocalValues.back();
+            if (IntInput->getIndex() >= EndIndex) {
+              Frame.CallState = State::Exit;
+              break;
+            }
+            IntType Value = IntInput->read();
+            TRACE(IntType, "value", Value);
+            if (!Output->writeVarint64(Value))
+              return fail("Unable to write last value");
+            break;
+          }
+          case State::Exit:
+            LocalValues.pop_back();
+            popAndReturn();
+            break;
+          default:
+            return failBadState();
+        }
+        break;
+    }
+  }
+}
+
+void IntStructureReader::structuralReadBackFilled() {
+  readFillStart();
+  while (!isFinished()) {
+    readFillMoreInput();
+    structuralResume();
+  }
 }
 
 }  // end of namespace interp

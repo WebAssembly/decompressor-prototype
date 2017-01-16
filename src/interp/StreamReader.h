@@ -27,42 +27,26 @@ namespace wasm {
 
 namespace interp {
 
-class StreamReader : public Reader {
+class StreamReader : public InputReader {
   StreamReader() = delete;
   StreamReader(const StreamReader&) = delete;
   StreamReader& operator=(const StreamReader&) = delete;
 
  public:
-  StreamReader(std::shared_ptr<decode::Queue> Input,
-               std::shared_ptr<Writer> Output,
-               std::shared_ptr<filt::SymbolTable> Symtab =
-                   std::shared_ptr<filt::SymbolTable>());
+  StreamReader(std::shared_ptr<decode::Queue> Input);
   ~StreamReader() OVERRIDE;
-  void startUsing(const decode::ReadCursor& ReadPos);
+  void setReadPos(const decode::ReadCursor& ReadPos);
   decode::ReadCursor& getPos();
-  utils::TraceClass::ContextPtr getTraceContext() OVERRIDE;
-
- private:
-  decode::ReadCursorWithTraceContext ReadPos;
-  std::shared_ptr<ReadStream> Input;
-  // The input position needed to fill to process now.
-  size_t FillPos;
-  // The input cursor position if back filling.
-  decode::ReadCursor FillCursor;
-  // The stack of read cursors (used by peek)
-  decode::ReadCursor PeekPos;
-  utils::ValueStack<decode::ReadCursor> PeekPosStack;
-
-  const char* getDefaultTraceName() const OVERRIDE;
 
   void describePeekPosStack(FILE* Out) OVERRIDE;
-
   bool canProcessMoreInputNow() OVERRIDE;
   bool stillMoreInputToProcessNow() OVERRIDE;
+  bool atInputEof() OVERRIDE;
   bool atInputEob() OVERRIDE;
   void resetPeekPosStack() OVERRIDE;
   void pushPeekPos() OVERRIDE;
   void popPeekPos() OVERRIDE;
+  size_t sizePeekPosStack() OVERRIDE;
   decode::StreamType getStreamType() OVERRIDE;
   bool processedInputCorrectly() OVERRIDE;
   bool enterBlock() OVERRIDE;
@@ -76,7 +60,18 @@ class StreamReader : public Reader {
   int64_t readVarint64() OVERRIDE;
   uint32_t readVaruint32() OVERRIDE;
   uint64_t readVaruint64() OVERRIDE;
-  decode::IntType readValue(const filt::Node* Format) OVERRIDE;
+  utils::TraceClass::ContextPtr getTraceContext() OVERRIDE;
+
+ private:
+  decode::ReadCursorWithTraceContext ReadPos;
+  std::shared_ptr<ReadStream> Input;
+  // The input position needed to fill to process now.
+  size_t FillPos;
+  // The input cursor position if back filling.
+  decode::ReadCursor FillCursor;
+  // The stack of read cursors (used by peek)
+  decode::ReadCursor PeekPos;
+  utils::ValueStack<decode::ReadCursor> PeekPosStack;
 };
 
 }  // end of namespace interp

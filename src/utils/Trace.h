@@ -144,6 +144,7 @@ class TraceClass : public std::enable_shared_from_this<TraceClass> {
   void exit(const char* Name = nullptr);
   virtual void traceContext() const;
   void addContext(ContextPtr Ctx);
+  void clearContexts();
 
   // Prints trace prefix only.
   FILE* indent();

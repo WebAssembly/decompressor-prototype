@@ -30,51 +30,30 @@ namespace wasm {
 
 namespace interp {
 
-class IntReader : public Reader {
-  IntReader() = delete;
+class IntReader : public InputReader {
   IntReader(const IntReader&) = delete;
   IntReader& operator=(const IntReader&) = delete;
 
  public:
-  IntReader(std::shared_ptr<IntStream> Input,
-            std::shared_ptr<Writer> Output,
-            std::shared_ptr<filt::SymbolTable> Symtab);
-  ~IntReader() OVERRIDE;
+  IntReader(std::shared_ptr<IntStream> Input);
+  ~IntReader();
 
-  // Read based on structure of input integer stream.
-  void structuralStart();
-  void structuralResume();
-  void structuralReadBackFilled();
-
-  void structuralRead() {
-    structuralStart();
-    structuralReadBackFilled();
-  }
-
-  utils::TraceClass::ContextPtr getTraceContext() OVERRIDE;
-
- private:
-  IntStream::ReadCursorWithTraceContext Pos;
-  IntStream::StreamPtr Input;
-  size_t HeaderIndex;
-  // Shows how many are still available since last call to
-  // canProcessMoreInputNow().
-  size_t StillAvailable;
-  // The stack of read cursors (used by peek).
-  IntStream::ReadCursor PeekPos;
-  utils::ValueStack<IntStream::Cursor> PeekPosStack;
-
-  const char* getDefaultTraceName() const OVERRIDE;
-  void describePeekPosStack(FILE* Out) OVERRIDE;
+  std::shared_ptr<IntStream> getStream() { return Input; }
+  bool hasMoreBlocks() { return Pos.hasMoreBlocks(); }
+  IntStream::BlockPtr getNextBlock() { return Pos.getNextBlock(); }
+  size_t getIndex() { return Pos.getIndex(); }
 
   decode::IntType read();
+  void describePeekPosStack(FILE* Out) OVERRIDE;
 
   bool canProcessMoreInputNow() OVERRIDE;
   bool stillMoreInputToProcessNow() OVERRIDE;
   bool atInputEob() OVERRIDE;
+  bool atInputEof() OVERRIDE;
   void resetPeekPosStack() OVERRIDE;
   void pushPeekPos() OVERRIDE;
   void popPeekPos() OVERRIDE;
+  size_t sizePeekPosStack() OVERRIDE;
   decode::StreamType getStreamType() OVERRIDE;
   bool processedInputCorrectly() OVERRIDE;
   bool enterBlock() OVERRIDE;
@@ -88,8 +67,56 @@ class IntReader : public Reader {
   int64_t readVarint64() OVERRIDE;
   uint32_t readVaruint32() OVERRIDE;
   uint64_t readVaruint64() OVERRIDE;
-  decode::IntType readValue(const filt::Node* Format) OVERRIDE;
-  decode::IntType readHeaderValue(interp::IntTypeFormat Format) OVERRIDE;
+  bool readHeaderValue(interp::IntTypeFormat Format,
+                       decode::IntType& Value) OVERRIDE;
+  utils::TraceClass::ContextPtr getTraceContext() OVERRIDE;
+
+  // Read based on structure of input integer stream.
+  void structuralStart();
+  void structuralResume();
+  void structuralReadBackFilled();
+
+  void structuralRead() {
+    structuralStart();
+    structuralReadBackFilled();
+  }
+
+ private:
+  IntStream::ReadCursorWithTraceContext Pos;
+  IntStream::StreamPtr Input;
+  size_t HeaderIndex;
+  // Shows how many are still available since last call to
+  // canProcessMoreInputNow().
+  size_t StillAvailable;
+  // The stack of read cursors (used by peek).
+  IntStream::ReadCursor PeekPos;
+  utils::ValueStack<IntStream::Cursor> PeekPosStack;
+};
+
+class IntStructureReader : public Reader {
+  IntStructureReader() = delete;
+  IntStructureReader(const IntStructureReader&) = delete;
+  IntStructureReader& operator=(const IntStructureReader&) = delete;
+
+ public:
+  IntStructureReader(std::shared_ptr<IntReader> Input,
+                     std::shared_ptr<Writer> Output,
+                     std::shared_ptr<filt::SymbolTable> Symtab);
+  ~IntStructureReader() OVERRIDE;
+
+  // Read based on structure of input integer stream.
+  void structuralStart();
+  void structuralResume();
+  void structuralReadBackFilled();
+
+  void structuralRead() {
+    structuralStart();
+    structuralReadBackFilled();
+  }
+
+ private:
+  const char* getDefaultTraceName() const OVERRIDE;
+  std::shared_ptr<IntReader> IntInput;
 };
 
 }  // end of namespace interp

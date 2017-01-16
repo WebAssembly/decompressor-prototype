@@ -64,6 +64,10 @@ void TraceClass::addContext(ContextPtr NewCtx) {
   ContextList.push_back(NewCtx);
 }
 
+void TraceClass::clearContexts() {
+  ContextList.clear();
+}
+
 void TraceClass::traceContext() const {
   if (ContextList.empty())
     return;

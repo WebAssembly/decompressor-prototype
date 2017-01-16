@@ -15,8 +15,10 @@
  * limitations under the License.
  */
 
+#include "algorithms/casm0x0.h"
 #include "algorithms/wasm0xd.h"
 #include "interp/Decompress.h"
+#include "interp/DecompressSelector.h"
 #include "interp/StreamReader.h"
 #include "interp/StreamWriter.h"
 #include "stream/FileReader.h"
@@ -200,10 +202,14 @@ int main(const int Argc, const char* Argv[]) {
     std::shared_ptr<Queue> BackedOutput =
         std::make_shared<WriteBackedQueue>(Output);
     auto Writer = std::make_shared<interp::StreamWriter>(BackedOutput);
-    interp::StreamReader Decompressor(std::make_shared<ReadBackedQueue>(Input),
-                                      Writer);
-    Decompressor.addSelector(
-        std::make_shared<SymbolTableSelector>(getAlgwasm0xdSymtab()));
+    Reader Decompressor(std::make_shared<interp::StreamReader>(
+                            std::make_shared<ReadBackedQueue>(Input)),
+                        Writer);
+    auto AlgState = std::make_shared<DecompAlgState>();
+    Decompressor.addSelector(std::make_shared<DecompressSelector>(
+        getAlgwasm0xdSymtab(), AlgState, false));
+    Decompressor.addSelector(std::make_shared<DecompressSelector>(
+        getAlgcasm0x0Symtab(), AlgState, true));
     Writer->setMinimizeBlockSize(MinimizeBlockSize);
     if (VerboseTrace) {
       auto Trace = std::make_shared<TraceClass>("Decompress");
