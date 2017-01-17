@@ -22,7 +22,7 @@
 #include "algorithms/casm0x0.h"
 #endif
 
-#include "interp/StreamReader.h"
+#include "interp/ByteReader.h"
 #include "sexp/Ast.h"
 #include "sexp/InflateAst.h"
 #include "sexp/TextWriter.h"
@@ -76,7 +76,7 @@ void CasmReader::readText(charstring Filename) {
 void CasmReader::readBinary(std::shared_ptr<Queue> Binary,
                             std::shared_ptr<SymbolTable> AlgSymtab) {
   auto Inflator = std::make_shared<InflateAst>();
-  Reader MyReader(std::make_shared<StreamReader>(Binary), Inflator, AlgSymtab);
+  Reader MyReader(std::make_shared<ByteReader>(Binary), Inflator, AlgSymtab);
   if (TraceRead || TraceTree) {
     auto Trace = std::make_shared<TraceClass>("CasmReader");
     Trace->setTraceProgress(true);

@@ -23,8 +23,9 @@
 #include "intcomp/IntCountNode.h"
 #include "interp/IntFormats.h"
 #include "interp/IntStream.h"
-#include "interp/StreamReader.h"
-#include "interp/StreamWriter.h"
+#include "sexp/Ast.h"
+#include "stream/Queue.h"
+#include "stream/WriteCursor.h"
 
 namespace wasm {
 

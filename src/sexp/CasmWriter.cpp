@@ -24,8 +24,8 @@
 #include "algorithms/casm0x0.h"
 #endif
 
+#include "interp/ByteWriter.h"
 #include "interp/IntReader.h"
-#include "interp/StreamWriter.h"
 #include "interp/TeeWriter.h"
 #include "sexp/FlattenAst.h"
 #include "sexp/InflateAst.h"
@@ -65,7 +65,7 @@ const WriteCursor& CasmWriter::writeBinary(
     std::shared_ptr<SymbolTable> AlgSymtab) {
   std::shared_ptr<IntStream> IntSeq = std::make_shared<IntStream>();
   writeBinary(Symtab, IntSeq);
-  auto StrmWriter = std::make_shared<StreamWriter>(Output);
+  auto StrmWriter = std::make_shared<ByteWriter>(Output);
   std::shared_ptr<Writer> Writer = StrmWriter;
   Writer->setMinimizeBlockSize(MinimizeBlockSize);
   if (TraceTree) {

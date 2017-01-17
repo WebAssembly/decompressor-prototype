@@ -16,8 +16,8 @@
 
 // Defines a stream reader for wasm/casm files.
 
-#ifndef DECOMPRESSOR_SRC_INTERP_STREAM_READER_H
-#define DECOMPRESSOR_SRC_INTERP_STREAM_READER_H
+#ifndef DECOMPRESSOR_SRC_INTERP_BYTEREADER_H
+#define DECOMPRESSOR_SRC_INTERP_BYTEREADER_H
 
 #include "interp/Reader.h"
 #include "interp/ReadStream.h"
@@ -27,14 +27,14 @@ namespace wasm {
 
 namespace interp {
 
-class StreamReader : public InputReader {
-  StreamReader() = delete;
-  StreamReader(const StreamReader&) = delete;
-  StreamReader& operator=(const StreamReader&) = delete;
+class ByteReader : public InputReader {
+  ByteReader() = delete;
+  ByteReader(const ByteReader&) = delete;
+  ByteReader& operator=(const ByteReader&) = delete;
 
  public:
-  StreamReader(std::shared_ptr<decode::Queue> Input);
-  ~StreamReader() OVERRIDE;
+  ByteReader(std::shared_ptr<decode::Queue> Input);
+  ~ByteReader() OVERRIDE;
   void setReadPos(const decode::ReadCursor& ReadPos);
   decode::ReadCursor& getPos();
 
@@ -77,4 +77,4 @@ class StreamReader : public InputReader {
 
 }  // end of namespace wasm
 
-#endif  // DECOMPRESSOR_SRC_INTERP_STREAM_READER_H
+#endif  // DECOMPRESSOR_SRC_INTERP_BYTEREADER_H

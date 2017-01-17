@@ -193,7 +193,9 @@ INTERP_OBJDIR = $(OBJDIR)/interp
 INTERP_OBJDIR_BOOT = $(OBJDIR_BOOT)/interp
 
 INTERP_SRCS_BASE = \
+	ByteReader.cpp \
 	ByteReadStream.cpp \
+	ByteWriter.cpp \
 	ByteWriteStream.cpp \
 	DecompressSelector.cpp \
 	IntFormats.cpp \
@@ -202,8 +204,6 @@ INTERP_SRCS_BASE = \
 	IntWriter.cpp \
 	Reader.cpp \
 	ReadStream.cpp \
-	StreamReader.cpp \
-	StreamWriter.cpp \
 	TeeWriter.cpp \
 	Writer.cpp \
 	WriteStream.cpp

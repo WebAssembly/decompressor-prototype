@@ -23,6 +23,8 @@
 #include "intcomp/AbbreviationsCollector.h"
 #include "intcomp/CountWriter.h"
 #include "intcomp/RemoveNodesVisitor.h"
+#include "interp/ByteReader.h"
+#include "interp/ByteWriter.h"
 #include "interp/IntReader.h"
 #include "sexp/CasmWriter.h"
 #include "sexp/TextWriter.h"
@@ -103,7 +105,7 @@ CountNode::RootPtr IntCompressor::getRoot() {
 void IntCompressor::readInput() {
   Contents = std::make_shared<IntStream>();
   auto MyWriter = std::make_shared<IntWriter>(Contents);
-  Reader MyReader(std::make_shared<StreamReader>(Input), MyWriter, Symtab);
+  Reader MyReader(std::make_shared<ByteReader>(Input), MyWriter, Symtab);
   if (MyFlags.TraceReadingInput)
     MyReader.getTrace().setTraceProgress(true);
   MyReader.algorithmRead();
@@ -126,7 +128,7 @@ const WriteCursor IntCompressor::writeCodeOutput(
 
 void IntCompressor::writeDataOutput(const WriteCursor& StartPos,
                                     std::shared_ptr<SymbolTable> Symtab) {
-  auto Writer = std::make_shared<StreamWriter>(Output);
+  auto Writer = std::make_shared<ByteWriter>(Output);
   Writer->setPos(StartPos);
   Reader MyReader(std::make_shared<IntReader>(IntOutput), Writer, Symtab);
   if (MyFlags.TraceWritingDataOutput)
