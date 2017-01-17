@@ -113,10 +113,10 @@ Node* AbbreviationCodegen::generateBlockAction(BlockCountNode* Blk) {
   PredefinedSymbol Sym;
   if (Blk->isEnter()) {
     Sym = ToRead ? PredefinedSymbol::Block_enter
-        : PredefinedSymbol::Block_enter_writeonly;
+                 : PredefinedSymbol::Block_enter_writeonly;
   } else {
     Sym = ToRead ? PredefinedSymbol::Block_exit
-        : PredefinedSymbol::Block_exit_writeonly;
+                 : PredefinedSymbol::Block_exit_writeonly;
   }
   return Symtab->create<CallbackNode>(Symtab->getPredefined(Sym));
 }

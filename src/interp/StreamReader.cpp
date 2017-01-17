@@ -57,7 +57,7 @@ constexpr size_t kResumeHeadroom = 100;
 bool StreamReader::canProcessMoreInputNow() {
   FillPos = ReadPos.fillSize();
   if (!ReadPos.isEofFrozen()) {
-    if (FillPos < kResumeHeadroom)
+    if (FillPos < ReadPos.getCurByteAddress() + kResumeHeadroom)
       return false;
     FillPos -= kResumeHeadroom;
   }

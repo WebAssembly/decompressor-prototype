@@ -1247,16 +1247,20 @@ void Reader::algorithmResume() {
       case Method::EvalBlock:
         switch (Frame.CallState) {
           case State::Enter: {
-            SymbolNode* EnterBlock = Symtab->getPredefined(PredefinedSymbol::Block_enter);
-            if (!Input->readAction(EnterBlock) || !Output->writeAction(EnterBlock))
+            SymbolNode* EnterBlock =
+                Symtab->getPredefined(PredefinedSymbol::Block_enter);
+            if (!Input->readAction(EnterBlock) ||
+                !Output->writeAction(EnterBlock))
               return fatal("Unable to enter block");
             Frame.CallState = State::Exit;
             call(DispatchedMethod, Frame.CallModifier, Frame.Nd);
             break;
           }
           case State::Exit: {
-            SymbolNode* ExitBlock = Symtab->getPredefined(PredefinedSymbol::Block_exit);
-            if (!Input->readAction(ExitBlock) || !Output->writeAction(ExitBlock))
+            SymbolNode* ExitBlock =
+                Symtab->getPredefined(PredefinedSymbol::Block_exit);
+            if (!Input->readAction(ExitBlock) ||
+                !Output->writeAction(ExitBlock))
               return fatal("unable to close block");
             popAndReturn();
             break;

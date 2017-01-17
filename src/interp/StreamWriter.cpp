@@ -107,7 +107,7 @@ bool StreamWriter::writeAction(const filt::SymbolNode* Action) {
       BlockStartStack.push(Pos);
       return true;
     case PredefinedSymbol::Block_exit:
-    case  PredefinedSymbol::Block_exit_writeonly:
+    case PredefinedSymbol::Block_exit_writeonly:
       if (MinimizeBlockSize) {
         // Mimimized block. Backpatch new size of block. If needed, move
         // block to fill gap between fixed and variable widths for block
