@@ -16,8 +16,8 @@
 
 // Defines a stream writer for wasm/casm files.
 
-#ifndef DECOMPRESSOR_SRC_INTERP_STREAMWRITER_H
-#define DECOMPRESSOR_SRC_INTERP_STREAMWRITER_H
+#ifndef DECOMPRESSOR_SRC_INTERP_BYTEWRITER_H
+#define DECOMPRESSOR_SRC_INTERP_BYTEWRITER_H
 
 #include "interp/Writer.h"
 #include "interp/WriteStream.h"
@@ -28,14 +28,14 @@ namespace wasm {
 
 namespace interp {
 
-class StreamWriter : public Writer {
-  StreamWriter() = delete;
-  StreamWriter(const StreamWriter&) = delete;
-  StreamWriter& operator=(const StreamWriter&) = delete;
+class ByteWriter : public Writer {
+  ByteWriter() = delete;
+  ByteWriter(const ByteWriter&) = delete;
+  ByteWriter& operator=(const ByteWriter&) = delete;
 
  public:
-  StreamWriter(std::shared_ptr<decode::Queue> Output);
-  ~StreamWriter() OVERRIDE;
+  ByteWriter(std::shared_ptr<decode::Queue> Output);
+  ~ByteWriter() OVERRIDE;
   decode::WriteCursor& getPos();
   utils::TraceClass::ContextPtr getTraceContext() OVERRIDE;
 
@@ -71,4 +71,4 @@ class StreamWriter : public Writer {
 
 }  // end of namespace wasm
 
-#endif  // DECOMPRESSOR_SRC_INTERP_STREAMWRITER_H
+#endif  // DECOMPRESSOR_SRC_INTERP_BYTEWRITER_H

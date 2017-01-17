@@ -19,8 +19,8 @@
 #include "algorithms/wasm0xd.h"
 #include "interp/Decompress.h"
 #include "interp/DecompressSelector.h"
-#include "interp/StreamReader.h"
-#include "interp/StreamWriter.h"
+#include "interp/ByteReader.h"
+#include "interp/ByteWriter.h"
 #include "stream/FileReader.h"
 #include "stream/FileWriter.h"
 #include "stream/ReadBackedQueue.h"
@@ -48,7 +48,7 @@ std::shared_ptr<RawStream> getInput() {
   if (UseFileStreams)
     return std::make_shared<FileReader>(InputFilename);
   if (InputFilename == std::string("-"))
-    return std::make_shared<decode::StreamReader>(std::cin);
+    return std::make_shared<StreamReader>(std::cin);
   return std::make_shared<FstreamReader>(InputFilename);
 }
 
@@ -56,7 +56,7 @@ std::shared_ptr<RawStream> getOutput() {
   if (UseFileStreams)
     return std::make_shared<FileWriter>(OutputFilename);
   if (OutputFilename == std::string("-"))
-    return std::make_shared<decode::StreamWriter>(std::cout);
+    return std::make_shared<StreamWriter>(std::cout);
   return std::make_shared<FstreamWriter>(OutputFilename);
 }
 
@@ -201,8 +201,8 @@ int main(const int Argc, const char* Argv[]) {
       fprintf(stderr, "Decompressing...\n");
     std::shared_ptr<Queue> BackedOutput =
         std::make_shared<WriteBackedQueue>(Output);
-    auto Writer = std::make_shared<interp::StreamWriter>(BackedOutput);
-    Reader Decompressor(std::make_shared<interp::StreamReader>(
+    auto Writer = std::make_shared<ByteWriter>(BackedOutput);
+    Reader Decompressor(std::make_shared<ByteReader>(
                             std::make_shared<ReadBackedQueue>(Input)),
                         Writer);
     auto AlgState = std::make_shared<DecompAlgState>();

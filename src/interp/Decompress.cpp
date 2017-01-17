@@ -19,9 +19,9 @@
 #include "algorithms/casm0x0.h"
 #include "algorithms/wasm0xd.h"
 #include "interp/Decompress.h"
+#include "interp/ByteReader.h"
+#include "interp/ByteWriter.h"
 #include "interp/DecompressSelector.h"
-#include "interp/StreamReader.h"
-#include "interp/StreamWriter.h"
 #include "stream/Pipe.h"
 
 namespace wasm {
@@ -48,7 +48,7 @@ struct Decompressor {
   Pipe OutputPipe;
   std::shared_ptr<ReadCursor> OutputPos;
   std::shared_ptr<Reader> MyReader;
-  std::shared_ptr<StreamWriter> Writer;
+  std::shared_ptr<ByteWriter> Writer;
   std::shared_ptr<DecompAlgState> AlgState;
   State MyState;
   Decompressor();
@@ -175,9 +175,9 @@ extern "C" {
 void* create_decompressor() {
   auto* Decomp = new Decompressor();
   Decomp->Writer =
-      std::make_shared<StreamWriter>(Decomp->OutputPipe.getInput());
+      std::make_shared<ByteWriter>(Decomp->OutputPipe.getInput());
   Decomp->MyReader = std::make_shared<Reader>(
-      std::make_shared<StreamReader>(Decomp->Input), Decomp->Writer);
+      std::make_shared<ByteReader>(Decomp->Input), Decomp->Writer);
   Decomp->MyReader->addSelector(std::make_shared<DecompressSelector>(
       getAlgwasm0xdSymtab(), Decomp->AlgState, false));
   Decomp->MyReader->addSelector(std::make_shared<DecompressSelector>(

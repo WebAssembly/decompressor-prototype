@@ -20,7 +20,6 @@
 #include "sexp/Ast.h"
 
 #include "interp/IntFormats.h"
-#include "interp/StreamReader.h"
 #include "sexp/InflateAst.h"
 #include "sexp/TextWriter.h"
 #include "stream/ArrayReader.h"

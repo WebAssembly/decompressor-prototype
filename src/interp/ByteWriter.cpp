@@ -16,7 +16,7 @@
 
 // implements a stream writer for wasm/casm files.
 
-#include "interp/StreamWriter.h"
+#include "interp/ByteWriter.h"
 
 #include "interp/ByteWriteStream.h"
 
@@ -28,77 +28,77 @@ using namespace utils;
 
 namespace interp {
 
-StreamWriter::StreamWriter(std::shared_ptr<decode::Queue> Output)
+ByteWriter::ByteWriter(std::shared_ptr<decode::Queue> Output)
     : Pos(StreamType::Byte, Output),
       Stream(std::make_shared<ByteWriteStream>()),
       BlockStartStack(BlockStart) {
 }
 
-StreamWriter::~StreamWriter() {
+ByteWriter::~ByteWriter() {
 }
 
-void StreamWriter::reset() {
+void ByteWriter::reset() {
   BlockStart = WriteCursor();
   BlockStartStack.clear();
 }
 
-WriteCursor& StreamWriter::getPos() {
+WriteCursor& ByteWriter::getPos() {
   return Pos;
 }
 
-TraceClass::ContextPtr StreamWriter::getTraceContext() {
+TraceClass::ContextPtr ByteWriter::getTraceContext() {
   return Pos.getTraceContext();
 }
 
-const char* StreamWriter::getDefaultTraceName() const {
-  return "StreamWriter";
+const char* ByteWriter::getDefaultTraceName() const {
+  return "ByteWriter";
 }
 
-decode::StreamType StreamWriter::getStreamType() const {
+decode::StreamType ByteWriter::getStreamType() const {
   return Stream->getType();
 }
 
-bool StreamWriter::writeUint8(uint8_t Value) {
+bool ByteWriter::writeUint8(uint8_t Value) {
   Stream->writeUint8(Value, Pos);
   return Pos.isQueueGood();
 }
 
-bool StreamWriter::writeUint32(uint32_t Value) {
+bool ByteWriter::writeUint32(uint32_t Value) {
   Stream->writeUint32(Value, Pos);
   return Pos.isQueueGood();
 }
 
-bool StreamWriter::writeUint64(uint64_t Value) {
+bool ByteWriter::writeUint64(uint64_t Value) {
   Stream->writeUint64(Value, Pos);
   return Pos.isQueueGood();
 }
 
-bool StreamWriter::writeVarint32(int32_t Value) {
+bool ByteWriter::writeVarint32(int32_t Value) {
   Stream->writeVarint32(Value, Pos);
   return Pos.isQueueGood();
 }
 
-bool StreamWriter::writeVarint64(int64_t Value) {
+bool ByteWriter::writeVarint64(int64_t Value) {
   Stream->writeVarint64(Value, Pos);
   return Pos.isQueueGood();
 }
 
-bool StreamWriter::writeVaruint32(uint32_t Value) {
+bool ByteWriter::writeVaruint32(uint32_t Value) {
   Stream->writeVaruint32(Value, Pos);
   return Pos.isQueueGood();
 }
 
-bool StreamWriter::writeVaruint64(uint64_t Value) {
+bool ByteWriter::writeVaruint64(uint64_t Value) {
   Stream->writeVaruint64(Value, Pos);
   return Pos.isQueueGood();
 }
 
-bool StreamWriter::writeFreezeEof() {
+bool ByteWriter::writeFreezeEof() {
   Pos.freezeEof();
   return Pos.isQueueGood();
 }
 
-bool StreamWriter::writeAction(const filt::SymbolNode* Action) {
+bool ByteWriter::writeAction(const filt::SymbolNode* Action) {
   switch (Action->getPredefinedSymbol()) {
     case PredefinedSymbol::Block_enter:
     case PredefinedSymbol::Block_enter_writeonly:
@@ -144,7 +144,7 @@ bool StreamWriter::writeAction(const filt::SymbolNode* Action) {
   return true;
 }
 
-void StreamWriter::describeBlockStartStack(FILE* File) {
+void ByteWriter::describeBlockStartStack(FILE* File) {
   if (BlockStartStack.empty())
     return;
   fprintf(File, "*** Block Start Stack ***\n");
@@ -153,7 +153,7 @@ void StreamWriter::describeBlockStartStack(FILE* File) {
   fprintf(File, "*************************\n");
 }
 
-void StreamWriter::describeState(FILE* File) {
+void ByteWriter::describeState(FILE* File) {
   describeBlockStartStack(File);
 }
 

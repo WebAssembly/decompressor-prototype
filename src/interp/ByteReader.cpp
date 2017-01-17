@@ -16,7 +16,7 @@
 
 // Implements a stream reader for wasm/casm files.
 
-#include "interp/StreamReader.h"
+#include "interp/ByteReader.h"
 
 #include "interp/ByteReadStream.h"
 
@@ -28,21 +28,21 @@ using namespace utils;
 
 namespace interp {
 
-StreamReader::StreamReader(std::shared_ptr<decode::Queue> StrmInput)
+ByteReader::ByteReader(std::shared_ptr<decode::Queue> StrmInput)
     : ReadPos(StreamType::Byte, StrmInput),
       Input(std::make_shared<ByteReadStream>()),
       FillPos(0),
       PeekPosStack(PeekPos) {
 }
 
-StreamReader::~StreamReader() {
+ByteReader::~ByteReader() {
 }
 
-void StreamReader::setReadPos(const decode::ReadCursor& StartPos) {
+void ByteReader::setReadPos(const decode::ReadCursor& StartPos) {
   ReadPos = StartPos;
 }
 
-TraceClass::ContextPtr StreamReader::getTraceContext() {
+TraceClass::ContextPtr ByteReader::getTraceContext() {
   return ReadPos.getTraceContext();
 }
 
@@ -54,7 +54,7 @@ constexpr size_t kResumeHeadroom = 100;
 
 }  // end of anonymous namespace
 
-bool StreamReader::canProcessMoreInputNow() {
+bool ByteReader::canProcessMoreInputNow() {
   FillPos = ReadPos.fillSize();
   if (!ReadPos.isEofFrozen()) {
     if (FillPos < ReadPos.getCurByteAddress() + kResumeHeadroom)
@@ -64,49 +64,49 @@ bool StreamReader::canProcessMoreInputNow() {
   return true;
 }
 
-bool StreamReader::stillMoreInputToProcessNow() {
+bool ByteReader::stillMoreInputToProcessNow() {
   return ReadPos.getCurByteAddress() <= FillPos;
 }
 
-ReadCursor& StreamReader::getPos() {
+ReadCursor& ByteReader::getPos() {
   return ReadPos;
 }
 
-bool StreamReader::atInputEob() {
+bool ByteReader::atInputEob() {
   return ReadPos.atByteEob();
 }
 
-bool StreamReader::atInputEof() {
+bool ByteReader::atInputEof() {
   return ReadPos.atEof();
 }
 
-void StreamReader::resetPeekPosStack() {
+void ByteReader::resetPeekPosStack() {
   PeekPos = ReadCursor();
   PeekPosStack.clear();
 }
 
-void StreamReader::pushPeekPos() {
+void ByteReader::pushPeekPos() {
   PeekPosStack.push(ReadPos);
 }
 
-void StreamReader::popPeekPos() {
+void ByteReader::popPeekPos() {
   ReadPos = PeekPos;
   PeekPosStack.pop();
 }
 
-size_t StreamReader::sizePeekPosStack() {
+size_t ByteReader::sizePeekPosStack() {
   return PeekPosStack.size();
 }
 
-decode::StreamType StreamReader::getStreamType() {
+decode::StreamType ByteReader::getStreamType() {
   return Input->getType();
 }
 
-bool StreamReader::processedInputCorrectly() {
+bool ByteReader::processedInputCorrectly() {
   return ReadPos.atEof() && ReadPos.isQueueGood();
 }
 
-bool StreamReader::readAction(const SymbolNode* Action) {
+bool ByteReader::readAction(const SymbolNode* Action) {
   switch (Action->getPredefinedSymbol()) {
     case PredefinedSymbol::Block_enter:
     case PredefinedSymbol::Block_enter_readonly: {
@@ -124,45 +124,45 @@ bool StreamReader::readAction(const SymbolNode* Action) {
   }
 }
 
-void StreamReader::readFillStart() {
+void ByteReader::readFillStart() {
   FillCursor = ReadPos;
 }
 
-void StreamReader::readFillMoreInput() {
+void ByteReader::readFillMoreInput() {
   if (FillCursor.atEof())
     return;
   FillCursor.advance(Page::Size);
 }
 
-uint8_t StreamReader::readUint8() {
+uint8_t ByteReader::readUint8() {
   return Input->readUint8(ReadPos);
 }
 
-uint32_t StreamReader::readUint32() {
+uint32_t ByteReader::readUint32() {
   return Input->readUint32(ReadPos);
 }
 
-uint64_t StreamReader::readUint64() {
+uint64_t ByteReader::readUint64() {
   return Input->readUint64(ReadPos);
 }
 
-int32_t StreamReader::readVarint32() {
+int32_t ByteReader::readVarint32() {
   return Input->readVarint32(ReadPos);
 }
 
-int64_t StreamReader::readVarint64() {
+int64_t ByteReader::readVarint64() {
   return Input->readVarint64(ReadPos);
 }
 
-uint32_t StreamReader::readVaruint32() {
+uint32_t ByteReader::readVaruint32() {
   return Input->readVaruint32(ReadPos);
 }
 
-uint64_t StreamReader::readVaruint64() {
+uint64_t ByteReader::readVaruint64() {
   return Input->readVaruint64(ReadPos);
 }
 
-void StreamReader::describePeekPosStack(FILE* File) {
+void ByteReader::describePeekPosStack(FILE* File) {
   if (PeekPosStack.empty())
     return;
   fprintf(File, "*** Peek Pos Stack ***\n");
