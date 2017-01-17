@@ -269,8 +269,10 @@ void IntStructureReader::structuralResume() {
             IntStream::BlockPtr Blk = IntInput->getNextBlock();
             TRACE_BLOCK(
                 { TRACE(hex_size_t, "block.open", Blk->getBeginIndex()); });
-            SymbolNode* EnterBlock = Symtab->getPredefined(PredefinedSymbol::Block_enter);
-            if (!Input->readAction(EnterBlock) || !Output->writeAction(EnterBlock))
+            SymbolNode* EnterBlock =
+                Symtab->getPredefined(PredefinedSymbol::Block_enter);
+            if (!Input->readAction(EnterBlock) ||
+                !Output->writeAction(EnterBlock))
               return fatal("Unable to enter block");
             Frame.CallState = State::Step3;
             LocalValues.push_back(Blk->getEndIndex());
@@ -281,8 +283,10 @@ void IntStructureReader::structuralResume() {
             // At the end of a nested block.
             TRACE_BLOCK(
                 { TRACE(hex_size_t, "block.close", LocalValues.back()); });
-            SymbolNode* ExitBlock = Symtab->getPredefined(PredefinedSymbol::Block_exit);
-            if (!Input->readAction(ExitBlock) || !Output->writeAction(ExitBlock))
+            SymbolNode* ExitBlock =
+                Symtab->getPredefined(PredefinedSymbol::Block_exit);
+            if (!Input->readAction(ExitBlock) ||
+                !Output->writeAction(ExitBlock))
               return fatal("unable to close block");
             // Continue to process rest of block.
             Frame.CallState = State::Loop;
