@@ -116,7 +116,6 @@ bool DecompressSelector::resetData(Reader* R) {
     return true;
   }
   // Last run was algorithm on front of queue.
-  State->IntermediateStream->describe(stderr);
   State->AlgQueue.pop();
   assert(State->IntermediateStream);
   auto Input = std::make_shared<IntReader>(State->IntermediateStream);

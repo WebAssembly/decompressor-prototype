@@ -52,9 +52,9 @@ constexpr size_t kResumeHeadroom = 100;
 }  // end of anonymous namespace
 
 bool IntReader::canProcessMoreInputNow() {
-  StillAvailable = Pos.sizeAvailable();
+  StillAvailable = Pos.streamSize();
   if (!Input->isFrozen()) {
-    if (StillAvailable < kResumeHeadroom)
+    if (StillAvailable < Pos.getIndex() + kResumeHeadroom)
       return false;
     StillAvailable -= kResumeHeadroom;
   }
