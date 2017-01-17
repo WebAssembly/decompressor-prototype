@@ -261,9 +261,6 @@ Reader::Reader(std::shared_ptr<InputReader> Input,
     : Input(Input),
       Output(Output),
       Symtab(Symtab),
-      ReadFileHeader(true),
-      MagicNumber(0),
-      Version(0),
       LastReadValue(0),
       DispatchedMethod(Method::NO_SUCH_METHOD),
       Catch(Method::NO_SUCH_METHOD),
@@ -545,13 +542,6 @@ void Reader::handleOtherMethods() {
         return;
     }
   }
-}
-
-void Reader::insertFileVersion(uint32_t NewMagicNumber, uint32_t NewVersion) {
-  assert(ReadFileHeader);
-  ReadFileHeader = false;
-  MagicNumber = NewMagicNumber;
-  Version = NewVersion;
 }
 
 void Reader::algorithmStart() {
@@ -1404,7 +1394,6 @@ void Reader::algorithmResume() {
       case Method::GetFile:
         switch (Frame.CallState) {
           case State::Enter: {
-            TRACE(bool, "ReadHeaderFile", ReadFileHeader);
             if (Frame.Nd == nullptr) {
               Frame.Nd = Symtab->getInstalledRoot();
               assert(Frame.Nd);
@@ -1412,37 +1401,13 @@ void Reader::algorithmResume() {
             }
             const Node* Header =
                 HeaderOverride ? HeaderOverride : Symtab->getTargetHeader();
-            if (Header->getType() == OpFileHeader) {
-              Frame.CallState = State::Step4;
-              call(Method::Eval, Frame.CallModifier, Header);
-              break;
-            }
-            Frame.CallState = ReadFileHeader ? State::Step2 : State::Step3;
+            if (!isa<FileHeaderNode>(Header))
+              return fail("Can't find matching header definition");
+            Frame.CallState = State::Step2;
+            call(Method::Eval, Frame.CallModifier, Header);
             break;
           }
-          case State::Step2:
-            MagicNumber = readUint32();
-            Version = readUint32();
-            Frame.CallState = State::Step3;
-            break;
-          case State::Step3:
-            // TODO(karlschimpf): Remove this form.
-            TRACE(hex_uint32_t, "magic number", MagicNumber);
-            if (MagicNumber != WasmBinaryMagic)
-              return throwMessage(
-                  "Unable to decompress. Did not find WASM binary "
-                  "magic number!");
-            if (!Output->writeHeaderValue(MagicNumber, IntTypeFormat::Uint32))
-              return throwCantWrite();
-            TRACE(hex_uint32_t, "version", Version);
-            if (Version != WasmBinaryVersionD)
-              return throwMessage(
-                  "Unable to decompress. WASM version not known");
-            if (!Output->writeHeaderValue(Version, IntTypeFormat::Uint32))
-              return throwCantWrite();
-            Frame.CallState = State::Step4;
-            break;
-          case State::Step4: {
+          case State::Step2: {
             Frame.CallState = State::Exit;
             SymbolNode* File = Symtab->getPredefined(PredefinedSymbol::File);
             if (File == nullptr)

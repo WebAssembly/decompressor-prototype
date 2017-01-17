@@ -114,11 +114,6 @@ class Reader {
              std::shared_ptr<filt::SymbolTable>());
   virtual ~Reader();
 
-  // Can be called immediately before algorithmStart() to insert file version
-  // into the output (instead of reading from input). Deorecated,
-  // TODO: Replace this with useFileHeader().
-  void insertFileVersion(uint32_t MagicNumber, uint32_t Version);
-
   void useFileHeader(const filt::FileHeaderNode* Header) {
     HeaderOverride = Header;
   }
@@ -291,12 +286,6 @@ class Reader {
   std::shared_ptr<Writer> Output;
   std::shared_ptr<filt::SymbolTable> Symtab;
   std::vector<std::shared_ptr<AlgorithmSelector>> Selectors;
-  // True if magic number/file header should be read.
-  bool ReadFileHeader;
-  // The magic number of the input.
-  uint32_t MagicNumber;
-  // The version of the input.
-  uint32_t Version;
   // The current section name (if applicable).
   std::string CurSectionName;
   // The last read value.
