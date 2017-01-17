@@ -114,11 +114,6 @@ class Reader {
              std::shared_ptr<filt::SymbolTable>());
   virtual ~Reader();
 
-  // Can be called immediately before algorithmStart() to insert file version
-  // into the output (instead of reading from input). Deorecated,
-  // TODO: Replace this with useFileHeader().
-  void insertFileVersion(uint32_t MagicNumber, uint32_t Version);
-
   void useFileHeader(const filt::FileHeaderNode* Header) {
     HeaderOverride = Header;
   }
@@ -162,13 +157,26 @@ class Reader {
   bool hasReadMode() const { return isReadModifier(Frame.CallModifier); }
   bool hasWriteMode() const { return isWriteModifier(Frame.CallModifier); }
 
-  // Force reader to fail with possible catches.
-  void fail(const std::string& Message);
+  // Throw exception (with message) for error.
+  void throwMessage(const std::string& Message);
+  void throwCantRead();
+  void throwCantWrite();
+  void throwCantFreezeEof();
+  void throwCantWriteInWriteOnlyMode();
+  void throwBadHeaderValue(decode::IntType WantedValue,
+                           decode::IntType FoundValue,
+                           decode::ValueFormat Format);
 
-  // Force reader to fail with no catches.
-  void failFatal(const std::string& Message);
-
+  // After catching (and cleaning up state), rethrow caught exception error.
   void rethrow();
+
+  // Finds state to apply catch, or fail if no catch is defined.
+  void catchOrElseFail();
+
+  // Fail always (even if catch applicable).
+  void fail(const std::string& Message);
+  void failBadState();
+  void failNotImplemented();
 
   // Returns non-null context handler if applicable.
   utils::TraceClass::ContextPtr getTraceContext();
@@ -278,12 +286,6 @@ class Reader {
   std::shared_ptr<Writer> Output;
   std::shared_ptr<filt::SymbolTable> Symtab;
   std::vector<std::shared_ptr<AlgorithmSelector>> Selectors;
-  // True if magic number/file header should be read.
-  bool ReadFileHeader;
-  // The magic number of the input.
-  uint32_t MagicNumber;
-  // The version of the input.
-  uint32_t Version;
   // The current section name (if applicable).
   std::string CurSectionName;
   // The last read value.
@@ -291,6 +293,10 @@ class Reader {
   // Holds the method to call (i.e. dispatch) if code expects a method to be
   // provided by the caller.
   Method DispatchedMethod;
+  // The last thrown message. Used for rethrowing.
+  std::string RethrowMessage;
+
+  // Trace object to use, if applicable.
   std::shared_ptr<utils::TraceClass> Trace;
 
   // Defines method to fail back to (defaults to
@@ -353,17 +359,6 @@ class Reader {
   bool writeAction(const filt::SymbolNode* Action) {
     return Output->writeAction(Action);
   }
-
-  void fail();
-  void failBadState();
-  void failCantRead();
-  void failCantWrite();
-  void failFreezingEof();
-  void failInWriteOnlyMode();
-  void failNotImplemented();
-  void failBadHeaderValue(decode::IntType WantedValue,
-                          decode::IntType FoundValue,
-                          decode::ValueFormat Format);
 
   // For debugging only.
 

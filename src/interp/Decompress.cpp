@@ -109,13 +109,14 @@ int32_t Decompressor::resume(int32_t Size) {
         }
       } else {
         if (InputPos->atEof()) {
-          MyReader->fail("resume_decompression(" + std::to_string(Size) +
-                         "): can't add bytes when input closed");
+          MyReader->throwMessage("resume_decompression(" +
+                                 std::to_string(Size) +
+                                 "): can't add bytes when input closed");
           return fail();
         }
         if (Size > BufferSize) {
-          MyReader->fail("resume_decompression(" + std::to_string(Size) +
-                         "): illegal size");
+          MyReader->throwMessage("resume_decompression(" +
+                                 std::to_string(Size) + "): illegal size");
           return fail();
         }
         // TODO(karlschimpf) Speed up this copy.
@@ -138,8 +139,8 @@ int32_t Decompressor::resume(int32_t Size) {
     case State::Succeeded:
       if (Size == 0)
         return DECOMPRESSOR_SUCCESS;
-      MyReader->fail("resume_decompression(" + std::to_string(Size) +
-                     "): can't add bytes when input closed");
+      MyReader->throwMessage("resume_decompression(" + std::to_string(Size) +
+                             "): can't add bytes when input closed");
       break;
     case State::Failed:
       break;

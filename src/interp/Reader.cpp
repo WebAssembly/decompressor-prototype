@@ -35,8 +35,6 @@
 // algorithm.
 #define LOG_SECTIONS LOG_DEFAULT_VALUE
 #define LOG_FUNCTIONS LOG_DEFAULT_VALUE
-// The following logs lookahead on each call to eval.
-#define LOG_EVAL_LOOKAHEAD LOG_FALSE_VALUE
 
 // The following two defines allows turning on tracing for the nth (zero based)
 // function.
@@ -261,9 +259,6 @@ Reader::Reader(std::shared_ptr<InputReader> Input,
     : Input(Input),
       Output(Output),
       Symtab(Symtab),
-      ReadFileHeader(true),
-      MagicNumber(0),
-      Version(0),
       LastReadValue(0),
       DispatchedMethod(Method::NO_SUCH_METHOD),
       Catch(Method::NO_SUCH_METHOD),
@@ -428,9 +423,7 @@ void Reader::callTopLevel(Method Method, const filt::Node* Nd) {
   call(Method, MethodModifier::ReadAndWrite, Nd);
 }
 
-// TODO: Add concept of "finally" clause that allows clean up on fail,
-// but doesn't assume a catch if performed.
-void Reader::fail() {
+void Reader::catchOrElseFail() {
   TRACE_MESSAGE("method failed");
   TRACE(string, "Catch method", getName(Catch));
   TRACE(string, "Catch state", getName(CatchState));
@@ -450,16 +443,17 @@ void Reader::fail() {
 }
 
 void Reader::rethrow() {
-  return fail("Rethrowing exception");
-}
-
-void Reader::failFatal(const std::string& Message) {
-  IsFatalFailure = true;
-  fail(Message);
+  return throwMessage(RethrowMessage);
 }
 
 void Reader::fail(const std::string& Message) {
+  IsFatalFailure = true;
+  throwMessage(Message);
+}
+
+void Reader::throwMessage(const std::string& Message) {
   TRACE_MESSAGE(Message);
+  RethrowMessage = Message;
   bool CanBeCaught = false;
   if (!IsFatalFailure) {
     for (auto CallFrame : FrameStack.riterRange()) {
@@ -479,39 +473,39 @@ void Reader::fail(const std::string& Message) {
     fprintf(stderr, "Error: (method %s) %s\n", getName(Frame.CallMethod),
             Message.c_str());
   }
-  Reader::fail();
+  Reader::catchOrElseFail();
 }
 
 void Reader::failBadState() {
-  failFatal(std::string("Bad internal decompressor state: ") +
-            getName(Frame.CallState));
+  fail(std::string("Bad internal decompressor state: ") +
+       getName(Frame.CallState));
 }
 
 void Reader::failNotImplemented() {
-  failFatal("Method not implemented!");
+  fail("Method not implemented!");
 }
 
-void Reader::failCantRead() {
-  fail("Unable to read value");
+void Reader::throwCantRead() {
+  throwMessage("Unable to read value");
 }
 
-void Reader::failCantWrite() {
-  failFatal("Unable to write value");
+void Reader::throwCantWrite() {
+  fail("Unable to write value");
 }
 
-void Reader::failFreezingEof() {
-  failFatal("Unable to set eof on output");
+void Reader::throwCantFreezeEof() {
+  fail("Unable to set eof on output");
 }
 
-void Reader::failInWriteOnlyMode() {
-  failFatal("Method can only be processed in read mode");
+void Reader::throwCantWriteInWriteOnlyMode() {
+  fail("Method can only be processed in read mode");
 }
 
-void Reader::failBadHeaderValue(IntType WantedValue,
-                                IntType FoundValue,
-                                ValueFormat Format) {
-  fail("Wanted header value " + std::to_string(WantedValue) + " but found " +
-       std::to_string(FoundValue));
+void Reader::throwBadHeaderValue(IntType WantedValue,
+                                 IntType FoundValue,
+                                 ValueFormat Format) {
+  throwMessage("Wanted header value " + std::to_string(WantedValue) +
+               " but found " + std::to_string(FoundValue));
 }
 
 void Reader::handleOtherMethods() {
@@ -526,7 +520,7 @@ void Reader::handleOtherMethods() {
         if (processedInputCorrectly())
           Frame.CallState = State::Succeeded;
         else
-          return fail("Malformed input in compressed file");
+          return throwMessage("Malformed input in compressed file");
         break;
       case Method::Finished:
         assert(FrameStack.empty());
@@ -546,13 +540,6 @@ void Reader::handleOtherMethods() {
         return;
     }
   }
-}
-
-void Reader::insertFileVersion(uint32_t NewMagicNumber, uint32_t NewVersion) {
-  assert(ReadFileHeader);
-  ReadFileHeader = false;
-  MagicNumber = NewMagicNumber;
-  Version = NewVersion;
 }
 
 void Reader::algorithmStart() {
@@ -602,20 +589,6 @@ void Reader::algorithmResume() {
         }
         break;
       case Method::Eval:
-#if LOG_EVAL_LOOKAHEAD
-        if (Frame.CallState == State::Enter) {
-          TRACE_BLOCK({
-            decode::ReadCursor Lookahead(getPos());
-            fprintf(getTrace().indent(), "Lookahead:");
-            for (int i = 0; i < 10; ++i) {
-              if (!Lookahead.atByteEob())
-                fprintf(getTrace().getFile(), " %x", Lookahead.readByte());
-            }
-            fprintf(getTrace().getFile(), " ");
-            fprintf(getPos().describe(getTrace().getFile(), true), "\n");
-          });
-        }
-#endif
         switch (Frame.Nd->getType()) {
           case NO_SUCH_NODETYPE:
           case OpConvert:
@@ -633,7 +606,7 @@ void Reader::algorithmResume() {
           case OpUnknownSection:  // Method::Eval
             return failNotImplemented();
           case OpError:  // Method::Eval
-            return fail("Algorithm error!");
+            return throwMessage("Algorithm error!");
           case OpFileHeader:
             switch (Frame.CallState) {
               case State::Enter:
@@ -652,21 +625,23 @@ void Reader::algorithmResume() {
                     dyn_cast<IntegerNode>(Frame.Nd->getKid(LoopCounter++));
                 TRACE(node_ptr, "Lit", Lit);
                 if (Lit == nullptr)
-                  return fail("Literal header value expected, but not found");
+                  return throwMessage(
+                      "Literal header value expected, but not found");
                 IntType WantedValue = Lit->getValue();
                 if (!Lit->definesIntTypeFormat())
-                  return fail("Format header contains badly formed constant");
+                  return throwMessage(
+                      "Format header contains badly formed constant");
                 IntTypeFormat TypeFormat = Lit->getIntTypeFormat();
                 IntType FoundValue;
                 if (!readHeaderValue(TypeFormat, FoundValue)) {
                   TRACE(IntType, "Found", FoundValue);
-                  return fail("Unable to read header value");
+                  return throwMessage("Unable to read header value");
                 }
                 if (errorsFound())
                   return;
                 if (WantedValue != FoundValue)
-                  return failBadHeaderValue(WantedValue, FoundValue,
-                                            Lit->getFormat());
+                  return throwBadHeaderValue(WantedValue, FoundValue,
+                                             Lit->getFormat());
                 if (hasWriteMode())
                   Output->writeHeaderValue(FoundValue, TypeFormat);
                 break;
@@ -674,7 +649,7 @@ void Reader::algorithmResume() {
               case State::Catch:
                 LoopCounterStack.pop();
                 popAndReturn();
-                return fail();
+                return rethrow();
               case State::Exit:
                 if (!CatchStack.empty())
                   CatchStack.pop();
@@ -689,7 +664,7 @@ void Reader::algorithmResume() {
             switch (Frame.CallState) {
               case State::Enter:
                 if (!hasReadMode())
-                  return failInWriteOnlyMode();
+                  return throwCantWriteInWriteOnlyMode();
                 Frame.CallState = State::Step2;
                 call(Method::Eval, Frame.CallModifier, Frame.Nd->getKid(0));
                 break;
@@ -713,7 +688,7 @@ void Reader::algorithmResume() {
             switch (Frame.CallState) {
               case State::Enter:
                 if (!hasReadMode())
-                  return failInWriteOnlyMode();
+                  return throwCantWriteInWriteOnlyMode();
                 Frame.CallState = State::Step2;
                 call(Method::Eval, Frame.CallModifier, Frame.Nd->getKid(0));
                 break;
@@ -737,7 +712,7 @@ void Reader::algorithmResume() {
             switch (Frame.CallState) {
               case State::Enter:
                 if (!hasReadMode())
-                  return failInWriteOnlyMode();
+                  return throwCantWriteInWriteOnlyMode();
                 Frame.CallState = State::Step2;
                 call(Method::Eval, Frame.CallModifier, Frame.Nd->getKid(0));
                 break;
@@ -761,7 +736,7 @@ void Reader::algorithmResume() {
             switch (Frame.CallState) {
               case State::Enter:
                 if (!hasReadMode())
-                  return failInWriteOnlyMode();
+                  return throwCantWriteInWriteOnlyMode();
                 Frame.CallState = State::Exit;
                 call(Method::Eval, Frame.CallModifier, Frame.Nd->getKid(0));
                 break;
@@ -778,7 +753,8 @@ void Reader::algorithmResume() {
           case OpCallback: {  // Method::Eval
             SymbolNode* Action = dyn_cast<SymbolNode>(Frame.Nd->getKid(0));
             if (!readAction(Action) || !writeAction(Action))
-              return fail("Unable to apply action: " + Action->getName());
+              return throwMessage("Unable to apply action: " +
+                                  Action->getName());
             popAndReturn(LastReadValue);
             break;
           }
@@ -800,7 +776,7 @@ void Reader::algorithmResume() {
             const auto* Local = dyn_cast<LocalNode>(Frame.Nd);
             size_t Index = Local->getValue();
             if (LocalsBase + Index >= LocalValues.size()) {
-              return fail("Local variable index out of range!");
+              return throwMessage("Local variable index out of range!");
             }
             popAndReturn(LocalValues[LocalsBase + Index]);
             break;
@@ -844,10 +820,10 @@ void Reader::algorithmResume() {
           case OpVaruint64: {
             if (hasReadMode())
               if (!readValue(Frame.Nd, LastReadValue))
-                return failCantRead();
+                return throwCantRead();
             if (hasWriteMode()) {
               if (!Output->writeValue(LastReadValue, Frame.Nd))
-                return failCantWrite();
+                return throwCantWrite();
             }
             popAndReturn(LastReadValue);
             break;
@@ -877,7 +853,7 @@ void Reader::algorithmResume() {
             }
             break;
           case OpOpcode:  // Method::Eval
-            return fail("Multibyte opcodes broken!");
+            return throwMessage("Multibyte opcodes broken!");
           case OpSet:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
@@ -888,7 +864,8 @@ void Reader::algorithmResume() {
                 const auto* Local = dyn_cast<LocalNode>(Frame.Nd->getKid(0));
                 size_t Index = Local->getValue();
                 if (LocalsBase + Index >= LocalValues.size()) {
-                  return fail("Local variable index out of range, can't set!");
+                  return throwMessage(
+                      "Local variable index out of range, can't set!");
                 }
                 LocalValues[LocalsBase + Index] = Frame.ReturnValue;
                 popAndReturn(LastReadValue);
@@ -933,7 +910,7 @@ void Reader::algorithmResume() {
           }
           case OpNot:  // Method::Eval
             if (!hasReadMode())
-              return failInWriteOnlyMode();
+              return throwCantWriteInWriteOnlyMode();
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Exit;
@@ -949,7 +926,7 @@ void Reader::algorithmResume() {
             break;
           case OpAnd:  // Method::Eval
             if (!hasReadMode())
-              return failInWriteOnlyMode();
+              return throwCantWriteInWriteOnlyMode();
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Step2;
@@ -970,7 +947,7 @@ void Reader::algorithmResume() {
             break;
           case OpOr:  // Method::Eval
             if (!hasReadMode())
-              return failInWriteOnlyMode();
+              return throwCantWriteInWriteOnlyMode();
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Step2;
@@ -1185,7 +1162,7 @@ void Reader::algorithmResume() {
                           Sym->getName().c_str(),
                           uintmax_t(NumParams->getValue()),
                           uintmax_t(NumCallArgs));
-                  return fail("Unable to evaluate call");
+                  return throwMessage("Unable to evaluate call");
                 }
                 size_t CallingEvalIndex = CallingEvalStack.size();
                 CallingEvalStack.push();
@@ -1272,14 +1249,14 @@ void Reader::algorithmResume() {
         switch (Frame.CallState) {
           case State::Enter: {
             if (CallingEvalStack.empty())
-              return fail(
+              return throwMessage(
                   "Not inside a call frame, can't evaluate parameter "
                   "accessor!");
             assert(isa<ParamNode>(Frame.Nd));
             auto* Param = cast<ParamNode>(Frame.Nd);
             IntType ParamIndex = Param->getValue() + 1;
             if (ParamIndex >= IntType(CallingEval.Caller->getNumKids()))
-              return fail(
+              return throwMessage(
                   "Parameter reference doesn't match callling context!");
             const Node* Context = CallingEval.Caller->getKid(ParamIndex);
             CallingEvalStack.push(
@@ -1316,7 +1293,7 @@ void Reader::algorithmResume() {
               CatchStack.pop();
               popPeekPos();
               LoopCounterStack.pop();
-              return fail("Unable to find algorithm to apply!");
+              return throwMessage("Unable to find algorithm to apply!");
             }
             Frame.CallState = State::Step2;
             call(Method::Eval, MethodModifier::ReadOnly,
@@ -1331,9 +1308,9 @@ void Reader::algorithmResume() {
             popPeekPos();
             TRACE(size_t, "Select counter", LoopCounter);
             if (!Selectors[LoopCounter]->configure(this))
-              return failFatal("Problems configuring reader for found header");
+              return fail("Problems configuring reader for found header");
             if (!Symtab)
-              return failFatal("No algorithm defined for selected algorithm!");
+              return fail("No algorithm defined for selected algorithm!");
             Frame.CallState = State::Step3;
             break;
           case State::Step3:
@@ -1358,7 +1335,8 @@ void Reader::algorithmResume() {
                 break;
               }
             } else
-              return fail("Unable to reset state after appplying algorithm");
+              return throwMessage(
+                  "Unable to reset state after appplying algorithm");
             TRACE_MESSAGE("Reset did not specify any more symtabs");
             TRACE(bool, "atEof", Input->atInputEof());
             if (Input->atInputEof()) {
@@ -1400,7 +1378,6 @@ void Reader::algorithmResume() {
       case Method::GetFile:
         switch (Frame.CallState) {
           case State::Enter: {
-            TRACE(bool, "ReadHeaderFile", ReadFileHeader);
             if (Frame.Nd == nullptr) {
               Frame.Nd = Symtab->getInstalledRoot();
               assert(Frame.Nd);
@@ -1408,48 +1385,26 @@ void Reader::algorithmResume() {
             }
             const Node* Header =
                 HeaderOverride ? HeaderOverride : Symtab->getTargetHeader();
-            if (Header->getType() == OpFileHeader) {
-              Frame.CallState = State::Step4;
-              call(Method::Eval, Frame.CallModifier, Header);
-              break;
-            }
-            Frame.CallState = ReadFileHeader ? State::Step2 : State::Step3;
+            if (!isa<FileHeaderNode>(Header))
+              return fail("Can't find matching header definition");
+            Frame.CallState = State::Step2;
+            call(Method::Eval, Frame.CallModifier, Header);
             break;
           }
-          case State::Step2:
-            MagicNumber = readUint32();
-            Version = readUint32();
-            Frame.CallState = State::Step3;
-            break;
-          case State::Step3:
-            TRACE(hex_uint32_t, "magic number", MagicNumber);
-            if (MagicNumber != WasmBinaryMagic)
-              return fail(
-                  "Unable to decompress. Did not find WASM binary "
-                  "magic number!");
-            if (!Output->writeHeaderValue(MagicNumber, IntTypeFormat::Uint32))
-              return failCantWrite();
-            TRACE(hex_uint32_t, "version", Version);
-            if (Version != WasmBinaryVersionD)
-              return fail("Unable to decompress. WASM version not known");
-            if (!Output->writeHeaderValue(Version, IntTypeFormat::Uint32))
-              return failCantWrite();
-            Frame.CallState = State::Step4;
-            break;
-          case State::Step4: {
+          case State::Step2: {
             Frame.CallState = State::Exit;
             SymbolNode* File = Symtab->getPredefined(PredefinedSymbol::File);
             if (File == nullptr)
-              fail("Can't find sexpression to process file");
+              throwMessage("Can't find sexpression to process file");
             const Node* FileDefn = File->getDefineDefinition();
             if (FileDefn == nullptr)
-              fail("Can't find sexpression to process file");
+              throwMessage("Can't find sexpression to process file");
             call(Method::Eval, Frame.CallModifier, FileDefn);
             break;
           }
           case State::Exit:
             if (FreezeEofAtExit && !Output->writeFreezeEof())
-              return failFreezingEof();
+              return throwCantFreezeEof();
             popAndReturn();
             break;
           default:
