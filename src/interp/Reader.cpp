@@ -35,8 +35,6 @@
 // algorithm.
 #define LOG_SECTIONS LOG_DEFAULT_VALUE
 #define LOG_FUNCTIONS LOG_DEFAULT_VALUE
-// The following logs lookahead on each call to eval.
-#define LOG_EVAL_LOOKAHEAD LOG_FALSE_VALUE
 
 // The following two defines allows turning on tracing for the nth (zero based)
 // function.
@@ -591,20 +589,6 @@ void Reader::algorithmResume() {
         }
         break;
       case Method::Eval:
-#if LOG_EVAL_LOOKAHEAD
-        if (Frame.CallState == State::Enter) {
-          TRACE_BLOCK({
-            decode::ReadCursor Lookahead(getPos());
-            fprintf(getTrace().indent(), "Lookahead:");
-            for (int i = 0; i < 10; ++i) {
-              if (!Lookahead.atByteEob())
-                fprintf(getTrace().getFile(), " %x", Lookahead.readByte());
-            }
-            fprintf(getTrace().getFile(), " ");
-            fprintf(getPos().describe(getTrace().getFile(), true), "\n");
-          });
-        }
-#endif
         switch (Frame.Nd->getType()) {
           case NO_SUCH_NODETYPE:
           case OpConvert:
