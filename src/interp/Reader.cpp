@@ -432,10 +432,11 @@ void Reader::callTopLevel(Method Method, const filt::Node* Nd) {
 // but doesn't assume a catch if performed.
 void Reader::fail() {
   TRACE_MESSAGE("method failed");
+  TRACE(string, "Catch method", getName(Catch));
+  TRACE(string, "Catch state", getName(CatchState));
   while (!FrameStack.empty()) {
     if (!IsFatalFailure && Frame.CallMethod == Catch) {
       CatchState = Frame.CallState;
-      TRACE(string, "Catch method", getName(Catch));
       TRACE(string, "Catch state", getName(CatchState));
       Frame.CallState = State::Catch;
       if (!CatchStack.empty())
@@ -463,9 +464,7 @@ void Reader::fail(const std::string& Message) {
   if (!IsFatalFailure) {
     for (auto CallFrame : FrameStack.riterRange()) {
       if (CallFrame.CallMethod == Catch) {
-#if 0
         CanBeCaught = true;
-#endif
         break;
       }
     }

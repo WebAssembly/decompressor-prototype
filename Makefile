@@ -864,12 +864,8 @@ $(TEST_EXECS): $(TEST_EXECDIR)/%$(EXE): $(TEST_OBJDIR)/%.o $(LIBS)
 ###### Testing ######
 
 test: build-all test-parser test-raw-streams test-byte-queues \
-	test-decompress test-casm2cast test-cast2casm
+	test-decompress test-casm2cast test-cast2casm test-compress
 	@echo "*** all tests passed ***"
-
-# TODO: Add this back to the set of tests.
-#	test-compress
-
 
 .PHONY: test
 
@@ -935,8 +931,9 @@ $(TEST_CASM_DF_GEN_FILES): $(TEST_0XD_GENDIR)/%.df-out: $(TEST_SRCS_DIR)/%.wasm 
 
 # Note: Currently only tests that code executes (without errors).
 $(TEST_WASM_COMP_FILES): $(TEST_0XD_GENDIR)/%.wasm-comp: $(TEST_0XD_SRCDIR)/%.wasm \
-		$(BUILD_EXECDIR)/compress-int
-	$(BUILD_EXECDIR)/compress-int -c 2 -l 10 -i $< -o /dev/null
+		$(BUILD_EXECDIR)/compress-int $(BUILD_EXECDIR)/decompress
+	$(BUILD_EXECDIR)/compress-int --min-int-count 2 --min-weight 5 $< \
+	| $(BUILD_EXECDIR)/decompress - | cmp - $<
 
 .PHONY: $(TEST_WASM_COMP_FILES)
 
