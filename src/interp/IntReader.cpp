@@ -211,11 +211,11 @@ void IntStructureReader::structuralResume() {
               if (!readHeaderValue(Pair.second, Value)) {
                 TRACE(IntType, "Lit Value", Pair.first);
                 TRACE(string, "Lit format", wasm::interp::getName(Pair.second));
-                return fail("unable to read header literal");
+                return throwMessage("unable to read header literal");
               }
               if (Value != Pair.first)
-                return failBadHeaderValue(Pair.first, Value,
-                                          ValueFormat::Hexidecimal);
+                return throwBadHeaderValue(Pair.first, Value,
+                                           ValueFormat::Hexidecimal);
               Output->writeHeaderValue(Pair.first, Pair.second);
             }
             LocalValues.push_back(IntInput->getStream()->size());
@@ -224,7 +224,7 @@ void IntStructureReader::structuralResume() {
             break;
           case State::Exit:
             if (FreezeEofAtExit && !Output->writeFreezeEof())
-              return failFreezingEof();
+              return throwCantFreezeEof();
             popAndReturn();
             break;
           default:
@@ -314,7 +314,7 @@ void IntStructureReader::structuralResume() {
             IntType Value = IntInput->read();
             TRACE(IntType, "value", Value);
             if (!Output->writeVarint64(Value))
-              return fail("Unable to write last value");
+              return throwMessage("Unable to write last value");
             break;
           }
           case State::Exit:
