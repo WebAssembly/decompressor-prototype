@@ -49,9 +49,10 @@ BINARY_DIR = $(SRCDIR)/binary
 BINARY_OBJDIR = $(OBJDIR)/binary
 BINARY_OBJDIR_BOOT = $(OBJDIR_BOOT)/binary
 BINARY_SRCS = \
-	BinaryWriter.cpp \
-	BinaryReader.cpp \
 	SectionSymbolTable.cpp
+
+#	BinaryReader.cpp
+#	BinaryWriter.cpp
 
 BINARY_OBJS=$(patsubst %.cpp, $(BINARY_OBJDIR)/%.o, $(BINARY_SRCS))
 BINARY_OBJS_BOOT=$(patsubst %.cpp, $(BINARY_OBJDIR_BOOT)/%.o, $(BINARY_SRCS))

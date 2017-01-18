@@ -167,6 +167,7 @@ struct IntValue {
 %type <wasm::filt::Node *> convert
 %type <wasm::filt::Node *> filter_args
 %type <wasm::filt::Node *> convert_args
+%type <wasm::filt::Node *> read_file_header
 %type <wasm::decode::StreamKind> stream_kind
 %type <wasm::decode::StreamType> stream_type
 %type <wasm::filt::Node *> section
@@ -178,142 +179,6 @@ struct IntValue {
 %start file
 
 %%
-
-file
-         : file_header write_file_header section {
-            $$ = Driver.create<FileNode>($1, $2, $3);
-            Driver.setParsedAst($$);
-          }
-        ;
-
-write_file_header
-        : file_header {
-            $$ = $1;
-          }
-        | "(" "void" ")" {
-            $$ = Driver.create<VoidNode>();
-          }
-        ;
-
-file_header
-        : "(" "header" file_header_args ")" {
-            $$ = $3;
-          }
-        ;
-
-file_header_args
-        : %empty {
-            $$ = Driver.create<FileHeaderNode>();
-          }
-        | file_header_args literal_expression {
-            $$ = $1;
-            $$->append($2);
-          }
-        ;
-
-case    : "(" "case" case_args ")" { $$ = $3; }
-        ;
-
-switch_args
-        : expression expression {
-            // selector / default expresssions
-            $$ = Driver.create<SwitchNode>();
-            $$->append($1);
-            $$->append($2);
-          }
-        | switch_args case {
-            $$ = $1;
-            $$->append($2);
-          }
-        ;
-
-case_args
-        : constant_expression expression {
-           // case index/first expression of case.
-            $$ = Driver.create<CaseNode>($1, $2);
-          }
-        | case_args expression {
-            // remaining expressions of case.
-            $$ = $1;
-            Node *StmtList = $1->getLastKid();
-            auto *Seq = dyn_cast<SequenceNode>(StmtList);
-            if (Seq == nullptr) {
-              Seq = Driver.create<SequenceNode>();
-              Seq->append(StmtList);
-              $1->setLastKid(Seq);
-            }
-            Seq->append($2);
-          }
-        ;
-
-constant_expression
-        : literal_expression {
-            $$ = $1;
-          }
-        | symbol {
-            $$ = Driver.create<LiteralUseNode>($1);
-          }
-        ;
-
-literal_expression
-        : "(" "i32.const" INTEGER ")" {
-            $$ = Driver.getI32ConstDefinition($3.Value, $3.Format);
-          }
-        | "(" "i64.const" INTEGER ")" {
-            $$ = Driver.getI64ConstDefinition($3.Value, $3.Format);
-          }
-        | "(" "u8.const" INTEGER ")" {
-            $$ = Driver.getU8ConstDefinition($3.Value, $3.Format);
-          }
-        | "(" "u32.const" INTEGER ")" {
-            $$ = Driver.getU32ConstDefinition($3.Value, $3.Format);
-          }
-        | "(" "u64.const" INTEGER ")" {
-            $$ = Driver.getU64ConstDefinition($3.Value, $3.Format);
-          }
-        ;
-
-declaration
-        : "(" "define" define_args ")" {
-            $$ = $3;
-          }
-        | "(" "rename" symbol symbol ")" {
-            $$ = Driver.create<RenameNode>($3, $4);
-          }
-        | "(" "undefine" symbol ")" {
-            $$ = Driver.create<UndefineNode>($3);
-          }
-        | "(" "literal" symbol literal_expression ")" {
-            $$ = Driver.create<LiteralDefNode>($3, $4);
-          }
-        ;
-
-define_args
-        : symbol params_decl expression {
-            $$ = Driver.create<DefineNode>();
-            $$->append($1);
-            $$->append($2);
-            $$->append($3);
-          }
-        | symbol params_decl locals_decl expression {
-            $$ = Driver.create<DefineNode>();
-            $$->append($1);
-            $$->append($2);
-            $$->append($3);
-            $$->append($4);
-          }
-        | define_args expression {
-            $$ = $1;
-            Node *LastKid = $1->getLastKid();
-            auto *Seq = dyn_cast<SequenceNode>(LastKid);
-            if (Seq == nullptr) {
-              Seq = Driver.create<SequenceNode>();
-              Seq->append(LastKid);
-              $1->setLastKid(Seq);
-            }
-            Seq->append($2);
-          }
-        ;
 
 block_args
         : expression  {
@@ -360,15 +225,77 @@ bool_expression
           }
         ;
 
-eval_args
-        : symbol {
-            $$ = Driver.create<EvalNode>();
-            $$->append($1);
+case    : "(" "case" case_args ")" { $$ = $3; }
+        ;
+
+case_args
+        : constant_expression expression {
+           // case index/first expression of case.
+            $$ = Driver.create<CaseNode>($1, $2);
           }
-        | eval_args expression {
+        | case_args expression {
+            // remaining expressions of case.
             $$ = $1;
+            Node *StmtList = $1->getLastKid();
+            auto *Seq = dyn_cast<SequenceNode>(StmtList);
+            if (Seq == nullptr) {
+              Seq = Driver.create<SequenceNode>();
+              Seq->append(StmtList);
+              $1->setLastKid(Seq);
+            }
+            Seq->append($2);
+          }
+        ;
+
+constant_expression
+        : literal_expression {
+            $$ = $1;
+          }
+        | symbol {
+            $$ = Driver.create<LiteralUseNode>($1);
+          }
+        ;
+
+declaration
+        : "(" "define" define_args ")" {
+            $$ = $3;
+          }
+        | "(" "rename" symbol symbol ")" {
+            $$ = Driver.create<RenameNode>($3, $4);
+          }
+        | "(" "undefine" symbol ")" {
+            $$ = Driver.create<UndefineNode>($3);
+          }
+        | "(" "literal" symbol literal_expression ")" {
+            $$ = Driver.create<LiteralDefNode>($3, $4);
+          }
+        ;
+
+define_args
+        : symbol params_decl expression {
+            $$ = Driver.create<DefineNode>();
+            $$->append($1);
             $$->append($2);
-        }
+            $$->append($3);
+          }
+        | symbol params_decl locals_decl expression {
+            $$ = Driver.create<DefineNode>();
+            $$->append($1);
+            $$->append($2);
+            $$->append($3);
+            $$->append($4);
+          }
+        | define_args expression {
+            $$ = $1;
+            Node *LastKid = $1->getLastKid();
+            auto *Seq = dyn_cast<SequenceNode>(LastKid);
+            if (Seq == nullptr) {
+              Seq = Driver.create<SequenceNode>();
+              Seq->append(LastKid);
+              $1->setLastKid(Seq);
+            }
+            Seq->append($2);
+          }
         ;
 
 expression
@@ -393,11 +320,134 @@ expression
         | "(" "read" ")" {
             $$ = Driver.create<LastReadNode>();
           }
-        | "(" "write" write_args ")" {
-            $$ = $3;
-          }
         | "(" expression_redirect ")" {
             $$ = $2;
+          }
+        ;
+
+expression_redirect
+        : "peek" expression {
+            $$ = Driver.create<PeekNode>($2);
+          }
+        | "read" expression {
+            $$ = Driver.create<ReadNode>($2);
+          }
+        | "write" write_args {
+            $$ = $2;
+          }
+        | expression_redirect expression {
+            $$ = $1;
+            Node* ExpList = $1->getLastKid();
+            auto* Seq = dyn_cast<SequenceNode>(ExpList);
+            if (Seq == nullptr) {
+              Seq = Driver.create<SequenceNode>();
+              Seq->append(ExpList);
+              $$->setLastKid(Seq);
+            }
+            Seq->append($2);
+          }
+        ;
+
+eval_args
+        : symbol {
+            $$ = Driver.create<EvalNode>();
+            $$->append($1);
+          }
+        | eval_args expression {
+            $$ = $1;
+            $$->append($2);
+        }
+        ;
+
+file
+         : read_file_header write_file_header section {
+            $$ = Driver.create<FileNode>($1, $2, $3);
+            Driver.setParsedAst($$);
+          }
+        ;
+
+file_header
+        : "(" "header" file_header_args ")" {
+            $$ = $3;
+          }
+        ;
+
+file_header_args
+        : %empty {
+            $$ = Driver.create<FileHeaderNode>();
+          }
+        | file_header_args literal_expression {
+            $$ = $1;
+            $$->append($2);
+          }
+        ;
+
+fixed_format_directive
+        : "(" "void" ")" {
+            $$ = Driver.create<VoidNode>();
+          }
+        | "(" "uint8" ")" {
+            $$ = Driver.create<Uint8Node>();
+          }
+        | "(" "uint32" ")" {
+            $$ = Driver.create<Uint32Node>();
+          }
+        | "(" "uint64" ")" {
+          $$ = Driver.create<Uint64Node>();
+          }
+        ;
+
+format_directive
+        : fixed_format_directive { $$ = $1; }
+        | "(" "opcode" opcode_args ")" {
+            $$ = $3;
+          }
+        | "(" "varint32" ")" {
+            $$ = Driver.create<Varint32Node>();
+          }
+        | "(" "varint64" ")" {
+            $$ = Driver.create<Varint64Node>();
+          }
+        | "(" "varuint32" ")" {
+            $$ = Driver.create<Varuint32Node>();
+          }
+        | "(" "varuint64" ")" {
+            $$ = Driver.create<Varuint64Node>();
+          }
+        ;
+
+literal_expression
+        : "(" "i32.const" INTEGER ")" {
+            $$ = Driver.getI32ConstDefinition($3.Value, $3.Format);
+          }
+        | "(" "i64.const" INTEGER ")" {
+            $$ = Driver.getI64ConstDefinition($3.Value, $3.Format);
+          }
+        | "(" "u8.const" INTEGER ")" {
+            $$ = Driver.getU8ConstDefinition($3.Value, $3.Format);
+          }
+        | "(" "u32.const" INTEGER ")" {
+            $$ = Driver.getU32ConstDefinition($3.Value, $3.Format);
+          }
+        | "(" "u64.const" INTEGER ")" {
+            $$ = Driver.getU64ConstDefinition($3.Value, $3.Format);
+          }
+        ;
+
+read_file_header
+        : file_header { $$ = $1; }
+        ;
+
+switch_args
+        : expression expression {
+            // selector / default expresssions
+            $$ = Driver.create<SwitchNode>();
+            $$->append($1);
+            $$->append($2);
+          }
+        | switch_args case {
+            $$ = $1;
+            $$->append($2);
           }
         ;
 
@@ -413,92 +463,12 @@ write_args
           }
         ;
 
-expression_redirect
-        : "peek" expression {
-            $$ = Driver.create<PeekNode>($2);
-          }
-        | "read" expression {
-            $$ = Driver.create<ReadNode>($2);
-          }
-        | expression_redirect expression {
+write_file_header
+        : file_header {
             $$ = $1;
-            Node* ExpList = $1->getLastKid();
-            auto* Seq = dyn_cast<SequenceNode>(ExpList);
-            if (Seq == nullptr) {
-              Seq = Driver.create<SequenceNode>();
-              Seq->append(ExpList);
-              $$->setLastKid(Seq);
-            }
-            Seq->append($2);
           }
-        ;
-
-format_directive
-        : fixed_format_directive { $$ = $1; }
-        | "(" "opcode" opcode_args ")" {
-            $$ = $3;
-          }
-        | "(" "varint32" ")" {
-            $$ = Driver.getVarint32Definition();
-          }
-        | "(" "varint32" INTEGER ")" {
-            if ($3.Value < 2 || $3.Value > 32)
-              Driver.error("varint32 expects 2 <= bitsize <= 32");
-            $$ = Driver.getVarint32Definition($3.Value, $3.Format);
-          }
-        | "(" "varint64" ")" {
-            $$ = Driver.getVarint64Definition();
-          }
-        | "(" "varint64" INTEGER ")" {
-            if ($3.Value < 2 || $3.Value > 64)
-              Driver.error("varint64 expects 2 <= bitsize <= 64");
-            $$ = Driver.getVarint64Definition($3.Value, $3.Format);
-          }
-        | "(" "varuint32" ")" {
-            $$ = Driver.getVaruint32Definition();
-          }
-        | "(" "varuint32" INTEGER ")" {
-            if ($3.Value < 2 || $3.Value > 32)
-              Driver.error("varuint32 expects 2 <= bitsize <= 32");
-            $$ = Driver.getVaruint32Definition($3.Value, $3.Format);
-          }
-        | "(" "varuint64" ")" {
-            $$ = Driver.getVaruint64Definition();
-          }
-        | "(" "varuint64" INTEGER ")" {
-            if ($3.Value < 2 || $3.Value > 64)
-              Driver.error("varuint64 expects 2 <= bitsize <= 64");
-            $$ = Driver.getVaruint64Definition($3.Value, $3.Format);
-          }
-        ;
-
-fixed_format_directive
-        : "(" "void" ")" {
+        | "(" "void" ")" {
             $$ = Driver.create<VoidNode>();
-          }
-        | "(" "uint8" ")" {
-            $$ = Driver.getUint8Definition();
-          }
-        | "(" "uint8" INTEGER ")" {
-            if ($3.Value > 8)
-              Driver.error("uint8 bitsize > 8");
-            $$ = Driver.getUint8Definition($3.Value, $3.Format);
-          }
-        | "(" "uint32" ")" {
-            $$ = Driver.getUint32Definition();
-          }
-        | "(" "uint32" INTEGER ")"  {
-            if ($3.Value > 32)
-              Driver.error("uint32 bitsize > 32");
-            $$ = Driver.getUint32Definition($3.Value, $3.Format);
-          }
-        | "(" "uint64" ")" {
-            $$ = Driver.getUint64Definition();
-          }
-        | "(" "uint64" INTEGER ")"  {
-            if ($3.Value > 64)
-              Driver.error("uint64 bitsize > 64");
-            $$ = Driver.getUint64Definition($3.Value, $3.Format);
           }
         ;
 

@@ -1459,7 +1459,7 @@ void Reader::algorithmResume() {
                 break;
               case State::Exit:
                 OpcodeLocals.CaseMask = Frame.ReturnValue;
-                OpcodeLocals.SelShift = cast<Uint8Node>(Frame.Nd)->getValue();
+                OpcodeLocals.SelShift = CHAR_BIT;
                 popAndReturn();
                 break;
               default:
@@ -1473,7 +1473,7 @@ void Reader::algorithmResume() {
                 break;
               case State::Exit:
                 OpcodeLocals.CaseMask = Frame.ReturnValue;
-                OpcodeLocals.SelShift = cast<Uint32Node>(Frame.Nd)->getValue();
+                OpcodeLocals.SelShift = CHAR_BIT;
                 popAndReturn();
                 break;
               default:
@@ -1488,7 +1488,7 @@ void Reader::algorithmResume() {
                 break;
               case State::Exit:
                 OpcodeLocals.CaseMask = Frame.ReturnValue;
-                OpcodeLocals.SelShift = cast<Uint64Node>(Frame.Nd)->getValue();
+                OpcodeLocals.SelShift = CHAR_BIT;
                 popAndReturn();
                 break;
               default:

@@ -140,6 +140,13 @@ void FlattenAst::flattenNode(const Node* Nd) {
     case OpSet:
     case OpLiteralDef:
     case OpLiteralUse:
+    case OpUint32:
+    case OpUint64:
+    case OpUint8:
+    case OpVarint32:
+    case OpVarint64:
+    case OpVaruint32:
+    case OpVaruint64:
     case OpVoid: {
       // Operations that are written out in postorder, with a fixed number of
       // arguments.

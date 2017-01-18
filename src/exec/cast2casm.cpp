@@ -439,11 +439,11 @@ size_t CodeGenerator::generateNode(const Node* Nd) {
     case OpSwitch:
       return generateNaryNode("SwitchNode", Nd);
     case OpUint8:
-      return generateIntegerNode("Uint8", cast<Uint8Node>(Nd));
+      return generateNullaryNode("Uint8Node", Nd);
     case OpUint32:
-      return generateIntegerNode("Uint32", cast<Uint32Node>(Nd));
+      return generateNullaryNode("Uint32Node", Nd);
     case OpUint64:
-      return generateIntegerNode("Uint64", cast<Uint64Node>(Nd));
+      return generateNullaryNode("Uint64Node", Nd);
     case OpUndefine:
       return generateUnaryNode("UndefineNode", Nd);
     case OpU8Const:
@@ -453,13 +453,13 @@ size_t CodeGenerator::generateNode(const Node* Nd) {
     case OpU64Const:
       return generateIntegerNode("U64Const", cast<U64ConstNode>(Nd));
     case OpVarint32:
-      return generateIntegerNode("Varint32", cast<Varint32Node>(Nd));
+      return generateNullaryNode("Varint32Node", Nd);
     case OpVarint64:
-      return generateIntegerNode("Varint64", cast<Varint64Node>(Nd));
+      return generateNullaryNode("Varint64Node", Nd);
     case OpVaruint32:
-      return generateIntegerNode("Varuint32", cast<Varuint32Node>(Nd));
+      return generateNullaryNode("Varuint32Node", Nd);
     case OpVaruint64:
-      return generateIntegerNode("Varuint64", cast<Varuint64Node>(Nd));
+      return generateNullaryNode("Varuint64Node", Nd);
     case OpVoid:
       return generateNullaryNode("VoidNode", Nd);
     case OpWrite:
