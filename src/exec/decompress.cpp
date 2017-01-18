@@ -202,9 +202,9 @@ int main(const int Argc, const char* Argv[]) {
     std::shared_ptr<Queue> BackedOutput =
         std::make_shared<WriteBackedQueue>(Output);
     auto Writer = std::make_shared<ByteWriter>(BackedOutput);
-    Reader Decompressor(std::make_shared<ByteReader>(
-                            std::make_shared<ReadBackedQueue>(Input)),
-                        Writer);
+    Reader Decompressor(
+        std::make_shared<ByteReader>(std::make_shared<ReadBackedQueue>(Input)),
+        Writer);
     auto AlgState = std::make_shared<DecompAlgState>();
     Decompressor.addSelector(std::make_shared<DecompressSelector>(
         getAlgwasm0xdSymtab(), AlgState, false));
