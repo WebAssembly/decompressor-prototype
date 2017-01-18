@@ -206,8 +206,6 @@ bool InflateAst::applyOp(IntType Op) {
       return buildUnary<CallbackNode>();
     case OpCase:
       return buildBinary<CaseNode>();
-    case OpConvert:
-      return buildTernary<ConvertNode>();
     case OpDefine:
       return buildNary<DefineNode>();
     case OpError:
@@ -218,8 +216,6 @@ bool InflateAst::applyOp(IntType Op) {
       return buildTernary<FileNode>();
     case OpFileHeader:
       return buildNary<FileHeaderNode>();
-    case OpFilter:
-      return buildNary<FilterNode>();
     case OpIfThen:
       return buildBinary<IfThenNode>();
     case OpIfThenElse:

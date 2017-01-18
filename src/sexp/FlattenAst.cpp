@@ -123,7 +123,6 @@ void FlattenAst::flattenNode(const Node* Nd) {
     case OpBitwiseXor:
     case OpCallback:
     case OpCase:
-    case OpConvert:
     case OpOr:
     case OpNot:
     case OpError:
@@ -224,7 +223,6 @@ void FlattenAst::flattenNode(const Node* Nd) {
     }
     case OpDefine:
     case OpEval:
-    case OpFilter:
     case OpOpcode:
     case OpMap:
     case OpSwitch:

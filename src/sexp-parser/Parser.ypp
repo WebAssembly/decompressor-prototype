@@ -164,17 +164,14 @@ struct IntValue {
 %type <wasm::filt::OpcodeNode *> opcode_args
 %type <wasm::filt::Node *> params_decl
 %type <wasm::filt::Node *> stream
-%type <wasm::filt::Node *> convert
-%type <wasm::filt::Node *> filter_args
-%type <wasm::filt::Node *> convert_args
-%type <wasm::filt::Node *> read_file_header
+%type <wasm::filt::Node *> file_header_read
 %type <wasm::decode::StreamKind> stream_kind
 %type <wasm::decode::StreamType> stream_type
 %type <wasm::filt::Node *> section
 %type <wasm::filt::Node *> sequence_args
 %type <wasm::filt::Node *> symbol
 %type <wasm::filt::Node *> write_args
-%type <wasm::filt::Node *> write_file_header
+%type <wasm::filt::Node *> file_header_write
 
 %start file
 
@@ -360,7 +357,7 @@ eval_args
         ;
 
 file
-         : read_file_header write_file_header section {
+         : file_header_read file_header_write section {
             $$ = Driver.create<FileNode>($1, $2, $3);
             Driver.setParsedAst($$);
           }
@@ -369,6 +366,19 @@ file
 file_header
         : "(" "header" file_header_args ")" {
             $$ = $3;
+          }
+        ;
+
+file_header_read
+        : file_header { $$ = $1; }
+        ;
+
+file_header_write
+        : file_header {
+            $$ = $1;
+          }
+        | "(" "void" ")" {
+            $$ = Driver.create<VoidNode>();
           }
         ;
 
@@ -434,41 +444,9 @@ literal_expression
           }
         ;
 
-read_file_header
-        : file_header { $$ = $1; }
-        ;
-
-switch_args
-        : expression expression {
-            // selector / default expresssions
-            $$ = Driver.create<SwitchNode>();
-            $$->append($1);
-            $$->append($2);
-          }
-        | switch_args case {
-            $$ = $1;
-            $$->append($2);
-          }
-        ;
-
-write_args
-        : fixed_format_directive expression {
-            $$ = Driver.create<WriteNode>();
-            $$->append($1);
-            $$->append($2);
-          }
-        | write_args expression {
-            $$ = $1;
-            $$->append($2);
-          }
-        ;
-
-write_file_header
-        : file_header {
-            $$ = $1;
-          }
-        | "(" "void" ")" {
-            $$ = Driver.create<VoidNode>();
+local_var
+        : "(" "local" INTEGER ")" {
+            $$ = Driver.getLocalDefinition($3.Value, $3.Format);
           }
         ;
 
@@ -478,9 +456,23 @@ locals_decl
           }
         ;
 
-local_var
-        : "(" "local" INTEGER ")" {
-            $$ = Driver.getLocalDefinition($3.Value, $3.Format);
+loop_body
+        : "loop" expression expression {
+            $$ = Driver.create<LoopNode>($2, $3);
+          }
+        | "loop.unbounded" expression {
+            $$ = Driver.create<LoopUnboundedNode>($2);
+          }
+        | loop_body expression {
+            $$ = $1;
+            Node *StmtList = $1->getLastKid();
+            auto *Seq = dyn_cast<SequenceNode>(StmtList);
+            if (Seq == nullptr) {
+              Seq = Driver.create<SequenceNode>();
+              Seq->append(StmtList);
+              $1->setLastKid(Seq);
+            }
+            Seq->append($2);
           }
         ;
 
@@ -514,26 +506,6 @@ params_decl
           }
         ;
 
-loop_body
-        : "loop" expression expression {
-            $$ = Driver.create<LoopNode>($2, $3);
-          }
-        | "loop.unbounded" expression {
-            $$ = Driver.create<LoopUnboundedNode>($2);
-          }
-        | loop_body expression {
-            $$ = $1;
-            Node *StmtList = $1->getLastKid();
-            auto *Seq = dyn_cast<SequenceNode>(StmtList);
-            if (Seq == nullptr) {
-              Seq = Driver.create<SequenceNode>();
-              Seq->append(StmtList);
-              $1->setLastKid(Seq);
-            }
-            Seq->append($2);
-          }
-        ;
-
 section
         : %empty {
             $$ = Driver.create<SectionNode>();
@@ -554,13 +526,36 @@ sequence_args
           }
         ;
 
+switch_args
+        : expression expression {
+            // selector / default expresssions
+            $$ = Driver.create<SwitchNode>();
+            $$->append($1);
+            $$->append($2);
+          }
+        | switch_args case {
+            $$ = $1;
+            $$->append($2);
+          }
+        ;
+
+write_args
+        : fixed_format_directive expression {
+            $$ = Driver.create<WriteNode>();
+            $$->append($1);
+            $$->append($2);
+          }
+        | write_args expression {
+            $$ = $1;
+            $$->append($2);
+          }
+        ;
+
 control_flow
-        : convert { $$ = $1; }
-        | "(" "block" block_args ")"  { $$ = $3; }
+        : "(" "block" block_args ")"  { $$ = $3; }
         | "(" "set" local_var expression ")" {
             $$ = Driver.create<SetNode>($3, $4);
           }
-        | "(" "filter" filter_args ")" { $$ = $3; }
         | "(" "if" expression expression ")" {
             $$ = Driver.create<IfThenNode>($3, $4);
           }
@@ -588,40 +583,6 @@ stream_kind
 stream_type
         : "byte" { $$ = decode::StreamType::Byte; }
         | "int" { $$ = decode::StreamType::Int; }
-        ;
-
-convert
-        : "(" "convert" convert_args ")" {
-            $$ = $3;
-          }
-        ;
-
-filter_args
-        : convert {
-            $$ = Driver.create<FilterNode>();
-            $$->append($1);
-          }
-        | filter_args convert {
-            $$ = $1;
-            $$->append($2);
-          }
-        ;
-
-convert_args
-        : stream stream expression {
-            $$ = Driver.create<ConvertNode>($1, $2, $3);
-          }
-        | convert_args expression {
-            $$ = $1;
-            Node *StmtList = $1->getLastKid();
-            auto *Seq = dyn_cast<SequenceNode>(StmtList);
-            if (Seq == nullptr) {
-              Seq = Driver.create<SequenceNode>();
-              Seq->append(StmtList);
-              $1->setLastKid(Seq);
-            }
-            Seq->append($2);
-          }
         ;
 
 symbol  : IDENTIFIER { $$ = Driver.getSymbolDefinition($1); }
