@@ -54,14 +54,14 @@
   X(U64Const,          0x16, "u64.const",        nullptr,           1, 0)      \
                                                                                \
   /* Formatting */                                                             \
-  X(Uint32,            0x21, "uint32",           "uint32",          1, 0)      \
-  X(Uint64,            0x23, "uint64",           "uint64",          1, 0)      \
-  X(Uint8,             0x25, "uint8",            "uint8",           1, 0)      \
-  X(Varint32,          0x27, "varint32",         "varint32",        1, 0)      \
-  X(Varint64,          0x29, "varint64",         "varint64",        1, 0)      \
-  X(Varuint32,         0x2b, "varuint32",        "varuint32",       1, 0)      \
-  X(Varuint64,         0x2d, "varuint64",        "varuint64",       1, 0)      \
-  X(Opcode,            0x2e, "opcode",           nullptr,           1, 0)      \
+  X(Uint32,            0x21, "uint32",           nullptr,           0, 0)      \
+  X(Uint64,            0x23, "uint64",           nullptr,           0, 0)      \
+  X(Uint8,             0x25, "uint8",            nullptr,           0, 0)      \
+  X(Varint32,          0x27, "varint32",         nullptr,           0, 0)      \
+  X(Varint64,          0x29, "varint64",         nullptr,           0, 0)      \
+  X(Varuint32,         0x2b, "varuint32",        nullptr,           0, 0)      \
+  X(Varuint64,         0x2d, "varuint64",        nullptr,           0, 0)      \
+  X(Opcode,            0x2e, "opcode",           nullptr,           0, 0)      \
                                                                                \
   /* Boolean Expressions */                                                    \
   X(And,               0x30, "and",              nullptr,           2, 0)      \
@@ -107,6 +107,13 @@
 #define AST_NULLARYNODE_TABLE                                                  \
   X(Error,)                                                                    \
   X(LastRead,)                                                                 \
+  X(Uint32,)                                                                   \
+  X(Uint64,)                                                                   \
+  X(Uint8,)                                                                    \
+  X(Varint32,)                                                                 \
+  X(Varint64,)                                                                 \
+  X(Varuint32,)                                                                \
+  X(Varuint64,)                                                                \
   X(Void,)                                                                     \
 
 //#define X(tag, defval, mergable, NODE_DECLS)
@@ -126,13 +133,6 @@
   X(U8Const, Uint8, 0, true,)                                                  \
   X(U32Const, Varuint32, 0, true,)                                             \
   X(U64Const, Varuint64, 0, true,)                                             \
-  X(Uint32, Uint8, 32, true,)                                                  \
-  X(Uint64, Uint8, 64, true,)                                                  \
-  X(Uint8, Uint8, 8, true,)                                                    \
-  X(Varint32, Uint8, 8, true,)                                                 \
-  X(Varint64, Uint8,  8, true,)                                                \
-  X(Varuint32, Uint8, 8, true,)                                                \
-  X(Varuint64, Uint8, 8, true,)                                                \
 
 #define PARAM_DECLS                                                            \
   public:                                                                      \

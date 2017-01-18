@@ -127,14 +127,14 @@ Node* AbbreviationCodegen::generateDefaultAction(DefaultCountNode* Default) {
 }
 
 Node* AbbreviationCodegen::generateDefaultMultipleAction() {
-  Node* LoopSize = Symtab->getVaruint64Definition();
+  Node* LoopSize = Symtab->create<Varuint64Node>();
   if (ToRead)
     LoopSize = Symtab->create<ReadNode>(LoopSize);
   return Symtab->create<LoopNode>(LoopSize, generateDefaultSingleAction());
 }
 
 Node* AbbreviationCodegen::generateDefaultSingleAction() {
-  return Symtab->getVarint64Definition();
+  return Symtab->create<Varint64Node>();
 }
 
 Node* AbbreviationCodegen::generateIntType(IntType Value) {
@@ -155,7 +155,7 @@ Node* AbbreviationCodegen::generateIntLitActionRead(IntCountNode* Nd) {
   }
   std::reverse(Values.begin(), Values.end());
   auto* Write = Symtab->create<WriteNode>();
-  Write->append(Symtab->getVaruint64Definition());
+  Write->append(Symtab->create<Varuint64Node>());
   for (IntCountNode* Nd : Values)
     Write->append(generateIntType(Nd->getValue()));
   return Write;
@@ -175,19 +175,19 @@ std::shared_ptr<SymbolTable> AbbreviationCodegen::getCodeSymtab(bool ToRead) {
 Node* AbbreviationCodegen::generateAbbrevFormat(IntTypeFormat AbbrevFormat) {
   switch (AbbrevFormat) {
     case IntTypeFormat::Uint8:
-      return Symtab->getUint8Definition();
+      return Symtab->create<Uint8Node>();
     case IntTypeFormat::Varint32:
-      return Symtab->getVarint32Definition();
+      return Symtab->create<Varint32Node>();
     case IntTypeFormat::Varuint32:
-      return Symtab->getVaruint32Definition();
+      return Symtab->create<Varuint32Node>();
     case IntTypeFormat::Uint32:
-      return Symtab->getUint32Definition();
+      return Symtab->create<Uint32Node>();
     case IntTypeFormat::Varint64:
-      return Symtab->getVarint64Definition();
+      return Symtab->create<Varint64Node>();
     case IntTypeFormat::Varuint64:
-      return Symtab->getVaruint64Definition();
+      return Symtab->create<Varuint64Node>();
     case IntTypeFormat::Uint64:
-      return Symtab->getUint64Definition();
+      return Symtab->create<Uint64Node>();
   }
   WASM_RETURN_UNREACHABLE(nullptr);
 }

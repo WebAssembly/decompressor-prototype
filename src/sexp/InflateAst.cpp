@@ -285,6 +285,20 @@ bool InflateAst::applyOp(IntType Op) {
       return buildUnary<UndefineNode>();
     case OpUnknownSection:
       return buildUnary<UnknownSectionNode>();
+    case OpUint32:
+      return buildNullary<Uint32Node>();
+    case OpUint64:
+      return buildNullary<Uint64Node>();
+    case OpUint8:
+      return buildNullary<Uint8Node>();
+    case OpVarint32:
+      return buildNullary<Varint32Node>();
+    case OpVarint64:
+      return buildNullary<Varint64Node>();
+    case OpVaruint32:
+      return buildNullary<Varuint32Node>();
+    case OpVaruint64:
+      return buildNullary<Varuint64Node>();
     case OpVoid:
       return buildNullary<VoidNode>();
     case OpWrite:
@@ -387,6 +401,7 @@ bool InflateAst::writeAction(const filt::SymbolNode* Action) {
           Nd = IsDefault ? Symtab->getU64ConstDefinition()
                          : Symtab->getU64ConstDefinition(Value, Format);
           break;
+#if 0
         case OpUint8:
           Nd = IsDefault ? Symtab->getUint8Definition()
                          : Symtab->getUint8Definition(Value, Format);
@@ -415,6 +430,7 @@ bool InflateAst::writeAction(const filt::SymbolNode* Action) {
           Nd = IsDefault ? Symtab->getVaruint64Definition()
                          : Symtab->getVaruint64Definition(Value, Format);
           break;
+#endif
         default:
           return failWriteActionMalformed();
       }
