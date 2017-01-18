@@ -323,6 +323,9 @@ expression
         | "(" "read" ")" {
             $$ = Driver.create<LastReadNode>();
           }
+        | "(" "write" write_args ")" {
+            $$ = $3;
+          }
         | "(" expression_redirect ")" {
             $$ = $2;
           }
@@ -334,9 +337,6 @@ expression_redirect
           }
         | "read" expression {
             $$ = Driver.create<ReadNode>($2);
-          }
-        | "write" write_args {
-            $$ = $2;
           }
         | expression_redirect expression {
             $$ = $1;
@@ -375,6 +375,16 @@ file_header
           }
         ;
 
+file_header_args
+        : %empty {
+            $$ = Driver.create<FileHeaderNode>();
+          }
+        | file_header_args literal_expression {
+            $$ = $1;
+            $$->append($2);
+          }
+        ;
+
 file_header_read
         : file_header { $$ = $1; }
         ;
@@ -385,16 +395,6 @@ file_header_write
           }
         | "(" "void" ")" {
             $$ = Driver.create<VoidNode>();
-          }
-        ;
-
-file_header_args
-        : %empty {
-            $$ = Driver.create<FileHeaderNode>();
-          }
-        | file_header_args literal_expression {
-            $$ = $1;
-            $$->append($2);
           }
         ;
 
@@ -546,7 +546,7 @@ switch_args
         ;
 
 write_args
-        : fixed_format_directive expression {
+        : format_directive expression {
             $$ = Driver.create<WriteNode>();
             $$->append($1);
             $$->append($2);
