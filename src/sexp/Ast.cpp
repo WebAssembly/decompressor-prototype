@@ -415,12 +415,6 @@ SymbolNode* SymbolTable::getSymbolDefinition(const std::string& Name) {
 AST_INTEGERNODE_TABLE
 #undef X
 
-StreamNode* SymbolTable::getStreamDefinition(StreamKind Kind, StreamType Type) {
-  StreamNode* Nd = new StreamNode(*this, Kind, Type);
-  Allocated->push_back(Nd);
-  return Nd;
-}
-
 void SymbolTable::install(Node* Root) {
   TRACE_METHOD("install");
   this->Root = Root;

@@ -428,8 +428,6 @@ size_t CodeGenerator::generateNode(const Node* Nd) {
       return generateNaryNode("SequenceNode", Nd);
     case OpSet:
       return generateBinaryNode("SetNode", Nd);
-    case OpStream:
-      return generateBinaryNode("StreamNode", Nd);
     case OpSymbol:
       return generateSymbol(cast<SymbolNode>(Nd));
     case OpSwitch:

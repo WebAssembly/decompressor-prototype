@@ -66,7 +66,6 @@
   X(And,               0x30, "and",              nullptr,           2, 0)      \
   X(Or,                0x31, "or",               nullptr,           2, 0)      \
   X(Not,               0x32, "not",              nullptr,           1, 0)      \
-  X(Stream,            0x33, "stream",           nullptr,           0, 0)      \
   X(BitwiseAnd,        0x34, "bitwise.and",      nullptr,           2, 0)      \
   X(BitwiseOr,         0x35, "bitwise.or",       nullptr,           2, 0)      \
   X(BitwiseXor,        0x36, "bitwise.xor",      nullptr,           2, 0)      \

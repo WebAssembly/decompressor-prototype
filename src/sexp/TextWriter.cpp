@@ -202,14 +202,6 @@ void TextWriter::writeNode(const Node* Nd,
     case OpLiteralUse:
       writeNode(Nd->getKid(0), AddNewline, EmbedInParent);
       break;
-    case OpStream: {
-      Indent _(this, AddNewline);
-      const auto* Stream = cast<StreamNode>(Nd);
-      fprintf(File, "%s.%s", getName(Stream->getStreamKind()),
-              getName(Stream->getStreamType()));
-      LineEmpty = false;
-      return;
-    }
     case OpSection:
       for (auto* Kid : *Nd)
         writeNode(Kid, true, false);
@@ -340,7 +332,6 @@ void TextWriter::writeNodeAbbrev(const Node* Nd,
       fprintf(File, "(%s ...)\n", Nd->getNodeName());
       return;
     }
-    case OpStream:
     case OpSymbol:
       writeNode(Nd, AddNewline, EmbedInParent);
       return;

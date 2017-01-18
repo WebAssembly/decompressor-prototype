@@ -193,12 +193,6 @@ void FlattenAst::flattenNode(const Node* Nd) {
       WrotePrimaryHeader = true;
       break;
     }
-    case OpStream: {
-      const auto* Stream = cast<StreamNode>(Nd);
-      Writer->write(Opcode);
-      Writer->write(Stream->getEncoding());
-      break;
-    }
     case OpSection: {
       Writer->writeAction(Symtab->getPredefined(PredefinedSymbol::Block_enter));
       const auto* Section = cast<SectionNode>(Nd);

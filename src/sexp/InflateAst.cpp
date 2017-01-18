@@ -397,36 +397,6 @@ bool InflateAst::writeAction(const filt::SymbolNode* Action) {
           Nd = IsDefault ? Symtab->getU64ConstDefinition()
                          : Symtab->getU64ConstDefinition(Value, Format);
           break;
-#if 0
-        case OpUint8:
-          Nd = IsDefault ? Symtab->getUint8Definition()
-                         : Symtab->getUint8Definition(Value, Format);
-          break;
-        case OpUint32:
-          Nd = IsDefault ? Symtab->getUint32Definition()
-                         : Symtab->getUint32Definition(Value, Format);
-          break;
-        case OpUint64:
-          Nd = IsDefault ? Symtab->getUint64Definition()
-                         : Symtab->getUint64Definition(Value, Format);
-          break;
-        case OpVarint32:
-          Nd = IsDefault ? Symtab->getVarint32Definition()
-                         : Symtab->getVarint32Definition(Value, Format);
-          break;
-        case OpVarint64:
-          Nd = IsDefault ? Symtab->getVarint64Definition()
-                         : Symtab->getVarint64Definition(Value, Format);
-          break;
-        case OpVaruint32:
-          Nd = IsDefault ? Symtab->getVaruint32Definition()
-                         : Symtab->getVaruint32Definition(Value, Format);
-          break;
-        case OpVaruint64:
-          Nd = IsDefault ? Symtab->getVaruint64Definition()
-                         : Symtab->getVaruint64Definition(Value, Format);
-          break;
-#endif
         default:
           return failWriteActionMalformed();
       }

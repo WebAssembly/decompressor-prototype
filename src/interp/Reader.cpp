@@ -901,11 +901,6 @@ void Reader::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpStream: {  // Method::Eval
-            const auto* Stream = cast<StreamNode>(Frame.Nd);
-            popAndReturn(IntType(Stream->getStreamType() == getStreamType()));
-            break;
-          }
           case OpNot:  // Method::Eval
             if (!hasReadMode())
               return throwCantWriteInWriteOnlyMode();

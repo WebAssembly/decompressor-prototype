@@ -78,7 +78,6 @@ struct IntValue {
 %token AND           "and"
 %token BITWISE       "bitwise"
 %token BLOCK         "block"
-%token BYTE          "byte"
 %token CASE          "case"
 %token CLOSEPAREN    ")"
 %token DEFINE        "define"
@@ -86,12 +85,8 @@ struct IntValue {
 %token DOUBLE_ARROW  "=>"
 %token ERROR         "error"
 %token EVAL          "eval"
-%token FILE          "file"
-%token FILTER        "filter"
 %token HEADER        "header"
 %token IF            "if"
-%token IN            "in"
-%token INT           "int"
 %token IS            "is"
 %token I32_CONST     "i32.const"
 %token I64_CONST     "i64.const"
@@ -101,14 +96,12 @@ struct IntValue {
 %token LOCALS        "locals"
 %token LOOP          "loop"
 %token LOOP_UNBOUNDED "loop.unbounded"
-%token MAGIC         "magic"
 %token MAP           "map"
 %token NEGATE        "negate"
 %token NOT           "not"
 %token OPCODE        "opcode"
 %token OPENPAREN     "("
 %token OR            "or"
-%token OUT           "out"
 %token PARAM         "param"
 %token PARAMS        "params"
 %token PEEK          "peek"
@@ -129,7 +122,6 @@ struct IntValue {
 %token VARINT64      "varint64"
 %token VARUINT32     "varuint32"
 %token VARUINT64     "varuint64"
-%token VERSION       "version"
 %token VOID          "void"
 %token WRITE         "write"
 %token XOR           "xor"
@@ -163,10 +155,7 @@ struct IntValue {
 %type <wasm::filt::MapNode *> map_args
 %type <wasm::filt::OpcodeNode *> opcode_args
 %type <wasm::filt::Node *> params_decl
-%type <wasm::filt::Node *> stream
 %type <wasm::filt::Node *> file_header_read
-%type <wasm::decode::StreamKind> stream_kind
-%type <wasm::decode::StreamType> stream_type
 %type <wasm::filt::Node *> section
 %type <wasm::filt::Node *> sequence_args
 %type <wasm::filt::Node *> symbol
@@ -198,7 +187,6 @@ bool_expression
         : "(" "and" expression expression ")" {
             $$ = Driver.create<AndNode>($3, $4);
           }
-        | stream { $$ = $1; }
         | "(" "not" expression ")" {
             $$ = Driver.create<NotNode>($3);
           }
@@ -251,6 +239,24 @@ constant_expression
         | symbol {
             $$ = Driver.create<LiteralUseNode>($1);
           }
+        ;
+
+control_flow
+        : "(" "block" block_args ")"  { $$ = $3; }
+        | "(" "set" local_var expression ")" {
+            $$ = Driver.create<SetNode>($3, $4);
+          }
+        | "(" "if" expression expression ")" {
+            $$ = Driver.create<IfThenNode>($3, $4);
+          }
+        | "(" "if" expression expression expression ")" {
+            $$ = Driver.create<IfThenElseNode>($3, $4, $5);
+          }
+        | "(" loop_body ")" { $$ = $2; }
+        | "(" "switch" switch_args ")" {
+            $$ = $3;
+          }
+        | "(" "seq" sequence_args ")" { $$ = $3; }
         ;
 
 declaration
@@ -549,40 +555,6 @@ write_args
             $$ = $1;
             $$->append($2);
           }
-        ;
-
-control_flow
-        : "(" "block" block_args ")"  { $$ = $3; }
-        | "(" "set" local_var expression ")" {
-            $$ = Driver.create<SetNode>($3, $4);
-          }
-        | "(" "if" expression expression ")" {
-            $$ = Driver.create<IfThenNode>($3, $4);
-          }
-        | "(" "if" expression expression expression ")" {
-            $$ = Driver.create<IfThenElseNode>($3, $4, $5);
-          }
-        | "(" loop_body ")" { $$ = $2; }
-        | "(" "switch" switch_args ")" {
-            $$ = $3;
-          }
-        | "(" "seq" sequence_args ")" { $$ = $3; }
-        ;
-
-stream
-        : stream_kind "." stream_type {
-            $$ = Driver.getStreamDefinition($1, $3);
-          }
-        ;
-
-stream_kind
-        : "in" { $$ = decode::StreamKind::Input; }
-        | "out" { $$ = decode::StreamKind::Output; }
-        ;
-
-stream_type
-        : "byte" { $$ = decode::StreamType::Byte; }
-        | "int" { $$ = decode::StreamType::Int; }
         ;
 
 symbol  : IDENTIFIER { $$ = Driver.getSymbolDefinition($1); }
