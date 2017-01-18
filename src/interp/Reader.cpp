@@ -591,6 +591,8 @@ void Reader::algorithmResume() {
       case Method::Eval:
         switch (Frame.Nd->getType()) {
           case NO_SUCH_NODETYPE:
+          case OpBinaryAccept:
+          case OpBinarySelect:
           case OpParams:
           case OpLastSymbolIs:
           case OpLiteralDef:
