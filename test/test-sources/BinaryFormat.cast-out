@@ -1,0 +1,20 @@
+(header (u32.const 0x6d736163) (u32.const 0x0))
+(void)
+(define 'file' (params)
+  (switch (binary
+      (binary
+        (accept 0x0)
+        (binary
+          (accept 0x2)
+          (accept 0x6)
+        )
+      )
+      (accept 0x1)
+    )
+    (void)
+    (case (u32.const 0x0) (void))
+    (case (u32.const 0x2) (void))
+    (case (u32.const 0x6) (void))
+    (case (u32.const 0x1) (void))
+  )
+)

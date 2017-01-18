@@ -636,6 +636,35 @@ bool ParamNode::validateNode(NodeVectorType& Parents) {
   return false;
 }
 
+bool BinaryAcceptNode::validateNode(NodeVectorType& Parents) {
+  // Defines path (value) from leaf to (binary) root node, guaranteeing each
+  // accept node has a unique value that can be case selected.
+  TRACE_METHOD("validateNode");
+  TRACE(node_ptr, nullptr, this);
+  isDefault = false;
+  Format = ValueFormat::Hexidecimal;
+  Value = 0;
+  Node* LastNode = this;
+  size_t NumBits = 0;
+  for (size_t i = Parents.size(); i > 0; --i) {
+    Node* Nd = Parents[i - 1];
+    auto *Selector = dyn_cast<BinarySelectNode>(Nd);
+    if (Selector == nullptr)
+      break;
+    if (NumBits >= sizeof(IntType)) {
+      FILE* Out = getTrace().getFile();
+      fputs("Error: Binary path too long for accept node\n", Out);
+      return false;
+    }
+    Value <<= 1;
+    if (LastNode == Nd->getKid(1))
+      Value |= 1;
+    LastNode = Nd;
+    NumBits++;
+  }
+  return true;
+}
+
 Node* BinaryNode::getKid(int Index) const {
   if (Index < 2)
     return Kids[Index];
