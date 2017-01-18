@@ -591,9 +591,7 @@ void Reader::algorithmResume() {
       case Method::Eval:
         switch (Frame.Nd->getType()) {
           case NO_SUCH_NODETYPE:
-          case OpConvert:
           case OpParams:
-          case OpFilter:  // Method::Eval
           case OpLastSymbolIs:
           case OpLiteralDef:
           case OpLiteralUse:
@@ -903,11 +901,6 @@ void Reader::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpStream: {  // Method::Eval
-            const auto* Stream = cast<StreamNode>(Frame.Nd);
-            popAndReturn(IntType(Stream->getStreamType() == getStreamType()));
-            break;
-          }
           case OpNot:  // Method::Eval
             if (!hasReadMode())
               return throwCantWriteInWriteOnlyMode();

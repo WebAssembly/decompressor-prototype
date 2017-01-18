@@ -370,8 +370,6 @@ size_t CodeGenerator::generateNode(const Node* Nd) {
       return generateUnaryNode("CallbackNode", Nd);
     case OpCase:
       return generateBinaryNode("CaseNode", Nd);
-    case OpConvert:
-      return generateTernaryNode("ConvertNode", Nd);
     case OpDefine:
       return generateNaryNode("DefineNode", Nd);
     case OpError:
@@ -382,8 +380,6 @@ size_t CodeGenerator::generateNode(const Node* Nd) {
       return generateTernaryNode("FileNode", Nd);
     case OpFileHeader:
       return generateNaryNode("FileHeaderNode", Nd);
-    case OpFilter:
-      return generateNaryNode("FilterNode", Nd);
     case OpIfThen:
       return generateBinaryNode("IfThenNode", Nd);
     case OpIfThenElse:
@@ -432,8 +428,6 @@ size_t CodeGenerator::generateNode(const Node* Nd) {
       return generateNaryNode("SequenceNode", Nd);
     case OpSet:
       return generateBinaryNode("SetNode", Nd);
-    case OpStream:
-      return generateBinaryNode("StreamNode", Nd);
     case OpSymbol:
       return generateSymbol(cast<SymbolNode>(Nd));
     case OpSwitch:

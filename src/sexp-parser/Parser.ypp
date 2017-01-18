@@ -78,7 +78,6 @@ struct IntValue {
 %token AND           "and"
 %token BITWISE       "bitwise"
 %token BLOCK         "block"
-%token BYTE          "byte"
 %token CASE          "case"
 %token CLOSEPAREN    ")"
 %token DEFINE        "define"
@@ -86,12 +85,8 @@ struct IntValue {
 %token DOUBLE_ARROW  "=>"
 %token ERROR         "error"
 %token EVAL          "eval"
-%token FILE          "file"
-%token FILTER        "filter"
 %token HEADER        "header"
 %token IF            "if"
-%token IN            "in"
-%token INT           "int"
 %token IS            "is"
 %token I32_CONST     "i32.const"
 %token I64_CONST     "i64.const"
@@ -101,14 +96,12 @@ struct IntValue {
 %token LOCALS        "locals"
 %token LOOP          "loop"
 %token LOOP_UNBOUNDED "loop.unbounded"
-%token MAGIC         "magic"
 %token MAP           "map"
 %token NEGATE        "negate"
 %token NOT           "not"
 %token OPCODE        "opcode"
 %token OPENPAREN     "("
 %token OR            "or"
-%token OUT           "out"
 %token PARAM         "param"
 %token PARAMS        "params"
 %token PEEK          "peek"
@@ -129,7 +122,6 @@ struct IntValue {
 %token VARINT64      "varint64"
 %token VARUINT32     "varuint32"
 %token VARUINT64     "varuint64"
-%token VERSION       "version"
 %token VOID          "void"
 %token WRITE         "write"
 %token XOR           "xor"
@@ -163,18 +155,12 @@ struct IntValue {
 %type <wasm::filt::MapNode *> map_args
 %type <wasm::filt::OpcodeNode *> opcode_args
 %type <wasm::filt::Node *> params_decl
-%type <wasm::filt::Node *> stream
-%type <wasm::filt::Node *> convert
-%type <wasm::filt::Node *> filter_args
-%type <wasm::filt::Node *> convert_args
-%type <wasm::filt::Node *> read_file_header
-%type <wasm::decode::StreamKind> stream_kind
-%type <wasm::decode::StreamType> stream_type
+%type <wasm::filt::Node *> file_header_read
 %type <wasm::filt::Node *> section
 %type <wasm::filt::Node *> sequence_args
 %type <wasm::filt::Node *> symbol
 %type <wasm::filt::Node *> write_args
-%type <wasm::filt::Node *> write_file_header
+%type <wasm::filt::Node *> file_header_write
 
 %start file
 
@@ -201,7 +187,6 @@ bool_expression
         : "(" "and" expression expression ")" {
             $$ = Driver.create<AndNode>($3, $4);
           }
-        | stream { $$ = $1; }
         | "(" "not" expression ")" {
             $$ = Driver.create<NotNode>($3);
           }
@@ -254,6 +239,24 @@ constant_expression
         | symbol {
             $$ = Driver.create<LiteralUseNode>($1);
           }
+        ;
+
+control_flow
+        : "(" "block" block_args ")"  { $$ = $3; }
+        | "(" "set" local_var expression ")" {
+            $$ = Driver.create<SetNode>($3, $4);
+          }
+        | "(" "if" expression expression ")" {
+            $$ = Driver.create<IfThenNode>($3, $4);
+          }
+        | "(" "if" expression expression expression ")" {
+            $$ = Driver.create<IfThenElseNode>($3, $4, $5);
+          }
+        | "(" loop_body ")" { $$ = $2; }
+        | "(" "switch" switch_args ")" {
+            $$ = $3;
+          }
+        | "(" "seq" sequence_args ")" { $$ = $3; }
         ;
 
 declaration
@@ -360,7 +363,7 @@ eval_args
         ;
 
 file
-         : read_file_header write_file_header section {
+         : file_header_read file_header_write section {
             $$ = Driver.create<FileNode>($1, $2, $3);
             Driver.setParsedAst($$);
           }
@@ -369,6 +372,19 @@ file
 file_header
         : "(" "header" file_header_args ")" {
             $$ = $3;
+          }
+        ;
+
+file_header_read
+        : file_header { $$ = $1; }
+        ;
+
+file_header_write
+        : file_header {
+            $$ = $1;
+          }
+        | "(" "void" ")" {
+            $$ = Driver.create<VoidNode>();
           }
         ;
 
@@ -434,41 +450,9 @@ literal_expression
           }
         ;
 
-read_file_header
-        : file_header { $$ = $1; }
-        ;
-
-switch_args
-        : expression expression {
-            // selector / default expresssions
-            $$ = Driver.create<SwitchNode>();
-            $$->append($1);
-            $$->append($2);
-          }
-        | switch_args case {
-            $$ = $1;
-            $$->append($2);
-          }
-        ;
-
-write_args
-        : fixed_format_directive expression {
-            $$ = Driver.create<WriteNode>();
-            $$->append($1);
-            $$->append($2);
-          }
-        | write_args expression {
-            $$ = $1;
-            $$->append($2);
-          }
-        ;
-
-write_file_header
-        : file_header {
-            $$ = $1;
-          }
-        | "(" "void" ")" {
-            $$ = Driver.create<VoidNode>();
+local_var
+        : "(" "local" INTEGER ")" {
+            $$ = Driver.getLocalDefinition($3.Value, $3.Format);
           }
         ;
 
@@ -478,9 +462,23 @@ locals_decl
           }
         ;
 
-local_var
-        : "(" "local" INTEGER ")" {
-            $$ = Driver.getLocalDefinition($3.Value, $3.Format);
+loop_body
+        : "loop" expression expression {
+            $$ = Driver.create<LoopNode>($2, $3);
+          }
+        | "loop.unbounded" expression {
+            $$ = Driver.create<LoopUnboundedNode>($2);
+          }
+        | loop_body expression {
+            $$ = $1;
+            Node *StmtList = $1->getLastKid();
+            auto *Seq = dyn_cast<SequenceNode>(StmtList);
+            if (Seq == nullptr) {
+              Seq = Driver.create<SequenceNode>();
+              Seq->append(StmtList);
+              $1->setLastKid(Seq);
+            }
+            Seq->append($2);
           }
         ;
 
@@ -514,26 +512,6 @@ params_decl
           }
         ;
 
-loop_body
-        : "loop" expression expression {
-            $$ = Driver.create<LoopNode>($2, $3);
-          }
-        | "loop.unbounded" expression {
-            $$ = Driver.create<LoopUnboundedNode>($2);
-          }
-        | loop_body expression {
-            $$ = $1;
-            Node *StmtList = $1->getLastKid();
-            auto *Seq = dyn_cast<SequenceNode>(StmtList);
-            if (Seq == nullptr) {
-              Seq = Driver.create<SequenceNode>();
-              Seq->append(StmtList);
-              $1->setLastKid(Seq);
-            }
-            Seq->append($2);
-          }
-        ;
-
 section
         : %empty {
             $$ = Driver.create<SectionNode>();
@@ -554,73 +532,28 @@ sequence_args
           }
         ;
 
-control_flow
-        : convert { $$ = $1; }
-        | "(" "block" block_args ")"  { $$ = $3; }
-        | "(" "set" local_var expression ")" {
-            $$ = Driver.create<SetNode>($3, $4);
-          }
-        | "(" "filter" filter_args ")" { $$ = $3; }
-        | "(" "if" expression expression ")" {
-            $$ = Driver.create<IfThenNode>($3, $4);
-          }
-        | "(" "if" expression expression expression ")" {
-            $$ = Driver.create<IfThenElseNode>($3, $4, $5);
-          }
-        | "(" loop_body ")" { $$ = $2; }
-        | "(" "switch" switch_args ")" {
-            $$ = $3;
-          }
-        | "(" "seq" sequence_args ")" { $$ = $3; }
-        ;
-
-stream
-        : stream_kind "." stream_type {
-            $$ = Driver.getStreamDefinition($1, $3);
-          }
-        ;
-
-stream_kind
-        : "in" { $$ = decode::StreamKind::Input; }
-        | "out" { $$ = decode::StreamKind::Output; }
-        ;
-
-stream_type
-        : "byte" { $$ = decode::StreamType::Byte; }
-        | "int" { $$ = decode::StreamType::Int; }
-        ;
-
-convert
-        : "(" "convert" convert_args ")" {
-            $$ = $3;
-          }
-        ;
-
-filter_args
-        : convert {
-            $$ = Driver.create<FilterNode>();
+switch_args
+        : expression expression {
+            // selector / default expresssions
+            $$ = Driver.create<SwitchNode>();
             $$->append($1);
+            $$->append($2);
           }
-        | filter_args convert {
+        | switch_args case {
             $$ = $1;
             $$->append($2);
           }
         ;
 
-convert_args
-        : stream stream expression {
-            $$ = Driver.create<ConvertNode>($1, $2, $3);
+write_args
+        : fixed_format_directive expression {
+            $$ = Driver.create<WriteNode>();
+            $$->append($1);
+            $$->append($2);
           }
-        | convert_args expression {
+        | write_args expression {
             $$ = $1;
-            Node *StmtList = $1->getLastKid();
-            auto *Seq = dyn_cast<SequenceNode>(StmtList);
-            if (Seq == nullptr) {
-              Seq = Driver.create<SequenceNode>();
-              Seq->append(StmtList);
-              $1->setLastKid(Seq);
-            }
-            Seq->append($2);
+            $$->append($2);
           }
         ;
 

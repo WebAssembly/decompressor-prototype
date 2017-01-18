@@ -123,7 +123,6 @@ void FlattenAst::flattenNode(const Node* Nd) {
     case OpBitwiseXor:
     case OpCallback:
     case OpCase:
-    case OpConvert:
     case OpOr:
     case OpNot:
     case OpError:
@@ -194,12 +193,6 @@ void FlattenAst::flattenNode(const Node* Nd) {
       WrotePrimaryHeader = true;
       break;
     }
-    case OpStream: {
-      const auto* Stream = cast<StreamNode>(Nd);
-      Writer->write(Opcode);
-      Writer->write(Stream->getEncoding());
-      break;
-    }
     case OpSection: {
       Writer->writeAction(Symtab->getPredefined(PredefinedSymbol::Block_enter));
       const auto* Section = cast<SectionNode>(Nd);
@@ -224,7 +217,6 @@ void FlattenAst::flattenNode(const Node* Nd) {
     }
     case OpDefine:
     case OpEval:
-    case OpFilter:
     case OpOpcode:
     case OpMap:
     case OpSwitch:

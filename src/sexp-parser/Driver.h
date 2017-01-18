@@ -60,10 +60,6 @@ class Driver {
   T* create(Node* Nd1, Node* Nd2, Node* Nd3) {
     return Table->create<T>(Nd1, Nd2, Nd3);
   }
-  StreamNode* getStreamDefinition(decode::StreamKind Kind,
-                                  decode::StreamType Type) {
-    return Table->getStreamDefinition(Kind, Type);
-  }
 
 #define X(tag, format, defval, mergable, NODE_DECLS)               \
   tag##Node* get##tag##Definition(                                 \
