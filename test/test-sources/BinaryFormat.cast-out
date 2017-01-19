@@ -3,13 +3,13 @@
 (define 'file' (params)
   (switch (binary
       (binary
-        (accept 0x0)
+        (accept 0x0:2)
         (binary
-          (accept 0x2)
-          (accept 0x6)
+          (accept 0x2:3)
+          (accept 0x6:3)
         )
       )
-      (accept 0x1)
+      (accept 0x1:1)
     )
     (void)
     (case (u32.const 0x0) (void))
