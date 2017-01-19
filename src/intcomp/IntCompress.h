@@ -57,6 +57,7 @@ class IntCompressor FINAL {
     bool TraceIntCounts;
     bool TraceSequenceCounts;
     bool TraceAbbreviationAssignments;
+    bool TraceAssigningAbbreviations;
     bool TraceCompressedIntOutput;
     std::shared_ptr<utils::TraceClass> Trace;
     Flags();
@@ -88,7 +89,18 @@ class IntCompressor FINAL {
   std::shared_ptr<utils::TraceClass> getTracePtr();
   bool hasTrace() { return bool(MyFlags.Trace); }
 
-  void describe(FILE* Out, CollectionFlags = makeFlags(CollectionFlag::All));
+  void describe(FILE* Out,
+                CollectionFlags Flags = makeFlags(CollectionFlag::All)) {
+    describeCutoff(Out, MyFlags.CountCutoff, MyFlags.WeightCutoff, Flags);
+  }
+
+  void describeCutoff(FILE* Out, uint64_t CountCutoff,
+                      CollectionFlags Flags = makeFlags(CollectionFlag::All)) {
+    describeCutoff(Out, CountCutoff, CountCutoff, Flags);
+  }
+
+  void describeCutoff(FILE* Out, uint64_t CountCutoff, uint64_t WeightCutoff,
+                      CollectionFlags Flags = makeFlags(CollectionFlag::All));
 
  private:
   std::shared_ptr<RootCountNode> Root;

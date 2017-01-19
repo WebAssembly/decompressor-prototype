@@ -37,16 +37,17 @@ class AbbreviationsCollector : public CountNodeCollector {
 
   size_t getNextAvailableIndex() const { return Assignments.size(); }
 
-  void addAbbreviation(CountNode::Ptr Nd) {
-    if (Nd->hasAbbrevIndex())
-      return;
-    Nd->setAbbrevIndex(Assignments.size());
-    Assignments.push_back(Nd);
-  }
+  void addAbbreviation(CountNode::Ptr Nd);
+
+  utils::TraceClass& getTrace() { return *getTracePtr(); }
+  std::shared_ptr<utils::TraceClass> getTracePtr();
+  void setTrace(std::shared_ptr<utils::TraceClass> NewTrace);
+  bool hasTrace() const { return bool(Trace); }
 
  private:
   interp::IntTypeFormat AbbrevFormat;
   CountNode::PtrVector& Assignments;
+  std::shared_ptr<utils::TraceClass> Trace;
 };
 
 }  // end of namespace intcomp

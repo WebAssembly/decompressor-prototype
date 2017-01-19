@@ -53,6 +53,10 @@ void CountNodeCollector::buildHeap() {
 }
 
 void CountNodeCollector::collect(CollectionFlags Flags) {
+  TRACE_METHOD("collect");
+  TRACE(uint32_t, "Flags", Flags);
+  TRACE(uint64_t, "CountCutoff", CountCutoff);
+  TRACE(uint64_t, "WeightCutoff", WeightCutoff);
   if (hasFlag(CollectionFlag::TopLevel, Flags)) {
     collectNode(Root->getBlockEnter(), Flags);
     collectNode(Root->getBlockExit(), Flags);
@@ -66,31 +70,42 @@ void CountNodeCollector::collect(CollectionFlags Flags) {
 }
 
 void CountNodeCollector::collectNode(CountNode::Ptr Nd, CollectionFlags Flags) {
-  bool IsIntNode = isa<IntCountNode>(*Nd);
+  TRACE_METHOD("collectNode");
+  TRACE_BLOCK({ Nd->describe(stderr); });
   std::vector<CountNode::Ptr> ToAdd;
   ToAdd.push_back(Nd);
   while (!ToAdd.empty()) {
     Nd = ToAdd.back();
     ToAdd.pop_back();
     if (!Nd)  // This shouldn't happen, but be safe.
-      continue;
-    if (auto* IntNd = dyn_cast<IntCountNode>(*Nd))
+     continue;
+    TRACE_BLOCK({
+        FILE* Out = getTrace().getFile();
+        fprintf(Out, "Consider: ");
+        Nd->describe(Out);
+      });
+    auto* IntNd = dyn_cast<IntCountNode>(Nd.get());
+    bool IsIntNode = IntNd != nullptr;
+    uint64_t Weight = Nd->getWeight();
+    size_t Count = Nd->getCount();
+    bool IsSingleton = !IsIntNode || isa<SingletonCountNode>(*Nd);
+    if (IsIntNode)
       for (CountNode::SuccMapIterator Iter = IntNd->getSuccBegin(),
                                       End = IntNd->getSuccEnd();
            Iter != End; ++Iter)
         ToAdd.push_back(Iter->second);
-    uint64_t Weight = Nd->getWeight();
-    size_t Count = Nd->getCount();
-    bool IsSingleton = !IsIntNode || isa<SingletonCountNode>(*Nd);
-    auto* IntNd = dyn_cast<IntCountNode>(Nd.get());
     if (hasFlag(CollectionFlag::TopLevel, Flags)) {
       CountTotal += Count;
       WeightTotal += Weight;
       if (IsIntNode) {
-        if (Count < CountCutoff)
+        if (IsSingleton && Count < CountCutoff) {
+          TRACE_MESSAGE("Omitting due to count cutoff");
           continue;
-        if (Weight < WeightCutoff)
+        }
+        if (Weight < WeightCutoff) {
+          TRACE_MESSAGE("Omitting due to weight cutoff");
           continue;
+        }
       }
       if (IntNd == nullptr || IsSingleton) {
         CountReported += Count;
@@ -106,10 +121,14 @@ void CountNodeCollector::collectNode(CountNode::Ptr Nd, CollectionFlags Flags) {
       WeightTotal += Weight;
     }
     if (IsIntNode) {
-      if (Count < CountCutoff)
+      if (IsSingleton && Count < CountCutoff) {
+        TRACE_MESSAGE("Omitting due to count cutoff");
         continue;
-      if (Weight < WeightCutoff)
+      }
+      if (Weight < WeightCutoff) {
+        TRACE_MESSAGE("Omitting due to weight cutoff");
         continue;
+      }
     }
     if (!IsSingleton) {
       Values.push_back(CountNode::Ptr(Nd));

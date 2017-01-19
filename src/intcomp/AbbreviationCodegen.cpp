@@ -146,8 +146,6 @@ Node* AbbreviationCodegen::generateIntLitAction(IntCountNode* Nd) {
 }
 
 Node* AbbreviationCodegen::generateIntLitActionRead(IntCountNode* Nd) {
-  if (Nd->getPathLength() == 1)
-    return generateIntType(Nd->getValue());
   std::vector<IntCountNode*> Values;
   while (Nd) {
     Values.push_back(Nd);

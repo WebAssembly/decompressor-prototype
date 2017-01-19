@@ -172,6 +172,11 @@ int main(int Argc, const char* Argv[]) {
     Args.add(TraceAbbreviationAssignmentsFlag.setLongName("verbose=abbrev")
                  .setDescription("Show (initial) abbreviation assignments"));
 
+    ArgsParser::Optional<bool> TraceAssigningAbbreviationsFlag(
+        CompressionFlags.TraceAssigningAbbreviations);
+    Args.add(TraceAssigningAbbreviationsFlag.setLongName("verbose=assign-abbrevs")
+             .setDescription("Show how abbreviations are assigned"));
+
     ArgsParser::Optional<bool> TraceCompressedIntOutputFlag(
         CompressionFlags.TraceCompressedIntOutput);
     Args.add(TraceCompressedIntOutputFlag.setLongName("verbose=int-output")
