@@ -123,7 +123,6 @@
 //   mergable: True if instances can be merged.
 //   NODE_DECLS: Other declarations for the node.
 #define AST_INTEGERNODE_TABLE                                                  \
-  X(BinaryAccept, Varuint32, 0, false, BINARYACCEPT_DECLS)                     \
   X(I32Const, Varint32, 0, true,)                                              \
   X(I64Const, Varint64, 0, true,)                                              \
   X(Local, Varuint32, 0, true,)                                                \
@@ -133,12 +132,6 @@
   X(U8Const, Uint8, 0, true,)                                                  \
   X(U32Const, Varuint32, 0, true,)                                             \
   X(U64Const, Varuint64, 0, true,)                                             \
-
-#define BINARYACCEPT_DECLS                                                     \
-  bool validateNode(NodeVectorType &Parents) OVERRIDE;                         \
-  unsigned getNumBits() const { return NumBits; }                              \
-protected:                                                                     \
-  unsigned NumBits;                                                            \
 
 #define PARAM_DECLS                                                            \
   public:                                                                      \

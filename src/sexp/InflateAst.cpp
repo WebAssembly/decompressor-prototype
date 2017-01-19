@@ -192,6 +192,10 @@ bool InflateAst::applyOp(IntType Op) {
   switch (NodeType(Op)) {
     case OpAnd:
       return buildBinary<AndNode>();
+    case OpBinaryAccept:
+      return buildNullary<BinaryAcceptNode>();
+    case OpBinarySelect:
+      return buildBinary<BinarySelectNode>();
     case OpBitwiseAnd:
       return buildBinary<BitwiseAndNode>();
     case OpBitwiseOr:

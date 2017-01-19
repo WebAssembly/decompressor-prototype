@@ -207,6 +207,7 @@ letter	[a-zA-Z]
 "#".*             Driver.stepLocation();
 [\n]+             Driver.extendLocationLines(yyleng); Driver.stepLocation();
 ")"               return Parser::make_CLOSEPAREN(Driver.getLoc());
+":"               return Parser::make_COLON(Driver.getLoc());
 "("               return Parser::make_OPENPAREN(Driver.getLoc());
 "."               return Parser::make_DOT(Driver.getLoc());
 "accept"          return Parser::make_ACCEPT(Driver.getLoc());

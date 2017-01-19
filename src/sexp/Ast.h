@@ -52,6 +52,7 @@ namespace wasm {
 
 namespace filt {
 
+class BinaryAcceptNode;
 class FileHeaderNode;
 class IntegerNode;
 class Node;
@@ -194,6 +195,7 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
   T* create(Node* Nd1, Node* Nd2);
   template <typename T>
   T* create(Node* Nd1, Node* Nd2, Node* Nd3);
+  BinaryAcceptNode* createBinaryAccept(decode::IntType Value, unsigned NumBits);
 
   void setTraceProgress(bool NewValue);
   virtual void setTrace(std::shared_ptr<utils::TraceClass> Trace);
@@ -416,6 +418,40 @@ class IntegerNode : public NullaryNode {
   };
 AST_INTEGERNODE_TABLE
 #undef X
+
+// The Value/Numbit fields are set by validateNode(). NumBits is the number of
+// bits used to reach this accept, and Value encodes the path (from leaf to
+// root) for the accept node. Note: The Value is unique for each accept, and
+// therefore is used as the (case) selector value.
+class BinaryAcceptNode : public IntegerNode {
+  BinaryAcceptNode(const BinaryAcceptNode&) = delete;
+  BinaryAcceptNode& operator=(const BinaryAcceptNode&) = delete;
+  BinaryAcceptNode() = delete;
+
+ public:
+  BinaryAcceptNode(SymbolTable& Symtab)
+      : IntegerNode(Symtab,
+                    OpBinaryAccept,
+                    0,
+                    decode::ValueFormat::Hexidecimal,
+                    true),
+        NumBits(0) {}
+  BinaryAcceptNode(SymbolTable& Symtab, decode::IntType Value, unsigned NumBits)
+      : IntegerNode(Symtab,
+                    OpBinaryAccept,
+                    Value,
+                    decode::ValueFormat::Hexidecimal,
+                    false),
+        NumBits(NumBits) {}
+  ~BinaryAcceptNode() OVERRIDE {}
+  bool validateNode(NodeVectorType& Parents) OVERRIDE;
+  unsigned getNumBits() const { return NumBits; }
+
+  static bool implementsClass(NodeType Type) { return Type == OpBinaryAccept; }
+
+ protected:
+  unsigned NumBits;
+};
 
 class SymbolNode FINAL : public NullaryNode {
   SymbolNode(const SymbolNode&) = delete;

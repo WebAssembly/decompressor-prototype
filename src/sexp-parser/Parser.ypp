@@ -82,6 +82,7 @@ struct IntValue {
 %token BLOCK         "block"
 %token CASE          "case"
 %token CLOSEPAREN    ")"
+%token COLON         ":"
 %token DEFINE        "define"
 %token DOT           "."
 %token DOUBLE_ARROW  "=>"
@@ -438,7 +439,14 @@ format_directive
 
 format_binary
         : "(" "accept" ")" {
-            $$ = Driver.getBinaryAcceptDefinition();
+            $$ = Driver.create<BinaryAcceptNode>();
+          }
+        | "(" "accept" INTEGER ":" INTEGER ")" {
+            if ($3.Format != decode::ValueFormat::Hexidecimal
+                || $5.Format != decode::ValueFormat::Decimal
+                || $5.Value >= std::numeric_limits<unsigned>::max())
+              Driver.error("Malformed accept arguments");
+            $$ = Driver.createBinaryAccept($3.Value, unsigned($5.Value));
           }
         | "(" "binary" format_binary format_binary ")" {
             $$ = Driver.create<BinarySelectNode>($3, $4);
