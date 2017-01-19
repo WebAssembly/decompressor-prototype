@@ -1,0 +1,24 @@
+(header (u32.const 0x6d736163) (u32.const 0x0))
+(void)
+
+(define 'file' (params)
+  (switch
+    (binary
+      (binary
+        (accept)
+        (binary
+          (accept)
+          (accept)
+        )
+      )
+      (accept)
+    )
+    (void)
+    # NOTE: Paths are parsed right-to-left, but use left-to-right encoding to make
+    # values unique.
+    (case (u32.const 0x0) (void)) # 00
+    (case (u32.const 0x2) (void)) # 010
+    (case (u32.const 0x6) (void)) # 110
+    (case (u32.const 0x1) (void)) # 1
+  )
+)

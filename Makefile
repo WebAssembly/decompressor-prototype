@@ -998,6 +998,8 @@ test-parser: $(TEST_EXECDIR)/TestParser
 		diff - $(TEST_SRCS_DIR)/MismatchedParens.df-out
 	$< -w $(TEST_SRCS_DIR)/ExprRedirects.df | \
 		diff - $(TEST_SRCS_DIR)/ExprRedirects.df-out
+	$< -w $(TEST_SRCS_DIR)/BinaryFormat.cast | \
+		diff - $(TEST_SRCS_DIR)/BinaryFormat.cast-out
 	@echo "*** parser tests passed ***"
 
 .PHONY: test-parser
