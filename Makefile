@@ -865,7 +865,8 @@ $(TEST_EXECS): $(TEST_EXECDIR)/%$(EXE): $(TEST_OBJDIR)/%.o $(LIBS)
 ###### Testing ######
 
 test: build-all test-parser test-raw-streams test-byte-queues \
-	test-decompress test-casm2cast test-cast2casm test-compress
+	test-decompress test-casm2cast test-cast2casm test-casm-cast \
+	test-compress
 	@echo "*** all tests passed ***"
 
 .PHONY: test
@@ -984,12 +985,20 @@ test-cast2casm: $(TEST_CASM_GEN_FILES) $(TEST_CASM_W_GEN_FILES)
 
 .PHONY: test-cast2cast
 
-test-casm2cast: $(BUILD_EXECDIR)/casm2cast $(TEST_CASM_DF_GEN_FILES)
+test-casm2cast: $(BUILD_EXECDIR)/casm2cast $(TEST_CASM_DF_GEN_FILES) 
 	$< $(TEST_DEFAULT_WASM) | diff - $(TEST_DEFAULT_DF)
 	$< $(TEST_DEFAULT_WASM_W) | diff - $(TEST_DEFAULT_DF)
 	@echo "*** casm2cast tests passed ***"
 
 .PHONY: test-casm2cast
+
+test-casm-cast: $(BUILD_EXECDIR)/cast2casm $(BUILD_EXECDIR)/casm2cast \
+		$(TEST_SRCS_DIR)/BinaryFormat.cast
+	$(BUILD_EXECDIR)/cast2casm $(TEST_SRCS_DIR)/BinaryFormat.cast | \
+	$(BUILD_EXECDIR)/casm2cast - | \
+	diff -  $(TEST_SRCS_DIR)/BinaryFormat.cast-out
+
+.PHONY: test-casm-cast
 
 test-parser: $(TEST_EXECDIR)/TestParser
 	$< -w $(SEXP_DEFAULT_DF) | diff - $(TEST_DEFAULT_DF)
