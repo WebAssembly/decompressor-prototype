@@ -70,6 +70,7 @@ IntCompressor::Flags::Flags()
       TraceIntCounts(false),
       TraceSequenceCounts(false),
       TraceAbbreviationAssignments(false),
+      TraceAssigningAbbreviations(false),
       TraceCompressedIntOutput(false) {
 }
 
@@ -191,7 +192,7 @@ void IntCompressor::compress() {
   if (!compressUpToSize(1))
     return;
   if (MyFlags.TraceIntCounts)
-    describe(stderr, makeFlags(CollectionFlag::TopLevel));
+    describeCutoff(stderr, MyFlags.CountCutoff, makeFlags(CollectionFlag::TopLevel));
   removeSmallUsageCounts();
   if (MyFlags.LengthLimit > 1) {
     if (!compressUpToSize(MyFlags.LengthLimit))
@@ -199,12 +200,14 @@ void IntCompressor::compress() {
     removeSmallUsageCounts();
   }
   if (MyFlags.TraceSequenceCounts)
-    describe(stderr, makeFlags(CollectionFlag::IntPaths));
+    describeCutoff(stderr, MyFlags.WeightCutoff,
+                   makeFlags(CollectionFlag::IntPaths));
   TRACE_MESSAGE("Assigning (initial) abbreviations to integer sequences");
   CountNode::PtrVector AbbrevAssignments;
   assignInitialAbbreviations(AbbrevAssignments);
   if (MyFlags.TraceAbbreviationAssignments)
-    describe(stderr, makeFlags(CollectionFlag::All));
+    describeCutoff(stderr, MyFlags.WeightCutoff,
+                   makeFlags(CollectionFlag::All));
   IntOutput = std::make_shared<IntStream>();
   TRACE_MESSAGE("Generating compressed integer stream");
   if (!generateIntOutput())
@@ -232,6 +235,8 @@ void IntCompressor::assignInitialAbbreviations(
     CountNode::PtrVector& Assignments) {
   AbbreviationsCollector Collector(getRoot(), MyFlags.AbbrevFormat,
                                    Assignments);
+  if (MyFlags.TraceAssigningAbbreviations && hasTrace())
+    Collector.setTrace(getTracePtr());
   Collector.CountCutoff = MyFlags.CountCutoff;
   Collector.WeightCutoff = MyFlags.WeightCutoff;
   Collector.assignAbbreviations();
@@ -262,12 +267,14 @@ std::shared_ptr<SymbolTable> IntCompressor::generateCode(
   return Symtab;
 }
 
-void IntCompressor::describe(FILE* Out, CollectionFlags Flags) {
+void IntCompressor::describeCutoff(FILE* Out, uint64_t CountCutoff,
+                                   uint64_t WeightCutoff,
+                                   CollectionFlags Flags) {
   CountNodeCollector Collector(getRoot());
   if (hasTrace())
     Collector.setTrace(getTracePtr());
-  Collector.CountCutoff = MyFlags.CountCutoff;
-  Collector.WeightCutoff = MyFlags.WeightCutoff;
+  Collector.CountCutoff = CountCutoff;
+  Collector.WeightCutoff = WeightCutoff;
   Collector.collect(Flags);
   TRACE_BLOCK({ Collector.describe(getTrace().getFile()); });
 }
