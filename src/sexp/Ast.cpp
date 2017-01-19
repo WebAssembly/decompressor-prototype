@@ -644,8 +644,8 @@ bool BinaryAcceptNode::validateNode(NodeVectorType& Parents) {
   isDefault = false;
   Format = ValueFormat::Hexidecimal;
   Value = 0;
+  NumBits = 0;
   Node* LastNode = this;
-  size_t NumBits = 0;
   for (size_t i = Parents.size(); i > 0; --i) {
     Node* Nd = Parents[i - 1];
     auto *Selector = dyn_cast<BinarySelectNode>(Nd);

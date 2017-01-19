@@ -136,6 +136,9 @@
 
 #define BINARYACCEPT_DECLS                                                     \
   bool validateNode(NodeVectorType &Parents) OVERRIDE;                         \
+  unsigned getNumBits() const { return NumBits; }                              \
+protected:                                                                     \
+  unsigned NumBits;                                                            \
 
 #define PARAM_DECLS                                                            \
   public:                                                                      \
