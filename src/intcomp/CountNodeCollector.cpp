@@ -78,12 +78,12 @@ void CountNodeCollector::collectNode(CountNode::Ptr Nd, CollectionFlags Flags) {
     Nd = ToAdd.back();
     ToAdd.pop_back();
     if (!Nd)  // This shouldn't happen, but be safe.
-     continue;
+      continue;
     TRACE_BLOCK({
-        FILE* Out = getTrace().getFile();
-        fprintf(Out, "Consider: ");
-        Nd->describe(Out);
-      });
+      FILE* Out = getTrace().getFile();
+      fprintf(Out, "Consider: ");
+      Nd->describe(Out);
+    });
     auto* IntNd = dyn_cast<IntCountNode>(Nd.get());
     bool IsIntNode = IntNd != nullptr;
     uint64_t Weight = Nd->getWeight();

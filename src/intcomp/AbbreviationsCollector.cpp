@@ -41,19 +41,25 @@ void AbbreviationsCollector::assignAbbreviations() {
   {
     CountNode::PtrVector Others;
     Root->getOthers(Others);
-    for (CountNode::Ptr Nd : Others)
-      addAbbreviation(Nd);
-  }
-  TRACE(uint64_t, "WeightCutoff", WeightCutoff);
-  collect(makeFlags(CollectionFlag::All));
-  buildHeap();
-  while (!ValuesHeap->empty()) {
-    CountNode::Ptr Nd = popHeap();
-    TRACE_BLOCK({
+    for (CountNode::Ptr Nd : Others) {
+      TRACE_BLOCK({
         FILE* Out = getTrace().getFile();
         fprintf(Out, "Considering: ");
         Nd->describe(Out);
       });
+      addAbbreviation(Nd);
+    }
+  }
+  TRACE(uint64_t, "WeightCutoff", WeightCutoff);
+  collect(makeFlags(CollectionFlag::All));
+  buildHeap();
+  while (!ValuesHeap->empty() && Assignments.size() < MaxAbbreviations) {
+    CountNode::Ptr Nd = popHeap();
+    TRACE_BLOCK({
+      FILE* Out = getTrace().getFile();
+      fprintf(Out, "Considering: ");
+      Nd->describe(Out);
+    });
     if (isa<IntCountNode>(*Nd) && Nd->getWeight() < WeightCutoff) {
       fprintf(stderr, "Removing due to weight cutoff\n");
       continue;
