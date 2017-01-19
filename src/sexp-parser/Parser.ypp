@@ -438,7 +438,7 @@ format_directive
 
 format_binary
         : "(" "accept" ")" {
-            $$ = Driver.getBinaryAcceptDefinition();
+            $$ = Driver.create<BinaryAcceptNode>();
           }
         | "(" "binary" format_binary format_binary ")" {
             $$ = Driver.create<BinarySelectNode>($3, $4);

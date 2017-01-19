@@ -50,6 +50,13 @@ void TraceClass::trace_node_ptr(const char* Name, const Node* Nd) {
 
 namespace filt {
 
+template <>
+BinaryAcceptNode* SymbolTable::create<BinaryAcceptNode>() {
+  BinaryAcceptNode* Nd = new BinaryAcceptNode(*this);
+  Allocated->push_back(Nd);
+  return Nd;
+}
+
 #define X(tag, NODE_DECLS)                      \
   template <>                                   \
   tag##Node* SymbolTable::create<tag##Node>() { \
@@ -599,11 +606,11 @@ bool IntegerNode::implementsClass(NodeType Type) {
   switch (Type) {
     default:
       return false;
-#define X(tag, format, defval, mergable, NODE_DECLS) \
-  case Op##tag:                                      \
-    return true;
+    case OpBinaryAccept:
+#define X(tag, format, defval, mergable, NODE_DECLS) case Op##tag:
       AST_INTEGERNODE_TABLE
 #undef X
+      return true;
   }
 }
 
@@ -648,7 +655,7 @@ bool BinaryAcceptNode::validateNode(NodeVectorType& Parents) {
   Node* LastNode = this;
   for (size_t i = Parents.size(); i > 0; --i) {
     Node* Nd = Parents[i - 1];
-    auto *Selector = dyn_cast<BinarySelectNode>(Nd);
+    auto* Selector = dyn_cast<BinarySelectNode>(Nd);
     if (Selector == nullptr)
       break;
     if (NumBits >= sizeof(IntType)) {

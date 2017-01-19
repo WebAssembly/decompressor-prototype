@@ -97,6 +97,7 @@ void FlattenAst::flattenNode(const Node* Nd) {
   switch (NodeType Opcode = Nd->getType()) {
     case NO_SUCH_NODETYPE:
     case OpBinarySelect:
+    case OpBinaryAccept:
     case OpUnknownSection: {
       reportError("Unexpected s-expression, can't write!");
       reportError("s-expression: ", Nd);
