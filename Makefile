@@ -997,6 +997,9 @@ test-casm-cast: $(BUILD_EXECDIR)/cast2casm $(BUILD_EXECDIR)/casm2cast \
 	$(BUILD_EXECDIR)/cast2casm $(TEST_SRCS_DIR)/BinaryFormat.cast | \
 	$(BUILD_EXECDIR)/casm2cast - | \
 	diff -  $(TEST_SRCS_DIR)/BinaryFormat.cast-out
+	$(BUILD_EXECDIR)/cast2casm $(TEST_SRCS_DIR)/BinaryFormat.cast-out | \
+	$(BUILD_EXECDIR)/casm2cast - | \
+	diff -  $(TEST_SRCS_DIR)/BinaryFormat.cast-out
 
 .PHONY: test-casm-cast
 

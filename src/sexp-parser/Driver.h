@@ -60,6 +60,10 @@ class Driver {
   T* create(Node* Nd1, Node* Nd2, Node* Nd3) {
     return Table->create<T>(Nd1, Nd2, Nd3);
   }
+  BinaryAcceptNode* createBinaryAccept(decode::IntType Value,
+                                       unsigned NumBits) {
+    return Table->createBinaryAccept(Value, NumBits);
+  }
 
 #define X(tag, format, defval, mergable, NODE_DECLS)               \
   tag##Node* get##tag##Definition(                                 \

@@ -57,6 +57,13 @@ BinaryAcceptNode* SymbolTable::create<BinaryAcceptNode>() {
   return Nd;
 }
 
+BinaryAcceptNode* SymbolTable::createBinaryAccept(IntType Value,
+                                                  unsigned NumBits) {
+  BinaryAcceptNode* Nd = new BinaryAcceptNode(*this, Value, NumBits);
+  Allocated->push_back(Nd);
+  return Nd;
+}
+
 #define X(tag, NODE_DECLS)                      \
   template <>                                   \
   tag##Node* SymbolTable::create<tag##Node>() { \
@@ -648,28 +655,38 @@ bool BinaryAcceptNode::validateNode(NodeVectorType& Parents) {
   // accept node has a unique value that can be case selected.
   TRACE_METHOD("validateNode");
   TRACE(node_ptr, nullptr, this);
-  isDefault = false;
-  Format = ValueFormat::Hexidecimal;
-  Value = 0;
-  NumBits = 0;
+  IntType MyValue = 0;
+  unsigned MyNumBits = 0;
   Node* LastNode = this;
   for (size_t i = Parents.size(); i > 0; --i) {
     Node* Nd = Parents[i - 1];
     auto* Selector = dyn_cast<BinarySelectNode>(Nd);
     if (Selector == nullptr)
       break;
-    if (NumBits >= sizeof(IntType)) {
+    if (MyNumBits >= sizeof(IntType)) {
       FILE* Out = getTrace().getFile();
       fputs("Error: Binary path too long for accept node\n", Out);
       return false;
     }
-    Value <<= 1;
+    MyValue <<= 1;
     if (LastNode == Nd->getKid(1))
-      Value |= 1;
+      MyValue |= 1;
     LastNode = Nd;
-    NumBits++;
+    MyNumBits++;
   }
-  return true;
+  bool Success = true;
+  if (!isDefault && (MyValue != Value || MyNumBits != NumBits)) {
+    describeNode("Malformed", this);
+    fprintf(stderr, "Expected (%s ", getName());
+    writeInt(stderr, MyValue, ValueFormat::Hexidecimal);
+    fprintf(stderr, ":%u)\n", MyNumBits);
+    Success = false;
+  }
+  Value = MyValue;
+  NumBits = MyNumBits;
+  isDefault = false;
+  Format = ValueFormat::Hexidecimal;
+  return Success;
 }
 
 Node* BinaryNode::getKid(int Index) const {
