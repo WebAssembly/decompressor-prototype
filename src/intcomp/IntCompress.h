@@ -43,6 +43,7 @@ class IntCompressor FINAL {
     uint64_t CountCutoff;
     uint64_t WeightCutoff;
     size_t LengthLimit;
+    size_t MaxAbbreviations;
     interp::IntTypeFormat AbbrevFormat;
     bool MinimizeCodeSize;
     bool TraceReadingInput;
@@ -94,12 +95,15 @@ class IntCompressor FINAL {
     describeCutoff(Out, MyFlags.CountCutoff, MyFlags.WeightCutoff, Flags);
   }
 
-  void describeCutoff(FILE* Out, uint64_t CountCutoff,
+  void describeCutoff(FILE* Out,
+                      uint64_t CountCutoff,
                       CollectionFlags Flags = makeFlags(CollectionFlag::All)) {
     describeCutoff(Out, CountCutoff, CountCutoff, Flags);
   }
 
-  void describeCutoff(FILE* Out, uint64_t CountCutoff, uint64_t WeightCutoff,
+  void describeCutoff(FILE* Out,
+                      uint64_t CountCutoff,
+                      uint64_t WeightCutoff,
                       CollectionFlags Flags = makeFlags(CollectionFlag::All));
 
  private:

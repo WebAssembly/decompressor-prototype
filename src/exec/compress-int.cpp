@@ -100,6 +100,15 @@ int main(int Argc, const char* Argv[]) {
                      "execution time grows non-linearly when this value "
                      " is increased)"));
 
+    ArgsParser::Optional<size_t> MaxAbbreviationsFlag(
+        CompressionFlags.MaxAbbreviations);
+    Args.add(
+        MaxAbbreviationsFlag.setDefault(8192)
+            .setLongName("max-abbreviations")
+            .setOptionName("INTEGER")
+            .setDescription(
+                "Maximum number of abbreviations allowed in compressed file"));
+
     ArgsParser::Optional<bool> TraceReadingInputFlag(
         CompressionFlags.TraceReadingInput);
     Args.add(
@@ -174,8 +183,9 @@ int main(int Argc, const char* Argv[]) {
 
     ArgsParser::Optional<bool> TraceAssigningAbbreviationsFlag(
         CompressionFlags.TraceAssigningAbbreviations);
-    Args.add(TraceAssigningAbbreviationsFlag.setLongName("verbose=assign-abbrevs")
-             .setDescription("Show how abbreviations are assigned"));
+    Args.add(
+        TraceAssigningAbbreviationsFlag.setLongName("verbose=assign-abbrevs")
+            .setDescription("Show how abbreviations are assigned"));
 
     ArgsParser::Optional<bool> TraceCompressedIntOutputFlag(
         CompressionFlags.TraceCompressedIntOutput);

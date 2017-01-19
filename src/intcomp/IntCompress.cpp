@@ -56,6 +56,7 @@ IntCompressor::Flags::Flags()
     : CountCutoff(0),
       WeightCutoff(0),
       LengthLimit(1),
+      MaxAbbreviations(std::numeric_limits<size_t>::max()),
       AbbrevFormat(IntTypeFormat::Varuint64),
       MinimizeCodeSize(true),
       TraceReadingInput(false),
@@ -192,7 +193,8 @@ void IntCompressor::compress() {
   if (!compressUpToSize(1))
     return;
   if (MyFlags.TraceIntCounts)
-    describeCutoff(stderr, MyFlags.CountCutoff, makeFlags(CollectionFlag::TopLevel));
+    describeCutoff(stderr, MyFlags.CountCutoff,
+                   makeFlags(CollectionFlag::TopLevel));
   removeSmallUsageCounts();
   if (MyFlags.LengthLimit > 1) {
     if (!compressUpToSize(MyFlags.LengthLimit))
@@ -233,8 +235,8 @@ void IntCompressor::compress() {
 
 void IntCompressor::assignInitialAbbreviations(
     CountNode::PtrVector& Assignments) {
-  AbbreviationsCollector Collector(getRoot(), MyFlags.AbbrevFormat,
-                                   Assignments);
+  AbbreviationsCollector Collector(getRoot(), MyFlags.AbbrevFormat, Assignments,
+                                   MyFlags.MaxAbbreviations);
   if (MyFlags.TraceAssigningAbbreviations && hasTrace())
     Collector.setTrace(getTracePtr());
   Collector.CountCutoff = MyFlags.CountCutoff;
@@ -267,7 +269,8 @@ std::shared_ptr<SymbolTable> IntCompressor::generateCode(
   return Symtab;
 }
 
-void IntCompressor::describeCutoff(FILE* Out, uint64_t CountCutoff,
+void IntCompressor::describeCutoff(FILE* Out,
+                                   uint64_t CountCutoff,
                                    uint64_t WeightCutoff,
                                    CollectionFlags Flags) {
   CountNodeCollector Collector(getRoot());

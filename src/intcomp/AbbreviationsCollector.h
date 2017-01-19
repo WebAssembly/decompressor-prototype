@@ -29,8 +29,10 @@ class AbbreviationsCollector : public CountNodeCollector {
  public:
   AbbreviationsCollector(CountNode::RootPtr Root,
                          interp::IntTypeFormat AbbrevFormat,
-                         CountNode::PtrVector& Assignments)
+                         CountNode::PtrVector& Assignments,
+                         size_t MaxAbbreviations)
       : CountNodeCollector(Root),
+        MaxAbbreviations(MaxAbbreviations),
         AbbrevFormat(AbbrevFormat),
         Assignments(Assignments) {}
   void assignAbbreviations();
@@ -45,6 +47,7 @@ class AbbreviationsCollector : public CountNodeCollector {
   bool hasTrace() const { return bool(Trace); }
 
  private:
+  const size_t MaxAbbreviations;
   interp::IntTypeFormat AbbrevFormat;
   CountNode::PtrVector& Assignments;
   std::shared_ptr<utils::TraceClass> Trace;
