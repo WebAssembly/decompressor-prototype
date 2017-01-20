@@ -71,7 +71,6 @@ void CountNodeCollector::collect(CollectionFlags Flags) {
 
 void CountNodeCollector::collectNode(CountNode::Ptr Nd, CollectionFlags Flags) {
   TRACE_METHOD("collectNode");
-  TRACE_BLOCK({ Nd->describe(stderr); });
   std::vector<CountNode::Ptr> ToAdd;
   ToAdd.push_back(Nd);
   while (!ToAdd.empty()) {
@@ -79,11 +78,7 @@ void CountNodeCollector::collectNode(CountNode::Ptr Nd, CollectionFlags Flags) {
     ToAdd.pop_back();
     if (!Nd)  // This shouldn't happen, but be safe.
       continue;
-    TRACE_BLOCK({
-      FILE* Out = getTrace().getFile();
-      fprintf(Out, "Consider: ");
-      Nd->describe(Out);
-    });
+    TRACE_BLOCK({ Nd->describe(getTrace().getFile()); });
     auto* IntNd = dyn_cast<IntCountNode>(Nd.get());
     bool IsIntNode = IntNd != nullptr;
     uint64_t Weight = Nd->getWeight();
