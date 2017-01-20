@@ -54,6 +54,14 @@ using namespace interp;
 
 namespace intcomp {
 
+// NOTE(karlschimpf): Created here because g++ version on Travis not happy
+// when used in initializer to heap.
+std::function<bool(CountNode::Ptr, CountNode::Ptr)> CountNode::CompareLt =
+    [](CountNode::Ptr V1, CountNode::Ptr V2) { return V1 < V2; };
+
+std::function<bool(CountNode::Ptr, CountNode::Ptr)> CountNode::CompareGt =
+    [](CountNode::Ptr V1, CountNode::Ptr V2) { return V1 > V2; };
+
 const decode::IntType CountNode::BAD_ABBREV_INDEX =
     std::numeric_limits<decode::IntType>::max();
 

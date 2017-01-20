@@ -69,8 +69,11 @@ IntCompressor::Flags::Flags()
       TraceCodeGenerationForWriting(false),
       TraceInputIntStream(false),
       TraceIntCounts(false),
+      TraceIntCountsCollection(false),
       TraceSequenceCounts(false),
+      TraceSequenceCountsCollection(false),
       TraceAbbreviationAssignments(false),
+      TraceAbbreviationAssignmentsCollection(false),
       TraceAssigningAbbreviations(false),
       TraceCompressedIntOutput(false) {
 }
@@ -194,7 +197,8 @@ void IntCompressor::compress() {
     return;
   if (MyFlags.TraceIntCounts)
     describeCutoff(stderr, MyFlags.CountCutoff,
-                   makeFlags(CollectionFlag::TopLevel));
+                   makeFlags(CollectionFlag::TopLevel),
+                   MyFlags.TraceIntCountsCollection);
   removeSmallUsageCounts();
   if (MyFlags.LengthLimit > 1) {
     if (!compressUpToSize(MyFlags.LengthLimit))
@@ -203,13 +207,14 @@ void IntCompressor::compress() {
   }
   if (MyFlags.TraceSequenceCounts)
     describeCutoff(stderr, MyFlags.WeightCutoff,
-                   makeFlags(CollectionFlag::IntPaths));
+                   makeFlags(CollectionFlag::IntPaths),
+                   MyFlags.TraceSequenceCountsCollection);
   TRACE_MESSAGE("Assigning (initial) abbreviations to integer sequences");
   CountNode::PtrVector AbbrevAssignments;
   assignInitialAbbreviations(AbbrevAssignments);
   if (MyFlags.TraceAbbreviationAssignments)
-    describeCutoff(stderr, MyFlags.WeightCutoff,
-                   makeFlags(CollectionFlag::All));
+    describeCutoff(stderr, MyFlags.WeightCutoff, makeFlags(CollectionFlag::All),
+                   MyFlags.TraceAbbreviationAssignmentsCollection);
   IntOutput = std::make_shared<IntStream>();
   TRACE_MESSAGE("Generating compressed integer stream");
   if (!generateIntOutput())
@@ -272,9 +277,10 @@ std::shared_ptr<SymbolTable> IntCompressor::generateCode(
 void IntCompressor::describeCutoff(FILE* Out,
                                    uint64_t CountCutoff,
                                    uint64_t WeightCutoff,
-                                   CollectionFlags Flags) {
+                                   CollectionFlags Flags,
+                                   bool Trace) {
   CountNodeCollector Collector(getRoot());
-  if (hasTrace())
+  if (Trace)
     Collector.setTrace(getTracePtr());
   Collector.CountCutoff = CountCutoff;
   Collector.WeightCutoff = WeightCutoff;

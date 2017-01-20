@@ -169,6 +169,12 @@ int main(int Argc, const char* Argv[]) {
         TraceIntCountsFlag.setLongName("verbose=int-counts")
             .setDescription("Show frequency of integers in the input stream"));
 
+    ArgsParser::Optional<bool> TraceIntCountsCollectionFlag(
+        CompressionFlags.TraceIntCountsCollection);
+    Args.add(TraceIntCountsCollectionFlag.setLongName(
+                                              "verbose=int-counts-collection")
+                 .setDescription("Show how int counts were selected"));
+
     ArgsParser::Optional<bool> TraceSequenceCountsFlag(
         CompressionFlags.TraceSequenceCounts);
     Args.add(TraceSequenceCountsFlag.setLongName("verbose=seq-counts")
@@ -176,10 +182,27 @@ int main(int Argc, const char* Argv[]) {
                      "Show frequency of integer sequences in the "
                      "input stream"));
 
+    ArgsParser::Optional<bool> TraceSequenceCountsCollectionFlag(
+        CompressionFlags.TraceSequenceCountsCollection);
+    Args.add(
+        TraceSequenceCountsCollectionFlag.setLongName(
+                                              "verbose=seq-counts-collection")
+            .setDescription(
+                "Show how frequency of integer sequences were "
+                "selected"));
+
     ArgsParser::Optional<bool> TraceAbbreviationAssignmentsFlag(
         CompressionFlags.TraceAbbreviationAssignments);
     Args.add(TraceAbbreviationAssignmentsFlag.setLongName("verbose=abbrev")
                  .setDescription("Show (initial) abbreviation assignments"));
+
+    ArgsParser::Optional<bool> TraceAbbreviationAssignmentsCollectionFlag(
+        CompressionFlags.TraceAbbreviationAssignmentsCollection);
+    Args.add(TraceAbbreviationAssignmentsCollectionFlag
+                 .setLongName("vebose=abbrev-collection")
+                 .setDescription(
+                     "Show how the (initial) abbreviation assignments "
+                     "were selected"));
 
     ArgsParser::Optional<bool> TraceAssigningAbbreviationsFlag(
         CompressionFlags.TraceAssigningAbbreviations);

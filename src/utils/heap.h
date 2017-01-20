@@ -88,11 +88,21 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
     size_t Index;
   };
 
+  typedef std::function<bool(value_type, value_type)> CompareFcn;
   // WARNING: Only create using std::make_shared<heap<value_type>>(); DO NOT
   // call constructor directly!
-  heap() {}
+  heap(CompareFcn LtFcn  // =
+       // TODO(karlschimpf): Why didn't std::less<Value_type>() not work!
+       // [](value_type V1, value_type V2) { return V1 < V2; }
+       )
+      : LtFcn(LtFcn) {}
 
   ~heap() {}
+
+  heap& setLtFcn(CompareFcn NewLtFcn) {
+    LtFcn = NewLtFcn;
+    return *this;
+  }
 
   bool empty() const { return Contents.empty(); }
 
@@ -143,7 +153,7 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
       size_t ParentIndex = getParentIndex(KidIndex);
       auto& Parent = Contents[ParentIndex];
       auto& Kid = Contents[KidIndex];
-      if (!(Kid->getValue() < Parent->getValue()))
+      if (!LtFcn(Kid->getValue(), Parent->getValue()))
         return Moved;
       std::swap(Parent, Kid);
       Parent->Index = KidIndex;
@@ -161,13 +171,13 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
       size_t KidIndex = ParentIndex;
       if (LeftKidIndex >= Contents.size())
         return;
-      if (Contents[LeftKidIndex]->getValue() <
-          Contents[ParentIndex]->getValue())
+      if (LtFcn(Contents[LeftKidIndex]->getValue(),
+                Contents[ParentIndex]->getValue()))
         KidIndex = LeftKidIndex;
       size_t RightKidIndex = getRightKidIndex(ParentIndex);
       if (RightKidIndex < Contents.size()) {
-        if (Contents[RightKidIndex]->getValue() <
-            Contents[KidIndex]->getValue())
+        if (LtFcn(Contents[RightKidIndex]->getValue(),
+                  Contents[KidIndex]->getValue()))
           KidIndex = RightKidIndex;
       }
       if (KidIndex == ParentIndex)
@@ -213,6 +223,9 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
     describeSubtree(Out, getLeftKidIndex(Parent), Indent, describe_fcn);
     describeSubtree(Out, getRightKidIndex(Parent), Indent, describe_fcn);
   }
+
+ private:
+  CompareFcn LtFcn;
 };
 
 }  // end of namespace utils

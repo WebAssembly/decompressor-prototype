@@ -42,17 +42,11 @@ class CountNodeCollector {
   uint64_t WeightCutoff;
   std::shared_ptr<utils::TraceClass> Trace;
 
-  explicit CountNodeCollector(CountNode::RootPtr Root)
-      : Root(Root),
-        ValuesHeap(std::make_shared<CountNode::HeapType>()),
-        WeightTotal(0),
-        CountTotal(0),
-        WeightReported(0),
-        CountReported(0),
-        NumNodesReported(0),
-        CountCutoff(1),
-        WeightCutoff(1) {}
+  explicit CountNodeCollector(CountNode::RootPtr Root);
   ~CountNodeCollector() { clear(); }
+
+  // Note: Can only be applied when the heap is empty!
+  void setCompareFcn(CountNode::CompareFcnType LtFcn);
 
   void collect(CollectionFlags Flags = makeFlags(CollectionFlag::All));
   void buildHeap();
