@@ -58,6 +58,7 @@ class CountNode : public std::enable_shared_from_this<CountNode> {
   typedef std::shared_ptr<CountNodeWithSuccs> WithSuccsPtr;
   typedef std::map<decode::IntType, CountNode::IntPtr> SuccMap;
   typedef std::vector<Ptr> PtrVector;
+  typedef std::map<size_t, Ptr> Int2PtrMap;
   typedef SuccMap::const_iterator SuccMapIterator;
   typedef Ptr HeapValueType;
   typedef utils::heap<HeapValueType> HeapType;

@@ -29,17 +29,13 @@ class AbbreviationsCollector : public CountNodeCollector {
  public:
   AbbreviationsCollector(CountNode::RootPtr Root,
                          interp::IntTypeFormat AbbrevFormat,
-                         CountNode::PtrVector& Assignments,
+                         CountNode::Int2PtrMap& Assignments,
                          size_t MaxAbbreviations)
       : CountNodeCollector(Root),
         MaxAbbreviations(MaxAbbreviations),
         AbbrevFormat(AbbrevFormat),
         Assignments(Assignments) {}
   void assignAbbreviations();
-
-  size_t getNextAvailableIndex() const { return Assignments.size(); }
-
-  void addAbbreviation(CountNode::Ptr Nd);
 
   utils::TraceClass& getTrace() { return *getTracePtr(); }
   std::shared_ptr<utils::TraceClass> getTracePtr();
@@ -49,8 +45,12 @@ class AbbreviationsCollector : public CountNodeCollector {
  private:
   const size_t MaxAbbreviations;
   interp::IntTypeFormat AbbrevFormat;
-  CountNode::PtrVector& Assignments;
+  CountNode::Int2PtrMap& Assignments;
   std::shared_ptr<utils::TraceClass> Trace;
+
+  size_t getNextAvailableIndex() const { return Assignments.size(); }
+
+  void addAbbreviation(CountNode::Ptr Nd);
 };
 
 }  // end of namespace intcomp
