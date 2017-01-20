@@ -47,6 +47,7 @@ void CountNodeCollector::setCompareFcn(CountNode::CompareFcnType LtFcn) {
   ValuesHeap->setLtFcn(LtFcn);
 }
 
+
 std::shared_ptr<TraceClass> CountNodeCollector::getTracePtr() {
   if (!Trace)
     setTrace(std::make_shared<TraceClass>("IntCompress"));
