@@ -30,6 +30,23 @@ void CountNodeCollector::setTrace(std::shared_ptr<TraceClass> NewTrace) {
   Trace = NewTrace;
 }
 
+CountNodeCollector::CountNodeCollector(CountNode::RootPtr Root)
+    : Root(Root),
+      ValuesHeap(std::make_shared<CountNode::HeapType>(CountNode::CompareLt)),
+      WeightTotal(0),
+      CountTotal(0),
+      WeightReported(0),
+      CountReported(0),
+      NumNodesReported(0),
+      CountCutoff(1),
+      WeightCutoff(1) {
+}
+
+void CountNodeCollector::setCompareFcn(CountNode::CompareFcnType LtFcn) {
+  assert(ValuesHeap->empty());
+  ValuesHeap->setLtFcn(LtFcn);
+}
+
 std::shared_ptr<TraceClass> CountNodeCollector::getTracePtr() {
   if (!Trace)
     setTrace(std::make_shared<TraceClass>("IntCompress"));

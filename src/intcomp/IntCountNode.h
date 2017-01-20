@@ -62,8 +62,12 @@ class CountNode : public std::enable_shared_from_this<CountNode> {
   typedef Ptr HeapValueType;
   typedef utils::heap<HeapValueType> HeapType;
   typedef std::shared_ptr<HeapType::entry> HeapEntryType;
+  typedef std::function<bool(Ptr, Ptr)> CompareFcnType;
 
   static const decode::IntType BAD_ABBREV_INDEX;
+
+  static CompareFcnType CompareLt;
+  static CompareFcnType CompareGt;
 
   virtual ~CountNode();
   enum class Kind { Root, Block, Default, Singleton, IntSequence };

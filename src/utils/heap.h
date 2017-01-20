@@ -91,12 +91,18 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
   typedef std::function<bool(value_type, value_type)> CompareFcn;
   // WARNING: Only create using std::make_shared<heap<value_type>>(); DO NOT
   // call constructor directly!
-  heap(CompareFcn LtFcn =
-           // TODO(karlschimpf): Why didn't std::less<Value_type>() not work!
-       [](value_type V1, value_type V2) { return V1 < V2; })
+  heap(CompareFcn LtFcn  // =
+       // TODO(karlschimpf): Why didn't std::less<Value_type>() not work!
+       // [](value_type V1, value_type V2) { return V1 < V2; }
+       )
       : LtFcn(LtFcn) {}
 
   ~heap() {}
+
+  heap& setLtFcn(CompareFcn NewLtFcn) {
+    LtFcn = NewLtFcn;
+    return *this;
+  }
 
   bool empty() const { return Contents.empty(); }
 
