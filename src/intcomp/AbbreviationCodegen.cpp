@@ -30,7 +30,7 @@ namespace intcomp {
 
 AbbreviationCodegen::AbbreviationCodegen(CountNode::RootPtr Root,
                                          IntTypeFormat AbbrevFormat,
-                                         CountNode::PtrVector& Assignments)
+                                         CountNode::Int2PtrMap& Assignments)
     : Root(Root), AbbrevFormat(AbbrevFormat), Assignments(Assignments) {
 }
 

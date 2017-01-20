@@ -210,7 +210,7 @@ void IntCompressor::compress() {
                    makeFlags(CollectionFlag::IntPaths),
                    MyFlags.TraceSequenceCountsCollection);
   TRACE_MESSAGE("Assigning (initial) abbreviations to integer sequences");
-  CountNode::PtrVector AbbrevAssignments;
+  CountNode::Int2PtrMap AbbrevAssignments;
   assignInitialAbbreviations(AbbrevAssignments);
   if (MyFlags.TraceAbbreviationAssignments)
     describeCutoff(stderr, MyFlags.WeightCutoff, makeFlags(CollectionFlag::All),
@@ -239,7 +239,7 @@ void IntCompressor::compress() {
 }
 
 void IntCompressor::assignInitialAbbreviations(
-    CountNode::PtrVector& Assignments) {
+    CountNode::Int2PtrMap& Assignments) {
   AbbreviationsCollector Collector(getRoot(), MyFlags.AbbrevFormat, Assignments,
                                    MyFlags.MaxAbbreviations);
   if (MyFlags.TraceAssigningAbbreviations && hasTrace())
@@ -262,7 +262,7 @@ bool IntCompressor::generateIntOutput() {
 }
 
 std::shared_ptr<SymbolTable> IntCompressor::generateCode(
-    CountNode::PtrVector& Assignments,
+    CountNode::Int2PtrMap& Assignments,
     bool ToRead,
     bool Trace) {
   AbbreviationCodegen Codegen(Root, MyFlags.AbbrevFormat, Assignments);

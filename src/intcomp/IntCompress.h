@@ -129,17 +129,17 @@ class IntCompressor FINAL {
                        std::shared_ptr<filt::SymbolTable> Symtab);
   bool compressUpToSize(size_t Size);
   void removeSmallUsageCounts();
-  void assignInitialAbbreviations(CountNode::PtrVector& Assignments);
+  void assignInitialAbbreviations(CountNode::Int2PtrMap& Assignments);
   bool generateIntOutput();
   std::shared_ptr<filt::SymbolTable>
-  generateCode(CountNode::PtrVector& Assignments, bool ToRead, bool Trace);
+  generateCode(CountNode::Int2PtrMap& Assignments, bool ToRead, bool Trace);
   std::shared_ptr<filt::SymbolTable> generateCodeForReading(
-      CountNode::PtrVector& Assignments) {
+      CountNode::Int2PtrMap& Assignments) {
     return generateCode(Assignments, true,
                         MyFlags.TraceCodeGenerationForReading);
   }
   std::shared_ptr<filt::SymbolTable> generateCodeForWriting(
-      CountNode::PtrVector& Assignments) {
+      CountNode::Int2PtrMap& Assignments) {
     return generateCode(Assignments, false,
                         MyFlags.TraceCodeGenerationForWriting);
   }

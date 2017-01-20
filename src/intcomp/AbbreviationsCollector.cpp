@@ -74,9 +74,10 @@ void AbbreviationsCollector::assignAbbreviations() {
 void AbbreviationsCollector::addAbbreviation(CountNode::Ptr Nd) {
   if (Nd->hasAbbrevIndex())
     return;
-  TRACE(size_t, "Abbreviation", Assignments.size());
-  Nd->setAbbrevIndex(Assignments.size());
-  Assignments.push_back(Nd);
+  size_t NdIndex = getNextAvailableIndex();
+  TRACE(size_t, "Abbreviation", NdIndex);
+  Nd->setAbbrevIndex(NdIndex);
+  Assignments[NdIndex] = Nd;
 }
 
 }  // end of namespace intcomp

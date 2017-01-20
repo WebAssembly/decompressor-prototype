@@ -34,7 +34,7 @@ class AbbreviationCodegen {
  public:
   AbbreviationCodegen(CountNode::RootPtr Root,
                       interp::IntTypeFormat AbbrevFormat,
-                      CountNode::PtrVector& Assignments);
+                      CountNode::Int2PtrMap& Assignments);
   ~AbbreviationCodegen();
 
   std::shared_ptr<filt::SymbolTable> getCodeSymtab(bool ToRead);
@@ -43,7 +43,7 @@ class AbbreviationCodegen {
   std::shared_ptr<filt::SymbolTable> Symtab;
   CountNode::RootPtr Root;
   interp::IntTypeFormat AbbrevFormat;
-  CountNode::PtrVector& Assignments;
+  CountNode::Int2PtrMap& Assignments;
   bool ToRead;
   filt::Node* generateCasmFileHeader();
   filt::Node* generateWasmFileHeader();
