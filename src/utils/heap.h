@@ -88,9 +88,13 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
     size_t Index;
   };
 
+  typedef std::function<bool(value_type, value_type)> CompareFcn;
   // WARNING: Only create using std::make_shared<heap<value_type>>(); DO NOT
   // call constructor directly!
-  heap() {}
+  heap(CompareFcn LtFcn =
+       // TODO(karlschimpf): Why didn't std::less<Value_type>() not work!
+       [](value_type V1, value_type V2) { return V1 < V2; }
+       ) : LtFcn(LtFcn) {}
 
   ~heap() {}
 
@@ -143,8 +147,13 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
       size_t ParentIndex = getParentIndex(KidIndex);
       auto& Parent = Contents[ParentIndex];
       auto& Kid = Contents[KidIndex];
+#if 0
       if (!(Kid->getValue() < Parent->getValue()))
         return Moved;
+#else
+      if (!LtFcn(Kid->getValue(), Parent->getValue()))
+        return Moved;
+#endif
       std::swap(Parent, Kid);
       Parent->Index = KidIndex;
       Kid->Index = ParentIndex;
@@ -166,9 +175,15 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
         KidIndex = LeftKidIndex;
       size_t RightKidIndex = getRightKidIndex(ParentIndex);
       if (RightKidIndex < Contents.size()) {
+#if 0
         if (Contents[RightKidIndex]->getValue() <
             Contents[KidIndex]->getValue())
           KidIndex = RightKidIndex;
+#else
+        if (LtFcn(Contents[RightKidIndex]->getValue(),
+                  Contents[KidIndex]->getValue()))
+          KidIndex = RightKidIndex;
+#endif
       }
       if (KidIndex == ParentIndex)
         return;
@@ -213,6 +228,9 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
     describeSubtree(Out, getLeftKidIndex(Parent), Indent, describe_fcn);
     describeSubtree(Out, getRightKidIndex(Parent), Indent, describe_fcn);
   }
+
+ private:
+  CompareFcn LtFcn;
 };
 
 }  // end of namespace utils
