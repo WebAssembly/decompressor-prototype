@@ -38,8 +38,10 @@ CountNodeCollector::CountNodeCollector(CountNode::RootPtr Root)
       WeightReported(0),
       CountReported(0),
       NumNodesReported(0),
-      CountCutoff(1),
-      WeightCutoff(1) {
+      CountCutoff(0),
+      WeightCutoff(0),
+      CollectAbbreviations(false),
+      Flags(makeFlags(CollectionFlag::None)) {
 }
 
 void CountNodeCollector::setCompareFcn(CountNode::CompareFcnType LtFcn) {
@@ -69,24 +71,43 @@ void CountNodeCollector::buildHeap() {
     Value->associateWithHeap(ValuesHeap->push(Value));
 }
 
-void CountNodeCollector::collect(CollectionFlags Flags) {
-  TRACE_METHOD("collect");
+void CountNodeCollector::collectUsingCutoffs(size_t MyCountCutoff,
+                                             size_t MyWeightCutoff,
+                                             CollectionFlags MyFlags) {
+  TRACE_METHOD("collectUsingCutoffs");
+  CountCutoff = MyCountCutoff;
+  WeightCutoff = MyWeightCutoff;
+  CollectAbbreviations = false;
+  Flags = MyFlags;
   TRACE(uint32_t, "Flags", Flags);
   TRACE(uint64_t, "CountCutoff", CountCutoff);
   TRACE(uint64_t, "WeightCutoff", WeightCutoff);
+  collect();
+}
+
+void CountNodeCollector::collectAbbreviations() {
+  TRACE_METHOD("collectAbbreviations");
+  CountCutoff = 0;
+  WeightCutoff = 0;
+  Flags = makeFlags(CollectionFlag::All);
+  CollectAbbreviations = true;
+  collect();
+}
+
+void CountNodeCollector::collect() {
   if (hasFlag(CollectionFlag::TopLevel, Flags)) {
-    collectNode(Root->getBlockEnter(), Flags);
-    collectNode(Root->getBlockExit(), Flags);
-    collectNode(Root->getDefaultSingle(), Flags);
-    collectNode(Root->getDefaultMultiple(), Flags);
+    collectNode(Root->getBlockEnter());
+    collectNode(Root->getBlockExit());
+    collectNode(Root->getDefaultSingle());
+    collectNode(Root->getDefaultMultiple());
   }
   for (CountNode::SuccMapIterator Iter = Root->getSuccBegin(),
                                   End = Root->getSuccEnd();
        Iter != End; ++Iter)
-    collectNode(Iter->second, Flags);
+    collectNode(Iter->second);
 }
 
-void CountNodeCollector::collectNode(CountNode::Ptr Nd, CollectionFlags Flags) {
+void CountNodeCollector::collectNode(CountNode::Ptr Nd) {
   TRACE_METHOD("collectNode");
   std::vector<CountNode::Ptr> ToAdd;
   ToAdd.push_back(Nd);
@@ -109,14 +130,19 @@ void CountNodeCollector::collectNode(CountNode::Ptr Nd, CollectionFlags Flags) {
     if (hasFlag(CollectionFlag::TopLevel, Flags)) {
       CountTotal += Count;
       WeightTotal += Weight;
-      if (IsIntNode) {
-        if (IsSingleton && Count < CountCutoff) {
-          TRACE_MESSAGE("Omitting due to count cutoff");
+      if (CollectAbbreviations) {
+        if (!Nd->hasAbbrevIndex())
           continue;
-        }
-        if (Weight < WeightCutoff) {
-          TRACE_MESSAGE("Omitting due to weight cutoff");
-          continue;
+      } else {
+        if (IsIntNode) {
+          if (IsSingleton && Count < CountCutoff) {
+            TRACE_MESSAGE("Omitting due to count cutoff");
+            continue;
+          }
+          if (Weight < WeightCutoff) {
+            TRACE_MESSAGE("Omitting due to weight cutoff");
+            continue;
+          }
         }
       }
       if (IntNd == nullptr || IsSingleton) {
@@ -133,13 +159,18 @@ void CountNodeCollector::collectNode(CountNode::Ptr Nd, CollectionFlags Flags) {
       WeightTotal += Weight;
     }
     if (IsIntNode) {
-      if (IsSingleton && Count < CountCutoff) {
-        TRACE_MESSAGE("Omitting due to count cutoff");
-        continue;
-      }
-      if (Weight < WeightCutoff) {
-        TRACE_MESSAGE("Omitting due to weight cutoff");
-        continue;
+      if (CollectAbbreviations) {
+        if (!Nd->hasAbbrevIndex())
+          continue;
+      } else {
+        if (IsSingleton && Count < CountCutoff) {
+          TRACE_MESSAGE("Omitting due to count cutoff");
+          continue;
+        }
+        if (Weight < WeightCutoff) {
+          TRACE_MESSAGE("Omitting due to weight cutoff");
+          continue;
+        }
       }
     }
     if (!IsSingleton) {

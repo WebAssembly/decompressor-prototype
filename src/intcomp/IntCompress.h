@@ -46,6 +46,7 @@ class IntCompressor FINAL {
     size_t MaxAbbreviations;
     interp::IntTypeFormat AbbrevFormat;
     bool MinimizeCodeSize;
+    bool UseHuffmanEncoding;
     bool TraceReadingInput;
     bool TraceReadingIntStream;
     bool TraceWritingCodeOutput;
@@ -112,6 +113,8 @@ class IntCompressor FINAL {
                       uint64_t WeightCutoff,
                       CollectionFlags Flags = makeFlags(CollectionFlag::All),
                       bool Trace = false);
+
+  void describeAbbreviations(FILE* Out, bool Trace = false);
 
  private:
   std::shared_ptr<RootCountNode> Root;

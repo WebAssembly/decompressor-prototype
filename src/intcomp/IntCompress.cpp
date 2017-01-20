@@ -59,6 +59,7 @@ IntCompressor::Flags::Flags()
       MaxAbbreviations(std::numeric_limits<size_t>::max()),
       AbbrevFormat(IntTypeFormat::Varuint64),
       MinimizeCodeSize(true),
+      UseHuffmanEncoding(false),
       TraceReadingInput(false),
       TraceReadingIntStream(false),
       TraceWritingCodeOutput(false),
@@ -213,8 +214,8 @@ void IntCompressor::compress() {
   CountNode::Int2PtrMap AbbrevAssignments;
   assignInitialAbbreviations(AbbrevAssignments);
   if (MyFlags.TraceAbbreviationAssignments)
-    describeCutoff(stderr, MyFlags.WeightCutoff, makeFlags(CollectionFlag::All),
-                   MyFlags.TraceAbbreviationAssignmentsCollection);
+    describeAbbreviations(stderr,
+                          MyFlags.TraceAbbreviationAssignmentsCollection);
   IntOutput = std::make_shared<IntStream>();
   TRACE_MESSAGE("Generating compressed integer stream");
   if (!generateIntOutput())
@@ -241,11 +242,10 @@ void IntCompressor::compress() {
 void IntCompressor::assignInitialAbbreviations(
     CountNode::Int2PtrMap& Assignments) {
   AbbreviationsCollector Collector(getRoot(), MyFlags.AbbrevFormat, Assignments,
+                                   MyFlags.CountCutoff, MyFlags.WeightCutoff,
                                    MyFlags.MaxAbbreviations);
   if (MyFlags.TraceAssigningAbbreviations && hasTrace())
     Collector.setTrace(getTracePtr());
-  Collector.CountCutoff = MyFlags.CountCutoff;
-  Collector.WeightCutoff = MyFlags.WeightCutoff;
   Collector.assignAbbreviations();
 }
 
@@ -282,9 +282,15 @@ void IntCompressor::describeCutoff(FILE* Out,
   CountNodeCollector Collector(getRoot());
   if (Trace)
     Collector.setTrace(getTracePtr());
-  Collector.CountCutoff = CountCutoff;
-  Collector.WeightCutoff = WeightCutoff;
-  Collector.collect(Flags);
+  Collector.collectUsingCutoffs(CountCutoff, WeightCutoff, Flags);
+  TRACE_BLOCK({ Collector.describe(getTrace().getFile()); });
+}
+
+void IntCompressor::describeAbbreviations(FILE* Out, bool Trace) {
+  CountNodeCollector Collector(getRoot());
+  if (Trace)
+    Collector.setTrace(getTracePtr());
+  Collector.collectAbbreviations();
   TRACE_BLOCK({ Collector.describe(getTrace().getFile()); });
 }
 

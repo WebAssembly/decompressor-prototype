@@ -38,9 +38,6 @@ class CountNodeCollector {
   uint64_t WeightReported;
   uint64_t CountReported;
   uint64_t NumNodesReported;
-  uint64_t CountCutoff;
-  uint64_t WeightCutoff;
-  std::shared_ptr<utils::TraceClass> Trace;
 
   explicit CountNodeCollector(CountNode::RootPtr Root);
   ~CountNodeCollector() { clear(); }
@@ -48,7 +45,11 @@ class CountNodeCollector {
   // Note: Can only be applied when the heap is empty!
   void setCompareFcn(CountNode::CompareFcnType LtFcn);
 
-  void collect(CollectionFlags Flags = makeFlags(CollectionFlag::All));
+  void collectUsingCutoffs(
+      size_t CountCutoff,
+      size_t WeightCutoff,
+      CollectionFlags Flags = makeFlags(CollectionFlag::All));
+  void collectAbbreviations();
   void buildHeap();
   CountNode::HeapValueType popHeap() {
     assert(ValuesHeap);
@@ -63,13 +64,24 @@ class CountNodeCollector {
     });
   }
   void clear();
-  void collectNode(CountNode::Ptr Nd, CollectionFlags Flags);
+  void collectNode(CountNode::Ptr Nd);
 
   void setTrace(std::shared_ptr<utils::TraceClass> Trace);
   std::shared_ptr<utils::TraceClass> getTracePtr();
   utils::TraceClass& getTrace() { return *getTracePtr(); }
   bool hasTrace() { return bool(Trace); }
   void describe(FILE* Out);
+
+ protected:
+  std::shared_ptr<utils::TraceClass> Trace;
+
+ private:
+  // Temporaries used during collection.
+  uint64_t CountCutoff;
+  uint64_t WeightCutoff;
+  bool CollectAbbreviations;
+  CollectionFlags Flags;
+  void collect();
 };
 
 }  // end of namespace intcomp

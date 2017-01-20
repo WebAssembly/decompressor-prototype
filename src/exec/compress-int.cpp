@@ -71,6 +71,12 @@ int main(int Argc, const char* Argv[]) {
                      "File containing algorithm to parse WASM file "
                      "(rather than using builting algorithm)"));
 
+    ArgsParser::Optional<bool> UseHuffmanEncodingFlag(
+        CompressionFlags.UseHuffmanEncoding);
+    Args.add(UseHuffmanEncodingFlag.setLongName("Huffman").setDescription(
+        "Usage Huffman encoding for abbreviations instead "
+        "of a simple weighted ordering (experimental)"));
+
     ArgsParser::Optional<uint64_t> CountCutoffFlag(
         CompressionFlags.CountCutoff);
     Args.add(CountCutoffFlag.setDefault(10)
