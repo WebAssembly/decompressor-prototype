@@ -147,13 +147,8 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
       size_t ParentIndex = getParentIndex(KidIndex);
       auto& Parent = Contents[ParentIndex];
       auto& Kid = Contents[KidIndex];
-#if 0
-      if (!(Kid->getValue() < Parent->getValue()))
-        return Moved;
-#else
       if (!LtFcn(Kid->getValue(), Parent->getValue()))
         return Moved;
-#endif
       std::swap(Parent, Kid);
       Parent->Index = KidIndex;
       Kid->Index = ParentIndex;
@@ -170,20 +165,14 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
       size_t KidIndex = ParentIndex;
       if (LeftKidIndex >= Contents.size())
         return;
-      if (Contents[LeftKidIndex]->getValue() <
-          Contents[ParentIndex]->getValue())
+      if (LtFcn(Contents[LeftKidIndex]->getValue(),
+                Contents[ParentIndex]->getValue()))
         KidIndex = LeftKidIndex;
       size_t RightKidIndex = getRightKidIndex(ParentIndex);
       if (RightKidIndex < Contents.size()) {
-#if 0
-        if (Contents[RightKidIndex]->getValue() <
-            Contents[KidIndex]->getValue())
-          KidIndex = RightKidIndex;
-#else
         if (LtFcn(Contents[RightKidIndex]->getValue(),
                   Contents[KidIndex]->getValue()))
           KidIndex = RightKidIndex;
-#endif
       }
       if (KidIndex == ParentIndex)
         return;
