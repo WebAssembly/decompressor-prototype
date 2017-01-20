@@ -51,7 +51,8 @@ void AbbreviationsCollector::assignAbbreviations() {
     }
   }
   TRACE(uint64_t, "WeightCutoff", WeightCutoff);
-  collect(makeFlags(CollectionFlag::All));
+  collectUsingCutoffs(CountCutoff, WeightCutoff,
+                      makeFlags(CollectionFlag::All));
   buildHeap();
   while (!ValuesHeap->empty() && Assignments.size() < MaxAbbreviations) {
     CountNode::Ptr Nd = popHeap();
@@ -69,6 +70,20 @@ void AbbreviationsCollector::assignAbbreviations() {
     if (Space <= Nd->getWeight())
       addAbbreviation(Nd);
   }
+}
+
+void AbbreviationsCollector::assignHuffmanAbbreviations() {
+  // Start by extracting out candidates based on weight. Then use resulting
+  // selected patterns as alphabet for Huffman encoding.
+  assignAbbreviations();
+  CountNode::PtrVector Alphabet;
+  for (const auto& Pair : Assignments) {
+    Alphabet.push_back(Pair.second);
+    Pair.second->clearAbbrevIndex();
+  }
+  Assignments.clear();
+  // Now build heap (sorted by smaller weights first) to assign abbreviation
+  // values.
 }
 
 void AbbreviationsCollector::addAbbreviation(CountNode::Ptr Nd) {

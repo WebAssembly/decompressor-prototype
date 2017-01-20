@@ -88,6 +88,7 @@ class CountNode : public std::enable_shared_from_this<CountNode> {
   decode::IntType getAbbrevIndex() const { return AbbrevIndex; }
   bool hasAbbrevIndex() const { return AbbrevIndex != BAD_ABBREV_INDEX; }
   void setAbbrevIndex(decode::IntType NewValue) { AbbrevIndex = NewValue; }
+  void clearAbbrevIndex() { AbbrevIndex = BAD_ABBREV_INDEX; }
 
   virtual int compare(const CountNode& Nd) const;
   bool operator<(const CountNode& Nd) const { return compare(Nd) < 0; }
