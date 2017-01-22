@@ -82,8 +82,21 @@ void AbbreviationsCollector::assignHuffmanAbbreviations() {
     Pair.second->clearAbbrevIndex();
   }
   Assignments.clear();
-  // Now build heap (sorted by smaller weights first) to assign abbreviation
-  // values.
+  clearHeap();
+// Now build heap (sorted by smaller weights first) to assign abbreviation
+// values.
+#if 0
+  ValuesHeap.setLtFcn(CountNode::CompareGt);
+  for (auto& Nd : Alphabet)
+    Nd->associateWithHeap(ValuesHeap->push(Value));
+  // Create nodes over two smallest values in heap.
+  while (ValuesHeap.size() > 1) {
+    Ptr Nd1 = ValuesHeap.top();
+    ValuesHeap.pop();
+    Ptr Nd2 = ValuesHeap.top();
+    ValuesHeap.pop();
+  }
+#endif
 }
 
 void AbbreviationsCollector::addAbbreviation(CountNode::Ptr Nd) {

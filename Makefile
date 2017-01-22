@@ -35,6 +35,7 @@ UTILS_SRCS = \
 	Allocator.cpp \
 	ArgsParse.cpp \
 	Defs.cpp \
+	HuffmanEncoding.cpp \
 	Trace.cpp
 
 UTILS_OBJS=$(patsubst %.cpp, $(UTILS_OBJDIR)/%.o, $(UTILS_SRCS))
