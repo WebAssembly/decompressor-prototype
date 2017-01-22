@@ -127,6 +127,13 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
 
   void pop() { remove(0); }
 
+  // Reinsert value since key changed.
+  void reinsert(size_t Index) {
+    assert(Index < Contents.size());
+    if (!insertUp(Index))
+      insertDown(Index);
+  }
+
   // Note: This operation is provided to make debugging easier.
   void describe(FILE* Out,
                 std::function<void(FILE*, value_type)> describe_fcn) {
@@ -189,13 +196,6 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
       Kid->Index = ParentIndex;
       ParentIndex = KidIndex;
     } while (true);
-  }
-
-  // Reinsert value since key changed.
-  void reinsert(size_t Index) {
-    assert(Index < Contents.size());
-    if (!insertUp(Index))
-      insertDown(Index);
   }
 
   void remove(size_t Index) {
