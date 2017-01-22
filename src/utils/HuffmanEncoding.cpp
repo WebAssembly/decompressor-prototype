@@ -34,15 +34,15 @@ bool operator<(HuffmanEncoder::NodePtr T1, HuffmanEncoder::NodePtr T2) {
   return T1->getWeight() < T2->getWeight();
 }
 
-HuffmanEncoder::Node::Node(NodeType Type, WeightType Weight, unsigned NumBits)
-    : Type(Type), Weight(Weight), NumBits(NumBits) {
+HuffmanEncoder::Node::Node(NodeType Type, WeightType Weight)
+    : Type(Type), Weight(Weight) {
 }
 
 HuffmanEncoder::Node::~Node() {
 }
 
 HuffmanEncoder::Symbol::Symbol(WeightType Weight)
-    : Node(NodeType::Symbol, Weight, 1), Path(0) {
+    : Node(NodeType::Symbol, Weight), Path(0) {
 }
 
 HuffmanEncoder::Symbol::~Symbol() {
@@ -63,17 +63,14 @@ size_t HuffmanEncoder::Symbol::nodeSize() const {
 }
 
 HuffmanEncoder::Selector::Selector(NodePtr Kid1, NodePtr Kid2)
-    : Node(NodeType::Selector,
-           Kid1->getWeight() + Kid2->getWeight(),
-           std::max(Kid1->getNumBits(), Kid2->getNumBits()) + 1),
+    : Node(NodeType::Selector, Kid1->getWeight() + Kid2->getWeight()),
       Kid1(Kid1),
       Kid2(Kid2),
       Size(Kid1->nodeSize() + Kid2->nodeSize()) {
 }
 
-void HuffmanEncoder::Selector::FixFields() {
+void HuffmanEncoder::Selector::fixFields() {
   Weight = Kid1->getWeight() + Kid2->getWeight();
-  NumBits = std::max(Kid1->getNumBits(), Kid2->getNumBits()) + 1;
   Size = Kid1->nodeSize() + Kid2->nodeSize();
 }
 
@@ -86,65 +83,74 @@ HuffmanEncoder::NodePtr HuffmanEncoder::Selector::installPaths(
     unsigned NumBits) {
   PathType KidPath = Path << 1;
   unsigned KidBits = NumBits + 1;
-  NodePtr K1 = Kid1->installPaths(Kid1, KidPath, KidBits);
-  NodePtr K2 = Kid2->installPaths(Kid2, KidPath + 1, KidBits);
-  if (K1 && K2) {
+  for (int NumTries = 1; NumTries <= 2; NumTries++) {
     assert(isa<Selector>(Self.get()));
     auto Sel = cast<Selector>(Self);
-    Sel->Kid1 = K1;
-    Sel->Kid2 = K2;
-    return Self;
-  }
+    NodePtr K1 = Sel->getKid1();
+    K1 = K1->installPaths(K1, KidPath, KidBits);
+    NodePtr K2 = Sel->getKid2();
+    K2 = K2->installPaths(K2, KidPath + 1, KidBits);
+    if (K1 && K2) {
+      Sel->Kid1 = K1;
+      Sel->Kid2 = K2;
+      Sel->fixFields();
+      return Self;
+    }
+    if (NumTries == 2)
+      // Flattening did not work, fail to parent
+      break;
 
-  // Tree is too deep. See if flattened binary tree will fit.
-  unsigned BitsNeeded = 0;
-  size_t Count = Size;
-  while (Count > 0) {
-    ++BitsNeeded;
-    Count >>= 1;
-  }
-  if (NumBits + BitsNeeded > MaxPathLength)
-    // Can't fix at this node, go to parent.
-    return NodePtr();
+    // Tree is too deep. See if flattened binary tree will fit.
+    unsigned BitsNeeded = 0;
+    size_t Count = Sel->nodeSize();
+    while (Count > 0) {
+      ++BitsNeeded;
+      Count >>= 1;
+    }
 
-  // Can flatten tree at this depth. Flatten and assign paths.
-  std::vector<NodePtr> Symbols;
-  std::vector<NodePtr> ToVisit;
-  ToVisit.push_back(Kid1);
-  ToVisit.push_back(Kid2);
-  while (!ToVisit.empty()) {
-    NodePtr Nd = ToVisit.back();
-    ToVisit.pop_back();
-    if (isa<Symbol>(Nd.get())) {
-      Symbols.push_back(Nd);
-      continue;
+    if (NumBits + BitsNeeded > MaxPathLength)
+      // Can't fix at this node, go to parent.
+      break;
+
+    // Can flatten tree at this depth. Flatten and assign paths.
+    std::vector<NodePtr> Symbols;
+    std::vector<NodePtr> ToVisit;
+    ToVisit.push_back(Sel->Kid1);
+    ToVisit.push_back(Sel->Kid2);
+    while (!ToVisit.empty()) {
+      NodePtr Nd = ToVisit.back();
+      ToVisit.pop_back();
+      if (isa<Symbol>(Nd.get())) {
+        Symbols.push_back(Nd);
+        continue;
+      }
+      assert(isa<Selector>(Nd.get()));
+      auto Sel = cast<Selector>(Nd.get());
+      ToVisit.push_back(Sel->getKid1());
+      ToVisit.push_back(Sel->getKid2());
     }
-    assert(isa<Selector>(Nd.get()));
-    auto Sel = cast<Selector>(Nd.get());
-    ToVisit.push_back(Sel->getKid1());
-    ToVisit.push_back(Sel->getKid2());
+    std::vector<NodePtr>* Ply1 = &Symbols;
+    std::vector<NodePtr>* Ply2 = &ToVisit;
+    while (Ply1->size() > 1) {
+      while (Ply1->size() >= 2) {
+        NodePtr N1 = Ply1->back();
+        Ply1->pop_back();
+        NodePtr N2 = Ply1->back();
+        Ply1->pop_back();
+        Ply2->push_back(std::make_shared<Selector>(N1, N2));
+      }
+      if (!Ply1->empty()) {
+        Ply2->push_back(Ply1->back());
+        Ply1->pop_back();
+      }
+      std::reverse(Ply2->begin(), Ply2->end());
+      std::swap(Ply1, Ply2);
+    }
+    // Loop again to verify if flattening actually worked, as well
+    // as update paths for symbols in subtree.
+    Self = Ply1->front();
   }
-  std::vector<NodePtr>* Ply1 = &Symbols;
-  std::vector<NodePtr>* Ply2 = &ToVisit;
-  while (Ply1->size() > 1) {
-    while (Ply1->size() >= 2) {
-      NodePtr N1 = Ply1->back();
-      Ply1->pop_back();
-      NodePtr N2 = Ply1->back();
-      Ply1->pop_back();
-      Ply2->push_back(std::make_shared<Selector>(N1, N2));
-    }
-    if (!Ply1->empty()) {
-      Ply2->push_back(Ply1->back());
-      Ply1->pop_back();
-    }
-    std::reverse(Ply2->begin(), Ply2->end());
-    std::swap(Ply1, Ply2);
-  }
-  NodePtr Root = Ply1->front();
-  // Double check that flattening was done correctly.
-  assert(Root->getNumBits() + NumBits <= MaxPathLength);
-  return Root->installPaths(Root, Path, NumBits);
+  return NodePtr();
 }
 
 size_t HuffmanEncoder::Selector::nodeSize() const {

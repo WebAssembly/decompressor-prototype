@@ -68,10 +68,9 @@ class HuffmanEncoder : public std::enable_shared_from_this<HuffmanEncoder> {
     friend class HuffmanEncoder;
 
    public:
-    explicit Node(NodeType Type, WeightType Weight, unsigned NumBits);
+    explicit Node(NodeType Type, WeightType Weight);
     virtual ~Node();
     WeightType getWeight() const { return Weight; }
-    unsigned getNumBits() const { return NumBits; }
 
     NodeType getRtClassId() const { return Type; }
 
@@ -79,8 +78,6 @@ class HuffmanEncoder : public std::enable_shared_from_this<HuffmanEncoder> {
     const NodeType Type;
     // The weight of all symbols in the subtree.
     WeightType Weight;
-    // The number of bits needed to represent all paths in subtree.
-    unsigned NumBits;
     // Note: Installs Huffman encoding values into leaves, based on path and
     // number of bits. Returns false if parent needs to rebalance because
     // it was unable to install with path limit.
@@ -103,6 +100,7 @@ class HuffmanEncoder : public std::enable_shared_from_this<HuffmanEncoder> {
     ~Symbol() OVERRIDE;
 
     PathType getPath() const { return Path; }
+    unsigned getNumBits() const { return NumBits; }
 
     static bool implementsClass(NodeType Type) {
       return Type == NodeType::Symbol;
@@ -116,6 +114,7 @@ class HuffmanEncoder : public std::enable_shared_from_this<HuffmanEncoder> {
 
    private:
     PathType Path;
+    unsigned NumBits;
   };
 
   // Defines (binary) selector tree node.
@@ -130,14 +129,13 @@ class HuffmanEncoder : public std::enable_shared_from_this<HuffmanEncoder> {
 
     NodePtr getKid1() const { return Kid1; }
     NodePtr getKid2() const { return Kid2; }
-    NodePtr getKid(unsigned i) const;
 
     static bool implementsClass(NodeType Type) {
       return Type == NodeType::Selector;
     }
 
    protected:
-    void FixFields();
+    void fixFields();
     NodePtr installPaths(NodePtr Self,
                          PathType Path,
                          unsigned NumBits) OVERRIDE;
