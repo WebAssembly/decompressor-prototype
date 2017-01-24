@@ -26,7 +26,7 @@
 #ifndef DECOMPRESSOR_SRC_INTERP_DECOMPRESSSELECTOR_H
 #define DECOMPRESSOR_SRC_INTERP_DECOMPRESSSELECTOR_H
 
-#include "interp/Reader.h"
+#include "interp/Algorithm.h"
 
 #include <memory>
 #include <queue>

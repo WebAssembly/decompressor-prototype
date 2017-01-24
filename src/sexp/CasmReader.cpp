@@ -22,6 +22,7 @@
 #include "algorithms/casm0x0.h"
 #endif
 
+#include "interp/Algorithm.h"
 #include "interp/ByteReader.h"
 #include "sexp/Ast.h"
 #include "sexp/InflateAst.h"

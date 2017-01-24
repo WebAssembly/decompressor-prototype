@@ -18,6 +18,8 @@
 
 #include "interp/Reader.h"
 
+#include "interp/Algorithm.h"
+
 #include "sexp/TextWriter.h"
 
 #define LOG_TRUE_VALUE 1
