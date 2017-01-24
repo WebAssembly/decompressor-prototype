@@ -57,11 +57,6 @@ class ReadCursor : public Cursor {
     return Result;
   }
 
-  bool atReadBitEob() {
-    // TODO(karlschimpf): Fix this to check at byte level!
-    return atByteEob();
-  }
-
   void pushEobAddress(const BitAddress& NewValue) {
     EobPtr = std::make_shared<BlockEob>(NewValue, EobPtr);
     updateGuaranteedBeforeEob();
