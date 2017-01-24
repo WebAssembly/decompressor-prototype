@@ -178,7 +178,7 @@ IntStructureReader::IntStructureReader(
     std::shared_ptr<IntReader> Input,
     std::shared_ptr<Writer> Output,
     std::shared_ptr<filt::SymbolTable> Symtab)
-    : Reader(Input, Output, Symtab), IntInput(Input) {
+    : Interpreter(Input, Output, Symtab), IntInput(Input) {
   // TODO(karlschimpf) Modify structuralStart() to mimic algorithmStart(),
   // except that it calls structuralResume() to remove this assertion.
   assert(Symtab &&

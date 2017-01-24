@@ -48,12 +48,12 @@ const filt::FileHeaderNode* DecompressSelector::getTargetHeader() {
   return Symtab->getTargetHeader();
 }
 
-bool DecompressSelector::configure(Reader* R) {
+bool DecompressSelector::configure(Interpreter* R) {
   TRACE_USING(R->getTrace(), bool, "IsAlgorithm", IsAlgorithm);
   return IsAlgorithm ? configureAlgorithm(R) : configureData(R);
 }
 
-bool DecompressSelector::configureAlgorithm(Reader* R) {
+bool DecompressSelector::configureAlgorithm(Interpreter* R) {
   State->OrigSymtab = R->getSymbolTable();
   R->setSymbolTable(Symtab);
   State->OrigWriter = R->getWriter();
@@ -62,14 +62,14 @@ bool DecompressSelector::configureAlgorithm(Reader* R) {
   return true;
 }
 
-bool DecompressSelector::applyDataAlgorithm(Reader* R) {
+bool DecompressSelector::applyDataAlgorithm(Interpreter* R) {
   // Assume this is the last algorithm to apply.
   State->OrigSymtab = R->getSymbolTable();
   R->setSymbolTable(Symtab);
   return true;
 }
 
-bool DecompressSelector::applyNextQueuedAlgorithm(Reader* R) {
+bool DecompressSelector::applyNextQueuedAlgorithm(Interpreter* R) {
   State->OrigSymtab = R->getSymbolTable();
   R->setSymbolTable(State->AlgQueue.front());
   State->OrigWriter = R->getWriter();
@@ -78,16 +78,16 @@ bool DecompressSelector::applyNextQueuedAlgorithm(Reader* R) {
   return true;
 }
 
-bool DecompressSelector::configureData(Reader* R) {
+bool DecompressSelector::configureData(Interpreter* R) {
   return State->AlgQueue.empty() ? applyDataAlgorithm(R)
                                  : applyNextQueuedAlgorithm(R);
 }
 
-bool DecompressSelector::reset(Reader* R) {
+bool DecompressSelector::reset(Interpreter* R) {
   return IsAlgorithm ? resetAlgorithm(R) : resetData(R);
 }
 
-bool DecompressSelector::resetAlgorithm(Reader* R) {
+bool DecompressSelector::resetAlgorithm(Interpreter* R) {
   R->setSymbolTable(State->OrigSymtab);
   State->OrigSymtab.reset();
   R->setWriter(State->OrigWriter);
@@ -98,7 +98,7 @@ bool DecompressSelector::resetAlgorithm(Reader* R) {
   return true;
 }
 
-bool DecompressSelector::resetData(Reader* R) {
+bool DecompressSelector::resetData(Interpreter* R) {
   if (State->AlgQueue.empty()) {
     // TODO(karlschimpf): Why must we null the symbol table?
     std::shared_ptr<SymbolTable> NullSymtab;

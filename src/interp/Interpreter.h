@@ -35,7 +35,7 @@ class TextWriter;
 
 namespace interp {
 
-class Reader;
+class Interpreter;
 
 class AlgorithmSelector
     : public std::enable_shared_from_this<AlgorithmSelector> {
@@ -51,24 +51,24 @@ class AlgorithmSelector
 
   // Called if header matches. Allows selector to reconfigure the reader.
   // Will read from input if symbol table (i.e. algorith) is set.
-  virtual bool configure(Reader* R) = 0;
+  virtual bool configure(Interpreter* R) = 0;
 
   // Called after reading from file using the symbol table. Allows one
   // to restore/reconfigure the reader.
-  virtual bool reset(Reader* R) = 0;
+  virtual bool reset(Interpreter* R) = 0;
 };
 
-class Reader {
-  Reader() = delete;
-  Reader(const Reader&) = delete;
-  Reader& operator=(const Reader&) = delete;
+class Interpreter {
+  Interpreter() = delete;
+  Interpreter(const Interpreter&) = delete;
+  Interpreter& operator=(const Interpreter&) = delete;
 
  public:
-  Reader(std::shared_ptr<InputReader> Input,
+  Interpreter(std::shared_ptr<InputReader> Input,
          std::shared_ptr<Writer> Output,
          std::shared_ptr<filt::SymbolTable> Symtab =
              std::shared_ptr<filt::SymbolTable>());
-  virtual ~Reader();
+  virtual ~Interpreter();
 
   void useFileHeader(const filt::FileHeaderNode* Header) {
     HeaderOverride = Header;

@@ -113,7 +113,7 @@ CountNode::RootPtr IntCompressor::getRoot() {
 void IntCompressor::readInput() {
   Contents = std::make_shared<IntStream>();
   auto MyWriter = std::make_shared<IntWriter>(Contents);
-  Reader MyReader(std::make_shared<ByteReader>(Input), MyWriter, Symtab);
+  Interpreter MyReader(std::make_shared<ByteReader>(Input), MyWriter, Symtab);
   if (MyFlags.TraceReadingInput)
     MyReader.getTrace().setTraceProgress(true);
   MyReader.algorithmRead();
@@ -138,7 +138,7 @@ void IntCompressor::writeDataOutput(const WriteCursor& StartPos,
                                     std::shared_ptr<SymbolTable> Symtab) {
   auto Writer = std::make_shared<ByteWriter>(Output);
   Writer->setPos(StartPos);
-  Reader MyReader(std::make_shared<IntReader>(IntOutput), Writer, Symtab);
+  Interpreter MyReader(std::make_shared<IntReader>(IntOutput), Writer, Symtab);
   if (MyFlags.TraceWritingDataOutput)
     MyReader.getTrace().setTraceProgress(true);
   MyReader.useFileHeader(Symtab->getTargetHeader());

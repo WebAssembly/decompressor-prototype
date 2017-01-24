@@ -175,7 +175,7 @@ bool InputReader::readHeaderValue(IntTypeFormat Format, IntType& Value) {
   }
 }
 
-void Reader::setInput(std::shared_ptr<InputReader> Value) {
+void Interpreter::setInput(std::shared_ptr<InputReader> Value) {
   Input = Value;
   if (Trace) {
     Trace->clearContexts();
@@ -183,7 +183,7 @@ void Reader::setInput(std::shared_ptr<InputReader> Value) {
   }
 }
 
-void Reader::setWriter(std::shared_ptr<Writer> Value) {
+void Interpreter::setWriter(std::shared_ptr<Writer> Value) {
   Output = Value;
   if (Trace) {
     Trace->clearContexts();
@@ -191,23 +191,23 @@ void Reader::setWriter(std::shared_ptr<Writer> Value) {
   }
 }
 
-void Reader::addSelector(std::shared_ptr<AlgorithmSelector> Selector) {
+void Interpreter::addSelector(std::shared_ptr<AlgorithmSelector> Selector) {
   assert(!Symtab &&
          "Can't add selectors if symbol table defined at construction");
   Selectors.push_back(Selector);
 }
 
-void Reader::setTraceProgress(bool NewValue) {
+void Interpreter::setTraceProgress(bool NewValue) {
   if (!NewValue && !Trace)
     return;
   getTrace().setTraceProgress(NewValue);
 }
 
-TraceClass::ContextPtr Reader::getTraceContext() {
+TraceClass::ContextPtr Interpreter::getTraceContext() {
   return Input->getTraceContext();
 }
 
-void Reader::setTrace(std::shared_ptr<TraceClass> NewTrace) {
+void Interpreter::setTrace(std::shared_ptr<TraceClass> NewTrace) {
   Trace = NewTrace;
   if (Trace) {
     Input->setTrace(Trace);
@@ -215,24 +215,24 @@ void Reader::setTrace(std::shared_ptr<TraceClass> NewTrace) {
   }
 }
 
-const char* Reader::getDefaultTraceName() const {
-  return "Reader";
+const char* Interpreter::getDefaultTraceName() const {
+  return "Interpreter";
 }
 
-std::shared_ptr<TraceClass> Reader::getTracePtr() {
+std::shared_ptr<TraceClass> Interpreter::getTracePtr() {
   if (!Trace)
     setTrace(std::make_shared<TraceClass>(getDefaultTraceName()));
   return Trace;
 }
 
-const char* Reader::getName(Method M) {
+const char* Interpreter::getName(Method M) {
   size_t Index = size_t(M);
   if (Index >= size(MethodName))
     Index = size_t(Method::NO_SUCH_METHOD);
   return MethodName[Index];
 }
 
-const char* Reader::getName(MethodModifier Modifier) {
+const char* Interpreter::getName(MethodModifier Modifier) {
   uint32_t Index = uint32_t(Modifier);
   for (size_t i = 0; i < size(MethodModifierName); ++i) {
     if (Index == MethodModifierName[i].Index)
@@ -241,21 +241,21 @@ const char* Reader::getName(MethodModifier Modifier) {
   return MethodModifierName[size(MethodModifierName) - 1].Name;
 }
 
-const char* Reader::getName(State S) {
+const char* Interpreter::getName(State S) {
   size_t Index = size_t(S);
   if (Index >= size(StateName))
     Index = size_t(State::NO_SUCH_STATE);
   return StateName[Index];
 }
 
-const char* Reader::getName(SectionCode Code) {
+const char* Interpreter::getName(SectionCode Code) {
   size_t Index = size_t(Code);
   if (Index >= size(SectionCodeName))
     Index = size_t(SectionCode::NO_SUCH_SECTION_CODE);
   return SectionCodeName[Index];
 }
 
-Reader::Reader(std::shared_ptr<InputReader> Input,
+Interpreter::Interpreter(std::shared_ptr<InputReader> Input,
                std::shared_ptr<Writer> Output,
                std::shared_ptr<filt::SymbolTable> Symtab)
     : Input(Input),
@@ -284,10 +284,10 @@ Reader::Reader(std::shared_ptr<InputReader> Input,
   OpcodeLocalsStack.reserve(DefaultStackSize);
 }
 
-Reader::~Reader() {
+Interpreter::~Interpreter() {
 }
 
-void Reader::traceEnterFrameInternal() {
+void Interpreter::traceEnterFrameInternal() {
   // Note: Enclosed in TRACE_BLOCK so that g++ will not complain when
   // compiled in release mode.
   TRACE_BLOCK({
@@ -299,7 +299,7 @@ void Reader::traceEnterFrameInternal() {
   });
 }
 
-void Reader::CallFrame::describe(FILE* File, TextWriter* Writer) const {
+void Interpreter::CallFrame::describe(FILE* File, TextWriter* Writer) const {
   fprintf(File, "%s.%s (%s) = ", getName(CallMethod), getName(CallState),
           getName(CallModifier));
   fprint_IntType(File, ReturnValue);
@@ -310,12 +310,12 @@ void Reader::CallFrame::describe(FILE* File, TextWriter* Writer) const {
     fprintf(File, "nullptr\n");
 }
 
-void Reader::EvalFrame::describe(FILE* File, TextWriter* Writer) const {
+void Interpreter::EvalFrame::describe(FILE* File, TextWriter* Writer) const {
   fprintf(File, "cc = %" PRIuMAX ": ", uintmax_t(CallingEvalIndex));
   Writer->writeAbbrev(File, Caller);
 }
 
-void Reader::OpcodeLocalsFrame::describe(FILE* File, TextWriter* Writer) const {
+void Interpreter::OpcodeLocalsFrame::describe(FILE* File, TextWriter* Writer) const {
   fprintf(File, "OpcodeFrame <%" PRIuMAX ",%" PRIuMAX "> ", uintmax_t(SelShift),
           uintmax_t(CaseMask));
   if (Writer && Case != nullptr)
@@ -324,7 +324,7 @@ void Reader::OpcodeLocalsFrame::describe(FILE* File, TextWriter* Writer) const {
     fprintf(File, "%p\n", (void*)Case);
 }
 
-void Reader::describeFrameStack(FILE* File) {
+void Interpreter::describeFrameStack(FILE* File) {
   fprintf(File, "*** Frame Stack ***\n");
   TextWriter Writer;
   for (auto& Frame : FrameStack)
@@ -332,7 +332,7 @@ void Reader::describeFrameStack(FILE* File) {
   fprintf(File, "*******************\n");
 }
 
-void Reader::describeCallingEvalStack(FILE* File) {
+void Interpreter::describeCallingEvalStack(FILE* File) {
   fprintf(File, "*** Eval Call Stack ****\n");
   TextWriter Writer;
   for (const auto& Frame : CallingEvalStack.iterRange(1))
@@ -340,14 +340,14 @@ void Reader::describeCallingEvalStack(FILE* File) {
   fprintf(File, "************************\n");
 }
 
-void Reader::describeLoopCounterStack(FILE* File) {
+void Interpreter::describeLoopCounterStack(FILE* File) {
   fprintf(File, "*** Loop Counter Stack ***\n");
   for (const auto& Count : LoopCounterStack.iterRange(1))
     fprintf(File, "%" PRIxMAX "\n", uintmax_t(Count));
   fprintf(File, "**************************\n");
 }
 
-void Reader::describeLocalsStack(FILE* File) {
+void Interpreter::describeLocalsStack(FILE* File) {
   fprintf(File, "*** Locals Base Stack ***\n");
   size_t BaseIndex = 0;
   for (const auto& Index : LocalsBaseStack.iterRange(1)) {
@@ -362,7 +362,7 @@ void Reader::describeLocalsStack(FILE* File) {
   fprintf(File, "*************************\n");
 }
 
-void Reader::describeOpcodeLocalsStack(FILE* File) {
+void Interpreter::describeOpcodeLocalsStack(FILE* File) {
   fprintf(File, "*** Opcode Stack ***\n");
   TextWriter Writer;
   for (auto& Frame : OpcodeLocalsStack.iterRange(1))
@@ -370,7 +370,7 @@ void Reader::describeOpcodeLocalsStack(FILE* File) {
   fprintf(File, "********************\n");
 }
 
-void Reader::describeState(FILE* File) {
+void Interpreter::describeState(FILE* File) {
   describeFrameStack(File);
   if (!CallingEvalStack.empty())
     describeCallingEvalStack(File);
@@ -384,7 +384,7 @@ void Reader::describeState(FILE* File) {
   Output->describeState(File);
 }
 
-void Reader::reset() {
+void Interpreter::reset() {
   Frame.reset();
   FrameStack.clear();
   LoopCounter = 0;
@@ -398,7 +398,7 @@ void Reader::reset() {
   Output->reset();
 }
 
-void Reader::call(Method Method,
+void Interpreter::call(Method Method,
                   MethodModifier Modifier,
                   const filt::Node* Nd) {
   Frame.ReturnValue = 0;
@@ -411,7 +411,7 @@ void Reader::call(Method Method,
   traceEnterFrame();
 }
 
-void Reader::popAndReturn(decode::IntType Value) {
+void Interpreter::popAndReturn(decode::IntType Value) {
   TRACE(IntType, "returns", Value);
   traceExitFrame();
   if (!FrameStack.empty())
@@ -419,13 +419,13 @@ void Reader::popAndReturn(decode::IntType Value) {
   Frame.ReturnValue = Value;
 }
 
-void Reader::callTopLevel(Method Method, const filt::Node* Nd) {
+void Interpreter::callTopLevel(Method Method, const filt::Node* Nd) {
   reset();
   Frame.reset();
   call(Method, MethodModifier::ReadAndWrite, Nd);
 }
 
-void Reader::catchOrElseFail() {
+void Interpreter::catchOrElseFail() {
   TRACE_MESSAGE("method failed");
   TRACE(string, "Catch method", getName(Catch));
   TRACE(string, "Catch state", getName(CatchState));
@@ -444,16 +444,16 @@ void Reader::catchOrElseFail() {
   Frame.fail();
 }
 
-void Reader::rethrow() {
+void Interpreter::rethrow() {
   return throwMessage(RethrowMessage);
 }
 
-void Reader::fail(const std::string& Message) {
+void Interpreter::fail(const std::string& Message) {
   IsFatalFailure = true;
   throwMessage(Message);
 }
 
-void Reader::throwMessage(const std::string& Message) {
+void Interpreter::throwMessage(const std::string& Message) {
   TRACE_MESSAGE(Message);
   RethrowMessage = Message;
   bool CanBeCaught = false;
@@ -475,42 +475,42 @@ void Reader::throwMessage(const std::string& Message) {
     fprintf(stderr, "Error: (method %s) %s\n", getName(Frame.CallMethod),
             Message.c_str());
   }
-  Reader::catchOrElseFail();
+  Interpreter::catchOrElseFail();
 }
 
-void Reader::failBadState() {
+void Interpreter::failBadState() {
   fail(std::string("Bad internal decompressor state: ") +
        getName(Frame.CallState));
 }
 
-void Reader::failNotImplemented() {
+void Interpreter::failNotImplemented() {
   fail("Method not implemented!");
 }
 
-void Reader::throwCantRead() {
+void Interpreter::throwCantRead() {
   throwMessage("Unable to read value");
 }
 
-void Reader::throwCantWrite() {
+void Interpreter::throwCantWrite() {
   fail("Unable to write value");
 }
 
-void Reader::throwCantFreezeEof() {
+void Interpreter::throwCantFreezeEof() {
   fail("Unable to set eof on output");
 }
 
-void Reader::throwCantWriteInWriteOnlyMode() {
+void Interpreter::throwCantWriteInWriteOnlyMode() {
   fail("Method can only be processed in read mode");
 }
 
-void Reader::throwBadHeaderValue(IntType WantedValue,
+void Interpreter::throwBadHeaderValue(IntType WantedValue,
                                  IntType FoundValue,
                                  ValueFormat Format) {
   throwMessage("Wanted header value " + std::to_string(WantedValue) +
                " but found " + std::to_string(FoundValue));
 }
 
-void Reader::handleOtherMethods() {
+void Interpreter::handleOtherMethods() {
   while (1) {
     switch (Frame.CallMethod) {
       default:
@@ -544,7 +544,7 @@ void Reader::handleOtherMethods() {
   }
 }
 
-void Reader::algorithmStart() {
+void Interpreter::algorithmStart() {
   if (Symtab.get() != nullptr)
     return callTopLevel(Method::GetFile, nullptr);
   assert(!Selectors.empty());
@@ -552,7 +552,7 @@ void Reader::algorithmStart() {
   callTopLevel(Method::GetAlgorithm, nullptr);
 }
 
-void Reader::algorithmResume() {
+void Interpreter::algorithmResume() {
 // TODO(karlschimpf) Add catches for methods that modify local statcks, so
 // that state is correctly cleaned up on a throw.
 #if LOG_RUNMETHODS
@@ -1502,7 +1502,7 @@ void Reader::algorithmResume() {
 #endif
 }
 
-void Reader::algorithmReadBackFilled() {
+void Interpreter::algorithmReadBackFilled() {
 #if LOG_RUNMETHODS
   TRACE_METHOD("readBackFilled");
 #endif

@@ -69,19 +69,19 @@ class DecompressSelector : public AlgorithmSelector {
       : Symtab(Symtab), State(State), IsAlgorithm(IsAlgorithm) {}
   ~DecompressSelector() OVERRIDE;
   const filt::FileHeaderNode* getTargetHeader() OVERRIDE;
-  bool configure(Reader* R) OVERRIDE;
-  bool reset(Reader* R) OVERRIDE;
+  bool configure(Interpreter* R) OVERRIDE;
+  bool reset(Interpreter* R) OVERRIDE;
 
  private:
   std::shared_ptr<filt::SymbolTable> Symtab;
   std::shared_ptr<DecompAlgState> State;
   bool IsAlgorithm;
-  bool configureAlgorithm(Reader* R);
-  bool configureData(Reader* R);
-  bool resetAlgorithm(Reader* R);
-  bool resetData(Reader* R);
-  bool applyDataAlgorithm(Reader* R);
-  bool applyNextQueuedAlgorithm(Reader* R);
+  bool configureAlgorithm(Interpreter* R);
+  bool configureData(Interpreter* R);
+  bool resetAlgorithm(Interpreter* R);
+  bool resetData(Interpreter* R);
+  bool applyDataAlgorithm(Interpreter* R);
+  bool applyNextQueuedAlgorithm(Interpreter* R);
 };
 
 }  // end of namespace interp
