@@ -75,14 +75,8 @@ class CodeGenerator {
   bool ErrorsFound;
   size_t NextIndex;
 
-  void puts(const char* Str) {
-    // fprintf(stderr, "puts(%s)\n", Str);
-    Output->puts(Str);
-  }
-  void putc(char Ch) {
-    // fprintf(stderr, "putc(%c)\n", Ch);
-    Output->putc(Ch);
-  }
+  void puts(const char* Str) { Output->puts(Str); }
+  void putc(char Ch) { Output->putc(Ch); }
   void generateArrayImplFile();
   void generateFunctionImplFile();
   void generateHeader();

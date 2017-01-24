@@ -72,7 +72,6 @@ class Cursor : public PageCursor {
 
   bool isBroken() const { return Que->isBroken(*this); }
 
-
   std::shared_ptr<Queue> getQueue() { return Que; }
 
   bool isEofFrozen() const { return Que->isEofFrozen(); }
@@ -94,7 +93,6 @@ class Cursor : public PageCursor {
   // ------------------------------------------------------------------------
 
   size_t getAddress() const { return CurAddress; }
-
 
   // For debugging.
   FILE* describe(FILE* File, bool IncludeDetail = false, bool AddEoln = false);
@@ -143,13 +141,7 @@ class Cursor : public PageCursor {
 
   void updateGuaranteedBeforeEob() {
     GuaranteedBeforeEob =
-        CurPage ? std::min(CurPage->getMaxAddress(),
-#if 0
-                           EobPtr->getEobAddress().getByteAddress()
-#else
-                           EobPtr->getEobAddress()
-#endif
-                           )
+        CurPage ? std::min(CurPage->getMaxAddress(), EobPtr->getEobAddress())
                 : 0;
   }
 
