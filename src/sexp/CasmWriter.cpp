@@ -24,8 +24,8 @@
 #include "algorithms/casm0x0.h"
 #endif
 
-#include "interp/Algorithm.h"
 #include "interp/ByteWriter.h"
+#include "interp/Interpreter.h"
 #include "interp/IntReader.h"
 #include "interp/TeeWriter.h"
 #include "sexp/FlattenAst.h"

@@ -18,8 +18,8 @@
 
 #include "interp/IntReader.h"
 
-#include "interp/Algorithm.h"
-#include "interp/IntAlgorithm.h"
+#include "interp/Interpreter.h"
+#include "interp/IntInterpreter.h"
 #include "interp/IntFormats.h"
 
 namespace wasm {

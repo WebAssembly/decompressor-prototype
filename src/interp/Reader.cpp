@@ -18,7 +18,7 @@
 
 #include "interp/Reader.h"
 
-#include "interp/Algorithm.h"
+#include "interp/Interpreter.h"
 
 #include "sexp/TextWriter.h"
 
