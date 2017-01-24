@@ -48,7 +48,7 @@ class ReadCursor : public Cursor {
     return *this;
   }
 
-  bool atByteEob() {
+  bool atEob() {
     if (CurAddress < GuaranteedBeforeEob)
       return false;
     bool Result =
