@@ -246,7 +246,10 @@ void IntCompressor::assignInitialAbbreviations(
                                    MyFlags.MaxAbbreviations);
   if (MyFlags.TraceAssigningAbbreviations && hasTrace())
     Collector.setTrace(getTracePtr());
-  Collector.assignAbbreviations();
+  if (MyFlags.UseHuffmanEncoding)
+    EncodingRoot = Collector.assignHuffmanAbbreviations();
+  else
+    Collector.assignAbbreviations();
 }
 
 bool IntCompressor::generateIntOutput() {
@@ -265,7 +268,8 @@ std::shared_ptr<SymbolTable> IntCompressor::generateCode(
     CountNode::Int2PtrMap& Assignments,
     bool ToRead,
     bool Trace) {
-  AbbreviationCodegen Codegen(Root, MyFlags.AbbrevFormat, Assignments);
+  AbbreviationCodegen Codegen(Root, EncodingRoot, MyFlags.AbbrevFormat,
+                              Assignments);
   std::shared_ptr<SymbolTable> Symtab = Codegen.getCodeSymtab(ToRead);
   if (Trace) {
     TextWriter Writer;

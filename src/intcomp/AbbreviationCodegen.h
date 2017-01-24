@@ -33,6 +33,7 @@ class AbbreviationCodegen {
 
  public:
   AbbreviationCodegen(CountNode::RootPtr Root,
+                      utils::HuffmanEncoder::NodePtr EncodingRoot,
                       interp::IntTypeFormat AbbrevFormat,
                       CountNode::Int2PtrMap& Assignments);
   ~AbbreviationCodegen();
@@ -42,6 +43,7 @@ class AbbreviationCodegen {
  private:
   std::shared_ptr<filt::SymbolTable> Symtab;
   CountNode::RootPtr Root;
+  utils::HuffmanEncoder::NodePtr EncodingRoot;
   interp::IntTypeFormat AbbrevFormat;
   CountNode::Int2PtrMap& Assignments;
   bool ToRead;

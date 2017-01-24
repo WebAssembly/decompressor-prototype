@@ -89,34 +89,13 @@ void AbbreviationsCollector::assignAbbreviations() {
   TRACE_MESSAGE("Huffman encoding abbreviations");
 }
 
-#if 0
-void AbbreviationsCollector::assignHuffmanAbbreviations() {
+HuffmanEncoder::NodePtr AbbreviationsCollector::assignHuffmanAbbreviations() {
   // Start by extracting out candidates based on weight. Then use resulting
   // selected patterns as alphabet for Huffman encoding.
   assignAbbreviations();
-  CountNode::PtrVector Alphabet;
-  for (const auto& Pair : Assignments) {
-    Alphabet.push_back(Pair.second);
-    Pair.second->clearAbbrevIndex();
-  }
-  Assignments.clear();
-  clearHeap();
-// Now build heap (sorted by smaller weights first) to assign abbreviation
-// values.
-#if 0
-  ValuesHeap.setLtFcn(CountNode::CompareGt);
-  for (auto& Nd : Alphabet)
-    Nd->associateWithHeap(ValuesHeap->push(Value));
-  // Create nodes over two smallest values in heap.
-  while (ValuesHeap.size() > 1) {
-    Ptr Nd1 = ValuesHeap.top();
-    ValuesHeap.pop();
-    Ptr Nd2 = ValuesHeap.top();
-    ValuesHeap.pop();
-  }
-#endif
+  HuffmanRoot = Encoder->encodeSymbols();
+  return HuffmanRoot;
 }
-#endif
 
 void AbbreviationsCollector::addAbbreviation(CountNode::Ptr Nd) {
   addAbbreviation(Nd, Nd->getWeight());
