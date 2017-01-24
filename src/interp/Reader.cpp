@@ -256,8 +256,8 @@ const char* Interpreter::getName(SectionCode Code) {
 }
 
 Interpreter::Interpreter(std::shared_ptr<InputReader> Input,
-               std::shared_ptr<Writer> Output,
-               std::shared_ptr<filt::SymbolTable> Symtab)
+                         std::shared_ptr<Writer> Output,
+                         std::shared_ptr<filt::SymbolTable> Symtab)
     : Input(Input),
       Output(Output),
       Symtab(Symtab),
@@ -315,7 +315,8 @@ void Interpreter::EvalFrame::describe(FILE* File, TextWriter* Writer) const {
   Writer->writeAbbrev(File, Caller);
 }
 
-void Interpreter::OpcodeLocalsFrame::describe(FILE* File, TextWriter* Writer) const {
+void Interpreter::OpcodeLocalsFrame::describe(FILE* File,
+                                              TextWriter* Writer) const {
   fprintf(File, "OpcodeFrame <%" PRIuMAX ",%" PRIuMAX "> ", uintmax_t(SelShift),
           uintmax_t(CaseMask));
   if (Writer && Case != nullptr)
@@ -399,8 +400,8 @@ void Interpreter::reset() {
 }
 
 void Interpreter::call(Method Method,
-                  MethodModifier Modifier,
-                  const filt::Node* Nd) {
+                       MethodModifier Modifier,
+                       const filt::Node* Nd) {
   Frame.ReturnValue = 0;
   FrameStack.push();
   Frame.CallMethod = Method;
@@ -504,8 +505,8 @@ void Interpreter::throwCantWriteInWriteOnlyMode() {
 }
 
 void Interpreter::throwBadHeaderValue(IntType WantedValue,
-                                 IntType FoundValue,
-                                 ValueFormat Format) {
+                                      IntType FoundValue,
+                                      ValueFormat Format) {
   throwMessage("Wanted header value " + std::to_string(WantedValue) +
                " but found " + std::to_string(FoundValue));
 }

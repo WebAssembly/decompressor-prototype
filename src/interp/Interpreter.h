@@ -65,9 +65,9 @@ class Interpreter {
 
  public:
   Interpreter(std::shared_ptr<InputReader> Input,
-         std::shared_ptr<Writer> Output,
-         std::shared_ptr<filt::SymbolTable> Symtab =
-             std::shared_ptr<filt::SymbolTable>());
+              std::shared_ptr<Writer> Output,
+              std::shared_ptr<filt::SymbolTable> Symtab =
+                  std::shared_ptr<filt::SymbolTable>());
   virtual ~Interpreter();
 
   void useFileHeader(const filt::FileHeaderNode* Header) {
