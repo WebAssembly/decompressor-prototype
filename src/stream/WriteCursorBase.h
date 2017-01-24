@@ -49,7 +49,6 @@ class WriteCursorBase : public Cursor {
 
   // Writes next byte. Fails if at end of file. NOTE: Assumed byte aligned!
   void writeByte(uint8_t Byte) {
-    assert(isByteAligned());
     if (CurAddress < GuaranteedBeforeEob)
       writeOneByte(Byte);
     else

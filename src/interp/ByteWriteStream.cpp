@@ -37,7 +37,7 @@ bool ByteWriteStream::writeAction(WriteCursor& Pos,
 }
 
 size_t ByteWriteStream::getStreamAddress(WriteCursor& Pos) {
-  return Pos.getCurByteAddress();
+  return Pos.getCurAddress();
 }
 
 void ByteWriteStream::writeFixedBlockSize(WriteCursor& Pos, size_t BlockSize) {
@@ -51,8 +51,7 @@ void ByteWriteStream::writeVarintBlockSize(decode::WriteCursor& Pos,
 
 size_t ByteWriteStream::getBlockSize(decode::WriteCursor& StartPos,
                                      decode::WriteCursor& EndPos) {
-  return EndPos.getCurByteAddress() -
-         (StartPos.getCurByteAddress() + ChunksInWord);
+  return EndPos.getCurAddress() - (StartPos.getCurAddress() + ChunksInWord);
 }
 
 void ByteWriteStream::moveBlock(decode::WriteCursor& Pos,

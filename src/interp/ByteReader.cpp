@@ -57,7 +57,7 @@ constexpr size_t kResumeHeadroom = 100;
 bool ByteReader::canProcessMoreInputNow() {
   FillPos = ReadPos.fillSize();
   if (!ReadPos.isEofFrozen()) {
-    if (FillPos < ReadPos.getCurByteAddress() + kResumeHeadroom)
+    if (FillPos < ReadPos.getCurAddress() + kResumeHeadroom)
       return false;
     FillPos -= kResumeHeadroom;
   }
@@ -65,7 +65,7 @@ bool ByteReader::canProcessMoreInputNow() {
 }
 
 bool ByteReader::stillMoreInputToProcessNow() {
-  return ReadPos.getCurByteAddress() <= FillPos;
+  return ReadPos.getCurAddress() <= FillPos;
 }
 
 ReadCursor& ByteReader::getPos() {

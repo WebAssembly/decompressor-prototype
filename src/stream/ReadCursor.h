@@ -76,7 +76,6 @@ class ReadCursor : public Cursor {
   // Reads next byte. Returns zero if at end of file. NOTE: Assumes byte
   // aligned!
   uint8_t readByte() {
-    assert(isByteAligned());
     if (CurAddress < GuaranteedBeforeEob)
       return readOneByte();
     return readByteAfterReadFill();
