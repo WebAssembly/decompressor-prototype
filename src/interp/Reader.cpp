@@ -98,38 +98,38 @@ struct {
 
 }  // end of anonymous namespace
 
-TraceClass::ContextPtr InputReader::getTraceContext() {
+TraceClass::ContextPtr Reader::getTraceContext() {
   TraceClass::ContextPtr Ptr;
   return Ptr;
 }
 
-void InputReader::setTraceProgress(bool NewValue) {
+void Reader::setTraceProgress(bool NewValue) {
   if (!NewValue && !Trace)
     return;
   getTrace().setTraceProgress(NewValue);
 }
 
-void InputReader::setTrace(std::shared_ptr<TraceClass> NewTrace) {
+void Reader::setTrace(std::shared_ptr<TraceClass> NewTrace) {
   Trace = NewTrace;
   if (Trace) {
     Trace->addContext(getTraceContext());
   }
 }
 
-const char* InputReader::getDefaultTraceName() const {
-  return "InputReader";
+const char* Reader::getDefaultTraceName() const {
+  return "Reader";
 }
 
-std::shared_ptr<TraceClass> InputReader::getTracePtr() {
+std::shared_ptr<TraceClass> Reader::getTracePtr() {
   if (!Trace)
     setTrace(std::make_shared<TraceClass>(getDefaultTraceName()));
   return Trace;
 }
 
-void InputReader::reset() {
+void Reader::reset() {
 }
 
-bool InputReader::readValue(const filt::Node* Format, IntType& Value) {
+bool Reader::readValue(const filt::Node* Format, IntType& Value) {
   switch (Format->getType()) {
     case OpUint8:
       Value = readUint8();
@@ -158,7 +158,7 @@ bool InputReader::readValue(const filt::Node* Format, IntType& Value) {
   }
 }
 
-bool InputReader::readHeaderValue(IntTypeFormat Format, IntType& Value) {
+bool Reader::readHeaderValue(IntTypeFormat Format, IntType& Value) {
   switch (Format) {
     case IntTypeFormat::Uint8:
       Value = readUint8();
@@ -175,7 +175,7 @@ bool InputReader::readHeaderValue(IntTypeFormat Format, IntType& Value) {
   }
 }
 
-void Interpreter::setInput(std::shared_ptr<InputReader> Value) {
+void Interpreter::setInput(std::shared_ptr<Reader> Value) {
   Input = Value;
   if (Trace) {
     Trace->clearContexts();
@@ -255,7 +255,7 @@ const char* Interpreter::getName(SectionCode Code) {
   return SectionCodeName[Index];
 }
 
-Interpreter::Interpreter(std::shared_ptr<InputReader> Input,
+Interpreter::Interpreter(std::shared_ptr<Reader> Input,
                          std::shared_ptr<Writer> Output,
                          std::shared_ptr<filt::SymbolTable> Symtab)
     : Input(Input),

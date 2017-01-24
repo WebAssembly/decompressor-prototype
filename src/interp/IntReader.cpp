@@ -174,29 +174,27 @@ void IntReader::describePeekPosStack(FILE* File) {
   fprintf(File, "**********************\n");
 }
 
-IntStructureReader::IntStructureReader(
-    std::shared_ptr<IntReader> Input,
-    std::shared_ptr<Writer> Output,
-    std::shared_ptr<filt::SymbolTable> Symtab)
+IntInterperter::IntInterperter(std::shared_ptr<IntReader> Input,
+                               std::shared_ptr<Writer> Output,
+                               std::shared_ptr<filt::SymbolTable> Symtab)
     : Interpreter(Input, Output, Symtab), IntInput(Input) {
   // TODO(karlschimpf) Modify structuralStart() to mimic algorithmStart(),
   // except that it calls structuralResume() to remove this assertion.
-  assert(Symtab &&
-         "IntStructureReader must be given algorithm at construction");
+  assert(Symtab && "IntInterperter must be given algorithm at construction");
 }
 
-IntStructureReader::~IntStructureReader() {
+IntInterperter::~IntInterperter() {
 }
 
-const char* IntStructureReader::getDefaultTraceName() const {
+const char* IntInterperter::getDefaultTraceName() const {
   return "IntReader";
 }
 
-void IntStructureReader::structuralStart() {
+void IntInterperter::structuralStart() {
   algorithmStart();
 }
 
-void IntStructureReader::structuralResume() {
+void IntInterperter::structuralResume() {
   if (!canProcessMoreInputNow())
     return;
   while (stillMoreInputToProcessNow()) {
@@ -331,7 +329,7 @@ void IntStructureReader::structuralResume() {
   }
 }
 
-void IntStructureReader::structuralReadBackFilled() {
+void IntInterperter::structuralReadBackFilled() {
   readFillStart();
   while (!isFinished()) {
     readFillMoreInput();

@@ -30,7 +30,7 @@ namespace wasm {
 
 namespace interp {
 
-class IntReader : public InputReader {
+class IntReader : public Reader {
   IntReader(const IntReader&) = delete;
   IntReader& operator=(const IntReader&) = delete;
 

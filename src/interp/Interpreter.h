@@ -64,7 +64,7 @@ class Interpreter {
   Interpreter& operator=(const Interpreter&) = delete;
 
  public:
-  Interpreter(std::shared_ptr<InputReader> Input,
+  Interpreter(std::shared_ptr<Reader> Input,
               std::shared_ptr<Writer> Output,
               std::shared_ptr<filt::SymbolTable> Symtab =
                   std::shared_ptr<filt::SymbolTable>());
@@ -74,8 +74,8 @@ class Interpreter {
     HeaderOverride = Header;
   }
 
-  std::shared_ptr<InputReader> getInput() { return Input; }
-  void setInput(std::shared_ptr<InputReader> Value);
+  std::shared_ptr<Reader> getInput() { return Input; }
+  void setInput(std::shared_ptr<Reader> Value);
 
   std::shared_ptr<Writer> getWriter() { return Output; }
   void setWriter(std::shared_ptr<Writer> Value);
@@ -238,7 +238,7 @@ class Interpreter {
     size_t CallingEvalIndex;
   };
 
-  std::shared_ptr<InputReader> Input;
+  std::shared_ptr<Reader> Input;
   std::shared_ptr<Writer> Output;
   std::shared_ptr<filt::SymbolTable> Symtab;
   std::vector<std::shared_ptr<AlgorithmSelector>> Selectors;

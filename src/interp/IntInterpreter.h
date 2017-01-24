@@ -30,16 +30,16 @@ namespace wasm {
 
 namespace interp {
 
-class IntStructureReader : public Interpreter {
-  IntStructureReader() = delete;
-  IntStructureReader(const IntStructureReader&) = delete;
-  IntStructureReader& operator=(const IntStructureReader&) = delete;
+class IntInterperter : public Interpreter {
+  IntInterperter() = delete;
+  IntInterperter(const IntInterperter&) = delete;
+  IntInterperter& operator=(const IntInterperter&) = delete;
 
  public:
-  IntStructureReader(std::shared_ptr<IntReader> Input,
-                     std::shared_ptr<Writer> Output,
-                     std::shared_ptr<filt::SymbolTable> Symtab);
-  ~IntStructureReader() OVERRIDE;
+  IntInterperter(std::shared_ptr<IntReader> Input,
+                 std::shared_ptr<Writer> Output,
+                 std::shared_ptr<filt::SymbolTable> Symtab);
+  ~IntInterperter() OVERRIDE;
 
   // Read based on structure of input integer stream.
   void structuralStart();

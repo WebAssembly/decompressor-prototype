@@ -34,13 +34,13 @@ class TextWriter;
 
 namespace interp {
 
-class InputReader : public std::enable_shared_from_this<InputReader> {
-  InputReader(const InputReader&) = delete;
-  InputReader& operator=(const InputReader&) = delete;
+class Reader : public std::enable_shared_from_this<Reader> {
+  Reader(const Reader&) = delete;
+  Reader& operator=(const Reader&) = delete;
 
  public:
-  InputReader() {}
-  virtual ~InputReader() {}
+  Reader() {}
+  virtual ~Reader() {}
   virtual utils::TraceClass::ContextPtr getTraceContext();
   void setTraceProgress(bool NewValue);
   void setTrace(std::shared_ptr<utils::TraceClass> Trace);

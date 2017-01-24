@@ -27,7 +27,7 @@ namespace wasm {
 
 namespace interp {
 
-class ByteReader : public InputReader {
+class ByteReader : public Reader {
   ByteReader() = delete;
   ByteReader(const ByteReader&) = delete;
   ByteReader& operator=(const ByteReader&) = delete;
