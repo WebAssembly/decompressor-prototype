@@ -25,13 +25,18 @@ namespace wasm {
 using namespace decode;
 using namespace filt;
 using namespace interp;
+using namespace utils;
 
 namespace intcomp {
 
 AbbreviationCodegen::AbbreviationCodegen(CountNode::RootPtr Root,
+                                         HuffmanEncoder::NodePtr EncodingRoot,
                                          IntTypeFormat AbbrevFormat,
                                          CountNode::Int2PtrMap& Assignments)
-    : Root(Root), AbbrevFormat(AbbrevFormat), Assignments(Assignments) {
+    : Root(Root),
+      EncodingRoot(EncodingRoot),
+      AbbrevFormat(AbbrevFormat),
+      Assignments(Assignments) {
 }
 
 Node* AbbreviationCodegen::generateCasmFileHeader() {
@@ -87,8 +92,14 @@ Node* AbbreviationCodegen::generateSwitchStatement() {
   auto* SwitchStmt = Symtab->create<SwitchNode>();
   SwitchStmt->append(generateAbbreviationRead());
   SwitchStmt->append(Symtab->create<ErrorNode>());
-  for (size_t i = 0; i < Assignments.size(); ++i)
-    SwitchStmt->append(generateCase(i, Assignments[i]));
+  for (size_t i = 0; i < Assignments.size(); ++i) {
+    if (EncodingRoot) {
+      CountNode::Ptr Nd = Assignments[i];
+      SwitchStmt->append(generateCase(Nd->getAbbrevIndex(), Nd));
+    } else {
+      SwitchStmt->append(generateCase(i, Assignments[i]));
+    }
+  }
   return SwitchStmt;
 }
 

@@ -40,6 +40,9 @@ class AbbreviationsCollector : public CountNodeCollector {
   // candidate patterns to use as abbreviations.
   void assignAbbreviations();
 
+  // Same as assignAbbreviations, but does this based on Huffman encodings.
+  utils::HuffmanEncoder::NodePtr assignHuffmanAbbreviations();
+
   utils::TraceClass& getTrace() { return *getTracePtr(); }
   std::shared_ptr<utils::TraceClass> getTracePtr();
   void setTrace(std::shared_ptr<utils::TraceClass> NewTrace);
@@ -51,6 +54,7 @@ class AbbreviationsCollector : public CountNodeCollector {
   uint64_t CountCutoff;
   uint64_t WeightCutoff;
   std::shared_ptr<utils::HuffmanEncoder> Encoder;
+  utils::HuffmanEncoder::NodePtr HuffmanRoot;
   utils::HuffmanEncoder::NodePtr Encoding;
   std::shared_ptr<utils::TraceClass> Trace;
 

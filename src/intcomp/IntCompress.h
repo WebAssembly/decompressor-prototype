@@ -26,6 +26,7 @@
 #include "sexp/Ast.h"
 #include "stream/Queue.h"
 #include "stream/WriteCursor.h"
+#include "utils/HuffmanEncoding.h"
 
 namespace wasm {
 
@@ -118,6 +119,7 @@ class IntCompressor FINAL {
 
  private:
   std::shared_ptr<RootCountNode> Root;
+  utils::HuffmanEncoder::NodePtr EncodingRoot;
   std::shared_ptr<decode::Queue> Input;
   std::shared_ptr<decode::Queue> Output;
   Flags& MyFlags;
