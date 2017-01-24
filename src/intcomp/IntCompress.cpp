@@ -241,7 +241,7 @@ void IntCompressor::compress() {
 
 void IntCompressor::assignInitialAbbreviations(
     CountNode::Int2PtrMap& Assignments) {
-  AbbreviationsCollector Collector(getRoot(), MyFlags.AbbrevFormat, Assignments,
+  AbbreviationsCollector Collector(getRoot(), Assignments,
                                    MyFlags.CountCutoff, MyFlags.WeightCutoff,
                                    MyFlags.MaxAbbreviations);
   if (MyFlags.TraceAssigningAbbreviations && hasTrace())

@@ -51,6 +51,7 @@ namespace wasm {
 
 using namespace decode;
 using namespace interp;
+using namespace utils;
 
 namespace intcomp {
 
@@ -70,6 +71,20 @@ CountNode::~CountNode() {
 
 size_t CountNode::getWeight(size_t Count) const {
   return Count;
+}
+
+decode::IntType CountNode::getAbbrevIndex() const {
+  if (!AbbrevSymbol)
+    return 0;
+  return AbbrevSymbol->getPath();
+}
+
+bool CountNode::hasAbbrevIndex() const { return bool(AbbrevSymbol); }
+
+void CountNode::clearAbbrevIndex() { AbbrevSymbol.reset(); }
+
+void CountNode::setAbbrevIndex(HuffmanEncoder::SymbolPtr Symbol) {
+  AbbrevSymbol = Symbol;
 }
 
 CountNode::IntPtr lookup(CountNode::RootPtr Root, IntType Value) {
@@ -112,8 +127,8 @@ void CountNode::indent(FILE* Out, size_t NestLevel, bool AddWeight) const {
 
 void CountNode::newline(FILE* Out) const {
   fprintf(Out, " - Count: %" PRIuMAX "", uintmax_t(getCount()));
-  if (AbbrevIndex != BAD_ABBREV_INDEX)
-    fprintf(Out, " Abbrev: %" PRIuMAX "", uintmax_t(AbbrevIndex));
+  if (hasAbbrevIndex())
+    fprintf(Out, " Abbrev: %" PRIuMAX "", uintmax_t(getAbbrevIndex()));
   fputc('\n', Out);
 }
 
