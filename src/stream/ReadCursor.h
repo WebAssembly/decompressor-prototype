@@ -57,18 +57,6 @@ class ReadCursor : public Cursor {
     return Result;
   }
 
-  bool atReadBitEob() {
-    // TODO(karlschimpf): Fix this to check at byte level!
-    return atByteEob();
-  }
-
-  BitsInByteType getBitsRead() const { return CurByte.getBitsRead(); }
-
-  BitAddress getCurReadBitAddress() const {
-    BitAddress Address(CurAddress, getBitsRead());
-    return Address;
-  }
-
   void pushEobAddress(const BitAddress& NewValue) {
     EobPtr = std::make_shared<BlockEob>(NewValue, EobPtr);
     updateGuaranteedBeforeEob();
@@ -83,14 +71,10 @@ class ReadCursor : public Cursor {
   // Reads next byte. Returns zero if at end of file. NOTE: Assumes byte
   // aligned!
   uint8_t readByte() {
-    assert(isByteAligned());
     if (CurAddress < GuaranteedBeforeEob)
       return readOneByte();
     return readByteAfterReadFill();
   }
-
-  // Reads up to 32 bits from the input.
-  uint32_t readBits(uint32_t NumBits);
 
   // Try to advance Distance bytes. Returns actual number of bytes advanced.  If
   // zero is returned (and Distance > 0), no more bytes are available to advance

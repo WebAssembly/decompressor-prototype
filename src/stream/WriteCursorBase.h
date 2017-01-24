@@ -47,23 +47,13 @@ class WriteCursorBase : public Cursor {
     return *this;
   }
 
-  BitsInByteType getBitsWritten() const { return CurByte.getBitsWritten(); }
-  BitAddress getCurWriteBitAddress() const {
-    BitAddress Address(CurAddress, getBitsWritten());
-    return Address;
-  }
-
   // Writes next byte. Fails if at end of file. NOTE: Assumed byte aligned!
   void writeByte(uint8_t Byte) {
-    assert(isByteAligned());
     if (CurAddress < GuaranteedBeforeEob)
       writeOneByte(Byte);
     else
       writeFillWriteByte(Byte);
   }
-
-  // Writes up to 32 bits to the output.
-  void writeBits(uint32_t Value, uint32_t NumBits);
 
  protected:
   void writeOneByte(uint8_t Byte);

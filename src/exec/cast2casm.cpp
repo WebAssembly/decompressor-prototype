@@ -478,7 +478,7 @@ void CodeGenerator::generateArrayImplFile() {
   Output->puts("[] = {\n");
   while (!ReadPos->atEof()) {
     uint8_t Byte = ReadPos->readByte();
-    size_t Address = ReadPos->getCurByteAddress();
+    size_t Address = ReadPos->getCurAddress();
     if (Address > 0 && Address % BytesPerLine == 0)
       Output->putc('\n');
     sprintf(Buffer, " %u", Byte);

@@ -27,56 +27,6 @@ namespace wasm {
 namespace decode {
 
 class Cursor;
-// Holds bits in incomplete byte read/write.
-class WorkingByte {
- public:
-  WorkingByte() : Value(0), BitsInValue(0) {}
-
-  uint8_t getValue() const { return Value; }
-
-  bool isEmpty() const { return BitsInValue == 0; }
-
-  BitsInByteType getBitsRead() const { return (CHAR_BIT - BitsInValue) & 0x7; }
-
-  BitsInByteType getReadBitsRemaining() const { return BitsInValue; }
-
-  BitsInByteType getBitsWritten() const { return BitsInValue; }
-
-  BitsInByteType getWriteBitsRemaining() const {
-    return CHAR_BIT - BitsInValue;
-  }
-
-  uint8_t readBits(BitsInByteType NumBits) {
-    assert(NumBits <= BitsInValue);
-    uint8_t Result = Value >> (BitsInValue - NumBits);
-    BitsInValue -= NumBits;
-    Value &= ~uint32_t(0) << BitsInValue;
-    return Result;
-  }
-
-  void writeBits(uint8_t Value, BitsInByteType NumBits) {
-    assert(NumBits <= BitsInValue);
-    Value = (Value << NumBits) | Value;
-    BitsInValue += NumBits;
-  }
-
-  void setByte(uint8_t Byte) {
-    Value = Byte;
-    BitsInValue = CHAR_BIT;
-  }
-
-  void reset() {
-    Value = 0;
-    BitsInValue = 0;
-  }
-
-  // For debugging.
-  FILE* describe(FILE* File);
-
- private:
-  uint8_t Value;
-  BitsInByteType BitsInValue;
-};
 
 class Cursor : public PageCursor {
   Cursor& operator=(const Cursor&) = delete;
@@ -121,9 +71,7 @@ class Cursor : public PageCursor {
 
   bool isBroken() const { return Que->isBroken(*this); }
 
-  bool isByteAligned() const { return CurByte.isEmpty(); }
-
-  const WorkingByte& getWorkingByte() const { return CurByte; }
+  const uint8_t& getWorkingByte() const { return CurByte; }
 
   std::shared_ptr<Queue> getQueue() { return Que; }
 
@@ -149,11 +97,7 @@ class Cursor : public PageCursor {
   // The following methods assume that the cursor is accessing a byte stream.
   // ------------------------------------------------------------------------
 
-  size_t getCurByteAddress() const {
-    // TODO: Remove: Just use getCurAddress().
-    assert(isByteAligned());
-    return CurAddress;
-  }
+  size_t getCurAddress() const { return CurAddress; }
 
   // For debugging.
   FILE* describe(FILE* File, bool IncludeDetail = false, bool AddEoln = false);
@@ -164,7 +108,7 @@ class Cursor : public PageCursor {
   std::shared_ptr<Queue> Que;
   // End of block address.
   std::shared_ptr<BlockEob> EobPtr;
-  WorkingByte CurByte;
+  uint8_t CurByte;
   size_t GuaranteedBeforeEob;
 
   Cursor(StreamType Type, std::shared_ptr<Queue> Que)

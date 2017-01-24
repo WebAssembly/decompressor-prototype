@@ -56,7 +56,7 @@ size_t ByteReadStream::readBlockSize(ReadCursor& Pos) {
 }
 
 void ByteReadStream::pushEobAddress(decode::ReadCursor& Pos, size_t Address) {
-  Pos.pushEobAddress(Pos.getCurByteAddress() + Address);
+  Pos.pushEobAddress(Pos.getCurAddress() + Address);
 }
 
 }  // end of namespace decode

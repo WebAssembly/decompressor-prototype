@@ -20,11 +20,6 @@ namespace wasm {
 
 namespace decode {
 
-FILE* WorkingByte::describe(FILE* File) {
-  fprintf(File, "[%u:%u] ", Value, BitsInValue);
-  return File;
-}
-
 Cursor::TraceContext::~TraceContext() {
 }
 
@@ -34,7 +29,7 @@ void Cursor::TraceContext::describe(FILE* File) {
 
 void Cursor::close() {
   CurPage = Que->getErrorPage();
-  CurByte.reset();
+  CurByte = 0;
   GuaranteedBeforeEob = false;
 }
 
@@ -67,10 +62,6 @@ FILE* Cursor::describe(FILE* File, bool IncludeDetail, bool AddEoln) {
   if (IncludeDetail)
     fputs("Cursor<", File);
   PageCursor::describe(File, IncludeDetail);
-  if (!CurByte.isEmpty()) {
-    fputc(' ', File);
-    CurByte.describe(File);
-  }
   if (IncludeDetail) {
     if (EobPtr->isDefined()) {
       fprintf(File, ", eob=");

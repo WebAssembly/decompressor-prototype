@@ -58,7 +58,7 @@ struct Decompressor {
   void closeInput();
   bool fetchOutput(int32_t Size);
   int32_t getOutputSize() {
-    return OutputPipe.getOutput()->fillSize() - OutputPos->getCurByteAddress();
+    return OutputPipe.getOutput()->fillSize() - OutputPos->getCurAddress();
   }
   TraceClass& getTrace() { return MyReader->getTrace(); }
   void setTraceProgress(bool NewValue) { MyReader->setTraceProgress(NewValue); }
