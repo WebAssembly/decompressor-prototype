@@ -79,9 +79,13 @@ decode::IntType CountNode::getAbbrevIndex() const {
   return AbbrevSymbol->getPath();
 }
 
-bool CountNode::hasAbbrevIndex() const { return bool(AbbrevSymbol); }
+bool CountNode::hasAbbrevIndex() const {
+  return bool(AbbrevSymbol);
+}
 
-void CountNode::clearAbbrevIndex() { AbbrevSymbol.reset(); }
+void CountNode::clearAbbrevIndex() {
+  AbbrevSymbol.reset();
+}
 
 void CountNode::setAbbrevIndex(HuffmanEncoder::SymbolPtr Symbol) {
   AbbrevSymbol = Symbol;

@@ -23,9 +23,7 @@
 using namespace wasm;
 using namespace wasm::utils;
 
-namespace {
-
-} // end of anonymous namespace
+namespace {}  // end of anonymous namespace
 
 void TestEncoding(const char* Title,
                   unsigned MaxPathLength,
@@ -41,50 +39,12 @@ void TestEncoding(const char* Title,
   Encoder->encodeSymbols()->describe(stdout, false);
 }
 
-HuffmanEncoder::WeightType Weights1[] = {
-  10,
-  1,
-  100,
-  5,
-  9,
-  54,
-  150
-};
+HuffmanEncoder::WeightType Weights1[] = {10, 1, 100, 5, 9, 54, 150};
 
 HuffmanEncoder::WeightType Weights2[] = {
-  1,
-  1,
-  1,
-  2,
-  2,
-  3,
-  5,
-  7,
-  9,
-  11,
-  15,
-  25,
-  32,
-  38,
-  64,
-  69,
-  75,
-  101,
-  105,
-  110,
-  150,
-  200,
-  600,
-  1201,
-  1503,
-  4200,
-  4600,
-  7012,
-  10000,
-  11000,
-  13000,
-  14000,
-  20000,
+    1,   1,    1,    2,    2,    3,    5,     7,     9,     11,    15,
+    25,  32,   38,   64,   69,   75,   101,   105,   110,   150,   200,
+    600, 1201, 1503, 4200, 4600, 7012, 10000, 11000, 13000, 14000, 20000,
 };
 
 int main(int Argc, const char* Argv[]) {

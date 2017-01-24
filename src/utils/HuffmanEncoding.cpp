@@ -72,21 +72,22 @@ int HuffmanEncoder::Symbol::compare(Node* Nd) const {
 }
 
 void HuffmanEncoder::Symbol::describe(FILE* Out, bool Brief, size_t Indent) {
-  (void) Brief;
+  (void)Brief;
   indentTo(Out, Indent);
-  fprintf(Out, "Sym(%" PRIuMAX " %" PRIuMAX "",
-          uintmax_t(Id), uintmax_t(Weight));
+  fprintf(Out, "Sym(%" PRIuMAX " %" PRIuMAX "", uintmax_t(Id),
+          uintmax_t(Weight));
   if (!Brief) {
-    fprintf(Out, " %" PRIuMAX ":%" PRIxMAX "",
-            uintmax_t(Path), uintmax_t(NumBits));
+    fprintf(Out, " %" PRIuMAX ":%" PRIxMAX "", uintmax_t(Path),
+            uintmax_t(NumBits));
   }
   fprintf(Out, ")\n");
 }
 
-HuffmanEncoder::NodePtr HuffmanEncoder::Symbol::installPaths(NodePtr Self,
-                                                             HuffmanEncoder& Encoder,
-                                                             PathType Path,
-                                                             unsigned NumBits) {
+HuffmanEncoder::NodePtr HuffmanEncoder::Symbol::installPaths(
+    NodePtr Self,
+    HuffmanEncoder& Encoder,
+    PathType Path,
+    unsigned NumBits) {
   if (NumBits > Encoder.getMaxPathLength())
     return NodePtr();
   this->Path = Path;
@@ -125,7 +126,6 @@ int HuffmanEncoder::Selector::compare(Node* Nd) const {
     return 1;
   return 0;
 }
-
 
 void HuffmanEncoder::Selector::describe(FILE* Out, bool Brief, size_t Indent) {
   indentTo(Out, Indent);
@@ -206,7 +206,8 @@ HuffmanEncoder::NodePtr HuffmanEncoder::Selector::installPaths(
         Ply1->pop_back();
         NodePtr N2 = Ply1->back();
         Ply1->pop_back();
-        Ply2->push_back(std::make_shared<Selector>(Encoder.getNextSelectorId(), N2, N1));
+        Ply2->push_back(
+            std::make_shared<Selector>(Encoder.getNextSelectorId(), N2, N1));
       }
       if (!Ply1->empty()) {
         Ply2->push_back(Ply1->back());
@@ -228,10 +229,9 @@ size_t HuffmanEncoder::Selector::nodeSize() const {
 HuffmanEncoder::HuffmanEncoder()
     : MaxAllowedPath(MaxPathLength),
       NextSelectorId(0),
-      NodePtrLtFcn([](NodePtr N1, NodePtr N2) {
-        return N1->compare(N2.get()) < 0;
-      })
-{}
+      NodePtrLtFcn(
+          [](NodePtr N1, NodePtr N2) { return N1->compare(N2.get()) < 0; }) {
+}
 
 HuffmanEncoder::~HuffmanEncoder() {
 }
@@ -255,7 +255,8 @@ HuffmanEncoder::NodePtr HuffmanEncoder::getSymbol(size_t Id) const {
 HuffmanEncoder::NodePtr HuffmanEncoder::encodeSymbols() {
   if (Alphabet.empty())
     return NodePtr();
-  std::shared_ptr<heap<NodePtr>> Heap = std::make_shared<heap<NodePtr>>(getNodePtrLtFcn());
+  std::shared_ptr<heap<NodePtr>> Heap =
+      std::make_shared<heap<NodePtr>>(getNodePtrLtFcn());
   for (NodePtr& Sym : Alphabet) {
     NodePtr Nd = Sym;
     auto V = Heap->push(Nd);

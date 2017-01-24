@@ -115,8 +115,7 @@ class CountNode : public std::enable_shared_from_this<CountNode> {
   // it is on the heap.
   HeapEntryType HeapEntry;
 
-  CountNode(Kind NodeKind)
-      : NodeKind(NodeKind), Count(0) {}
+  CountNode(Kind NodeKind) : NodeKind(NodeKind), Count(0) {}
   // The following two enclose description entries.
   void indent(FILE* Out, size_t NestLevel, bool AddWeight = true) const;
   void newline(FILE* Out) const;

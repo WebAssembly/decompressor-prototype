@@ -39,8 +39,9 @@
 #include "utils/Defs.h"
 #include "utils/Casting.h"
 
-#include <vector>
+#include <functional>
 #include <memory>
+#include <vector>
 
 namespace wasm {
 
@@ -189,9 +190,7 @@ class HuffmanEncoder : public std::enable_shared_from_this<HuffmanEncoder> {
   size_t getMaxPathLength() const { return MaxAllowedPath; }
   void setMaxPathLength(unsigned NewSize);
 
-  size_t getNextSelectorId() {
-    return NextSelectorId++;
-  }
+  size_t getNextSelectorId() { return NextSelectorId++; }
 
   NodePtrLtFcnType getNodePtrLtFcn() { return NodePtrLtFcn; }
 

@@ -32,14 +32,16 @@ AbbreviationsCollector::AbbreviationsCollector(
     size_t CountCutoff,
     size_t WeightCutoff,
     size_t MaxAbbreviations)
-      : CountNodeCollector(Root),
-        MaxAbbreviations(MaxAbbreviations),
-        Assignments(Assignments),
-        CountCutoff(CountCutoff),
-        WeightCutoff(WeightCutoff),
-        Encoder(std::make_shared<HuffmanEncoder>()) {}
+    : CountNodeCollector(Root),
+      MaxAbbreviations(MaxAbbreviations),
+      Assignments(Assignments),
+      CountCutoff(CountCutoff),
+      WeightCutoff(WeightCutoff),
+      Encoder(std::make_shared<HuffmanEncoder>()) {
+}
 
-AbbreviationsCollector::~AbbreviationsCollector() {}
+AbbreviationsCollector::~AbbreviationsCollector() {
+}
 
 void AbbreviationsCollector::setTrace(std::shared_ptr<TraceClass> NewTrace) {
   Trace = NewTrace;
@@ -62,10 +64,9 @@ void AbbreviationsCollector::assignAbbreviations() {
         fprintf(Out, "Considering: ");
         Nd->describe(Out);
       });
-      addAbbreviation(Nd,
-                      isa<DefaultCountNode>(Nd.get())
-                      ? std::numeric_limits<uint32_t>::max()
-                      : Nd->getWeight());
+      addAbbreviation(Nd, isa<DefaultCountNode>(Nd.get())
+                              ? std::numeric_limits<uint32_t>::max()
+                              : Nd->getWeight());
     }
   }
   TRACE(uint64_t, "WeightCutoff", WeightCutoff);
@@ -117,12 +118,12 @@ void AbbreviationsCollector::assignHuffmanAbbreviations() {
 }
 #endif
 
-
 void AbbreviationsCollector::addAbbreviation(CountNode::Ptr Nd) {
   addAbbreviation(Nd, Nd->getWeight());
 }
 
-void AbbreviationsCollector::addAbbreviation(CountNode::Ptr Nd, uint64_t Weight) {
+void AbbreviationsCollector::addAbbreviation(CountNode::Ptr Nd,
+                                             uint64_t Weight) {
   if (Nd->hasAbbrevIndex()) {
     TRACE_MESSAGE("Already has abbreviation. Ignoring");
     return;
