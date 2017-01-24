@@ -200,7 +200,9 @@ INTERP_SRCS_BASE = \
 	ByteWriter.cpp \
 	ByteWriteStream.cpp \
 	DecompressSelector.cpp \
+	Interpreter.cpp \
 	IntFormats.cpp \
+	IntInterpreter.cpp \
 	IntReader.cpp \
 	IntStream.cpp \
 	IntWriter.cpp \

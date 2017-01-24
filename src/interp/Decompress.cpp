@@ -22,6 +22,7 @@
 #include "interp/ByteReader.h"
 #include "interp/ByteWriter.h"
 #include "interp/DecompressSelector.h"
+#include "interp/Interpreter.h"
 #include "stream/Pipe.h"
 
 namespace wasm {
@@ -47,7 +48,7 @@ struct Decompressor {
   std::shared_ptr<WriteCursor2ReadQueue> InputPos;
   Pipe OutputPipe;
   std::shared_ptr<ReadCursor> OutputPos;
-  std::shared_ptr<Reader> MyReader;
+  std::shared_ptr<Interpreter> MyReader;
   std::shared_ptr<ByteWriter> Writer;
   std::shared_ptr<DecompAlgState> AlgState;
   State MyState;
@@ -175,7 +176,7 @@ extern "C" {
 void* create_decompressor() {
   auto* Decomp = new Decompressor();
   Decomp->Writer = std::make_shared<ByteWriter>(Decomp->OutputPipe.getInput());
-  Decomp->MyReader = std::make_shared<Reader>(
+  Decomp->MyReader = std::make_shared<Interpreter>(
       std::make_shared<ByteReader>(Decomp->Input), Decomp->Writer);
   Decomp->MyReader->addSelector(std::make_shared<DecompressSelector>(
       getAlgwasm0xdSymtab(), Decomp->AlgState, false));

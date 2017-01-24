@@ -30,7 +30,7 @@ namespace wasm {
 
 namespace interp {
 
-class IntReader : public InputReader {
+class IntReader : public Reader {
   IntReader(const IntReader&) = delete;
   IntReader& operator=(const IntReader&) = delete;
 
@@ -90,32 +90,6 @@ class IntReader : public InputReader {
   // The stack of read cursors (used by peek).
   IntStream::ReadCursor PeekPos;
   utils::ValueStack<IntStream::Cursor> PeekPosStack;
-};
-
-class IntStructureReader : public Reader {
-  IntStructureReader() = delete;
-  IntStructureReader(const IntStructureReader&) = delete;
-  IntStructureReader& operator=(const IntStructureReader&) = delete;
-
- public:
-  IntStructureReader(std::shared_ptr<IntReader> Input,
-                     std::shared_ptr<Writer> Output,
-                     std::shared_ptr<filt::SymbolTable> Symtab);
-  ~IntStructureReader() OVERRIDE;
-
-  // Read based on structure of input integer stream.
-  void structuralStart();
-  void structuralResume();
-  void structuralReadBackFilled();
-
-  void structuralRead() {
-    structuralStart();
-    structuralReadBackFilled();
-  }
-
- private:
-  const char* getDefaultTraceName() const OVERRIDE;
-  std::shared_ptr<IntReader> IntInput;
 };
 
 }  // end of namespace interp

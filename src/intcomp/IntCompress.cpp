@@ -25,6 +25,8 @@
 #include "intcomp/RemoveNodesVisitor.h"
 #include "interp/ByteReader.h"
 #include "interp/ByteWriter.h"
+#include "interp/Interpreter.h"
+#include "interp/IntInterpreter.h"
 #include "interp/IntReader.h"
 #include "sexp/CasmWriter.h"
 #include "sexp/TextWriter.h"
@@ -111,7 +113,7 @@ CountNode::RootPtr IntCompressor::getRoot() {
 void IntCompressor::readInput() {
   Contents = std::make_shared<IntStream>();
   auto MyWriter = std::make_shared<IntWriter>(Contents);
-  Reader MyReader(std::make_shared<ByteReader>(Input), MyWriter, Symtab);
+  Interpreter MyReader(std::make_shared<ByteReader>(Input), MyWriter, Symtab);
   if (MyFlags.TraceReadingInput)
     MyReader.getTrace().setTraceProgress(true);
   MyReader.algorithmRead();
@@ -136,7 +138,7 @@ void IntCompressor::writeDataOutput(const WriteCursor& StartPos,
                                     std::shared_ptr<SymbolTable> Symtab) {
   auto Writer = std::make_shared<ByteWriter>(Output);
   Writer->setPos(StartPos);
-  Reader MyReader(std::make_shared<IntReader>(IntOutput), Writer, Symtab);
+  Interpreter MyReader(std::make_shared<IntReader>(IntOutput), Writer, Symtab);
   if (MyFlags.TraceWritingDataOutput)
     MyReader.getTrace().setTraceProgress(true);
   MyReader.useFileHeader(Symtab->getTargetHeader());
@@ -163,8 +165,7 @@ bool IntCompressor::compressUpToSize(size_t Size) {
   Writer->setCountCutoff(MyFlags.CountCutoff);
   Writer->setUpToSize(Size);
 
-  IntStructureReader Reader(std::make_shared<IntReader>(Contents), Writer,
-                            Symtab);
+  IntInterperter Reader(std::make_shared<IntReader>(Contents), Writer, Symtab);
   if (MyFlags.TraceReadingIntStream)
     Reader.getTrace().setTraceProgress(true);
   Reader.structuralRead();
@@ -255,8 +256,7 @@ void IntCompressor::assignInitialAbbreviations(
 bool IntCompressor::generateIntOutput() {
   auto Writer = std::make_shared<AbbrevAssignWriter>(
       Root, IntOutput, MyFlags.LengthLimit, MyFlags.AbbrevFormat);
-  IntStructureReader Reader(std::make_shared<IntReader>(Contents), Writer,
-                            Symtab);
+  IntInterperter Reader(std::make_shared<IntReader>(Contents), Writer, Symtab);
   if (MyFlags.TraceIntStreamGeneration)
     Reader.getTrace().setTraceProgress(true);
   Reader.structuralRead();

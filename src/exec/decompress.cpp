@@ -21,6 +21,7 @@
 #include "interp/DecompressSelector.h"
 #include "interp/ByteReader.h"
 #include "interp/ByteWriter.h"
+#include "interp/Interpreter.h"
 #include "stream/FileReader.h"
 #include "stream/FileWriter.h"
 #include "stream/ReadBackedQueue.h"
@@ -202,7 +203,7 @@ int main(const int Argc, const char* Argv[]) {
     std::shared_ptr<Queue> BackedOutput =
         std::make_shared<WriteBackedQueue>(Output);
     auto Writer = std::make_shared<ByteWriter>(BackedOutput);
-    Reader Decompressor(
+    Interpreter Decompressor(
         std::make_shared<ByteReader>(std::make_shared<ReadBackedQueue>(Input)),
         Writer);
     auto AlgState = std::make_shared<DecompAlgState>();
