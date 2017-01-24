@@ -14,12 +14,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Defines a (stream) reader for wasm/casm files.
+// Defines an interpreter of that reads a file and applies algorithms to the
+// data in the file.
 
 #ifndef DECOMPRESSOR_SRC_INTERP_INTERPRETER_H
 #define DECOMPRESSOR_SRC_INTERP_INTERPRETER_H
 
 #include "interp/Interpreter.def"
+
 #include "interp/Reader.h"
 #include "interp/Writer.h"
 #include "utils/Trace.h"
