@@ -36,28 +36,10 @@ class WorkingByte {
 
   bool isEmpty() const { return BitsInValue == 0; }
 
-  BitsInByteType getBitsRead() const { return (CHAR_BIT - BitsInValue) & 0x7; }
-
   BitsInByteType getReadBitsRemaining() const { return BitsInValue; }
-
-  BitsInByteType getBitsWritten() const { return BitsInValue; }
 
   BitsInByteType getWriteBitsRemaining() const {
     return CHAR_BIT - BitsInValue;
-  }
-
-  uint8_t readBits(BitsInByteType NumBits) {
-    assert(NumBits <= BitsInValue);
-    uint8_t Result = Value >> (BitsInValue - NumBits);
-    BitsInValue -= NumBits;
-    Value &= ~uint32_t(0) << BitsInValue;
-    return Result;
-  }
-
-  void writeBits(uint8_t Value, BitsInByteType NumBits) {
-    assert(NumBits <= BitsInValue);
-    Value = (Value << NumBits) | Value;
-    BitsInValue += NumBits;
   }
 
   void setByte(uint8_t Byte) {

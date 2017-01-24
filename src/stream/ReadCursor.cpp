@@ -30,24 +30,6 @@ uint8_t ReadCursor::readByteAfterReadFill() {
   return readOneByte();
 }
 
-uint32_t ReadCursor::readBits(uint32_t NumBits) {
-  assert(NumBits <= sizeof(uint32_t) * CHAR_BIT);
-  uint32_t Value = 0;
-  while (NumBits != 0) {
-    BitsInByteType AvailBits = CurByte.getReadBitsRemaining();
-    if (NumBits <= AvailBits) {
-      Value = (Value << NumBits) | CurByte.readBits(NumBits);
-      return Value;
-    }
-    if (!CurByte.isEmpty()) {
-      Value = (Value << AvailBits) | CurByte.getValue();
-      NumBits -= AvailBits;
-    }
-    CurByte.setByte(readByte());
-  }
-  return Value;
-}
-
 size_t ReadCursor::advance(size_t Distance) {
   size_t WantedAddress = CurAddress + Distance;
   size_t DistanceMoved = 0;
