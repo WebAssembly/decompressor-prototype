@@ -19,6 +19,7 @@
 #ifndef DECOMPRESSOR_SRC_INTERP_INTINTERPRETER_H
 #define DECOMPRESSOR_SRC_INTERP_INTINTERPRETER_H
 
+#include "interp/Interpreter.h"
 #include "interp/IntStream.h"
 #include "interp/IntReader.h"
 #include "utils/Defs.h"
