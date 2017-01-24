@@ -202,6 +202,7 @@ INTERP_SRCS_BASE = \
 	DecompressSelector.cpp \
 	Interpreter.cpp \
 	IntFormats.cpp \
+	IntInterpreter.cpp \
 	IntReader.cpp \
 	IntStream.cpp \
 	IntWriter.cpp \
