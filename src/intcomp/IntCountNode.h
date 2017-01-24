@@ -24,6 +24,7 @@
 #include "utils/Casting.h"
 #include "utils/Defs.h"
 #include "utils/heap.h"
+#include "utils/HuffmanEncoding.h"
 
 #include <map>
 #include <memory>
@@ -85,10 +86,10 @@ class CountNode : public std::enable_shared_from_this<CountNode> {
   static bool isAbbrevDefined(decode::IntType Abbrev) {
     return Abbrev != BAD_ABBREV_INDEX;
   }
-  decode::IntType getAbbrevIndex() const { return AbbrevIndex; }
-  bool hasAbbrevIndex() const { return AbbrevIndex != BAD_ABBREV_INDEX; }
-  void setAbbrevIndex(decode::IntType NewValue) { AbbrevIndex = NewValue; }
-  void clearAbbrevIndex() { AbbrevIndex = BAD_ABBREV_INDEX; }
+  decode::IntType getAbbrevIndex() const;
+  bool hasAbbrevIndex() const;
+  void clearAbbrevIndex();
+  void setAbbrevIndex(utils::HuffmanEncoder::SymbolPtr Symbol);
 
   virtual int compare(const CountNode& Nd) const;
   bool operator<(const CountNode& Nd) const { return compare(Nd) < 0; }
@@ -107,15 +108,14 @@ class CountNode : public std::enable_shared_from_this<CountNode> {
  protected:
   Kind NodeKind;
   size_t Count;
-  decode::IntType AbbrevIndex;
+  utils::HuffmanEncoder::SymbolPtr AbbrevSymbol;
 
   // The heap position of this, when added to heap. Note: Used to
   // allow the ability to change the priority key (i.e. weight) while
   // it is on the heap.
   HeapEntryType HeapEntry;
 
-  CountNode(Kind NodeKind)
-      : NodeKind(NodeKind), Count(0), AbbrevIndex(BAD_ABBREV_INDEX) {}
+  CountNode(Kind NodeKind) : NodeKind(NodeKind), Count(0) {}
   // The following two enclose description entries.
   void indent(FILE* Out, size_t NestLevel, bool AddWeight = true) const;
   void newline(FILE* Out) const;

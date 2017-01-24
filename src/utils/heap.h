@@ -16,7 +16,7 @@
 
 // Defines a heap that also allows fast removal and reinsertion. To do this, a
 // (shared) pointer to an (internal) entry is returned to the caller. By using
-// the returned entery, a fast (i.e. log n) removal/reinsertion can be
+// the returned entry, a fast (i.e. log n) removal/reinsertion can be
 // performed.
 //
 // Note: Can't use std::make_heap() or a priority queue because we need the

@@ -26,6 +26,23 @@ using namespace utils;
 
 namespace intcomp {
 
+AbbreviationsCollector::AbbreviationsCollector(
+    CountNode::RootPtr Root,
+    CountNode::Int2PtrMap& Assignments,
+    size_t CountCutoff,
+    size_t WeightCutoff,
+    size_t MaxAbbreviations)
+    : CountNodeCollector(Root),
+      MaxAbbreviations(MaxAbbreviations),
+      Assignments(Assignments),
+      CountCutoff(CountCutoff),
+      WeightCutoff(WeightCutoff),
+      Encoder(std::make_shared<HuffmanEncoder>()) {
+}
+
+AbbreviationsCollector::~AbbreviationsCollector() {
+}
+
 void AbbreviationsCollector::setTrace(std::shared_ptr<TraceClass> NewTrace) {
   Trace = NewTrace;
 }
@@ -47,7 +64,9 @@ void AbbreviationsCollector::assignAbbreviations() {
         fprintf(Out, "Considering: ");
         Nd->describe(Out);
       });
-      addAbbreviation(Nd);
+      addAbbreviation(Nd, isa<DefaultCountNode>(Nd.get())
+                              ? std::numeric_limits<uint32_t>::max()
+                              : Nd->getWeight());
     }
   }
   TRACE(uint64_t, "WeightCutoff", WeightCutoff);
@@ -62,16 +81,15 @@ void AbbreviationsCollector::assignAbbreviations() {
       Nd->describe(Out);
     });
     if (isa<IntCountNode>(*Nd) && Nd->getWeight() < WeightCutoff) {
-      fprintf(stderr, "Removing due to weight cutoff\n");
+      TRACE_MESSAGE("Removing due to weight cutoff");
       continue;
     }
-    IntTypeFormats Formats(getNextAvailableIndex());
-    size_t Space = Formats.getByteSize(AbbrevFormat);
-    if (Space <= Nd->getWeight())
-      addAbbreviation(Nd);
+    addAbbreviation(Nd);
   }
+  TRACE_MESSAGE("Huffman encoding abbreviations");
 }
 
+#if 0
 void AbbreviationsCollector::assignHuffmanAbbreviations() {
   // Start by extracting out candidates based on weight. Then use resulting
   // selected patterns as alphabet for Huffman encoding.
@@ -98,13 +116,21 @@ void AbbreviationsCollector::assignHuffmanAbbreviations() {
   }
 #endif
 }
+#endif
 
 void AbbreviationsCollector::addAbbreviation(CountNode::Ptr Nd) {
-  if (Nd->hasAbbrevIndex())
+  addAbbreviation(Nd, Nd->getWeight());
+}
+
+void AbbreviationsCollector::addAbbreviation(CountNode::Ptr Nd,
+                                             uint64_t Weight) {
+  if (Nd->hasAbbrevIndex()) {
+    TRACE_MESSAGE("Already has abbreviation. Ignoring");
     return;
+  }
   size_t NdIndex = getNextAvailableIndex();
   TRACE(size_t, "Abbreviation", NdIndex);
-  Nd->setAbbrevIndex(NdIndex);
+  Nd->setAbbrevIndex(Encoder->createSymbol(Weight));
   Assignments[NdIndex] = Nd;
 }
 

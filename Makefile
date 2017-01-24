@@ -271,6 +271,7 @@ TEST_EXECDIR = $(BUILDDIR)/test
 
 TEST_SRCS = \
 	TestByteQueues.cpp \
+	TestHuffman.cpp \
 	TestParser.cpp \
 	TestRawStreams.cpp
 
@@ -867,7 +868,7 @@ $(TEST_EXECS): $(TEST_EXECDIR)/%$(EXE): $(TEST_OBJDIR)/%.o $(LIBS)
 
 test: build-all test-parser test-raw-streams test-byte-queues \
 	test-decompress test-casm2cast test-cast2casm test-casm-cast \
-	test-compress
+	test-compress test-huffman
 	@echo "*** all tests passed ***"
 
 .PHONY: test
@@ -892,6 +893,12 @@ presubmit:
 	@echo "*** Presubmit tests passed ***"
 
 .PHONY: presubmit
+
+test-huffman: $(TEST_EXECDIR)/TestHuffman
+	$< | diff - $(TEST_SRCS_DIR)/TestHuffman.out
+	@echo "*** Huffman encoding tests passed ***"
+
+.PHONY: test-huffman
 
 test-decompress: \
 	$(TEST_WASM_GEN_FILES) \

@@ -20,6 +20,7 @@
 #define DECOMPRESSOR_SRC_INTCOMP_ABBREVIATIONSCOLLECTOR_H
 
 #include "intcomp/CountNodeCollector.h"
+#include "utils/HuffmanEncoding.h"
 
 namespace wasm {
 
@@ -28,24 +29,16 @@ namespace intcomp {
 class AbbreviationsCollector : public CountNodeCollector {
  public:
   AbbreviationsCollector(CountNode::RootPtr Root,
-                         interp::IntTypeFormat AbbrevFormat,
                          CountNode::Int2PtrMap& Assignments,
                          size_t CountCutoff,
                          size_t WeightCutoff,
-                         size_t MaxAbbreviations)
-      : CountNodeCollector(Root),
-        MaxAbbreviations(MaxAbbreviations),
-        AbbrevFormat(AbbrevFormat),
-        Assignments(Assignments),
-        CountCutoff(CountCutoff),
-        WeightCutoff(WeightCutoff) {}
+                         size_t MaxAbbreviations);
+
+  ~AbbreviationsCollector();
 
   // Does assignment based on maximizing weight. This will find the set of
   // candidate patterns to use as abbreviations.
   void assignAbbreviations();
-
-  // Does assignment based on Huffman encoding.
-  void assignHuffmanAbbreviations();
 
   utils::TraceClass& getTrace() { return *getTracePtr(); }
   std::shared_ptr<utils::TraceClass> getTracePtr();
@@ -54,15 +47,17 @@ class AbbreviationsCollector : public CountNodeCollector {
 
  private:
   const size_t MaxAbbreviations;
-  interp::IntTypeFormat AbbrevFormat;
   CountNode::Int2PtrMap& Assignments;
   uint64_t CountCutoff;
   uint64_t WeightCutoff;
+  std::shared_ptr<utils::HuffmanEncoder> Encoder;
+  utils::HuffmanEncoder::NodePtr Encoding;
   std::shared_ptr<utils::TraceClass> Trace;
 
   size_t getNextAvailableIndex() const { return Assignments.size(); }
 
   void addAbbreviation(CountNode::Ptr Nd);
+  void addAbbreviation(CountNode::Ptr Nd, uint64_t Weight);
 };
 
 }  // end of namespace intcomp

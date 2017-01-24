@@ -28,12 +28,6 @@ using namespace decode;
 
 namespace utils {
 
-// Define ordering over nodes, so that we can use a heap to extract smallest
-// weighted subtrees.
-bool operator<(HuffmanEncoder::NodePtr T1, HuffmanEncoder::NodePtr T2) {
-  return T1->getWeight() < T2->getWeight();
-}
-
 HuffmanEncoder::Node::Node(NodeType Type, WeightType Weight)
     : Type(Type), Weight(Weight) {
 }
@@ -41,17 +35,60 @@ HuffmanEncoder::Node::Node(NodeType Type, WeightType Weight)
 HuffmanEncoder::Node::~Node() {
 }
 
-HuffmanEncoder::Symbol::Symbol(WeightType Weight)
-    : Node(NodeType::Symbol, Weight), Path(0) {
+int HuffmanEncoder::Node::compare(Node* Nd) const {
+  if (getWeight() < Nd->getWeight())
+    return -1;
+  if (getWeight() > Nd->getWeight())
+    return 1;
+  return int(Type) - int(Nd->Type);
+}
+
+void HuffmanEncoder::Node::indentTo(FILE* Out, size_t Indent) {
+  for (size_t i = 0; i < Indent; ++i)
+    fputs("  ", Out);
+}
+
+HuffmanEncoder::Symbol::Symbol(size_t Id, WeightType Weight)
+    : Node(NodeType::Symbol, Weight), Id(Id), Path(0), NumBits(0) {
+  // TODO(karlschimpf): Remove hack of next assignment once compile-int
+  // has been ported!
+  Path = Id;
 }
 
 HuffmanEncoder::Symbol::~Symbol() {
 }
 
-HuffmanEncoder::NodePtr HuffmanEncoder::Symbol::installPaths(NodePtr Self,
-                                                             PathType Path,
-                                                             unsigned NumBits) {
-  if (NumBits > MaxPathLength)
+int HuffmanEncoder::Symbol::compare(Node* Nd) const {
+  int diff = Node::compare(Nd);
+  if (diff != 0)
+    return diff;
+  assert(isa<Symbol>(Nd));
+  Symbol* Sym = cast<Symbol>(Nd);
+  if (Id < Sym->Id)
+    return -1;
+  if (Id > Sym->Id)
+    return 1;
+  return 0;
+}
+
+void HuffmanEncoder::Symbol::describe(FILE* Out, bool Brief, size_t Indent) {
+  (void)Brief;
+  indentTo(Out, Indent);
+  fprintf(Out, "Sym(%" PRIuMAX " %" PRIuMAX "", uintmax_t(Id),
+          uintmax_t(Weight));
+  if (!Brief) {
+    fprintf(Out, " %" PRIuMAX ":%" PRIxMAX "", uintmax_t(Path),
+            uintmax_t(NumBits));
+  }
+  fprintf(Out, ")\n");
+}
+
+HuffmanEncoder::NodePtr HuffmanEncoder::Symbol::installPaths(
+    NodePtr Self,
+    HuffmanEncoder& Encoder,
+    PathType Path,
+    unsigned NumBits) {
+  if (NumBits > Encoder.getMaxPathLength())
     return NodePtr();
   this->Path = Path;
   this->NumBits = NumBits;
@@ -62,11 +99,42 @@ size_t HuffmanEncoder::Symbol::nodeSize() const {
   return 1;
 }
 
-HuffmanEncoder::Selector::Selector(NodePtr Kid1, NodePtr Kid2)
+HuffmanEncoder::Selector::Selector(size_t Id, NodePtr Kid1, NodePtr Kid2)
     : Node(NodeType::Selector, Kid1->getWeight() + Kid2->getWeight()),
+      Id(Id),
       Kid1(Kid1),
       Kid2(Kid2),
       Size(Kid1->nodeSize() + Kid2->nodeSize()) {
+}
+
+HuffmanEncoder::Selector::~Selector() {
+}
+
+int HuffmanEncoder::Selector::compare(Node* Nd) const {
+  int Diff = Node::compare(Nd);
+  if (Diff != 0)
+    return Diff;
+  assert(isa<Selector>(Nd));
+  Selector* Sel = cast<Selector>(Nd);
+  if (Size < Sel->Size)
+    return -1;
+  if (Size > Sel->Size)
+    return 1;
+  if (Id < Sel->Id)
+    return -1;
+  if (Id > Sel->Id)
+    return 1;
+  return 0;
+}
+
+void HuffmanEncoder::Selector::describe(FILE* Out, bool Brief, size_t Indent) {
+  indentTo(Out, Indent);
+  fprintf(Out, "sel(%" PRIuMAX ")\n", uintmax_t(Id));
+  if (Brief)
+    return;
+  ++Indent;
+  Kid1->describe(Out, Brief, Indent);
+  Kid2->describe(Out, Brief, Indent);
 }
 
 void HuffmanEncoder::Selector::fixFields() {
@@ -74,22 +142,19 @@ void HuffmanEncoder::Selector::fixFields() {
   Size = Kid1->nodeSize() + Kid2->nodeSize();
 }
 
-HuffmanEncoder::Selector::~Selector() {
-}
-
 HuffmanEncoder::NodePtr HuffmanEncoder::Selector::installPaths(
     NodePtr Self,
+    HuffmanEncoder& Encoder,
     PathType Path,
     unsigned NumBits) {
   PathType KidPath = Path << 1;
   unsigned KidBits = NumBits + 1;
   for (int NumTries = 1; NumTries <= 2; NumTries++) {
-    assert(isa<Selector>(Self.get()));
-    auto Sel = cast<Selector>(Self);
+    auto Sel = cast<Selector>(Self.get());
     NodePtr K1 = Sel->getKid1();
-    K1 = K1->installPaths(K1, KidPath, KidBits);
+    K1 = K1->installPaths(K1, Encoder, KidPath, KidBits);
     NodePtr K2 = Sel->getKid2();
-    K2 = K2->installPaths(K2, KidPath + 1, KidBits);
+    K2 = K2->installPaths(K2, Encoder, KidPath + 1, KidBits);
     if (K1 && K2) {
       Sel->Kid1 = K1;
       Sel->Kid2 = K2;
@@ -108,7 +173,7 @@ HuffmanEncoder::NodePtr HuffmanEncoder::Selector::installPaths(
       Count >>= 1;
     }
 
-    if (NumBits + BitsNeeded > MaxPathLength)
+    if (NumBits + BitsNeeded > Encoder.getMaxPathLength())
       // Can't fix at this node, go to parent.
       break;
 
@@ -129,21 +194,25 @@ HuffmanEncoder::NodePtr HuffmanEncoder::Selector::installPaths(
       ToVisit.push_back(Sel->getKid1());
       ToVisit.push_back(Sel->getKid2());
     }
+    // Sort so that if tree is not full, nodes with maximal weight will be
+    // on shorter paths.
+    std::sort(Symbols.begin(), Symbols.end(), Encoder.getNodePtrLtFcn());
     std::vector<NodePtr>* Ply1 = &Symbols;
     std::vector<NodePtr>* Ply2 = &ToVisit;
     while (Ply1->size() > 1) {
+      std::reverse(Ply1->begin(), Ply1->end());
       while (Ply1->size() >= 2) {
         NodePtr N1 = Ply1->back();
         Ply1->pop_back();
         NodePtr N2 = Ply1->back();
         Ply1->pop_back();
-        Ply2->push_back(std::make_shared<Selector>(N1, N2));
+        Ply2->push_back(
+            std::make_shared<Selector>(Encoder.getNextSelectorId(), N2, N1));
       }
       if (!Ply1->empty()) {
         Ply2->push_back(Ply1->back());
         Ply1->pop_back();
       }
-      std::reverse(Ply2->begin(), Ply2->end());
       std::swap(Ply1, Ply2);
     }
     // Loop again to verify if flattening actually worked, as well
@@ -157,32 +226,51 @@ size_t HuffmanEncoder::Selector::nodeSize() const {
   return Size;
 }
 
-HuffmanEncoder::HuffmanEncoder() {
+HuffmanEncoder::HuffmanEncoder()
+    : MaxAllowedPath(MaxPathLength),
+      NextSelectorId(0),
+      NodePtrLtFcn(
+          [](NodePtr N1, NodePtr N2) { return N1->compare(N2.get()) < 0; }) {
 }
 
 HuffmanEncoder::~HuffmanEncoder() {
 }
 
-void HuffmanEncoder::add(SymbolPtr Sym) {
+void HuffmanEncoder::setMaxPathLength(unsigned NewSize) {
+  assert(NewSize <= MaxPathLength);
+  MaxAllowedPath = NewSize;
+}
+
+HuffmanEncoder::SymbolPtr HuffmanEncoder::createSymbol(WeightType Weight) {
+  auto Sym = std::make_shared<Symbol>(Alphabet.size(), Weight);
   Alphabet.push_back(Sym);
+  return Sym;
+}
+
+HuffmanEncoder::NodePtr HuffmanEncoder::getSymbol(size_t Id) const {
+  assert(Id < Alphabet.size());
+  return Alphabet.at(Id);
 }
 
 HuffmanEncoder::NodePtr HuffmanEncoder::encodeSymbols() {
   if (Alphabet.empty())
     return NodePtr();
-  heap<NodePtr> Heap((std::less<NodePtr>()));
-  for (NodePtr& Sym : Alphabet)
-    Heap.push(Sym);
-  while (Heap.size() >= 2) {
-    NodePtr N1 = Heap.top()->getValue();
-    Heap.pop();
-    NodePtr N2 = Heap.top()->getValue();
-    Heap.pop();
-    NodePtr Sel = std::make_shared<Selector>(N1, N2);
-    Heap.push(Sel);
+  std::shared_ptr<heap<NodePtr>> Heap =
+      std::make_shared<heap<NodePtr>>(getNodePtrLtFcn());
+  for (NodePtr& Sym : Alphabet) {
+    NodePtr Nd = Sym;
+    auto V = Heap->push(Nd);
   }
-  NodePtr Root = Heap.top()->getValue();
-  Root = Root->installPaths(Root, 0, 0);
+  while (Heap->size() >= 2) {
+    NodePtr N1 = Heap->top()->getValue();
+    Heap->pop();
+    NodePtr N2 = Heap->top()->getValue();
+    Heap->pop();
+    NodePtr Sel = std::make_shared<Selector>(getNextSelectorId(), N2, N1);
+    Heap->push(Sel);
+  }
+  NodePtr Root = Heap->top()->getValue();
+  Root = Root->installPaths(Root, *this, 0, 0);
   if (!Root)
     fatal("Can't build Huffman encoding for alphabet!");
   return Root;

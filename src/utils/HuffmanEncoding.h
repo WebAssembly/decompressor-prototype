@@ -39,8 +39,9 @@
 #include "utils/Defs.h"
 #include "utils/Casting.h"
 
-#include <vector>
+#include <functional>
 #include <memory>
+#include <vector>
 
 namespace wasm {
 
@@ -57,8 +58,10 @@ class HuffmanEncoder : public std::enable_shared_from_this<HuffmanEncoder> {
   typedef std::shared_ptr<Symbol> SymbolPtr;
   typedef std::shared_ptr<Selector> SelectorPtr;
 
+  typedef std::function<bool(NodePtr, NodePtr)> NodePtrLtFcnType;
+
   static constexpr unsigned MaxPathLength = sizeof(PathType) * CHAR_BIT;
-  enum class NodeType { Selector, Symbol };
+  enum class NodeType : int { Selector, Symbol };
 
   // Node used to encode binary paths of Huffman encoding.
   class Node : public std::enable_shared_from_this<Node> {
@@ -74,6 +77,11 @@ class HuffmanEncoder : public std::enable_shared_from_this<HuffmanEncoder> {
 
     NodeType getRtClassId() const { return Type; }
 
+    virtual int compare(Node* Nd) const;
+
+    // For debugging
+    virtual void describe(FILE* Out, bool brief = true, size_t Indent = 0) = 0;
+
    protected:
     const NodeType Type;
     // The weight of all symbols in the subtree.
@@ -82,10 +90,14 @@ class HuffmanEncoder : public std::enable_shared_from_this<HuffmanEncoder> {
     // number of bits. Returns false if parent needs to rebalance because
     // it was unable to install with path limit.
     virtual NodePtr installPaths(NodePtr Self,
+                                 HuffmanEncoder& Encoder,
                                  PathType Path,
                                  unsigned NumBits) = 0;
     // Returns number of nodes in tree.
     virtual size_t nodeSize() const = 0;
+
+    // For debugging.
+    void indentTo(FILE* Out, size_t Indent);
   };
 
   // Defines a symbol in the alphabet being Huffman encoded.  Note: Only
@@ -96,23 +108,32 @@ class HuffmanEncoder : public std::enable_shared_from_this<HuffmanEncoder> {
 
    public:
     // Note: Path and number of bits are not defined until installed.
-    Symbol(WeightType Weight);
+    Symbol(size_t Id, WeightType Weight);
     ~Symbol() OVERRIDE;
 
     PathType getPath() const { return Path; }
     unsigned getNumBits() const { return NumBits; }
 
+    // Unique integer that identifies symbol.
+    size_t getId() const { return Id; }
+
     static bool implementsClass(NodeType Type) {
       return Type == NodeType::Symbol;
     }
 
+    int compare(Node* Nd) const OVERRIDE;
+
+    void describe(FILE* Out, bool brief = true, size_t Indent = 0) OVERRIDE;
+
    protected:
     NodePtr installPaths(NodePtr Self,
+                         HuffmanEncoder& Encoder,
                          PathType Path,
                          unsigned NumBits) OVERRIDE;
     size_t nodeSize() const OVERRIDE;
 
    private:
+    size_t Id;
     PathType Path;
     unsigned NumBits;
   };
@@ -124,7 +145,7 @@ class HuffmanEncoder : public std::enable_shared_from_this<HuffmanEncoder> {
     Selector& operator=(const Selector&) = delete;
 
    public:
-    Selector(NodePtr Kid1, NodePtr Kid2);
+    Selector(size_t Id, NodePtr Kid1, NodePtr Kid2);
     ~Selector() OVERRIDE;
 
     NodePtr getKid1() const { return Kid1; }
@@ -134,14 +155,20 @@ class HuffmanEncoder : public std::enable_shared_from_this<HuffmanEncoder> {
       return Type == NodeType::Selector;
     }
 
+    int compare(Node* Nd) const OVERRIDE;
+
+    void describe(FILE* Out, bool Brief = true, size_t Indent = 0) OVERRIDE;
+
    protected:
     void fixFields();
     NodePtr installPaths(NodePtr Self,
+                         HuffmanEncoder& Encoder,
                          PathType Path,
                          unsigned NumBits) OVERRIDE;
     size_t nodeSize() const OVERRIDE;
 
    private:
+    size_t Id;
     NodePtr Kid1;
     NodePtr Kid2;
     size_t Size;
@@ -151,15 +178,27 @@ class HuffmanEncoder : public std::enable_shared_from_this<HuffmanEncoder> {
   ~HuffmanEncoder();
 
   // Add the given symbol to the alphabet to be encoded.
-  void add(SymbolPtr Sym);
+  SymbolPtr createSymbol(WeightType Weight);
+
+  NodePtr getSymbol(size_t Id) const;
 
   // Define the Huffman encodings for each symbol in the alphabet.
   // Returns the root of the corresponding tree defining the encoded
   // symbols.
   NodePtr encodeSymbols();
 
+  size_t getMaxPathLength() const { return MaxAllowedPath; }
+  void setMaxPathLength(unsigned NewSize);
+
+  size_t getNextSelectorId() { return NextSelectorId++; }
+
+  NodePtrLtFcnType getNodePtrLtFcn() { return NodePtrLtFcn; }
+
  protected:
   std::vector<NodePtr> Alphabet;
+  unsigned MaxAllowedPath;
+  size_t NextSelectorId;
+  NodePtrLtFcnType NodePtrLtFcn;
 };
 
 }  // end of namespace utils
