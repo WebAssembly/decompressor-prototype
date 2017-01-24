@@ -52,12 +52,22 @@ class ReadCursor : public Cursor {
     if (CurAddress < GuaranteedBeforeEob)
       return false;
     bool Result =
+#if 0
         CurAddress >= getEobAddress().getByteAddress() || !readFillBuffer();
+#else
+        CurAddress >= getEobAddress() || !readFillBuffer();
+#endif
     updateGuaranteedBeforeEob();
     return Result;
   }
 
-  void pushEobAddress(const BitAddress& NewValue) {
+  void pushEobAddress(
+#if 0
+      const BitAddress& NewValue
+#else
+      BitAddress NewValue
+#endif
+                      ) {
     EobPtr = std::make_shared<BlockEob>(NewValue, EobPtr);
     updateGuaranteedBeforeEob();
   }

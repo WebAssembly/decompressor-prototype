@@ -144,7 +144,12 @@ class Cursor : public PageCursor {
   void updateGuaranteedBeforeEob() {
     GuaranteedBeforeEob =
         CurPage ? std::min(CurPage->getMaxAddress(),
-                           EobPtr->getEobAddress().getByteAddress())
+#if 0
+                           EobPtr->getEobAddress().getByteAddress()
+#else
+                           EobPtr->getEobAddress()
+#endif
+                           )
                 : 0;
   }
 

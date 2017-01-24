@@ -53,20 +53,28 @@ static constexpr size_t kErrorPageAddress = kMaxEofAddress + 1;
 static constexpr size_t kErrorPageIndex = Page::index(kErrorPageAddress);
 static constexpr size_t kUndefinedAddress = std::numeric_limits<size_t>::max();
 
-typedef uint8_t BitsInByteType;
-
+#if 1
+typedef size_t BitAddress;
+inline bool isGoodAddress(BitAddress Addr) {
+  return Addr <= kMaxEofAddress;
+}
+inline bool isDefinedAddress(BitAddress Addr) {
+  return Addr != kUndefinedAddress;
+}
+inline void resetAddress(BitAddress& Addr) { Addr = 0; }
+void describeAddress(FILE* File, BitAddress Addr);
+#else
 struct BitAddress {
   friend class BlockEob;
 
  public:
-  BitAddress(size_t ByteAddr = 0, BitsInByteType BitAddr = 0)
-      : ByteAddr(ByteAddr), BitAddr(BitAddr) {}
+  BitAddress(size_t ByteAddr = 0) : ByteAddr(ByteAddr) {}
   BitAddress(const BitAddress& Address)
-      : ByteAddr(Address.ByteAddr), BitAddr(Address.BitAddr) {}
+      : ByteAddr(Address.ByteAddr)
+  {}
   size_t getByteAddress() const { return ByteAddr; }
-  BitsInByteType getBitAddress() const { return BitAddr; }
   bool operator==(const BitAddress& Addr) {
-    return ByteAddr == Addr.ByteAddr && BitAddr == Addr.BitAddr;
+    return ByteAddr == Addr.ByteAddr;
   }
   bool isGood() const { return ByteAddr <= kMaxEofAddress; }
   bool isDefined() const { return ByteAddr != kUndefinedAddress; }
@@ -76,12 +84,11 @@ struct BitAddress {
 
  protected:
   size_t ByteAddr;
-  BitsInByteType BitAddr;
   void reset() {
     ByteAddr = 0;
-    BitAddr = 0;
   }
 };
+#endif
 
 // Holds the end of a block within a queue. The outermost block is
 // always defined as enclosing the entire queue. Note: EobBitAddress
@@ -92,31 +99,35 @@ class BlockEob : public std::enable_shared_from_this<BlockEob> {
   BlockEob& operator=(const BlockEob&) = delete;
 
  public:
+#if 0
   explicit BlockEob(const BitAddress& Address) : EobAddress(Address) { init(); }
-  explicit BlockEob(size_t ByteAddr = kMaxEofAddress,
-                    BitsInByteType BitAddr = 0)
-      : EobAddress(ByteAddr, BitAddr) {
+  explicit BlockEob(size_t ByteAddr = kMaxEofAddress)
+      : EobAddress(ByteAddr) {
     init();
   }
-  BlockEob(size_t ByteAddr, const std::shared_ptr<BlockEob> EnclosingEobPtr)
+#else
+  explicit BlockEob(BitAddress Address = kMaxEofAddress) : EobAddress(Address) { init(); }
+#endif
+  BlockEob(BitAddress ByteAddr, const std::shared_ptr<BlockEob> EnclosingEobPtr)
       : EobAddress(ByteAddr), EnclosingEobPtr(EnclosingEobPtr) {
     init();
   }
-  BlockEob(size_t ByteAddr,
-           BitsInByteType BitAddr,
-           const std::shared_ptr<BlockEob> EnclosingEobPtr)
-      : EobAddress(ByteAddr, BitAddr), EnclosingEobPtr(EnclosingEobPtr) {
-    init();
-  }
+#if 0
   BlockEob(const BitAddress& Address,
            const std::shared_ptr<BlockEob> EnclosingEobPtr)
       : EobAddress(Address), EnclosingEobPtr(EnclosingEobPtr) {
     init();
   }
+#endif
   BitAddress& getEobAddress() { return EobAddress; }
   void setEobAddress(const BitAddress& Address) { EobAddress = Address; }
+#if 0
   bool isGood() const { return EobAddress.isGood(); }
   bool isDefined() const { return EobAddress.isDefined(); }
+#else
+  bool isGood() const { return isGoodAddress(EobAddress); }
+  bool isDefined() const { return isDefinedAddress(EobAddress); }
+#endif
   std::shared_ptr<BlockEob> getEnclosingEobPtr() const {
     return EnclosingEobPtr;
   }
@@ -153,7 +164,11 @@ class Queue : public std::enable_shared_from_this<Queue> {
 
   // Value unknown (returning maximum possible size) until frozen. When
   // frozen, returns the size of the buffer.
+#if 0
   size_t currentSize() { return EofPtr->getEobAddress().getByteAddress(); }
+#else
+  size_t currentSize() { return EofPtr->getEobAddress(); }
+#endif
 
   size_t fillSize() const { return LastPage->getMaxAddress(); }
 
@@ -207,7 +222,11 @@ class Queue : public std::enable_shared_from_this<Queue> {
   bool write(size_t& Address, uint8_t* Buffer, size_t Size = 1);
 
   size_t getEofAddress() const {
+#if 0
     return EofPtr->getEobAddress().getByteAddress();
+#else
+    return EofPtr->getEobAddress();
+#endif
   }
 
   // Freezes eob of the queue. Not valid to read/write past the eob, once set.

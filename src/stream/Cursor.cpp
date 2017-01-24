@@ -65,7 +65,11 @@ FILE* Cursor::describe(FILE* File, bool IncludeDetail, bool AddEoln) {
   if (IncludeDetail) {
     if (EobPtr->isDefined()) {
       fprintf(File, ", eob=");
+#if 0
       getEobAddress().describe(File);
+#else
+      describeAddress(File, getEofAddress());
+#endif
     }
     fputc('>', File);
   }

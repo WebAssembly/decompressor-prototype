@@ -42,7 +42,11 @@ PageCursor::PageCursor(Queue* Que)
 
 FILE* PageCursor::describe(FILE* File, bool IncludePage) {
   BitAddress Addr(CurAddress);
+#if 0
   Addr.describe(File);
+#else
+  describeAddress(File, Addr);
+#endif
   if (IncludePage) {
     if (CurPage)
       CurPage->describe(File);
