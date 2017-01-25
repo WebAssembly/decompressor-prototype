@@ -556,6 +556,55 @@ void SymbolTable::installDefinitions(Node* Root) {
   }
 }
 
+Node* SymbolTable::stripCallbacksExcept(std::vector<std::string>& KeepActions,
+                                        Node* Root) {
+  switch (Root->getType()) {
+    case OpDefine:
+    case OpEval:
+    case OpFileHeader:
+    case OpSection:
+    case OpWrite:
+    default:
+      for (int i = 0; i < Root->getNumKids(); ++i)
+        Root->setKid(i, stripCallbacksExcept(KeepActions, Root->getKid(i)));
+      return Root;
+    case OpCallback: {
+      auto * Sym = dyn_cast<SymbolNode>(Root->getKid(0));
+      if (Sym == nullptr)
+        return Root;
+      for (std::string& Str : KeepActions) {
+        if (Str == Sym->getName())
+          return Root;
+      }
+      break;
+    }
+    case OpSequence: {
+      std::vector<Node*> Kids;
+      for (int i = 0; i < Root->getNumKids(); ++i) {
+        Node* Kid = stripCallbacksExcept(KeepActions, Root->getKid(i));
+        if (!isa<VoidNode>(Kid))
+          Kids.push_back(Kid);
+      }
+      if (Kids.size() == size_t(Root->getNumKids())) {
+        // Replace kids in place.
+        for (size_t i = 0; i < Kids.size(); ++i)
+          Root->setKid(i, Kids[i]);
+        return Root;
+      }
+      if (Kids.empty())
+        break;
+      if (Kids.size() == 1)
+        return Kids[0];
+      auto *Seq = create<SequenceNode>();
+      for (auto Kid : Kids)
+        Seq->append(Kid);
+      return Seq;
+    }
+  }
+  return create<VoidNode>();
+}
+
+
 Node* NullaryNode::getKid(int) const {
   return nullptr;
 }

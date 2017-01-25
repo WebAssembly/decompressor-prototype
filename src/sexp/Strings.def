@@ -289,10 +289,6 @@ X(Inst_i64_xor, "inst.i64.xor") \
 X(Inst_if, "inst.if") \
 X(Inst_loop, "inst.loop") \
 X(Inst_nop, "inst.nop") \
-/*X(Inst_param, "param")*/ \
-/*X(Inst_params, "params")*/ \
-/*X(Inst_return, "inst.return")*/ \
-/*X(Inst_u8_const, "u8.const")*/ \
 X(Instruction, "instruction") \
 X(Instruction_begin, "instruction.begin") \
 X(Instruction_end, "instruction.end") \
