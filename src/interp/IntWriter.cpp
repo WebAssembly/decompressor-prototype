@@ -32,7 +32,7 @@ IntWriter::IntWriter(std::shared_ptr<IntStream> Output)
 
 void IntWriter::reset() {
   Output->reset();
-  IntStream::WriteCursorWithTraceContext StartPos(Output);
+  IntStream::WriteCursor StartPos(Output);
   Pos = StartPos;
 }
 

@@ -96,6 +96,7 @@ class IntStream : public std::enable_shared_from_this<IntStream> {
     FILE* describe(FILE* File,
                    bool IncludeDetail = false,
                    bool AddEoln = false);
+    utils::TraceClass::ContextPtr getTraceContext();
 
    protected:
     size_t Index;
@@ -117,24 +118,6 @@ class IntStream : public std::enable_shared_from_this<IntStream> {
     bool freezeEof();
     bool openBlock();
     bool closeBlock();
-  };
-
-  class WriteCursorWithTraceContext : public WriteCursor {
-   public:
-    WriteCursorWithTraceContext() : WriteCursor() {}
-    explicit WriteCursorWithTraceContext(StreamPtr Stream)
-        : WriteCursor(Stream) {}
-    explicit WriteCursorWithTraceContext(const WriteCursor& C)
-        : WriteCursor(C) {}
-    WriteCursorWithTraceContext& operator=(const WriteCursor& C) {
-      WriteCursor::operator=(C);
-      return *this;
-    }
-
-    utils::TraceClass::ContextPtr getTraceContext();
-
-   private:
-    utils::TraceClass::ContextPtr TraceContext;
   };
 
   class ReadCursor : public Cursor {
@@ -161,23 +144,6 @@ class IntStream : public std::enable_shared_from_this<IntStream> {
    private:
     IntStream::BlockIterator NextBlock;
     IntStream::BlockIterator EndBlocks;
-  };
-
-  class ReadCursorWithTraceContext : public ReadCursor {
-   public:
-    ReadCursorWithTraceContext() : ReadCursor() {}
-    explicit ReadCursorWithTraceContext(StreamPtr Stream)
-        : ReadCursor(Stream) {}
-    explicit ReadCursorWithTraceContext(const ReadCursor& C) : ReadCursor(C) {}
-    ReadCursorWithTraceContext& operator=(const ReadCursor& C) {
-      ReadCursor::operator=(C);
-      return *this;
-    }
-
-    utils::TraceClass::ContextPtr getTraceContext();
-
-   private:
-    utils::TraceClass::ContextPtr TraceContext;
   };
 
   // WARNING: Don't call constructor directly. Call std::make_shared().

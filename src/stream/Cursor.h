@@ -97,6 +97,8 @@ class Cursor : public PageCursor {
   // For debugging.
   FILE* describe(FILE* File, bool IncludeDetail = false, bool AddEoln = false);
 
+  utils::TraceClass::ContextPtr getTraceContext();
+
  protected:
   StreamType Type;
   // The byte queue the cursor points to.

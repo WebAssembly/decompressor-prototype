@@ -32,12 +32,6 @@ void WriteCursor::writeFillWriteByte(uint8_t Byte) {
   writeOneByte(Byte);
 }
 
-TraceClass::ContextPtr WriteCursorWithTraceContext::getTraceContext() {
-  if (!TraceContext)
-    TraceContext = std::make_shared<Cursor::TraceContext>(*this);
-  return TraceContext;
-}
-
 }  // end of namespace decode
 
 }  // end of namespace wasm

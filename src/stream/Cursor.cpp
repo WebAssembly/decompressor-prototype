@@ -18,6 +18,8 @@
 
 namespace wasm {
 
+using namespace utils;
+
 namespace decode {
 
 Cursor::TraceContext::~TraceContext() {
@@ -25,6 +27,10 @@ Cursor::TraceContext::~TraceContext() {
 
 void Cursor::TraceContext::describe(FILE* File) {
   Pos.describe(File);
+}
+
+TraceClass::ContextPtr Cursor::getTraceContext() {
+  return std::make_shared<Cursor::TraceContext>(*this);
 }
 
 void Cursor::close() {

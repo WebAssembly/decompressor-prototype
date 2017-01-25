@@ -58,6 +58,11 @@ IntStream::Cursor& IntStream::Cursor::operator=(const IntStream::Cursor& C) {
   return *this;
 }
 
+TraceClass::ContextPtr
+IntStream::Cursor::getTraceContext() {
+  return std::make_shared<IntStream::Cursor::TraceContext>(*this);
+}
+
 FILE* IntStream::Cursor::describe(FILE* File,
                                   bool IncludeDetail,
                                   bool AddEoln) {
@@ -140,13 +145,6 @@ bool IntStream::WriteCursor::closeBlock() {
   return true;
 }
 
-TraceClass::ContextPtr
-IntStream::WriteCursorWithTraceContext::getTraceContext() {
-  if (!TraceContext)
-    TraceContext = std::make_shared<IntStream::Cursor::TraceContext>(*this);
-  return TraceContext;
-}
-
 IntType IntStream::ReadCursor::read() {
   // TODO(karlschimpf): Add capability to communicate failure to caller.
   assert(!EnclosingBlocks.empty());
@@ -174,13 +172,6 @@ bool IntStream::ReadCursor::closeBlock() {
   if (!Blk)
     return false;
   return Blk->getEndIndex() == Index;
-}
-
-TraceClass::ContextPtr
-IntStream::ReadCursorWithTraceContext::getTraceContext() {
-  if (!TraceContext)
-    TraceContext = std::make_shared<IntStream::Cursor::TraceContext>(*this);
-  return TraceContext;
 }
 
 void IntStream::reset() {
