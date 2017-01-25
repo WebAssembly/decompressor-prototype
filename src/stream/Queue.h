@@ -53,17 +53,18 @@ static constexpr size_t kErrorPageAddress = kMaxEofAddress + 1;
 static constexpr size_t kErrorPageIndex = Page::index(kErrorPageAddress);
 static constexpr size_t kUndefinedAddress = std::numeric_limits<size_t>::max();
 
-typedef size_t BitAddress;
-inline bool isGoodAddress(BitAddress Addr) {
+typedef size_t AddressType;
+
+inline bool isGoodAddress(AddressType Addr) {
   return Addr <= kMaxEofAddress;
 }
-inline bool isDefinedAddress(BitAddress Addr) {
+inline bool isDefinedAddress(AddressType Addr) {
   return Addr != kUndefinedAddress;
 }
-inline void resetAddress(BitAddress& Addr) {
+inline void resetAddress(AddressType& Addr) {
   Addr = 0;
 }
-void describeAddress(FILE* File, BitAddress Addr);
+void describeAddress(FILE* File, AddressType Addr);
 
 // Holds the end of a block within a queue. The outermost block is
 // always defined as enclosing the entire queue. Note: EobBitAddress
@@ -74,15 +75,15 @@ class BlockEob : public std::enable_shared_from_this<BlockEob> {
   BlockEob& operator=(const BlockEob&) = delete;
 
  public:
-  explicit BlockEob(BitAddress Address = kMaxEofAddress) : EobAddress(Address) {
+  explicit BlockEob(AddressType Address = kMaxEofAddress) : EobAddress(Address) {
     init();
   }
-  BlockEob(BitAddress ByteAddr, const std::shared_ptr<BlockEob> EnclosingEobPtr)
+  BlockEob(AddressType ByteAddr, const std::shared_ptr<BlockEob> EnclosingEobPtr)
       : EobAddress(ByteAddr), EnclosingEobPtr(EnclosingEobPtr) {
     init();
   }
-  BitAddress& getEobAddress() { return EobAddress; }
-  void setEobAddress(const BitAddress& Address) { EobAddress = Address; }
+  AddressType& getEobAddress() { return EobAddress; }
+  void setEobAddress(const AddressType& Address) { EobAddress = Address; }
   bool isGood() const { return isGoodAddress(EobAddress); }
   bool isDefined() const { return isDefinedAddress(EobAddress); }
   std::shared_ptr<BlockEob> getEnclosingEobPtr() const {
@@ -95,7 +96,7 @@ class BlockEob : public std::enable_shared_from_this<BlockEob> {
   FILE* describe(FILE* File) const;
 
  private:
-  BitAddress EobAddress;
+  AddressType EobAddress;
   std::shared_ptr<BlockEob> EnclosingEobPtr;
   void init() { assert(isGood()); }
 };

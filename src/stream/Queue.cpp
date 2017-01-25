@@ -24,7 +24,7 @@ namespace wasm {
 
 namespace decode {
 
-void describeAddress(FILE* File, BitAddress Addr) {
+void describeAddress(FILE* File, AddressType Addr) {
   fprintf(File, "@%" PRIxMAX, uintmax_t(Addr));
 }
 

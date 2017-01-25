@@ -80,7 +80,7 @@ class Cursor : public PageCursor {
 
   size_t getEofAddress() const { return Que->getEofAddress(); }
 
-  BitAddress& getEobAddress() const { return EobPtr->getEobAddress(); }
+  AddressType& getEobAddress() const { return EobPtr->getEobAddress(); }
 
   void freezeEof() { Que->freezeEof(CurAddress); }
 
