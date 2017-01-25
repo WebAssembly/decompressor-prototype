@@ -75,10 +75,12 @@ class BlockEob : public std::enable_shared_from_this<BlockEob> {
   BlockEob& operator=(const BlockEob&) = delete;
 
  public:
-  explicit BlockEob(AddressType Address = kMaxEofAddress) : EobAddress(Address) {
+  explicit BlockEob(AddressType Address = kMaxEofAddress)
+      : EobAddress(Address) {
     init();
   }
-  BlockEob(AddressType ByteAddr, const std::shared_ptr<BlockEob> EnclosingEobPtr)
+  BlockEob(AddressType ByteAddr,
+           const std::shared_ptr<BlockEob> EnclosingEobPtr)
       : EobAddress(ByteAddr), EnclosingEobPtr(EnclosingEobPtr) {
     init();
   }
