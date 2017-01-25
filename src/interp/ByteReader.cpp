@@ -38,7 +38,7 @@ ByteReader::ByteReader(std::shared_ptr<decode::Queue> StrmInput)
 ByteReader::~ByteReader() {
 }
 
-void ByteReader::setReadPos(const decode::ReadCursor& StartPos) {
+void ByteReader::setReadPos(const decode::BitReadCursor& StartPos) {
   ReadPos = StartPos;
 }
 
@@ -68,7 +68,7 @@ bool ByteReader::stillMoreInputToProcessNow() {
   return ReadPos.getCurAddress() <= FillPos;
 }
 
-ReadCursor& ByteReader::getPos() {
+BitReadCursor& ByteReader::getPos() {
   return ReadPos;
 }
 
@@ -81,8 +81,7 @@ bool ByteReader::atInputEof() {
 }
 
 void ByteReader::resetPeekPosStack() {
-  PeekPos = ReadCursor();
-  PeekPosStack.clear();
+  PeekPos = BitReadCursor();
 }
 
 void ByteReader::pushPeekPos() {

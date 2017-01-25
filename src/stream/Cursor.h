@@ -47,24 +47,9 @@ class Cursor : public PageCursor {
   };
   ~Cursor() {}
 
-  void swap(Cursor& C) {
-    std::swap(Type, C.Type);
-    std::swap(Que, C.Que);
-    std::swap(static_cast<PageCursor&>(*this), static_cast<PageCursor&>(C));
-    std::swap(EobPtr, C.EobPtr);
-    std::swap(CurByte, C.CurByte);
-    std::swap(CurByte, C.CurByte);
-    std::swap(GuaranteedBeforeEob, C.GuaranteedBeforeEob);
-  }
+  void swap(Cursor& C);
 
-  void assign(const Cursor& C) {
-    Type = C.Type;
-    Que = C.Que;
-    static_cast<PageCursor&>(*this) = static_cast<const PageCursor&>(C);
-    EobPtr = C.EobPtr;
-    CurByte = C.CurByte;
-    GuaranteedBeforeEob = C.GuaranteedBeforeEob;
-  }
+  void assign(const Cursor& C);
 
   StreamType getType() const { return Type; }
 
@@ -96,8 +81,10 @@ class Cursor : public PageCursor {
 
   // For debugging.
   FILE* describe(FILE* File, bool IncludeDetail = false, bool AddEoln = false);
+  // Adds any extentions to the page address, as defined in a derived class.
+  virtual void describeDerivedExtensions(FILE* File);
 
-  utils::TraceClass::ContextPtr getTraceContext();
+  virtual utils::TraceClass::ContextPtr getTraceContext();
 
  protected:
   StreamType Type;

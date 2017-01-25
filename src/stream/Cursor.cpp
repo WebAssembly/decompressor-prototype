@@ -25,6 +25,25 @@ namespace decode {
 Cursor::TraceContext::~TraceContext() {
 }
 
+void Cursor::swap(Cursor& C) {
+  std::swap(Type, C.Type);
+  std::swap(Que, C.Que);
+  std::swap(static_cast<PageCursor&>(*this), static_cast<PageCursor&>(C));
+  std::swap(EobPtr, C.EobPtr);
+  std::swap(CurByte, C.CurByte);
+  std::swap(CurByte, C.CurByte);
+  std::swap(GuaranteedBeforeEob, C.GuaranteedBeforeEob);
+}
+
+void Cursor::assign(const Cursor& C) {
+  Type = C.Type;
+  Que = C.Que;
+  static_cast<PageCursor&>(*this) = static_cast<const PageCursor&>(C);
+  EobPtr = C.EobPtr;
+  CurByte = C.CurByte;
+  GuaranteedBeforeEob = C.GuaranteedBeforeEob;
+}
+
 void Cursor::TraceContext::describe(FILE* File) {
   Pos.describe(File);
 }
@@ -68,6 +87,7 @@ FILE* Cursor::describe(FILE* File, bool IncludeDetail, bool AddEoln) {
   if (IncludeDetail)
     fputs("Cursor<", File);
   PageCursor::describe(File, IncludeDetail);
+  describeDerivedExtensions(File);
   if (IncludeDetail) {
     if (EobPtr->isDefined()) {
       fprintf(File, ", eob=");
@@ -78,6 +98,9 @@ FILE* Cursor::describe(FILE* File, bool IncludeDetail, bool AddEoln) {
   if (AddEoln)
     fputc('\n', File);
   return File;
+}
+
+void Cursor::describeDerivedExtensions(FILE* File) {
 }
 
 }  // end of namespace decode

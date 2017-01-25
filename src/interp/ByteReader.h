@@ -21,7 +21,7 @@
 
 #include "interp/Reader.h"
 #include "interp/ReadStream.h"
-#include "stream/ReadCursor.h"
+#include "stream/BitReadCursor.h"
 
 namespace wasm {
 
@@ -35,8 +35,8 @@ class ByteReader : public Reader {
  public:
   ByteReader(std::shared_ptr<decode::Queue> Input);
   ~ByteReader() OVERRIDE;
-  void setReadPos(const decode::ReadCursor& ReadPos);
-  decode::ReadCursor& getPos();
+  void setReadPos(const decode::BitReadCursor& ReadPos);
+  decode::BitReadCursor& getPos();
 
   void describePeekPosStack(FILE* Out) OVERRIDE;
   bool canProcessMoreInputNow() OVERRIDE;
@@ -62,15 +62,15 @@ class ByteReader : public Reader {
   utils::TraceClass::ContextPtr getTraceContext() OVERRIDE;
 
  private:
-  decode::ReadCursor ReadPos;
+  decode::BitReadCursor ReadPos;
   std::shared_ptr<ReadStream> Input;
   // The input position needed to fill to process now.
   size_t FillPos;
   // The input cursor position if back filling.
   decode::ReadCursor FillCursor;
   // The stack of read cursors (used by peek)
-  decode::ReadCursor PeekPos;
-  utils::ValueStack<decode::ReadCursor> PeekPosStack;
+  decode::BitReadCursor PeekPos;
+  utils::ValueStack<decode::BitReadCursor> PeekPosStack;
 };
 
 }  // end of namespace interp
