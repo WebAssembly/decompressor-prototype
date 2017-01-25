@@ -23,10 +23,11 @@ namespace wasm {
 
 namespace decode {
 
-BitWriteCursor::BitWriteCursor() { initFields(); }
+BitWriteCursor::BitWriteCursor() {
+  initFields();
+}
 
-BitWriteCursor::BitWriteCursor(std::shared_ptr<Queue> Que)
-    : WriteCursor(Que) {
+BitWriteCursor::BitWriteCursor(std::shared_ptr<Queue> Que) : WriteCursor(Que) {
   initFields();
 }
 
@@ -43,7 +44,8 @@ BitWriteCursor::BitWriteCursor(const BitWriteCursor& C, size_t StartAddress)
     : WriteCursor(C, StartAddress), CurWord(C.CurWord), NumBits(C.NumBits) {
 }
 
-BitWriteCursor::~BitWriteCursor() {}
+BitWriteCursor::~BitWriteCursor() {
+}
 
 void BitWriteCursor::assign(const BitWriteCursor& C) {
   WriteCursor::assign(C);

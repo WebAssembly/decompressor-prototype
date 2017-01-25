@@ -25,11 +25,7 @@
 #include "interp/IntStream.h"
 #include "sexp/Ast.h"
 #include "stream/Queue.h"
-#if 0
-#include "stream/WriteCursor.h"
-#else
 #include "stream/BitWriteCursor.h"
-#endif
 #include "utils/HuffmanEncoding.h"
 
 namespace wasm {
@@ -132,17 +128,10 @@ class IntCompressor FINAL {
   std::shared_ptr<interp::IntStream> IntOutput;
   bool ErrorsFound;
   void readInput();
-#if 0
-  const decode::WriteCursor writeCodeOutput(
-      std::shared_ptr<filt::SymbolTable> Symtab);
-  void writeDataOutput(const decode::WriteCursor& StartPos,
-                       std::shared_ptr<filt::SymbolTable> Symtab);
-#else
   const decode::BitWriteCursor writeCodeOutput(
       std::shared_ptr<filt::SymbolTable> Symtab);
   void writeDataOutput(const decode::BitWriteCursor& StartPos,
                        std::shared_ptr<filt::SymbolTable> Symtab);
-#endif
   bool compressUpToSize(size_t Size);
   void removeSmallUsageCounts();
   void assignInitialAbbreviations(CountNode::Int2PtrMap& Assignments);
