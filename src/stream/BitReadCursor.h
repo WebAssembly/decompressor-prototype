@@ -34,7 +34,7 @@ class BitReadCursor : public ReadCursor {
   BitReadCursor(StreamType Type, std::shared_ptr<Queue> Que);
   explicit BitReadCursor(const BitReadCursor& C);
   BitReadCursor(const BitReadCursor& C, size_t StartAddress);
-  ~BitReadCursor() OVERRIDE;
+  ~BitReadCursor();
 
   void assign(const BitReadCursor& C);
 
