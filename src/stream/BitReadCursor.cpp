@@ -56,8 +56,8 @@ void BitReadCursor::assign(const BitReadCursor& C) {
 
 void BitReadCursor::swap(BitReadCursor& C) {
   ReadCursor::swap(C);
-  CurWord = C.CurWord;
-  NumBits = C.NumBits;
+  std::swap(CurWord, C.CurWord);
+  std::swap(NumBits, C.NumBits);
 }
 
 void BitReadCursor::alignToByte() {

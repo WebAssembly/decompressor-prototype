@@ -21,7 +21,7 @@
 
 #include "interp/Writer.h"
 #include "interp/WriteStream.h"
-#include "stream/WriteCursor.h"
+#include "stream/BitWriteCursor.h"
 #include "utils/ValueStack.h"
 
 namespace wasm {
@@ -36,12 +36,11 @@ class ByteWriter : public Writer {
  public:
   ByteWriter(std::shared_ptr<decode::Queue> Output);
   ~ByteWriter() OVERRIDE;
-  decode::WriteCursor& getPos();
+  decode::BitWriteCursor& getPos();
   utils::TraceClass::ContextPtr getTraceContext() OVERRIDE;
 
-  void setPos(const decode::WriteCursor& NewPos) { Pos = NewPos; }
-
-  const decode::WriteCursor& getWritePos() const { return Pos; }
+  void setPos(const decode::BitWriteCursor& NewPos) { Pos = NewPos; }
+  const decode::BitWriteCursor& getWritePos() const { return Pos; }
 
   void reset() OVERRIDE;
   decode::StreamType getStreamType() const OVERRIDE;
@@ -58,11 +57,11 @@ class ByteWriter : public Writer {
   void describeState(FILE* File) OVERRIDE;
 
  private:
-  decode::WriteCursor Pos;
+  decode::BitWriteCursor Pos;
   std::shared_ptr<WriteStream> Stream;
   // The stack of block patch locations.
-  decode::WriteCursor BlockStart;
-  utils::ValueStack<decode::WriteCursor> BlockStartStack;
+  decode::BitWriteCursor BlockStart;
+  utils::ValueStack<decode::BitWriteCursor> BlockStartStack;
   void describeBlockStartStack(FILE* File);
   const char* getDefaultTraceName() const OVERRIDE;
 };

@@ -124,7 +124,7 @@ void IntCompressor::readInput() {
   return;
 }
 
-const WriteCursor IntCompressor::writeCodeOutput(
+const BitWriteCursor IntCompressor::writeCodeOutput(
     std::shared_ptr<SymbolTable> Symtab) {
   CasmWriter Writer;
   return Writer.setTraceWriter(MyFlags.TraceWritingCodeOutput)
@@ -134,7 +134,7 @@ const WriteCursor IntCompressor::writeCodeOutput(
       .writeBinary(Symtab, Output);
 }
 
-void IntCompressor::writeDataOutput(const WriteCursor& StartPos,
+void IntCompressor::writeDataOutput(const BitWriteCursor& StartPos,
                                     std::shared_ptr<SymbolTable> Symtab) {
   auto Writer = std::make_shared<ByteWriter>(Output);
   Writer->setPos(StartPos);
@@ -226,7 +226,7 @@ void IntCompressor::compress() {
   if (MyFlags.TraceCompressedIntOutput)
     IntOutput->describe(stderr, "Output int stream");
   TRACE_MESSAGE("Appending compression algorithm to output");
-  const WriteCursor Pos =
+  const BitWriteCursor Pos =
       writeCodeOutput(generateCodeForReading(AbbrevAssignments));
   if (errorsFound()) {
     fprintf(stderr, "Unable to compress, output malformed\n");
