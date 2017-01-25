@@ -197,6 +197,14 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
   T* create(Node* Nd1, Node* Nd2, Node* Nd3);
   BinaryAcceptNode* createBinaryAccept(decode::IntType Value, unsigned NumBits);
 
+  // Strips all callback actions from the algorithm, except for the names
+  // specified. Returns the updated tree.
+  Node* stripCallbacksExcept(std::vector<std::string>& KeepActions, Node* Root);
+
+  void stripCallbacksExcept(std::vector<std::string>& KeepActions) {
+    install(stripCallbacksExcept(KeepActions, Root));
+  }
+
   void setTraceProgress(bool NewValue);
   virtual void setTrace(std::shared_ptr<utils::TraceClass> Trace);
   std::shared_ptr<utils::TraceClass> getTracePtr();
