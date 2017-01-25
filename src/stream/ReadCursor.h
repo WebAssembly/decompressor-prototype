@@ -56,7 +56,7 @@ class ReadCursor : public Cursor {
     return Result;
   }
 
-  void pushEobAddress(BitAddress NewValue) {
+  void pushEobAddress(AddressType NewValue) {
     EobPtr = std::make_shared<BlockEob>(NewValue, EobPtr);
     updateGuaranteedBeforeEob();
   }
