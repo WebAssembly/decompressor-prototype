@@ -53,6 +53,7 @@ class Cursor : public PageCursor {
     std::swap(static_cast<PageCursor&>(*this), static_cast<PageCursor&>(C));
     std::swap(EobPtr, C.EobPtr);
     std::swap(CurByte, C.CurByte);
+    std::swap(CurByte, C.CurByte);
     std::swap(GuaranteedBeforeEob, C.GuaranteedBeforeEob);
   }
 
@@ -71,8 +72,6 @@ class Cursor : public PageCursor {
 
   bool isBroken() const { return Que->isBroken(*this); }
 
-  const uint8_t& getWorkingByte() const { return CurByte; }
-
   std::shared_ptr<Queue> getQueue() { return Que; }
 
   bool isEofFrozen() const { return Que->isEofFrozen(); }
@@ -82,10 +81,6 @@ class Cursor : public PageCursor {
   size_t getEofAddress() const { return Que->getEofAddress(); }
 
   BitAddress& getEobAddress() const { return EobPtr->getEobAddress(); }
-
-  size_t getByteEobAddress() const {
-    return EobPtr->getEobAddress().getByteAddress();
-  }
 
   void freezeEof() { Que->freezeEof(CurAddress); }
 
@@ -97,7 +92,7 @@ class Cursor : public PageCursor {
   // The following methods assume that the cursor is accessing a byte stream.
   // ------------------------------------------------------------------------
 
-  size_t getCurAddress() const { return CurAddress; }
+  size_t getAddress() const { return CurAddress; }
 
   // For debugging.
   FILE* describe(FILE* File, bool IncludeDetail = false, bool AddEoln = false);
@@ -146,8 +141,7 @@ class Cursor : public PageCursor {
 
   void updateGuaranteedBeforeEob() {
     GuaranteedBeforeEob =
-        CurPage ? std::min(CurPage->getMaxAddress(),
-                           EobPtr->getEobAddress().getByteAddress())
+        CurPage ? std::min(CurPage->getMaxAddress(), EobPtr->getEobAddress())
                 : 0;
   }
 

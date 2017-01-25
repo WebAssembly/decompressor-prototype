@@ -73,7 +73,7 @@ ReadCursor& ByteReader::getPos() {
 }
 
 bool ByteReader::atInputEob() {
-  return ReadPos.atByteEob();
+  return ReadPos.atEob();
 }
 
 bool ByteReader::atInputEof() {

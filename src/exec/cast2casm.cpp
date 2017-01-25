@@ -75,6 +75,8 @@ class CodeGenerator {
   bool ErrorsFound;
   size_t NextIndex;
 
+  void puts(const char* Str) { Output->puts(Str); }
+  void putc(char Ch) { Output->putc(Ch); }
   void generateArrayImplFile();
   void generateFunctionImplFile();
   void generateHeader();
@@ -102,33 +104,33 @@ class CodeGenerator {
   void generateReturnCreate(charstring NodeType);
   size_t generateBadLocal();
   void generateArrayName() {
-    Output->puts(FunctionName);
-    Output->puts("Array");
+    puts(FunctionName);
+    puts("Array");
   }
 };
 
 void CodeGenerator::generateInt(IntType Value) {
   char Buffer[40];
   sprintf(Buffer, "%" PRIuMAX "", uintmax_t(Value));
-  Output->puts(Buffer);
+  puts(Buffer);
 }
 
 void CodeGenerator::generateFormat(ValueFormat Format) {
   switch (Format) {
     case ValueFormat::Decimal:
-      Output->puts("ValueFormat::Decimal");
+      puts("ValueFormat::Decimal");
       break;
     case ValueFormat::SignedDecimal:
-      Output->puts("ValueFormat::SignedDecimal");
+      puts("ValueFormat::SignedDecimal");
       break;
     case ValueFormat::Hexidecimal:
-      Output->puts("ValueFormat::Hexidecimal");
+      puts("ValueFormat::Hexidecimal");
       break;
   }
 }
 
 void CodeGenerator::generateHeader() {
-  Output->puts(
+  puts(
       "// -*- C++ -*- \n"
       "\n"
       "// *** AUTOMATICALLY GENERATED FILE (DO NOT EDIT)! ***\n"
@@ -149,8 +151,8 @@ void CodeGenerator::generateHeader() {
       "// limitations under the License.\n"
       "\n"
       "// Generated from: \"");
-  Output->puts(Filename);
-  Output->puts(
+  puts(Filename);
+  puts(
       "\"\n"
       "\n"
       "#include \"sexp/Ast.h\"\n"
@@ -161,9 +163,9 @@ void CodeGenerator::generateHeader() {
 
 void CodeGenerator::generateEnterNamespaces() {
   for (charstring Name : Namespaces) {
-    Output->puts("namespace ");
-    Output->puts(Name);
-    Output->puts(
+    puts("namespace ");
+    puts(Name);
+    puts(
         " {\n"
         "\n");
   }
@@ -173,87 +175,87 @@ void CodeGenerator::generateExitNamespaces() {
   for (std::vector<charstring>::reverse_iterator Iter = Namespaces.rbegin(),
                                                  IterEnd = Namespaces.rend();
        Iter != IterEnd; ++Iter) {
-    Output->puts("}  // end of namespace ");
-    Output->puts(*Iter);
-    Output->puts(
+    puts("}  // end of namespace ");
+    puts(*Iter);
+    puts(
         "\n"
         "\n");
   }
 }
 
 void CodeGenerator::generateAlgorithmHeader() {
-  Output->puts("std::shared_ptr<filt::SymbolTable> ");
-  Output->puts(FunctionName);
-  Output->puts("()");
+  puts("std::shared_ptr<filt::SymbolTable> ");
+  puts(FunctionName);
+  puts("()");
 }
 
 size_t CodeGenerator::generateBadLocal() {
   size_t Index = NextIndex++;
   ErrorsFound = true;
   generateLocalVar("Node", Index);
-  Output->puts("nullptr;\n");
+  puts("nullptr;\n");
   return Index;
 }
 
 void CodeGenerator::generateLocal(size_t Index) {
-  Output->puts(LocalName);
+  puts(LocalName);
   generateInt(Index);
 }
 
 void CodeGenerator::generateLocalVar(std::string NodeType, size_t Index) {
-  Output->puts("  ");
-  Output->puts(NodeType.c_str());
-  Output->puts("* ");
+  puts("  ");
+  puts(NodeType.c_str());
+  puts("* ");
   generateLocal(Index);
-  Output->puts(" = ");
+  puts(" = ");
 }
 
 void CodeGenerator::generateFunctionName(size_t Index) {
-  Output->puts(FuncName);
+  puts(FuncName);
   generateInt(Index);
 }
 
 void CodeGenerator::generateFunctionCall(size_t Index) {
   generateFunctionName(Index);
-  Output->puts("(Symtab)");
+  puts("(Symtab)");
 }
 
 void CodeGenerator::generateFunctionHeader(std::string NodeType, size_t Index) {
-  Output->puts(NodeType.c_str());
-  Output->puts("* ");
+  puts(NodeType.c_str());
+  puts("* ");
   generateFunctionName(Index);
-  Output->puts("(SymbolTable* Symtab) {\n");
+  puts("(SymbolTable* Symtab) {\n");
 }
 
 void CodeGenerator::generateFunctionFooter() {
-  Output->puts(
+  puts(
       "}\n"
       "\n");
 }
 
 void CodeGenerator::generateCloseFunctionFooter() {
-  Output->puts(");\n");
+  puts(");\n");
   generateFunctionFooter();
 }
 
 void CodeGenerator::generateCreate(charstring NodeType) {
-  Output->puts("Symtab->create<");
-  Output->puts(NodeType);
-  Output->puts(">(");
+  puts("Symtab->create<");
+  puts(NodeType);
+  puts(">(");
 }
 
 void CodeGenerator::generateReturnCreate(charstring NodeType) {
-  Output->puts("  return ");
+  puts("  return ");
   generateCreate(NodeType);
 }
 
 size_t CodeGenerator::generateSymbol(const SymbolNode* Sym) {
   size_t Index = NextIndex++;
   generateFunctionHeader("SymbolNode", Index);
-  Output->puts("  return Symtab->getSymbolDefinition(\"");
+  puts("  return Symtab->getSymbolDefinition(\"");
   for (auto& Ch : Sym->getName())
-    Output->putc(Ch);
-  Output->putc('"');
+    putc(Ch);
+  putc('"');
   generateCloseFunctionFooter();
   return Index;
 }
@@ -264,11 +266,11 @@ size_t CodeGenerator::generateIntegerNode(charstring NodeName,
   std::string NodeType(NodeName);
   NodeType.append("Node");
   generateFunctionHeader(NodeType, Index);
-  Output->puts("  return Symtab->get");
-  Output->puts(NodeName);
-  Output->puts("Definition(");
+  puts("  return Symtab->get");
+  puts(NodeName);
+  puts("Definition(");
   generateInt(Nd->getValue());
-  Output->puts(", ");
+  puts(", ");
   generateFormat(Nd->getFormat());
   generateCloseFunctionFooter();
   return Index;
@@ -301,7 +303,7 @@ size_t CodeGenerator::generateBinaryNode(charstring NodeType, const Node* Nd) {
   generateFunctionHeader(NodeType, Index);
   generateReturnCreate(NodeType);
   generateFunctionCall(Kid1);
-  Output->puts(", ");
+  puts(", ");
   generateFunctionCall(Kid2);
   generateCloseFunctionFooter();
   return Index;
@@ -316,9 +318,9 @@ size_t CodeGenerator::generateTernaryNode(charstring NodeType, const Node* Nd) {
   generateFunctionHeader(NodeType, Index);
   generateReturnCreate(NodeType);
   generateFunctionCall(Kid1);
-  Output->puts(", ");
+  puts(", ");
   generateFunctionCall(Kid2);
-  Output->puts(", ");
+  puts(", ");
   generateFunctionCall(Kid3);
   generateCloseFunctionFooter();
   return Index;
@@ -332,17 +334,17 @@ size_t CodeGenerator::generateNaryNode(charstring NodeType, const Node* Nd) {
   generateFunctionHeader(NodeType, Index);
   generateLocalVar(NodeType, Index);
   generateCreate(NodeType);
-  Output->puts(");\n");
+  puts(");\n");
   for (size_t KidIndex : Kids) {
-    Output->puts("  ");
+    puts("  ");
     generateLocal(Index);
-    Output->puts("->append(");
+    puts("->append(");
     generateFunctionCall(KidIndex);
-    Output->puts(");\n");
+    puts(");\n");
   }
-  Output->puts("  return ");
+  puts("  return ");
   generateLocal(Index);
-  Output->puts(";\n");
+  puts(";\n");
   generateFunctionFooter();
   return Index;
 }
@@ -466,40 +468,40 @@ void CodeGenerator::generateDeclFile() {
   generateHeader();
   generateEnterNamespaces();
   generateAlgorithmHeader();
-  Output->puts(";\n\n");
+  puts(";\n\n");
   generateExitNamespaces();
 }
 
 void CodeGenerator::generateArrayImplFile() {
   char Buffer[256];
   constexpr size_t BytesPerLine = 15;
-  Output->puts("static const uint8_t ");
+  puts("static const uint8_t ");
   generateArrayName();
-  Output->puts("[] = {\n");
+  puts("[] = {\n");
   while (!ReadPos->atEof()) {
     uint8_t Byte = ReadPos->readByte();
     size_t Address = ReadPos->getCurAddress();
     if (Address > 0 && Address % BytesPerLine == 0)
-      Output->putc('\n');
+      putc('\n');
     sprintf(Buffer, " %u", Byte);
-    Output->puts(Buffer);
+    puts(Buffer);
     if (!ReadPos->atEof())
-      Output->putc(',');
+      putc(',');
   }
-  Output->puts(
+  puts(
       "};\n"
       "\n"
       "}  // end of anonymous namespace\n"
       "\n");
   generateAlgorithmHeader();
-  Output->puts(
+  puts(
       " {\n"
       "  auto ArrayInput = std::make_shared<ArrayReader>(\n"
       "    ");
   generateArrayName();
-  Output->puts(", size(");
+  puts(", size(");
   generateArrayName();
-  Output->puts(
+  puts(
       "));\n"
       "  auto Input = std::make_shared<ReadBackedQueue>(ArrayInput);\n"
       "  CasmReader Reader;\n"
@@ -511,17 +513,17 @@ void CodeGenerator::generateArrayImplFile() {
 
 void CodeGenerator::generateFunctionImplFile() {
   size_t Index = generateNode(Symtab->getInstalledRoot());
-  Output->puts(
+  puts(
       "}  // end of anonymous namespace\n"
       "\n");
   generateAlgorithmHeader();
-  Output->puts(
+  puts(
       " {\n"
       "  auto Symtable = std::make_shared<SymbolTable>();\n"
       "  SymbolTable* Symtab = Symtable.get();\n"
       "  Symtab->install(");
   generateFunctionCall(Index);
-  Output->puts(
+  puts(
       ");\n"
       "  return Symtable;\n");
   generateFunctionFooter();
@@ -530,7 +532,7 @@ void CodeGenerator::generateFunctionImplFile() {
 void CodeGenerator::generateImplFile(bool UseArrayImpl) {
   generateHeader();
   if (UseArrayImpl)
-    Output->puts(
+    puts(
         "#include \"sexp/CasmReader.h\"\n"
         "#include \"stream/ArrayReader.h\"\n"
         "#include \"stream/ReadBackedQueue.h\"\n"
@@ -538,7 +540,7 @@ void CodeGenerator::generateImplFile(bool UseArrayImpl) {
         "#include <cassert>\n"
         "\n");
   generateEnterNamespaces();
-  Output->puts(
+  puts(
       "using namespace wasm::filt;\n"
       "\n"
       "namespace {\n"

@@ -24,24 +24,22 @@ namespace wasm {
 
 namespace decode {
 
-FILE* BitAddress::describe(FILE* File) const {
-  fprintf(File, "@%" PRIxMAX, uintmax_t(ByteAddr));
-  if (BitAddr != 0)
-    fprintf(File, ":%u", BitAddr);
-  return File;
+void describeAddress(FILE* File, BitAddress Addr) {
+  fprintf(File, "@%" PRIxMAX, uintmax_t(Addr));
 }
 
 void BlockEob::fail() {
   BlockEob* Next = this;
   while (Next) {
-    Next->EobAddress.reset();
+    resetAddress(Next->EobAddress);
     Next = Next->EnclosingEobPtr.get();
   }
 }
 
 FILE* BlockEob::describe(FILE* File) const {
   fprintf(File, "eob=");
-  return EobAddress.describe(File);
+  describeAddress(File, EobAddress);
+  return File;
 }
 
 Queue::Queue()
@@ -212,7 +210,7 @@ size_t Queue::writeToPage(size_t& Address,
 
 void Queue::freezeEof(size_t& Address) {
   assert(Address <= kMaxEofAddress && "WASM stream too big to process");
-  if (EofFrozen && Address != EofPtr->getEobAddress().getByteAddress()) {
+  if (EofFrozen && Address != EofPtr->getEobAddress()) {
     fail();
     Address = 0;
   }
