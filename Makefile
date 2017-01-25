@@ -165,6 +165,7 @@ STRM_OBJDIR_BOOT = $(OBJDIR_BOOT)/stream
 STRM_SRCS = \
 	ArrayReader.cpp \
 	BitReadCursor.cpp \
+	BitWriteCursor.cpp \
 	FileReader.cpp \
 	FileWriter.cpp \
 	Cursor.cpp \

@@ -14,39 +14,45 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Defines a pointer to a byte stream (for reading) that can read a bit
-// at a time.
+// Defines a pointer to a byte stream (for reading) that can written a bit at a
+// time.
 
-#ifndef DECOMPRESSOR_SRC_STREAM_BITREADCURSOR_H
-#define DECOMPRESSOR_SRC_STREAM_BITREADCURSOR_H
+#ifndef DECOMPRESSOR_SRC_STREAM_BITWRITECURSOR_H
+#define DECOMPRESSOR_SRC_STREAM_BITWRITECURSOR_H
 
-#include "stream/ReadCursor.h"
+#include "stream/WriteCursor.h"
 
 namespace wasm {
 
 namespace decode {
 
-class BitReadCursor : public ReadCursor {
+class BitWriteCursor : public WriteCursor {
  public:
   typedef uint32_t WordType;
-  BitReadCursor();
-  BitReadCursor(std::shared_ptr<Queue> Que);
-  BitReadCursor(StreamType Type, std::shared_ptr<Queue> Que);
-  explicit BitReadCursor(const BitReadCursor& C);
-  BitReadCursor(const BitReadCursor& C, size_t StartAddress);
-  ~BitReadCursor();
 
-  void assign(const BitReadCursor& C);
+  BitWriteCursor();
 
-  BitReadCursor& operator=(const BitReadCursor& C) {
+  BitWriteCursor(std::shared_ptr<Queue> Que);
+
+  BitWriteCursor(StreamType Type, std::shared_ptr<Queue> Que);
+
+  explicit BitWriteCursor(const BitWriteCursor& C);
+
+  BitWriteCursor(const BitWriteCursor& C, size_t StartAddress);
+
+  ~BitWriteCursor() OVERRIDE;
+
+  void assign(const BitWriteCursor& C);
+
+  BitWriteCursor& operator=(const BitWriteCursor& C) {
     assign(C);
     return *this;
   }
 
-  void swap(BitReadCursor& C);
+  void swap(BitWriteCursor& C);
 
-  uint8_t readByte();
-  uint8_t readBit();
+  void writeByte(uint8_t Byte);
+  void writeBit(uint8_t Bit);
   void alignToByte();
 
   void describeDerivedExtensions(FILE* File) OVERRIDE;
@@ -65,4 +71,4 @@ class BitReadCursor : public ReadCursor {
 
 }  // end of namespace wasm
 
-#endif  // DECOMPRESSOR_SRC_STREAM_BITREADCURSOR_H
+#endif  // DECOMPRESSOR_SRC_STREAM_BITWRITECURSOR_H
