@@ -38,11 +38,20 @@ ByteWriter::~ByteWriter() {
 }
 
 void ByteWriter::reset() {
+#if 0
   BlockStart = WriteCursor();
+#else
+  BlockStart = BitWriteCursor();
+#endif
   BlockStartStack.clear();
 }
 
-WriteCursor& ByteWriter::getPos() {
+#if 0
+WriteCursor& ByteWriter::getPos()
+#else
+BitWriteCursor& ByteWriter::getPos()
+#endif
+{
   return Pos;
 }
 

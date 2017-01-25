@@ -36,7 +36,7 @@ class BitWriteCursor : public WriteCursor {
 
   BitWriteCursor(StreamType Type, std::shared_ptr<Queue> Que);
 
-  explicit BitWriteCursor(const BitWriteCursor& C);
+  BitWriteCursor(const BitWriteCursor& C);
 
   BitWriteCursor(const BitWriteCursor& C, size_t StartAddress);
 
