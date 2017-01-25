@@ -39,8 +39,8 @@ class ByteWriter : public Writer {
   decode::BitWriteCursor& getPos();
   utils::TraceClass::ContextPtr getTraceContext() OVERRIDE;
 
-  void setPos(const decode::BitWriteCursor& NewPos) { Pos = NewPos; }
-  const decode::BitWriteCursor& getWritePos() const { return Pos; }
+  void setPos(const decode::BitWriteCursor& NewPos) { WritePos = NewPos; }
+  const decode::BitWriteCursor& getWritePos() const { return WritePos; }
 
   void reset() OVERRIDE;
   decode::StreamType getStreamType() const OVERRIDE;
@@ -57,7 +57,7 @@ class ByteWriter : public Writer {
   void describeState(FILE* File) OVERRIDE;
 
  private:
-  decode::BitWriteCursor Pos;
+  decode::BitWriteCursor WritePos;
   std::shared_ptr<WriteStream> Stream;
   // The stack of block patch locations.
   decode::BitWriteCursor BlockStart;

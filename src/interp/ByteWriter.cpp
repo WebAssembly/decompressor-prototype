@@ -29,7 +29,7 @@ using namespace utils;
 namespace interp {
 
 ByteWriter::ByteWriter(std::shared_ptr<decode::Queue> Output)
-    : Pos(StreamType::Byte, Output),
+    : WritePos(StreamType::Byte, Output),
       Stream(std::make_shared<ByteWriteStream>()),
       BlockStartStack(BlockStart) {
 }
@@ -43,11 +43,11 @@ void ByteWriter::reset() {
 }
 
 BitWriteCursor& ByteWriter::getPos() {
-  return Pos;
+  return WritePos;
 }
 
 TraceClass::ContextPtr ByteWriter::getTraceContext() {
-  return Pos.getTraceContext();
+  return WritePos.getTraceContext();
 }
 
 const char* ByteWriter::getDefaultTraceName() const {
@@ -59,52 +59,52 @@ decode::StreamType ByteWriter::getStreamType() const {
 }
 
 bool ByteWriter::writeUint8(uint8_t Value) {
-  Stream->writeUint8(Value, Pos);
-  return Pos.isQueueGood();
+  Stream->writeUint8(Value, WritePos);
+  return WritePos.isQueueGood();
 }
 
 bool ByteWriter::writeUint32(uint32_t Value) {
-  Stream->writeUint32(Value, Pos);
-  return Pos.isQueueGood();
+  Stream->writeUint32(Value, WritePos);
+  return WritePos.isQueueGood();
 }
 
 bool ByteWriter::writeUint64(uint64_t Value) {
-  Stream->writeUint64(Value, Pos);
-  return Pos.isQueueGood();
+  Stream->writeUint64(Value, WritePos);
+  return WritePos.isQueueGood();
 }
 
 bool ByteWriter::writeVarint32(int32_t Value) {
-  Stream->writeVarint32(Value, Pos);
-  return Pos.isQueueGood();
+  Stream->writeVarint32(Value, WritePos);
+  return WritePos.isQueueGood();
 }
 
 bool ByteWriter::writeVarint64(int64_t Value) {
-  Stream->writeVarint64(Value, Pos);
-  return Pos.isQueueGood();
+  Stream->writeVarint64(Value, WritePos);
+  return WritePos.isQueueGood();
 }
 
 bool ByteWriter::writeVaruint32(uint32_t Value) {
-  Stream->writeVaruint32(Value, Pos);
-  return Pos.isQueueGood();
+  Stream->writeVaruint32(Value, WritePos);
+  return WritePos.isQueueGood();
 }
 
 bool ByteWriter::writeVaruint64(uint64_t Value) {
-  Stream->writeVaruint64(Value, Pos);
-  return Pos.isQueueGood();
+  Stream->writeVaruint64(Value, WritePos);
+  return WritePos.isQueueGood();
 }
 
 bool ByteWriter::writeFreezeEof() {
-  Pos.freezeEof();
-  return Pos.isQueueGood();
+  WritePos.freezeEof();
+  return WritePos.isQueueGood();
 }
 
 bool ByteWriter::writeAction(const filt::SymbolNode* Action) {
   switch (Action->getPredefinedSymbol()) {
     case PredefinedSymbol::Block_enter:
     case PredefinedSymbol::Block_enter_writeonly:
-      BlockStartStack.push(Pos);
-      Stream->writeFixedBlockSize(Pos, 0);
-      BlockStartStack.push(Pos);
+      BlockStartStack.push(WritePos);
+      Stream->writeFixedBlockSize(WritePos, 0);
+      BlockStartStack.push(WritePos);
       return true;
     case PredefinedSymbol::Block_exit:
     case PredefinedSymbol::Block_exit_writeonly:
@@ -114,7 +114,7 @@ bool ByteWriter::writeAction(const filt::SymbolNode* Action) {
         // size.
         WriteCursor WriteAfterSizeWrite(BlockStart);
         BlockStartStack.pop();
-        const size_t NewSize = Stream->getBlockSize(BlockStart, Pos);
+        const size_t NewSize = Stream->getBlockSize(BlockStart, WritePos);
         TRACE(uint32_t, "New block size", NewSize);
         Stream->writeVarintBlockSize(BlockStart, NewSize);
         size_t SizeAfterBackPatch = Stream->getStreamAddress(BlockStart);
@@ -122,20 +122,23 @@ bool ByteWriter::writeAction(const filt::SymbolNode* Action) {
             Stream->getStreamAddress(WriteAfterSizeWrite);
         size_t Diff = SizeAfterSizeWrite - SizeAfterBackPatch;
         if (Diff) {
-          size_t CurAddress = Stream->getStreamAddress(Pos);
+          size_t CurAddress = Stream->getStreamAddress(WritePos);
           Stream->moveBlock(BlockStart, SizeAfterSizeWrite,
                             (CurAddress - Diff) - SizeAfterBackPatch);
-          Pos.swap(BlockStart);
+          WritePos.swap(BlockStart);
         }
       } else {
         // Non-minimized block. Just backpatch in new size.
         WriteCursor WriteAfterSizeWrite(BlockStart);
         BlockStartStack.pop();
-        const size_t NewSize = Stream->getBlockSize(BlockStart, Pos);
+        const size_t NewSize = Stream->getBlockSize(BlockStart, WritePos);
         TRACE(uint32_t, "New block size", NewSize);
         Stream->writeFixedBlockSize(BlockStart, NewSize);
       }
       BlockStartStack.pop();
+      return true;
+    case PredefinedSymbol::Align:
+      WritePos.alignToByte();
       return true;
     default:
       break;
@@ -148,8 +151,8 @@ void ByteWriter::describeBlockStartStack(FILE* File) {
   if (BlockStartStack.empty())
     return;
   fprintf(File, "*** Block Start Stack ***\n");
-  for (const auto& Pos : BlockStartStack.iterRange(1))
-    fprintf(File, "@%" PRIxMAX "\n", uintmax_t(Pos.getCurAddress()));
+  for (const auto& WritePos : BlockStartStack.iterRange(1))
+    fprintf(File, "@%" PRIxMAX "\n", uintmax_t(WritePos.getCurAddress()));
   fprintf(File, "*************************\n");
 }
 

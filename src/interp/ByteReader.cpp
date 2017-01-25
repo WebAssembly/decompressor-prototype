@@ -118,6 +118,9 @@ bool ByteReader::readAction(const SymbolNode* Action) {
     case PredefinedSymbol::Block_exit_readonly:
       ReadPos.popEobAddress();
       return true;
+    case PredefinedSymbol::Align:
+      ReadPos.alignToByte();
+      return true;
     default:
       return true;
   }
