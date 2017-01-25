@@ -62,7 +62,7 @@ class ByteReader : public Reader {
   utils::TraceClass::ContextPtr getTraceContext() OVERRIDE;
 
  private:
-  decode::ReadCursorWithTraceContext ReadPos;
+  decode::ReadCursor ReadPos;
   std::shared_ptr<ReadStream> Input;
   // The input position needed to fill to process now.
   size_t FillPos;

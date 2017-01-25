@@ -58,7 +58,7 @@ class ByteWriter : public Writer {
   void describeState(FILE* File) OVERRIDE;
 
  private:
-  decode::WriteCursorWithTraceContext Pos;
+  decode::WriteCursor Pos;
   std::shared_ptr<WriteStream> Stream;
   // The stack of block patch locations.
   decode::WriteCursor BlockStart;

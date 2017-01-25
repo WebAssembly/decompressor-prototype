@@ -81,7 +81,7 @@ class IntReader : public Reader {
   }
 
  private:
-  IntStream::ReadCursorWithTraceContext Pos;
+  IntStream::ReadCursor Pos;
   IntStream::StreamPtr Input;
   size_t HeaderIndex;
   // Shows how many are still available since last call to

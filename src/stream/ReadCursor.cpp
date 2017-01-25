@@ -51,12 +51,6 @@ uint8_t ReadCursor::readOneByte() {
   return Byte;
 }
 
-TraceClass::ContextPtr ReadCursorWithTraceContext::getTraceContext() {
-  if (!TraceContext)
-    TraceContext = std::make_shared<Cursor::TraceContext>(*this);
-  return TraceContext;
-}
-
 }  // end of namespace decode
 
 }  // end of namespace wasm

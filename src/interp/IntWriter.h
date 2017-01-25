@@ -58,7 +58,7 @@ class IntWriter : public Writer {
 
  private:
   std::shared_ptr<IntStream> Output;
-  IntStream::WriteCursorWithTraceContext Pos;
+  IntStream::WriteCursor Pos;
 
   const char* getDefaultTraceName() const OVERRIDE;
 };
