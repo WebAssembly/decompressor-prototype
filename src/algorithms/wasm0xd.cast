@@ -390,7 +390,6 @@
   (=> 'import.section.end')
 )
 
-
 (define 'import_entry' (params)
   (=> 'import_entry.begin')
   (eval 'symbol_name')

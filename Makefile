@@ -527,9 +527,10 @@ $(ALG_GEN_H_SRCS): $(ALG_GENDIR)/%.h: $(ALG_GENDIR)/%.cast \
 $(ALG_GEN_CPP_SRCS): $(ALG_GENDIR)/%.cpp: $(ALG_GENDIR)/%.cast \
 		$(BUILD_EXECDIR_BOOT)/cast2casm $(ALG_GENDIR_ALG)
 	$(BUILD_EXECDIR_BOOT)/cast2casm -a $(ALG_GENDIR_ALG) \
-		$< -o $@ --function \
+		$< -o $@ --strip-literals --function \
 		$(patsubst $(ALG_GENDIR)/%.cast, getAlg%Symtab, $<) \
-		$(if $(call eq, "$(ALG_GENDIR)/casm0x0.cast", "$<") ,  , --array)
+		$(if $(call eq, "$(ALG_GENDIR)/casm0x0.cast", "$<") \
+                      ,  , --strip-actions --array)
 
 -include $(foreach dep,$(ALG_GEN_CPP_SRCS:.cpp=.d),$(ALG_OBJDIR)/$(dep))
 
