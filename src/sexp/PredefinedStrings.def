@@ -33,4 +33,4 @@ X(Postorder_inst, "postorder.inst") \
 X(Symbol_lookup, "symbol.lookup") \
 X(Symbol_name, "symbol_name") \
 X(Symbol_name_begin, "symbol_name.begin") \
-X(Symbol_name_end, "symbol_name.end") \
+X(Symbol_name_end, "symbol_name.end")
