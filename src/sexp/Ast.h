@@ -32,7 +32,7 @@
 #include "interp/IntFormats.h"
 #include "sexp/Ast.def"
 #include "sexp/NodeType.h"
-#include "sexp/Strings.def"
+#include "sexp/PredefinedStrings.def"
 #include "stream/WriteUtils.h"
 #include "utils/Casting.h"
 #include "utils/Defs.h"
