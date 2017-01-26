@@ -595,7 +595,7 @@ Node* SymbolTable::stripUsing(Node* Root,
   return create<VoidNode>();
 }
 
-Node* SymbolTable::stripCallbacksExcept(std::vector<std::string>& KeepActions,
+Node* SymbolTable::stripCallbacksExcept(std::set<std::string>& KeepActions,
                                         Node* Root) {
   switch (Root->getType()) {
     default:
@@ -606,10 +606,8 @@ Node* SymbolTable::stripCallbacksExcept(std::vector<std::string>& KeepActions,
       auto* Sym = dyn_cast<SymbolNode>(Root->getKid(0));
       if (Sym == nullptr)
         return Root;
-      for (std::string& Str : KeepActions) {
-        if (Str == Sym->getName())
-          return Root;
-      }
+      if (KeepActions.count(Sym->getName()))
+        return Root;
       break;
     }
   }

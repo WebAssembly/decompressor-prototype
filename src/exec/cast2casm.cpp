@@ -31,6 +31,7 @@
 #include "utils/ArgsParse.h"
 
 #include <cstdlib>
+#include <set>
 
 using namespace wasm;
 using namespace wasm::decode;
@@ -572,6 +573,7 @@ int main(int Argc, charstring Argv[]) {
   bool StripActions = false;
   bool StripLiterals = false;
   bool ShowSavedCast = false;
+  std::set<std::string> KeepActions;
   {
     ArgsParser Args("Converts compression algorithm from text to binary");
 
@@ -666,6 +668,12 @@ int main(int Argc, charstring Argv[]) {
     Args.add(StripActionsFlag.setLongName("strip-actions")
                  .setDescription("Remove callback actions from input."));
 
+    ArgsParser::RepeatableSet<std::string> KeepActionsFlag(KeepActions);
+    Args.add(
+        KeepActionsFlag.setLongName("keep")
+            .setOptionName("ACTION")
+            .setDescription("Don't strip callbacks on ACTION from the input"));
+
     ArgsParser::Optional<bool> StripLiteralsFlag(StripLiterals);
     Args.add(StripLiteralsFlag.setLongName("strip-literals")
                  .setDescription(
@@ -721,8 +729,7 @@ int main(int Argc, charstring Argv[]) {
     InputSymtab = Reader.getReadSymtab();
   }
   if (StripActions) {
-    std::vector<std::string> Keep;
-    InputSymtab->stripCallbacksExcept(Keep);
+    InputSymtab->stripCallbacksExcept(KeepActions);
   }
   if (StripLiterals)
     InputSymtab->stripLiterals();

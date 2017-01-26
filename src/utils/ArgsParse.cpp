@@ -389,6 +389,20 @@ bool ArgsParser::Required<charstring>::select(charstring OptionValue) {
   return true;
 }
 
+template <>
+bool ArgsParser::RepeatableSet<std::string>::select(charstring Add) {
+  Values.insert(Add);
+  return true;
+}
+
+template <>
+void ArgsParser::RepeatableSet<std::string>::describeDefault(
+    FILE* Out,
+    size_t TabSize,
+    size_t& Indent) const {
+  printDescriptionContinue(Out, TabSize, Indent, " (can be repeated)");
+}
+
 ArgsParser::ArgsParser(charstring Description)
     : ExecName(nullptr),
       Description(Description),
