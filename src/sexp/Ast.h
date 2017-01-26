@@ -40,6 +40,7 @@
 #include "utils/Trace.h"
 
 #include <array>
+#include <functional>
 #include <limits>
 #include <memory>
 #include <map>
@@ -199,11 +200,12 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
 
   // Strips all callback actions from the algorithm, except for the names
   // specified. Returns the updated tree.
-  Node* stripCallbacksExcept(std::vector<std::string>& KeepActions, Node* Root);
-
   void stripCallbacksExcept(std::vector<std::string>& KeepActions) {
     install(stripCallbacksExcept(KeepActions, Root));
   }
+
+  // Strips out literal definitions and replaces literal uses.
+  void stripLiterals();
 
   void setTraceProgress(bool NewValue);
   virtual void setTrace(std::shared_ptr<utils::TraceClass> Trace);
@@ -234,6 +236,11 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
   void installSubtreeCaches(Node* Nd,
                             VisitedNodesType& VisitedNoes,
                             NodeVectorType& AdditionalNodes);
+
+  Node* stripUsing(Node* Root, std::function<Node*(Node*)> stripKid);
+  Node* stripCallbacksExcept(std::vector<std::string>& KeepActions, Node* Root);
+  Node* stripLiteralUses(Node* Root);
+  Node* stripLiteralDefs(Node* Root);
 };
 
 class Node {
@@ -634,6 +641,7 @@ class NaryNode : public Node {
   void setKid(int Index, Node* N) OVERRIDE FINAL { Kids[Index] = N; }
 
   void append(Node* Kid) FINAL OVERRIDE;
+  void clearKids() { Kids.clear(); }
   ~NaryNode() OVERRIDE {}
 
   static bool implementsClass(NodeType Type);

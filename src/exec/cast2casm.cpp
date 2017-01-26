@@ -24,6 +24,7 @@
 
 #include "sexp/CasmReader.h"
 #include "sexp/CasmWriter.h"
+#include "sexp/TextWriter.h"
 #include "stream/FileWriter.h"
 #include "stream/ReadCursor.h"
 #include "stream/WriteBackedQueue.h"
@@ -568,6 +569,9 @@ int main(int Argc, charstring Argv[]) {
   charstring FunctionName = nullptr;
   bool UseArrayImpl = false;
   bool HeaderFile;
+  bool StripActions = false;
+  bool StripLiterals = false;
+  bool ShowSavedCast = false;
   {
     ArgsParser Args("Converts compression algorithm from text to binary");
 
@@ -658,6 +662,20 @@ int main(int Argc, charstring Argv[]) {
         "of implementatoin file (only applies when "
         "'--function Name' is specified)"));
 
+    ArgsParser::Optional<bool> StripActionsFlag(StripActions);
+    Args.add(StripActionsFlag.setLongName("strip-actions")
+                 .setDescription("Remove callback actions from input."));
+
+    ArgsParser::Optional<bool> StripLiteralsFlag(StripLiterals);
+    Args.add(StripLiteralsFlag.setLongName("strip-literals")
+                 .setDescription(
+                     "Replace literal uses with their definition, then "
+                     "remove literal definitions from the input."));
+
+    ArgsParser::Optional<bool> ShowSavedCastFlag(ShowSavedCast);
+    Args.add(ShowSavedCastFlag.setLongName("cast")
+                 .setDescription("Show cast text being written"));
+
     switch (Args.parse(Argc, Argv)) {
       case ArgsParser::State::Good:
         break;
@@ -694,7 +712,7 @@ int main(int Argc, charstring Argv[]) {
     CasmReader Reader;
     Reader.setTraceRead(TraceParser)
         .setTraceLexer(TraceLexer)
-        .setTraceTree(Verbose)
+        // .setTraceTree(Verbose)
         .readText(InputFilename);
     if (Reader.hasErrors()) {
       fprintf(stderr, "Unable to parse: %s\n", InputFilename);
@@ -702,6 +720,12 @@ int main(int Argc, charstring Argv[]) {
     }
     InputSymtab = Reader.getReadSymtab();
   }
+  if (StripActions) {
+    std::vector<std::string> Keep;
+    InputSymtab->stripCallbacksExcept(Keep);
+  }
+  if (StripLiterals)
+    InputSymtab->stripLiterals();
 
   if (Verbose) {
     if (AlgorithmFilename)
@@ -725,6 +749,11 @@ int main(int Argc, charstring Argv[]) {
   } else {
     AlgSymtab = getAlgcasm0x0Symtab();
 #endif
+  }
+
+  if (ShowSavedCast) {
+    TextWriter Writer;
+    Writer.write(stderr, InputSymtab->getInstalledRoot());
   }
 
   if (Verbose && strcmp(OutputFilename, "-") != 0)

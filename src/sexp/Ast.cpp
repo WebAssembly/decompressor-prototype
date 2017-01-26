@@ -556,20 +556,54 @@ void SymbolTable::installDefinitions(Node* Root) {
   }
 }
 
+Node* SymbolTable::stripUsing(Node* Root,
+                              std::function<Node*(Node*)> stripKid) {
+  switch (Root->getType()) {
+    default:
+      for (int i = 0; i < Root->getNumKids(); ++i)
+        Root->setKid(i, stripKid(Root->getKid(i)));
+      return Root;
+#define X(tag, NODE_DECLS) case Op##tag:
+      AST_NARYNODE_TABLE
+#undef X
+      {
+        std::vector<Node*> Kids;
+        for (int i = 0; i < Root->getNumKids(); ++i) {
+          Node* Kid = stripKid(Root->getKid(i));
+          if (!isa<VoidNode>(Kid))
+            Kids.push_back(Kid);
+        }
+        if (Kids.size() == size_t(Root->getNumKids())) {
+          // Replace kids in place.
+          for (size_t i = 0; i < Kids.size(); ++i)
+            Root->setKid(i, Kids[i]);
+          return Root;
+        }
+        if (Kids.empty())
+          break;
+        if (Kids.size() == 1)
+          return Kids[0];
+        NaryNode* Nd = dyn_cast<NaryNode>(Root);
+        if (Nd == nullptr)
+          break;
+        Nd->clearKids();
+        for (auto Kid : Kids)
+          Nd->append(Kid);
+        return Nd;
+      }
+  }
+  return create<VoidNode>();
+}
+
 Node* SymbolTable::stripCallbacksExcept(std::vector<std::string>& KeepActions,
                                         Node* Root) {
   switch (Root->getType()) {
-    case OpDefine:
-    case OpEval:
-    case OpFileHeader:
-    case OpSection:
-    case OpWrite:
     default:
-      for (int i = 0; i < Root->getNumKids(); ++i)
-        Root->setKid(i, stripCallbacksExcept(KeepActions, Root->getKid(i)));
-      return Root;
+      return stripUsing(Root, [&](Node* Nd) -> Node* {
+        return stripCallbacksExcept(KeepActions, Nd);
+      });
     case OpCallback: {
-      auto * Sym = dyn_cast<SymbolNode>(Root->getKid(0));
+      auto* Sym = dyn_cast<SymbolNode>(Root->getKid(0));
       if (Sym == nullptr)
         return Root;
       for (std::string& Str : KeepActions) {
@@ -578,32 +612,47 @@ Node* SymbolTable::stripCallbacksExcept(std::vector<std::string>& KeepActions,
       }
       break;
     }
-    case OpSequence: {
-      std::vector<Node*> Kids;
-      for (int i = 0; i < Root->getNumKids(); ++i) {
-        Node* Kid = stripCallbacksExcept(KeepActions, Root->getKid(i));
-        if (!isa<VoidNode>(Kid))
-          Kids.push_back(Kid);
-      }
-      if (Kids.size() == size_t(Root->getNumKids())) {
-        // Replace kids in place.
-        for (size_t i = 0; i < Kids.size(); ++i)
-          Root->setKid(i, Kids[i]);
-        return Root;
-      }
-      if (Kids.empty())
-        break;
-      if (Kids.size() == 1)
-        return Kids[0];
-      auto *Seq = create<SequenceNode>();
-      for (auto Kid : Kids)
-        Seq->append(Kid);
-      return Seq;
-    }
   }
   return create<VoidNode>();
 }
 
+void SymbolTable::stripLiterals() {
+  install(stripLiteralDefs(stripLiteralUses(Root)));
+}
+
+Node* SymbolTable::stripLiteralUses(Node* Root) {
+  switch (Root->getType()) {
+    default:
+      return stripUsing(
+          Root, [&](Node* Nd) -> Node* { return stripLiteralUses(Nd); });
+    case OpLiteralUse: {
+      const auto* Use = cast<LiteralUseNode>(Root);
+      const auto* Sym = dyn_cast<SymbolNode>(Use->getKid(0));
+      if (Sym == nullptr)
+        break;
+      const auto* Def = Sym->getLiteralDefinition();
+      if (Def == nullptr)
+        break;
+      return Def->getKid(1);
+    }
+  }
+  // If reached, this is a use without a def, so remove.
+  TextWriter Writer;
+  fprintf(stderr, "error: No literal definition for: ");
+  Writer.write(stderr, Root);
+  return create<VoidNode>();
+}
+
+Node* SymbolTable::stripLiteralDefs(Node* Root) {
+  switch (Root->getType()) {
+    default:
+      return stripUsing(
+          Root, [&](Node* Nd) -> Node* { return stripLiteralDefs(Nd); });
+    case OpLiteralDef:
+      break;
+  }
+  return create<VoidNode>();
+}
 
 Node* NullaryNode::getKid(int) const {
   return nullptr;
