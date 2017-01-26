@@ -31,6 +31,7 @@
 #include "utils/ArgsParse.h"
 
 #include <cstdlib>
+#include <cctype>
 #include <set>
 
 using namespace wasm;
