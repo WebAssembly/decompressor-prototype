@@ -228,6 +228,26 @@ class ArgsParser {
     T SelectValue;
   };
 
+  template <class T>
+  class RepeatableSet : public OptionalArg {
+    RepeatableSet() = delete;
+    RepeatableSet(const RepeatableSet&) = delete;
+    RepeatableSet& operator=(const RepeatableSet&) = delete;
+
+   public:
+    typedef std::set<T> set_type;
+    explicit RepeatableSet(set_type& Values, charstring Description = nullptr)
+        : OptionalArg(Description), Values(Values) {}
+
+    bool select(charstring Add) OVERRIDE;
+    void describeDefault(FILE* Out,
+                         size_t TabSize,
+                         size_t& Indent) const OVERRIDE;
+
+   protected:
+    set_type& Values;
+  };
+
   class RequiredArg : public Arg {
     RequiredArg() = delete;
     RequiredArg(const RequiredArg&) = delete;

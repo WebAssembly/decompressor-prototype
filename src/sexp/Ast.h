@@ -44,6 +44,7 @@
 #include <limits>
 #include <memory>
 #include <map>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -200,7 +201,7 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
 
   // Strips all callback actions from the algorithm, except for the names
   // specified. Returns the updated tree.
-  void stripCallbacksExcept(std::vector<std::string>& KeepActions) {
+  void stripCallbacksExcept(std::set<std::string>& KeepActions) {
     install(stripCallbacksExcept(KeepActions, Root));
   }
 
@@ -238,7 +239,7 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
                             NodeVectorType& AdditionalNodes);
 
   Node* stripUsing(Node* Root, std::function<Node*(Node*)> stripKid);
-  Node* stripCallbacksExcept(std::vector<std::string>& KeepActions, Node* Root);
+  Node* stripCallbacksExcept(std::set<std::string>& KeepActions, Node* Root);
   Node* stripLiteralUses(Node* Root);
   Node* stripLiteralDefs(Node* Root);
 };
