@@ -86,7 +86,6 @@ void AbbreviationsCollector::assignAbbreviations() {
     }
     addAbbreviation(Nd);
   }
-  TRACE_MESSAGE("Huffman encoding abbreviations");
 }
 
 HuffmanEncoder::NodePtr AbbreviationsCollector::assignHuffmanAbbreviations() {

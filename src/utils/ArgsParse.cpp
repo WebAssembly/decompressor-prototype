@@ -409,7 +409,8 @@ ArgsParser::ArgsParser(charstring Description)
       Help(false),
       HelpFlag(Help, "Describe how to use"),
       CurArg(0),
-      Status(State::Good) {
+      Status(State::Good),
+      TraceProgress(false) {
   HelpFlag.setDefault(false).setShortName('h').setLongName("help");
   add(HelpFlag);
 }
@@ -515,6 +516,8 @@ ArgsParser::Arg* ArgsParser::parseNextLong(charstring Argument,
 void ArgsParser::parseNextArg() {
   if (CurArg == Argc)
     return;
+  if (TraceProgress)
+    fprintf(stderr, "parse arg[%d] = '%s'\n", CurArg, Argv[CurArg]);
   if (Status == State::Usage)
     return;
   charstring Argument = Argv[CurArg++];
@@ -533,6 +536,10 @@ void ArgsParser::parseNextArg() {
     }
     if (MatchingOption->select(Leftover) && MaybeUseNextArg)
       ++CurArg;
+    if (TraceProgress) {
+      fprintf(stderr, "Matched:\n");
+      MatchingOption->describe(stderr, TabWidth);
+    }
     if (MatchingOption == &HelpFlag)
       showUsage();
     return;
@@ -540,6 +547,10 @@ void ArgsParser::parseNextArg() {
   if (CurPlacement < PlacementArgs.size()) {
     Arg* Placement = PlacementArgs[CurPlacement++];
     Placement->setOptionFound(true);
+    if (TraceProgress) {
+      fprintf(stderr, "Matched:\n");
+      Placement->describe(stderr, TabWidth);
+    }
     if (!Placement->select(Argument)) {
       fprintf(stderr, "Can't assign option:\n");
       Placement->describe(stderr, TabWidth);

@@ -296,6 +296,9 @@ class ArgsParser {
                      charstring Argument,
                      charstring& Leftover) const;
 
+  void setTraceProgress(bool Value) { TraceProgress = Value; }
+  bool getTraceProgress() const { return TraceProgress; }
+
  private:
   charstring ExecName;
   charstring Description;
@@ -311,6 +314,7 @@ class ArgsParser {
   int CurArg;
   size_t CurPlacement;
   State Status;
+  bool TraceProgress;
 
   void parseNextArg();
   Arg* parseNextShort(charstring Argument, charstring& Leftover);

@@ -157,6 +157,7 @@ bool CountNodeWithSuccs::implementsClass(Kind K) {
       return true;
     case Kind::Block:
     case Kind::Default:
+    case Kind::Align:
       return false;
   }
   WASM_RETURN_UNREACHABLE(false);
@@ -167,7 +168,8 @@ RootCountNode::RootCountNode()
       BlockEnter(std::make_shared<BlockCountNode>(true)),
       BlockExit(std::make_shared<BlockCountNode>(false)),
       DefaultSingle(std::make_shared<DefaultCountNode>(true)),
-      DefaultMultiple(std::make_shared<DefaultCountNode>(false)) {
+      DefaultMultiple(std::make_shared<DefaultCountNode>(false)),
+      AlignCount(std::make_shared<AlignCountNode>()) {
 }
 
 RootCountNode::~RootCountNode() {
@@ -178,6 +180,7 @@ void RootCountNode::getOthers(PtrVector& L) const {
   L.push_back(BlockExit);
   L.push_back(DefaultSingle);
   L.push_back(DefaultMultiple);
+  L.push_back(AlignCount);
 }
 
 void RootCountNode::describe(FILE* Out, size_t NestLevel) const {
@@ -239,6 +242,14 @@ void DefaultCountNode::describe(FILE* Out, size_t NestLevel) const {
   indent(Out, NestLevel);
   fputs(": default.", Out);
   fputs(IsSingle ? "single" : "multiple", Out);
+  newline(Out);
+}
+
+AlignCountNode::~AlignCountNode() {}
+
+void AlignCountNode::describe(FILE* Out, size_t NestLevel) const {
+  indent(Out, NestLevel);
+  fputs(": align", Out);
   newline(Out);
 }
 
