@@ -76,6 +76,7 @@ class CountNode : public std::enable_shared_from_this<CountNode> {
   virtual ~CountNode();
 
   enum class Kind { Root, Block, Default, Align, Singleton, IntSequence };
+  Kind getKind() const { return NodeKind; }
   size_t getCount() const { return Count; }
   void setCount(size_t NewValue) { Count = NewValue; }
   size_t getWeight() const { return getWeight(getCount()); }
@@ -237,6 +238,7 @@ class RootCountNode : public CountNodeWithSuccs {
   CountNode::BlockPtr getBlockExit() { return BlockExit; }
   CountNode::DefaultPtr getDefaultSingle() { return DefaultSingle; }
   CountNode::DefaultPtr getDefaultMultiple() { return DefaultMultiple; }
+  CountNode::AlignPtr getAlign() { return AlignCount; }
   void describe(FILE* Out, size_t NestLevel = 0) const OVERRIDE;
   int compare(const CountNode& Nd) const OVERRIDE;
 

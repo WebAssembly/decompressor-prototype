@@ -212,6 +212,13 @@ void IntCompressor::compress() {
                    makeFlags(CollectionFlag::IntPaths),
                    MyFlags.TraceSequenceCountsCollection);
   TRACE_MESSAGE("Assigning (initial) abbreviations to integer sequences");
+  // SInce we don't actually know the number of times default patterns will
+  // be used, assume a large number.
+  Root->getDefaultSingle()->setCount(std::numeric_limits<uint32_t>::max());
+  Root->getDefaultMultiple()->setCount(std::numeric_limits<uint32_t>::max());
+  if (MyFlags.UseHuffmanEncoding)
+    // Assume one is added at the end of each block, and one at eof.
+    Root->getAlign()->setCount(Root->getBlockExit()->getCount() + 1);
   CountNode::Int2PtrMap AbbrevAssignments;
   assignInitialAbbreviations(AbbrevAssignments);
   if (MyFlags.TraceAbbreviationAssignments)
@@ -255,7 +262,8 @@ void IntCompressor::assignInitialAbbreviations(
 
 bool IntCompressor::generateIntOutput() {
   auto Writer = std::make_shared<AbbrevAssignWriter>(
-      Root, IntOutput, MyFlags.LengthLimit, MyFlags.AbbrevFormat);
+      Root, IntOutput, MyFlags.LengthLimit, MyFlags.AbbrevFormat,
+      !MyFlags.UseHuffmanEncoding);
   IntInterperter Reader(std::make_shared<IntReader>(Contents), Writer, Symtab);
   if (MyFlags.TraceIntStreamGeneration)
     Reader.getTrace().setTraceProgress(true);
