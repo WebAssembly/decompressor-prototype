@@ -117,6 +117,8 @@ Node* AbbreviationCodegen::generateAction(CountNode::Ptr Nd) {
     return generateBlockAction(BlkPtr);
   else if (auto* DefaultPtr = dyn_cast<DefaultCountNode>(NdPtr))
     return generateDefaultAction(DefaultPtr);
+  else if (isa<AlignCountNode>(NdPtr))
+    return generateAlignAction();
   return Symtab->create<ErrorNode>();
 }
 
@@ -146,6 +148,10 @@ Node* AbbreviationCodegen::generateDefaultMultipleAction() {
 
 Node* AbbreviationCodegen::generateDefaultSingleAction() {
   return Symtab->create<Varint64Node>();
+}
+
+Node* AbbreviationCodegen::generateAlignAction() {
+  return Symtab->create<CallbackNode>(Symtab->getPredefined(PredefinedSymbol::Align));
 }
 
 Node* AbbreviationCodegen::generateIntType(IntType Value) {

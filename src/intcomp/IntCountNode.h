@@ -39,6 +39,7 @@ class BlockCountNode;
 class CountNode;
 class CountNodeWithSuccs;
 class DefaultCountNode;
+class AlignCountNode;
 class IntCountNode;
 class RootCountNode;
 
@@ -54,6 +55,7 @@ class CountNode : public std::enable_shared_from_this<CountNode> {
   typedef std::shared_ptr<IntCountNode> IntPtr;
   typedef std::shared_ptr<BlockCountNode> BlockPtr;
   typedef std::shared_ptr<DefaultCountNode> DefaultPtr;
+  typedef std::shared_ptr<AlignCountNode> AlignPtr;
   typedef std::weak_ptr<IntCountNode> ParentPtr;
   typedef std::shared_ptr<RootCountNode> RootPtr;
   typedef std::shared_ptr<CountNodeWithSuccs> WithSuccsPtr;
@@ -72,7 +74,8 @@ class CountNode : public std::enable_shared_from_this<CountNode> {
   static CompareFcnType CompareGt;
 
   virtual ~CountNode();
-  enum class Kind { Root, Block, Default, Singleton, IntSequence };
+
+  enum class Kind { Root, Block, Default, Align, Singleton, IntSequence };
   size_t getCount() const { return Count; }
   void setCount(size_t NewValue) { Count = NewValue; }
   size_t getWeight() const { return getWeight(getCount()); }
@@ -210,6 +213,19 @@ class DefaultCountNode : public CountNode {
   bool IsSingle;
 };
 
+// Used for modeling alignment (used once in codegen) so that the
+// same representation can be used for all abbreviations/actions.
+class AlignCountNode : public CountNode {
+  AlignCountNode(const AlignCountNode&) = delete;
+  AlignCountNode& operator=(const AlignCountNode&) = delete;
+
+ public:
+  AlignCountNode() : CountNode(Kind::Align) {}
+  ~AlignCountNode() OVERRIDE;
+  void describe(FILE* Out, size_t NestLevel = 0) const OVERRIDE;
+  static bool implementsClass(Kind K) { return K == Kind::Align; }
+};
+
 class RootCountNode : public CountNodeWithSuccs {
   RootCountNode(const RootCountNode&) = delete;
   RootCountNode& operator=(const RootCountNode&) = delete;
@@ -233,6 +249,7 @@ class RootCountNode : public CountNodeWithSuccs {
   CountNode::BlockPtr BlockExit;
   CountNode::DefaultPtr DefaultSingle;
   CountNode::DefaultPtr DefaultMultiple;
+  CountNode::AlignPtr AlignCount;
 };
 
 // Node defining an IntValue

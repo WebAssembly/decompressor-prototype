@@ -96,10 +96,10 @@ void CountNodeCollector::collectAbbreviations() {
 
 void CountNodeCollector::collect() {
   if (hasFlag(CollectionFlag::TopLevel, Flags)) {
-    collectNode(Root->getBlockEnter());
-    collectNode(Root->getBlockExit());
-    collectNode(Root->getDefaultSingle());
-    collectNode(Root->getDefaultMultiple());
+    CountNode::PtrVector Others;
+    Root->getOthers(Others);
+    for (CountNode::Ptr Nd : Others)
+      collectNode(Nd);
   }
   for (CountNode::SuccMapIterator Iter = Root->getSuccBegin(),
                                   End = Root->getSuccEnd();

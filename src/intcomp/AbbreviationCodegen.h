@@ -60,6 +60,7 @@ class AbbreviationCodegen {
   filt::Node* generateDefaultAction(DefaultCountNode* Default);
   filt::Node* generateDefaultMultipleAction();
   filt::Node* generateDefaultSingleAction();
+  filt::Node* generateAlignAction();
   filt::Node* generateIntType(decode::IntType Value);
   filt::Node* generateIntLitAction(IntCountNode* Nd);
   filt::Node* generateIntLitActionRead(IntCountNode* Nd);
