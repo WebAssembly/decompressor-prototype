@@ -218,7 +218,7 @@ void IntCompressor::compress() {
   Root->getDefaultMultiple()->setCount(std::numeric_limits<uint32_t>::max());
   if (MyFlags.UseHuffmanEncoding)
     // Assume an alignment added at end of file.
-    Root->getAlign()->setCount(Root->getAlign()->getCount() + 1);
+    Root->getAlign()->setCount(1);
   CountNode::Int2PtrMap AbbrevAssignments;
   assignInitialAbbreviations(AbbrevAssignments);
   if (MyFlags.TraceAbbreviationAssignments)
