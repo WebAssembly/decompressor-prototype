@@ -123,7 +123,6 @@ bool AbbrevAssignWriter::writeAction(const filt::SymbolNode* Action) {
     case PredefinedSymbol::Block_exit:
       writeUntilBufferEmpty();
       flushDefaultValues();
-      alignIfNecessary();
       assert(Root->getBlockExit()->hasAbbrevIndex());
       forwardAbbrevValue(Root->getBlockExit()->getAbbrevIndex());
       return true;
