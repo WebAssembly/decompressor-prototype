@@ -109,6 +109,9 @@ bool ByteReader::readAction(const SymbolNode* Action) {
   switch (Action->getPredefinedSymbol()) {
     case PredefinedSymbol::Block_enter:
     case PredefinedSymbol::Block_enter_readonly: {
+      // Force alignment before processing, in case non-byte encodings
+      // are used.
+      ReadPos.alignToByte();
       const uint32_t OldSize = Input->readBlockSize(ReadPos);
       TRACE(uint32_t, "block size", OldSize);
       Input->pushEobAddress(ReadPos, OldSize);
@@ -116,6 +119,8 @@ bool ByteReader::readAction(const SymbolNode* Action) {
     }
     case PredefinedSymbol::Block_exit:
     case PredefinedSymbol::Block_exit_readonly:
+      // Force alignment before processing, in case non-byte encodings
+      ReadPos.alignToByte();
       ReadPos.popEobAddress();
       return true;
     case PredefinedSymbol::Align:

@@ -102,12 +102,18 @@ bool ByteWriter::writeAction(const filt::SymbolNode* Action) {
   switch (Action->getPredefinedSymbol()) {
     case PredefinedSymbol::Block_enter:
     case PredefinedSymbol::Block_enter_writeonly:
+      // Force alignment before processing, in case non-byte encodings
+      // are used.
+      WritePos.alignToByte();
       BlockStartStack.push(WritePos);
       Stream->writeFixedBlockSize(WritePos, 0);
       BlockStartStack.push(WritePos);
       return true;
     case PredefinedSymbol::Block_exit:
     case PredefinedSymbol::Block_exit_writeonly:
+      // Force alignment before processing, in case non-byte encodings
+      // are used.
+      WritePos.alignToByte();
       if (MinimizeBlockSize) {
         // Mimimized block. Backpatch new size of block. If needed, move
         // block to fill gap between fixed and variable widths for block
