@@ -88,9 +88,17 @@ bool AbbrevAssignWriter::writeVaruint64(uint64_t Value) {
   return true;
 }
 
+void AbbrevAssignWriter::alignIfNecessary() {
+  if (AssumeByteAlignment)
+    return;
+  assert(Root->getAlign()->hasAbbrevIndex());
+  forwardAbbrevValue(Root->getAlign()->getAbbrevIndex());
+}
+
 bool AbbrevAssignWriter::writeFreezeEof() {
   writeUntilBufferEmpty();
   flushDefaultValues();
+  alignIfNecessary();
   return Writer.writeFreezeEof();
 }
 
@@ -115,6 +123,7 @@ bool AbbrevAssignWriter::writeAction(const filt::SymbolNode* Action) {
     case PredefinedSymbol::Block_exit:
       writeUntilBufferEmpty();
       flushDefaultValues();
+      alignIfNecessary();
       assert(Root->getBlockExit()->hasAbbrevIndex());
       forwardAbbrevValue(Root->getBlockExit()->getAbbrevIndex());
       return true;

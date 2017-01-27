@@ -151,7 +151,8 @@ Node* AbbreviationCodegen::generateDefaultSingleAction() {
 }
 
 Node* AbbreviationCodegen::generateAlignAction() {
-  return Symtab->create<CallbackNode>(Symtab->getPredefined(PredefinedSymbol::Align));
+  return Symtab->create<CallbackNode>(
+      Symtab->getPredefined(PredefinedSymbol::Align));
 }
 
 Node* AbbreviationCodegen::generateIntType(IntType Value) {

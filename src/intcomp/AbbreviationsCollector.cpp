@@ -64,14 +64,17 @@ void AbbreviationsCollector::assignAbbreviations() {
         fprintf(Out, "Considering: ");
         Nd->describe(Out);
       });
-      addAbbreviation(Nd, isa<DefaultCountNode>(Nd.get())
-                              ? std::numeric_limits<uint32_t>::max()
-                              : Nd->getWeight());
+      // Assume others are needed if even used once!
+      if (Nd->getCount() == 0) {
+        TRACE_MESSAGE("Ignoring: never used");
+        continue;
+      }
+      addAbbreviation(Nd, Nd->getWeight());
     }
   }
   TRACE(uint64_t, "WeightCutoff", WeightCutoff);
   collectUsingCutoffs(CountCutoff, WeightCutoff,
-                      makeFlags(CollectionFlag::All));
+                      makeFlags(CollectionFlag::IntPaths));
   buildHeap();
   while (!ValuesHeap->empty() && Assignments.size() < MaxAbbreviations) {
     CountNode::Ptr Nd = popHeap();

@@ -39,11 +39,13 @@ class AbbrevAssignWriter : public interp::Writer {
   AbbrevAssignWriter(CountNode::RootPtr Root,
                      std::shared_ptr<interp::IntStream> Output,
                      size_t BufSize,
-                     interp::IntTypeFormat AbbrevFormat)
+                     interp::IntTypeFormat AbbrevFormat,
+                     bool AssumeByteAlignment)
       : Root(Root),
         Writer(Output),
         Buffer(BufSize),
-        AbbrevFormat(AbbrevFormat) {
+        AbbrevFormat(AbbrevFormat),
+        AssumeByteAlignment(AssumeByteAlignment) {
     assert(Root->getDefaultSingle()->hasAbbrevIndex());
     assert(Root->getDefaultMultiple()->hasAbbrevIndex());
   }
@@ -73,6 +75,7 @@ class AbbrevAssignWriter : public interp::Writer {
   utils::circular_vector<decode::IntType> Buffer;
   interp::IntTypeFormat AbbrevFormat;
   std::vector<decode::IntType> DefaultValues;
+  bool AssumeByteAlignment;
   static constexpr interp::IntTypeFormat DefaultFormat =
       interp::IntTypeFormat::Varint64;
   static constexpr interp::IntTypeFormat LoopSizeFormat =
@@ -85,6 +88,7 @@ class AbbrevAssignWriter : public interp::Writer {
   void writeUntilBufferEmpty();
   void popValuesFromBuffer(size_t size);
   void flushDefaultValues();
+  void alignIfNecessary();
 
   const char* getDefaultTraceName() const OVERRIDE;
 };

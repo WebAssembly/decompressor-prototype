@@ -245,7 +245,8 @@ void DefaultCountNode::describe(FILE* Out, size_t NestLevel) const {
   newline(Out);
 }
 
-AlignCountNode::~AlignCountNode() {}
+AlignCountNode::~AlignCountNode() {
+}
 
 void AlignCountNode::describe(FILE* Out, size_t NestLevel) const {
   indent(Out, NestLevel);
