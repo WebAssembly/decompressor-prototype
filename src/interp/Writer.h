@@ -49,6 +49,7 @@ class Writer {
   virtual bool writeVaruint32(uint32_t Value) = 0;
   virtual bool writeVaruint64(uint64_t Value) = 0;
   virtual bool writeFreezeEof();
+  virtual bool writeBinary(decode::IntType Value, const filt::Node* Encoding);
   virtual bool writeValue(decode::IntType Value, const filt::Node* Format);
   virtual bool writeTypedValue(decode::IntType Value,
                                interp::IntTypeFormat Format);

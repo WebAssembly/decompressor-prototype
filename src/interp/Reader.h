@@ -71,6 +71,7 @@ class Reader : public std::enable_shared_from_this<Reader> {
   virtual int64_t readVarint64() = 0;
   virtual uint32_t readVaruint32() = 0;
   virtual uint64_t readVaruint64() = 0;
+  virtual bool readBinary(const filt::Node* Encoding, decode::IntType& Value);
   virtual bool readValue(const filt::Node* Format, decode::IntType& Value);
   virtual bool readHeaderValue(interp::IntTypeFormat Format,
                                decode::IntType& Value);

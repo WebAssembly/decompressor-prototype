@@ -126,6 +126,13 @@ bool TeeWriter::writeFreezeEof() {
   return true;
 }
 
+bool TeeWriter::writeBinary(IntType Value, const filt::Node* Encoding) {
+  for (Node& Nd : Writers)
+    if (!Nd.getWriter()->writeBinary(Value, Encoding))
+      return false;
+  return true;
+}
+
 bool TeeWriter::writeValue(decode::IntType Value, const filt::Node* Format) {
   for (Node& Nd : Writers)
     if (!Nd.getWriter()->writeValue(Value, Format))

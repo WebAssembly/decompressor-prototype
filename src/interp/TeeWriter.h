@@ -74,6 +74,7 @@ class TeeWriter : public Writer {
   bool writeVaruint32(uint32_t Value) OVERRIDE;
   bool writeVaruint64(uint64_t Value) OVERRIDE;
   bool writeFreezeEof() OVERRIDE;
+  bool writeBinary(decode::IntType, const filt::Node* Encoding) OVERRIDE;
   bool writeValue(decode::IntType Value, const filt::Node* Format) OVERRIDE;
   bool writeTypedValue(decode::IntType Value,
                        interp::IntTypeFormat Format) OVERRIDE;

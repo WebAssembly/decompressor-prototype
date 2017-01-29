@@ -59,6 +59,7 @@ class ByteReader : public Reader {
   int64_t readVarint64() OVERRIDE;
   uint32_t readVaruint32() OVERRIDE;
   uint64_t readVaruint64() OVERRIDE;
+  bool readBinary(const filt::Node* Encoding, decode::IntType& Value) OVERRIDE;
   utils::TraceClass::ContextPtr getTraceContext() OVERRIDE;
 
  private:
