@@ -52,6 +52,7 @@ class ByteWriter : public Writer {
   bool writeVaruint32(uint32_t Value) OVERRIDE;
   bool writeVaruint64(uint64_t Value) OVERRIDE;
   bool writeFreezeEof() OVERRIDE;
+  bool writeBinary(decode::IntType, const filt::Node* Encoding) OVERRIDE;
   bool writeAction(const filt::SymbolNode* Action) OVERRIDE;
 
   void describeState(FILE* File) OVERRIDE;

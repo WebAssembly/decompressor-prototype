@@ -61,6 +61,10 @@ bool Writer::writeFreezeEof() {
   return true;
 }
 
+bool Writer::writeBinary(IntType Value, const Node* Format) {
+  return writeVaruint64(Value);
+}
+
 bool Writer::writeTypedValue(IntType Value, IntTypeFormat Format) {
   switch (Format) {
     case IntTypeFormat::Uint8:

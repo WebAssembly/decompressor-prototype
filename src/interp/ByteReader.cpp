@@ -131,6 +131,12 @@ bool ByteReader::readAction(const SymbolNode* Action) {
   }
 }
 
+bool ByteReader::readBinary(const Node* Encoding, IntType& Value) {
+  Value = 0;
+  fprintf(stderr, "ByteReader::readBinary not implemented!\n");
+  return false;
+}
+
 void ByteReader::readFillStart() {
   FillCursor = ReadPos;
 }

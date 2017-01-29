@@ -98,7 +98,31 @@ bool ByteWriter::writeFreezeEof() {
   return WritePos.isQueueGood();
 }
 
-bool ByteWriter::writeAction(const filt::SymbolNode* Action) {
+bool ByteWriter::writeBinary(IntType Value, const Node* Encoding) {
+  unsigned NumBits = 0;
+  while (Encoding != nullptr) {
+    switch (Encoding->getType()) {
+      default:
+      case OpBinaryReject:
+        return false;
+      case OpBinaryAccept:
+        assert(NumBits == cast<BinaryAcceptNode>(Encoding)->getNumBits());
+        return true;
+      case OpBinarySelect: {
+        auto* Sel = cast<BinarySelectNode>(Encoding);
+        uint8_t Val = uint8_t(Value & 1);
+        WritePos.writeBit(Val);
+        Encoding = Val ? Sel->getKid(1) : Sel->getKid(0);
+        Value >>= 1;
+        ++NumBits;
+        break;
+      }
+    }
+  }
+  return false;
+}
+
+bool ByteWriter::writeAction(const SymbolNode* Action) {
   switch (Action->getPredefinedSymbol()) {
     case PredefinedSymbol::Block_enter:
     case PredefinedSymbol::Block_enter_writeonly:

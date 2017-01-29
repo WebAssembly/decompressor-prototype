@@ -359,6 +359,9 @@ class Interpreter {
   int64_t readVarint64() { return Input->readVarint64(); }
   uint32_t readVaruint32() { return Input->readVaruint32(); }
   uint64_t readVaruint64() { return Input->readVaruint64(); }
+  bool readBinary(const filt::Node* Format, decode::IntType& Value) {
+    return Input->readBinary(Format, Value);
+  }
   bool readValue(const filt::Node* Format, decode::IntType& Value) {
     return Input->readValue(Format, Value);
   }

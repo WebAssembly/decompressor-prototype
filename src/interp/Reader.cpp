@@ -57,6 +57,11 @@ std::shared_ptr<TraceClass> Reader::getTracePtr() {
 void Reader::reset() {
 }
 
+bool Reader::readBinary(const Node*, IntType& Value) {
+  Value = readVaruint64();
+  return true;
+}
+
 bool Reader::readValue(const filt::Node* Format, IntType& Value) {
   switch (Format->getType()) {
     case OpUint8:

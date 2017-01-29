@@ -219,6 +219,7 @@
 
 //#define X(tag)
 #define AST_NODE_NEVER_SAME_LINE                                               \
+  X(BinarySelect)                                                              \
   X(Block)                                                                     \
   X(Case)                                                                      \
   X(Define)                                                                    \

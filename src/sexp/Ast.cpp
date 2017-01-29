@@ -778,7 +778,7 @@ bool BinaryLeafNode::validateNode(NodeVectorType& Parents) {
     auto* Selector = dyn_cast<BinarySelectNode>(Nd);
     if (Selector == nullptr)
       break;
-    if (MyNumBits >= sizeof(IntType)) {
+    if (MyNumBits >= sizeof(IntType) * CHAR_BIT) {
       FILE* Out = getTrace().getFile();
       fprintf(Out, "Error: Binary path too long for %s node\n", getName());
       return false;
@@ -797,6 +797,8 @@ bool BinaryLeafNode::validateNode(NodeVectorType& Parents) {
     fprintf(stderr, ":%u)\n", MyNumBits);
     Success = false;
   }
+  TRACE(IntType, "Value", MyValue);
+  TRACE(unsigned_int, "Bits", MyNumBits);
   Value = MyValue;
   NumBits = MyNumBits;
   isDefault = false;

@@ -73,6 +73,7 @@ class HuffmanEncoder : public std::enable_shared_from_this<HuffmanEncoder> {
    public:
     explicit Node(NodeType Type, WeightType Weight);
     virtual ~Node();
+    NodeType getType() const { return Type; }
     WeightType getWeight() const { return Weight; }
 
     NodeType getRtClassId() const { return Type; }

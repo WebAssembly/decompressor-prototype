@@ -66,6 +66,7 @@ class AbbreviationCodegen {
   filt::Node* generateIntLitActionRead(IntCountNode* Nd);
   filt::Node* generateIntLitActionWrite(IntCountNode* Nd);
   filt::Node* generateAbbrevFormat(interp::IntTypeFormat AbbrevFormat);
+  filt::Node* generateHuffmanEncoding(utils::HuffmanEncoder::NodePtr Root);
 };
 
 }  // end of namespace intcomp
