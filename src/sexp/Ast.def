@@ -53,16 +53,17 @@
   X(U64Const,          0x16, "u64.const",        nullptr,           1, 0)      \
                                                                                \
   /* Formatting */                                                             \
-  X(Uint32,            0x21, "uint32",           nullptr,           0, 0)      \
-  X(Uint64,            0x23, "uint64",           nullptr,           0, 0)      \
-  X(Uint8,             0x25, "uint8",            nullptr,           0, 0)      \
-  X(Varint32,          0x27, "varint32",         nullptr,           0, 0)      \
-  X(Varint64,          0x29, "varint64",         nullptr,           0, 0)      \
-  X(Varuint32,         0x2b, "varuint32",        nullptr,           0, 0)      \
-  X(Varuint64,         0x2d, "varuint64",        nullptr,           0, 0)      \
-  X(Opcode,            0x2e, "opcode",           nullptr,           0, 0)      \
-  X(BinaryAccept,      0x22, "accept",           nullptr,           0, 0)      \
-  X(BinarySelect,      0x24, "binary",           nullptr,           0, 0)      \
+  X(Uint32,            0x20, "uint32",           nullptr,           0, 0)      \
+  X(Uint64,            0x21, "uint64",           nullptr,           0, 0)      \
+  X(Uint8,             0x22, "uint8",            nullptr,           0, 0)      \
+  X(Varint32,          0x23, "varint32",         nullptr,           0, 0)      \
+  X(Varint64,          0x24, "varint64",         nullptr,           0, 0)      \
+  X(Varuint32,         0x25, "varuint32",        nullptr,           0, 0)      \
+  X(Varuint64,         0x26, "varuint64",        nullptr,           0, 0)      \
+  X(Opcode,            0x27, "opcode",           nullptr,           0, 0)      \
+  X(BinaryAccept,      0x28, "accept",           nullptr,           0, 0)      \
+  X(BinaryReject,      0x29, "reject",           nullptr,           0, 0)      \
+  X(BinarySelect,      0x2a, "binary",           nullptr,           0, 0)      \
                                                                                \
   /* Boolean Expressions */                                                    \
   X(And,               0x30, "and",              nullptr,           2, 0)      \

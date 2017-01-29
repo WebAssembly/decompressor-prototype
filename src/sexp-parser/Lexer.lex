@@ -239,6 +239,7 @@ letter	[a-zA-Z]
 "params"          return Parser::make_PARAMS(Driver.getLoc());
 "peek"            return Parser::make_PEEK(Driver.getLoc());
 "read"            return Parser::make_READ(Driver.getLoc());
+"reject"          return Parser::make_REJECT(Driver.getLoc());
 "rename"          return Parser::make_RENAME(Driver.getLoc());
 "seq"             return Parser::make_SEQ(Driver.getLoc());
 "set"             return Parser::make_SET(Driver.getLoc());

@@ -519,6 +519,7 @@ void Interpreter::algorithmResume() {
         switch (Frame.Nd->getType()) {
           case NO_SUCH_NODETYPE:
           case OpBinaryAccept:
+          case OpBinaryReject:
           case OpBinarySelect:
           case OpParams:
           case OpLastSymbolIs:
