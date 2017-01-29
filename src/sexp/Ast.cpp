@@ -64,6 +64,20 @@ BinaryAcceptNode* SymbolTable::createBinaryAccept(IntType Value,
   return Nd;
 }
 
+template <>
+BinaryRejectNode* SymbolTable::create<BinaryRejectNode>() {
+  BinaryRejectNode* Nd = new BinaryRejectNode(*this);
+  Allocated->push_back(Nd);
+  return Nd;
+}
+
+BinaryRejectNode* SymbolTable::createBinaryReject(IntType Value,
+                                                  unsigned NumBits) {
+  BinaryRejectNode* Nd = new BinaryRejectNode(*this, Value, NumBits);
+  Allocated->push_back(Nd);
+  return Nd;
+}
+
 #define X(tag, NODE_DECLS)                      \
   template <>                                   \
   tag##Node* SymbolTable::create<tag##Node>() { \
@@ -710,6 +724,7 @@ bool IntegerNode::implementsClass(NodeType Type) {
     default:
       return false;
     case OpBinaryAccept:
+    case OpBinaryReject:
 #define X(tag, format, defval, mergable, NODE_DECLS) case Op##tag:
       AST_INTEGERNODE_TABLE
 #undef X
@@ -746,7 +761,11 @@ bool ParamNode::validateNode(NodeVectorType& Parents) {
   return false;
 }
 
-bool BinaryAcceptNode::validateNode(NodeVectorType& Parents) {
+bool BinaryLeafNode::implementsClass(NodeType Type) {
+  return Type == OpBinaryAccept || Type == OpBinaryReject;
+}
+
+bool BinaryLeafNode::validateNode(NodeVectorType& Parents) {
   // Defines path (value) from leaf to (binary) root node, guaranteeing each
   // accept node has a unique value that can be case selected.
   TRACE_METHOD("validateNode");
@@ -761,7 +780,7 @@ bool BinaryAcceptNode::validateNode(NodeVectorType& Parents) {
       break;
     if (MyNumBits >= sizeof(IntType)) {
       FILE* Out = getTrace().getFile();
-      fputs("Error: Binary path too long for accept node\n", Out);
+      fprintf(Out, "Error: Binary path too long for %s node\n", getName());
       return false;
     }
     MyValue <<= 1;

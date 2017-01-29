@@ -109,6 +109,7 @@ struct IntValue {
 %token PARAMS        "params"
 %token PEEK          "peek"
 %token READ          "read"
+%token REJECT        "reject"
 %token RENAME        "rename"
 %token SEQ           "seq"
 %token SET           "set"
@@ -447,6 +448,16 @@ format_binary
                 || $5.Value >= std::numeric_limits<unsigned>::max())
               Driver.error("Malformed accept arguments");
             $$ = Driver.createBinaryAccept($3.Value, unsigned($5.Value));
+          }
+        | "(" "reject" ")" {
+            $$ = Driver.create<BinaryRejectNode>();
+          }
+        | "(" "reject" INTEGER ":" INTEGER ")" {
+            if ($3.Format != decode::ValueFormat::Hexidecimal
+                || $5.Format != decode::ValueFormat::Decimal
+                || $5.Value >= std::numeric_limits<unsigned>::max())
+              Driver.error("Malformed reject arguments");
+            $$ = Driver.createBinaryReject($3.Value, unsigned($5.Value));
           }
         | "(" "binary" format_binary format_binary ")" {
             $$ = Driver.create<BinarySelectNode>($3, $4);

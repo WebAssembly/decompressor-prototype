@@ -64,6 +64,10 @@ class Driver {
                                        unsigned NumBits) {
     return Table->createBinaryAccept(Value, NumBits);
   }
+  BinaryRejectNode* createBinaryReject(decode::IntType Value,
+                                       unsigned NumBits) {
+    return Table->createBinaryReject(Value, NumBits);
+  }
 
 #define X(tag, format, defval, mergable, NODE_DECLS)               \
   tag##Node* get##tag##Definition(                                 \
