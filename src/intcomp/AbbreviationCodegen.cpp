@@ -81,20 +81,21 @@ Node* AbbreviationCodegen::generateFileFcn() {
 }
 
 Node* AbbreviationCodegen::generateAbbreviationRead() {
-  auto* Format = EncodingRoot
-      ? generateHuffmanEncoding(EncodingRoot)
-      : generateAbbrevFormat(AbbrevFormat);
+  auto* Format = EncodingRoot ? generateHuffmanEncoding(EncodingRoot)
+                              : generateAbbrevFormat(AbbrevFormat);
   if (ToRead) {
     Format = Symtab->create<ReadNode>(Format);
   }
   return Format;
 }
 
-Node* AbbreviationCodegen::generateHuffmanEncoding(HuffmanEncoder::NodePtr Root) {
+Node* AbbreviationCodegen::generateHuffmanEncoding(
+    HuffmanEncoder::NodePtr Root) {
   Node* Result = nullptr;
   switch (Root->getType()) {
     case HuffmanEncoder::NodeType::Selector: {
-      HuffmanEncoder::Selector* Sel = cast<HuffmanEncoder::Selector>(Root.get());
+      HuffmanEncoder::Selector* Sel =
+          cast<HuffmanEncoder::Selector>(Root.get());
       Result = Symtab->create<BinarySelectNode>(
           generateHuffmanEncoding(Sel->getKid1()),
           generateHuffmanEncoding(Sel->getKid2()));

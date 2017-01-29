@@ -450,9 +450,15 @@ class BinaryLeafNode : public IntegerNode {
   BinaryLeafNode(SymbolTable& Symtab, NodeType Type)
       : IntegerNode(Symtab, Type, 0, decode::ValueFormat::Hexidecimal, true),
         NumBits(0) {}
-  BinaryLeafNode(SymbolTable& Symtab, NodeType Type,
-                 decode::IntType Value, unsigned NumBits)
-      : IntegerNode(Symtab, Type, Value, decode::ValueFormat::Hexidecimal, false),
+  BinaryLeafNode(SymbolTable& Symtab,
+                 NodeType Type,
+                 decode::IntType Value,
+                 unsigned NumBits)
+      : IntegerNode(Symtab,
+                    Type,
+                    Value,
+                    decode::ValueFormat::Hexidecimal,
+                    false),
         NumBits(NumBits) {}
   ~BinaryLeafNode() OVERRIDE {}
   bool validateNode(NodeVectorType& Parents) OVERRIDE;
