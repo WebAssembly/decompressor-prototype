@@ -307,6 +307,8 @@ class Node {
 
   // Recursively walks tree and validates (Scope allows lexical validation).
   // Returns true if validation succeeds.
+  bool validateKid(NodeVectorType& Parents, Node* Kid);
+  bool validateKids(NodeVectorType& Parents);
   bool validateSubtree(NodeVectorType& Parents);
 
   void setLastKid(Node* N) { setKid(getNumKids() - 1, N); }
@@ -775,6 +777,26 @@ class OpcodeNode FINAL : public SelectBaseNode {
   typedef std::vector<WriteRange> CaseRangeVectorType;
   CaseRangeVectorType CaseRangeVector;
   void installCaseRanges();
+};
+
+class BinaryEvalNode : public UnaryNode {
+  BinaryEvalNode() = delete;
+  BinaryEvalNode(const BinaryEvalNode&) = delete;
+  BinaryEvalNode& operator=(const BinaryEvalNode&) = delete;
+
+ public:
+  explicit BinaryEvalNode(SymbolTable& Symtab, Node* Encoding);
+  ~BinaryEvalNode() OVERRIDE;
+  bool validateNode(NodeVectorType& Parents) OVERRIDE;
+
+  const Node* getEncoding(decode::IntType Value) const;
+  bool addEncoding(BinaryLeafNode* Encoding);
+
+  static bool implementsClass(NodeType Type) { return OpBinaryEval == Type; }
+
+ private:
+  std::unordered_map<decode::IntType, const Node*> LookupMap;
+  BinaryRejectNode* NotFound;
 };
 
 }  // end of namespace filt

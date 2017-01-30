@@ -518,11 +518,9 @@ void Interpreter::algorithmResume() {
       case Method::Eval:
         switch (Frame.Nd->getType()) {
           case NO_SUCH_NODETYPE:
-#if 0
           case OpBinaryAccept:
           case OpBinaryReject:
           case OpBinarySelect:
-#endif
           case OpParams:
           case OpLastSymbolIs:
           case OpLiteralDef:
@@ -758,9 +756,7 @@ void Interpreter::algorithmResume() {
             popAndReturn(LastReadValue);
             break;
           }
-          case OpBinaryAccept:
-          case OpBinaryReject:
-          case OpBinarySelect:
+          case OpBinaryEval:
             if (hasReadMode())
               if (!readBinary(Frame.Nd, LastReadValue))
                 return throwCantRead();

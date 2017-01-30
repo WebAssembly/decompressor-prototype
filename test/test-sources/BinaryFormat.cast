@@ -3,15 +3,17 @@
 
 (define 'file' (params)
   (switch
-    (binary
+    (opcode
       (binary
-        (accept)
         (binary
           (accept)
-          (accept)
+          (binary
+            (accept)
+            (accept)
+          )
         )
+        (accept)
       )
-      (accept)
     )
     (void)
     # NOTE: Paths are parsed right-to-left, but use left-to-right encoding to make

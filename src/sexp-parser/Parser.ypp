@@ -435,7 +435,9 @@ format_directive
         | "(" "varuint64" ")" {
             $$ = Driver.create<Varuint64Node>();
           }
-        | format_binary { $$ = $1; }
+        | "(" "opcode" format_binary ")" {
+            $$ = Driver.create<BinaryEvalNode>($3);
+          }
         ;
 
 format_binary
