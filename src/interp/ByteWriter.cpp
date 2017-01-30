@@ -108,10 +108,9 @@ bool ByteWriter::writeBinary(IntType Value, const Node* Encoding) {
   const auto* Accept = cast<BinaryAcceptNode>(Enc);
   unsigned NumBits = Accept->getNumBits();
   IntType Bits = Accept->getValue();
-  for (unsigned i = 0; i < NumBits; ++i) {
-    uint8_t Bit = uint8_t(Bits & 1);
-    WritePos.writeBit(Bit);
-    Bits >>= 1;
+  while (NumBits) {
+    --NumBits;
+    WritePos.writeBit(uint8_t((Bits >> NumBits) & 0x1));
   }
   return true;
 }

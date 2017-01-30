@@ -42,6 +42,8 @@ class BitWriteCursor : public WriteCursor {
 
   ~BitWriteCursor() OVERRIDE;
 
+  bool atEof() const OVERRIDE;
+
   void assign(const BitWriteCursor& C);
 
   BitWriteCursor& operator=(const BitWriteCursor& C) {

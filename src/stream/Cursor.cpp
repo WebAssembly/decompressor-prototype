@@ -25,6 +25,10 @@ namespace decode {
 Cursor::TraceContext::~TraceContext() {
 }
 
+bool Cursor::atEof() const {
+  return CurAddress == Que->getEofAddress();
+}
+
 void Cursor::swap(Cursor& C) {
   std::swap(Type, C.Type);
   std::swap(Que, C.Que);

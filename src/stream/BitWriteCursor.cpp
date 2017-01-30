@@ -54,6 +54,12 @@ BitWriteCursor::BitWriteCursor(const BitWriteCursor& C, size_t StartAddress)
 BitWriteCursor::~BitWriteCursor() {
 }
 
+bool BitWriteCursor::atEof() const OVERRIDE {
+  if (!WriteCursor::atEof())
+    return false;
+  return NumBits == 0;
+}
+
 void BitWriteCursor::assign(const BitWriteCursor& C) {
   WriteCursor::assign(C);
   CurWord = C.CurWord;
