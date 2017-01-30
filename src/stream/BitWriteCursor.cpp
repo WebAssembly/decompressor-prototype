@@ -23,6 +23,13 @@ namespace wasm {
 
 namespace decode {
 
+namespace {
+
+constexpr BitWriteCursor::WordType BitsInByte =
+    BitWriteCursor::WordType(sizeof(uint8_t) * CHAR_BIT);
+
+}  // end of namespace
+
 BitWriteCursor::BitWriteCursor() {
   initFields();
 }
@@ -62,7 +69,7 @@ void BitWriteCursor::swap(BitWriteCursor& C) {
 void BitWriteCursor::writeByte(uint8_t Byte) {
   if (NumBits == 0)
     return WriteCursor::writeByte(Byte);
-  CurWord = (CurWord << sizeof(uint8_t)) | Byte;
+  CurWord = (CurWord << BitsInByte) | Byte;
   WriteCursor::writeByte(CurWord >> NumBits);
   CurWord &= (1 << WordType(NumBits)) - 1;
 }
@@ -71,8 +78,8 @@ void BitWriteCursor::writeBit(uint8_t Bit) {
   assert(Bit <= 1);
   CurWord = (CurWord << 1) | Bit;
   ++NumBits;
-  if (NumBits >= sizeof(uint8_t)) {
-    NumBits -= sizeof(uint8_t);
+  if (NumBits >= BitsInByte) {
+    NumBits -= BitsInByte;
     WriteCursor::writeByte(CurWord >> NumBits);
     CurWord &= (1 << WordType(NumBits)) - 1;
   }
@@ -81,14 +88,14 @@ void BitWriteCursor::writeBit(uint8_t Bit) {
 void BitWriteCursor::alignToByte() {
   if (NumBits == 0)
     return;
-  WriteCursor::writeByte(CurWord << (sizeof(uint8_t) - NumBits));
+  WriteCursor::writeByte(CurWord << (BitsInByte - NumBits));
   CurWord = 0;
   NumBits = 0;
 }
 
 void BitWriteCursor::describeDerivedExtensions(FILE* File) {
   if (NumBits > 0)
-    fprintf(File, "+%u", NumBits);
+    fprintf(File, ":%u", NumBits);
 }
 
 }  // end of namespace decode
