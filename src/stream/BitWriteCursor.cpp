@@ -54,7 +54,7 @@ BitWriteCursor::BitWriteCursor(const BitWriteCursor& C, size_t StartAddress)
 BitWriteCursor::~BitWriteCursor() {
 }
 
-bool BitWriteCursor::atEof() const OVERRIDE {
+bool BitWriteCursor::atEof() const {
   if (!WriteCursor::atEof())
     return false;
   return NumBits == 0;
