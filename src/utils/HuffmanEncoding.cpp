@@ -77,7 +77,7 @@ void HuffmanEncoder::Symbol::describe(FILE* Out, bool Brief, size_t Indent) {
   fprintf(Out, "Sym(%" PRIuMAX " %" PRIuMAX "", uintmax_t(Id),
           uintmax_t(Weight));
   if (!Brief) {
-    fprintf(Out, " %" PRIuMAX ":%" PRIxMAX "", uintmax_t(Path),
+    fprintf(Out, " %" PRIxMAX ":%" PRIuMAX "", uintmax_t(Path),
             uintmax_t(NumBits));
   }
   fprintf(Out, ")\n");

@@ -20,7 +20,7 @@
     # values unique.
     (case (u32.const 0x0) (void)) # 00
     (case (u32.const 0x2) (void)) # 010
-    (case (u32.const 0x6) (void)) # 110
+    (case (u32.const 0x3) (void)) # 011
     (case (u32.const 0x1) (void)) # 1
   )
 )
