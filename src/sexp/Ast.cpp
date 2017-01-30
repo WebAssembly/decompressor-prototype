@@ -841,7 +841,8 @@ bool BinaryLeafNode::validateNode(NodeVectorType& Parents) {
       }
     }
   }
-  fprintf(getTrace().getFile(), "Error: %s can't appear at top level\n", getName());
+  fprintf(getTrace().getFile(), "Error: %s can't appear at top level\n",
+          getName());
   return false;
 }
 
@@ -1201,9 +1202,11 @@ const CaseNode* OpcodeNode::getWriteCase(decode::IntType Value,
 
 BinaryEvalNode::BinaryEvalNode(SymbolTable& Symtab, Node* Encoding)
     : UnaryNode(Symtab, OpBinaryEval, Encoding),
-      NotFound(Symtab.create<BinaryRejectNode>()) {}
+      NotFound(Symtab.create<BinaryRejectNode>()) {
+}
 
-BinaryEvalNode::~BinaryEvalNode() {}
+BinaryEvalNode::~BinaryEvalNode() {
+}
 
 bool BinaryEvalNode::validateNode(NodeVectorType& Parents) {
   LookupMap.clear();

@@ -101,7 +101,7 @@ bool ByteWriter::writeFreezeEof() {
 bool ByteWriter::writeBinary(IntType Value, const Node* Encoding) {
   if (!isa<BinaryEvalNode>(Encoding))
     return false;
-  const auto *Eval = cast<BinaryEvalNode>(Encoding);
+  const auto* Eval = cast<BinaryEvalNode>(Encoding);
   const Node* Enc = Eval->getEncoding(Value);
   if (!isa<BinaryAcceptNode>(Enc))
     return false;

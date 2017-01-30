@@ -82,8 +82,9 @@ Node* AbbreviationCodegen::generateFileFcn() {
 
 Node* AbbreviationCodegen::generateAbbreviationRead() {
   auto* Format = EncodingRoot
-      ? Symtab->create<BinaryEvalNode>(generateHuffmanEncoding(EncodingRoot))
-      : generateAbbrevFormat(AbbrevFormat);
+                     ? Symtab->create<BinaryEvalNode>(
+                           generateHuffmanEncoding(EncodingRoot))
+                     : generateAbbrevFormat(AbbrevFormat);
   if (ToRead) {
     Format = Symtab->create<ReadNode>(Format);
   }
