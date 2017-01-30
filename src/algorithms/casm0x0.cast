@@ -50,6 +50,7 @@
 (literal 'accept'         (u8.const 0x28))
 (literal 'reject'         (u8.const 0x29))
 (literal 'binary'         (u8.const 0x2a))
+(literal 'bin.eval'       (u8.const 0x2b))
 
 # Boolean expressions
 (literal 'and'            (u8.const 0x30))
@@ -125,6 +126,7 @@
     (case 'accept'              (=> 'postorder.inst'))
     (case 'and'                 (=> 'postorder.inst'))
     (case 'binary'              (=> 'postorder.inst'))
+    (case 'bin.eval'            (=> 'postorder.inst'))
     (case 'bitwise.and'         (=> 'postorder.inst'))
     (case 'bitwise.negate'      (=> 'postorder.inst'))
     (case 'bitwise.or'          (=> 'postorder.inst'))

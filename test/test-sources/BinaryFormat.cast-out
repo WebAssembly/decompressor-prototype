@@ -2,15 +2,17 @@
 (void)
 (define 'file' (params)
   (switch
-    (binary
+    (opcode
       (binary
-        (accept 0x0:2)
         (binary
-          (accept 0x2:3)
-          (accept 0x6:3)
+          (accept 0x0:2)
+          (binary
+            (accept 0x2:3)
+            (accept 0x6:3)
+          )
         )
+        (accept 0x1:1)
       )
-      (accept 0x1:1)
     )
     (void)
     (case (u32.const 0x0) (void))

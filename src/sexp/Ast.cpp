@@ -65,6 +65,13 @@ BinaryAcceptNode* SymbolTable::createBinaryAccept(IntType Value,
 }
 
 template <>
+BinaryEvalNode* SymbolTable::create<BinaryEvalNode>(Node* Kid) {
+  BinaryEvalNode* Nd = new BinaryEvalNode(*this, Kid);
+  Allocated->push_back(Nd);
+  return Nd;
+}
+
+template <>
 BinaryRejectNode* SymbolTable::create<BinaryRejectNode>() {
   BinaryRejectNode* Nd = new BinaryRejectNode(*this);
   Allocated->push_back(Nd);
@@ -302,18 +309,29 @@ void Node::clearCaches(NodeVectorType& AdditionalNodes) {
 void Node::installCaches(NodeVectorType& AdditionalNodes) {
 }
 
+bool Node::validateKid(NodeVectorType& Parents, Node* Kid) {
+  Parents.push_back(this);
+  bool Result = Kid->validateSubtree(Parents);
+  Parents.pop_back();
+  return Result;
+}
+
+bool Node::validateKids(NodeVectorType& Parents) {
+  if (!hasKids())
+    return true;
+  TRACE(int, "NumKids", getNumKids());
+  for (auto* Kid : *this)
+    if (!validateKid(Parents, Kid))
+      return false;
+  return true;
+}
+
 bool Node::validateSubtree(NodeVectorType& Parents) {
+  TRACE_METHOD("validateSubtree");
+  TRACE(node_ptr, nullptr, this);
   if (!validateNode(Parents))
     return false;
-  if (hasKids()) {
-    Parents.push_back(this);
-    TRACE(int, "NumKids", getNumKids());
-    for (auto* Kid : *this)
-      if (!Kid->validateSubtree(Parents))
-        return false;
-    Parents.pop_back();
-  }
-  return true;
+  return validateKids(Parents);
 }
 
 bool Node::validateNode(NodeVectorType& Scope) {
@@ -706,6 +724,7 @@ bool UnaryNode::implementsClass(NodeType Type) {
   switch (Type) {
     default:
       return false;
+    case OpBinaryEval:
 #define X(tag, NODE_DECLS) \
   case Op##tag:            \
     return true;
@@ -775,35 +794,56 @@ bool BinaryLeafNode::validateNode(NodeVectorType& Parents) {
   Node* LastNode = this;
   for (size_t i = Parents.size(); i > 0; --i) {
     Node* Nd = Parents[i - 1];
-    auto* Selector = dyn_cast<BinarySelectNode>(Nd);
-    if (Selector == nullptr)
-      break;
-    if (MyNumBits >= sizeof(IntType) * CHAR_BIT) {
-      FILE* Out = getTrace().getFile();
-      fprintf(Out, "Error: Binary path too long for %s node\n", getName());
-      return false;
+    switch (Nd->getType()) {
+      case OpBinaryEval: {
+        bool Success = true;
+        if (!isDefault && (MyValue != Value || MyNumBits != NumBits)) {
+          describeNode("Malformed", this);
+          fprintf(stderr, "Expected (%s ", getName());
+          writeInt(stderr, MyValue, ValueFormat::Hexidecimal);
+          fprintf(stderr, ":%u)\n", MyNumBits);
+          Success = false;
+        }
+        TRACE(IntType, "Value", MyValue);
+        TRACE(unsigned_int, "Bits", MyNumBits);
+        Value = MyValue;
+        NumBits = MyNumBits;
+        isDefault = false;
+        Format = ValueFormat::Hexidecimal;
+        if (!cast<BinaryEvalNode>(Nd)->addEncoding(this)) {
+          fprintf(getTrace().getFile(),
+                  "Error: Can't install opcode, malformed: %s\n", getName());
+          Success = false;
+        }
+        return Success;
+      }
+      case OpBinarySelect:
+        if (MyNumBits >= sizeof(IntType) * CHAR_BIT) {
+          FILE* Out = getTrace().getFile();
+          fprintf(Out, "Error: Binary path too long for %s node\n", getName());
+          return false;
+        }
+        MyValue <<= 1;
+        if (LastNode == Nd->getKid(1))
+          MyValue |= 1;
+        LastNode = Nd;
+        MyNumBits++;
+        break;
+      default: {
+        // Exit loop and fail.
+        FILE* Out = getTrace().getFile();
+        TextWriter Writer;
+        Writer.write(Out, this);
+        fprintf(Out, "Error: Doesn't appear under %s\n",
+                getNodeSexpName(NodeType::OpBinaryEval));
+        fprintf(Out, "Appears in:\n");
+        Writer.write(Out, Nd);
+        return false;
+      }
     }
-    MyValue <<= 1;
-    if (LastNode == Nd->getKid(1))
-      MyValue |= 1;
-    LastNode = Nd;
-    MyNumBits++;
   }
-  bool Success = true;
-  if (!isDefault && (MyValue != Value || MyNumBits != NumBits)) {
-    describeNode("Malformed", this);
-    fprintf(stderr, "Expected (%s ", getName());
-    writeInt(stderr, MyValue, ValueFormat::Hexidecimal);
-    fprintf(stderr, ":%u)\n", MyNumBits);
-    Success = false;
-  }
-  TRACE(IntType, "Value", MyValue);
-  TRACE(unsigned_int, "Bits", MyNumBits);
-  Value = MyValue;
-  NumBits = MyNumBits;
-  isDefault = false;
-  Format = ValueFormat::Hexidecimal;
-  return Success;
+  fprintf(getTrace().getFile(), "Error: %s can't appear at top level\n", getName());
+  return false;
 }
 
 Node* BinaryNode::getKid(int Index) const {
@@ -1158,6 +1198,36 @@ const CaseNode* OpcodeNode::getWriteCase(decode::IntType Value,
   }
   SelShift = 0;
   return nullptr;
+}
+
+BinaryEvalNode::BinaryEvalNode(SymbolTable& Symtab, Node* Encoding)
+    : UnaryNode(Symtab, OpBinaryEval, Encoding),
+      NotFound(Symtab.create<BinaryRejectNode>()) {}
+
+BinaryEvalNode::~BinaryEvalNode() {}
+
+bool BinaryEvalNode::validateNode(NodeVectorType& Parents) {
+  LookupMap.clear();
+  if (!validateKid(Parents, NotFound)) {
+    return false;
+  }
+  return true;
+}
+
+const Node* BinaryEvalNode::getEncoding(IntType Value) const {
+  if (LookupMap.count(Value))
+    return LookupMap.at(Value);
+  return NotFound;
+}
+
+bool BinaryEvalNode::addEncoding(BinaryLeafNode* Encoding) {
+  if (!isa<BinaryAcceptNode>(Encoding))
+    return true;
+  IntType Value = Encoding->getValue();
+  if (LookupMap.count(Value))
+    return false;
+  LookupMap[Value] = Encoding;
+  return true;
 }
 
 }  // end of namespace filt

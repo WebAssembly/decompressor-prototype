@@ -99,18 +99,22 @@ bool ByteWriter::writeFreezeEof() {
 }
 
 bool ByteWriter::writeBinary(IntType Value, const Node* Encoding) {
+  fprintf(stderr, "-> writeBinary %" PRIxMAX "\n", uintmax_t(Value));
   unsigned NumBits = 0;
   while (Encoding != nullptr) {
     switch (Encoding->getType()) {
       default:
       case OpBinaryReject:
+        fprintf(stderr, "<- writeBinary reject\n");
         return false;
       case OpBinaryAccept:
         assert(NumBits == cast<BinaryAcceptNode>(Encoding)->getNumBits());
+        fprintf(stderr, "<- writeBinary bits = %u\n", NumBits);
         return true;
       case OpBinarySelect: {
         auto* Sel = cast<BinarySelectNode>(Encoding);
         uint8_t Val = uint8_t(Value & 1);
+        fprintf(stderr, "Val = %u\n", unsigned(Val));
         WritePos.writeBit(Val);
         Encoding = Val ? Sel->getKid(1) : Sel->getKid(0);
         Value >>= 1;
@@ -119,6 +123,7 @@ bool ByteWriter::writeBinary(IntType Value, const Node* Encoding) {
       }
     }
   }
+  fprintf(stderr, "<- writeBinary not encoded\n");
   return false;
 }
 
