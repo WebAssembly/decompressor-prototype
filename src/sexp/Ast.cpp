@@ -823,9 +823,8 @@ bool BinaryLeafNode::validateNode(NodeVectorType& Parents) {
           fprintf(Out, "Error: Binary path too long for %s node\n", getName());
           return false;
         }
-        MyValue <<= 1;
         if (LastNode == Nd->getKid(1))
-          MyValue |= 1;
+          MyValue |= (IntType(1) << MyNumBits);
         LastNode = Nd;
         MyNumBits++;
         break;
