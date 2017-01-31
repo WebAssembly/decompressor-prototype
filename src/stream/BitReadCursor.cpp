@@ -23,6 +23,13 @@ namespace wasm {
 
 namespace decode {
 
+namespace {
+
+constexpr BitReadCursor::WordType BitsInByte =
+    BitReadCursor::WordType(sizeof(uint8_t) * CHAR_BIT);
+
+}  // end of namespace
+
 BitReadCursor::BitReadCursor() {
   initFields();
 }
@@ -68,40 +75,40 @@ void BitReadCursor::alignToByte() {
 
 void BitReadCursor::describeDerivedExtensions(FILE* File) {
   if (NumBits > 0)
-    fprintf(File, "+%u", NumBits);
+    fprintf(File, "-%u", NumBits);
 }
 
-#define BITREAD(Mask, MaskSize)                                      \
-  do {                                                               \
-    if (NumBits >= MaskSize) {                                       \
-      NumBits -= MaskSize;                                           \
-      uint8_t Value = uint8_t(CurWord >> NumBits);                   \
-      CurWord &= ~Mask << NumBits;                                   \
-      return Value;                                                  \
-    }                                                                \
-    if (atEob())                                                     \
-      break;                                                         \
-    /* Not enough bits left, read more in. */                        \
-    CurWord = (CurWord << sizeof(uint8_t)) | ReadCursor::readByte(); \
-    NumBits += sizeof(uint8_t);                                      \
-  } while (1);                                                       \
-  /* Leftover bits, fix (as best as possible) */                     \
-  fail();                                                            \
-  uint8_t Value = uint8_t(CurWord);                                  \
-  CurWord = 0;                                                       \
-  NumBits = 0;                                                       \
+#define BITREAD(Mask, MaskSize)                                 \
+  do {                                                          \
+    if (NumBits >= MaskSize) {                                  \
+      NumBits -= MaskSize;                                      \
+      uint8_t Value = uint8_t(CurWord >> NumBits);              \
+      CurWord &= ~Mask << NumBits;                              \
+      return Value;                                             \
+    }                                                           \
+    if (atEob())                                                \
+      break;                                                    \
+    /* Not enough bits left, read more in. */                   \
+    CurWord = (CurWord << BitsInByte) | ReadCursor::readByte(); \
+    NumBits += BitsInByte;                                      \
+  } while (1);                                                  \
+  /* Leftover bits, fix (as best as possible) */                \
+  fail();                                                       \
+  uint8_t Value = uint8_t(CurWord);                             \
+  CurWord = 0;                                                  \
+  NumBits = 0;                                                  \
   return Value;
 
 namespace {
 
-static constexpr BitReadCursor::WordType ByteMask = (1 << sizeof(uint8_t)) - 1;
+static constexpr BitReadCursor::WordType ByteMask = (1 << BitsInByte) - 1;
 
 }  // end of anonymous namespace
 
 uint8_t BitReadCursor::readByte() {
   if (NumBits == 0)
     return ReadCursor::readByte();
-  BITREAD(ByteMask, sizeof(uint8_t));
+  BITREAD(ByteMask, BitsInByte);
 }
 
 uint8_t BitReadCursor::readBit() {

@@ -20,6 +20,10 @@
 
 #include "interp/ByteReadStream.h"
 
+#if 1
+#include "sexp/TextWriter.h"
+#endif
+
 namespace wasm {
 
 using namespace decode;
@@ -131,9 +135,23 @@ bool ByteReader::readAction(const SymbolNode* Action) {
   }
 }
 
-bool ByteReader::readBinary(const Node* Encoding, IntType& Value) {
+bool ByteReader::readBinary(const Node* Eval, IntType& Value) {
   Value = 0;
-  fprintf(stderr, "ByteReader::readBinary not implemented!\n");
+  if (!isa<BinaryEvalNode>(Eval))
+    return false;
+  const Node* Encoding = cast<BinaryEvalNode>(Eval)->getKid(0);
+  while (1) {
+    switch (Encoding->getType()) {
+      case OpBinaryAccept:
+        Value = cast<BinaryAcceptNode>(Encoding)->getValue();
+        return true;
+      case OpBinarySelect:
+        Encoding = const_cast<Node*>(Encoding->getKid(ReadPos.readBit()));
+        break;
+      default:
+        return false;
+    }
+  }
   return false;
 }
 

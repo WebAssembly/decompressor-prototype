@@ -61,7 +61,7 @@ class Cursor : public PageCursor {
 
   bool isEofFrozen() const { return Que->isEofFrozen(); }
 
-  bool atEof() const { return CurAddress == Que->getEofAddress(); }
+  virtual bool atEof() const;
 
   size_t getEofAddress() const { return Que->getEofAddress(); }
 
