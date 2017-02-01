@@ -28,8 +28,9 @@ namespace interp {
 
 IntInterperter::IntInterperter(std::shared_ptr<IntReader> Input,
                                std::shared_ptr<Writer> Output,
+                               const InterpreterFlags& Flags,
                                std::shared_ptr<filt::SymbolTable> Symtab)
-    : Interpreter(Input, Output, Symtab), IntInput(Input) {
+    : Interpreter(Input, Output, Flags, Symtab), IntInput(Input) {
   // TODO(karlschimpf) Modify structuralStart() to mimic algorithmStart(),
   // except that it calls structuralResume() to remove this assertion.
   assert(Symtab && "IntInterperter must be given algorithm at construction");

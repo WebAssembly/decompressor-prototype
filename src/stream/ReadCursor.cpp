@@ -44,6 +44,10 @@ size_t ReadCursor::advance(size_t Distance) {
   return DistanceMoved;
 }
 
+uint8_t ReadCursor::readByte() {
+  return (CurAddress < GuaranteedBeforeEob) ? readOneByte() : readByteAfterReadFill();
+}
+
 uint8_t ReadCursor::readOneByte() {
   assert(CurPage);
   uint8_t Byte = *getBufferPtr();

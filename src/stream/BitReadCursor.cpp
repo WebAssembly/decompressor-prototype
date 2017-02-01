@@ -88,12 +88,12 @@ void BitReadCursor::describeDerivedExtensions(FILE* File, bool IncludeDetail) {
   fprintf(File, ":%u", BitsInByte - NumBits);
 }
 
-#define BITREAD(Mask, MaskSize)                                 \
+#define BITREAD_TYPED(Mask, MaskSize)                           \
   do {                                                          \
     if (NumBits >= MaskSize) {                                  \
       NumBits -= MaskSize;                                      \
       uint8_t Value = uint8_t(CurWord >> NumBits);              \
-      CurWord &= ~Mask << NumBits;                              \
+      CurWord &= ~(Mask << NumBits);                            \
       return Value;                                             \
     }                                                           \
     if (atEob())                                                \
@@ -108,6 +108,9 @@ void BitReadCursor::describeDerivedExtensions(FILE* File, bool IncludeDetail) {
   CurWord = 0;                                                  \
   NumBits = 0;                                                  \
   return Value;
+
+#define BITREAD(Mask, MaskSize) \
+  BITREAD_TYPED(WordType(Mask), unsigned(MaskSize))
 
 namespace {
 

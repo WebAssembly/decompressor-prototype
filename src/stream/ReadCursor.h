@@ -67,13 +67,8 @@ class ReadCursor : public Cursor {
     updateGuaranteedBeforeEob();
   }
 
-  // Reads next byte. Returns zero if at end of file. NOTE: Assumes byte
-  // aligned!
-  uint8_t readByte() {
-    if (CurAddress < GuaranteedBeforeEob)
-      return readOneByte();
-    return readByteAfterReadFill();
-  }
+  // Reads next byte. Returns zero if at end of file.
+  virtual uint8_t readByte();
 
   // Try to advance Distance bytes. Returns actual number of bytes advanced.  If
   // zero is returned (and Distance > 0), no more bytes are available to advance

@@ -21,6 +21,7 @@
 
 #include "intcomp/CompressionFlags.h"
 #include "intcomp/IntCountNode.h"
+#include "interp/Interpreter.h"
 #include "interp/IntFormats.h"
 #include "interp/IntStream.h"
 #include "sexp/Ast.h"
@@ -66,6 +67,7 @@ class IntCompressor FINAL {
     bool TraceAssigningAbbreviations;
     bool TraceCompressedIntOutput;
     std::shared_ptr<utils::TraceClass> Trace;
+    interp::InterpreterFlags InterpFlags;
     Flags();
   };
 

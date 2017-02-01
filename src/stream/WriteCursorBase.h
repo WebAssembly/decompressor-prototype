@@ -47,13 +47,8 @@ class WriteCursorBase : public Cursor {
     return *this;
   }
 
-  // Writes next byte. Fails if at end of file. NOTE: Assumed byte aligned!
-  void writeByte(uint8_t Byte) {
-    if (CurAddress < GuaranteedBeforeEob)
-      writeOneByte(Byte);
-    else
-      writeFillWriteByte(Byte);
-  }
+  // Writes next byte. Fails if at end of file.
+  virtual void writeByte(uint8_t Byte);
 
  protected:
   void writeOneByte(uint8_t Byte);
