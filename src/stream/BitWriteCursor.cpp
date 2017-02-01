@@ -99,7 +99,8 @@ void BitWriteCursor::alignToByte() {
   NumBits = 0;
 }
 
-void BitWriteCursor::describeDerivedExtensions(FILE* File) {
+void BitWriteCursor::describeDerivedExtensions(FILE* File, bool IncludeDetail) {
+  WriteCursor::describeDerivedExtensions(File, IncludeDetail);
   if (NumBits > 0)
     fprintf(File, ":%u", NumBits);
 }

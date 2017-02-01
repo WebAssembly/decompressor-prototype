@@ -280,9 +280,7 @@ class Node {
 
   virtual ~Node() {}
 
-#if 1
   SymbolTable& getSymtab() { return Symtab; }
-#endif
 
   NodeType getRtClassId() const { return Type; }
 

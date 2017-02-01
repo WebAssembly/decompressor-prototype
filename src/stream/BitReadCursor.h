@@ -49,7 +49,7 @@ class BitReadCursor : public ReadCursor {
   uint8_t readBit();
   void alignToByte();
 
-  void describeDerivedExtensions(FILE* File) OVERRIDE;
+  void describeDerivedExtensions(FILE* File, bool IncludeDetail) OVERRIDE;
 
  private:
   WordType CurWord;

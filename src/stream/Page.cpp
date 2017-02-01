@@ -40,15 +40,18 @@ PageCursor::PageCursor(Queue* Que)
   assert(CurPage);
 }
 
+void describePage(FILE* File, Page* Pg) {
+  if (Pg == nullptr)
+    fprintf(File, " nullptr");
+  else
+    Pg->describe(File);
+}
+
 FILE* PageCursor::describe(FILE* File, bool IncludePage) {
   AddressType Addr(CurAddress);
   describeAddress(File, Addr);
-  if (IncludePage) {
-    if (CurPage)
-      CurPage->describe(File);
-    else
-      fprintf(File, " nullptr");
-  }
+  if (IncludePage)
+    describePage(File, CurPage.get());
   return File;
 }
 

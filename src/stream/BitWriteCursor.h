@@ -57,7 +57,7 @@ class BitWriteCursor : public WriteCursor {
   void writeBit(uint8_t Bit);
   void alignToByte();
 
-  void describeDerivedExtensions(FILE* File) OVERRIDE;
+  void describeDerivedExtensions(FILE* File, bool IncludeDetail) OVERRIDE;
 
  private:
   WordType CurWord;
