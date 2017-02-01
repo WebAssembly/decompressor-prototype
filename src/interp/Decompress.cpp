@@ -177,8 +177,9 @@ extern "C" {
 void* create_decompressor() {
   auto* Decomp = new Decompressor();
   Decomp->Writer = std::make_shared<ByteWriter>(Decomp->OutputPipe.getInput());
-  Decomp->MyReader = std::make_shared<Interpreter>(
-      std::make_shared<ByteReader>(Decomp->Input), Decomp->Writer, Decomp->Flags);
+  Decomp->MyReader =
+      std::make_shared<Interpreter>(std::make_shared<ByteReader>(Decomp->Input),
+                                    Decomp->Writer, Decomp->Flags);
   Decomp->MyReader->addSelector(std::make_shared<DecompressSelector>(
       getAlgwasm0xdSymtab(), Decomp->AlgState, false, Decomp->Flags));
   Decomp->MyReader->addSelector(std::make_shared<DecompressSelector>(

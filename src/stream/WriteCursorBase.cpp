@@ -23,6 +23,13 @@ namespace decode {
 WriteCursorBase::~WriteCursorBase() {
 }
 
+void WriteCursorBase::writeByte(uint8_t Byte) {
+  if (CurAddress < GuaranteedBeforeEob)
+    writeOneByte(Byte);
+  else
+    writeFillWriteByte(Byte);
+}
+
 void WriteCursorBase::writeOneByte(uint8_t Byte) {
   *getBufferPtr() = Byte;
   ++CurAddress;

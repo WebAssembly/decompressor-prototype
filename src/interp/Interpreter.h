@@ -39,7 +39,6 @@ namespace interp {
 
 class Interpreter;
 
-
 struct InterpreterFlags {
   InterpreterFlags();
   bool TraceProgress;
@@ -75,7 +74,6 @@ class Interpreter {
   Interpreter& operator=(const Interpreter&) = delete;
 
  public:
-
   Interpreter(std::shared_ptr<Reader> Input,
               std::shared_ptr<Writer> Output,
               const InterpreterFlags& Flags,

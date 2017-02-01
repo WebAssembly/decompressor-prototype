@@ -45,7 +45,7 @@ class BitReadCursor : public ReadCursor {
 
   void swap(BitReadCursor& C);
 
-  uint8_t readByte();
+  uint8_t readByte() OVERRIDE;
   uint8_t readBit();
   void alignToByte();
 

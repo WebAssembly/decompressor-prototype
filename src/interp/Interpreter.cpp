@@ -100,8 +100,7 @@ struct {
 }  // end of anonymous namespace
 
 InterpreterFlags::InterpreterFlags()
-    : TraceProgress(false),
-      TraceIntermediateStreams(false) {
+    : TraceProgress(false), TraceIntermediateStreams(false) {
 }
 
 void Interpreter::setInput(std::shared_ptr<Reader> Value) {

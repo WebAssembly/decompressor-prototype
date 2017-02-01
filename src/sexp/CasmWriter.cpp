@@ -76,7 +76,8 @@ const BitWriteCursor& CasmWriter::writeBinary(
     Writer = Tee;
   }
   InterpreterFlags Flags;
-  Interpreter MyReader(std::make_shared<IntReader>(IntSeq), Writer, Flags, AlgSymtab);
+  Interpreter MyReader(std::make_shared<IntReader>(IntSeq), Writer, Flags,
+                       AlgSymtab);
   MyReader.setFreezeEofAtExit(FreezeEofAtExit);
   if (TraceWriter || TraceTree) {
     auto Trace = std::make_shared<TraceClass>("CasmWriter");

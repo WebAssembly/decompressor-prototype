@@ -113,7 +113,8 @@ CountNode::RootPtr IntCompressor::getRoot() {
 void IntCompressor::readInput() {
   Contents = std::make_shared<IntStream>();
   auto MyWriter = std::make_shared<IntWriter>(Contents);
-  Interpreter MyReader(std::make_shared<ByteReader>(Input), MyWriter, MyFlags.InterpFlags, Symtab);
+  Interpreter MyReader(std::make_shared<ByteReader>(Input), MyWriter,
+                       MyFlags.InterpFlags, Symtab);
   if (MyFlags.TraceReadingInput)
     MyReader.getTrace().setTraceProgress(true);
   MyReader.algorithmRead();
@@ -138,7 +139,8 @@ void IntCompressor::writeDataOutput(const BitWriteCursor& StartPos,
                                     std::shared_ptr<SymbolTable> Symtab) {
   auto Writer = std::make_shared<ByteWriter>(Output);
   Writer->setPos(StartPos);
-  Interpreter MyReader(std::make_shared<IntReader>(IntOutput), Writer, MyFlags.InterpFlags, Symtab);
+  Interpreter MyReader(std::make_shared<IntReader>(IntOutput), Writer,
+                       MyFlags.InterpFlags, Symtab);
   if (MyFlags.TraceWritingDataOutput)
     MyReader.getTrace().setTraceProgress(true);
   MyReader.useFileHeader(Symtab->getTargetHeader());
@@ -165,7 +167,8 @@ bool IntCompressor::compressUpToSize(size_t Size) {
   Writer->setCountCutoff(MyFlags.CountCutoff);
   Writer->setUpToSize(Size);
 
-  IntInterperter Reader(std::make_shared<IntReader>(Contents), Writer, MyFlags.InterpFlags, Symtab);
+  IntInterperter Reader(std::make_shared<IntReader>(Contents), Writer,
+                        MyFlags.InterpFlags, Symtab);
   if (MyFlags.TraceReadingIntStream)
     Reader.getTrace().setTraceProgress(true);
   Reader.structuralRead();
@@ -264,7 +267,8 @@ bool IntCompressor::generateIntOutput() {
   auto Writer = std::make_shared<AbbrevAssignWriter>(
       Root, IntOutput, MyFlags.LengthLimit, MyFlags.AbbrevFormat,
       !MyFlags.UseHuffmanEncoding);
-  IntInterperter Reader(std::make_shared<IntReader>(Contents), Writer, MyFlags.InterpFlags, Symtab);
+  IntInterperter Reader(std::make_shared<IntReader>(Contents), Writer,
+                        MyFlags.InterpFlags, Symtab);
   if (MyFlags.TraceIntStreamGeneration)
     Reader.getTrace().setTraceProgress(true);
   Reader.structuralRead();

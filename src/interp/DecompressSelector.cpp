@@ -79,6 +79,8 @@ bool DecompressSelector::applyNextQueuedAlgorithm(Interpreter* R) {
 }
 
 bool DecompressSelector::configureData(Interpreter* R) {
+  if (State->IntermediateStream && Flags.TraceIntermediateStreams)
+    State->IntermediateStream->describe(stderr, "Intermediate stream");
   return State->AlgQueue.empty() ? applyDataAlgorithm(R)
                                  : applyNextQueuedAlgorithm(R);
 }

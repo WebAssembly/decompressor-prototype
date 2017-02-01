@@ -53,7 +53,7 @@ class BitWriteCursor : public WriteCursor {
 
   void swap(BitWriteCursor& C);
 
-  void writeByte(uint8_t Byte);
+  void writeByte(uint8_t Byte) OVERRIDE;
   void writeBit(uint8_t Bit);
   void alignToByte();
 
