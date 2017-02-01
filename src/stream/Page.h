@@ -121,6 +121,8 @@ class Page : public std::enable_shared_from_this<Page> {
   FILE* describe(FILE* File);
 };
 
+void describePage(FILE* File, Page* Pg);
+
 class PageCursor {
   friend class Queue;
 

@@ -73,9 +73,19 @@ void BitReadCursor::alignToByte() {
   CurWord = 0;
 }
 
-void BitReadCursor::describeDerivedExtensions(FILE* File) {
-  if (NumBits > 0)
-    fprintf(File, "-%u", NumBits);
+void BitReadCursor::describeDerivedExtensions(FILE* File, bool IncludeDetail) {
+  size_t Address = getAddress();
+  if (NumBits == 0 || Address == 0) {
+    ReadCursor::describeDerivedExtensions(File, IncludeDetail);
+    if (NumBits > 0)
+      fprintf(File, ":-%u", NumBits);
+    return;
+  }
+  // Correct by moving back one byte, so that it looks the same as when writing.
+  describeAddress(File, Address - 1);
+  if (IncludeDetail)
+    describePage(File, CurPage.get());
+  fprintf(File, ":%u", BitsInByte - NumBits);
 }
 
 #define BITREAD(Mask, MaskSize)                                 \

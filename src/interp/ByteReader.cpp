@@ -20,10 +20,6 @@
 
 #include "interp/ByteReadStream.h"
 
-#if 1
-#include "sexp/TextWriter.h"
-#endif
-
 namespace wasm {
 
 using namespace decode;

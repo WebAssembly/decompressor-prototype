@@ -82,7 +82,7 @@ class Cursor : public PageCursor {
   // For debugging.
   FILE* describe(FILE* File, bool IncludeDetail = false, bool AddEoln = false);
   // Adds any extentions to the page address, as defined in a derived class.
-  virtual void describeDerivedExtensions(FILE* File);
+  virtual void describeDerivedExtensions(FILE* File, bool IncludeDetail);
 
   virtual utils::TraceClass::ContextPtr getTraceContext();
 

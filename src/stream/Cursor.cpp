@@ -90,8 +90,7 @@ void Cursor::writeFillBuffer(size_t WantedSize) {
 FILE* Cursor::describe(FILE* File, bool IncludeDetail, bool AddEoln) {
   if (IncludeDetail)
     fputs("Cursor<", File);
-  PageCursor::describe(File, IncludeDetail);
-  describeDerivedExtensions(File);
+  describeDerivedExtensions(File, IncludeDetail);
   if (IncludeDetail) {
     if (EobPtr->isDefined()) {
       fprintf(File, ", eob=");
@@ -104,7 +103,8 @@ FILE* Cursor::describe(FILE* File, bool IncludeDetail, bool AddEoln) {
   return File;
 }
 
-void Cursor::describeDerivedExtensions(FILE* File) {
+void Cursor::describeDerivedExtensions(FILE* File, bool IncludeDetail) {
+  PageCursor::describe(File, IncludeDetail);
 }
 
 }  // end of namespace decode
