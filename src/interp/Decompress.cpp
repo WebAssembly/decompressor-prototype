@@ -52,6 +52,7 @@ struct Decompressor {
   std::shared_ptr<ByteWriter> Writer;
   std::shared_ptr<DecompAlgState> AlgState;
   State MyState;
+  InterpreterFlags Flags;
   Decompressor();
   uint8_t* getBuffer(int32_t Size);
   int32_t resume(int32_t Size);
@@ -177,11 +178,11 @@ void* create_decompressor() {
   auto* Decomp = new Decompressor();
   Decomp->Writer = std::make_shared<ByteWriter>(Decomp->OutputPipe.getInput());
   Decomp->MyReader = std::make_shared<Interpreter>(
-      std::make_shared<ByteReader>(Decomp->Input), Decomp->Writer);
+      std::make_shared<ByteReader>(Decomp->Input), Decomp->Writer, Decomp->Flags);
   Decomp->MyReader->addSelector(std::make_shared<DecompressSelector>(
-      getAlgwasm0xdSymtab(), Decomp->AlgState, false));
+      getAlgwasm0xdSymtab(), Decomp->AlgState, false, Decomp->Flags));
   Decomp->MyReader->addSelector(std::make_shared<DecompressSelector>(
-      getAlgcasm0x0Symtab(), Decomp->AlgState, true));
+      getAlgcasm0x0Symtab(), Decomp->AlgState, true, Decomp->Flags));
   Decomp->MyReader->algorithmStart();
   return Decomp;
 }

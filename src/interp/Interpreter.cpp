@@ -99,6 +99,11 @@ struct {
 
 }  // end of anonymous namespace
 
+InterpreterFlags::InterpreterFlags()
+    : TraceProgress(false),
+      TraceIntermediateStreams(false) {
+}
+
 void Interpreter::setInput(std::shared_ptr<Reader> Value) {
   Input = Value;
   if (Trace) {
@@ -181,9 +186,11 @@ const char* Interpreter::getName(SectionCode Code) {
 
 Interpreter::Interpreter(std::shared_ptr<Reader> Input,
                          std::shared_ptr<Writer> Output,
+                         const InterpreterFlags& Flags,
                          std::shared_ptr<filt::SymbolTable> Symtab)
     : Input(Input),
       Output(Output),
+      Flags(Flags),
       Symtab(Symtab),
       LastReadValue(0),
       DispatchedMethod(Method::NO_SUCH_METHOD),

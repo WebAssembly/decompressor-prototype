@@ -39,13 +39,20 @@ namespace interp {
 
 class Interpreter;
 
+
+struct InterpreterFlags {
+  InterpreterFlags();
+  bool TraceProgress;
+  bool TraceIntermediateStreams;
+};
+
 class AlgorithmSelector
     : public std::enable_shared_from_this<AlgorithmSelector> {
   AlgorithmSelector(const AlgorithmSelector&) = delete;
   AlgorithmSelector& operator=(const AlgorithmSelector&) = delete;
 
  public:
-  explicit AlgorithmSelector() {}
+  explicit AlgorithmSelector(const InterpreterFlags& Flags) : Flags(Flags) {}
   virtual ~AlgorithmSelector() {}
 
   // Returns the header to match.
@@ -58,6 +65,8 @@ class AlgorithmSelector
   // Called after reading from file using the symbol table. Allows one
   // to restore/reconfigure the reader.
   virtual bool reset(Interpreter* R) = 0;
+
+  const InterpreterFlags& Flags;
 };
 
 class Interpreter {
@@ -66,8 +75,10 @@ class Interpreter {
   Interpreter& operator=(const Interpreter&) = delete;
 
  public:
+
   Interpreter(std::shared_ptr<Reader> Input,
               std::shared_ptr<Writer> Output,
+              const InterpreterFlags& Flags,
               std::shared_ptr<filt::SymbolTable> Symtab =
                   std::shared_ptr<filt::SymbolTable>());
   virtual ~Interpreter();
@@ -242,6 +253,7 @@ class Interpreter {
 
   std::shared_ptr<Reader> Input;
   std::shared_ptr<Writer> Output;
+  const InterpreterFlags& Flags;
   std::shared_ptr<filt::SymbolTable> Symtab;
   std::vector<std::shared_ptr<AlgorithmSelector>> Selectors;
   // The current section name (if applicable).

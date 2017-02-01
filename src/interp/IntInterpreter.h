@@ -39,6 +39,7 @@ class IntInterperter : public Interpreter {
  public:
   IntInterperter(std::shared_ptr<IntReader> Input,
                  std::shared_ptr<Writer> Output,
+                 const InterpreterFlags& Flags,
                  std::shared_ptr<filt::SymbolTable> Symtab);
   ~IntInterperter() OVERRIDE;
 

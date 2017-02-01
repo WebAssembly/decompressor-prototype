@@ -77,8 +77,9 @@ void CasmReader::readText(charstring Filename) {
 void CasmReader::readBinary(std::shared_ptr<Queue> Binary,
                             std::shared_ptr<SymbolTable> AlgSymtab) {
   auto Inflator = std::make_shared<InflateAst>();
+  InterpreterFlags Flags;
   Interpreter MyReader(std::make_shared<ByteReader>(Binary), Inflator,
-                       AlgSymtab);
+                       Flags, AlgSymtab);
   if (TraceRead || TraceTree) {
     auto Trace = std::make_shared<TraceClass>("CasmInterpreter");
     Trace->setTraceProgress(true);

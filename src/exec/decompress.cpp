@@ -110,6 +110,7 @@ int main(const int Argc, const char* Argv[]) {
   bool MinimizeBlockSize = false;
   bool UseCApi = false;
   size_t NumTries = 1;
+  InterpreterFlags InterpFlags;
 
   {
     ArgsParser Args("Decompress WASM binary file");
@@ -205,12 +206,12 @@ int main(const int Argc, const char* Argv[]) {
     auto Writer = std::make_shared<ByteWriter>(BackedOutput);
     Interpreter Decompressor(
         std::make_shared<ByteReader>(std::make_shared<ReadBackedQueue>(Input)),
-        Writer);
+        Writer, InterpFlags);
     auto AlgState = std::make_shared<DecompAlgState>();
     Decompressor.addSelector(std::make_shared<DecompressSelector>(
-        getAlgwasm0xdSymtab(), AlgState, false));
+        getAlgwasm0xdSymtab(), AlgState, false, InterpFlags));
     Decompressor.addSelector(std::make_shared<DecompressSelector>(
-        getAlgcasm0x0Symtab(), AlgState, true));
+        getAlgcasm0x0Symtab(), AlgState, true, InterpFlags));
     Writer->setMinimizeBlockSize(MinimizeBlockSize);
     if (VerboseTrace) {
       auto Trace = std::make_shared<TraceClass>("Decompress");
