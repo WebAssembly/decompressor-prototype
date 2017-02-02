@@ -153,7 +153,8 @@ HuffmanEncoder::NodePtr HuffmanEncoder::Selector::installPaths(
     NodePtr K1 = Sel->getKid1();
     K1 = K1->installPaths(K1, Encoder, Path, KidBits);
     NodePtr K2 = Sel->getKid2();
-    K2 = K2->installPaths(K2, Encoder, Path | (1 << NumBits), KidBits);
+    K2 =
+        K2->installPaths(K2, Encoder, Path | (PathType(1) << NumBits), KidBits);
     if (K1 && K2) {
       Sel->Kid1 = K1;
       Sel->Kid2 = K2;
