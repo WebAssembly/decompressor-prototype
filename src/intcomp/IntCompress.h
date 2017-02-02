@@ -49,6 +49,7 @@ class IntCompressor FINAL {
     interp::IntTypeFormat AbbrevFormat;
     bool MinimizeCodeSize;
     bool UseHuffmanEncoding;
+    bool TraceHuffmanAssignments;
     bool TraceReadingInput;
     bool TraceReadingIntStream;
     bool TraceWritingCodeOutput;

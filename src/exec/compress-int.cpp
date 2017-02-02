@@ -77,6 +77,14 @@ int main(int Argc, const char* Argv[]) {
         "Usage Huffman encoding for abbreviations instead "
         "of a simple weighted ordering (experimental)"));
 
+    ArgsParser::Optional<bool> TraceHuffmanAssignmentsFlag(
+        CompressionFlags.TraceHuffmanAssignments);
+    Args.add(
+        TraceHuffmanAssignmentsFlag.setLongName("verbose=Huffman-assignments")
+            .setDescription(
+                "Show defined Huffman encoding assignments for "
+                "to use for abbreviations"));
+
     ArgsParser::Optional<uint64_t> CountCutoffFlag(
         CompressionFlags.CountCutoff);
     Args.add(CountCutoffFlag.setDefault(10)
