@@ -141,7 +141,8 @@ void CountNode::newline(FILE* Out) const {
   fprintf(Out, " - Count: %" PRIuMAX "", uintmax_t(getCount()));
   if (hasAbbrevIndex())
     fprintf(Out, " Abbrev: %" PRIuMAX "", uintmax_t(getAbbrevIndex()));
-  if (AbbrevSymbol)
+  if (AbbrevSymbol && AbbrevSymbol->getNumBits())
+    // Assume binary encoded, so add binary encoding.
     fprintf(Out, " -> 0x%" PRIxMAX ":%u", uintmax_t(AbbrevSymbol->getPath()),
             AbbrevSymbol->getNumBits());
   fputc('\n', Out);
