@@ -62,6 +62,7 @@ IntCompressor::Flags::Flags()
       AbbrevFormat(IntTypeFormat::Varuint64),
       MinimizeCodeSize(true),
       UseHuffmanEncoding(false),
+      TrimOverriddenPatterns(false),
       TraceHuffmanAssignments(false),
       TraceReadingInput(false),
       TraceReadingIntStream(false),
@@ -253,9 +254,7 @@ void IntCompressor::compress() {
 
 void IntCompressor::assignInitialAbbreviations(
     CountNode::Int2PtrMap& Assignments) {
-  AbbreviationsCollector Collector(getRoot(), Assignments, MyFlags.CountCutoff,
-                                   MyFlags.WeightCutoff,
-                                   MyFlags.MaxAbbreviations);
+  AbbreviationsCollector Collector(getRoot(), Assignments, MyFlags);
   if (MyFlags.TraceAssigningAbbreviations && hasTrace())
     Collector.setTrace(getTracePtr());
   if (!MyFlags.UseHuffmanEncoding)

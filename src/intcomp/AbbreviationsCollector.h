@@ -20,6 +20,7 @@
 #define DECOMPRESSOR_SRC_INTCOMP_ABBREVIATIONSCOLLECTOR_H
 
 #include "intcomp/CountNodeCollector.h"
+#include "intcomp/IntCompress.h"
 #include "utils/HuffmanEncoding.h"
 
 namespace wasm {
@@ -30,9 +31,7 @@ class AbbreviationsCollector : public CountNodeCollector {
  public:
   AbbreviationsCollector(CountNode::RootPtr Root,
                          CountNode::Int2PtrMap& Assignments,
-                         size_t CountCutoff,
-                         size_t WeightCutoff,
-                         size_t MaxAbbreviations);
+                         const IntCompressor::Flags& MyFlags);
 
   ~AbbreviationsCollector();
 
@@ -49,10 +48,8 @@ class AbbreviationsCollector : public CountNodeCollector {
   bool hasTrace() const { return bool(Trace); }
 
  private:
-  const size_t MaxAbbreviations;
   CountNode::Int2PtrMap& Assignments;
-  uint64_t CountCutoff;
-  uint64_t WeightCutoff;
+  const IntCompressor::Flags& MyFlags;
   std::shared_ptr<utils::HuffmanEncoder> Encoder;
   utils::HuffmanEncoder::NodePtr HuffmanRoot;
   utils::HuffmanEncoder::NodePtr Encoding;
@@ -62,6 +59,8 @@ class AbbreviationsCollector : public CountNodeCollector {
 
   void addAbbreviation(CountNode::Ptr Nd);
   void addAbbreviation(CountNode::Ptr Nd, uint64_t Weight);
+  void removeAbbreviation(CountNode::Ptr Nd);
+  void removeAbbreviationSuccs(CountNode::Ptr Nd);
 };
 
 }  // end of namespace intcomp

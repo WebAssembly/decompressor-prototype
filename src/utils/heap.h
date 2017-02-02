@@ -71,7 +71,7 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
     }
     bool remove() {
       bool Removed = false;
-      if (auto HeapPtr = HeapWeakPtr->lock()) {
+      if (auto HeapPtr = HeapWeakPtr.lock()) {
         if (HeapPtr->isValidEntry(this)) {
           HeapPtr->remove(Index);
           Removed = true;
@@ -114,7 +114,10 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
     return Contents[E->Index].get() == E;
   }
 
-  std::shared_ptr<entry> top() { return Contents.front(); }
+  std::shared_ptr<entry> top() {
+    assert(!Contents.empty());
+    return Contents.front();
+  }
 
   std::shared_ptr<entry> push(value_type& Value) {
     size_t Index = Contents.size();
@@ -200,12 +203,13 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
 
   void remove(size_t Index) {
     assert(Index < Contents.size());
+    if (Contents.size() - 1 == Index)
+      return Contents.pop_back();
     auto& Avail = Contents.back();
     Contents[Index] = Avail;
     Avail->Index = Index;
     Contents.pop_back();
-    if (Index > 0 || !Contents.empty())
-      reinsert(Index);
+    reinsert(Index);
   }
 
   // Describes subtree rooted at parent.

@@ -101,10 +101,8 @@ void CountNodeCollector::collect() {
     for (CountNode::Ptr Nd : Others)
       collectNode(Nd);
   }
-  for (CountNode::SuccMapIterator Iter = Root->getSuccBegin(),
-                                  End = Root->getSuccEnd();
-       Iter != End; ++Iter)
-    collectNode(Iter->second);
+  for (auto& Pair : *Root.get())
+    collectNode(Pair.second);
 }
 
 void CountNodeCollector::collectNode(CountNode::Ptr Nd) {
@@ -123,10 +121,8 @@ void CountNodeCollector::collectNode(CountNode::Ptr Nd) {
     size_t Count = Nd->getCount();
     bool IsSingleton = !IsIntNode || isa<SingletonCountNode>(*Nd);
     if (IsIntNode)
-      for (CountNode::SuccMapIterator Iter = IntNd->getSuccBegin(),
-                                      End = IntNd->getSuccEnd();
-           Iter != End; ++Iter)
-        ToAdd.push_back(Iter->second);
+      for (auto& Pair : *IntNd)
+        ToAdd.push_back(Pair.second);
     if (hasFlag(CollectionFlag::TopLevel, Flags)) {
       CountTotal += Count;
       WeightTotal += Weight;

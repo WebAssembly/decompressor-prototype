@@ -67,6 +67,14 @@ const decode::IntType CountNode::BAD_ABBREV_INDEX =
     std::numeric_limits<decode::IntType>::max();
 
 CountNode::~CountNode() {
+  disassociateFromHeap();
+}
+
+void CountNode::disassociateFromHeap() {
+  if (!HeapEntry)
+    return;
+  HeapEntry->remove();
+  HeapEntry.reset();
 }
 
 size_t CountNode::getWeight(size_t Count) const {
@@ -437,19 +445,15 @@ void CountNodeVisitor::walkOther() {
 
 void CountNodeVisitor::callRoot() {
   size_t FirstKid = ToVisit.size();
-  for (CountNode::SuccMapIterator Iter = Root->getSuccBegin(),
-                                  End = Root->getSuccEnd();
-       Iter != End; ++Iter)
-    ToVisit.push_back(Iter->second);
+  for (auto& Pair : *Root.get())
+    ToVisit.push_back(Pair.second);
   Stack.push_back(getFrame(FirstKid, ToVisit.size()));
 }
 
 void CountNodeVisitor::callNode(CountNode::IntPtr Nd) {
   size_t FirstKid = ToVisit.size();
-  for (CountNode::SuccMapIterator Iter = Nd->getSuccBegin(),
-                                  End = Nd->getSuccEnd();
-       Iter != End; ++Iter)
-    ToVisit.push_back(Iter->second);
+  for (auto& Pair : *Nd.get())
+    ToVisit.push_back(Pair.second);
   Stack.push_back(getFrame(Nd, FirstKid, ToVisit.size()));
 }
 
