@@ -265,7 +265,7 @@ class IntCountNode : public CountNodeWithSuccs {
   ~IntCountNode() OVERRIDE {}
   int compare(const CountNode& Nd) const OVERRIDE;
   void describe(FILE* Out, size_t NestLevel = 0) const OVERRIDE;
-  size_t getValue() const { return Value; }
+  decode::IntType getValue() const { return Value; }
   size_t getPathLength() const { return PathLength; }
   CountNode::IntPtr getParent() const { return Parent.lock(); }
   size_t getLocalWeight() const;

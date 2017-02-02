@@ -115,12 +115,9 @@ Node* AbbreviationCodegen::generateSwitchStatement() {
   SwitchStmt->append(generateAbbreviationRead());
   SwitchStmt->append(Symtab->create<ErrorNode>());
   for (size_t i = 0; i < Assignments.size(); ++i) {
-    if (EncodingRoot) {
-      CountNode::Ptr Nd = Assignments[i];
-      SwitchStmt->append(generateCase(Nd->getAbbrevIndex(), Nd));
-    } else {
-      SwitchStmt->append(generateCase(i, Assignments[i]));
-    }
+    CountNode::Ptr Nd = Assignments[i];
+    assert(Nd->hasAbbrevIndex());
+    SwitchStmt->append(generateCase(Nd->getAbbrevIndex(), Nd));
   }
   return SwitchStmt;
 }

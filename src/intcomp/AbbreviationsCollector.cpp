@@ -70,7 +70,7 @@ void AbbreviationsCollector::assignAbbreviations() {
   }
   TRACE(uint64_t, "WeightCutoff", MyFlags.WeightCutoff);
   collectUsingCutoffs(MyFlags.CountCutoff, MyFlags.WeightCutoff,
-                      makeFlags(CollectionFlag::IntPaths));
+                      makeFlags(CollectionFlag::All));
   buildHeap();
   while (!ValuesHeap->empty() &&
          Assignments.size() < MyFlags.MaxAbbreviations) {
@@ -91,19 +91,30 @@ void AbbreviationsCollector::assignAbbreviations() {
 }
 
 void AbbreviationsCollector::removeAbbreviationSuccs(CountNode::Ptr Nd) {
+#if 0
+  // TODO(karlschimpf) For now, turn off. We apparently do want to
+  // pick up longer paths in some cases.
   if (!isa<IntCountNode>(Nd.get()))
     return;
-  auto* IntNd = dyn_cast<IntCountNode>(Nd.get());
+  auto* IntNd = cast<IntCountNode>(Nd.get());
   for (auto& Pair : *IntNd)
     removeAbbreviation(Pair.second);
+  IntNd->clearSuccs();
+#endif
 }
 
 void AbbreviationsCollector::removeAbbreviation(CountNode::Ptr Nd) {
+#if 0
+  // TODO(karlschimpf) For now, turn off. We apparently do want to
+  // pick up longer paths in some cases.
   if (!isa<IntCountNode>(Nd.get()))
     return;
   removeAbbreviationSuccs(Nd);
-  auto* IntNd = dyn_cast<IntCountNode>(Nd.get());
+  auto* IntNd = cast<IntCountNode>(Nd.get());
   IntNd->disassociateFromHeap();
+  if (CountNode::IntPtr Parent = IntNd->getParent())
+    Parent->eraseSucc(IntNd->getValue());
+#endif
 }
 
 HuffmanEncoder::NodePtr AbbreviationsCollector::assignHuffmanAbbreviations() {
@@ -116,8 +127,6 @@ HuffmanEncoder::NodePtr AbbreviationsCollector::assignHuffmanAbbreviations() {
 
 void AbbreviationsCollector::addAbbreviation(CountNode::Ptr Nd) {
   addAbbreviation(Nd, Nd->getWeight());
-  if (MyFlags.TrimOverriddenPatterns)
-    removeAbbreviationSuccs(Nd);
 }
 
 void AbbreviationsCollector::addAbbreviation(CountNode::Ptr Nd,
@@ -130,6 +139,8 @@ void AbbreviationsCollector::addAbbreviation(CountNode::Ptr Nd,
   TRACE(size_t, "Abbreviation", NdIndex);
   Nd->setAbbrevIndex(Encoder->createSymbol(Weight));
   Assignments[NdIndex] = Nd;
+  if (MyFlags.TrimOverriddenPatterns)
+    removeAbbreviationSuccs(Nd);
 }
 
 }  // end of namespace intcomp
