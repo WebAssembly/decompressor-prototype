@@ -302,7 +302,6 @@ class SingletonCountNode : public IntCountNode {
   SingletonCountNode(decode::IntType Value)
       : IntCountNode(Kind::Singleton, Value) {}
   ~SingletonCountNode() OVERRIDE;
-  size_t getWeight(size_t Count) const OVERRIDE;
   static bool implementsClass(Kind NodeKind) {
     return NodeKind == Kind::Singleton;
   }
@@ -321,7 +320,6 @@ class IntSeqCountNode : public IntCountNode {
       : IntCountNode(Kind::IntSequence, Value, Parent) {}
 
   ~IntSeqCountNode() OVERRIDE;
-  size_t getWeight(size_t Count) const OVERRIDE;
   static bool implementsClass(Kind NodeKind) {
     return NodeKind == Kind::IntSequence;
   }
