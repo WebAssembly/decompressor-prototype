@@ -62,7 +62,7 @@ IntCompressor::Flags::Flags()
       AbbrevFormat(IntTypeFormat::Varuint64),
       MinimizeCodeSize(true),
       UseHuffmanEncoding(false),
-      TrimOverriddenPatterns(true),
+      TrimOverriddenPatterns(false),
       TraceHuffmanAssignments(false),
       TraceReadingInput(false),
       TraceReadingIntStream(false),

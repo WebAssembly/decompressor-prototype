@@ -84,8 +84,9 @@ class CountNode : public std::enable_shared_from_this<CountNode> {
   void increment(size_t Cnt = 1) { Count += Cnt; }
 
   // The following two handle associating a heap entry with this.
+  HeapEntryType getAssociatedHeadEntry() { return HeapEntry; }
   void associateWithHeap(HeapEntryType Entry) { HeapEntry = Entry; }
-  void disassociateFromHeap() { HeapEntry.reset(); }
+  void disassociateFromHeap();
 
   static bool isAbbrevDefined(decode::IntType Abbrev) {
     return Abbrev != BAD_ABBREV_INDEX;
@@ -163,8 +164,8 @@ class CountNodeWithSuccs : public CountNode {
 
  public:
   ~CountNodeWithSuccs() OVERRIDE;
-  SuccMapIterator getSuccBegin() const { return Successors.begin(); }
-  SuccMapIterator getSuccEnd() const { return Successors.end(); }
+  SuccMapIterator begin() const { return Successors.begin(); }
+  SuccMapIterator end() const { return Successors.end(); }
   bool hasSuccessors() const { return !Successors.empty(); }
   void clearSuccs() { Successors.clear(); }
   CountNode::IntPtr getSucc(decode::IntType V);

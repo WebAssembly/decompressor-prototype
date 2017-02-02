@@ -72,7 +72,8 @@ void AbbreviationsCollector::assignAbbreviations() {
   collectUsingCutoffs(MyFlags.CountCutoff, MyFlags.WeightCutoff,
                       makeFlags(CollectionFlag::IntPaths));
   buildHeap();
-  while (!ValuesHeap->empty() && Assignments.size() < MyFlags.MaxAbbreviations) {
+  while (!ValuesHeap->empty() &&
+         Assignments.size() < MyFlags.MaxAbbreviations) {
     CountNode::Ptr Nd = popHeap();
     TRACE_BLOCK({
       FILE* Out = getTrace().getFile();
@@ -81,10 +82,28 @@ void AbbreviationsCollector::assignAbbreviations() {
     });
     if (isa<IntCountNode>(*Nd) && Nd->getWeight() < MyFlags.WeightCutoff) {
       TRACE_MESSAGE("Removing due to weight cutoff");
+      if (MyFlags.TrimOverriddenPatterns)
+        removeAbbreviation(Nd);
       continue;
     }
     addAbbreviation(Nd);
   }
+}
+
+void AbbreviationsCollector::removeAbbreviationSuccs(CountNode::Ptr Nd) {
+  if (!isa<IntCountNode>(Nd.get()))
+    return;
+  auto* IntNd = dyn_cast<IntCountNode>(Nd.get());
+  for (auto& Pair : *IntNd)
+    removeAbbreviation(Pair.second);
+}
+
+void AbbreviationsCollector::removeAbbreviation(CountNode::Ptr Nd) {
+  if (!isa<IntCountNode>(Nd.get()))
+    return;
+  removeAbbreviationSuccs(Nd);
+  auto* IntNd = dyn_cast<IntCountNode>(Nd.get());
+  IntNd->disassociateFromHeap();
 }
 
 HuffmanEncoder::NodePtr AbbreviationsCollector::assignHuffmanAbbreviations() {
@@ -97,6 +116,8 @@ HuffmanEncoder::NodePtr AbbreviationsCollector::assignHuffmanAbbreviations() {
 
 void AbbreviationsCollector::addAbbreviation(CountNode::Ptr Nd) {
   addAbbreviation(Nd, Nd->getWeight());
+  if (MyFlags.TrimOverriddenPatterns)
+    removeAbbreviationSuccs(Nd);
 }
 
 void AbbreviationsCollector::addAbbreviation(CountNode::Ptr Nd,

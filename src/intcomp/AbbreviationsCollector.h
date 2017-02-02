@@ -59,6 +59,8 @@ class AbbreviationsCollector : public CountNodeCollector {
 
   void addAbbreviation(CountNode::Ptr Nd);
   void addAbbreviation(CountNode::Ptr Nd, uint64_t Weight);
+  void removeAbbreviation(CountNode::Ptr Nd);
+  void removeAbbreviationSuccs(CountNode::Ptr Nd);
 };
 
 }  // end of namespace intcomp

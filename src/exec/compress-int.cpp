@@ -123,6 +123,11 @@ int main(int Argc, const char* Argv[]) {
             .setDescription(
                 "Maximum number of abbreviations allowed in compressed file"));
 
+    ArgsParser::Toggle TrimOverriddenPatternsFlag(
+        CompressionFlags.TrimOverriddenPatterns);
+    Args.add(TrimOverriddenPatternsFlag.setLongName("trim").setDescription(
+        "Remove patterns if already implied by previous patterns"));
+
     ArgsParser::Optional<bool> TraceReadingInputFlag(
         CompressionFlags.TraceReadingInput);
     Args.add(
