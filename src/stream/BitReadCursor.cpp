@@ -118,6 +118,12 @@ static constexpr BitReadCursor::WordType ByteMask = (1 << BitsInByte) - 1;
 
 }  // end of anonymous namespace
 
+bool BitReadCursor::atEob() {
+  if (!ReadCursor::atEob())
+    return false;
+  return NumBits == 0;
+}
+
 uint8_t BitReadCursor::readByte() {
   if (NumBits == 0)
     return ReadCursor::readByte();

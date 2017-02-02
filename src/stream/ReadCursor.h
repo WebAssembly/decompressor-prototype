@@ -48,13 +48,7 @@ class ReadCursor : public Cursor {
     return *this;
   }
 
-  bool atEob() {
-    if (CurAddress < GuaranteedBeforeEob)
-      return false;
-    bool Result = CurAddress >= getEobAddress() || !readFillBuffer();
-    updateGuaranteedBeforeEob();
-    return Result;
-  }
+  virtual bool atEob();
 
   void pushEobAddress(AddressType NewValue) {
     EobPtr = std::make_shared<BlockEob>(NewValue, EobPtr);

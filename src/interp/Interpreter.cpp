@@ -1276,8 +1276,7 @@ void Interpreter::algorithmResume() {
               return throwMessage(
                   "Unable to reset state after appplying algorithm");
             TRACE_MESSAGE("Reset did not specify any more symtabs");
-            TRACE(bool, "atEof", Input->atInputEof());
-            if (Input->atInputEof()) {
+            if (atInputEob()) {
               LoopCounterStack.pop();
               Frame.CallState = State::Exit;
               break;

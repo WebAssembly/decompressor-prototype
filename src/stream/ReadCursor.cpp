@@ -22,6 +22,14 @@ using namespace utils;
 
 namespace decode {
 
+bool ReadCursor::atEob() {
+  if (CurAddress < GuaranteedBeforeEob)
+    return false;
+  bool Result = CurAddress >= getEobAddress() || !readFillBuffer();
+  updateGuaranteedBeforeEob();
+  return Result;
+}
+
 uint8_t ReadCursor::readByteAfterReadFill() {
   bool atEof = isIndexAtEndOfPage() && !readFillBuffer();
   updateGuaranteedBeforeEob();
