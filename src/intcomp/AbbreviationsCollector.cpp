@@ -29,14 +29,10 @@ namespace intcomp {
 AbbreviationsCollector::AbbreviationsCollector(
     CountNode::RootPtr Root,
     CountNode::Int2PtrMap& Assignments,
-    size_t CountCutoff,
-    size_t WeightCutoff,
-    size_t MaxAbbreviations)
+    const IntCompressor::Flags& MyFlags)
     : CountNodeCollector(Root),
-      MaxAbbreviations(MaxAbbreviations),
       Assignments(Assignments),
-      CountCutoff(CountCutoff),
-      WeightCutoff(WeightCutoff),
+      MyFlags(MyFlags),
       Encoder(std::make_shared<HuffmanEncoder>()) {
 }
 
@@ -72,18 +68,18 @@ void AbbreviationsCollector::assignAbbreviations() {
       addAbbreviation(Nd, Nd->getWeight());
     }
   }
-  TRACE(uint64_t, "WeightCutoff", WeightCutoff);
-  collectUsingCutoffs(CountCutoff, WeightCutoff,
+  TRACE(uint64_t, "WeightCutoff", MyFlags.WeightCutoff);
+  collectUsingCutoffs(MyFlags.CountCutoff, MyFlags.WeightCutoff,
                       makeFlags(CollectionFlag::IntPaths));
   buildHeap();
-  while (!ValuesHeap->empty() && Assignments.size() < MaxAbbreviations) {
+  while (!ValuesHeap->empty() && Assignments.size() < MyFlags.MaxAbbreviations) {
     CountNode::Ptr Nd = popHeap();
     TRACE_BLOCK({
       FILE* Out = getTrace().getFile();
       fprintf(Out, "Considering: ");
       Nd->describe(Out);
     });
-    if (isa<IntCountNode>(*Nd) && Nd->getWeight() < WeightCutoff) {
+    if (isa<IntCountNode>(*Nd) && Nd->getWeight() < MyFlags.WeightCutoff) {
       TRACE_MESSAGE("Removing due to weight cutoff");
       continue;
     }
