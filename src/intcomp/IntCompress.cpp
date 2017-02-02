@@ -62,6 +62,7 @@ IntCompressor::Flags::Flags()
       AbbrevFormat(IntTypeFormat::Varuint64),
       MinimizeCodeSize(true),
       UseHuffmanEncoding(false),
+      TraceHuffmanAssignments(false),
       TraceReadingInput(false),
       TraceReadingIntStream(false),
       TraceWritingCodeOutput(false),
@@ -257,10 +258,14 @@ void IntCompressor::assignInitialAbbreviations(
                                    MyFlags.MaxAbbreviations);
   if (MyFlags.TraceAssigningAbbreviations && hasTrace())
     Collector.setTrace(getTracePtr());
-  if (MyFlags.UseHuffmanEncoding)
-    EncodingRoot = Collector.assignHuffmanAbbreviations();
-  else
-    Collector.assignAbbreviations();
+  if (!MyFlags.UseHuffmanEncoding)
+    return Collector.assignAbbreviations();
+  EncodingRoot = Collector.assignHuffmanAbbreviations();
+  if (MyFlags.TraceHuffmanAssignments) {
+    fprintf(stderr, "Huffman assignments:\n");
+    constexpr bool Brief = false;
+    EncodingRoot->describe(stderr, Brief);
+  }
 }
 
 bool IntCompressor::generateIntOutput() {

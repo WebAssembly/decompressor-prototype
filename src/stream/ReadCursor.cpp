@@ -45,7 +45,8 @@ size_t ReadCursor::advance(size_t Distance) {
 }
 
 uint8_t ReadCursor::readByte() {
-  return (CurAddress < GuaranteedBeforeEob) ? readOneByte() : readByteAfterReadFill();
+  return (CurAddress < GuaranteedBeforeEob) ? readOneByte()
+                                            : readByteAfterReadFill();
 }
 
 uint8_t ReadCursor::readOneByte() {

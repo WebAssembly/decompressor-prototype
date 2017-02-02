@@ -77,7 +77,7 @@ void HuffmanEncoder::Symbol::describe(FILE* Out, bool Brief, size_t Indent) {
   fprintf(Out, "Sym(%" PRIuMAX " %" PRIuMAX "", uintmax_t(Id),
           uintmax_t(Weight));
   if (!Brief) {
-    fprintf(Out, " %" PRIxMAX ":%" PRIuMAX "", uintmax_t(Path),
+    fprintf(Out, " 0x%" PRIxMAX ":%" PRIuMAX "", uintmax_t(Path),
             uintmax_t(NumBits));
   }
   fprintf(Out, ")\n");
@@ -147,14 +147,13 @@ HuffmanEncoder::NodePtr HuffmanEncoder::Selector::installPaths(
     HuffmanEncoder& Encoder,
     PathType Path,
     unsigned NumBits) {
-  PathType KidPath = Path << 1;
   unsigned KidBits = NumBits + 1;
   for (int NumTries = 1; NumTries <= 2; NumTries++) {
     auto Sel = cast<Selector>(Self.get());
     NodePtr K1 = Sel->getKid1();
-    K1 = K1->installPaths(K1, Encoder, KidPath, KidBits);
+    K1 = K1->installPaths(K1, Encoder, Path, KidBits);
     NodePtr K2 = Sel->getKid2();
-    K2 = K2->installPaths(K2, Encoder, KidPath + 1, KidBits);
+    K2 = K2->installPaths(K2, Encoder, Path | (1 << NumBits), KidBits);
     if (K1 && K2) {
       Sel->Kid1 = K1;
       Sel->Kid2 = K2;

@@ -110,7 +110,8 @@ bool ByteWriter::writeBinary(IntType Value, const Node* Encoding) {
   IntType Bits = Accept->getValue();
   while (NumBits) {
     --NumBits;
-    WritePos.writeBit(uint8_t((Bits >> NumBits) & 0x1));
+    WritePos.writeBit(uint8_t(Bits & 0x1));
+    Bits >>= 1;
   }
   return true;
 }
