@@ -307,12 +307,26 @@ void IntCountNode::describe(FILE* Out, size_t NestLevel) const {
 SingletonCountNode::~SingletonCountNode() {
 }
 
+size_t SingletonCountNode::getWeight(size_t Count) const {
+  return Count * getLocalWeight();
+}
+
 void SingletonCountNode::describeValues(FILE* Out) const {
   fputs("Value: ", Out);
   fprint_IntType(Out, getValue());
 }
 
 IntSeqCountNode::~IntSeqCountNode() {
+}
+
+size_t IntSeqCountNode::getWeight(size_t Count) const {
+  size_t Weight = 0;
+  const IntCountNode* Nd = this;
+  while (Nd) {
+    Weight += Nd->getLocalWeight() * Count;
+    Nd = dyn_cast<IntCountNode>(Nd->getParent().get());
+  }
+  return Weight;
 }
 
 void IntSeqCountNode::describeValues(FILE* Out) const {

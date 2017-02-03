@@ -28,7 +28,7 @@ namespace intcomp {
 
 AbbreviationsCollector::AbbreviationsCollector(
     CountNode::RootPtr Root,
-    CountNode::Int2PtrMap& Assignments,
+    CountNode::PtrSet& Assignments,
     const IntCompressor::Flags& MyFlags)
     : CountNodeCollector(Root),
       Assignments(Assignments),
@@ -138,7 +138,7 @@ void AbbreviationsCollector::addAbbreviation(CountNode::Ptr Nd,
   size_t NdIndex = getNextAvailableIndex();
   TRACE(size_t, "Abbreviation", NdIndex);
   Nd->setAbbrevIndex(Encoder->createSymbol(Weight));
-  Assignments[NdIndex] = Nd;
+  Assignments.insert(Nd);
   if (MyFlags.TrimOverriddenPatterns)
     removeAbbreviationSuccs(Nd);
 }

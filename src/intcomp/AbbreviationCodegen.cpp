@@ -32,7 +32,7 @@ namespace intcomp {
 AbbreviationCodegen::AbbreviationCodegen(CountNode::RootPtr Root,
                                          HuffmanEncoder::NodePtr EncodingRoot,
                                          IntTypeFormat AbbrevFormat,
-                                         CountNode::Int2PtrMap& Assignments)
+                                         CountNode::PtrSet& Assignments)
     : Root(Root),
       EncodingRoot(EncodingRoot),
       AbbrevFormat(AbbrevFormat),
@@ -114,8 +114,8 @@ Node* AbbreviationCodegen::generateSwitchStatement() {
   auto* SwitchStmt = Symtab->create<SwitchNode>();
   SwitchStmt->append(generateAbbreviationRead());
   SwitchStmt->append(Symtab->create<ErrorNode>());
-  for (size_t i = 0; i < Assignments.size(); ++i) {
-    CountNode::Ptr Nd = Assignments[i];
+  // TODO(karlschimpf): Sort so that output consistent or more readable?
+  for (CountNode::Ptr Nd : Assignments) {
     assert(Nd->hasAbbrevIndex());
     SwitchStmt->append(generateCase(Nd->getAbbrevIndex(), Nd));
   }

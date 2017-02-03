@@ -191,7 +191,7 @@ int main(int Argc, const char* Argv[]) {
     ArgsParser::Optional<bool> TraceIntCountsCollectionFlag(
         CompressionFlags.TraceIntCountsCollection);
     Args.add(TraceIntCountsCollectionFlag.setLongName(
-                                             "verbose=int-counts-collection")
+                                              "verbose=int-counts-collection")
                  .setDescription("Show how int counts were selected"));
 
     ArgsParser::Optional<bool> TraceSequenceCountsFlag(
@@ -205,7 +205,7 @@ int main(int Argc, const char* Argv[]) {
         CompressionFlags.TraceSequenceCountsCollection);
     Args.add(
         TraceSequenceCountsCollectionFlag.setLongName(
-                                             "verbose=seq-counts-collection")
+                                              "verbose=seq-counts-collection")
             .setDescription(
                 "Show how frequency of integer sequences were "
                 "selected"));
