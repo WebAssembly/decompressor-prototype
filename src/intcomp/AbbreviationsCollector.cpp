@@ -141,8 +141,6 @@ void AbbreviationsCollector::addAbbreviation(CountNode::Ptr Nd) {
     TRACE_MESSAGE("Already has abbreviation. Ignoring");
     return;
   }
-  size_t NdIndex = getNextAvailableIndex();
-  TRACE(size_t, "Abbreviation", NdIndex);
   Nd->setAbbrevIndex(Encoder->createSymbol(Weight));
   Assignments.insert(Nd);
   if (MyFlags.TrimOverriddenPatterns)

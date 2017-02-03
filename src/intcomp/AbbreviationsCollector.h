@@ -55,8 +55,6 @@ class AbbreviationsCollector : public CountNodeCollector {
   utils::HuffmanEncoder::NodePtr Encoding;
   std::shared_ptr<utils::TraceClass> Trace;
 
-  size_t getNextAvailableIndex() const { return Assignments.size(); }
-
   void addAbbreviation(CountNode::Ptr Nd);
   void removeAbbreviation(CountNode::Ptr Nd);
   void removeAbbreviationSuccs(CountNode::Ptr Nd);
