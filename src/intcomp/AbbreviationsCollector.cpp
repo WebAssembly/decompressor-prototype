@@ -65,7 +65,7 @@ void AbbreviationsCollector::assignAbbreviations() {
         TRACE_MESSAGE("Ignoring: never used");
         continue;
       }
-      addAbbreviation(Nd, Nd->getWeight());
+      addAbbreviation(Nd);
     }
   }
   TRACE(uint64_t, "WeightCutoff", MyFlags.WeightCutoff);
@@ -126,11 +126,17 @@ HuffmanEncoder::NodePtr AbbreviationsCollector::assignHuffmanAbbreviations() {
 }
 
 void AbbreviationsCollector::addAbbreviation(CountNode::Ptr Nd) {
-  addAbbreviation(Nd, Nd->getWeight());
-}
-
-void AbbreviationsCollector::addAbbreviation(CountNode::Ptr Nd,
-                                             uint64_t Weight) {
+  if (Nd->hasAbbrevIndex()) {
+    TRACE_MESSAGE("Already has abbreviation. Ignoring");
+    return;
+  }
+#if 1
+  // TODO(karlschimpf) Why is weight better, when huffman encoding
+  // should do better on count?
+  uint64_t Weight = Nd->getWeight();
+#else
+  uint64_t Weight = Nd->getCount();
+#endif
   if (Nd->hasAbbrevIndex()) {
     TRACE_MESSAGE("Already has abbreviation. Ignoring");
     return;

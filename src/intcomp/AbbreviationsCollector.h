@@ -58,7 +58,6 @@ class AbbreviationsCollector : public CountNodeCollector {
   size_t getNextAvailableIndex() const { return Assignments.size(); }
 
   void addAbbreviation(CountNode::Ptr Nd);
-  void addAbbreviation(CountNode::Ptr Nd, uint64_t Weight);
   void removeAbbreviation(CountNode::Ptr Nd);
   void removeAbbreviationSuccs(CountNode::Ptr Nd);
 };
