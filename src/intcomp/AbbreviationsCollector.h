@@ -30,7 +30,7 @@ namespace intcomp {
 class AbbreviationsCollector : public CountNodeCollector {
  public:
   AbbreviationsCollector(CountNode::RootPtr Root,
-                         CountNode::Int2PtrMap& Assignments,
+                         CountNode::PtrSet& Assignments,
                          const IntCompressor::Flags& MyFlags);
 
   ~AbbreviationsCollector();
@@ -48,17 +48,14 @@ class AbbreviationsCollector : public CountNodeCollector {
   bool hasTrace() const { return bool(Trace); }
 
  private:
-  CountNode::Int2PtrMap& Assignments;
+  CountNode::PtrSet& Assignments;
   const IntCompressor::Flags& MyFlags;
   std::shared_ptr<utils::HuffmanEncoder> Encoder;
   utils::HuffmanEncoder::NodePtr HuffmanRoot;
   utils::HuffmanEncoder::NodePtr Encoding;
   std::shared_ptr<utils::TraceClass> Trace;
 
-  size_t getNextAvailableIndex() const { return Assignments.size(); }
-
   void addAbbreviation(CountNode::Ptr Nd);
-  void addAbbreviation(CountNode::Ptr Nd, uint64_t Weight);
   void removeAbbreviation(CountNode::Ptr Nd);
   void removeAbbreviationSuccs(CountNode::Ptr Nd);
 };

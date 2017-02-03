@@ -27,6 +27,7 @@
 #include "utils/HuffmanEncoding.h"
 
 #include <map>
+#include <set>
 #include <memory>
 
 // WARNING: All CountNode classes should be created using sdt::make_shared!
@@ -61,6 +62,7 @@ class CountNode : public std::enable_shared_from_this<CountNode> {
   typedef std::shared_ptr<CountNodeWithSuccs> WithSuccsPtr;
   typedef std::map<decode::IntType, CountNode::IntPtr> SuccMap;
   typedef std::vector<Ptr> PtrVector;
+  typedef std::set<Ptr> PtrSet;
   typedef std::map<size_t, Ptr> Int2PtrMap;
   typedef SuccMap::const_iterator SuccMapIterator;
   typedef Ptr HeapValueType;
@@ -302,6 +304,7 @@ class SingletonCountNode : public IntCountNode {
   SingletonCountNode(decode::IntType Value)
       : IntCountNode(Kind::Singleton, Value) {}
   ~SingletonCountNode() OVERRIDE;
+  size_t getWeight(size_t Count) const OVERRIDE;
   static bool implementsClass(Kind NodeKind) {
     return NodeKind == Kind::Singleton;
   }
@@ -318,8 +321,8 @@ class IntSeqCountNode : public IntCountNode {
  public:
   IntSeqCountNode(decode::IntType Value, CountNode::IntPtr Parent)
       : IntCountNode(Kind::IntSequence, Value, Parent) {}
-
   ~IntSeqCountNode() OVERRIDE;
+  size_t getWeight(size_t Count) const OVERRIDE;
   static bool implementsClass(Kind NodeKind) {
     return NodeKind == Kind::IntSequence;
   }

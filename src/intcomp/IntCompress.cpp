@@ -224,7 +224,7 @@ void IntCompressor::compress() {
   if (MyFlags.UseHuffmanEncoding)
     // Assume an alignment added at end of file.
     Root->getAlign()->setCount(1);
-  CountNode::Int2PtrMap AbbrevAssignments;
+  CountNode::PtrSet AbbrevAssignments;
   assignInitialAbbreviations(AbbrevAssignments);
   if (MyFlags.TraceAbbreviationAssignments)
     describeAbbreviations(stderr,
@@ -252,8 +252,7 @@ void IntCompressor::compress() {
   }
 }
 
-void IntCompressor::assignInitialAbbreviations(
-    CountNode::Int2PtrMap& Assignments) {
+void IntCompressor::assignInitialAbbreviations(CountNode::PtrSet& Assignments) {
   AbbreviationsCollector Collector(getRoot(), Assignments, MyFlags);
   if (MyFlags.TraceAssigningAbbreviations && hasTrace())
     Collector.setTrace(getTracePtr());
@@ -281,7 +280,7 @@ bool IntCompressor::generateIntOutput() {
 }
 
 std::shared_ptr<SymbolTable> IntCompressor::generateCode(
-    CountNode::Int2PtrMap& Assignments,
+    CountNode::PtrSet& Assignments,
     bool ToRead,
     bool Trace) {
   AbbreviationCodegen Codegen(Root, EncodingRoot, MyFlags.AbbrevFormat,
