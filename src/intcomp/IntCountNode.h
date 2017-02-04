@@ -87,11 +87,7 @@ class CountNode : public std::enable_shared_from_this<CountNode> {
 
   // The following two handle associating a heap entry with this.
   HeapEntryType getAssociatedHeapEntry() { return HeapEntry; }
-#if 0
   void associateWithHeap(HeapEntryType Entry) { HeapEntry = Entry; }
-#else
-  void associateWithHeap(HeapEntryType Entry);
-#endif
   void disassociateFromHeap();
 
   static bool isAbbrevDefined(decode::IntType Abbrev) {

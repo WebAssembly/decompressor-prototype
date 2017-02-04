@@ -73,11 +73,9 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
       bool Removed = false;
       if (auto HeapPtr = HeapWeakPtr.lock()) {
         if (HeapPtr->isValidEntry(this)) {
-          fprintf(stderr, "Is valid entry\n");
           HeapPtr->remove(Index);
           Removed = true;
         } else {
-          fprintf(stderr, "Is invalid entry\n");
           HeapWeakPtr.reset();
         }
       }
@@ -101,8 +99,7 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
   typedef std::function<bool(value_type, value_type)> CompareFcn;
   // WARNING: Only create using std::make_shared<heap<value_type>>(); DO NOT
   // call constructor directly!
-  heap(CompareFcn LtFcn)
-      : LtFcn(LtFcn) {}
+  heap(CompareFcn LtFcn) : LtFcn(LtFcn) {}
 
   ~heap() {}
 
@@ -118,13 +115,6 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
   bool isValidEntry(entry* E) {
     if (E->Index >= Contents.size())
       return false;
-#if 1
-
-    fprintf(stderr, "E = %p [%u], C = %p [%u]\n",
-            (void*)E, unsigned(E->Index),
-            (void*)Contents[E->Index].get(), unsigned(Contents[E->Index]->Index));
-    showEntryPtrs(stderr);
-#endif
     return Contents[E->Index].get() == E;
   }
 
@@ -159,16 +149,6 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
     fprintf(Out, "************:\n");
   }
 
-#if 1
-  void showEntryPtrs(FILE* Out) {
-    fprintf(Out, "*** Entry Ptrs ***\n");
-    for (size_t i = 0; i < Contents.size(); ++i)
-      fprintf(Out, "[%u] = %p[%u]\n", unsigned(i), (void*)Contents[i].get(),
-              unsigned(Contents[i]->Index));
-    fprintf(Out, "******************\n");
-  }
-#endif
-
  private:
   std::vector<entry_ptr> Contents;
 
@@ -189,19 +169,9 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
       auto& Kid = Contents[KidIndex];
       if (!LtFcn(Kid->getValue(), Parent->getValue()))
         return Moved;
-#if 0
-      fprintf(stderr, "Before swap: P = %p [%u], K = %p [%u]\n",
-              (void*)Parent.get(), unsigned(Parent->Index),
-              (void*)Kid.get(), unsigned(Kid->Index));
-#endif
       Parent->Index = KidIndex;
       Kid->Index = ParentIndex;
       std::swap(Parent, Kid);
-#if 0
-      fprintf(stderr, "After swap: P = %p [%u], K = %p [%u]\n",
-              (void*)Parent.get(), unsigned(Parent->Index),
-              (void*)Kid.get(), unsigned(Kid->Index));
-#endif
       KidIndex = ParentIndex;
       Moved = true;
     }

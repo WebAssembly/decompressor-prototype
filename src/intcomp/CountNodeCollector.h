@@ -51,18 +51,10 @@ class CountNodeCollector {
       CollectionFlags Flags = makeFlags(CollectionFlag::All));
   void collectAbbreviations();
   void buildHeap();
-  CountNode::HeapValueType popHeap() {
-    assert(ValuesHeap);
-    CountNode::HeapEntryType Entry = ValuesHeap->top();
-    ValuesHeap->pop();
-    return Entry->getValue();
-  }
+  void pushHeap(CountNode::Ptr Nd);
+  CountNode::HeapValueType popHeap();
   void clearHeap();
-  void describeHeap(FILE* Out) {
-    ValuesHeap->describe(Out, [](FILE* Out, CountNode::HeapValueType Value) {
-      Value->describe(Out);
-    });
-  }
+  void describeHeap(FILE* Out);
   void clear();
   void collectNode(CountNode::Ptr Nd);
 

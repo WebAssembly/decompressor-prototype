@@ -51,6 +51,7 @@ std::shared_ptr<TraceClass> AbbreviationsCollector::getTracePtr() {
 
 void AbbreviationsCollector::assignAbbreviations() {
   TRACE_METHOD("assignAbbreviations");
+  TRACE(uint64_t, "WeightCutoff", MyFlags.WeightCutoff);
   {
     // Add always defined patterns.
     CountNode::PtrVector Others;
@@ -70,7 +71,6 @@ void AbbreviationsCollector::assignAbbreviations() {
     }
   }
   // Now select best fitting patterns, based on weight.
-  TRACE(uint64_t, "WeightCutoff", MyFlags.WeightCutoff);
   collectUsingCutoffs(MyFlags.CountCutoff, MyFlags.WeightCutoff,
                       makeFlags(CollectionFlag::All));
   buildHeap();
@@ -84,42 +84,17 @@ void AbbreviationsCollector::assignAbbreviations() {
     });
     if (isa<IntCountNode>(*Nd) && Nd->getWeight() < MyFlags.WeightCutoff) {
       TRACE_MESSAGE("Removing due to weight cutoff");
-      if (MyFlags.TrimOverriddenPatterns)
-        removeAbbreviation(Nd);
       continue;
     }
     addAbbreviation(Nd);
   }
   // Now create abbreviation indices for selected abbreviations.
   for (const CountNode::Ptr& Nd : Assignments)
+    pushHeap(Nd);
+  while (!ValuesHeap->empty()) {
+    CountNode::Ptr Nd = popHeap();
     Nd->setAbbrevIndex(Encoder->createSymbol(Nd->getCount()));
-}
-
-void AbbreviationsCollector::removeAbbreviationSuccs(CountNode::Ptr Nd) {
-#if 0
-  // TODO(karlschimpf) For now, turn off. We apparently do want to
-  // pick up longer paths in some cases.
-  if (!isa<IntCountNode>(Nd.get()))
-    return;
-  auto* IntNd = cast<IntCountNode>(Nd.get());
-  for (auto& Pair : *IntNd)
-    removeAbbreviation(Pair.second);
-  IntNd->clearSuccs();
-#endif
-}
-
-void AbbreviationsCollector::removeAbbreviation(CountNode::Ptr Nd) {
-#if 0
-  // TODO(karlschimpf) For now, turn off. We apparently do want to
-  // pick up longer paths in some cases.
-  if (!isa<IntCountNode>(Nd.get()))
-    return;
-  removeAbbreviationSuccs(Nd);
-  auto* IntNd = cast<IntCountNode>(Nd.get());
-  IntNd->disassociateFromHeap();
-  if (CountNode::IntPtr Parent = IntNd->getParent())
-    Parent->eraseSucc(IntNd->getValue());
-#endif
+  }
 }
 
 HuffmanEncoder::NodePtr AbbreviationsCollector::assignHuffmanAbbreviations() {
@@ -132,52 +107,43 @@ HuffmanEncoder::NodePtr AbbreviationsCollector::assignHuffmanAbbreviations() {
 
 void AbbreviationsCollector::addAbbreviation(CountNode::Ptr Nd) {
   if (Assignments.count(Nd) > 0) {
-    TRACE_MESSAGE("Already has abbreviation. Ignoring");
+    TRACE_MESSAGE("Ignoring: already chosen");
     return;
   }
-  TRACE_MESSAGE("Added to assignments");
   Assignments.insert(Nd);
+  TRACE_MESSAGE("Added to assignments");
+  if (!MyFlags.TrimOverriddenPatterns) {
+    TRACE(size_t, "Number assignements", Assignments.size());
+    return;
+  }
   CountNode* NdPtr = Nd.get();
   uint64_t Count = NdPtr->getCount();
+  bool ErasedParents = false;
   while (auto* IntNd = dyn_cast<IntCountNode>(NdPtr)) {
     CountNode::IntPtr Parent = IntNd->getParent();
     if (!Parent)
       break;
     IntCountNode* ParentPtr = Parent.get();
-    TRACE_BLOCK({
-        FILE* Out = getTrace().getFile();
-        fprintf(Out, "Parent: ");
-        ParentPtr->describe(Out);
-      });
     size_t OldCount = ParentPtr->getCount();
     size_t NewCount = (OldCount > Count) ? (OldCount - Count) : 0;
     if (OldCount == NewCount)
       break;
     ParentPtr->setCount(NewCount);
     TRACE_BLOCK({
-        FILE* Out = getTrace().getFile();
-        fprintf(Out, "Updated Parent: ");
-        ParentPtr->describe(Out);
-      });
+      FILE* Out = getTrace().getFile();
+      fprintf(Out, "Updated Parent: ");
+      ParentPtr->describe(Out);
+    });
     if (CountNode::HeapEntryType Entry = ParentPtr->getAssociatedHeapEntry()) {
-      fprintf(stderr, "Before updating:\n");
-      ValuesHeap->describe(stderr,
-                           [](FILE* Out, CountNode::HeapValueType Nd) {
-                             Nd->describe(Out);
-                           });
-      if (! Entry->reinsert()) {
+      if (!Entry->reinsert()) {
         CountNode::Ptr Nd = Parent;
-        ValuesHeap->push(Nd);
+        pushHeap(Nd);
       }
-      fprintf(stderr, "After updating:\n");
-      ValuesHeap->describe(stderr,
-                           [](FILE* Out, CountNode::HeapValueType Nd) {
-                             Nd->describe(Out);
-                           });
     }
     if (Assignments.count(Parent) > 0) {
       TRACE_MESSAGE("Removing from assignments");
       Assignments.erase(Parent);
+      ErasedParents = true;
     }
     NdPtr = ParentPtr;
   }

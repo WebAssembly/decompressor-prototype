@@ -70,24 +70,9 @@ CountNode::~CountNode() {
   disassociateFromHeap();
 }
 
-#if 1
-void CountNode::associateWithHeap(HeapEntryType Entry) {
-  HeapEntry = Entry;
-#if 1
-  fprintf(stderr, "Associate: ");
-  describe(stderr);
-  fprintf(stderr, "Is valid = %d\n", HeapEntry->isValid());
-#endif
-}
-#endif
-
 void CountNode::disassociateFromHeap() {
   if (!HeapEntry)
     return;
-#if 1
-  fprintf(stderr, "Disassociate: ");
-  describe(stderr);
-#endif
   HeapEntry->remove();
   HeapEntry.reset();
 }
