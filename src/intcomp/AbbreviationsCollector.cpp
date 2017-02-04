@@ -154,19 +154,34 @@ void AbbreviationsCollector::addAbbreviation(CountNode::Ptr Nd) {
     if (OldCount == NewCount)
       break;
     ParentPtr->setCount(NewCount);
-    if (CountNode::HeapEntryType Entry = ParentPtr->getAssociatedHeapEntry())
-      Entry->reinsert();
     TRACE_BLOCK({
         FILE* Out = getTrace().getFile();
         fprintf(Out, "Updated Parent: ");
         ParentPtr->describe(Out);
       });
+    if (CountNode::HeapEntryType Entry = ParentPtr->getAssociatedHeapEntry()) {
+      fprintf(stderr, "Before updating:\n");
+      ValuesHeap->describe(stderr,
+                           [](FILE* Out, CountNode::HeapValueType Nd) {
+                             Nd->describe(Out);
+                           });
+      if (! Entry->reinsert()) {
+        CountNode::Ptr Nd = Parent;
+        ValuesHeap->push(Nd);
+      }
+      fprintf(stderr, "After updating:\n");
+      ValuesHeap->describe(stderr,
+                           [](FILE* Out, CountNode::HeapValueType Nd) {
+                             Nd->describe(Out);
+                           });
+    }
     if (Assignments.count(Parent) > 0) {
       TRACE_MESSAGE("Removing from assignments");
       Assignments.erase(Parent);
     }
     NdPtr = ParentPtr;
   }
+  TRACE(size_t, "Number assignements", Assignments.size());
 }
 
 }  // end of namespace intcomp

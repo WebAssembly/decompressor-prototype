@@ -67,8 +67,17 @@ void CountNodeCollector::clear() {
 }
 
 void CountNodeCollector::buildHeap() {
+#if 1
   for (auto& Value : Values)
     Value->associateWithHeap(ValuesHeap->push(Value));
+#else
+  for (auto& Value : Values) {
+    fprintf(stderr, "Add: ");
+    Value->describe(stderr);
+    Value->associateWithHeap(ValuesHeap->push(Value));
+    ValuesHeap->showEntryPtrs(stderr);
+  }
+#endif
 }
 
 void CountNodeCollector::collectUsingCutoffs(size_t MyCountCutoff,

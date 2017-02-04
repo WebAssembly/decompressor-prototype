@@ -73,13 +73,21 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
       bool Removed = false;
       if (auto HeapPtr = HeapWeakPtr.lock()) {
         if (HeapPtr->isValidEntry(this)) {
+          fprintf(stderr, "Is valid entry\n");
           HeapPtr->remove(Index);
           Removed = true;
         } else {
+          fprintf(stderr, "Is invalid entry\n");
           HeapWeakPtr.reset();
         }
       }
       return Removed;
+    }
+
+    bool isValid() {
+      if (auto HeapPtr = HeapWeakPtr.lock())
+        return HeapPtr->isValidEntry(this);
+      return false;
     }
 
    private:
@@ -88,13 +96,12 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
     size_t Index;
   };
 
+  typedef std::shared_ptr<entry> entry_ptr;
+
   typedef std::function<bool(value_type, value_type)> CompareFcn;
   // WARNING: Only create using std::make_shared<heap<value_type>>(); DO NOT
   // call constructor directly!
-  heap(CompareFcn LtFcn  // =
-       // TODO(karlschimpf): Why didn't std::less<Value_type>() not work!
-       // [](value_type V1, value_type V2) { return V1 < V2; }
-       )
+  heap(CompareFcn LtFcn)
       : LtFcn(LtFcn) {}
 
   ~heap() {}
@@ -111,17 +118,24 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
   bool isValidEntry(entry* E) {
     if (E->Index >= Contents.size())
       return false;
+#if 1
+
+    fprintf(stderr, "E = %p [%u], C = %p [%u]\n",
+            (void*)E, unsigned(E->Index),
+            (void*)Contents[E->Index].get(), unsigned(Contents[E->Index]->Index));
+    showEntryPtrs(stderr);
+#endif
     return Contents[E->Index].get() == E;
   }
 
-  std::shared_ptr<entry> top() {
+  entry_ptr top() {
     assert(!Contents.empty());
     return Contents.front();
   }
 
-  std::shared_ptr<entry> push(value_type& Value) {
+  entry_ptr push(value_type& Value) {
     size_t Index = Contents.size();
-    std::shared_ptr<entry> Entry =
+    entry_ptr Entry =
         std::make_shared<entry>(this->shared_from_this(), Value, Index);
     Contents.push_back(Entry);
     insertUp(Index);
@@ -145,8 +159,18 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
     fprintf(Out, "************:\n");
   }
 
+#if 1
+  void showEntryPtrs(FILE* Out) {
+    fprintf(Out, "*** Entry Ptrs ***\n");
+    for (size_t i = 0; i < Contents.size(); ++i)
+      fprintf(Out, "[%u] = %p[%u]\n", unsigned(i), (void*)Contents[i].get(),
+              unsigned(Contents[i]->Index));
+    fprintf(Out, "******************\n");
+  }
+#endif
+
  private:
-  std::vector<std::shared_ptr<entry>> Contents;
+  std::vector<entry_ptr> Contents;
 
   // Accessors defining indices for parent/children.
   size_t getLeftKidIndex(size_t Parent) { return 2 * Parent + 1; }
@@ -165,9 +189,19 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
       auto& Kid = Contents[KidIndex];
       if (!LtFcn(Kid->getValue(), Parent->getValue()))
         return Moved;
-      std::swap(Parent, Kid);
+#if 0
+      fprintf(stderr, "Before swap: P = %p [%u], K = %p [%u]\n",
+              (void*)Parent.get(), unsigned(Parent->Index),
+              (void*)Kid.get(), unsigned(Kid->Index));
+#endif
       Parent->Index = KidIndex;
       Kid->Index = ParentIndex;
+      std::swap(Parent, Kid);
+#if 0
+      fprintf(stderr, "After swap: P = %p [%u], K = %p [%u]\n",
+              (void*)Parent.get(), unsigned(Parent->Index),
+              (void*)Kid.get(), unsigned(Kid->Index));
+#endif
       KidIndex = ParentIndex;
       Moved = true;
     }
@@ -194,9 +228,9 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
         return;
       auto& Parent = Contents[ParentIndex];
       auto& Kid = Contents[KidIndex];
-      std::swap(Parent, Kid);
       Parent->Index = KidIndex;
       Kid->Index = ParentIndex;
+      std::swap(Parent, Kid);
       ParentIndex = KidIndex;
     } while (true);
   }
