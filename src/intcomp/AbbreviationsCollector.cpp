@@ -118,7 +118,6 @@ void AbbreviationsCollector::addAbbreviation(CountNode::Ptr Nd) {
   }
   CountNode* NdPtr = Nd.get();
   uint64_t Count = NdPtr->getCount();
-  bool ErasedParents = false;
   while (auto* IntNd = dyn_cast<IntCountNode>(NdPtr)) {
     CountNode::IntPtr Parent = IntNd->getParent();
     if (!Parent)
@@ -143,7 +142,6 @@ void AbbreviationsCollector::addAbbreviation(CountNode::Ptr Nd) {
     if (Assignments.count(Parent) > 0) {
       TRACE_MESSAGE("Removing from assignments");
       Assignments.erase(Parent);
-      ErasedParents = true;
     }
     NdPtr = ParentPtr;
   }
