@@ -59,7 +59,7 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
     value_type getValue() { return Value; }
     bool reinsert() {
       bool Inserted = false;
-      if (auto HeapPtr = HeapWeakPtr->lock()) {
+      if (auto HeapPtr = HeapWeakPtr.lock()) {
         if (HeapPtr->isValidEntry(this)) {
           HeapPtr->reinsert(Index);
           Inserted = true;
@@ -82,20 +82,24 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
       return Removed;
     }
 
+    bool isValid() {
+      if (auto HeapPtr = HeapWeakPtr.lock())
+        return HeapPtr->isValidEntry(this);
+      return false;
+    }
+
    private:
     std::weak_ptr<heap<value_type>> HeapWeakPtr;
     value_type Value;
     size_t Index;
   };
 
+  typedef std::shared_ptr<entry> entry_ptr;
+
   typedef std::function<bool(value_type, value_type)> CompareFcn;
   // WARNING: Only create using std::make_shared<heap<value_type>>(); DO NOT
   // call constructor directly!
-  heap(CompareFcn LtFcn  // =
-       // TODO(karlschimpf): Why didn't std::less<Value_type>() not work!
-       // [](value_type V1, value_type V2) { return V1 < V2; }
-       )
-      : LtFcn(LtFcn) {}
+  heap(CompareFcn LtFcn) : LtFcn(LtFcn) {}
 
   ~heap() {}
 
@@ -114,14 +118,14 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
     return Contents[E->Index].get() == E;
   }
 
-  std::shared_ptr<entry> top() {
+  entry_ptr top() {
     assert(!Contents.empty());
     return Contents.front();
   }
 
-  std::shared_ptr<entry> push(value_type& Value) {
+  entry_ptr push(value_type& Value) {
     size_t Index = Contents.size();
-    std::shared_ptr<entry> Entry =
+    entry_ptr Entry =
         std::make_shared<entry>(this->shared_from_this(), Value, Index);
     Contents.push_back(Entry);
     insertUp(Index);
@@ -146,7 +150,7 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
   }
 
  private:
-  std::vector<std::shared_ptr<entry>> Contents;
+  std::vector<entry_ptr> Contents;
 
   // Accessors defining indices for parent/children.
   size_t getLeftKidIndex(size_t Parent) { return 2 * Parent + 1; }
@@ -165,9 +169,9 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
       auto& Kid = Contents[KidIndex];
       if (!LtFcn(Kid->getValue(), Parent->getValue()))
         return Moved;
-      std::swap(Parent, Kid);
       Parent->Index = KidIndex;
       Kid->Index = ParentIndex;
+      std::swap(Parent, Kid);
       KidIndex = ParentIndex;
       Moved = true;
     }
@@ -194,9 +198,9 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
         return;
       auto& Parent = Contents[ParentIndex];
       auto& Kid = Contents[KidIndex];
-      std::swap(Parent, Kid);
       Parent->Index = KidIndex;
       Kid->Index = ParentIndex;
+      std::swap(Parent, Kid);
       ParentIndex = KidIndex;
     } while (true);
   }

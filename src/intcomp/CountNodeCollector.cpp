@@ -68,7 +68,25 @@ void CountNodeCollector::clear() {
 
 void CountNodeCollector::buildHeap() {
   for (auto& Value : Values)
-    Value->associateWithHeap(ValuesHeap->push(Value));
+    pushHeap(Value);
+}
+
+void CountNodeCollector::pushHeap(CountNode::Ptr Nd) {
+  assert(ValuesHeap);
+  Nd->associateWithHeap(ValuesHeap->push(Nd));
+}
+
+CountNode::HeapValueType CountNodeCollector::popHeap() {
+  assert(ValuesHeap);
+  CountNode::HeapEntryType Entry = ValuesHeap->top();
+  ValuesHeap->pop();
+  return Entry->getValue();
+}
+
+void CountNodeCollector::describeHeap(FILE* Out) {
+  ValuesHeap->describe(Out, [](FILE* Out, CountNode::HeapValueType Value) {
+    Value->describe(Out);
+  });
 }
 
 void CountNodeCollector::collectUsingCutoffs(size_t MyCountCutoff,

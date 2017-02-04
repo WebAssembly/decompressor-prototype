@@ -51,7 +51,9 @@ std::shared_ptr<TraceClass> AbbreviationsCollector::getTracePtr() {
 
 void AbbreviationsCollector::assignAbbreviations() {
   TRACE_METHOD("assignAbbreviations");
+  TRACE(uint64_t, "WeightCutoff", MyFlags.WeightCutoff);
   {
+    // Add always defined patterns.
     CountNode::PtrVector Others;
     Root->getOthers(Others);
     for (CountNode::Ptr Nd : Others) {
@@ -68,7 +70,7 @@ void AbbreviationsCollector::assignAbbreviations() {
       addAbbreviation(Nd);
     }
   }
-  TRACE(uint64_t, "WeightCutoff", MyFlags.WeightCutoff);
+  // Now select best fitting patterns, based on weight.
   collectUsingCutoffs(MyFlags.CountCutoff, MyFlags.WeightCutoff,
                       makeFlags(CollectionFlag::All));
   buildHeap();
@@ -82,39 +84,17 @@ void AbbreviationsCollector::assignAbbreviations() {
     });
     if (isa<IntCountNode>(*Nd) && Nd->getWeight() < MyFlags.WeightCutoff) {
       TRACE_MESSAGE("Removing due to weight cutoff");
-      if (MyFlags.TrimOverriddenPatterns)
-        removeAbbreviation(Nd);
       continue;
     }
     addAbbreviation(Nd);
   }
-}
-
-void AbbreviationsCollector::removeAbbreviationSuccs(CountNode::Ptr Nd) {
-#if 0
-  // TODO(karlschimpf) For now, turn off. We apparently do want to
-  // pick up longer paths in some cases.
-  if (!isa<IntCountNode>(Nd.get()))
-    return;
-  auto* IntNd = cast<IntCountNode>(Nd.get());
-  for (auto& Pair : *IntNd)
-    removeAbbreviation(Pair.second);
-  IntNd->clearSuccs();
-#endif
-}
-
-void AbbreviationsCollector::removeAbbreviation(CountNode::Ptr Nd) {
-#if 0
-  // TODO(karlschimpf) For now, turn off. We apparently do want to
-  // pick up longer paths in some cases.
-  if (!isa<IntCountNode>(Nd.get()))
-    return;
-  removeAbbreviationSuccs(Nd);
-  auto* IntNd = cast<IntCountNode>(Nd.get());
-  IntNd->disassociateFromHeap();
-  if (CountNode::IntPtr Parent = IntNd->getParent())
-    Parent->eraseSucc(IntNd->getValue());
-#endif
+  // Now create abbreviation indices for selected abbreviations.
+  for (const CountNode::Ptr& Nd : Assignments)
+    pushHeap(Nd);
+  while (!ValuesHeap->empty()) {
+    CountNode::Ptr Nd = popHeap();
+    Nd->setAbbrevIndex(Encoder->createSymbol(Nd->getCount()));
+  }
 }
 
 HuffmanEncoder::NodePtr AbbreviationsCollector::assignHuffmanAbbreviations() {
@@ -126,25 +106,46 @@ HuffmanEncoder::NodePtr AbbreviationsCollector::assignHuffmanAbbreviations() {
 }
 
 void AbbreviationsCollector::addAbbreviation(CountNode::Ptr Nd) {
-  if (Nd->hasAbbrevIndex()) {
-    TRACE_MESSAGE("Already has abbreviation. Ignoring");
+  if (Assignments.count(Nd) > 0) {
+    TRACE_MESSAGE("Ignoring: already chosen");
     return;
   }
-#if 1
-  // TODO(karlschimpf) Why is weight better, when huffman encoding
-  // should do better on count?
-  uint64_t Weight = Nd->getWeight();
-#else
-  uint64_t Weight = Nd->getCount();
-#endif
-  if (Nd->hasAbbrevIndex()) {
-    TRACE_MESSAGE("Already has abbreviation. Ignoring");
-    return;
-  }
-  Nd->setAbbrevIndex(Encoder->createSymbol(Weight));
   Assignments.insert(Nd);
-  if (MyFlags.TrimOverriddenPatterns)
-    removeAbbreviationSuccs(Nd);
+  TRACE_MESSAGE("Added to assignments");
+  if (!MyFlags.TrimOverriddenPatterns) {
+    TRACE(size_t, "Number assignements", Assignments.size());
+    return;
+  }
+  CountNode* NdPtr = Nd.get();
+  uint64_t Count = NdPtr->getCount();
+  while (auto* IntNd = dyn_cast<IntCountNode>(NdPtr)) {
+    CountNode::IntPtr Parent = IntNd->getParent();
+    if (!Parent)
+      break;
+    IntCountNode* ParentPtr = Parent.get();
+    size_t OldCount = ParentPtr->getCount();
+    size_t NewCount = (OldCount > Count) ? (OldCount - Count) : 0;
+    if (OldCount == NewCount)
+      break;
+    ParentPtr->setCount(NewCount);
+    TRACE_BLOCK({
+      FILE* Out = getTrace().getFile();
+      fprintf(Out, "Updated Parent: ");
+      ParentPtr->describe(Out);
+    });
+    if (CountNode::HeapEntryType Entry = ParentPtr->getAssociatedHeapEntry()) {
+      if (!Entry->reinsert()) {
+        CountNode::Ptr Nd = Parent;
+        pushHeap(Nd);
+      }
+    }
+    if (Assignments.count(Parent) > 0) {
+      TRACE_MESSAGE("Removing from assignments");
+      Assignments.erase(Parent);
+    }
+    NdPtr = ParentPtr;
+  }
+  TRACE(size_t, "Number assignements", Assignments.size());
 }
 
 }  // end of namespace intcomp

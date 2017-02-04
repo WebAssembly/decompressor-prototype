@@ -56,8 +56,6 @@ class AbbreviationsCollector : public CountNodeCollector {
   std::shared_ptr<utils::TraceClass> Trace;
 
   void addAbbreviation(CountNode::Ptr Nd);
-  void removeAbbreviation(CountNode::Ptr Nd);
-  void removeAbbreviationSuccs(CountNode::Ptr Nd);
 };
 
 }  // end of namespace intcomp
