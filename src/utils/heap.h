@@ -59,7 +59,7 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
     value_type getValue() { return Value; }
     bool reinsert() {
       bool Inserted = false;
-      if (auto HeapPtr = HeapWeakPtr->lock()) {
+      if (auto HeapPtr = HeapWeakPtr.lock()) {
         if (HeapPtr->isValidEntry(this)) {
           HeapPtr->reinsert(Index);
           Inserted = true;

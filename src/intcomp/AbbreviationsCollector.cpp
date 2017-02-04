@@ -52,6 +52,7 @@ std::shared_ptr<TraceClass> AbbreviationsCollector::getTracePtr() {
 void AbbreviationsCollector::assignAbbreviations() {
   TRACE_METHOD("assignAbbreviations");
   {
+    // Add always defined patterns.
     CountNode::PtrVector Others;
     Root->getOthers(Others);
     for (CountNode::Ptr Nd : Others) {
@@ -68,6 +69,7 @@ void AbbreviationsCollector::assignAbbreviations() {
       addAbbreviation(Nd);
     }
   }
+  // Now select best fitting patterns, based on weight.
   TRACE(uint64_t, "WeightCutoff", MyFlags.WeightCutoff);
   collectUsingCutoffs(MyFlags.CountCutoff, MyFlags.WeightCutoff,
                       makeFlags(CollectionFlag::All));
@@ -88,6 +90,9 @@ void AbbreviationsCollector::assignAbbreviations() {
     }
     addAbbreviation(Nd);
   }
+  // Now create abbreviation indices for selected abbreviations.
+  for (const CountNode::Ptr& Nd : Assignments)
+    Nd->setAbbrevIndex(Encoder->createSymbol(Nd->getCount()));
 }
 
 void AbbreviationsCollector::removeAbbreviationSuccs(CountNode::Ptr Nd) {
@@ -126,25 +131,42 @@ HuffmanEncoder::NodePtr AbbreviationsCollector::assignHuffmanAbbreviations() {
 }
 
 void AbbreviationsCollector::addAbbreviation(CountNode::Ptr Nd) {
-  if (Nd->hasAbbrevIndex()) {
+  if (Assignments.count(Nd) > 0) {
     TRACE_MESSAGE("Already has abbreviation. Ignoring");
     return;
   }
-#if 1
-  // TODO(karlschimpf) Why is weight better, when huffman encoding
-  // should do better on count?
-  uint64_t Weight = Nd->getWeight();
-#else
-  uint64_t Weight = Nd->getCount();
-#endif
-  if (Nd->hasAbbrevIndex()) {
-    TRACE_MESSAGE("Already has abbreviation. Ignoring");
-    return;
-  }
-  Nd->setAbbrevIndex(Encoder->createSymbol(Weight));
+  TRACE_MESSAGE("Added to assignments");
   Assignments.insert(Nd);
-  if (MyFlags.TrimOverriddenPatterns)
-    removeAbbreviationSuccs(Nd);
+  CountNode* NdPtr = Nd.get();
+  uint64_t Count = NdPtr->getCount();
+  while (auto* IntNd = dyn_cast<IntCountNode>(NdPtr)) {
+    CountNode::IntPtr Parent = IntNd->getParent();
+    if (!Parent)
+      break;
+    IntCountNode* ParentPtr = Parent.get();
+    TRACE_BLOCK({
+        FILE* Out = getTrace().getFile();
+        fprintf(Out, "Parent: ");
+        ParentPtr->describe(Out);
+      });
+    size_t OldCount = ParentPtr->getCount();
+    size_t NewCount = (OldCount > Count) ? (OldCount - Count) : 0;
+    if (OldCount == NewCount)
+      break;
+    ParentPtr->setCount(NewCount);
+    if (CountNode::HeapEntryType Entry = ParentPtr->getAssociatedHeapEntry())
+      Entry->reinsert();
+    TRACE_BLOCK({
+        FILE* Out = getTrace().getFile();
+        fprintf(Out, "Updated Parent: ");
+        ParentPtr->describe(Out);
+      });
+    if (Assignments.count(Parent) > 0) {
+      TRACE_MESSAGE("Removing from assignments");
+      Assignments.erase(Parent);
+    }
+    NdPtr = ParentPtr;
+  }
 }
 
 }  // end of namespace intcomp

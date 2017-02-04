@@ -86,7 +86,7 @@ class CountNode : public std::enable_shared_from_this<CountNode> {
   void increment(size_t Cnt = 1) { Count += Cnt; }
 
   // The following two handle associating a heap entry with this.
-  HeapEntryType getAssociatedHeadEntry() { return HeapEntry; }
+  HeapEntryType getAssociatedHeapEntry() { return HeapEntry; }
   void associateWithHeap(HeapEntryType Entry) { HeapEntry = Entry; }
   void disassociateFromHeap();
 
