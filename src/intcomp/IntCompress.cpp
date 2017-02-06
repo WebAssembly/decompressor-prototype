@@ -129,6 +129,7 @@ void IntCompressor::readInput() {
 
 const BitWriteCursor IntCompressor::writeCodeOutput(
     std::shared_ptr<SymbolTable> Symtab) {
+  TRACE_METHOD("writeCodeOutput");
   CasmWriter Writer;
   return Writer.setTraceWriter(MyFlags.TraceWritingCodeOutput)
       .setTraceTree(MyFlags.TraceWritingCodeOutput)
@@ -139,6 +140,7 @@ const BitWriteCursor IntCompressor::writeCodeOutput(
 
 void IntCompressor::writeDataOutput(const BitWriteCursor& StartPos,
                                     std::shared_ptr<SymbolTable> Symtab) {
+  TRACE_METHOD("writeDataOutput");
   auto Writer = std::make_shared<ByteWriter>(Output);
   Writer->setPos(StartPos);
   Interpreter MyReader(std::make_shared<IntReader>(IntOutput), Writer,
@@ -270,19 +272,20 @@ bool IntCompressor::generateIntOutput() {
   auto Writer = std::make_shared<AbbrevAssignWriter>(
       Root, IntOutput, MyFlags.LengthLimit, MyFlags.AbbrevFormat,
       !MyFlags.UseHuffmanEncoding);
-  IntInterperter Reader(std::make_shared<IntReader>(Contents), Writer,
+  IntInterperter Interp(std::make_shared<IntReader>(Contents), Writer,
                         MyFlags.InterpFlags, Symtab);
   if (MyFlags.TraceIntStreamGeneration)
-    Reader.getTrace().setTraceProgress(true);
-  Reader.structuralRead();
+    Interp.setTrace(getTracePtr());
+  Interp.structuralRead();
   assert(IntOutput->isFrozen());
-  return !Reader.errorsFound();
+  return !Interp.errorsFound();
 }
 
 std::shared_ptr<SymbolTable> IntCompressor::generateCode(
     CountNode::PtrSet& Assignments,
     bool ToRead,
     bool Trace) {
+  TRACE_METHOD("generateCode");
   AbbreviationCodegen Codegen(Root, EncodingRoot, MyFlags.AbbrevFormat,
                               Assignments);
   std::shared_ptr<SymbolTable> Symtab = Codegen.getCodeSymtab(ToRead);

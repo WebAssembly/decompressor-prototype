@@ -234,6 +234,14 @@ int main(int Argc, const char* Argv[]) {
     Args.add(TraceCompressedIntOutputFlag.setLongName("verbose=int-output")
                  .setDescription("Show generated compressed integer stream"));
 
+    ArgsParser::Optional<bool> TraceIntStreamGenerationFlag(
+        CompressionFlags.TraceIntStreamGeneration);
+    Args.add(TraceIntStreamGenerationFlag
+             .setLongName("verbose=gen-int-output")
+             .setDescription("Trace the generation of the compressed integer "
+                             "stream. In particular, show how abbreviations "
+                             "are inserted"));
+
     switch (Args.parse(Argc, Argv)) {
       case ArgsParser::State::Good:
         break;

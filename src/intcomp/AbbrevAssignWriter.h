@@ -40,17 +40,8 @@ class AbbrevAssignWriter : public interp::Writer {
                      std::shared_ptr<interp::IntStream> Output,
                      size_t BufSize,
                      interp::IntTypeFormat AbbrevFormat,
-                     bool AssumeByteAlignment)
-      : Root(Root),
-        Writer(Output),
-        Buffer(BufSize),
-        AbbrevFormat(AbbrevFormat),
-        AssumeByteAlignment(AssumeByteAlignment) {
-    assert(Root->getDefaultSingle()->hasAbbrevIndex());
-    assert(Root->getDefaultMultiple()->hasAbbrevIndex());
-  }
-
-  ~AbbrevAssignWriter() OVERRIDE {}
+                     bool AssumeByteAlignment);
+  ~AbbrevAssignWriter() OVERRIDE;
 
   decode::StreamType getStreamType() const OVERRIDE;
   bool writeUint8(uint8_t Value) OVERRIDE;
@@ -66,12 +57,15 @@ class AbbrevAssignWriter : public interp::Writer {
                         interp::IntTypeFormat Format) OVERRIDE;
   bool writeAction(const filt::SymbolNode* Action) OVERRIDE;
 
+#if 0
   utils::TraceClass::ContextPtr getTraceContext() OVERRIDE;
+#endif
   void setTrace(std::shared_ptr<utils::TraceClass> Trace) OVERRIDE;
 
  private:
   CountNode::RootPtr Root;
   interp::IntWriter Writer;
+  size_t BufSize;
   utils::circular_vector<decode::IntType> Buffer;
   interp::IntTypeFormat AbbrevFormat;
   std::vector<decode::IntType> DefaultValues;
@@ -84,6 +78,7 @@ class AbbrevAssignWriter : public interp::Writer {
   void bufferValue(decode::IntType Value);
   void forwardAbbrevValue(decode::IntType Value);
   void forwardOtherValue(decode::IntType Value);
+  CountNode::IntPtr  extractMaxPattern(size_t StartIndex);
   void writeFromBuffer();
   void writeUntilBufferEmpty();
   void popValuesFromBuffer(size_t size);

@@ -128,8 +128,10 @@ class CountNode : public std::enable_shared_from_this<CountNode> {
   void newline(FILE* Out) const;
 };
 
-CountNode::IntPtr lookup(CountNode::RootPtr, decode::IntType Value);
-CountNode::IntPtr lookup(CountNode::IntPtr, decode::IntType Value);
+CountNode::IntPtr lookup(CountNode::RootPtr, decode::IntType Value,
+                         bool AddIfNotFound = true);
+CountNode::IntPtr lookup(CountNode::IntPtr, decode::IntType Value,
+                         bool AddIfNotFound = true);
 
 int compare(CountNode::Ptr P1, CountNode::Ptr P2);
 
@@ -161,8 +163,10 @@ class CountNodeWithSuccs : public CountNode {
   CountNodeWithSuccs() = delete;
   CountNodeWithSuccs(const CountNodeWithSuccs&) = delete;
   CountNodeWithSuccs& operator=(const CountNodeWithSuccs&) = delete;
-  friend CountNode::IntPtr lookup(CountNode::RootPtr, decode::IntType Value);
-  friend CountNode::IntPtr lookup(CountNode::IntPtr, decode::IntType Value);
+  friend CountNode::IntPtr lookup(CountNode::RootPtr, decode::IntType Value,
+                                  bool AddIfNotFound);
+  friend CountNode::IntPtr lookup(CountNode::IntPtr, decode::IntType Value,
+                                  bool AddIfNotFound);
 
  public:
   ~CountNodeWithSuccs() OVERRIDE;
