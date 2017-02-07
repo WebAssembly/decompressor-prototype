@@ -27,20 +27,40 @@ using namespace utils;
 
 namespace intcomp {
 
+AbbrevAssignWriter::AbbrevAssignWriter(
+    CountNode::RootPtr Root,
+    std::shared_ptr<interp::IntStream> Output,
+    size_t BufSize,
+    interp::IntTypeFormat AbbrevFormat,
+    bool AssumeByteAlignment,
+    Flags& MyFlags)
+    : MyFlags(MyFlags),
+      Root(Root),
+      Writer(Output),
+      BufSize(BufSize),
+      // Allocate enough space to handle possible pattern overlaps!
+      Buffer(BufSize * 2 - 1),
+      AbbrevFormat(AbbrevFormat),
+      AssumeByteAlignment(AssumeByteAlignment) {
+  assert(Root->getDefaultSingle()->hasAbbrevIndex());
+  assert(Root->getDefaultMultiple()->hasAbbrevIndex());
+}
+
+AbbrevAssignWriter::~AbbrevAssignWriter() {
+}
+
 const char* AbbrevAssignWriter::getDefaultTraceName() const {
   return "AbbrevAssignWriter";
 }
 
-utils::TraceClass::ContextPtr AbbrevAssignWriter::getTraceContext() {
-  return Writer.getTraceContext();
-}
-
 void AbbrevAssignWriter::forwardAbbrevValue(IntType Value) {
   flushDefaultValues();
+  TRACE(IntType, "Insert abbreviation", Value);
   Writer.writeTypedValue(Value, AbbrevFormat);
 }
 
 void AbbrevAssignWriter::forwardOtherValue(IntType Value) {
+  TRACE(IntType, "Forward other", Value);
   DefaultValues.push_back(Value);
 }
 
@@ -132,6 +152,7 @@ bool AbbrevAssignWriter::writeAction(const filt::SymbolNode* Action) {
 }
 
 void AbbrevAssignWriter::bufferValue(IntType Value) {
+  TRACE(IntType, "Buffer.enqueue", Value);
   assert(!Buffer.full());
   Buffer.push_back(Value);
   if (!Buffer.full())
@@ -139,19 +160,67 @@ void AbbrevAssignWriter::bufferValue(IntType Value) {
   writeFromBuffer();
 }
 
+CountNode::IntPtr AbbrevAssignWriter::extractMaxPattern(size_t StartIndex) {
+  TRACE_METHOD("extractMaxPattern");
+  CountNode::IntPtr Nd;
+  CountNode::IntPtr Max;
+  size_t EndIndex = std::min(StartIndex + BufSize, Buffer.size());
+  constexpr bool AddIfNotFound = false;
+  for (size_t i = StartIndex; i < EndIndex; ++i) {
+    TRACE(size_t, "i", i);
+    if (i >= Buffer.size())
+      break;
+    IntType Value = Buffer[i];
+    TRACE(IntType, "Value", Value);
+    Nd = Nd ? lookup(Nd, Value, AddIfNotFound)
+            : lookup(Root, Value, AddIfNotFound);
+    if (!Nd) {
+      TRACE_MESSAGE("No pattern found!");
+      break;
+    }
+    if (!Nd->hasAbbrevIndex())
+      continue;
+    if (!Max || (Max->getWeight() > Nd->getWeight())) {
+      Max = Nd;
+      TRACE_BLOCK({
+        FILE* Out = getTrace().getFile();
+        fprintf(Out, "Max: ");
+        Max->describe(Out);
+      });
+    }
+  }
+  return Max;
+}
+
 void AbbrevAssignWriter::writeFromBuffer() {
+  TRACE_METHOD("writeFromBuffer");
   // TODO(karlschimpf): When writing values, dont' create abbreviation
   // if there are already default values, and adding as a default value
   // will use less space.
   if (Buffer.empty())
     return;
+  TRACE_BLOCK({
+    FILE* Out = getTrace().getFile();
+    fprintf(Out, "** Buffer **\n");
+    for (IntType Value : Buffer)
+      fprintf(Out, "  %" PRIuMAX "\n", Value);
+    fprintf(Out, "************\n");
+  });
   // Collect abbreviations available for value sequences in buffer.
-  CountNode::IntPtr Nd;
-  CountNode::IntPtr Max;
-  for (IntType Value : Buffer) {
-    Nd = Nd ? lookup(Nd, Value) : lookup(Root, Value);
-    if (Nd->hasAbbrevIndex())
-      Max = Nd;
+  CountNode::IntPtr Max = extractMaxPattern(0);
+  if (MyFlags.CheckOverlapping && Max) {
+    // See if overlappingn pattern is better choice.
+    size_t EndIndex = Max->getPathLength();
+    for (size_t i = 1; i < EndIndex; ++i) {
+      if (i >= Buffer.size())
+        break;
+      CountNode::IntPtr CandMax = extractMaxPattern(i);
+      // TODO(karlschimpf) Figure out heuristic to handle overlapping cost.
+      if (CandMax && Max->getWeight() < CandMax->getWeight()) {
+        Max = CountNode::IntPtr();
+        break;
+      }
+    }
   }
   if (!Max) {
     // Default to writing at least one value.
@@ -172,6 +241,7 @@ void AbbrevAssignWriter::popValuesFromBuffer(size_t Size) {
   for (size_t i = 0; i < Size; ++i) {
     if (Buffer.empty())
       return;
+    TRACE(IntType, "Buffer.deque", Buffer.front());
     Buffer.pop_front();
   }
 }
@@ -179,20 +249,34 @@ void AbbrevAssignWriter::popValuesFromBuffer(size_t Size) {
 void AbbrevAssignWriter::flushDefaultValues() {
   if (DefaultValues.empty())
     return;
+  TRACE_METHOD("flushDefaultValues");
+  TRACE_BLOCK({
+    FILE* Out = getTrace().getFile();
+    fprintf(Out, "** Other values **\n");
+    for (const IntType Value : DefaultValues)
+      fprintf(Out, "  %" PRIuMAX "\n", Value);
+    fprintf(Out, "******************\n");
+  });
 
   if (DefaultValues.size() == 1) {
-    Writer.writeTypedValue(Root->getDefaultSingle()->getAbbrevIndex(),
-                           AbbrevFormat);
+    IntType Abbrev = Root->getDefaultSingle()->getAbbrevIndex();
+    TRACE(IntType, "Insert single abbrev", Abbrev);
+    Writer.writeTypedValue(Abbrev, AbbrevFormat);
+    TRACE(IntType, "Value", DefaultValues[0]);
     Writer.writeTypedValue(DefaultValues[0], DefaultFormat);
     DefaultValues.clear();
     return;
   }
 
-  Writer.writeTypedValue(Root->getDefaultMultiple()->getAbbrevIndex(),
-                         AbbrevFormat);
+  IntType Abbrev = Root->getDefaultMultiple()->getAbbrevIndex();
+  TRACE(IntType, "Insert multiple abbrev", Abbrev);
+  Writer.writeTypedValue(Abbrev, AbbrevFormat);
+  TRACE(size_t, "Number values", DefaultValues.size());
   Writer.writeTypedValue(DefaultValues.size(), LoopSizeFormat);
-  for (const auto V : DefaultValues)
+  for (const IntType V : DefaultValues) {
+    TRACE(IntType, "Value", V);
     Writer.writeTypedValue(V, DefaultFormat);
+  }
   DefaultValues.clear();
 }
 
