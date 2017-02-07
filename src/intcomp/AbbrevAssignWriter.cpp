@@ -46,7 +46,7 @@ AbbrevAssignWriter::AbbrevAssignWriter(
   assert(Root->getDefaultMultiple()->hasAbbrevIndex());
 }
 
-AbbrevAssignWriter::~AbbrevAssignWriter() OVERRIDE {
+AbbrevAssignWriter::~AbbrevAssignWriter() {
 }
 
 const char* AbbrevAssignWriter::getDefaultTraceName() const {
