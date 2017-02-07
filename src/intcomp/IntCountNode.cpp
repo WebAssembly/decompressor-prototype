@@ -99,35 +99,30 @@ void CountNode::setAbbrevIndex(HuffmanEncoder::SymbolPtr Symbol) {
   AbbrevSymbol = Symbol;
 }
 
-CountNode::IntPtr lookup(CountNode::RootPtr Root, IntType Value,
+CountNode::IntPtr lookup(CountNode::RootPtr Root,
+                         IntType Value,
                          bool AddIfNotFound) {
   CountNode::IntPtr Succ = Root->getSucc(Value);
   if (Succ)
     return Succ;
 
-#if 1
   if (!AddIfNotFound)
     return CountNode::IntPtr();
-#else
-  (void) AddIfNotFound;
-#endif
 
   Succ = std::make_shared<SingletonCountNode>(Value);
   Root->Successors[Value] = Succ;
   return Succ;
 }
 
-CountNode::IntPtr lookup(CountNode::IntPtr Nd, IntType Value,
+CountNode::IntPtr lookup(CountNode::IntPtr Nd,
+                         IntType Value,
                          bool AddIfNotFound) {
   CountNode::IntPtr Succ = Nd->getSucc(Value);
   if (Succ)
     return Succ;
-#if 1
+
   if (!AddIfNotFound)
     return CountNode::IntPtr();
-#else
-  (void) AddIfNotFound;
-#endif
 
   Succ = std::make_shared<IntSeqCountNode>(Value, Nd);
   Nd->Successors[Value] = Succ;

@@ -128,6 +128,13 @@ int main(int Argc, const char* Argv[]) {
     Args.add(TrimOverriddenPatternsFlag.setLongName("trim").setDescription(
         "Remove patterns if already implied by previous patterns"));
 
+    ArgsParser::Toggle CheckOverlappingPatternsFlag(
+        CompressionFlags.AbbrevAssignFlags.CheckOverlapping);
+    Args.add(CheckOverlappingPatternsFlag.setLongName("overlapping")
+                 .setDescription(
+                     "Overlap close abbreviation patterns to find better "
+                     "fit of abbreviations"));
+
     ArgsParser::Optional<bool> TraceReadingInputFlag(
         CompressionFlags.TraceReadingInput);
     Args.add(
@@ -236,11 +243,11 @@ int main(int Argc, const char* Argv[]) {
 
     ArgsParser::Optional<bool> TraceIntStreamGenerationFlag(
         CompressionFlags.TraceIntStreamGeneration);
-    Args.add(TraceIntStreamGenerationFlag
-             .setLongName("verbose=gen-int-output")
-             .setDescription("Trace the generation of the compressed integer "
-                             "stream. In particular, show how abbreviations "
-                             "are inserted"));
+    Args.add(TraceIntStreamGenerationFlag.setLongName("verbose=gen-int-output")
+                 .setDescription(
+                     "Trace the generation of the compressed integer "
+                     "stream. In particular, show how abbreviations "
+                     "are inserted"));
 
     switch (Args.parse(Argc, Argv)) {
       case ArgsParser::State::Good:

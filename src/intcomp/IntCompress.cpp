@@ -271,7 +271,7 @@ void IntCompressor::assignInitialAbbreviations(CountNode::PtrSet& Assignments) {
 bool IntCompressor::generateIntOutput() {
   auto Writer = std::make_shared<AbbrevAssignWriter>(
       Root, IntOutput, MyFlags.LengthLimit, MyFlags.AbbrevFormat,
-      !MyFlags.UseHuffmanEncoding);
+      !MyFlags.UseHuffmanEncoding, MyFlags.AbbrevAssignFlags);
   IntInterperter Interp(std::make_shared<IntReader>(Contents), Writer,
                         MyFlags.InterpFlags, Symtab);
   if (MyFlags.TraceIntStreamGeneration)

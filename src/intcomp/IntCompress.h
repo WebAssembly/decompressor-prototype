@@ -19,6 +19,7 @@
 #ifndef DECOMPRESSOR_SRC_INTCOMP_INTCOMPRESS_H
 #define DECOMPRESSOR_SRC_INTCOMP_INTCOMPRESS_H
 
+#include "intcomp/AbbrevAssignWriter.h"
 #include "intcomp/CompressionFlags.h"
 #include "intcomp/IntCountNode.h"
 #include "interp/Interpreter.h"
@@ -70,6 +71,7 @@ class IntCompressor FINAL {
     bool TraceCompressedIntOutput;
     std::shared_ptr<utils::TraceClass> Trace;
     interp::InterpreterFlags InterpFlags;
+    AbbrevAssignWriter::Flags AbbrevAssignFlags;
     Flags();
   };
 
