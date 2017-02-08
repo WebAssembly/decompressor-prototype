@@ -52,6 +52,7 @@ std::shared_ptr<TraceClass> AbbreviationsCollector::getTracePtr() {
 void AbbreviationsCollector::assignAbbreviations() {
   TRACE_METHOD("assignAbbreviations");
   TRACE(uint64_t, "WeightCutoff", MyFlags.WeightCutoff);
+  TrimmedNodes.clear();
   {
     // Add always defined patterns.
     CountNode::PtrVector Others;
@@ -74,6 +75,7 @@ void AbbreviationsCollector::assignAbbreviations() {
   collectUsingCutoffs(MyFlags.CountCutoff, MyFlags.WeightCutoff,
                       makeFlags(CollectionFlag::All));
   buildHeap();
+
   while (!ValuesHeap->empty() &&
          Assignments.size() < MyFlags.MaxAbbreviations) {
     CountNode::Ptr Nd = popHeap();
@@ -88,6 +90,7 @@ void AbbreviationsCollector::assignAbbreviations() {
     }
     addAbbreviation(Nd);
   }
+  TrimmedNodes.clear();
   // Now create abbreviation indices for selected abbreviations.
   for (const CountNode::Ptr& Nd : Assignments)
     pushHeap(Nd);
@@ -117,11 +120,26 @@ void AbbreviationsCollector::addAbbreviation(CountNode::Ptr Nd) {
     return;
   }
   CountNode* NdPtr = Nd.get();
+  // Walk up prefices and trim count off from count, so that we
+  // aren't counting overlapping patterns.
+  if (!isa<IntCountNode>(NdPtr)) {
+    TRACE(size_t, "Number assignements", Assignments.size());
+    return;
+  }
   uint64_t Count = NdPtr->getCount();
-  while (auto* IntNd = dyn_cast<IntCountNode>(NdPtr)) {
+  CountNode::Ptr NextNd = Nd;
+  while (auto* IntNd = dyn_cast<IntCountNode>(NextNd.get())) {
     CountNode::IntPtr Parent = IntNd->getParent();
     if (!Parent)
       break;
+    if (TrimmedNodes.count(NextNd)) {
+      TRACE_BLOCK({
+        FILE* Out = getTrace().getFile();
+        fprintf(Out, "Already trimmed: ");
+        NextNd->describe(Out);
+      });
+      break;
+    }
     IntCountNode* ParentPtr = Parent.get();
     size_t OldCount = ParentPtr->getCount();
     size_t NewCount = (OldCount > Count) ? (OldCount - Count) : 0;
@@ -135,16 +153,16 @@ void AbbreviationsCollector::addAbbreviation(CountNode::Ptr Nd) {
     });
     if (CountNode::HeapEntryType Entry = ParentPtr->getAssociatedHeapEntry()) {
       if (!Entry->reinsert()) {
-        CountNode::Ptr Nd = Parent;
-        pushHeap(Nd);
+        pushHeap(Parent);
       }
     }
     if (Assignments.count(Parent) > 0) {
       TRACE_MESSAGE("Removing from assignments");
       Assignments.erase(Parent);
     }
-    NdPtr = ParentPtr;
+    NextNd = Parent;
   }
+  TrimmedNodes.insert(Nd);
   TRACE(size_t, "Number assignements", Assignments.size());
 }
 

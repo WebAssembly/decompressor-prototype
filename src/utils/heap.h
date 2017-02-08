@@ -132,6 +132,13 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
     return Entry;
   }
 
+  void push(entry* Entry) {
+    Entry->Index = Contents.size();
+    Contents.push_back(Entry);
+    insertUp(Entry->Index);
+    return Entry;
+  }
+
   void pop() { remove(0); }
 
   // Reinsert value since key changed.

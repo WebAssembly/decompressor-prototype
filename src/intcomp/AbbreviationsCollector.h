@@ -54,6 +54,7 @@ class AbbreviationsCollector : public CountNodeCollector {
   utils::HuffmanEncoder::NodePtr HuffmanRoot;
   utils::HuffmanEncoder::NodePtr Encoding;
   std::shared_ptr<utils::TraceClass> Trace;
+  CountNode::PtrSet TrimmedNodes;
 
   void addAbbreviation(CountNode::Ptr Nd);
 };
