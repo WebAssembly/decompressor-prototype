@@ -84,10 +84,6 @@ void AbbreviationsCollector::assignAbbreviations() {
       fprintf(Out, "Considering: ");
       Nd->describe(Out);
     });
-    if (isa<IntCountNode>(*Nd) && Nd->getWeight() < MyFlags.WeightCutoff) {
-      TRACE_MESSAGE("Removing due to weight cutoff");
-      continue;
-    }
     addAbbreviation(Nd);
   }
   TrimmedNodes.clear();
@@ -113,13 +109,25 @@ void AbbreviationsCollector::addAbbreviation(CountNode::Ptr Nd) {
     TRACE_MESSAGE("Ignoring: already chosen");
     return;
   }
+  CountNode* NdPtr = Nd.get();
+  if (isa<IntCountNode>(NdPtr)) {
+    if (NdPtr->getCount() < MyFlags.CountCutoff ||
+        NdPtr->getWeight() < MyFlags.WeightCutoff) {
+      TRACE_MESSAGE("Removing, count/weight too small");
+      return;
+    }
+  }
   Assignments.insert(Nd);
+  TRACE_BLOCK({
+    FILE* Out = getTrace().getFile();
+    ValuesHeap->describe(
+        Out, [](FILE* Out, CountNode::HeapValueType Nd) { Nd->describe(Out); });
+  });
   TRACE_MESSAGE("Added to assignments");
   if (!MyFlags.TrimOverriddenPatterns) {
     TRACE(size_t, "Number assignements", Assignments.size());
     return;
   }
-  CountNode* NdPtr = Nd.get();
   // Walk up prefices and trim count off from count, so that we
   // aren't counting overlapping patterns.
   if (!isa<IntCountNode>(NdPtr)) {
