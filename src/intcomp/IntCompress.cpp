@@ -275,7 +275,7 @@ bool IntCompressor::generateIntOutput() {
   IntInterperter Interp(std::make_shared<IntReader>(Contents), Writer,
                         MyFlags.InterpFlags, Symtab);
   if (MyFlags.TraceIntStreamGeneration)
-    Interp.setTrace(getTracePtr());
+    Interp.setTraceProgress(true);
   Interp.structuralRead();
   assert(IntOutput->isFrozen());
   return !Interp.errorsFound();
