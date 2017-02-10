@@ -179,12 +179,14 @@ bool IntCompressor::compressUpToSize(size_t Size) {
   return !Reader.errorsFound();
 }
 
-void IntCompressor::removeSmallUsageCounts(bool KeepSingletonsUsingCount) {
+void IntCompressor::removeSmallUsageCounts(bool KeepSingletonsUsingCount,
+                                           bool ZeroOutSmallNodes) {
   // NOTE: The main purpose of this method is to shrink the size of
   // the trie to (a) recover memory and (b) make remaining analysis
   // faster.  It does this by removing int count nodes that are not
   // not useful (See case RemoveFrame::State::Exit for details).
-  RemoveNodesVisitor Visitor(Root, MyFlags, KeepSingletonsUsingCount);
+  RemoveNodesVisitor Visitor(Root, MyFlags, KeepSingletonsUsingCount,
+                             ZeroOutSmallNodes);
   Visitor.walk();
 }
 
@@ -204,8 +206,7 @@ void IntCompressor::compress() {
   // trie.
   if (!compressUpToSize(1))
     return;
-  constexpr bool KeepSingletonsUsingCount = true;
-  removeSmallUsageCounts(KeepSingletonsUsingCount);
+  removeSmallSingletonUsageCounts();
   if (MyFlags.TraceIntCounts)
     describeCutoff(stderr, MyFlags.CountCutoff,
                    makeFlags(CollectionFlag::TopLevel),
@@ -213,7 +214,7 @@ void IntCompressor::compress() {
   if (MyFlags.LengthLimit > 1) {
     if (!compressUpToSize(MyFlags.LengthLimit))
       return;
-    removeSmallUsageCounts(!KeepSingletonsUsingCount);
+    removeAllSmallUsageCounts();
     if (MyFlags.TraceSequenceCounts)
       describeCutoff(stderr, MyFlags.WeightCutoff,
                      makeFlags(CollectionFlag::IntPaths),
@@ -229,6 +230,7 @@ void IntCompressor::compress() {
     Root->getAlign()->setCount(1);
   CountNode::PtrSet AbbrevAssignments;
   assignInitialAbbreviations(AbbrevAssignments);
+  zeroSmallUsageCounts();
   if (MyFlags.TraceAbbreviationAssignments)
     describeAbbreviations(stderr,
                           MyFlags.TraceAbbreviationAssignmentsCollection);

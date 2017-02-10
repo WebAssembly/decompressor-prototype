@@ -59,15 +59,18 @@ class RemoveNodesVisitor : public CountNodeVisitor {
   };
   explicit RemoveNodesVisitor(CountNode::RootPtr Root,
                               const CompressionFlags& Flags,
-                              bool KeepSingletonsUsingCount = false)
+                              bool KeepSingletonsUsingCount,
+                              bool ZeroOutSmallNodes)
       : CountNodeVisitor(Root),
         Flags(Flags),
-        KeepSingletonsUsingCount(KeepSingletonsUsingCount) {}
+        KeepSingletonsUsingCount(KeepSingletonsUsingCount),
+        ZeroOutSmallNodes(ZeroOutSmallNodes) {}
   ~RemoveNodesVisitor() {}
 
  protected:
   const CompressionFlags& Flags;
   bool KeepSingletonsUsingCount;
+  bool ZeroOutSmallNodes;
   FramePtr getFrame(size_t FirstKid, size_t LastKid) OVERRIDE;
   FramePtr getFrame(CountNode::IntPtr Nd,
                     size_t FirstKid,
