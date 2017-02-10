@@ -214,11 +214,11 @@ void IntCompressor::compress() {
     if (!compressUpToSize(MyFlags.LengthLimit))
       return;
     removeSmallUsageCounts(!KeepSingletonsUsingCount);
+    if (MyFlags.TraceSequenceCounts)
+      describeCutoff(stderr, MyFlags.WeightCutoff,
+                     makeFlags(CollectionFlag::IntPaths),
+                     MyFlags.TraceSequenceCountsCollection);
   }
-  if (MyFlags.TraceSequenceCounts)
-    describeCutoff(stderr, MyFlags.WeightCutoff,
-                   makeFlags(CollectionFlag::IntPaths),
-                   MyFlags.TraceSequenceCountsCollection);
   TRACE_MESSAGE("Assigning (initial) abbreviations to integer sequences");
   // SInce we don't actually know the number of times default patterns will
   // be used, assume a large number.
