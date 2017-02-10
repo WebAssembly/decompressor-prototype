@@ -37,13 +37,6 @@ class AbbrevAssignWriter : public interp::Writer {
   AbbrevAssignWriter& operator=(const AbbrevAssignWriter&) = delete;
 
  public:
-#if 0
-  struct Flags {
-    bool CheckOverlapping;
-    Flags() : CheckOverlapping(false) {}
-  };
-#endif
-
   AbbrevAssignWriter(CountNode::RootPtr Root,
                      std::shared_ptr<interp::IntStream> Output,
                      size_t BufSize,

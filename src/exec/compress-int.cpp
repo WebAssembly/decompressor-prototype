@@ -130,7 +130,7 @@ int main(int Argc, const char* Argv[]) {
         "Remove patterns if already implied by previous patterns"));
 
     ArgsParser::Toggle CheckOverlappingPatternsFlag(
-        MyCompressionFlags.AbbrevAssignFlags.CheckOverlapping);
+        MyCompressionFlags.MyAbbrevAssignFlags.CheckOverlapping);
     Args.add(CheckOverlappingPatternsFlag.setLongName("overlapping")
                  .setDescription(
                      "Overlap close abbreviation patterns to find better "

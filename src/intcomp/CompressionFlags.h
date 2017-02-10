@@ -74,11 +74,8 @@ struct CompressionFlags {
   bool TraceAbbreviationAssignmentsCollection;
   bool TraceAssigningAbbreviations;
   bool TraceCompressedIntOutput;
-#if 0
-  std::shared_ptr<utils::TraceClass> Trace;
-#endif
-  interp::InterpreterFlags InterpFlags;
-  AbbrevAssignFlags AbbrevAssignFlags;
+  interp::InterpreterFlags MyInterpFlags;
+  AbbrevAssignFlags MyAbbrevAssignFlags;
   CompressionFlags();
 };
 

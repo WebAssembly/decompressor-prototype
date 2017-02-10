@@ -42,43 +42,6 @@ class IntCompressor FINAL {
   IntCompressor& operator=(const IntCompressor&) = delete;
 
  public:
-#if 0
-  struct Flags {
-    uint64_t CountCutoff;
-    uint64_t WeightCutoff;
-    size_t LengthLimit;
-    size_t MaxAbbreviations;
-    interp::IntTypeFormat AbbrevFormat;
-    bool MinimizeCodeSize;
-    bool UseHuffmanEncoding;
-    bool TrimOverriddenPatterns;
-    bool TraceHuffmanAssignments;
-    bool TraceReadingInput;
-    bool TraceReadingIntStream;
-    bool TraceWritingCodeOutput;
-    bool TraceWritingDataOutput;
-    bool TraceCompression;
-    bool TraceIntStreamGeneration;
-    bool TraceCodeGenerationForReading;
-    bool TraceCodeGenerationForWriting;
-    bool TraceInputIntStream;
-    bool TraceIntCounts;
-    bool TraceIntCountsCollection;
-    bool TraceSequenceCounts;
-    bool TraceSequenceCountsCollection;
-    bool TraceAbbreviationAssignments;
-    bool TraceAbbreviationAssignmentsCollection;
-    bool TraceAssigningAbbreviations;
-    bool TraceCompressedIntOutput;
-#if 0
-    std::shared_ptr<utils::TraceClass> Trace;
-#endif
-    interp::InterpreterFlags InterpFlags;
-    AbbrevAssignWriter::Flags AbbrevAssignFlags;
-    Flags();
-  };
-#endif
-
   IntCompressor(std::shared_ptr<decode::Queue> InputStream,
                 std::shared_ptr<decode::Queue> OutputStream,
                 std::shared_ptr<filt::SymbolTable> Symtab,
