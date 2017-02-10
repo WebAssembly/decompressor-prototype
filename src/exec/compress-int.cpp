@@ -104,7 +104,8 @@ int main(int Argc, const char* Argv[]) {
                      "number of integer constants in pattern) before it is "
                      "considered for abbreviating"));
 
-    ArgsParser::Optional<size_t> LengthLimitFlag(MyCompressionFlags.LengthLimit);
+    ArgsParser::Optional<size_t> LengthLimitFlag(
+        MyCompressionFlags.LengthLimit);
     Args.add(LengthLimitFlag.setDefault(5)
                  .setLongName("max-length")
                  .setOptionName("INTEGER")

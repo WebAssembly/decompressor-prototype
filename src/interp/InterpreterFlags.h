@@ -33,4 +33,4 @@ struct InterpreterFlags {
 
 }  // end of namespace wasm
 
-#endif // DECOMPRESSOR_SRC_INTERP_INTERPRETERFLAGS_H
+#endif  // DECOMPRESSOR_SRC_INTERP_INTERPRETERFLAGS_H

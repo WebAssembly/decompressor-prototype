@@ -26,10 +26,9 @@ using namespace utils;
 
 namespace intcomp {
 
-AbbreviationsCollector::AbbreviationsCollector(
-    CountNode::RootPtr Root,
-    CountNode::PtrSet& Assignments,
-    const CompressionFlags& MyFlags)
+AbbreviationsCollector::AbbreviationsCollector(CountNode::RootPtr Root,
+                                               CountNode::PtrSet& Assignments,
+                                               const CompressionFlags& MyFlags)
     : CountNodeCollector(Root),
       Assignments(Assignments),
       MyFlags(MyFlags),

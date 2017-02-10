@@ -318,8 +318,7 @@ int IntCountNode::compare(const CountNode& Nd) const {
 }
 
 bool IntCountNode::keep(const CompressionFlags& Flags) {
-  return getCount() >= Flags.CountCutoff
-      & getWeight() >= Flags.WeightCutoff;
+  return getCount() >= Flags.CountCutoff && getWeight() >= Flags.WeightCutoff;
 }
 
 bool AlignCountNode::keep(const CompressionFlags& Flags) {
