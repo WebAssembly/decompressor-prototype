@@ -947,9 +947,9 @@ $(TEST_CASM_DF_GEN_FILES): $(TEST_0XD_GENDIR)/%.df-out: $(TEST_SRCS_DIR)/%.wasm 
 # Note: Currently only tests that code executes (without errors).
 $(TEST_WASM_COMP_FILES): $(TEST_0XD_GENDIR)/%.wasm-comp: $(TEST_0XD_SRCDIR)/%.wasm \
 		$(BUILD_EXECDIR)/compress-int $(BUILD_EXECDIR)/decompress
-	$(BUILD_EXECDIR)/compress-int --min-int-count 2 --min-weight 5 $< \
+	$(BUILD_EXECDIR)/compress-int --min-count 2 --min-weight 5 $< \
 	| $(BUILD_EXECDIR)/decompress - | cmp - $<
-	$(BUILD_EXECDIR)/compress-int --Huffman --min-int-count 2 --min-weight 5 $< \
+	$(BUILD_EXECDIR)/compress-int --Huffman --min-count 2 --min-weight 5 $< \
 	| $(BUILD_EXECDIR)/decompress - | cmp - $<
 
 .PHONY: $(TEST_WASM_COMP_FILES)
