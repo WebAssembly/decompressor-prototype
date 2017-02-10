@@ -51,11 +51,13 @@ void RemoveNodesVisitor::visitReturn(FramePtr Frame) {
   if (!F->isIntNodeFrame())
     return;
   CountNode::IntPtr Nd = F->getIntNode();
-  if (!(Nd->hasSuccessors() ||
-        (Nd->getWeight() >= CountCutoff && Nd->getCount() >= PatternCutoff))) {
-    reinterpret_cast<RemoveNodesVisitor::Frame*>(Stack.back().get())
-        ->RemoveSet.push_back(Nd);
-  }
+  if (Nd->hasSuccessors())
+    return;
+  if (KeepSingletonsUsingCount ? Nd->keepSingletonsUsingCount(Flags)
+                               : Nd->keep(Flags))
+    return;
+  reinterpret_cast<RemoveNodesVisitor::Frame*>(Stack.back().get())
+      ->RemoveSet.push_back(Nd);
 }
 
 void RemoveNodesVisitor::Frame::describeSuffix(FILE* Out) const {
