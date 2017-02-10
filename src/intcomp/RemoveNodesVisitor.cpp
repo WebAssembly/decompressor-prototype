@@ -51,11 +51,13 @@ void RemoveNodesVisitor::visitReturn(FramePtr Frame) {
   if (!F->isIntNodeFrame())
     return;
   CountNode::IntPtr Nd = F->getIntNode();
-  if (Nd->hasSuccessors())
+  bool Keep = KeepSingletonsUsingCount ? Nd->keepSingletonsUsingCount(Flags)
+                                       : Nd->keep(Flags);
+  if (Nd->hasSuccessors() || Keep) {
+    if (ZeroOutSmallNodes && !Keep && Nd->getCount())
+      Nd->setCount(0);
     return;
-  if (KeepSingletonsUsingCount ? Nd->keepSingletonsUsingCount(Flags)
-                               : Nd->keep(Flags))
-    return;
+  }
   reinterpret_cast<RemoveNodesVisitor::Frame*>(Stack.back().get())
       ->RemoveSet.push_back(Nd);
 }
