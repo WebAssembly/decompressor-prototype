@@ -42,43 +42,10 @@ class IntCompressor FINAL {
   IntCompressor& operator=(const IntCompressor&) = delete;
 
  public:
-  struct Flags {
-    uint64_t CountCutoff;
-    uint64_t WeightCutoff;
-    size_t LengthLimit;
-    size_t MaxAbbreviations;
-    interp::IntTypeFormat AbbrevFormat;
-    bool MinimizeCodeSize;
-    bool UseHuffmanEncoding;
-    bool TrimOverriddenPatterns;
-    bool TraceHuffmanAssignments;
-    bool TraceReadingInput;
-    bool TraceReadingIntStream;
-    bool TraceWritingCodeOutput;
-    bool TraceWritingDataOutput;
-    bool TraceCompression;
-    bool TraceIntStreamGeneration;
-    bool TraceCodeGenerationForReading;
-    bool TraceCodeGenerationForWriting;
-    bool TraceInputIntStream;
-    bool TraceIntCounts;
-    bool TraceIntCountsCollection;
-    bool TraceSequenceCounts;
-    bool TraceSequenceCountsCollection;
-    bool TraceAbbreviationAssignments;
-    bool TraceAbbreviationAssignmentsCollection;
-    bool TraceAssigningAbbreviations;
-    bool TraceCompressedIntOutput;
-    std::shared_ptr<utils::TraceClass> Trace;
-    interp::InterpreterFlags InterpFlags;
-    AbbrevAssignWriter::Flags AbbrevAssignFlags;
-    Flags();
-  };
-
   IntCompressor(std::shared_ptr<decode::Queue> InputStream,
                 std::shared_ptr<decode::Queue> OutputStream,
                 std::shared_ptr<filt::SymbolTable> Symtab,
-                Flags& MyFlags);
+                const CompressionFlags& MyFlags);
 
   ~IntCompressor();
 
@@ -99,7 +66,7 @@ class IntCompressor FINAL {
   void setTrace(std::shared_ptr<utils::TraceClass> Trace);
   utils::TraceClass& getTrace() { return *getTracePtr(); }
   std::shared_ptr<utils::TraceClass> getTracePtr();
-  bool hasTrace() { return bool(MyFlags.Trace); }
+  bool hasTrace() { return bool(Trace); }
 
   void describe(FILE* Out,
                 CollectionFlags Flags = makeFlags(CollectionFlag::All),
@@ -128,10 +95,11 @@ class IntCompressor FINAL {
   utils::HuffmanEncoder::NodePtr EncodingRoot;
   std::shared_ptr<decode::Queue> Input;
   std::shared_ptr<decode::Queue> Output;
-  Flags& MyFlags;
+  const CompressionFlags& MyFlags;
   std::shared_ptr<filt::SymbolTable> Symtab;
   std::shared_ptr<interp::IntStream> Contents;
   std::shared_ptr<interp::IntStream> IntOutput;
+  std::shared_ptr<utils::TraceClass> Trace;
   bool ErrorsFound;
   void readInput();
   const decode::BitWriteCursor writeCodeOutput(

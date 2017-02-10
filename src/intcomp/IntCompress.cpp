@@ -54,7 +54,7 @@ charstring getName(CollectionFlags Flags) {
   return "UnknownCollectionFlags";
 }
 
-IntCompressor::Flags::Flags()
+CompressionFlags::CompressionFlags()
     : CountCutoff(0),
       WeightCutoff(0),
       LengthLimit(1),
@@ -86,7 +86,7 @@ IntCompressor::Flags::Flags()
 IntCompressor::IntCompressor(std::shared_ptr<decode::Queue> Input,
                              std::shared_ptr<decode::Queue> Output,
                              std::shared_ptr<filt::SymbolTable> Symtab,
-                             Flags& MyFlags)
+                             const CompressionFlags& MyFlags)
     : Input(Input),
       Output(Output),
       MyFlags(MyFlags),
@@ -97,13 +97,13 @@ IntCompressor::IntCompressor(std::shared_ptr<decode::Queue> Input,
 }
 
 void IntCompressor::setTrace(std::shared_ptr<TraceClass> NewTrace) {
-  MyFlags.Trace = NewTrace;
+  Trace = NewTrace;
 }
 
 std::shared_ptr<TraceClass> IntCompressor::getTracePtr() {
-  if (!MyFlags.Trace)
+  if (!Trace)
     setTrace(std::make_shared<TraceClass>("IntCompress"));
-  return MyFlags.Trace;
+  return Trace;
 }
 
 CountNode::RootPtr IntCompressor::getRoot() {
@@ -116,7 +116,7 @@ void IntCompressor::readInput() {
   Contents = std::make_shared<IntStream>();
   auto MyWriter = std::make_shared<IntWriter>(Contents);
   Interpreter MyReader(std::make_shared<ByteReader>(Input), MyWriter,
-                       MyFlags.InterpFlags, Symtab);
+                       MyFlags.MyInterpFlags, Symtab);
   if (MyFlags.TraceReadingInput)
     MyReader.getTrace().setTraceProgress(true);
   MyReader.algorithmRead();
@@ -144,7 +144,7 @@ void IntCompressor::writeDataOutput(const BitWriteCursor& StartPos,
   auto Writer = std::make_shared<ByteWriter>(Output);
   Writer->setPos(StartPos);
   Interpreter MyReader(std::make_shared<IntReader>(IntOutput), Writer,
-                       MyFlags.InterpFlags, Symtab);
+                       MyFlags.MyInterpFlags, Symtab);
   if (MyFlags.TraceWritingDataOutput)
     MyReader.getTrace().setTraceProgress(true);
   MyReader.useFileHeader(Symtab->getTargetHeader());
@@ -172,7 +172,7 @@ bool IntCompressor::compressUpToSize(size_t Size) {
   Writer->setUpToSize(Size);
 
   IntInterperter Reader(std::make_shared<IntReader>(Contents), Writer,
-                        MyFlags.InterpFlags, Symtab);
+                        MyFlags.MyInterpFlags, Symtab);
   if (MyFlags.TraceReadingIntStream)
     Reader.getTrace().setTraceProgress(true);
   Reader.structuralRead();
@@ -271,9 +271,9 @@ void IntCompressor::assignInitialAbbreviations(CountNode::PtrSet& Assignments) {
 bool IntCompressor::generateIntOutput() {
   auto Writer = std::make_shared<AbbrevAssignWriter>(
       Root, IntOutput, MyFlags.LengthLimit, MyFlags.AbbrevFormat,
-      !MyFlags.UseHuffmanEncoding, MyFlags.AbbrevAssignFlags);
+      !MyFlags.UseHuffmanEncoding, MyFlags.MyAbbrevAssignFlags);
   IntInterperter Interp(std::make_shared<IntReader>(Contents), Writer,
-                        MyFlags.InterpFlags, Symtab);
+                        MyFlags.MyInterpFlags, Symtab);
   if (MyFlags.TraceIntStreamGeneration)
     Interp.setTraceProgress(true);
   Interp.structuralRead();

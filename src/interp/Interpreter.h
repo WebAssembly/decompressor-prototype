@@ -22,6 +22,7 @@
 
 #include "interp/Interpreter.def"
 
+#include "interp/InterpreterFlags.h"
 #include "interp/Reader.h"
 #include "interp/Writer.h"
 #include "utils/Trace.h"
@@ -38,12 +39,6 @@ class TextWriter;
 namespace interp {
 
 class Interpreter;
-
-struct InterpreterFlags {
-  InterpreterFlags();
-  bool TraceProgress;
-  bool TraceIntermediateStreams;
-};
 
 class AlgorithmSelector
     : public std::enable_shared_from_this<AlgorithmSelector> {

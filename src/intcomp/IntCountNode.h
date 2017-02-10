@@ -20,6 +20,7 @@
 #ifndef DEcOMPRESSOR_SRC_INTCOMP_INTCOUNTNODE_H
 #define DEcOMPRESSOR_SRC_INTCOMP_INTCOUNTNODE_H
 
+#include "intcomp/CompressionFlags.h"
 #include "interp/IntFormats.h"
 #include "utils/Casting.h"
 #include "utils/Defs.h"
@@ -105,6 +106,10 @@ class CountNode : public std::enable_shared_from_this<CountNode> {
   bool operator!=(const CountNode& Nd) const { return compare(Nd) != 0; }
   bool operator>=(const CountNode& Nd) const { return compare(Nd) >= 0; }
   bool operator>(const CountNode& Nd) const { return compare(Nd) > 0; }
+
+  // Returns true if the node should be kept, assignment the given compression
+  // flag assignments.
+  virtual bool keep(const CompressionFlags& Flags);
 
   virtual void describe(FILE* out, size_t NestLevel = 0) const = 0;
 
@@ -199,6 +204,7 @@ class BlockCountNode : public CountNode {
   bool isEnter() const { return IsEnter; }
   bool IsExit() const { return !IsEnter; }
   int compare(const CountNode& Nd) const OVERRIDE;
+  bool keep(const CompressionFlags& Flags) OVERRIDE;
   void describe(FILE* Out, size_t NestLevel = 0) const OVERRIDE;
   static bool implementsClass(Kind K) { return K == Kind::Block; }
 
@@ -218,6 +224,7 @@ class DefaultCountNode : public CountNode {
   bool isSingle() const { return IsSingle; }
   bool isMultiple() const { return !IsSingle; }
   int compare(const CountNode& Nd) const OVERRIDE;
+  bool keep(const CompressionFlags& Flags) OVERRIDE;
   void describe(FILE* Out, size_t NestLevel = 0) const OVERRIDE;
   static bool implementsClass(Kind K) { return K == Kind::Default; }
 
@@ -234,6 +241,7 @@ class AlignCountNode : public CountNode {
  public:
   AlignCountNode() : CountNode(Kind::Align) {}
   ~AlignCountNode() OVERRIDE;
+  bool keep(const CompressionFlags& Flags) OVERRIDE;
   void describe(FILE* Out, size_t NestLevel = 0) const OVERRIDE;
   static bool implementsClass(Kind K) { return K == Kind::Align; }
 };
@@ -252,6 +260,7 @@ class RootCountNode : public CountNodeWithSuccs {
   CountNode::AlignPtr getAlign() { return AlignCount; }
   void describe(FILE* Out, size_t NestLevel = 0) const OVERRIDE;
   int compare(const CountNode& Nd) const OVERRIDE;
+  bool keep(const CompressionFlags& Flags) OVERRIDE;
 
   void getOthers(PtrVector& L) const;
 
@@ -279,6 +288,7 @@ class IntCountNode : public CountNodeWithSuccs {
   size_t getPathLength() const { return PathLength; }
   CountNode::IntPtr getParent() const { return Parent.lock(); }
   size_t getLocalWeight() const;
+  bool keep(const CompressionFlags& Flags) OVERRIDE;
 
   static bool implementsClass(Kind NodeKind) {
     return NodeKind == Kind::IntSequence || NodeKind == Kind::Singleton;

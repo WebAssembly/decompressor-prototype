@@ -26,10 +26,9 @@ using namespace utils;
 
 namespace intcomp {
 
-AbbreviationsCollector::AbbreviationsCollector(
-    CountNode::RootPtr Root,
-    CountNode::PtrSet& Assignments,
-    const IntCompressor::Flags& MyFlags)
+AbbreviationsCollector::AbbreviationsCollector(CountNode::RootPtr Root,
+                                               CountNode::PtrSet& Assignments,
+                                               const CompressionFlags& MyFlags)
     : CountNodeCollector(Root),
       Assignments(Assignments),
       MyFlags(MyFlags),
@@ -110,19 +109,11 @@ void AbbreviationsCollector::addAbbreviation(CountNode::Ptr Nd) {
     return;
   }
   CountNode* NdPtr = Nd.get();
-  if (isa<IntCountNode>(NdPtr)) {
-    if (NdPtr->getCount() < MyFlags.CountCutoff ||
-        NdPtr->getWeight() < MyFlags.WeightCutoff) {
-      TRACE_MESSAGE("Removing, count/weight too small");
-      return;
-    }
+  if (!NdPtr->keep(MyFlags)) {
+    TRACE_MESSAGE("Removing, count/weight too small");
+    return;
   }
   Assignments.insert(Nd);
-  TRACE_BLOCK({
-    FILE* Out = getTrace().getFile();
-    ValuesHeap->describe(
-        Out, [](FILE* Out, CountNode::HeapValueType Nd) { Nd->describe(Out); });
-  });
   TRACE_MESSAGE("Added to assignments");
   if (!MyFlags.TrimOverriddenPatterns) {
     TRACE(size_t, "Number assignements", Assignments.size());
