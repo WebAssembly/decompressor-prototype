@@ -107,7 +107,7 @@ class IntCompressor FINAL {
   void writeDataOutput(const decode::BitWriteCursor& StartPos,
                        std::shared_ptr<filt::SymbolTable> Symtab);
   bool compressUpToSize(size_t Size);
-  void removeSmallUsageCounts();
+  void removeSmallUsageCounts(bool KeepSingletonsUsingCount);
   void assignInitialAbbreviations(CountNode::PtrSet& Assignments);
   bool generateIntOutput();
   std::shared_ptr<filt::SymbolTable>

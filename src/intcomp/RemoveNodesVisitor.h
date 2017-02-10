@@ -58,16 +58,16 @@ class RemoveNodesVisitor : public CountNodeVisitor {
     std::vector<CountNode::IntPtr> RemoveSet;
   };
   explicit RemoveNodesVisitor(CountNode::RootPtr Root,
-                              size_t CountCutoff,
-                              size_t PatternCutoff = 2)
+                              const CompressionFlags& Flags,
+                              bool KeepSingletonsUsingCount = false)
       : CountNodeVisitor(Root),
-        CountCutoff(CountCutoff),
-        PatternCutoff(PatternCutoff) {}
+        Flags(Flags),
+        KeepSingletonsUsingCount(KeepSingletonsUsingCount) {}
   ~RemoveNodesVisitor() {}
 
  protected:
-  size_t CountCutoff;
-  size_t PatternCutoff;
+  const CompressionFlags& Flags;
+  bool KeepSingletonsUsingCount;
   FramePtr getFrame(size_t FirstKid, size_t LastKid) OVERRIDE;
   FramePtr getFrame(CountNode::IntPtr Nd,
                     size_t FirstKid,
