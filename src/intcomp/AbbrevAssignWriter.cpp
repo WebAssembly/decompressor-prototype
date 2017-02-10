@@ -33,7 +33,7 @@ AbbrevAssignWriter::AbbrevAssignWriter(
     size_t BufSize,
     interp::IntTypeFormat AbbrevFormat,
     bool AssumeByteAlignment,
-    Flags& MyFlags)
+    const AbbrevAssignFlags& MyFlags)
     : MyFlags(MyFlags),
       Root(Root),
       Writer(Output),

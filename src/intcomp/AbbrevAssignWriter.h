@@ -19,6 +19,7 @@
 #ifndef DECOMPRESSOR_SRC_INTCOMP_ABBREVASSIGNWRITER_H
 #define DECOMPRESSOR_SRC_INTCOMP_ABBREVASSIGNWRITER_H
 
+#include "intcomp/CompressionFlags.h"
 #include "intcomp/IntCountNode.h"
 #include "interp/IntStream.h"
 #include "interp/IntWriter.h"
@@ -36,17 +37,19 @@ class AbbrevAssignWriter : public interp::Writer {
   AbbrevAssignWriter& operator=(const AbbrevAssignWriter&) = delete;
 
  public:
+#if 0
   struct Flags {
     bool CheckOverlapping;
     Flags() : CheckOverlapping(false) {}
   };
+#endif
 
   AbbrevAssignWriter(CountNode::RootPtr Root,
                      std::shared_ptr<interp::IntStream> Output,
                      size_t BufSize,
                      interp::IntTypeFormat AbbrevFormat,
                      bool AssumeByteAlignment,
-                     Flags& MyFlags);
+                     const AbbrevAssignFlags& MyFlags);
   ~AbbrevAssignWriter() OVERRIDE;
 
   decode::StreamType getStreamType() const OVERRIDE;
@@ -66,7 +69,7 @@ class AbbrevAssignWriter : public interp::Writer {
   void setTrace(std::shared_ptr<utils::TraceClass> Trace) OVERRIDE;
 
  private:
-  Flags& MyFlags;
+  const AbbrevAssignFlags& MyFlags;
   CountNode::RootPtr Root;
   interp::IntWriter Writer;
   size_t BufSize;

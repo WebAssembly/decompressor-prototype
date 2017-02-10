@@ -22,6 +22,7 @@
 
 #include "interp/Interpreter.def"
 
+#include "interp/InterpreterFlags.h"
 #include "interp/Reader.h"
 #include "interp/Writer.h"
 #include "utils/Trace.h"
@@ -39,11 +40,13 @@ namespace interp {
 
 class Interpreter;
 
+#if 0
 struct InterpreterFlags {
   InterpreterFlags();
   bool TraceProgress;
   bool TraceIntermediateStreams;
 };
+#endif
 
 class AlgorithmSelector
     : public std::enable_shared_from_this<AlgorithmSelector> {

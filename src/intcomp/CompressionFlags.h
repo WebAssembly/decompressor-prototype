@@ -18,6 +18,8 @@
 #define DECOMPRESSOR_SRC_INTCOMP_COMPRESSIONFLAGS_H
 
 #include "utils/Defs.h"
+#include "interp/InterpreterFlags.h"
+#include "interp/IntFormats.h"
 
 namespace wasm {
 
@@ -39,6 +41,46 @@ inline CollectionFlags makeFlags(CollectionFlag F) {
 inline bool hasFlag(CollectionFlag F, CollectionFlags Flags) {
   return makeFlags(F) & Flags;
 }
+
+struct AbbrevAssignFlags {
+  bool CheckOverlapping;
+  AbbrevAssignFlags() : CheckOverlapping(false) {}
+};
+
+struct CompressionFlags {
+  uint64_t CountCutoff;
+  uint64_t WeightCutoff;
+  size_t LengthLimit;
+  size_t MaxAbbreviations;
+  interp::IntTypeFormat AbbrevFormat;
+  bool MinimizeCodeSize;
+  bool UseHuffmanEncoding;
+  bool TrimOverriddenPatterns;
+  bool TraceHuffmanAssignments;
+  bool TraceReadingInput;
+  bool TraceReadingIntStream;
+  bool TraceWritingCodeOutput;
+  bool TraceWritingDataOutput;
+  bool TraceCompression;
+  bool TraceIntStreamGeneration;
+  bool TraceCodeGenerationForReading;
+  bool TraceCodeGenerationForWriting;
+  bool TraceInputIntStream;
+  bool TraceIntCounts;
+  bool TraceIntCountsCollection;
+  bool TraceSequenceCounts;
+  bool TraceSequenceCountsCollection;
+  bool TraceAbbreviationAssignments;
+  bool TraceAbbreviationAssignmentsCollection;
+  bool TraceAssigningAbbreviations;
+  bool TraceCompressedIntOutput;
+#if 0
+  std::shared_ptr<utils::TraceClass> Trace;
+#endif
+  interp::InterpreterFlags InterpFlags;
+  AbbrevAssignFlags AbbrevAssignFlags;
+  CompressionFlags();
+};
 
 }  // end of namespace intcomp
 

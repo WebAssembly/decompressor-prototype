@@ -142,6 +142,10 @@ int CountNode::compare(const CountNode& Nd) const {
   return compareValues(int(NodeKind), int(Nd.NodeKind));
 }
 
+bool CountNode::keep(const CompressionFlags& Flags) {
+  return getCount() >= Flags.CountCutoff && getWeight() >= Flags.WeightCutoff;
+}
+
 void CountNode::indent(FILE* Out, size_t NestLevel, bool AddWeight) const {
   for (size_t i = 0; i < NestLevel; ++i)
     fputs("  ", Out);
@@ -199,6 +203,10 @@ RootCountNode::RootCountNode()
 RootCountNode::~RootCountNode() {
 }
 
+bool RootCountNode::keep(const CompressionFlags& Flags) {
+  return true;
+}
+
 void RootCountNode::getOthers(PtrVector& L) const {
   L.push_back(BlockEnter);
   L.push_back(BlockExit);
@@ -243,6 +251,10 @@ int BlockCountNode::compare(const CountNode& Nd) const {
   return compareBoolean(IsEnter, BlkNd->IsEnter);
 }
 
+bool BlockCountNode::keep(const CompressionFlags& Flags) {
+  return true;
+}
+
 void BlockCountNode::describe(FILE* Out, size_t NestLevel) const {
   indent(Out, NestLevel);
   fputs(": Block.", Out);
@@ -260,6 +272,10 @@ int DefaultCountNode::compare(const CountNode& Nd) const {
   assert(isa<DefaultCountNode>(Nd));
   const auto* DefaultNd = cast<DefaultCountNode>(Nd);
   return compareBoolean(IsSingle, DefaultNd->IsSingle);
+}
+
+bool DefaultCountNode::keep(const CompressionFlags& Flags) {
+  return true;
 }
 
 void DefaultCountNode::describe(FILE* Out, size_t NestLevel) const {
@@ -299,6 +315,15 @@ int IntCountNode::compare(const CountNode& Nd) const {
   if (IntNd)
     return -1;
   return 0;
+}
+
+bool IntCountNode::keep(const CompressionFlags& Flags) {
+  return getCount() >= Flags.CountCutoff
+      & getWeight() >= Flags.WeightCutoff;
+}
+
+bool AlignCountNode::keep(const CompressionFlags& Flags) {
+  return true;
 }
 
 size_t IntCountNode::getLocalWeight() const {
