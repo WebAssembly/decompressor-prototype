@@ -18,13 +18,16 @@
 
 #include "utils/ArgsParse.h"
 
+#include <cctype>
+#include <cstdlib>
+
 namespace wasm {
 
 namespace utils {
 
 template <>
 bool ArgsParser::Optional<uint32_t>::select(charstring OptionValue) {
-  Value = size_t(atoll(OptionValue));
+  Value = uint32_t(atoll(OptionValue));
   return true;
 }
 

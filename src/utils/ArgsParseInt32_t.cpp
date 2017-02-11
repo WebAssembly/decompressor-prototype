@@ -18,13 +18,16 @@
 
 #include "utils/ArgsParse.h"
 
+#include <cctype>
+#include <cstdlib>
+
 namespace wasm {
 
 namespace utils {
 
 template <>
 bool ArgsParser::SetValue<int32_t>::select(charstring OptionValue) {
-  Value = SelectValue;
+  Value = int32_t(atoll(OptionValue));
   return false;
 }
 

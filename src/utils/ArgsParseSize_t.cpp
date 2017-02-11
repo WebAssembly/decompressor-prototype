@@ -18,6 +18,9 @@
 
 #include "utils/ArgsParse.h"
 
+#include <cctype>
+#include <cstdlib>
+
 namespace wasm {
 
 namespace utils {
