@@ -52,6 +52,8 @@ struct CompressionFlags {
   uint64_t WeightCutoff;
   size_t LengthLimit;
   size_t MaxAbbreviations;
+  decode::IntType SmallValueMax;
+  size_t SmallValueCountCutoff;
   interp::IntTypeFormat AbbrevFormat;
   bool MinimizeCodeSize;
   bool UseHuffmanEncoding;

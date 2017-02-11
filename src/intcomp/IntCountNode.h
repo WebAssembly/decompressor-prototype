@@ -109,6 +109,7 @@ class CountNode : public std::enable_shared_from_this<CountNode> {
 
   // Returns true if the node should be kept, assignment the given compression
   // flag assignments.
+  virtual bool smallValueKeep(const CompressionFlags&) const;
   virtual bool keep(const CompressionFlags& Flags) const;
   virtual bool keepSingletonsUsingCount(const CompressionFlags& Flags) const;
 
@@ -283,6 +284,7 @@ class IntCountNode : public CountNodeWithSuccs {
  public:
   ~IntCountNode() OVERRIDE {}
   int compare(const CountNode& Nd) const OVERRIDE;
+  bool smallValueKeep(const CompressionFlags& Flags) const OVERRIDE;
   bool keep(const CompressionFlags& Flags) const OVERRIDE;
   void describe(FILE* Out, size_t NestLevel = 0) const OVERRIDE;
   decode::IntType getValue() const { return Value; }
@@ -319,16 +321,20 @@ class SingletonCountNode : public IntCountNode {
   SingletonCountNode& operator=(const SingletonCountNode&) = delete;
 
  public:
-  SingletonCountNode(decode::IntType Value)
-      : IntCountNode(Kind::Singleton, Value) {}
+  explicit SingletonCountNode(decode::IntType Value)
+      : IntCountNode(Kind::Singleton, Value), SmallValueKeep(false) {}
   ~SingletonCountNode() OVERRIDE;
+  bool getSmallValueKeep() const { return SmallValueKeep; }
+  void setSmallValueKeep(bool NewValue) { SmallValueKeep = NewValue; }
   size_t getWeight(size_t Count) const OVERRIDE;
+  bool smallValueKeep(const CompressionFlags& Flags) const OVERRIDE;
   bool keepSingletonsUsingCount(const CompressionFlags& Flags) const OVERRIDE;
   static bool implementsClass(Kind NodeKind) {
     return NodeKind == Kind::Singleton;
   }
 
  protected:
+  bool SmallValueKeep;
   void describeValues(FILE* Out) const OVERRIDE;
 };
 

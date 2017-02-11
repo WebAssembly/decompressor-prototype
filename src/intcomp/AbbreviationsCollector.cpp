@@ -21,6 +21,7 @@
 
 namespace wasm {
 
+using namespace decode;
 using namespace interp;
 using namespace utils;
 
@@ -69,6 +70,21 @@ void AbbreviationsCollector::assignAbbreviations() {
       }
       addAbbreviation(Nd);
     }
+    for (IntType Val = 0; Val < MyFlags.SmallValueMax; ++Val) {
+      constexpr bool AddIfNotFound = true;
+      CountNode::Ptr Nd = lookup(Root, Val, !AddIfNotFound);
+      if (!Nd)
+        continue;
+      CountNode* NdPtr = Nd.get();
+      assert(isa<SingletonCountNode>(NdPtr));
+      cast<SingletonCountNode>(NdPtr)->setSmallValueKeep(true);
+      TRACE_BLOCK({
+        FILE* Out = getTrace().getFile();
+        fprintf(Out, "Considering: ");
+        NdPtr->describe(Out);
+      });
+      addAbbreviation(Nd);
+    }
   }
   // Now select best fitting patterns, based on weight.
   collectUsingCutoffs(MyFlags.CountCutoff, MyFlags.WeightCutoff,
@@ -87,6 +103,7 @@ void AbbreviationsCollector::assignAbbreviations() {
   }
   TrimmedNodes.clear();
   // Now create abbreviation indices for selected abbreviations.
+  clearHeap();
   for (const CountNode::Ptr& Nd : Assignments)
     pushHeap(Nd);
   while (!ValuesHeap->empty()) {
@@ -155,7 +172,7 @@ void AbbreviationsCollector::addAbbreviation(CountNode::Ptr Nd) {
         pushHeap(Parent);
       }
     }
-    if (Assignments.count(Parent) > 0) {
+    if (Assignments.count(Parent) > 0 && !ParentPtr->smallValueKeep(MyFlags)) {
       TRACE_MESSAGE("Removing from assignments");
       Assignments.erase(Parent);
     }
