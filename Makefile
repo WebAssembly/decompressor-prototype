@@ -34,6 +34,14 @@ UTILS_OBJDIR_BOOT = $(OBJDIR_BOOT)/utils
 UTILS_SRCS = \
 	Allocator.cpp \
 	ArgsParse.cpp \
+	ArgsParseBool.cpp \
+	ArgsParseCharstring.cpp \
+	ArgsParseSize_t.cpp \
+	ArgsParseString.cpp \
+	ArgsParseInt32_t.cpp \
+	ArgsParseInt64_t.cpp \
+	ArgsParseUint32_t.cpp \
+	ArgsParseUint64_t.cpp \
 	Defs.cpp \
 	HuffmanEncoding.cpp \
 	Trace.cpp
