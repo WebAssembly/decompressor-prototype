@@ -85,16 +85,16 @@ int main(int Argc, const char* Argv[]) {
                 "Show defined Huffman encoding assignments for "
                 "to use for abbreviations"));
 
-    ArgsParser::Optional<uint64_t> CountCutoffFlag(
+    ArgsParser::Optional<size_t> CountCutoffFlag(
         MyCompressionFlags.CountCutoff);
-    Args.add(CountCutoffFlag.setDefault(10)
+    Args.add(CountCutoffFlag.setDefault(100)
                  .setLongName("min-count")
                  .setOptionName("INTEGER")
                  .setDescription(
-                     "Minimum number of uses of a pattern before it is "
-                     "considered for abbreviating"));
+                     "Minimum number of uses of a (a non-small value) pattern "
+                     "before it is considered for abbreviating"));
 
-    ArgsParser::Optional<uint64_t> WeightCutoffFlag(
+    ArgsParser::Optional<size_t> WeightCutoffFlag(
         MyCompressionFlags.WeightCutoff);
     Args.add(WeightCutoffFlag.setDefault(100)
                  .setLongName("min-weight")
@@ -118,11 +118,27 @@ int main(int Argc, const char* Argv[]) {
     ArgsParser::Optional<size_t> MaxAbbreviationsFlag(
         MyCompressionFlags.MaxAbbreviations);
     Args.add(
-        MaxAbbreviationsFlag.setDefault(8192)
-            .setLongName("max-abbreviations")
+        MaxAbbreviationsFlag.setLongName("max-abbreviations")
             .setOptionName("INTEGER")
             .setDescription(
                 "Maximum number of abbreviations allowed in compressed file"));
+
+    ArgsParser::Optional<IntType> SmallValueMaxFlag(
+        MyCompressionFlags.SmallValueMax);
+    Args.add(
+        SmallValueMaxFlag.setLongName("max-small")
+            .setOptionName("INTEGER")
+            .setDescription(
+                "Maximum value that should be considered a small value when "
+                "applying small abbreviation counts"));
+
+    ArgsParser::Optional<size_t> SmallValueCountCutoffFlag(
+        MyCompressionFlags.SmallValueCountCutoff);
+    Args.add(SmallValueCountCutoffFlag.setDefault(5)
+                 .setLongName("small-min-count")
+                 .setDescription(
+                     "Mimimum number of uses of a small value before "
+                     "it is considered for abbreviating"));
 
     ArgsParser::Toggle TrimOverriddenPatternsFlag(
         MyCompressionFlags.TrimOverriddenPatterns);
@@ -220,8 +236,9 @@ int main(int Argc, const char* Argv[]) {
 
     ArgsParser::Optional<bool> TraceAbbreviationAssignmentsFlag(
         MyCompressionFlags.TraceAbbreviationAssignments);
-    Args.add(TraceAbbreviationAssignmentsFlag.setLongName("verbose=abbrev")
-                 .setDescription("Show (initial) abbreviation assignments"));
+    Args.add(
+        TraceAbbreviationAssignmentsFlag.setLongName("verbose=abbreviations")
+            .setDescription("Show (initial) abbreviation assignments"));
 
     ArgsParser::Optional<bool> TraceAbbreviationAssignmentsCollectionFlag(
         MyCompressionFlags.TraceAbbreviationAssignmentsCollection);

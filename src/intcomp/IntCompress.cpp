@@ -57,8 +57,10 @@ charstring getName(CollectionFlags Flags) {
 CompressionFlags::CompressionFlags()
     : CountCutoff(0),
       WeightCutoff(0),
-      LengthLimit(1),
-      MaxAbbreviations(std::numeric_limits<size_t>::max()),
+      LengthLimit(10),
+      MaxAbbreviations(4096),
+      SmallValueMax(std::numeric_limits<uint8_t>::max()),
+      SmallValueCountCutoff(2),
       AbbrevFormat(IntTypeFormat::Varuint64),
       MinimizeCodeSize(true),
       UseHuffmanEncoding(false),
@@ -223,8 +225,8 @@ void IntCompressor::compress() {
   TRACE_MESSAGE("Assigning (initial) abbreviations to integer sequences");
   // SInce we don't actually know the number of times default patterns will
   // be used, assume a large number.
-  Root->getDefaultSingle()->setCount(std::numeric_limits<uint32_t>::max());
-  Root->getDefaultMultiple()->setCount(std::numeric_limits<uint32_t>::max());
+  Root->getDefaultSingle()->setCount(100);
+  Root->getDefaultMultiple()->setCount(100);
   if (MyFlags.UseHuffmanEncoding)
     // Assume an alignment added at end of file.
     Root->getAlign()->setCount(1);

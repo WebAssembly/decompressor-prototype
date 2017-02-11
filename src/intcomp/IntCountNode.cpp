@@ -146,6 +146,10 @@ bool CountNode::keep(const CompressionFlags& Flags) const {
   return true;
 }
 
+bool CountNode::smallValueKeep(const CompressionFlags&) const {
+  return true;
+}
+
 bool CountNode::keepSingletonsUsingCount(const CompressionFlags& Flags) const {
   return keep(Flags);
 }
@@ -309,8 +313,13 @@ int IntCountNode::compare(const CountNode& Nd) const {
   return 0;
 }
 
+bool IntCountNode::smallValueKeep(const CompressionFlags&) const {
+  return false;
+}
+
 bool IntCountNode::keep(const CompressionFlags& Flags) const {
-  return getCount() >= Flags.CountCutoff && getWeight() >= Flags.WeightCutoff;
+  return smallValueKeep(Flags) ||
+         (getCount() >= Flags.CountCutoff && getWeight() >= Flags.WeightCutoff);
 }
 
 size_t IntCountNode::getLocalWeight() const {
@@ -335,9 +344,13 @@ size_t SingletonCountNode::getWeight(size_t Count) const {
   return Count * getLocalWeight();
 }
 
+bool SingletonCountNode::smallValueKeep(const CompressionFlags& Flags) const {
+  return SmallValueKeep && getCount() >= Flags.SmallValueCountCutoff;
+}
+
 bool SingletonCountNode::keepSingletonsUsingCount(
     const CompressionFlags& Flags) const {
-  return getCount() >= Flags.CountCutoff;
+  return smallValueKeep(Flags) || getCount() >= Flags.CountCutoff;
 }
 
 void SingletonCountNode::describeValues(FILE* Out) const {
