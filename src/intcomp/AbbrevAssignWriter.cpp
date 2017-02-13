@@ -167,10 +167,6 @@ CountNode::IntPtr AbbrevAssignWriter::extractMaxPattern(size_t StartIndex) {
   constexpr bool AddIfNotFound = true;
   for (size_t i = StartIndex; i < EndIndex; ++i) {
     TRACE(size_t, "i", i);
-#if 0
-    if (i >= Buffer.size())
-      break;
-#endif
     IntType Value = Buffer[i];
     TRACE(IntType, "Value", Value);
     Nd = Nd ? lookup(Nd, Value, !AddIfNotFound)
@@ -181,7 +177,14 @@ CountNode::IntPtr AbbrevAssignWriter::extractMaxPattern(size_t StartIndex) {
     }
     if (!Nd->hasAbbrevIndex())
       continue;
-    if (!Max || (Max->getWeight() < Nd->getWeight())) {
+#if 0
+    // We should do this, but it makes things much worse, since we aren't
+    // doing a good job at finding locality. For now, leave with bad code!
+    if (!Max || (Max->getWeight() < Nd->getWeight()))
+#else
+    if (!Max || (Max->getWeight() > Nd->getWeight()))
+#endif
+    {
       Max = Nd;
       TRACE_BLOCK({
         FILE* Out = getTrace().getFile();
@@ -211,9 +214,9 @@ void AbbrevAssignWriter::writeFromBuffer() {
   CountNode::IntPtr Max = extractMaxPattern(0);
   // Before committing to Max, see if would be cheaper to just add
   // to default list.
-  if (auto *MaxNd = dyn_cast<SingletonCountNode>(Max.get())) {
+  if (auto* MaxNd = dyn_cast<SingletonCountNode>(Max.get())) {
     // TODO(karlschimpf) Parameterize getValue cutoff as CL argument.
-    constexpr IntType MaxLEBBytes = (IntType(1) << 3*(CHAR_BIT - 1)) - 1;
+    constexpr IntType MaxLEBBytes = (IntType(1) << 3 * (CHAR_BIT - 1)) - 1;
     if (DefaultValues.size() >= 2 && MaxNd->getValue() <= MaxLEBBytes) {
       TRACE_MESSAGE("Ignore pattern, make other pattern!");
       Max = CountNode::IntPtr();

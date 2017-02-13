@@ -278,8 +278,8 @@ bool IntCompressor::generateIntOutput() {
   auto Writer = std::make_shared<AbbrevAssignWriter>(
       Root, IntOutput,
       MyFlags.PatternLengthLimit * MyFlags.PatternLengthMultiplier,
-      MyFlags.AbbrevFormat,
-      !MyFlags.UseHuffmanEncoding, MyFlags.MyAbbrevAssignFlags);
+      MyFlags.AbbrevFormat, !MyFlags.UseHuffmanEncoding,
+      MyFlags.MyAbbrevAssignFlags);
   IntInterperter Interp(std::make_shared<IntReader>(Contents), Writer,
                         MyFlags.MyInterpFlags, Symtab);
   if (MyFlags.TraceIntStreamGeneration)

@@ -1,4 +1,4 @@
-/* -*- C++ -*- */
+//* -*- C++ -*- */
 //
 // Copyright 2016 WebAssembly Community Group participants
 //
@@ -117,12 +117,12 @@ int main(int Argc, const char* Argv[]) {
 
     ArgsParser::Optional<size_t> PatternLengthMultiplierFlag(
         MyCompressionFlags.PatternLengthMultiplier);
-    Args.add(PatternLengthMultiplierFlag.setLongName("window-mulitplier")
-             .setOptionName("INTEGER")
-             .setDescription(
-                 "Multiplier of 'max-length' to get window size used to "
-                 "figure out optimal layout of pattern abbreviations for "
-                 "the window"));
+    Args.add(PatternLengthMultiplierFlag.setLongName("window-multiplier")
+                 .setOptionName("INTEGER")
+                 .setDescription(
+                     "Multiplier of 'max-length' to get window size used to "
+                     "figure out optimal layout of pattern abbreviations for "
+                     "the window"));
 
     ArgsParser::Optional<size_t> MaxAbbreviationsFlag(
         MyCompressionFlags.MaxAbbreviations);
@@ -224,7 +224,7 @@ int main(int Argc, const char* Argv[]) {
     ArgsParser::Optional<bool> TraceIntCountsCollectionFlag(
         MyCompressionFlags.TraceIntCountsCollection);
     Args.add(TraceIntCountsCollectionFlag.setLongName(
-                                              "verbose=int-counts-collection")
+                                             "verbose=int-counts-collection")
                  .setDescription("Show how int counts were selected"));
 
     ArgsParser::Optional<bool> TraceSequenceCountsFlag(
@@ -238,7 +238,7 @@ int main(int Argc, const char* Argv[]) {
         MyCompressionFlags.TraceSequenceCountsCollection);
     Args.add(
         TraceSequenceCountsCollectionFlag.setLongName(
-                                              "verbose=seq-counts-collection")
+                                             "verbose=seq-counts-collection")
             .setDescription(
                 "Show how frequency of integer sequences were "
                 "selected"));
