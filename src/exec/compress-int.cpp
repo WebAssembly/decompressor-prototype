@@ -1,4 +1,4 @@
-/* -*- C++ -*- */
+//* -*- C++ -*- */
 //
 // Copyright 2016 WebAssembly Community Group participants
 //
@@ -74,7 +74,7 @@ int main(int Argc, const char* Argv[]) {
     ArgsParser::Optional<bool> UseHuffmanEncodingFlag(
         MyCompressionFlags.UseHuffmanEncoding);
     Args.add(UseHuffmanEncodingFlag.setLongName("Huffman").setDescription(
-        "Usage Huffman encoding for abbreviations instead "
+        "Usage Huffman encoding for pattern abbreviations instead"
         "of a simple weighted ordering (experimental)"));
 
     ArgsParser::Optional<bool> TraceHuffmanAssignmentsFlag(
@@ -83,7 +83,7 @@ int main(int Argc, const char* Argv[]) {
         TraceHuffmanAssignmentsFlag.setLongName("verbose=Huffman-assignments")
             .setDescription(
                 "Show defined Huffman encoding assignments for "
-                "to use for abbreviations"));
+                "to use for pattern abbreviations"));
 
     ArgsParser::Optional<size_t> CountCutoffFlag(
         MyCompressionFlags.CountCutoff);
@@ -104,9 +104,9 @@ int main(int Argc, const char* Argv[]) {
                      "number of integer constants in pattern) before it is "
                      "considered for abbreviating"));
 
-    ArgsParser::Optional<size_t> LengthLimitFlag(
-        MyCompressionFlags.LengthLimit);
-    Args.add(LengthLimitFlag.setDefault(5)
+    ArgsParser::Optional<size_t> PatternLengthLimitFlag(
+        MyCompressionFlags.PatternLengthLimit);
+    Args.add(PatternLengthLimitFlag.setDefault(5)
                  .setLongName("max-length")
                  .setOptionName("INTEGER")
                  .setDescription(
@@ -115,10 +115,19 @@ int main(int Argc, const char* Argv[]) {
                      "execution time grows non-linearly when this value "
                      " is increased)"));
 
+    ArgsParser::Optional<size_t> PatternLengthMultiplierFlag(
+        MyCompressionFlags.PatternLengthMultiplier);
+    Args.add(PatternLengthMultiplierFlag.setLongName("window-multiplier")
+                 .setOptionName("INTEGER")
+                 .setDescription(
+                     "Multiplier of 'max-length' to get window size used to "
+                     "figure out optimal layout of pattern abbreviations for "
+                     "the window"));
+
     ArgsParser::Optional<size_t> MaxAbbreviationsFlag(
         MyCompressionFlags.MaxAbbreviations);
     Args.add(
-        MaxAbbreviationsFlag.setLongName("max-abbreviations")
+        MaxAbbreviationsFlag.setLongName("max-patterns")
             .setOptionName("INTEGER")
             .setDescription(
                 "Maximum number of abbreviations allowed in compressed file"));
@@ -130,7 +139,7 @@ int main(int Argc, const char* Argv[]) {
             .setOptionName("INTEGER")
             .setDescription(
                 "Maximum value that should be considered a small value when "
-                "applying small abbreviation counts"));
+                "applying small pattern abbreviations"));
 
     ArgsParser::Optional<size_t> SmallValueCountCutoffFlag(
         MyCompressionFlags.SmallValueCountCutoff);
@@ -138,7 +147,7 @@ int main(int Argc, const char* Argv[]) {
                  .setLongName("small-min-count")
                  .setDescription(
                      "Mimimum number of uses of a small value before "
-                     "it is considered for abbreviating"));
+                     "it is considered an abbreviation pattern"));
 
     ArgsParser::Toggle TrimOverriddenPatternsFlag(
         MyCompressionFlags.TrimOverriddenPatterns);
@@ -149,7 +158,7 @@ int main(int Argc, const char* Argv[]) {
         MyCompressionFlags.MyAbbrevAssignFlags.CheckOverlapping);
     Args.add(CheckOverlappingPatternsFlag.setLongName("overlapping")
                  .setDescription(
-                     "Overlap close abbreviation patterns to find better "
+                     "Overlap patterns to find better "
                      "fit of abbreviations"));
 
     ArgsParser::Optional<bool> TraceReadingInputFlag(
@@ -215,7 +224,7 @@ int main(int Argc, const char* Argv[]) {
     ArgsParser::Optional<bool> TraceIntCountsCollectionFlag(
         MyCompressionFlags.TraceIntCountsCollection);
     Args.add(TraceIntCountsCollectionFlag.setLongName(
-                                              "verbose=int-counts-collection")
+                                             "verbose=int-counts-collection")
                  .setDescription("Show how int counts were selected"));
 
     ArgsParser::Optional<bool> TraceSequenceCountsFlag(
@@ -229,7 +238,7 @@ int main(int Argc, const char* Argv[]) {
         MyCompressionFlags.TraceSequenceCountsCollection);
     Args.add(
         TraceSequenceCountsCollectionFlag.setLongName(
-                                              "verbose=seq-counts-collection")
+                                             "verbose=seq-counts-collection")
             .setDescription(
                 "Show how frequency of integer sequences were "
                 "selected"));

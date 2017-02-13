@@ -50,7 +50,8 @@ struct AbbrevAssignFlags {
 struct CompressionFlags {
   size_t CountCutoff;
   size_t WeightCutoff;
-  size_t LengthLimit;
+  size_t PatternLengthLimit;
+  size_t PatternLengthMultiplier;
   size_t MaxAbbreviations;
   decode::IntType SmallValueMax;
   size_t SmallValueCountCutoff;

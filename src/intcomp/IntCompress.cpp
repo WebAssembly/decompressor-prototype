@@ -57,7 +57,8 @@ charstring getName(CollectionFlags Flags) {
 CompressionFlags::CompressionFlags()
     : CountCutoff(0),
       WeightCutoff(0),
-      LengthLimit(10),
+      PatternLengthLimit(10),
+      PatternLengthMultiplier(3),
       MaxAbbreviations(4096),
       SmallValueMax(std::numeric_limits<uint8_t>::max()),
       SmallValueCountCutoff(2),
@@ -213,8 +214,8 @@ void IntCompressor::compress() {
     describeCutoff(stderr, MyFlags.CountCutoff,
                    makeFlags(CollectionFlag::TopLevel),
                    MyFlags.TraceIntCountsCollection);
-  if (MyFlags.LengthLimit > 1) {
-    if (!compressUpToSize(MyFlags.LengthLimit))
+  if (MyFlags.PatternLengthLimit > 1) {
+    if (!compressUpToSize(MyFlags.PatternLengthLimit))
       return;
     removeAllSmallUsageCounts();
     if (MyFlags.TraceSequenceCounts)
@@ -275,8 +276,10 @@ void IntCompressor::assignInitialAbbreviations(CountNode::PtrSet& Assignments) {
 
 bool IntCompressor::generateIntOutput() {
   auto Writer = std::make_shared<AbbrevAssignWriter>(
-      Root, IntOutput, MyFlags.LengthLimit, MyFlags.AbbrevFormat,
-      !MyFlags.UseHuffmanEncoding, MyFlags.MyAbbrevAssignFlags);
+      Root, IntOutput,
+      MyFlags.PatternLengthLimit * MyFlags.PatternLengthMultiplier,
+      MyFlags.AbbrevFormat, !MyFlags.UseHuffmanEncoding,
+      MyFlags.MyAbbrevAssignFlags);
   IntInterperter Interp(std::make_shared<IntReader>(Contents), Writer,
                         MyFlags.MyInterpFlags, Symtab);
   if (MyFlags.TraceIntStreamGeneration)
