@@ -14,6 +14,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <cstdlib>
+#include <cstring>
+#include <unistd.h>
+
 #include "algorithms/wasm0xd.h"
 #include "intcomp/IntCompress.h"
 #include "stream/FileReader.h"
@@ -21,12 +25,6 @@
 #include "stream/ReadBackedQueue.h"
 #include "stream/WriteBackedQueue.h"
 #include "utils/ArgsParse.h"
-
-#include "utils/Defs.h"
-
-#include <cstdlib>
-#include <cstring>
-#include <unistd.h>
 
 using namespace wasm;
 using namespace wasm::decode;

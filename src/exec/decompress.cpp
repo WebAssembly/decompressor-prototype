@@ -14,6 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <cstring>
+#include <unistd.h>
+
+#include <iostream>
 
 #include "algorithms/casm0x0.h"
 #include "algorithms/wasm0xd.h"
@@ -30,10 +34,6 @@
 #include "stream/WriteBackedQueue.h"
 #include "utils/Defs.h"
 #include "utils/ArgsParse.h"
-
-#include <cstring>
-#include <unistd.h>
-#include <iostream>
 
 using namespace wasm;
 using namespace wasm::filt;
