@@ -104,9 +104,9 @@ int main(int Argc, const char* Argv[]) {
                      "number of integer constants in pattern) before it is "
                      "considered for abbreviating"));
 
-    ArgsParser::Optional<size_t> LengthLimitFlag(
-        MyCompressionFlags.LengthLimit);
-    Args.add(LengthLimitFlag.setDefault(5)
+    ArgsParser::Optional<size_t> PatternLengthLimitFlag(
+        MyCompressionFlags.PatternLengthLimit);
+    Args.add(PatternLengthLimitFlag.setDefault(5)
                  .setLongName("max-length")
                  .setOptionName("INTEGER")
                  .setDescription(
@@ -114,6 +114,14 @@ int main(int Argc, const char* Argv[]) {
                      "considered for compression patterns ("
                      "execution time grows non-linearly when this value "
                      " is increased)"));
+
+    ArgsParser::Optional<size_t> PatternLengthMultiplierFlag(
+        MyCompressionFlags.PatternLengthMultiplier);
+    Args.add(PatternLengthMultiplierFlag.setLongName("window-mulitplier")
+             .setOptionName("INTEGER")
+             .setDescription(
+                 "Multiplier of 'max-length' to get window size used to "
+                 "figure out optimal layout of abbreviations for the window"));
 
     ArgsParser::Optional<size_t> MaxAbbreviationsFlag(
         MyCompressionFlags.MaxAbbreviations);

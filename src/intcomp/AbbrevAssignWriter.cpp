@@ -38,8 +38,7 @@ AbbrevAssignWriter::AbbrevAssignWriter(
       Root(Root),
       Writer(Output),
       BufSize(BufSize),
-      // Allocate enough space to handle possible pattern overlaps!
-      Buffer(BufSize * 2 - 1),
+      Buffer(BufSize),
       AbbrevFormat(AbbrevFormat),
       AssumeByteAlignment(AssumeByteAlignment) {
   assert(Root->getDefaultSingle()->hasAbbrevIndex());
@@ -165,22 +164,24 @@ CountNode::IntPtr AbbrevAssignWriter::extractMaxPattern(size_t StartIndex) {
   CountNode::IntPtr Nd;
   CountNode::IntPtr Max;
   size_t EndIndex = std::min(StartIndex + BufSize, Buffer.size());
-  constexpr bool AddIfNotFound = false;
+  constexpr bool AddIfNotFound = true;
   for (size_t i = StartIndex; i < EndIndex; ++i) {
     TRACE(size_t, "i", i);
+#if 0
     if (i >= Buffer.size())
       break;
+#endif
     IntType Value = Buffer[i];
     TRACE(IntType, "Value", Value);
-    Nd = Nd ? lookup(Nd, Value, AddIfNotFound)
-            : lookup(Root, Value, AddIfNotFound);
+    Nd = Nd ? lookup(Nd, Value, !AddIfNotFound)
+            : lookup(Root, Value, !AddIfNotFound);
     if (!Nd) {
-      TRACE_MESSAGE("No pattern found!");
+      TRACE_MESSAGE("No more patterns found!");
       break;
     }
     if (!Nd->hasAbbrevIndex())
       continue;
-    if (!Max || (Max->getWeight() > Nd->getWeight())) {
+    if (!Max || (Max->getWeight() < Nd->getWeight())) {
       Max = Nd;
       TRACE_BLOCK({
         FILE* Out = getTrace().getFile();
@@ -208,6 +209,16 @@ void AbbrevAssignWriter::writeFromBuffer() {
   });
   // Collect abbreviations available for value sequences in buffer.
   CountNode::IntPtr Max = extractMaxPattern(0);
+  // Before committing to Max, see if would be cheaper to just add
+  // to default list.
+  if (auto *MaxNd = dyn_cast<SingletonCountNode>(Max.get())) {
+    // TODO(karlschimpf) Parameterize getValue cutoff as CL argument.
+    constexpr IntType MaxLEBBytes = (IntType(1) << 3*(CHAR_BIT - 1)) - 1;
+    if (DefaultValues.size() >= 2 && MaxNd->getValue() <= MaxLEBBytes) {
+      TRACE_MESSAGE("Ignore pattern, make other pattern!");
+      Max = CountNode::IntPtr();
+    }
+  }
   if (MyFlags.CheckOverlapping && Max) {
     // See if overlappingn pattern is better choice.
     size_t EndIndex = Max->getPathLength();
