@@ -16,17 +16,14 @@
 
 // Converts binary algorithm file back to textual form.
 
-#include "utils/Defs.h"
+#include <cstdlib>
 
 #if WASM_BOOT == 0
 #include "algorithms/casm0x0.h"
 #endif
-
 #include "sexp/CasmReader.h"
 #include "sexp/TextWriter.h"
 #include "utils/ArgsParse.h"
-
-#include <cstdlib>
 
 using namespace wasm;
 using namespace wasm::decode;
