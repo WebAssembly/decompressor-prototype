@@ -139,6 +139,11 @@ class heap : public std::enable_shared_from_this<heap<value_type>> {
     return Entry;
   }
 
+  void clear() {
+    while (!empty())
+      pop();
+  }
+
   void pop() { remove(0); }
 
   // Reinsert value since key changed.

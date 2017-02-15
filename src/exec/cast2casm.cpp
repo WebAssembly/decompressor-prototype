@@ -16,7 +16,6 @@
 
 // Converts textual algorithm into binary file form.
 
-
 #include <cstdlib>
 #include <cctype>
 #include <set>

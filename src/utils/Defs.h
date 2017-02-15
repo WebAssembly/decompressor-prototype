@@ -38,9 +38,11 @@ namespace wasm {
 #define WASM_IGNORE(V) (void)(V);
 
 #ifdef __GNUC__
-#define WASM_RETURN_UNREACHABLE(V) return (V);
+#define WASM_RETURN_UNREACHABLE(V) \
+  assert(false);                   \
+  return (V)
 #else
-#define WASM_RETURN_UNREACHABLE(V)
+#define WASM_RETURN_UNREACHABLE(V) assert(false)
 #endif
 
 #ifdef NDEBUG

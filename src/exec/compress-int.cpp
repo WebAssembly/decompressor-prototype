@@ -143,6 +143,7 @@ int main(int Argc, const char* Argv[]) {
         MyCompressionFlags.SmallValueCountCutoff);
     Args.add(SmallValueCountCutoffFlag.setDefault(5)
                  .setLongName("small-min-count")
+                 .setOptionName("INTEGER")
                  .setDescription(
                      "Mimimum number of uses of a small value before "
                      "it is considered an abbreviation pattern"));
@@ -222,7 +223,7 @@ int main(int Argc, const char* Argv[]) {
     ArgsParser::Optional<bool> TraceIntCountsCollectionFlag(
         MyCompressionFlags.TraceIntCountsCollection);
     Args.add(TraceIntCountsCollectionFlag.setLongName(
-                                             "verbose=int-counts-collection")
+                                              "verbose=int-counts-collection")
                  .setDescription("Show how int counts were selected"));
 
     ArgsParser::Optional<bool> TraceSequenceCountsFlag(
@@ -236,7 +237,7 @@ int main(int Argc, const char* Argv[]) {
         MyCompressionFlags.TraceSequenceCountsCollection);
     Args.add(
         TraceSequenceCountsCollectionFlag.setLongName(
-                                             "verbose=seq-counts-collection")
+                                              "verbose=seq-counts-collection")
             .setDescription(
                 "Show how frequency of integer sequences were "
                 "selected"));
@@ -268,11 +269,38 @@ int main(int Argc, const char* Argv[]) {
 
     ArgsParser::Optional<bool> TraceIntStreamGenerationFlag(
         MyCompressionFlags.TraceIntStreamGeneration);
-    Args.add(TraceIntStreamGenerationFlag.setLongName("verbose=gen-int-output")
+    Args.add(TraceIntStreamGenerationFlag.setLongName("verbose=select-abbrevs")
                  .setDescription(
                      "Trace the generation of the compressed integer "
-                     "stream. In particular, show how abbreviations "
-                     "are inserted"));
+                     "stream. and show how abbreviations are selected"));
+
+    ArgsParser::Optional<bool> TraceAbbrevSelectionSelectFlag(
+        MyCompressionFlags.MyAbbrevAssignFlags.TraceAbbrevSelectionSelect);
+    Args.add(TraceAbbrevSelectionSelectFlag.setLongName(
+                                                "verbose=select-abbrevs-select")
+                 .setDescription(
+                     "Show selected pattern sequences, as they apply. "
+                     "Only appiles when --verbose=select-abbrevs is "
+                     "also true"));
+
+    ArgsParser::Optional<bool> TraceAbbrevSelectionCreateFlag(
+        MyCompressionFlags.MyAbbrevAssignFlags.TraceAbbrevSelectionCreate);
+    Args.add(
+        TraceAbbrevSelectionCreateFlag.setLongName(
+                                           "verbose=select-abbrevs-create")
+            .setDescription(
+                "Show each created pattern sequence that is tried (not just "
+                "the selected ones). Only applies when "
+                "--verbose=select-abbrevs is also true"));
+
+    ArgsParser::Optional<bool> TraceAbbrevSelectionDetailFlag(
+        MyCompressionFlags.MyAbbrevAssignFlags.TraceAbbrevSelectionDetail);
+    Args.add(TraceAbbrevSelectionDetailFlag.setLongName(
+                                                "verbose=select-abbrev-details")
+                 .setDescription(
+                     "Show additional detail (besides creating and selecting) "
+                     "when creating the applied pattern sequence. Only applies "
+                     "when --verbose=select-abbrevs is also true"));
 
     switch (Args.parse(Argc, Argv)) {
       case ArgsParser::State::Good:

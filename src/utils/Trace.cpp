@@ -36,7 +36,7 @@ TraceClass::TraceClass() {
   init();
 }
 
-TraceClass::TraceClass(const char* Lbl) {
+TraceClass::TraceClass(charstring Lbl) {
   init();
   Label = Lbl;
 }
@@ -46,7 +46,7 @@ TraceClass::TraceClass(FILE* Fl) {
   File = Fl;
 }
 
-TraceClass::TraceClass(const char* Lbl, FILE* Fl) {
+TraceClass::TraceClass(charstring Lbl, FILE* Fl) {
   init();
   Label = Lbl;
   File = Fl;
@@ -79,14 +79,14 @@ void TraceClass::traceContext() const {
   fputc(' ', File);
 }
 
-void TraceClass::enter(const char* Name) {
+void TraceClass::enter(charstring Name) {
   indent();
   ++IndentLevel;
   CallStack.push_back(Name);
   fprintf(File, "enter %s\n", Name);
 }
 
-void TraceClass::exit(const char* Name) {
+void TraceClass::exit(charstring Name) {
   assert(~CallStack.empty());
   if (Name == nullptr)
     Name = CallStack.back();
@@ -115,7 +115,13 @@ FILE* TraceClass::indent() {
   return File;
 }
 
-void TraceClass::trace_value_label(const char* Label) {
+FILE* TraceClass::indentNewline() {
+  for (int i = 0; i <= IndentLevel; ++i)
+    fputs("  ", File);
+  return File;
+}
+
+void TraceClass::trace_value_label(charstring Label) {
   if (Label == nullptr)
     return;
   fprintf(File, "%s = ", Label);
@@ -126,56 +132,56 @@ void TraceClass::traceMessageInternal(const std::string& Message) {
   fprintf(File, "%s\n", Message.c_str());
 }
 
-void TraceClass::traceBoolInternal(const char* Name, bool Value) {
+void TraceClass::traceBoolInternal(charstring Name, bool Value) {
   indent();
   trace_value_label(Name);
   fprintf(File, "%s\n", Value ? "t" : "f");
 }
 
-void TraceClass::traceCharInternal(const char* Name, char Ch) {
+void TraceClass::traceCharInternal(charstring Name, char Ch) {
   indent();
   trace_value_label(Name);
   fprintf(File, "'%c'\n", Ch);
 }
 
-void TraceClass::traceStringInternal(const char* Name, const char* Value) {
+void TraceClass::traceStringInternal(charstring Name, charstring Value) {
   indent();
   trace_value_label(Name);
   fprintf(File, "'%s'\n", Value);
 }
 
-void TraceClass::traceIntInternal(const char* Name, intmax_t Value) {
+void TraceClass::traceIntInternal(charstring Name, intmax_t Value) {
   indent();
   trace_value_label(Name);
   fprintf(File, "%" PRIiMAX "\n", Value);
 }
 
-void TraceClass::traceUintInternal(const char* Name, uintmax_t Value) {
+void TraceClass::traceUintInternal(charstring Name, uintmax_t Value) {
   indent();
   trace_value_label(Name);
   fprintf(File, "%" PRIuMAX "\n", Value);
 }
 
-void TraceClass::traceIntTypeInternal(const char* Name, IntType Value) {
+void TraceClass::traceIntTypeInternal(charstring Name, IntType Value) {
   indent();
   trace_value_label(Name);
   fprint_IntType(File, Value);
   fputc('\n', File);
 }
 
-void TraceClass::traceHexIntTypeInternal(const char* Name, IntType Value) {
+void TraceClass::traceHexIntTypeInternal(charstring Name, IntType Value) {
   indent();
   trace_value_label(Name);
   fprintf(File, "%" PRIxMAX "\n", uintmax_t(Value));
 }
 
-void TraceClass::traceHexInternal(const char* Name, uintmax_t Value) {
+void TraceClass::traceHexInternal(charstring Name, uintmax_t Value) {
   indent();
   trace_value_label(Name);
   fprintf(File, "%" PRIxMAX "\n", uintmax_t(Value));
 }
 
-void TraceClass::tracePointerInternal(const char* Name, void* Value) {
+void TraceClass::tracePointerInternal(charstring Name, void* Value) {
   indent();
   trace_value_label(Name);
   fprintf(File, "%p\n", Value);

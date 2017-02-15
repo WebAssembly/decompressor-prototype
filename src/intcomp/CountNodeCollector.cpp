@@ -26,10 +26,6 @@ using namespace utils;
 
 namespace intcomp {
 
-void CountNodeCollector::setTrace(std::shared_ptr<TraceClass> NewTrace) {
-  Trace = NewTrace;
-}
-
 CountNodeCollector::CountNodeCollector(CountNode::RootPtr Root)
     : Root(Root),
       ValuesHeap(std::make_shared<CountNode::HeapType>(CountNode::CompareLt)),
@@ -47,6 +43,10 @@ CountNodeCollector::CountNodeCollector(CountNode::RootPtr Root)
 void CountNodeCollector::setCompareFcn(CountNode::CompareFcnType LtFcn) {
   assert(ValuesHeap->empty());
   ValuesHeap->setLtFcn(LtFcn);
+}
+
+void CountNodeCollector::setTrace(std::shared_ptr<TraceClass> NewTrace) {
+  Trace = NewTrace;
 }
 
 std::shared_ptr<TraceClass> CountNodeCollector::getTracePtr() {
