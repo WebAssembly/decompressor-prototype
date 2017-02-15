@@ -239,6 +239,7 @@ INTCOMP_SRCS = \
 	AbbrevAssignWriter.cpp \
 	AbbreviationCodegen.cpp \
 	AbbreviationsCollector.cpp \
+	AbbrevSelector.cpp \
 	CountNodeCollector.cpp \
 	CountWriter.cpp \
 	IntCompress.cpp \

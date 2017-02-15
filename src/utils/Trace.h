@@ -100,6 +100,7 @@ class TraceClass : public std::enable_shared_from_this<TraceClass> {
   TraceClass& operator=(const TraceClass&) = delete;
 
  public:
+  typedef std::shared_ptr<TraceClass> Ptr;
   // Models called methods in traces.
   class Method {
     Method() = delete;
@@ -107,7 +108,7 @@ class TraceClass : public std::enable_shared_from_this<TraceClass> {
     Method& operator=(const Method&) = delete;
 
    public:
-    Method(const char* Name, TraceClass& Cls) : Cls(Cls) {
+    Method(charstring Name, TraceClass& Cls) : Cls(Cls) {
       if (Cls.getTraceProgress()) {
         Cls.enter(Name);
       }
@@ -136,134 +137,136 @@ class TraceClass : public std::enable_shared_from_this<TraceClass> {
   typedef std::shared_ptr<Context> ContextPtr;
 
   TraceClass();
-  explicit TraceClass(const char* Label);
+  explicit TraceClass(charstring Label);
   explicit TraceClass(FILE* File);
-  TraceClass(const char* Label, FILE* File);
+  TraceClass(charstring Label, FILE* File);
   virtual ~TraceClass();
-  void enter(const char* Name);
-  void exit(const char* Name = nullptr);
+  void enter(charstring Name);
+  void exit(charstring Name = nullptr);
   virtual void traceContext() const;
   void addContext(ContextPtr Ctx);
   void clearContexts();
 
   // Prints trace prefix only.
   FILE* indent();
-  void trace_value_label(const char* Label);
-  void trace_message(const char* Message) { traceMessageInternal(Message); }
+  FILE* indentNewline();
+  void trace_value_label(charstring Label);
+  void trace_message(charstring Message) { traceMessageInternal(Message); }
   void trace_message(std::string Message) { traceMessageInternal(Message); }
-  void trace_bool(const char* Name, bool Value) {
+  void trace_bool(charstring Name, bool Value) {
     traceBoolInternal(Name, Value);
   }
-  void trace_char(const char* Name, char Ch) { traceCharInternal(Name, Ch); }
-  void trace_signed_char(const char* Name, signed char Ch) {
+  void trace_char(charstring Name, char Ch) { traceCharInternal(Name, Ch); }
+  void trace_signed_char(charstring Name, signed char Ch) {
     traceCharInternal(Name, char(Ch));
   }
-  void trace_unsigned_char(const char* Name, unsigned char Ch) {
+  void trace_unsigned_char(charstring Name, unsigned char Ch) {
     traceCharInternal(Name, char(Ch));
   }
-  void trace_string(const char* Name, const std::string&& Value) {
+  void trace_string(charstring Name, const std::string&& Value) {
     traceStringInternal(Name, Value.c_str());
   }
-  void trace_string(const char* Name, const std::string& Value) {
+  void trace_string(charstring Name, const std::string& Value) {
     traceStringInternal(Name, Value.c_str());
   }
-  void trace_string(const char* Name, const char* Value) {
+  void trace_charstring(charstring Name, charstring Value) {
     traceStringInternal(Name, Value);
   }
-  void trace_short(const char* Name, short Value) {
+  void trace_short(charstring Name, short Value) {
     traceIntInternal(Name, Value);
   }
-  void trace_unsigned_short(const char* Name, unsigned short Value) {
+  void trace_unsigned_short(charstring Name, unsigned short Value) {
     traceUintInternal(Name, Value);
   }
-  void trace_int(const char* Name, int Value) { traceIntInternal(Name, Value); }
-  void trace_unsigned_int(const char* Name, unsigned int Value) {
+  void trace_int(charstring Name, int Value) { traceIntInternal(Name, Value); }
+  void trace_unsigned_int(charstring Name, unsigned int Value) {
     traceUintInternal(Name, Value);
   }
-  void trace_long(const char* Name, long Value) {
+  void trace_long(charstring Name, long Value) {
     traceIntInternal(Name, Value);
   }
-  void trace_unsigned_long(const char* Name, unsigned long Value) {
+  void trace_unsigned_long(charstring Name, unsigned long Value) {
     traceUintInternal(Name, Value);
   }
-  void trace_int8_t(const char* Name, int8_t Value) {
+  void trace_int8_t(charstring Name, int8_t Value) {
     traceIntInternal(Name, Value);
   }
-  void trace_uint8_t(const char* Name, uint8_t Value) {
+  void trace_uint8_t(charstring Name, uint8_t Value) {
     traceUintInternal(Name, Value);
   }
-  void trace_hex_uint8_t(const char* Name, uint8_t Value) {
+  void trace_hex_uint8_t(charstring Name, uint8_t Value) {
     traceHexInternal(Name, Value);
   }
-  void trace_int16_t(const char* Name, int16_t Value) {
+  void trace_int16_t(charstring Name, int16_t Value) {
     traceIntInternal(Name, Value);
   }
-  void trace_uint16_t(const char* Name, uint16_t Value) {
+  void trace_uint16_t(charstring Name, uint16_t Value) {
     traceUintInternal(Name, Value);
   }
-  void trace_int32_t(const char* Name, int32_t Value) {
+  void trace_int32_t(charstring Name, int32_t Value) {
     traceIntInternal(Name, Value);
   }
-  void trace_hex_int32_t(const char* Name, int32_t Value) {
+  void trace_hex_int32_t(charstring Name, int32_t Value) {
     traceHexInternal(Name, Value);
   }
-  void trace_uint32_t(const char* Name, uint32_t Value) {
+  void trace_uint32_t(charstring Name, uint32_t Value) {
     traceUintInternal(Name, Value);
   }
-  void trace_hex_uint32_t(const char* Name, uint32_t Value) {
+  void trace_hex_uint32_t(charstring Name, uint32_t Value) {
     traceHexInternal(Name, Value);
   }
-  void trace_int64_t(const char* Name, int64_t Value) {
+  void trace_int64_t(charstring Name, int64_t Value) {
     traceIntInternal(Name, Value);
   }
-  void trace_intmax_t(const char* Name, intmax_t Value) {
+  void trace_intmax_t(charstring Name, intmax_t Value) {
     traceIntInternal(Name, Value);
   }
-  void trace_uint64_t(const char* Name, uint64_t Value) {
+  void trace_uint64_t(charstring Name, uint64_t Value) {
     traceUintInternal(Name, Value);
   }
-  void trace_uintmax_t(const char* Name, uintmax_t Value) {
+  void trace_uintmax_t(charstring Name, uintmax_t Value) {
     traceUintInternal(Name, Value);
   }
-  void trace_IntType(const char* Name, decode::IntType Value) {
+  void trace_IntType(charstring Name, decode::IntType Value) {
     traceIntTypeInternal(Name, Value);
   }
-  void trace_hex_IntType(const char* Name, decode::IntType Value) {
+  void trace_hex_IntType(charstring Name, decode::IntType Value) {
     traceHexIntTypeInternal(Name, Value);
   }
-  void trace_size_t(const char* Name, size_t Value) {
+  void trace_size_t(charstring Name, size_t Value) {
     traceUintInternal(Name, Value);
   }
-  void trace_hex_size_t(const char* Name, size_t Value) {
+  void trace_hex_size_t(charstring Name, size_t Value) {
     traceHexInternal(Name, Value);
   }
   template <typename T>
-  void trace_void_ptr(const char* Name, T* Ptr) {
+  void trace_void_ptr(charstring Name, T* Ptr) {
     tracePointerInternal(Name, (void*)Ptr);
   }
-  void trace_node_ptr(const char* Name, const filt::Node* Nd);
+  void trace_node_ptr(charstring Name, const filt::Node* Nd);
   bool getTraceProgress() const { return wasm::isDebug() && TraceProgress; }
   void setTraceProgress(bool NewValue) { TraceProgress = NewValue; }
 
   FILE* getFile() const { return File; }
 
  protected:
-  const char* Label;
+  charstring Label;
   FILE* File;
   int IndentLevel;
   bool TraceProgress;
-  std::vector<const char*> CallStack;
+  std::vector<charstring> CallStack;
   std::vector<ContextPtr> ContextList;
+
   void traceMessageInternal(const std::string& Message);
-  void traceBoolInternal(const char* Name, bool Value);
-  void traceCharInternal(const char* Name, char Ch);
-  void traceStringInternal(const char* Name, const char* Value);
-  void traceIntInternal(const char* Name, intmax_t Value);
-  void traceUintInternal(const char* Name, uintmax_t Value);
-  void traceIntTypeInternal(const char* Name, decode::IntType Value);
-  void traceHexInternal(const char* Name, uintmax_t Value);
-  void tracePointerInternal(const char* Name, void* Value);
-  void traceHexIntTypeInternal(const char* Name, decode::IntType Value);
+  void traceBoolInternal(charstring Name, bool Value);
+  void traceCharInternal(charstring Name, char Ch);
+  void traceStringInternal(charstring Name, charstring Value);
+  void traceIntInternal(charstring Name, intmax_t Value);
+  void traceUintInternal(charstring Name, uintmax_t Value);
+  void traceIntTypeInternal(charstring Name, decode::IntType Value);
+  void traceHexInternal(charstring Name, uintmax_t Value);
+  void tracePointerInternal(charstring Name, void* Value);
+  void traceHexIntTypeInternal(charstring Name, decode::IntType Value);
 
  private:
   inline void init();

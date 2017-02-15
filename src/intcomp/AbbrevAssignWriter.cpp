@@ -17,6 +17,7 @@
 // Implements a writer that injects abbreviations into the input stream.
 
 #include "intcomp/AbbrevAssignWriter.h"
+#include "intcomp/AbbrevSelector.h"
 
 namespace wasm {
 
@@ -210,6 +211,14 @@ void AbbrevAssignWriter::writeFromBuffer() {
       fprintf(Out, "  %" PRIuMAX "\n", Value);
     fprintf(Out, "************\n");
   });
+#if 1
+  AbbrevSelector Selector(Buffer, Root, DefaultValues.size(),
+                          DefaultFormat, MyFlags);
+#if 1
+  Selector.getTrace().setTraceProgress(getTrace().getTraceProgress());
+#endif
+  AbbrevSelection::Ptr Sel = Selector.select();
+#endif
   // Collect abbreviations available for value sequences in buffer.
   CountNode::IntPtr Max = extractMaxPattern(0);
   // Before committing to Max, see if would be cheaper to just add

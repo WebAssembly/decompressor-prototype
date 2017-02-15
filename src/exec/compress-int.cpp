@@ -142,10 +142,11 @@ int main(int Argc, const char* Argv[]) {
     ArgsParser::Optional<size_t> SmallValueCountCutoffFlag(
         MyCompressionFlags.SmallValueCountCutoff);
     Args.add(SmallValueCountCutoffFlag.setDefault(5)
-                 .setLongName("small-min-count")
-                 .setDescription(
-                     "Mimimum number of uses of a small value before "
-                     "it is considered an abbreviation pattern"));
+             .setLongName("small-min-count")
+             .setOptionName("INTEGER")
+             .setDescription(
+                 "Mimimum number of uses of a small value before "
+                 "it is considered an abbreviation pattern"));
 
     ArgsParser::Toggle TrimOverriddenPatternsFlag(
         MyCompressionFlags.TrimOverriddenPatterns);
