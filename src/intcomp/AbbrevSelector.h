@@ -36,63 +36,54 @@
   do {                                                   \
     auto& tracE = (Trace);                               \
     if (tracE.getTraceProgress())                        \
-      AbbrevSelection::trace(tracE, name, value)    ;    \
-  } while(false)
+      AbbrevSelection::trace(tracE, name, value);        \
+  } while (false)
 
 #define TRACE_ABBREV_SELECTION(name, value) \
-    TRACE_ABBREV_SELECTION_USING(getTrace(), name, Sel);
+  TRACE_ABBREV_SELECTION_USING(getTrace(), name, value);
 #endif
 
 namespace wasm {
 
 namespace intcomp {
 
+class AbbrevSelector;
+
 class AbbrevSelection : public std::enable_shared_from_this<AbbrevSelection> {
   AbbrevSelection() = delete;
   AbbrevSelection(const AbbrevSelection&) = delete;
   AbbrevSelection& operator=(const AbbrevSelection&) = delete;
+  friend class AbbrevSelector;
+
  public:
   typedef std::shared_ptr<AbbrevSelection> Ptr;
-  typedef std::function<bool(Ptr, Ptr)> CompareFcnType;
 
-  static CompareFcnType CompareGT;
-  static CompareFcnType CompareLT;
-
-  // Do not use directly! Call create to instantiate.
+  // Do not use directly! Call AbbrevSelector::create to instantiate.
   AbbrevSelection(CountNode::Ptr Abbreviation,
                   Ptr Previous,
-                  size_t BufferIndex,
-                  size_t Weight);
+                  size_t IntsConsumed,
+                  size_t Weight,
+                  size_t CreationIndex);
 
   CountNode::Ptr getAbbreviation() const { return Abbreviation; }
   Ptr getPrevious() const { return Previous; }
-  size_t getBufferIndex() const { return BufferIndex; }
-  size_t getWeight() const;
+  size_t getIntsConsumed() const { return IntsConsumed; }
+  size_t getWeight() const { return Weight; }
+  size_t getCreationIndex() const { return CreationIndex; }
 
-  static Ptr create(CountNode::Ptr Abbreviation,
-                    Ptr Previous,
-                    size_t Weight,
-                    size_t BufferIndex);
-
-  static Ptr create(CountNode::Ptr Abbreviation,
-                    size_t Weight,
-                    size_t BufferIndex,
-                    size_t NumLeadingDefaultValues = 0);
-
-  // Returns < 0 if this smaller, > 0 if Sel smaller, and zero if equal.
-  int compare(AbbrevSelection* Sel) const;
-
-  void describe(FILE* Out, bool Summary=true);
-  static void trace(utils::TraceClass& TC, charstring Name, AbbrevSelection::Ptr Sel);
+  void describe(FILE* Out, bool Summary = true);
+  static void trace(utils::TraceClass& TC,
+                    charstring Name,
+                    AbbrevSelection::Ptr Sel);
 
  private:
   CountNode::Ptr Abbreviation;
   Ptr Previous;
-  size_t BufferIndex;
+  size_t IntsConsumed;
   size_t Weight;
-  // Note: CreationIndex is used to break ties in comparison.
+  // Note: Code assumes that this value must be unique for each instance,
+  // and it is the responsability of the instance creator to guarantee this.
   size_t CreationIndex;
-  static size_t NextCreationIndex;
 };
 
 class AbbrevSelector {
@@ -117,20 +108,27 @@ class AbbrevSelector {
   BufferType Buffer;
   CountNode::RootPtr Root;
   size_t NumLeadingDefaultValues;
+#if 1
+// Remove, use flags.
+#endif
   interp::IntTypeFormat AbbrevFormat;
+  size_t NextCreationIndex;
   const AbbrevAssignFlags& Flags;
   std::shared_ptr<HeapType> Heap;
   std::map<decode::IntType, interp::IntTypeFormats*> FormatMap;
   utils::TraceClass::Ptr Trace;
 
+  AbbrevSelection::Ptr create(CountNode::Ptr Abbreviation,
+                              AbbrevSelection::Ptr Previous,
+                              size_t LocalWeight,
+                              size_t LocalIntsConsumed);
+
   size_t computeAbbrevWeight(CountNode::Ptr Abbev);
   size_t computeValueWeight(decode::IntType Value);
-  void installDefaults();
-  void installDefaults(AbbrevSelection::Ptr Previous);
-  void installIntSeqMatches();
-  void installIntSeqMatches(AbbrevSelection::Ptr Previous);
-  void installMatches();
-  void installMatches(AbbrevSelection::Ptr Previous);
+  void createDefaults(AbbrevSelection::Ptr Previous);
+  void createIntSeqMatches(AbbrevSelection::Ptr Previous);
+  void createMatches(AbbrevSelection::Ptr Previous);
+  void createMatches();
   AbbrevSelection::Ptr popHeap();
 };
 

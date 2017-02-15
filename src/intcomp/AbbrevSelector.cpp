@@ -20,6 +20,19 @@
 
 #include <cassert>
 
+#ifdef NODEBUG
+
+#define IF_TRACE(level, tracecall)
+
+#else
+
+#define IF_TRACE(Flag, tracecall)         \
+  if (Flags.TraceAbbrevSelection##Flag) { \
+    tracecall;                            \
+  }
+
+#endif
+
 namespace wasm {
 
 using namespace decode;
@@ -28,88 +41,77 @@ using namespace utils;
 
 namespace intcomp {
 
-size_t AbbrevSelection::NextCreationIndex = 0;
+namespace {
+
+size_t countIntPatterns(AbbrevSelection* Sel) {
+  size_t Count = 0;
+  while (Sel != nullptr) {
+    if (isa<IntCountNode>(Sel->getAbbreviation().get()))
+      ++Count;
+    Sel = Sel->getPrevious().get();
+  }
+  return Count;
+}
+
+bool isHillclimbLT(AbbrevSelection::Ptr S1, AbbrevSelection::Ptr S2) {
+  AbbrevSelection* Sel1 = S1.get();
+  AbbrevSelection* Sel2 = S2.get();
+  if (Sel1 == nullptr)
+    return Sel2 != nullptr;
+  if (Sel2 == nullptr)
+    return false;
+  // To force a quick base to compare against during hillclimbing, favor
+  // selections that consume more input first. This should also favor selections
+  // that use integer sequence patterns (which is good).  In other words (based
+  // on consuming input) force the heap to do a depth-first search.
+  size_t Count1 = Sel1->getIntsConsumed();
+  size_t Count2 = Sel2->getIntsConsumed();
+  if (Count1 < Count2)
+    return false;
+  if (Count1 > Count2)
+    return true;
+  // Favor the one which requires the least amount of (approximated) space.
+  Count1 = Sel1->getWeight();
+  Count2 = Sel2->getWeight();
+  if (Count1 < Count2)
+    return true;
+  if (Count1 > Count2)
+    return false;
+  // Arbitrate by choosing the one with the most integer patterns, assuming that
+  // the Huffman encoding will generate a smaller value.
+  Count1 = countIntPatterns(Sel1);
+  Count2 = countIntPatterns(Sel2);
+  if (Count1 < Count2)
+    return false;
+  if (Count1 > Count2)
+    return true;
+  // Arbitrate uncomparable by choosing the one created first.
+  Count1 = Sel1->getCreationIndex();
+  Count2 = Sel2->getCreationIndex();
+  if (Count1 < Count2)
+    return true;
+  if (Count1 > Count2)
+    return false;
+  WASM_RETURN_UNREACHABLE(false);
+}
+
+}  // end of anonymous namespace
 
 AbbrevSelection::AbbrevSelection(CountNode::Ptr Abbreviation,
                                  Ptr Previous,
-                                 size_t BufferIndex,
-                                 size_t Weight)
+                                 size_t IntsConsumed,
+                                 size_t Weight,
+                                 size_t CreationIndex)
     : Abbreviation(Abbreviation),
       Previous(Previous),
-      BufferIndex(BufferIndex),
+      IntsConsumed(IntsConsumed),
       Weight(Weight),
-      CreationIndex(NextCreationIndex++) {}
-
-AbbrevSelection::Ptr AbbrevSelection::create(
-    CountNode::Ptr Abbreviation,
-    Ptr Previous,
-    size_t Weight,
-    size_t BufferIndex) {
-  auto Sel = std::make_shared<AbbrevSelection>(Abbreviation, Previous, BufferIndex, Weight);
-  return Sel;
+      CreationIndex(CreationIndex) {
 }
 
-AbbrevSelection::Ptr AbbrevSelection::create(
-    CountNode::Ptr Abbreviation,
-    size_t Weight,
-    size_t BufferIndex,
-    size_t NumLeadingDefaultValues) {
-  Ptr Previous;
-  auto Sel = std::make_shared<AbbrevSelection>(Abbreviation, Previous, BufferIndex, Weight);
-  // TODO(karlschimpf) Set additional fields.
-  return Sel;
-}
-
-int AbbrevSelection::compare(AbbrevSelection* Sel) const {
-  if (Sel == nullptr)
-    return 1;
-  // Assume the one with the less weight (i.e. bitsize when written), is the
-  // better choice.
-  if (Weight < Sel->Weight)
-    return -1;
-  if (Weight > Sel->Weight)
-    return 1;
-  // Consider the one that has consumed more of the input to be the better
-  // choice.
-  if (BufferIndex > Sel->BufferIndex)
-    return -1;
-  if (BufferIndex < Sel->BufferIndex)
-    return 1;
-  // Both are equally likely.
-  if (CreationIndex < Sel->CreationIndex)
-    return -1;
-  if (CreationIndex > Sel->CreationIndex)
-    return 1;
-  return 0;
-}
-
-namespace {
-
-bool isLT(AbbrevSelection::Ptr S1, AbbrevSelection::Ptr S2) {
-  if (!S1)
-    return bool(S2);
-  if (!S2)
-    return false;
-  return S1->compare(S2.get()) < 0;
-}
-
-bool isGT(AbbrevSelection::Ptr S1, AbbrevSelection::Ptr S2) {
-  if (!S1)
-    return false;
-  if (!S2)
-    return true;
-  return S1->compare(S2.get()) > 0;
-}
-
-} // end of anonymous namespace
-
-AbbrevSelection::CompareFcnType AbbrevSelection::CompareGT =
-    [](Ptr S1, Ptr S2) { return isGT(S1, S2); };
-
-AbbrevSelection::CompareFcnType AbbrevSelection::CompareLT =
-    [](Ptr S1, Ptr S2) { return isLT(S1, S2); };
-
-void AbbrevSelection::trace(TraceClass& TC, charstring Name, AbbrevSelection::Ptr Sel) {
+void AbbrevSelection::trace(TraceClass& TC,
+                            charstring Name,
+                            AbbrevSelection::Ptr Sel) {
   TC.indent();
   FILE* Out = TC.getFile();
   TC.trace_value_label(Name);
@@ -130,13 +132,13 @@ void AbbrevSelection::describe(FILE* Out, bool Summary) {
   AbbrevSelection* Next = this;
   do {
     fprintf(Out, "[%" PRIuMAX "] ints=%" PRIuMAX " w=%" PRIuMAX ":",
-            uintmax_t(Next->CreationIndex), uintmax_t(Next->BufferIndex),
+            uintmax_t(Next->CreationIndex), uintmax_t(Next->IntsConsumed),
             uintmax_t(Next->Weight));
-  if (Next->Abbreviation)
-    Next->Abbreviation->describe(Out);
-  else
-    fprintf(Out, "nullptr\n");
-  Next = Next->Previous.get();
+    if (Next->Abbreviation)
+      Next->Abbreviation->describe(Out);
+    else
+      fprintf(Out, "nullptr\n");
+    Next = Next->Previous.get();
   } while (Next && !Summary);
 }
 
@@ -149,8 +151,9 @@ AbbrevSelector::AbbrevSelector(BufferType Buffer,
       Root(Root),
       NumLeadingDefaultValues(NumLeadingDefaultValues),
       AbbrevFormat(AbbrevFormat),
+      NextCreationIndex(0),
       Flags(Flags),
-      Heap(std::make_shared<HeapType>(AbbrevSelection::CompareLT)) {
+      Heap(std::make_shared<HeapType>(isHillclimbLT)) {
 }
 
 void AbbrevSelector::setTrace(TraceClass::Ptr NewTrace) {
@@ -173,71 +176,102 @@ size_t AbbrevSelector::computeValueWeight(IntType Value) {
   return Formatter.getByteSize(AbbrevFormat);
 }
 
-void AbbrevSelector::installDefaults() {
-  TRACE_METHOD("installlDefaults");
+AbbrevSelection::Ptr AbbrevSelector::create(CountNode::Ptr Abbreviation,
+                                            AbbrevSelection::Ptr Previous,
+                                            size_t LocalWeight,
+                                            size_t LocalIntsConsumed) {
+  if (Previous) {
+    AbbrevSelection* PreviousPtr = Previous.get();
+    LocalWeight += PreviousPtr->getWeight();
+    LocalIntsConsumed += PreviousPtr->getIntsConsumed();
+  }
+  return std::make_shared<AbbrevSelection>(Abbreviation, Previous,
+                                           LocalIntsConsumed, LocalWeight,
+                                           NextCreationIndex++);
+}
+
+void AbbrevSelector::createDefaults(AbbrevSelection::Ptr Previous) {
+  IF_TRACE(Detail, TRACE_MESSAGE("Try default match"));
   AbbrevSelection::Ptr Sel;
-  size_t ValueWeight = computeValueWeight(Buffer[0]);
-  if (NumLeadingDefaultValues == 0) {
+  bool HasPrevious = bool(Previous);
+  size_t Index = HasPrevious ? Previous->getIntsConsumed() : 0;
+  size_t ValueWeight = computeValueWeight(Buffer[Index]);
+  bool AddMultCounterSize = false;
+  bool IsSingle;
+  if (HasPrevious) {
+    if (auto* DefNd =
+            dyn_cast<DefaultCountNode>(Previous->getAbbreviation().get())) {
+      IsSingle = false;
+      if (DefNd->isSingle()) {
+        AddMultCounterSize = true;
+      }
+    } else {
+      IsSingle = true;
+    }
+  } else {
+    IsSingle = (NumLeadingDefaultValues = 0);
+    if (NumLeadingDefaultValues == 1) {
+      AddMultCounterSize = true;
+    }
+  }
+  IF_TRACE(Detail, {
+    TRACE(bool, "Is single", IsSingle);
+    TRACE(size_t, "Value weight", ValueWeight);
+    TRACE(bool, "Add Multiple byte counter", AddMultCounterSize);
+  });
+  if (AddMultCounterSize)
+    ++ValueWeight;
+  if (IsSingle) {
     CountNode::DefaultPtr Default = Root->getDefaultSingle();
-    Sel = AbbrevSelection::create(Default,
-                                  ValueWeight + computeAbbrevWeight(Default),
-                                  1);
+    Sel = create(Default, Previous, ValueWeight + computeAbbrevWeight(Default),
+                 1);
   } else {
     CountNode::DefaultPtr Default = Root->getDefaultMultiple();
-    Sel = AbbrevSelection::create(Root->getDefaultMultiple(),
-                                  ValueWeight,
-                                  1);
+    Sel = create(Root->getDefaultMultiple(), Previous, ValueWeight, 1);
   }
-  TRACE_ABBREV_SELECTION("install", Sel);
+  IF_TRACE(Create, TRACE_ABBREV_SELECTION("create", Sel));
   Heap->push(Sel);
 }
 
-void AbbrevSelector::installIntSeqMatches() {
-  TRACE_METHOD("installMatches");
+void AbbrevSelector::createIntSeqMatches(AbbrevSelection::Ptr Previous) {
+  IF_TRACE(Detail, TRACE_MESSAGE("Try int sequence match"));
   CountNode::IntPtr Nd;
   constexpr bool AddIfNotFound = true;
-  for (size_t i = 0; i < Buffer.size(); ++i) {
+  bool HasPrevious = bool(Previous);
+  size_t StartIndex = HasPrevious ? Previous->getIntsConsumed() : 0;
+  for (size_t i = StartIndex; i < Buffer.size(); ++i) {
     IntType Value = Buffer[i];
-    TRACE(size_t, "i", i);
-    TRACE(IntType, "Value", Value);
+    IF_TRACE(Detail, {
+      TRACE(size_t, "i", i);
+      TRACE(IntType, "Value", Value);
+    });
     Nd = Nd ? lookup(Nd, Value, !AddIfNotFound)
             : lookup(Root, Value, !AddIfNotFound);
     if (!Nd) {
-      TRACE_MESSAGE("No more patterns found!");
+      IF_TRACE(Detail, TRACE_MESSAGE("No more patterns found!"));
       return;
     }
     if (!Nd->hasAbbrevIndex())
       continue;
-    auto Sel = AbbrevSelection::create(Nd,
-                                       computeAbbrevWeight(Nd),
-                                       i + 1);
-    TRACE_ABBREV_SELECTION("install", Sel);
+    auto Sel =
+        create(Nd, Previous, computeAbbrevWeight(Nd), Nd->getPathLength());
+    IF_TRACE(Create, TRACE_ABBREV_SELECTION("create", Sel));
     Heap->push(Sel);
   }
 }
 
-void AbbrevSelector::installMatches() {
-  installDefaults();
-  installIntSeqMatches();
+void AbbrevSelector::createMatches(AbbrevSelection::Ptr Previous) {
+  // Note: Try integer (specialized) pattern matches second, under the
+  // assumption that we favor default patterns. This ordering is used
+  // to arbitrate unorderable selections that will use creation index
+  // as final arbitration.
+  createDefaults(Previous);
+  createIntSeqMatches(Previous);
 }
 
-void AbbrevSelector::installDefaults(AbbrevSelection::Ptr Previous) {
-  // TODO(karlschimpf): Define.
-#if 1
-  (void) Previous;
-#endif
-}
-
-void AbbrevSelector::installIntSeqMatches(AbbrevSelection::Ptr Previous) {
-  // TODO(karlschimpf): Define.
-#if 1
-  (void) Previous;
-#endif
-}
-
-void AbbrevSelector::installMatches(AbbrevSelection::Ptr Previous) {
-  installDefaults(Previous);
-  installIntSeqMatches(Previous);
+void AbbrevSelector::createMatches() {
+  AbbrevSelection::Ptr Empty;
+  createMatches(Empty);
 }
 
 AbbrevSelection::Ptr AbbrevSelector::popHeap() {
@@ -249,28 +283,53 @@ AbbrevSelection::Ptr AbbrevSelector::popHeap() {
 
 AbbrevSelection::Ptr AbbrevSelector::select() {
   TRACE_METHOD("select");
-  (void) Flags;
+  (void)Flags;
   AbbrevSelection::Ptr Min;
   if (Buffer.size() == 0)
     return Min;
-  // Install possible defaults.
+  // Create possible defaults.
   Heap->clear();
-  installMatches();
+  createMatches();
   while (!Heap->empty()) {
+    // Get candidate selection.
+    IF_TRACE(Detail, {
+      TRACE(size_t, "heap size", Heap->size());
+      TRACE(size_t, "Buffer size", Buffer.size());
+    });
     AbbrevSelection::Ptr Sel = popHeap();
-    TRACE_ABBREV_SELECTION("Select", Sel);
+    IF_TRACE(Select, TRACE_ABBREV_SELECTION("Select", Sel));
     assert(bool(Sel));
-    if (Sel->getBufferIndex() == Buffer.size()) {
-      if (!bool(Min) || Min->compare(Sel.get()) > 0) {
+
+    // Rule out special cases where we can short-circuit the search.
+    if (!Min) {
+      if (Heap->empty()) {
+        // If only one choice left, no need to expand further, it must be
+        // the best choice.
+        IF_TRACE(Select,
+                 TRACE_MESSAGE("Defining as minimum, since only selection"));
         Min = Sel;
-        TRACE_MESSAGE("Define as minimum");
+        break;
+      }
+    } else if (Sel->getWeight() > Min->getWeight()) {
+      IF_TRACE(Select, TRACE_MESSAGE("Ignoring: can't be minimum"));
+      continue;
+    }
+
+    if (Sel->getIntsConsumed() >= Buffer.size()) {
+      // Valid selection, see if best.
+      if (!Min || isHillclimbLT(Sel, Min)) {
+        Min = Sel;
+        IF_TRACE(Select, TRACE_MESSAGE("Define as minimum"));
       } else {
-        TRACE_MESSAGE("Ignoring: not minimum");
+        IF_TRACE(Select, TRACE_MESSAGE("Ignoring: not minimum"));
       }
       continue;
     }
-    installMatches(Sel);
+
+    // Can't conclude best found, try more matches.
+    createMatches(Sel);
   }
+  TRACE_ABBREV_SELECTION("Selected min", Min);
   return Min;
 }
 

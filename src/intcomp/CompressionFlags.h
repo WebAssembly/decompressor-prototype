@@ -44,7 +44,10 @@ inline bool hasFlag(CollectionFlag F, CollectionFlags Flags) {
 
 struct AbbrevAssignFlags {
   bool CheckOverlapping;
-  AbbrevAssignFlags() : CheckOverlapping(false) {}
+  bool TraceAbbrevSelectionSelect;
+  bool TraceAbbrevSelectionCreate;
+  bool TraceAbbrevSelectionDetail;
+  AbbrevAssignFlags();
 };
 
 struct CompressionFlags {

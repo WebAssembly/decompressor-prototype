@@ -54,11 +54,19 @@ charstring getName(CollectionFlags Flags) {
   return "UnknownCollectionFlags";
 }
 
+AbbrevAssignFlags::AbbrevAssignFlags()
+    : CheckOverlapping(false),
+      // TODO(karlschimpf) Make these command-line arguments.
+      TraceAbbrevSelectionSelect(false),
+      TraceAbbrevSelectionCreate(false),
+      TraceAbbrevSelectionDetail(false) {
+}
+
 CompressionFlags::CompressionFlags()
     : CountCutoff(0),
       WeightCutoff(0),
       PatternLengthLimit(10),
-      PatternLengthMultiplier(3),
+      PatternLengthMultiplier(2),
       MaxAbbreviations(4096),
       SmallValueMax(std::numeric_limits<uint8_t>::max()),
       SmallValueCountCutoff(2),

@@ -212,10 +212,10 @@ void AbbrevAssignWriter::writeFromBuffer() {
     fprintf(Out, "************\n");
   });
 #if 1
-  AbbrevSelector Selector(Buffer, Root, DefaultValues.size(),
-                          DefaultFormat, MyFlags);
+  AbbrevSelector Selector(Buffer, Root, DefaultValues.size(), DefaultFormat,
+                          MyFlags);
 #if 1
-  Selector.getTrace().setTraceProgress(getTrace().getTraceProgress());
+  Selector.setTrace(getTracePtr());
 #endif
   AbbrevSelection::Ptr Sel = Selector.select();
 #endif
