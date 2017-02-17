@@ -60,6 +60,11 @@ namespace utils {
 const size_t ArgsParser::TabWidth = 8;
 const size_t ArgsParser::MaxLine = 79;  // allow for trailing space character.
 
+FILE* ArgsParser::error() {
+  Status = State::Bad;
+  return stderr;
+}
+
 void ArgsParser::endLineIfOver(FILE* Out,
                                const size_t TabSize,
                                size_t& Indent) {
@@ -136,7 +141,7 @@ void ArgsParser::writeSize_t(FILE* Out,
     writeNewline(Out, Indent);
     indentTo(Out, TabSize, Indent);
   }
-  fprintf(stderr, "%" PRIuMAX "", uintmax_t(Value));
+  fprintf(Out, "%" PRIuMAX "", uintmax_t(Value));
 }
 
 void ArgsParser::printDescriptionContinue(FILE* Out,
@@ -176,6 +181,16 @@ void ArgsParser::printDescription(FILE* Out,
   if (Description && *Description != '\0')
     endLineIfOver(Out, TabSize, Indent);
   printDescriptionContinue(Out, TabSize, Indent, Description);
+}
+
+bool ArgsParser::Arg::validOptionValue(ArgsParser* Parser,
+                                       charstring OptionValue) {
+  if (OptionValue != nullptr)
+    return true;
+  FILE* Out = Parser->error();
+  fprintf(Out, "Malformed specification: No option valule specified!\n");
+  describe(Out, TabWidth);
+  return false;
 }
 
 void ArgsParser::Arg::describe(FILE* Out, size_t TabSize) const {
@@ -292,8 +307,9 @@ ArgsParser& ArgsParser::add(Arg& A) {
   Args.push_back(&A);
   if (auto* Opt = dyn_cast<OptionalArg>(&A)) {
     if (Opt->getShortName() == 0 && Opt->getLongName() == nullptr) {
-      fprintf(stderr, "Can't add option without Name:\n");
-      A.describe(stderr, TabWidth);
+      FILE* Out = error();
+      fprintf(Out, "Can't add option without Name:\n");
+      A.describe(Out, TabWidth);
       Status = State::Bad;
     }
   }
@@ -310,8 +326,9 @@ ArgsParser& ArgsParser::add(Arg& A) {
     if (A.getOptionName() != nullptr) {
       PlacementArgs.push_back(&A);
     } else {
-      fprintf(stderr, "Can't categorize option:\n");
-      A.describe(stderr, TabWidth);
+      FILE* Out = error();
+      fprintf(Out, "Can't categorize option:\n");
+      A.describe(Out, TabWidth);
       Status = State::Bad;
     }
   }
@@ -406,7 +423,7 @@ void ArgsParser::parseNextArg() {
       MaybeUseNextArg = true;
       Leftover = Argv[CurArg];
     }
-    if (MatchingOption->select(Leftover) && MaybeUseNextArg)
+    if (MatchingOption->select(this, Leftover) && MaybeUseNextArg)
       ++CurArg;
     if (TraceProgress) {
       fprintf(stderr, "Matched:\n");
@@ -423,15 +440,16 @@ void ArgsParser::parseNextArg() {
       fprintf(stderr, "Matched:\n");
       Placement->describe(stderr, TabWidth);
     }
-    if (!Placement->select(Argument)) {
-      fprintf(stderr, "Can't assign option:\n");
-      Placement->describe(stderr, TabWidth);
+    if (!Placement->select(this, Argument)) {
+      FILE* Out = error();
+      fprintf(Out, "Can't assign option:\n");
+      Placement->describe(Out, TabWidth);
       Status = State::Bad;
       return;
     }
     return;
   }
-  fprintf(stderr, "Argument '%s' not understood\n", Argument);
+  fprintf(error(), "Argument '%s' not understood\n", Argument);
   Status = State::Bad;
   return;
 }
@@ -448,8 +466,9 @@ ArgsParser::State ArgsParser::parse(int Argc, charstring Argv[]) {
   if (Status == State::Good) {
     for (Arg* A : RequiredArgs)
       if (!A->getOptionFound()) {
-        fprintf(stderr, "Required option not found:\n");
-        A->describe(stderr, TabWidth);
+        FILE* Out = error();
+        fprintf(Out, "Required option not found:\n");
+        A->describe(Out, TabWidth);
         Status = State::Bad;
       }
   }

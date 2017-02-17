@@ -42,14 +42,6 @@ inline bool hasFlag(CollectionFlag F, CollectionFlags Flags) {
   return makeFlags(F) & Flags;
 }
 
-struct AbbrevAssignFlags {
-  bool CheckOverlapping;
-  bool TraceAbbrevSelectionSelect;
-  bool TraceAbbrevSelectionCreate;
-  bool TraceAbbrevSelectionDetail;
-  AbbrevAssignFlags();
-};
-
 struct CompressionFlags {
   size_t CountCutoff;
   size_t WeightCutoff;
@@ -62,6 +54,12 @@ struct CompressionFlags {
   bool MinimizeCodeSize;
   bool UseHuffmanEncoding;
   bool TrimOverriddenPatterns;
+  bool CheckOverlapping;
+  interp::IntTypeFormat DefaultFormat;
+  interp::IntTypeFormat LoopSizeFormat;
+
+  interp::InterpreterFlags MyInterpFlags;
+
   bool TraceHuffmanAssignments;
   bool TraceReadingInput;
   bool TraceReadingIntStream;
@@ -80,8 +78,10 @@ struct CompressionFlags {
   bool TraceAbbreviationAssignmentsCollection;
   bool TraceAssigningAbbreviations;
   bool TraceCompressedIntOutput;
-  interp::InterpreterFlags MyInterpFlags;
-  AbbrevAssignFlags MyAbbrevAssignFlags;
+  bool TraceAbbrevSelectionSelect;
+  bool TraceAbbrevSelectionCreate;
+  bool TraceAbbrevSelectionDetail;
+  size_t TraceAbbrevSelectionProgress;
   CompressionFlags();
 };
 

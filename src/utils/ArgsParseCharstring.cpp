@@ -25,7 +25,10 @@ namespace wasm {
 namespace utils {
 
 template <>
-bool ArgsParser::Optional<charstring>::select(charstring OptionValue) {
+bool ArgsParser::Optional<charstring>::select(ArgsParser* Parser,
+                                              charstring OptionValue) {
+  if (!validOptionValue(Parser, OptionValue))
+    return false;
   Value = OptionValue;
   return true;
 }
@@ -44,7 +47,10 @@ void ArgsParser::Optional<charstring>::describeDefault(FILE* Out,
 }
 
 template <>
-bool ArgsParser::Required<charstring>::select(charstring OptionValue) {
+bool ArgsParser::Required<charstring>::select(ArgsParser* Parser,
+                                              charstring OptionValue) {
+  if (!validOptionValue(Parser, OptionValue))
+    return false;
   Value = OptionValue;
   return true;
 }

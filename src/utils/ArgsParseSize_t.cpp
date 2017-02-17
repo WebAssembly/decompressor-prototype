@@ -26,7 +26,10 @@ namespace wasm {
 namespace utils {
 
 template <>
-bool ArgsParser::Optional<size_t>::select(charstring OptionValue) {
+bool ArgsParser::Optional<size_t>::select(ArgsParser* Parser,
+                                          charstring OptionValue) {
+  if (!validOptionValue(Parser, OptionValue))
+    return false;
   Value = size_t(atoll(OptionValue));
   return true;
 }

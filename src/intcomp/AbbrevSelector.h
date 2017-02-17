@@ -92,8 +92,7 @@ class AbbrevSelector {
   AbbrevSelector(BufferType Buffer,
                  CountNode::RootPtr Root,
                  size_t NumLeadingDefaultValues,
-                 interp::IntTypeFormat AbbrevFormat,
-                 const AbbrevAssignFlags& Flags);
+                 const CompressionFlags& Flags);
   // Heuristically finds the best (measured by weight) abberviation selection
   // for the contents of the buffer.
   AbbrevSelection::Ptr select();
@@ -108,12 +107,8 @@ class AbbrevSelector {
   BufferType Buffer;
   CountNode::RootPtr Root;
   size_t NumLeadingDefaultValues;
-#if 1
-// Remove, use flags.
-#endif
-  interp::IntTypeFormat AbbrevFormat;
   size_t NextCreationIndex;
-  const AbbrevAssignFlags& Flags;
+  const CompressionFlags& Flags;
   std::shared_ptr<HeapType> Heap;
   std::map<decode::IntType, interp::IntTypeFormats*> FormatMap;
   utils::TraceClass::Ptr Trace;
