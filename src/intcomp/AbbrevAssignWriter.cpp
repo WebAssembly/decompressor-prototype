@@ -74,36 +74,6 @@ StreamType AbbrevAssignWriter::getStreamType() const {
   return StreamType::Int;
 }
 
-bool AbbrevAssignWriter::writeUint8(uint8_t Value) {
-  bufferValue(Value);
-  return true;
-}
-
-bool AbbrevAssignWriter::writeUint32(uint32_t Value) {
-  bufferValue(Value);
-  return true;
-}
-
-bool AbbrevAssignWriter::writeUint64(uint64_t Value) {
-  bufferValue(Value);
-  return true;
-}
-
-bool AbbrevAssignWriter::writeVarint32(int32_t Value) {
-  bufferValue(Value);
-  return true;
-}
-
-bool AbbrevAssignWriter::writeVarint64(int64_t Value) {
-  bufferValue(Value);
-  return true;
-}
-
-bool AbbrevAssignWriter::writeVaruint32(uint32_t Value) {
-  bufferValue(Value);
-  return true;
-}
-
 bool AbbrevAssignWriter::writeVaruint64(uint64_t Value) {
   bufferValue(Value);
   return true;
@@ -121,11 +91,6 @@ bool AbbrevAssignWriter::writeFreezeEof() {
   flushDefaultValues();
   alignIfNecessary();
   return Writer.writeFreezeEof();
-}
-
-bool AbbrevAssignWriter::writeValue(decode::IntType Value, const filt::Node*) {
-  bufferValue(Value);
-  return true;
 }
 
 bool AbbrevAssignWriter::writeHeaderValue(decode::IntType Value,
