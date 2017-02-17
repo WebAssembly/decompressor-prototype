@@ -45,7 +45,7 @@ class ArgsParser {
 
    public:
     void describe(FILE* Out, size_t TabSize) const;
-    virtual bool select(charstring OptionValue) = 0;
+    virtual bool select(ArgsParser* Parser, charstring OptionValue) = 0;
     virtual int compare(const Arg& A) const;
     char getShortName() const { return ShortName; }
     Arg& setShortName(char Name) {
@@ -68,6 +68,7 @@ class ArgsParser {
     }
     bool getOptionFound() const { return OptionFound; }
     void setOptionFound(bool Value) { OptionFound = Value; }
+    bool validOptionValue(ArgsParser* Parser, charstring OptionValue);
     size_t getAddIndex() const { return AddIndex; }
     void setAddIndex(size_t Value) { AddIndex = Value; }
     ArgKind getRtClassId() const { return Kind; }
@@ -179,7 +180,7 @@ class ArgsParser {
       Value = DefaultValue = NewDefault;
       return *this;
     }
-    bool select(charstring NewDefault) OVERRIDE;
+    bool select(ArgsParser* Parser, charstring NewDefault) OVERRIDE;
     void describeDefault(FILE* Out,
                          size_t TabSize,
                          size_t& Indent) const OVERRIDE;
@@ -199,7 +200,7 @@ class ArgsParser {
    public:
     explicit Toggle(bool& Value, charstring Description = nullptr)
         : Optional<bool>(Value, Description) {}
-    bool select(charstring OptionValue) OVERRIDE;
+    bool select(ArgsParser* Parser, charstring OptionValue) OVERRIDE;
     void describeDefault(FILE* Out,
                          size_t TabSize,
                          size_t& Indent) const OVERRIDE;
@@ -217,7 +218,7 @@ class ArgsParser {
     SetValue(T& Value, T SelectValue, charstring Description = nullptr)
         : Optional<T>(Value, Description) {}
 
-    bool select(charstring OptionValue) OVERRIDE;
+    bool select(ArgsParser* Parser, charstring OptionValue) OVERRIDE;
     void describeDefault(FILE* Out,
                          size_t TabSize,
                          size_t& Indent) const OVERRIDE;
@@ -239,7 +240,7 @@ class ArgsParser {
     explicit RepeatableSet(set_type& Values, charstring Description = nullptr)
         : OptionalArg(Description), Values(Values) {}
 
-    bool select(charstring Add) OVERRIDE;
+    bool select(ArgsParser* Parser, charstring Add) OVERRIDE;
     void describeDefault(FILE* Out,
                          size_t TabSize,
                          size_t& Indent) const OVERRIDE;
@@ -275,7 +276,7 @@ class ArgsParser {
    public:
     explicit Required(T& Value, charstring Description = nullptr)
         : RequiredArg(Description), Value(Value) {}
-    bool select(charstring OptionValue) OVERRIDE;
+    bool select(ArgsParser* Parser, charstring OptionValue) OVERRIDE;
 
     ~Required() OVERRIDE {}
 
@@ -320,6 +321,10 @@ class ArgsParser {
   Arg* parseNextShort(charstring Argument, charstring& Leftover);
   Arg* parseNextLong(charstring Argument, charstring& Leftover);
   void showUsage();
+
+  // Records that there was an error, and then returns stream to print
+  // error message to.
+  FILE* error();
 
   friend class Arg;
 

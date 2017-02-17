@@ -43,6 +43,7 @@ class Reader : public std::enable_shared_from_this<Reader> {
   virtual ~Reader() {}
   virtual utils::TraceClass::ContextPtr getTraceContext();
   void setTraceProgress(bool NewValue);
+  bool hasTrace() { return bool(Trace); }
   void setTrace(std::shared_ptr<utils::TraceClass> Trace);
   std::shared_ptr<utils::TraceClass> getTracePtr();
   utils::TraceClass& getTrace() { return *getTracePtr(); }

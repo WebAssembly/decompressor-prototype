@@ -61,6 +61,7 @@ class Writer {
   virtual void describeState(FILE* File);
 
   virtual utils::TraceClass::ContextPtr getTraceContext();
+  bool hasTrace() { return bool(Trace) && Trace->getTraceProgress(); }
   virtual void setTrace(std::shared_ptr<utils::TraceClass> Trace);
   std::shared_ptr<utils::TraceClass> getTracePtr();
   utils::TraceClass& getTrace() { return *getTracePtr(); }

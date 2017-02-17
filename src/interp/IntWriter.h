@@ -56,6 +56,8 @@ class IntWriter : public Writer {
 
   virtual void describeState(FILE* File);
 
+  size_t getIndex() const { return Pos.getIndex(); }
+
  private:
   std::shared_ptr<IntStream> Output;
   IntStream::WriteCursor Pos;

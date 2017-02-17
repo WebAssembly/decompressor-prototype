@@ -23,7 +23,7 @@ namespace wasm {
 namespace utils {
 
 template <>
-bool ArgsParser::Optional<bool>::select(charstring OptionValue) {
+bool ArgsParser::Optional<bool>::select(ArgsParser*, charstring OptionValue) {
   Value = !DefaultValue;
   return false;
 }
@@ -38,7 +38,7 @@ void ArgsParser::Optional<bool>::describeDefault(FILE* Out,
   printDescriptionContinue(Out, TabSize, Indent, ")");
 }
 
-bool ArgsParser::Toggle::select(charstring OptionValue) {
+bool ArgsParser::Toggle::select(ArgsParser*, charstring OptionValue) {
   Value = !Value;
   return false;
 }

@@ -54,14 +54,6 @@ charstring getName(CollectionFlags Flags) {
   return "UnknownCollectionFlags";
 }
 
-AbbrevAssignFlags::AbbrevAssignFlags()
-    : CheckOverlapping(false),
-      // TODO(karlschimpf) Make these command-line arguments.
-      TraceAbbrevSelectionSelect(false),
-      TraceAbbrevSelectionCreate(false),
-      TraceAbbrevSelectionDetail(false) {
-}
-
 CompressionFlags::CompressionFlags()
     : CountCutoff(0),
       WeightCutoff(0),
@@ -74,6 +66,9 @@ CompressionFlags::CompressionFlags()
       MinimizeCodeSize(true),
       UseHuffmanEncoding(false),
       TrimOverriddenPatterns(false),
+      CheckOverlapping(false),
+      DefaultFormat(IntTypeFormat::Varint64),
+      LoopSizeFormat(IntTypeFormat::Varuint64),
       TraceHuffmanAssignments(false),
       TraceReadingInput(false),
       TraceReadingIntStream(false),
@@ -91,7 +86,11 @@ CompressionFlags::CompressionFlags()
       TraceAbbreviationAssignments(false),
       TraceAbbreviationAssignmentsCollection(false),
       TraceAssigningAbbreviations(false),
-      TraceCompressedIntOutput(false) {
+      TraceCompressedIntOutput(false),
+      TraceAbbrevSelectionSelect(false),
+      TraceAbbrevSelectionCreate(false),
+      TraceAbbrevSelectionDetail(false),
+      TraceAbbrevSelectionProgress(0) {
 }
 
 IntCompressor::IntCompressor(std::shared_ptr<decode::Queue> Input,
@@ -260,6 +259,7 @@ void IntCompressor::compress() {
     fprintf(stderr, "Unable to compress, output malformed\n");
     return;
   }
+  TRACE(size_t, "Pos after code", Pos.getAddress());
   TRACE_MESSAGE("Appending compressed WASM file to output");
   writeDataOutput(Pos, generateCodeForWriting(AbbrevAssignments));
   if (errorsFound()) {
@@ -286,8 +286,7 @@ bool IntCompressor::generateIntOutput() {
   auto Writer = std::make_shared<AbbrevAssignWriter>(
       Root, IntOutput,
       MyFlags.PatternLengthLimit * MyFlags.PatternLengthMultiplier,
-      MyFlags.AbbrevFormat, !MyFlags.UseHuffmanEncoding,
-      MyFlags.MyAbbrevAssignFlags);
+      MyFlags.AbbrevFormat, !MyFlags.UseHuffmanEncoding, MyFlags);
   IntInterperter Interp(std::make_shared<IntReader>(Contents), Writer,
                         MyFlags.MyInterpFlags, Symtab);
   if (MyFlags.TraceIntStreamGeneration)

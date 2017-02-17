@@ -23,7 +23,10 @@ namespace wasm {
 namespace utils {
 
 template <>
-bool ArgsParser::RepeatableSet<std::string>::select(charstring Add) {
+bool ArgsParser::RepeatableSet<std::string>::select(ArgsParser* Parser,
+                                                    charstring Add) {
+  if (!validOptionValue(Parser, Add))
+    return false;
   Values.insert(Add);
   return true;
 }

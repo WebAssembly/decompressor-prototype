@@ -154,7 +154,7 @@ int main(int Argc, const char* Argv[]) {
         "Remove patterns if already implied by previous patterns"));
 
     ArgsParser::Toggle CheckOverlappingPatternsFlag(
-        MyCompressionFlags.MyAbbrevAssignFlags.CheckOverlapping);
+        MyCompressionFlags.CheckOverlapping);
     Args.add(CheckOverlappingPatternsFlag.setLongName("overlapping")
                  .setDescription(
                      "Overlap patterns to find better "
@@ -274,8 +274,20 @@ int main(int Argc, const char* Argv[]) {
                      "Trace the generation of the compressed integer "
                      "stream. and show how abbreviations are selected"));
 
+    ArgsParser::Optional<size_t> TraceAbbrevSelectionProgressFlag(
+        MyCompressionFlags.TraceAbbrevSelectionProgress);
+    Args.add(
+        TraceAbbrevSelectionProgressFlag.setLongName(
+                                             "verbose=select-abbrevs-progress")
+            .setOptionName("INTEGER")
+            .setDescription(
+                "For every INTEGER values generated in the output integer "
+                "stream, generate a progress message. Use this to show "
+                "progress is being made, especially with large "
+                "command line overrides (INTEGER=0 turns off)"));
+
     ArgsParser::Optional<bool> TraceAbbrevSelectionSelectFlag(
-        MyCompressionFlags.MyAbbrevAssignFlags.TraceAbbrevSelectionSelect);
+        MyCompressionFlags.TraceAbbrevSelectionSelect);
     Args.add(TraceAbbrevSelectionSelectFlag.setLongName(
                                                 "verbose=select-abbrevs-select")
                  .setDescription(
@@ -284,7 +296,7 @@ int main(int Argc, const char* Argv[]) {
                      "also true"));
 
     ArgsParser::Optional<bool> TraceAbbrevSelectionCreateFlag(
-        MyCompressionFlags.MyAbbrevAssignFlags.TraceAbbrevSelectionCreate);
+        MyCompressionFlags.TraceAbbrevSelectionCreate);
     Args.add(
         TraceAbbrevSelectionCreateFlag.setLongName(
                                            "verbose=select-abbrevs-create")
@@ -294,7 +306,7 @@ int main(int Argc, const char* Argv[]) {
                 "--verbose=select-abbrevs is also true"));
 
     ArgsParser::Optional<bool> TraceAbbrevSelectionDetailFlag(
-        MyCompressionFlags.MyAbbrevAssignFlags.TraceAbbrevSelectionDetail);
+        MyCompressionFlags.TraceAbbrevSelectionDetail);
     Args.add(TraceAbbrevSelectionDetailFlag.setLongName(
                                                 "verbose=select-abbrev-details")
                  .setDescription(

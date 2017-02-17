@@ -145,12 +145,10 @@ void AbbrevSelection::describe(FILE* Out, bool Summary) {
 AbbrevSelector::AbbrevSelector(BufferType Buffer,
                                CountNode::RootPtr Root,
                                size_t NumLeadingDefaultValues,
-                               IntTypeFormat AbbrevFormat,
-                               const AbbrevAssignFlags& Flags)
+                               const CompressionFlags& Flags)
     : Buffer(Buffer),
       Root(Root),
       NumLeadingDefaultValues(NumLeadingDefaultValues),
-      AbbrevFormat(AbbrevFormat),
       NextCreationIndex(0),
       Flags(Flags),
       Heap(std::make_shared<HeapType>(isHillclimbLT)) {
@@ -173,7 +171,7 @@ size_t AbbrevSelector::computeAbbrevWeight(CountNode::Ptr) {
 
 size_t AbbrevSelector::computeValueWeight(IntType Value) {
   IntTypeFormats Formatter(Value);
-  return Formatter.getByteSize(AbbrevFormat);
+  return Formatter.getByteSize(Flags.DefaultFormat);
 }
 
 AbbrevSelection::Ptr AbbrevSelector::create(CountNode::Ptr Abbreviation,

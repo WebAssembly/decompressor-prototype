@@ -66,7 +66,7 @@ class IntCompressor FINAL {
   void setTrace(std::shared_ptr<utils::TraceClass> Trace);
   utils::TraceClass& getTrace() { return *getTracePtr(); }
   std::shared_ptr<utils::TraceClass> getTracePtr();
-  bool hasTrace() { return bool(Trace); }
+  bool hasTrace() { return bool(Trace) && Trace->getTraceProgress(); }
 
   void describe(FILE* Out,
                 CollectionFlags Flags = makeFlags(CollectionFlag::All),
