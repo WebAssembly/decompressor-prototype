@@ -115,7 +115,7 @@ class IntCompressor FINAL {
   void removeAllSmallUsageCounts() { removeSmallUsageCounts(false, false); }
   void zeroSmallUsageCounts() { removeSmallUsageCounts(false, true); }
   void assignInitialAbbreviations(CountNode::PtrSet& Assignments);
-  bool generateIntOutput();
+  bool generateIntOutput(CountNode::PtrSet& Assignments);
   std::shared_ptr<filt::SymbolTable>
   generateCode(CountNode::PtrSet& Assignments, bool ToRead, bool Trace);
   std::shared_ptr<filt::SymbolTable> generateCodeForReading(

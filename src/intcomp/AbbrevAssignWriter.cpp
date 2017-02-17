@@ -30,6 +30,7 @@ namespace intcomp {
 
 AbbrevAssignWriter::AbbrevAssignWriter(
     CountNode::RootPtr Root,
+    CountNode::PtrSet&,
     std::shared_ptr<interp::IntStream> Output,
     size_t BufSize,
     interp::IntTypeFormat AbbrevFormat,
@@ -147,7 +148,8 @@ bool AbbrevAssignWriter::writeAction(const filt::SymbolNode* Action) {
       forwardAbbrevValue(Root->getBlockExit()->getAbbrevIndex());
       return true;
     default:
-      return Writer.writeAction(Action);
+      // There should not be any other actions!!
+      return false;
   }
 }
 

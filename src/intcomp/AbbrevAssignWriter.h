@@ -19,13 +19,14 @@
 #ifndef DECOMPRESSOR_SRC_INTCOMP_ABBREVASSIGNWRITER_H
 #define DECOMPRESSOR_SRC_INTCOMP_ABBREVASSIGNWRITER_H
 
+#include <vector>
+
+#include "intcomp/AbbrevWriter.h"
 #include "intcomp/CompressionFlags.h"
 #include "intcomp/IntCountNode.h"
 #include "interp/IntStream.h"
 #include "interp/IntWriter.h"
 #include "utils/circular-vector.h"
-
-#include <vector>
 
 namespace wasm {
 
@@ -38,6 +39,7 @@ class AbbrevAssignWriter : public interp::Writer {
 
  public:
   AbbrevAssignWriter(CountNode::RootPtr Root,
+                     CountNode::PtrSet& Assignments,
                      std::shared_ptr<interp::IntStream> Output,
                      size_t BufSize,
                      interp::IntTypeFormat AbbrevFormat,

@@ -246,7 +246,7 @@ void IntCompressor::compress() {
                           MyFlags.TraceAbbreviationAssignmentsCollection);
   IntOutput = std::make_shared<IntStream>();
   TRACE_MESSAGE("Generating compressed integer stream");
-  if (!generateIntOutput())
+  if (!generateIntOutput(AbbrevAssignments))
     return;
   TRACE(size_t, "Number of integers in compressed output",
         IntOutput->getNumIntegers());
@@ -282,9 +282,9 @@ void IntCompressor::assignInitialAbbreviations(CountNode::PtrSet& Assignments) {
   }
 }
 
-bool IntCompressor::generateIntOutput() {
+bool IntCompressor::generateIntOutput(CountNode::PtrSet& Assignments) {
   auto Writer = std::make_shared<AbbrevAssignWriter>(
-      Root, IntOutput,
+      Root, Assignments, IntOutput,
       MyFlags.PatternLengthLimit * MyFlags.PatternLengthMultiplier,
       MyFlags.AbbrevFormat, !MyFlags.UseHuffmanEncoding, MyFlags);
   IntInterperter Interp(std::make_shared<IntReader>(Contents), Writer,
