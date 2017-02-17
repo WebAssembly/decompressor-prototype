@@ -59,14 +59,7 @@ class CountWriter : public interp::Writer {
   void addToUsageMap(decode::IntType Value);
 
   decode::StreamType getStreamType() const OVERRIDE;
-  bool writeUint8(uint8_t Value) OVERRIDE;
-  bool writeUint32(uint32_t Value) OVERRIDE;
-  bool writeUint64(uint64_t Value) OVERRIDE;
-  bool writeVarint32(int32_t Value) OVERRIDE;
-  bool writeVarint64(int64_t Value) OVERRIDE;
-  bool writeVaruint32(uint32_t Value) OVERRIDE;
   bool writeVaruint64(uint64_t Value) OVERRIDE;
-  bool writeValue(decode::IntType Value, const filt::Node* Format) OVERRIDE;
   bool writeHeaderValue(decode::IntType Value,
                         interp::IntTypeFormat Format) OVERRIDE;
   bool writeAction(const filt::SymbolNode* Action) OVERRIDE;

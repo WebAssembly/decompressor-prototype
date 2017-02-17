@@ -53,42 +53,7 @@ void CountWriter::addToUsageMap(IntType Value) {
     Frontier.push_back(TopNd);
 }
 
-bool CountWriter::writeUint8(uint8_t Value) {
-  addToUsageMap(Value);
-  return true;
-}
-
-bool CountWriter::writeUint32(uint32_t Value) {
-  addToUsageMap(Value);
-  return true;
-}
-
-bool CountWriter::writeUint64(uint64_t Value) {
-  addToUsageMap(Value);
-  return true;
-}
-
-bool CountWriter::writeVarint32(int32_t Value) {
-  addToUsageMap(Value);
-  return true;
-}
-
-bool CountWriter::writeVarint64(int64_t Value) {
-  addToUsageMap(Value);
-  return true;
-}
-
-bool CountWriter::writeVaruint32(uint32_t Value) {
-  addToUsageMap(Value);
-  return true;
-}
-
 bool CountWriter::writeVaruint64(uint64_t Value) {
-  addToUsageMap(Value);
-  return true;
-}
-
-bool CountWriter::writeValue(decode::IntType Value, const filt::Node*) {
   addToUsageMap(Value);
   return true;
 }

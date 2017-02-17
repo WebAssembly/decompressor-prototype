@@ -29,6 +29,30 @@ namespace interp {
 Writer::~Writer() {
 }
 
+bool Writer::writeUint8(uint8_t Value) {
+  return writeVaruint64(Value);
+}
+
+bool Writer::writeUint32(uint32_t Value) {
+  return writeVaruint64(Value);
+}
+
+bool Writer::writeUint64(uint64_t Value) {
+  return writeVaruint64(Value);
+}
+
+bool Writer::writeVarint32(int32_t Value) {
+  return writeVaruint64(Value);
+}
+
+bool Writer::writeVarint64(int64_t Value) {
+  return writeVaruint64(Value);
+}
+
+bool Writer::writeVaruint32(uint32_t Value) {
+  return writeVaruint64(Value);
+}
+
 void Writer::setMinimizeBlockSize(bool NewValue) {
   MinimizeBlockSize = NewValue;
 }

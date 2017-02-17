@@ -41,12 +41,12 @@ class Writer {
   virtual decode::StreamType getStreamType() const = 0;
   // Override the following as needed. These methods return false if the writes
   // failed. Default actions are to do nothing and return true.
-  virtual bool writeUint8(uint8_t Value) = 0;
-  virtual bool writeUint32(uint32_t Value) = 0;
-  virtual bool writeUint64(uint64_t Value) = 0;
-  virtual bool writeVarint32(int32_t Value) = 0;
-  virtual bool writeVarint64(int64_t Value) = 0;
-  virtual bool writeVaruint32(uint32_t Value) = 0;
+  virtual bool writeUint8(uint8_t Value);
+  virtual bool writeUint32(uint32_t Value);
+  virtual bool writeUint64(uint64_t Value);
+  virtual bool writeVarint32(int32_t Value);
+  virtual bool writeVarint64(int64_t Value);
+  virtual bool writeVaruint32(uint32_t Value);
   virtual bool writeVaruint64(uint64_t Value) = 0;
   virtual bool writeFreezeEof();
   virtual bool writeBinary(decode::IntType Value, const filt::Node* Encoding);
