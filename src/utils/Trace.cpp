@@ -127,6 +127,12 @@ void TraceClass::trace_value_label(charstring Label) {
   fprintf(File, "%s = ", Label);
 }
 
+FILE* TraceClass::tracePrefixInternal(const std::string& Message) {
+  indent();
+  fprintf(File, "%s", Message.c_str());
+  return File;
+}
+
 void TraceClass::traceMessageInternal(const std::string& Message) {
   indent();
   fprintf(File, "%s\n", Message.c_str());

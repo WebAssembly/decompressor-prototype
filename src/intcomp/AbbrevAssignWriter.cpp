@@ -28,36 +28,194 @@ using namespace utils;
 
 namespace intcomp {
 
+namespace {
+enum class ValueType { Abbreviation , Default , Loop };
+}  // end of anonymous namespace
+
+// Base class for assignment values to be written.
+class AbbrevAssignValue {
+  AbbrevAssignValue() = delete;
+  AbbrevAssignValue(const AbbrevAssignValue&) = delete;
+  AbbrevAssignValue& operator=(const AbbrevAssignValue&) = delete;
+
+ public:
+  virtual ~AbbrevAssignValue();
+  virtual void describe(FILE* Out) = 0;
+  ValueType getKind() const { return Kind; }
+
+  // The following define casting oeprations isa<>, dyn_cast<>, and cast<>
+  ValueType getRtClassId() const { return Kind; }
+  static bool implementsClass(ValueType Kind) { return true; }
+
+ protected:
+  ValueType Kind;
+  AbbrevAssignValue(ValueType Kind) : Kind(Kind) {}
+};
+
+AbbrevAssignValue::~AbbrevAssignValue() {}
+
+namespace {
+
+class AbbrevValue : public AbbrevAssignValue {
+  AbbrevValue() = delete;
+  AbbrevValue(const AbbrevValue&) = delete;
+  AbbrevValue& operator=(const AbbrevValue&);
+
+ public:
+  ~AbbrevValue() OVERRIDE;
+  void describe(FILE* Out) OVERRIDE;
+  static AbbrevValue* create(CountNode::Ptr Abbreviation);
+  CountNode::Ptr getAbbreviation() const { return Abbreviation; }
+  static bool implementsClass(ValueType Kind) { return Kind == ValueType::Abbreviation; }
+
+ private:
+  CountNode::Ptr Abbreviation;
+  explicit AbbrevValue(CountNode::Ptr Abbreviation)
+        : AbbrevAssignValue(ValueType::Abbreviation),
+          Abbreviation(Abbreviation) {}
+};
+
+
+AbbrevValue::~AbbrevValue() {}
+
+AbbrevValue* AbbrevValue::create(CountNode::Ptr Abbreviation) {
+  return new AbbrevValue(Abbreviation);
+}
+
+void AbbrevValue::describe(FILE* Out) {
+  fprintf(Out, "Abbrev: ");
+  Abbreviation->describe(Out);
+}
+
+class IntValue : public AbbrevAssignValue {
+  IntValue() = delete;
+  IntValue(const IntValue&) = delete;
+  IntValue& operator=(const IntValue&) = delete;
+
+ public:
+  ~IntValue() OVERRIDE;
+  IntType getValue() const { return Value; }
+  static bool implementsClass(ValueType Kind) { return Kind != ValueType::Abbreviation; }
+
+ protected:
+  IntValue(ValueType Kind, IntType Value)
+      : AbbrevAssignValue(Kind), Value(Value) {}
+ private:
+  const IntType Value;
+
+};
+
+IntValue::~IntValue() {}
+
+class DefaultValue : public IntValue {
+  DefaultValue() = delete;
+  DefaultValue(const DefaultValue&) = delete;
+  DefaultValue& operator=(const DefaultValue&) = delete;
+
+ public:
+  ~DefaultValue() OVERRIDE;
+  void describe(FILE* OUt) OVERRIDE;
+  static DefaultValue* create(IntType Value);
+  static bool implementsClass(ValueType Kind) { return Kind == ValueType::Default; }
+
+ private:
+  DefaultValue(IntType Value) : IntValue(ValueType::Default, Value) {}
+};
+
+DefaultValue::~DefaultValue() {}
+
+DefaultValue* DefaultValue::create(IntType Value) {
+  return new DefaultValue(Value);
+}
+
+void DefaultValue::describe(FILE* Out) {
+  fprintf(Out, "Default: %" PRIuMAX "\n", getValue());
+}
+
+class LoopValue : public IntValue {
+  LoopValue() = delete;
+  LoopValue(const LoopValue&) = delete;
+  LoopValue& operator=(const LoopValue&) = delete;
+
+ public:
+  ~LoopValue() OVERRIDE;
+  void describe(FILE* Out) OVERRIDE;
+  static LoopValue* create(size_t Value);
+  static bool implementsClass(ValueType Kind) { return Kind == ValueType::Loop; }
+
+ private:
+  LoopValue(decode::IntType Value) : IntValue(ValueType::Loop, Value) {}
+};
+
+LoopValue::~LoopValue() {}
+
+LoopValue* LoopValue::create(IntType Value) {
+  return new LoopValue(Value);
+}
+
+void LoopValue::describe(FILE* Out) {
+  fprintf(Out, "Size: %" PRIuMAX "\n", getValue());
+}
+
+} // end of anonymous namespace
+
 AbbrevAssignWriter::AbbrevAssignWriter(
     CountNode::RootPtr Root,
-    CountNode::PtrSet&,
+    CountNode::PtrSet& Assignments,
     std::shared_ptr<interp::IntStream> Output,
     size_t BufSize,
+#if 0
+    // TODO: Move this to be defined in CompressionFlags.
+#endif
     interp::IntTypeFormat AbbrevFormat,
     bool AssumeByteAlignment,
     const CompressionFlags& MyFlags)
     : MyFlags(MyFlags),
       Root(Root),
+#if 0
+      Assignments(Assignments),
+#endif
       Writer(Output),
       Buffer(BufSize),
+#if 0
       AbbrevFormat(AbbrevFormat),
+#endif
       AssumeByteAlignment(AssumeByteAlignment),
       ProgressCount(0) {
+#if 1
+  (void) AbbrevFormat;
+  (void) Assignments;
+#endif
   assert(Root->getDefaultSingle()->hasAbbrevIndex());
   assert(Root->getDefaultMultiple()->hasAbbrevIndex());
 }
 
 AbbrevAssignWriter::~AbbrevAssignWriter() {
+  clearValues();
+}
+
+void AbbrevAssignWriter::clearValues() {
+  for (AbbrevAssignValue* Value : Values)
+    delete Value;
+  Values.clear();
 }
 
 const char* AbbrevAssignWriter::getDefaultTraceName() const {
   return "AbbrevAssignWriter";
 }
 
-void AbbrevAssignWriter::forwardAbbrevValue(IntType Value) {
+void AbbrevAssignWriter::forwardAbbrev(CountNode::Ptr Abbrev) {
   flushDefaultValues();
-  TRACE(IntType, "Insert abbreviation", Value);
-  Writer.writeTypedValue(Value, AbbrevFormat);
+  forwardAbbrevAfterFlush(Abbrev);
+}
+
+void AbbrevAssignWriter::forwardAbbrevAfterFlush(CountNode::Ptr Abbrev) {
+  assert(Abbrev->hasAbbrevIndex());
+  TRACE_BLOCK({
+      TRACE_PREFIX("Insert ");
+      Abbrev->describe(getTrace().getFile());
+    });
+  Values.push_back(AbbrevValue::create(Abbrev));
 }
 
 void AbbrevAssignWriter::forwardOtherValue(IntType Value) {
@@ -82,14 +240,48 @@ bool AbbrevAssignWriter::writeVaruint64(uint64_t Value) {
 void AbbrevAssignWriter::alignIfNecessary() {
   if (AssumeByteAlignment)
     return;
-  assert(Root->getAlign()->hasAbbrevIndex());
-  forwardAbbrevValue(Root->getAlign()->getAbbrevIndex());
+  forwardAbbrev(Root->getAlign());
 }
 
 bool AbbrevAssignWriter::writeFreezeEof() {
   writeUntilBufferEmpty();
   flushDefaultValues();
   alignIfNecessary();
+  return flushValues();
+}
+
+bool AbbrevAssignWriter::flushValues() {
+  TRACE_MESSAGE("Flushing collected abbreviations");
+  for (AbbrevAssignValue* Value : Values) {
+    TRACE_BLOCK({
+        TRACE_PREFIX("Write ");
+        Value->describe(getTrace().getFile());
+      });
+    switch (Value->getKind()) {
+      default:
+        fprintf(stderr,
+                "Internal error found while flushing Abbreviation assignments\n");
+        return false;
+      case ValueType::Abbreviation: {
+        AbbrevValue* Abbrev = cast<AbbrevValue>(Value);
+#if 0
+        Writer.writeTypedValue(Abbrev->getAbbreviation()->getAbbrevIndex(), AbbrevFormat);
+#else
+        Writer.write(Abbrev->getAbbreviation()->getAbbrevIndex());
+#endif
+        break;
+      }
+      case ValueType::Default: {
+        DefaultValue* Default = cast<DefaultValue>(Value);
+        Writer.writeTypedValue(Default->getValue(), MyFlags.DefaultFormat);
+        break;
+      }
+      case ValueType::Loop: {
+        LoopValue* Loop = cast<LoopValue>(Value);
+        Writer.writeTypedValue(Loop->getValue(), MyFlags.LoopSizeFormat);
+      }
+    }
+  }
   return Writer.writeFreezeEof();
 }
 
@@ -103,14 +295,12 @@ bool AbbrevAssignWriter::writeAction(const filt::SymbolNode* Action) {
     case PredefinedSymbol::Block_enter:
       writeUntilBufferEmpty();
       flushDefaultValues();
-      assert(Root->getBlockEnter()->hasAbbrevIndex());
-      forwardAbbrevValue(Root->getBlockEnter()->getAbbrevIndex());
+      forwardAbbrev(Root->getBlockEnter());
       return true;
     case PredefinedSymbol::Block_exit:
       writeUntilBufferEmpty();
       flushDefaultValues();
-      assert(Root->getBlockExit()->hasAbbrevIndex());
-      forwardAbbrevValue(Root->getBlockExit()->getAbbrevIndex());
+      forwardAbbrev(Root->getBlockExit());
       return true;
     default:
       // There should not be any other actions!!
@@ -186,7 +376,7 @@ void AbbrevAssignWriter::writeFromBuffer() {
           Selections.clear();
           break;
         }
-        forwardAbbrevValue(IntAbbrev->getAbbrevIndex());
+        forwardAbbrev(Sel->getAbbreviation());
         popValuesFromBuffer(Length);
         Index += Length;
         break;
@@ -227,23 +417,19 @@ void AbbrevAssignWriter::flushDefaultValues() {
   });
 
   if (DefaultValues.size() == 1) {
-    IntType Abbrev = Root->getDefaultSingle()->getAbbrevIndex();
-    TRACE(IntType, "Insert single abbrev", Abbrev);
-    Writer.writeTypedValue(Abbrev, AbbrevFormat);
-    TRACE(IntType, "Value", DefaultValues[0]);
-    Writer.writeTypedValue(DefaultValues[0], MyFlags.DefaultFormat);
+    forwardAbbrevAfterFlush(Root->getDefaultSingle());
+    IntType Value = DefaultValues[0];
+    TRACE(IntType, "Value", Value);
+    Values.push_back(DefaultValue::create(Value));
     DefaultValues.clear();
     return;
   }
 
-  IntType Abbrev = Root->getDefaultMultiple()->getAbbrevIndex();
-  TRACE(IntType, "Insert multiple abbrev", Abbrev);
-  Writer.writeTypedValue(Abbrev, AbbrevFormat);
-  TRACE(size_t, "Number values", DefaultValues.size());
-  Writer.writeTypedValue(DefaultValues.size(), MyFlags.LoopSizeFormat);
-  for (const IntType V : DefaultValues) {
-    TRACE(IntType, "Value", V);
-    Writer.writeTypedValue(V, MyFlags.DefaultFormat);
+  forwardAbbrevAfterFlush(Root->getDefaultMultiple());
+  Values.push_back(LoopValue::create(DefaultValues.size()));
+  for (const IntType Value : DefaultValues) {
+    TRACE(IntType, "Value", Value);
+    Values.push_back(DefaultValue::create(Value));
   }
   DefaultValues.clear();
 }
