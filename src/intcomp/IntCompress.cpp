@@ -286,7 +286,7 @@ bool IntCompressor::generateIntOutput(CountNode::PtrSet& Assignments) {
   auto Writer = std::make_shared<AbbrevAssignWriter>(
       Root, Assignments, IntOutput,
       MyFlags.PatternLengthLimit * MyFlags.PatternLengthMultiplier,
-      MyFlags.AbbrevFormat, !MyFlags.UseHuffmanEncoding, MyFlags);
+      !MyFlags.UseHuffmanEncoding, MyFlags);
   IntInterperter Interp(std::make_shared<IntReader>(Contents), Writer,
                         MyFlags.MyInterpFlags, Symtab);
   if (MyFlags.TraceIntStreamGeneration)

@@ -43,7 +43,6 @@ class AbbrevAssignWriter : public interp::Writer {
                      CountNode::PtrSet& Assignments,
                      std::shared_ptr<interp::IntStream> Output,
                      size_t BufSize,
-                     interp::IntTypeFormat AbbrevFormat,
                      bool AssumeByteAlignment,
                      const CompressionFlags& MyFlags);
   ~AbbrevAssignWriter() OVERRIDE;
@@ -65,9 +64,6 @@ class AbbrevAssignWriter : public interp::Writer {
 #endif
   interp::IntWriter Writer;
   utils::circular_vector<decode::IntType> Buffer;
-#if 0
-  interp::IntTypeFormat AbbrevFormat;
-#endif
   std::vector<decode::IntType> DefaultValues;
   // Intermediate structure. Allows us to change encoding of
   // abbreviations once we know the actually usage counts.
