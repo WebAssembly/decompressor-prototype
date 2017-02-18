@@ -41,6 +41,7 @@ class AbbrevAssignWriter : public interp::Writer {
  public:
   AbbrevAssignWriter(CountNode::RootPtr Root,
                      CountNode::PtrSet& Assignments,
+                     utils::HuffmanEncoder::NodePtr& EncodingRoot,
                      std::shared_ptr<interp::IntStream> Output,
                      size_t BufSize,
                      bool AssumeByteAlignment,
@@ -59,9 +60,8 @@ class AbbrevAssignWriter : public interp::Writer {
  private:
   const CompressionFlags& MyFlags;
   CountNode::RootPtr Root;
-#if 0
   CountNode::PtrSet& Assignments;
-#endif
+  utils::HuffmanEncoder::NodePtr& EncodingRoot;
   interp::IntWriter Writer;
   utils::circular_vector<decode::IntType> Buffer;
   std::vector<decode::IntType> DefaultValues;
@@ -82,6 +82,7 @@ class AbbrevAssignWriter : public interp::Writer {
   void alignIfNecessary();
   bool flushValues();
   void clearValues();
+  void reassignAbbreviations();
 
   const char* getDefaultTraceName() const OVERRIDE;
 };

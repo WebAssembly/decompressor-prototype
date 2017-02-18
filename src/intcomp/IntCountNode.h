@@ -78,6 +78,10 @@ class CountNode : public std::enable_shared_from_this<CountNode> {
 
   virtual ~CountNode();
 
+  static utils::HuffmanEncoder::NodePtr assignAbbreviations(
+      PtrSet& Assignments,
+      const CompressionFlags& Flags);
+
   enum class Kind { Root, Block, Default, Align, Singleton, IntSequence };
   Kind getKind() const { return NodeKind; }
   size_t getCount() const { return Count; }

@@ -67,6 +67,7 @@ CompressionFlags::CompressionFlags()
       UseHuffmanEncoding(false),
       TrimOverriddenPatterns(false),
       CheckOverlapping(false),
+      ReassignAbbreviations(true),
       DefaultFormat(IntTypeFormat::Varint64),
       LoopSizeFormat(IntTypeFormat::Varuint64),
       TraceHuffmanAssignments(false),
@@ -272,19 +273,12 @@ void IntCompressor::assignInitialAbbreviations(CountNode::PtrSet& Assignments) {
   AbbreviationsCollector Collector(getRoot(), Assignments, MyFlags);
   if (MyFlags.TraceAssigningAbbreviations && hasTrace())
     Collector.setTrace(getTracePtr());
-  if (!MyFlags.UseHuffmanEncoding)
-    return Collector.assignAbbreviations();
-  EncodingRoot = Collector.assignHuffmanAbbreviations();
-  if (MyFlags.TraceHuffmanAssignments) {
-    fprintf(stderr, "Huffman assignments:\n");
-    constexpr bool Brief = false;
-    EncodingRoot->describe(stderr, Brief);
-  }
+  EncodingRoot = Collector.assignAbbreviations();
 }
 
 bool IntCompressor::generateIntOutput(CountNode::PtrSet& Assignments) {
   auto Writer = std::make_shared<AbbrevAssignWriter>(
-      Root, Assignments, IntOutput,
+      Root, Assignments, EncodingRoot, IntOutput,
       MyFlags.PatternLengthLimit * MyFlags.PatternLengthMultiplier,
       !MyFlags.UseHuffmanEncoding, MyFlags);
   IntInterperter Interp(std::make_shared<IntReader>(Contents), Writer,
