@@ -78,6 +78,14 @@ class CountNode : public std::enable_shared_from_this<CountNode> {
 
   virtual ~CountNode();
 
+  static utils::HuffmanEncoder::NodePtr assignAbbreviations(
+      PtrSet& Assignments,
+      const CompressionFlags& Flags);
+
+  static void describeNodes(FILE* Out, PtrSet& Nodes);
+  // Consumes the heap, printing out each node as it is consumed.
+  static void describeAndConsumeHeap(FILE* Out, HeapType* Heap);
+
   enum class Kind { Root, Block, Default, Align, Singleton, IntSequence };
   Kind getKind() const { return NodeKind; }
   size_t getCount() const { return Count; }
@@ -95,6 +103,10 @@ class CountNode : public std::enable_shared_from_this<CountNode> {
     return Abbrev != BAD_ABBREV_INDEX;
   }
   decode::IntType getAbbrevIndex() const;
+  utils::HuffmanEncoder::SymbolPtr getAbbrevSymbol() const {
+    return AbbrevSymbol;
+  }
+  size_t getAbbrevNumBits() const;
   bool hasAbbrevIndex() const;
   void clearAbbrevIndex();
   void setAbbrevIndex(utils::HuffmanEncoder::SymbolPtr Symbol);

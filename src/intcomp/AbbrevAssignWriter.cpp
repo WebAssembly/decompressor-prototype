@@ -174,22 +174,19 @@ void LoopValue::describe(FILE* Out) {
 AbbrevAssignWriter::AbbrevAssignWriter(
     CountNode::RootPtr Root,
     CountNode::PtrSet& Assignments,
+    HuffmanEncoder::NodePtr& EncodingRoot,
     std::shared_ptr<interp::IntStream> Output,
     size_t BufSize,
     bool AssumeByteAlignment,
     const CompressionFlags& MyFlags)
     : MyFlags(MyFlags),
       Root(Root),
-#if 0
       Assignments(Assignments),
-#endif
+      EncodingRoot(EncodingRoot),
       Writer(Output),
       Buffer(BufSize),
       AssumeByteAlignment(AssumeByteAlignment),
       ProgressCount(0) {
-#if 1
-  (void)Assignments;
-#endif
   assert(Root->getDefaultSingle()->hasAbbrevIndex());
   assert(Root->getDefaultMultiple()->hasAbbrevIndex());
 }
@@ -254,8 +251,38 @@ bool AbbrevAssignWriter::writeFreezeEof() {
   return flushValues();
 }
 
+void AbbrevAssignWriter::reassignAbbreviations() {
+  TRACE_METHOD("reassignAbbreviations");
+  // First clear usage counts.
+  CountNode::PtrVector Abbrevs;
+  for (CountNode::Ptr Nd : Assignments) {
+    Nd->setCount(0);
+    Nd->clearAbbrevIndex();
+    Abbrevs.push_back(Nd);
+  }
+  // Recompute usage counts.
+  for (AbbrevAssignValue* Value : Values)
+    if (auto* Val = dyn_cast<AbbrevValue>(Value))
+      Val->getAbbreviation()->increment();
+  // Now do the assignments.
+  Assignments.clear();
+  for (CountNode::Ptr& Nd : Abbrevs)
+    if (Nd->getCount() > 0)
+      Assignments.insert(Nd);
+  EncodingRoot = CountNode::assignAbbreviations(Assignments, MyFlags);
+  if (!MyFlags.TraceAbbreviationAssignments)
+    return;
+}
+
 bool AbbrevAssignWriter::flushValues() {
   TRACE_MESSAGE("Flushing collected abbreviations");
+  if (MyFlags.ReassignAbbreviations)
+    reassignAbbreviations();
+  if (MyFlags.TraceAbbreviationAssignments) {
+    fprintf(stderr, "abbreviation assignments:\n");
+    fprintf(stderr, "-------------------------\n");
+    CountNode::describeNodes(stderr, Assignments);
+  }
   for (AbbrevAssignValue* Value : Values) {
     TRACE_BLOCK({
       TRACE_PREFIX("Write ");
@@ -341,7 +368,7 @@ void AbbrevAssignWriter::writeFromBuffer() {
   // TODO(karlschimp): Figure out why TRACE macro can't be used!
   if (MyFlags.TraceAbbrevSelectionProgress != 0) {
     size_t Gap = MyFlags.TraceAbbrevSelectionProgress;
-    size_t Count = Writer.getIndex();
+    size_t Count = Values.size();
     while (Count >= ProgressCount + Gap) {
       ProgressCount += Gap;
       fprintf(stderr, "Progress: %" PRIuMAX "\n", uintmax_t(ProgressCount));

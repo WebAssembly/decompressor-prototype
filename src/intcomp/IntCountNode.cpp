@@ -55,6 +55,45 @@ using namespace utils;
 
 namespace intcomp {
 
+HuffmanEncoder::NodePtr CountNode::assignAbbreviations(
+    PtrSet& Assignments,
+    const CompressionFlags& Flags) {
+  HuffmanEncoder Encoder;
+  auto Heap = std::make_shared<CountNode::HeapType>(CompareLt);
+  for (CountNode::Ptr Nd : Assignments)
+    Nd->associateWithHeap(Heap->push(Nd));
+
+  while (!Heap->empty()) {
+    CountNode::Ptr Nd = Heap->top()->getValue();
+    Heap->pop();
+    Nd->setAbbrevIndex(Encoder.createSymbol(Nd->getCount()));
+  }
+  if (!Flags.UseHuffmanEncoding)
+    return HuffmanEncoder::NodePtr();
+  return Encoder.encodeSymbols();
+}
+
+void CountNode::describeNodes(FILE* Out, PtrSet& Nodes) {
+  fprintf(Out, "Describe nodes:\n");
+  size_t Count = 0;
+  for (CountNode::Ptr Nd : Nodes) {
+    ++Count;
+    fprintf(Out, "%8" PRIuMAX ": ", uintmax_t(Count));
+    Nd->describe(Out);
+  }
+}
+
+void CountNode::describeAndConsumeHeap(FILE* Out, HeapType* Heap) {
+  size_t Count = 0;
+  while (!Heap->empty()) {
+    CountNode::Ptr Nd = Heap->top()->getValue();
+    Heap->pop();
+    ++Count;
+    fprintf(Out, "%8" PRIuMAX ": ", uintmax_t(Count));
+    Nd->describe(Out);
+  }
+}
+
 // NOTE(karlschimpf): Created here because g++ version on Travis not happy
 // when used in initializer to heap.
 std::function<bool(CountNode::Ptr, CountNode::Ptr)> CountNode::CompareLt =

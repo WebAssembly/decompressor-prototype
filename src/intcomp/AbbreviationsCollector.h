@@ -19,9 +19,7 @@
 #ifndef DECOMPRESSOR_SRC_INTCOMP_ABBREVIATIONSCOLLECTOR_H
 #define DECOMPRESSOR_SRC_INTCOMP_ABBREVIATIONSCOLLECTOR_H
 
-#include "intcomp/CompressionFlags.h"
 #include "intcomp/CountNodeCollector.h"
-#include "utils/HuffmanEncoding.h"
 
 namespace wasm {
 
@@ -36,11 +34,9 @@ class AbbreviationsCollector : public CountNodeCollector {
   ~AbbreviationsCollector();
 
   // Does assignment based on maximizing weight. This will find the set of
-  // candidate patterns to use as abbreviations.
-  void assignAbbreviations();
-
-  // Same as assignAbbreviations, but does this based on Huffman encodings.
-  utils::HuffmanEncoder::NodePtr assignHuffmanAbbreviations();
+  // candidate patterns to use as abbreviations. Returns Huffman encoding
+  // of abbreviations if generated.
+  utils::HuffmanEncoder::NodePtr assignAbbreviations();
 
   utils::TraceClass& getTrace() { return *getTracePtr(); }
   std::shared_ptr<utils::TraceClass> getTracePtr();
@@ -50,9 +46,6 @@ class AbbreviationsCollector : public CountNodeCollector {
  private:
   CountNode::PtrSet& Assignments;
   const CompressionFlags& MyFlags;
-  std::shared_ptr<utils::HuffmanEncoder> Encoder;
-  utils::HuffmanEncoder::NodePtr HuffmanRoot;
-  utils::HuffmanEncoder::NodePtr Encoding;
   std::shared_ptr<utils::TraceClass> Trace;
   CountNode::PtrSet TrimmedNodes;
 

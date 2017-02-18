@@ -112,14 +112,7 @@ AbbrevSelection::AbbrevSelection(CountNode::Ptr Abbreviation,
 void AbbrevSelection::trace(TraceClass& TC,
                             charstring Name,
                             AbbrevSelection::Ptr Sel) {
-#if 0
-  TC.indent();
-  FILE* Out = TC.getFile();
-  TC.trace_value_label(Name);
-  fputc('\n', Out);
-#else
   TC.trace_message(Name);
-#endif
   std::vector<AbbrevSelection*> Stack;
   AbbrevSelection* Next = Sel.get();
   while (Next) {
@@ -127,11 +120,7 @@ void AbbrevSelection::trace(TraceClass& TC,
     Next = Next->Previous.get();
   }
   while (!Stack.empty()) {
-#if 0
-    Stack.back()->describe(TC.indentNewline());
-#else
     Stack.back()->describe(TC.trace_prefix(""));
-#endif
     Stack.pop_back();
   }
 }

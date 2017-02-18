@@ -246,7 +246,23 @@ int main(int Argc, const char* Argv[]) {
         MyCompressionFlags.TraceAbbreviationAssignments);
     Args.add(
         TraceAbbreviationAssignmentsFlag.setLongName("verbose=abbreviations")
-            .setDescription("Show (initial) abbreviation assignments"));
+            .setDescription("Show (final) abbreviation assignments"));
+
+    ArgsParser::Optional<bool> TraceInitialAbbreviationAssignmentsFlag(
+        MyCompressionFlags.TraceInitialAbbreviationAssignments);
+    Args.add(TraceInitialAbbreviationAssignmentsFlag
+                 .setLongName("verbose=initial-abbreviations")
+                 .setDescription(
+                     "Show initial abbreviation assignments before selecting "
+                     "patterns"));
+
+    ArgsParser::Toggle ReassignAbbreviationsFlag(
+        MyCompressionFlags.ReassignAbbreviations);
+    Args.add(ReassignAbbreviationsFlag.setShortName('r')
+                 .setLongName("reassign")
+                 .setDescription(
+                     "Toggle whether abbrevation are reassigned after "
+                     "selecting patterns"));
 
     ArgsParser::Optional<bool> TraceAbbreviationAssignmentsCollectionFlag(
         MyCompressionFlags.TraceAbbreviationAssignmentsCollection);

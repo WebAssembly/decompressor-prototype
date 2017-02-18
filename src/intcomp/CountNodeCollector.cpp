@@ -207,13 +207,7 @@ void CountNodeCollector::describe(FILE* Out) {
           uintmax_t(NumNodesReported), uintmax_t(WeightTotal),
           uintmax_t(WeightReported), uintmax_t(CountTotal),
           uintmax_t(CountReported));
-  size_t Count = 0;
-  while (!ValuesHeap->empty()) {
-    CountNode::HeapValueType NdPtr = popHeap();
-    ++Count;
-    fprintf(Out, "%8" PRIuMAX ": ", uintmax_t(Count));
-    NdPtr->describe(Out);
-  }
+  CountNode::describeAndConsumeHeap(Out, ValuesHeap.get());
 }
 
 }  // end of namespace intcomp

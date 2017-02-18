@@ -55,6 +55,7 @@ struct CompressionFlags {
   bool UseHuffmanEncoding;
   bool TrimOverriddenPatterns;
   bool CheckOverlapping;
+  bool ReassignAbbreviations;
   interp::IntTypeFormat DefaultFormat;
   interp::IntTypeFormat LoopSizeFormat;
 
@@ -74,6 +75,7 @@ struct CompressionFlags {
   bool TraceIntCountsCollection;
   bool TraceSequenceCounts;
   bool TraceSequenceCountsCollection;
+  bool TraceInitialAbbreviationAssignments;
   bool TraceAbbreviationAssignments;
   bool TraceAbbreviationAssignmentsCollection;
   bool TraceAssigningAbbreviations;

@@ -30,10 +30,7 @@ namespace intcomp {
 AbbreviationsCollector::AbbreviationsCollector(CountNode::RootPtr Root,
                                                CountNode::PtrSet& Assignments,
                                                const CompressionFlags& MyFlags)
-    : CountNodeCollector(Root),
-      Assignments(Assignments),
-      MyFlags(MyFlags),
-      Encoder(std::make_shared<HuffmanEncoder>()) {
+    : CountNodeCollector(Root), Assignments(Assignments), MyFlags(MyFlags) {
 }
 
 AbbreviationsCollector::~AbbreviationsCollector() {
@@ -49,7 +46,7 @@ std::shared_ptr<TraceClass> AbbreviationsCollector::getTracePtr() {
   return Trace;
 }
 
-void AbbreviationsCollector::assignAbbreviations() {
+HuffmanEncoder::NodePtr AbbreviationsCollector::assignAbbreviations() {
   TRACE_METHOD("assignAbbreviations");
   TRACE(uint64_t, "WeightCutoff", MyFlags.WeightCutoff);
   TrimmedNodes.clear();
@@ -102,22 +99,8 @@ void AbbreviationsCollector::assignAbbreviations() {
     addAbbreviation(Nd);
   }
   TrimmedNodes.clear();
-  // Now create abbreviation indices for selected abbreviations.
   clearHeap();
-  for (const CountNode::Ptr& Nd : Assignments)
-    pushHeap(Nd);
-  while (!ValuesHeap->empty()) {
-    CountNode::Ptr Nd = popHeap();
-    Nd->setAbbrevIndex(Encoder->createSymbol(Nd->getCount()));
-  }
-}
-
-HuffmanEncoder::NodePtr AbbreviationsCollector::assignHuffmanAbbreviations() {
-  // Start by extracting out candidates based on weight. Then use resulting
-  // selected patterns as alphabet for Huffman encoding.
-  assignAbbreviations();
-  HuffmanRoot = Encoder->encodeSymbols();
-  return HuffmanRoot;
+  return CountNode::assignAbbreviations(Assignments, MyFlags);
 }
 
 void AbbreviationsCollector::addAbbreviation(CountNode::Ptr Nd) {
