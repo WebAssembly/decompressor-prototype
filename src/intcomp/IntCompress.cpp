@@ -84,6 +84,7 @@ CompressionFlags::CompressionFlags()
       TraceIntCountsCollection(false),
       TraceSequenceCounts(false),
       TraceSequenceCountsCollection(false),
+      TraceInitialAbbreviationAssignments(false),
       TraceAbbreviationAssignments(false),
       TraceAbbreviationAssignmentsCollection(false),
       TraceAssigningAbbreviations(false),
@@ -242,7 +243,7 @@ void IntCompressor::compress() {
   CountNode::PtrSet AbbrevAssignments;
   assignInitialAbbreviations(AbbrevAssignments);
   zeroSmallUsageCounts();
-  if (MyFlags.TraceAbbreviationAssignments)
+  if (MyFlags.TraceInitialAbbreviationAssignments)
     describeAbbreviations(stderr,
                           MyFlags.TraceAbbreviationAssignmentsCollection);
   IntOutput = std::make_shared<IntStream>();

@@ -272,14 +272,17 @@ void AbbrevAssignWriter::reassignAbbreviations() {
   EncodingRoot = CountNode::assignAbbreviations(Assignments, MyFlags);
   if (!MyFlags.TraceAbbreviationAssignments)
     return;
-  fprintf(stderr, "Final abbreviation assignments:\n");
-  CountNode::describeNodes(stderr, Assignments);
 }
 
 bool AbbrevAssignWriter::flushValues() {
   TRACE_MESSAGE("Flushing collected abbreviations");
   if (MyFlags.ReassignAbbreviations)
     reassignAbbreviations();
+  if (MyFlags.TraceAbbreviationAssignments) {
+    fprintf(stderr, "abbreviation assignments:\n");
+    fprintf(stderr, "-------------------------\n");
+    CountNode::describeNodes(stderr, Assignments);
+  }
   for (AbbrevAssignValue* Value : Values) {
     TRACE_BLOCK({
       TRACE_PREFIX("Write ");

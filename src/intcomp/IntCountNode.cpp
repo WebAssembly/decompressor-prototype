@@ -74,8 +74,20 @@ HuffmanEncoder::NodePtr CountNode::assignAbbreviations(
 }
 
 void CountNode::describeNodes(FILE* Out, PtrSet& Nodes) {
+  fprintf(Out, "Describe nodes:\n");
   size_t Count = 0;
   for (CountNode::Ptr Nd : Nodes) {
+    ++Count;
+    fprintf(Out, "%8" PRIuMAX ": ", uintmax_t(Count));
+    Nd->describe(Out);
+  }
+}
+
+void CountNode::describeAndConsumeHeap(FILE* Out, HeapType* Heap) {
+  size_t Count = 0;
+  while (!Heap->empty()) {
+    CountNode::Ptr Nd = Heap->top()->getValue();
+    Heap->pop();
     ++Count;
     fprintf(Out, "%8" PRIuMAX ": ", uintmax_t(Count));
     Nd->describe(Out);

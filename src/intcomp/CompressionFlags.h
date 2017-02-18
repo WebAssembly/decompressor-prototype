@@ -75,6 +75,7 @@ struct CompressionFlags {
   bool TraceIntCountsCollection;
   bool TraceSequenceCounts;
   bool TraceSequenceCountsCollection;
+  bool TraceInitialAbbreviationAssignments;
   bool TraceAbbreviationAssignments;
   bool TraceAbbreviationAssignmentsCollection;
   bool TraceAssigningAbbreviations;
