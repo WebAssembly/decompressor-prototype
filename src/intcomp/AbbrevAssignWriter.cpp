@@ -161,7 +161,7 @@ class LoopValue : public IntValue {
 LoopValue::~LoopValue() {
 }
 
-LoopValue* LoopValue::create(IntType Value) {
+LoopValue* LoopValue::create(size_t Value) {
   return new LoopValue(Value);
 }
 
