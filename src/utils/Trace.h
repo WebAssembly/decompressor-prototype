@@ -26,6 +26,8 @@
 #define TRACE_METHOD(Name)
 #define TRACE_USING(trace, type, name, value)
 #define TRACE(type, name, value)
+#define TRACE_PREFIX_USING(trace, Message)
+#define TRACE_PREFIX(Message)
 #define TRACE_MESSAGE_USING(trace, Message)
 #define TRACE_MESSAGE(Message)
 #define TRACE_ENTER_USING(name, trace)
@@ -49,6 +51,13 @@
       (tracE).trace_##type((name), (value));  \
   } while (false)
 #define TRACE(type, name, value) TRACE_USING(getTrace(), type, name, value)
+#define TRACE_PREFIX_USING(trace, Message) \
+  do {                                     \
+    auto& tracE = (trace);                 \
+    if (tracE.getTraceProgress())          \
+      tracE.trace_prefix(Message);         \
+  } while (false)
+#define TRACE_PREFIX(Message) TRACE_PREFIX_USING(getTrace(), Message)
 #define TRACE_MESSAGE_USING(trace, Message) \
   do {                                      \
     auto& tracE = (trace);                  \
@@ -151,6 +160,12 @@ class TraceClass : public std::enable_shared_from_this<TraceClass> {
   FILE* indent();
   FILE* indentNewline();
   void trace_value_label(charstring Label);
+  FILE* trace_prefix(charstring Message) {
+    return tracePrefixInternal(Message);
+  }
+  FILE* trace_prefix(std::string Message) {
+    return tracePrefixInternal(Message);
+  }
   void trace_message(charstring Message) { traceMessageInternal(Message); }
   void trace_message(std::string Message) { traceMessageInternal(Message); }
   void trace_bool(charstring Name, bool Value) {
@@ -257,6 +272,7 @@ class TraceClass : public std::enable_shared_from_this<TraceClass> {
   std::vector<charstring> CallStack;
   std::vector<ContextPtr> ContextList;
 
+  FILE* tracePrefixInternal(const std::string& Message);
   void traceMessageInternal(const std::string& Message);
   void traceBoolInternal(charstring Name, bool Value);
   void traceCharInternal(charstring Name, char Ch);
