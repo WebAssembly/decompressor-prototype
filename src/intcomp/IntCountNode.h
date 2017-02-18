@@ -82,6 +82,8 @@ class CountNode : public std::enable_shared_from_this<CountNode> {
       PtrSet& Assignments,
       const CompressionFlags& Flags);
 
+  static void describeNodes(FILE* Out, PtrSet& Nodes);
+
   enum class Kind { Root, Block, Default, Align, Singleton, IntSequence };
   Kind getKind() const { return NodeKind; }
   size_t getCount() const { return Count; }

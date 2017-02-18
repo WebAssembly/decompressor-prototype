@@ -73,6 +73,15 @@ HuffmanEncoder::NodePtr CountNode::assignAbbreviations(
   return Encoder.encodeSymbols();
 }
 
+void CountNode::describeNodes(FILE* Out, PtrSet& Nodes) {
+  size_t Count = 0;
+  for (CountNode::Ptr Nd : Nodes) {
+    ++Count;
+    fprintf(Out, "%8" PRIuMAX ": ", uintmax_t(Count));
+    Nd->describe(Out);
+  }
+}
+
 // NOTE(karlschimpf): Created here because g++ version on Travis not happy
 // when used in initializer to heap.
 std::function<bool(CountNode::Ptr, CountNode::Ptr)> CountNode::CompareLt =

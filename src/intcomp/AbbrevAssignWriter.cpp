@@ -257,6 +257,7 @@ void AbbrevAssignWriter::reassignAbbreviations() {
   CountNode::PtrVector Abbrevs;
   for (CountNode::Ptr Nd : Assignments) {
     Nd->setCount(0);
+    Nd->clearAbbrevIndex();
     Abbrevs.push_back(Nd);
   }
   // Recompute usage counts.
@@ -269,6 +270,10 @@ void AbbrevAssignWriter::reassignAbbreviations() {
     if (Nd->getCount() > 0)
       Assignments.insert(Nd);
   EncodingRoot = CountNode::assignAbbreviations(Assignments, MyFlags);
+  if (!MyFlags.TraceAbbreviationAssignments)
+    return;
+  fprintf(stderr, "Final abbreviation assignments:\n");
+  CountNode::describeNodes(stderr, Assignments);
 }
 
 bool AbbrevAssignWriter::flushValues() {
