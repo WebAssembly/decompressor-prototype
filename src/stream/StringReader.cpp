@@ -22,18 +22,24 @@ namespace wasm {
 
 namespace decode {
 
-size_t StringReader::read(uint8_t* Buf, size_t Size) {
+StringReader::StringReader(std::string& Str) : Str(Str), Cursor(0) {
+}
+
+StringReader::~StringReader() {
+}
+
+AddressType StringReader::read(ByteType* Buf, AddressType Size) {
   if (Cursor >= Str.size())
     return 0;
-  size_t Available = Str.size() - Cursor;
+  AddressType Available = Str.size() - Cursor;
   if (Available > Size)
     Available = Size;
-  for (size_t i = 0; i < Available; ++i)
-    *(Buf++) = uint8_t(Str[Cursor++]);
+  for (AddressType i = 0; i < Available; ++i)
+    *(Buf++) = ByteType(Str[Cursor++]);
   return Available;
 }
 
-bool StringReader::write(uint8_t* Buf, size_t Size) {
+bool StringReader::write(ByteType* Buf, AddressType Size) {
   return false;
 }
 

@@ -17,25 +17,36 @@
 
 #include "stream/ReadBackedQueue.h"
 
+#include "stream/Page.h"
+#include "stream/RawStream.h"
+
 namespace wasm {
 
 namespace decode {
 
-bool ReadBackedQueue::readFill(size_t Address) {
+ReadBackedQueue::ReadBackedQueue(std::shared_ptr<RawStream> _Reader) {
+  assert(_Reader);
+  Reader = std::move(_Reader);
+}
+
+ReadBackedQueue::~ReadBackedQueue() {
+}
+
+bool ReadBackedQueue::readFill(AddressType Address) {
   // Double check that there isn't more to read.
   if (Address < LastPage->getMaxAddress())
     return true;
   if (EofFrozen)
     return false;
   while (Address >= LastPage->getMaxAddress()) {
-    size_t SpaceAvailable = LastPage->spaceRemaining();
+    AddressType SpaceAvailable = LastPage->spaceRemaining();
     // Create new page if current page full.
     if (SpaceAvailable == 0) {
       if (!appendPage())
         return false;
       SpaceAvailable = PageSize;
     }
-    size_t NumBytes = Reader->read(
+    AddressType NumBytes = Reader->read(
         LastPage->getByteAddress(PageAddress(Address)), SpaceAvailable);
     LastPage->incrementMaxAddress(NumBytes);
     if (NumBytes == 0) {

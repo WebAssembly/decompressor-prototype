@@ -16,6 +16,8 @@
 
 #include "stream/Cursor.h"
 
+#include "stream/BlockEob.h"
+#include "stream/Page.h"
 #include "stream/Queue.h"
 
 namespace wasm {

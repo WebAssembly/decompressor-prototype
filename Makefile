@@ -175,6 +175,7 @@ STRM_SRCS = \
 	ArrayReader.cpp \
 	BitReadCursor.cpp \
 	BitWriteCursor.cpp \
+	BlockEob.cpp \
 	FileReader.cpp \
 	FileWriter.cpp \
 	Cursor.cpp \
@@ -184,8 +185,6 @@ STRM_SRCS = \
 	Queue.cpp \
 	ReadCursor.cpp \
 	ReadBackedQueue.cpp \
-	StreamReader.cpp \
-	StreamWriter.cpp \
 	StringReader.cpp \
 	StringWriter.cpp \
 	WriteBackedQueue.cpp \
@@ -1046,7 +1045,6 @@ test-parser: $(TEST_EXECDIR)/TestParser
 
 test-raw-streams: $(TEST_EXECDIR)/TestRawStreams
 	$< -i $(TEST_DEFAULT_DF) | diff - $(TEST_DEFAULT_DF)
-	$< -i $(TEST_DEFAULT_DF) -s | diff - $(TEST_DEFAULT_DF)
 	@echo "*** test raw streams passed ***"
 
 .PHONY: test-raw-streams

@@ -17,6 +17,7 @@
 
 #include "stream/Pipe.h"
 
+#include "stream/Page.h"
 #include "stream/Queue.h"
 #include "stream/WriteCursor2ReadQueue.h"
 
@@ -29,17 +30,17 @@ class Pipe::PipeBackedQueue FINAL : public Queue {
   PipeBackedQueue& operator=(const PipeBackedQueue&) = delete;
   PipeBackedQueue() = delete;
 
-public:
+ public:
   PipeBackedQueue(Pipe& MyPipe);
   ~PipeBackedQueue();
 
-private:
+ private:
   Pipe& MyPipe;
   void dumpFirstPage() OVERRIDE;
 };
 
-Pipe::PipeBackedQueue::PipeBackedQueue(Pipe& MyPipe)
-    : Queue(), MyPipe(MyPipe) {}
+Pipe::PipeBackedQueue::PipeBackedQueue(Pipe& MyPipe) : Queue(), MyPipe(MyPipe) {
+}
 
 void Pipe::PipeBackedQueue::dumpFirstPage() {
   // TODO(karlschimpf) Optimize this!
@@ -51,13 +52,19 @@ void Pipe::PipeBackedQueue::dumpFirstPage() {
 Pipe::Pipe()
     : Input(std::make_shared<PipeBackedQueue>(*this)),
       Output(std::make_shared<Queue>()),
-      WritePos(utils::make_unique<WriteCursor2ReadQueue>(Output)) {}
+      WritePos(utils::make_unique<WriteCursor2ReadQueue>(Output)) {
+}
 
-Pipe::~Pipe() {}
+Pipe::~Pipe() {
+}
 
-std::shared_ptr<Queue> Pipe::getInput() const { return Input; }
+std::shared_ptr<Queue> Pipe::getInput() const {
+  return Input;
+}
 
-std::shared_ptr<Queue> Pipe::getOutput() const { return Output; }
+std::shared_ptr<Queue> Pipe::getOutput() const {
+  return Output;
+}
 
 Pipe::PipeBackedQueue::~PipeBackedQueue() {
   // NOTE: we must override the base destructor so that calls to dumpFirstPage

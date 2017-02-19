@@ -20,9 +20,12 @@
 #define DECOMPRESSOR_SRC_STREAM_READCURSOR_H
 
 #include "stream/Cursor.h"
-#include "utils/Trace.h"
 
 namespace wasm {
+
+namespace utils {
+class TraceClass;
+}  // end of namespace utils
 
 namespace decode {
 

@@ -17,38 +17,13 @@
 
 #include "stream/Queue.h"
 
+#include "stream/BlockEob.h"
+#include "stream/Page.h"
 #include "stream/PageCursor.h"
 
 namespace wasm {
 
 namespace decode {
-
-BlockEob::BlockEob(AddressType Address) : EobAddress(Address) {
-  init();
-}
-
-BlockEob::BlockEob(AddressType ByteAddr,
-                   const std::shared_ptr<BlockEob> EnclosingEobPtr)
-    : EobAddress(ByteAddr), EnclosingEobPtr(EnclosingEobPtr) {
-  init();
-}
-
-BlockEob::~BlockEob() {
-}
-
-void BlockEob::fail() {
-  BlockEob* Next = this;
-  while (Next) {
-    resetAddress(Next->EobAddress);
-    Next = Next->EnclosingEobPtr.get();
-  }
-}
-
-FILE* BlockEob::describe(FILE* File) const {
-  fprintf(File, "eob=");
-  describeAddress(File, EobAddress);
-  return File;
-}
 
 Queue::Queue()
     : MinPeekSize(32),
@@ -72,6 +47,22 @@ void Queue::close() {
 
 Queue::~Queue() {
   close();
+}
+
+AddressType Queue::currentSize() const {
+  return EofPtr->getEobAddress();
+}
+
+AddressType Queue::fillSize() const {
+  return LastPage->getMaxAddress();
+}
+
+AddressType Queue::actualSize() const {
+  return LastPage->getMaxAddress() - FirstPage->getMinAddress();
+}
+
+AddressType Queue::getEofAddress() const {
+  return EofPtr->getEobAddress();
 }
 
 void Queue::describe(FILE* Out) {
@@ -183,7 +174,8 @@ bool Queue::writeFill(AddressType Address, AddressType WantedSize) {
   return true;
 }
 
-std::shared_ptr<Page> Queue::readFillToPage(AddressType Index, AddressType& Address) {
+std::shared_ptr<Page> Queue::readFillToPage(AddressType Index,
+                                            AddressType& Address) {
   while (Index > LastPage->Index) {
     bool ReadFillNextPage = readFill(LastPage->getMinAddress() + PageSize);
     if (!ReadFillNextPage && Index > LastPage->Index) {
@@ -198,7 +190,8 @@ std::shared_ptr<Page> Queue::readFillToPage(AddressType Index, AddressType& Addr
   return getDefinedPage(Index, Address);
 }
 
-std::shared_ptr<Page> Queue::writeFillToPage(AddressType Index, AddressType& Address) {
+std::shared_ptr<Page> Queue::writeFillToPage(AddressType Index,
+                                             AddressType& Address) {
   while (Index > LastPage->Index) {
     bool WriteFillNextPage = writeFill(LastPage->getMinAddress(), PageSize);
     if (!WriteFillNextPage && Index > LastPage->Index) {
@@ -214,8 +207,8 @@ std::shared_ptr<Page> Queue::writeFillToPage(AddressType Index, AddressType& Add
 }
 
 AddressType Queue::readFromPage(AddressType& Address,
-                           AddressType WantedSize,
-                           PageCursor& Cursor) {
+                                AddressType WantedSize,
+                                PageCursor& Cursor) {
   // Start by read-filling if necessary.
   if (Address >= LastPage->getMaxAddress() && !readFill(Address))
     return 0;
@@ -230,8 +223,8 @@ AddressType Queue::readFromPage(AddressType& Address,
 }
 
 AddressType Queue::writeToPage(AddressType& Address,
-                          AddressType WantedSize,
-                          PageCursor& Cursor) {
+                               AddressType WantedSize,
+                               PageCursor& Cursor) {
   // Expand till page exists.
   if (!writeFill(Address, WantedSize))
     return 0;
@@ -270,7 +263,9 @@ bool Queue::isBroken(const PageCursor& C) const {
   return C.CurPage->getPageIndex() >= kErrorPageIndex;
 }
 
-AddressType Queue::read(AddressType& Address, uint8_t* ToBuf, AddressType WantedSize) {
+AddressType Queue::read(AddressType& Address,
+                        uint8_t* ToBuf,
+                        AddressType WantedSize) {
   AddressType Count = 0;
   PageCursor Cursor(this);
   while (WantedSize) {
@@ -286,7 +281,9 @@ AddressType Queue::read(AddressType& Address, uint8_t* ToBuf, AddressType Wanted
   return Count;
 }
 
-bool Queue::write(AddressType& Address, uint8_t* FromBuf, AddressType WantedSize) {
+bool Queue::write(AddressType& Address,
+                  uint8_t* FromBuf,
+                  AddressType WantedSize) {
   PageCursor Cursor(this);
   while (WantedSize) {
     AddressType FoundSize = writeToPage(Address, WantedSize, Cursor);

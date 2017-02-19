@@ -1,4 +1,4 @@
-// -*- C++ -*- */
+// -*- C++ -*-
 //
 // Copyright 2016 WebAssembly Community Group participants
 //
@@ -13,41 +13,41 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+///
 
-// Implements a string writer.
-
-#include "stream/StringWriter.h"
+#include "stream/BlockEob.h"
 
 namespace wasm {
 
 namespace decode {
 
-StringWriter::StringWriter(std::string& Str) : Str(Str), IsFrozen(false) {
+BlockEob::BlockEob(AddressType Address) : EobAddress(Address) {
+  init();
 }
 
-StringWriter::~StringWriter() {
+BlockEob::BlockEob(AddressType ByteAddr,
+                   const std::shared_ptr<BlockEob> EnclosingEobPtr)
+    : EobAddress(ByteAddr), EnclosingEobPtr(EnclosingEobPtr) {
+  init();
 }
 
-AddressType StringWriter::read(ByteType*, AddressType) {
-  return 0;
+BlockEob::~BlockEob() {
 }
 
-bool StringWriter::write(ByteType* Buf, AddressType Size) {
-  if (IsFrozen)
-    return false;
-  for (AddressType i = 0; i < Size; ++i)
-    Str.push_back(*(Buf++));
-  return true;
+void BlockEob::fail() {
+  BlockEob* Next = this;
+  while (Next) {
+    resetAddress(Next->EobAddress);
+    Next = Next->EnclosingEobPtr.get();
+  }
 }
 
-bool StringWriter::freeze() {
-  return IsFrozen = true;
+FILE* BlockEob::describe(FILE* File) const {
+  fprintf(File, "eob=");
+  describeAddress(File, EobAddress);
+  return File;
 }
 
-bool StringWriter::atEof() {
-  return IsFrozen;
-}
+}  // end of decode namespace
 
-}  // end of namespace decode
-
-}  // end of namespace wasm
+}  // end of wasm namespace

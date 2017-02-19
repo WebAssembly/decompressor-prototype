@@ -16,8 +16,8 @@
 
 // Defines the base class of a pointer to a byte stream for writing.
 
-#ifndef DECOMPRESSOR_SRC_STREAM_WRITECURSORBASE_H
-#define DECOMPRESSOR_SRC_STREAM_WRITECURSORBASE_H
+#ifndef DECOMPRESSOR_SRC_STREAM_WRITECURSORBASE_H_
+#define DECOMPRESSOR_SRC_STREAM_WRITECURSORBASE_H_
 
 #include "stream/Cursor.h"
 
@@ -33,10 +33,10 @@ class WriteCursorBase : public Cursor {
   WriteCursorBase(std::shared_ptr<Queue> Que);
   WriteCursorBase(StreamType Type, std::shared_ptr<Queue> Que);
   explicit WriteCursorBase(const WriteCursorBase& C);
-  WriteCursorBase(const Cursor& C, size_t StartAddress);
+  WriteCursorBase(const Cursor& C, AddressType StartAddress);
   ~WriteCursorBase() OVERRIDE;
   // Writes next byte. Fails if at end of file.
-  virtual void writeByte(uint8_t Byte);
+  virtual void writeByte(ByteType Byte);
 
   WriteCursorBase& operator=(const WriteCursorBase& C) {
     assign(C);
@@ -44,12 +44,12 @@ class WriteCursorBase : public Cursor {
   }
 
  protected:
-  void writeOneByte(uint8_t Byte);
-  virtual void writeFillWriteByte(uint8_t Byte) = 0;
+  void writeOneByte(ByteType Byte);
+  virtual void writeFillWriteByte(ByteType Byte) = 0;
 };
 
 }  // end of namespace decode
 
 }  // end of namespace wasm
 
-#endif  // DECOMPRESSOR_SRC_STREAM_WRITECURSORBASE_H
+#endif  // DECOMPRESSOR_SRC_STREAM_WRITECURSORBASE_H_

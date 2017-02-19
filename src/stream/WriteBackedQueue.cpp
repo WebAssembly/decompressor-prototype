@@ -14,12 +14,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
 #include "stream/WriteBackedQueue.h"
+
+#include "stream/Page.h"
+#include "stream/RawStream.h"
 
 namespace wasm {
 
 namespace decode {
+
+WriteBackedQueue::WriteBackedQueue(std::shared_ptr<RawStream> _Writer) {
+  assert(_Writer);
+  Writer = std::move(_Writer);
+}
 
 WriteBackedQueue::~WriteBackedQueue() {
   // NOTE: we must override the base destructor so that calls to dumpFirstPage
@@ -28,8 +35,8 @@ WriteBackedQueue::~WriteBackedQueue() {
 }
 
 void WriteBackedQueue::dumpFirstPage() {
-  size_t Address = 0;
-  size_t Size = FirstPage->getMaxAddress() - FirstPage->getMinAddress();
+  AddressType Address = 0;
+  AddressType Size = FirstPage->getMaxAddress() - FirstPage->getMinAddress();
   if (!Writer->write(FirstPage->getByteAddress(Address), Size))
     fail();
   Queue::dumpFirstPage();

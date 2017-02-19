@@ -47,7 +47,8 @@ BitWriteCursor::BitWriteCursor(const BitWriteCursor& C)
     : WriteCursor(C), CurWord(C.CurWord), NumBits(C.NumBits) {
 }
 
-BitWriteCursor::BitWriteCursor(const BitWriteCursor& C, AddressType StartAddress)
+BitWriteCursor::BitWriteCursor(const BitWriteCursor& C,
+                               AddressType StartAddress)
     : WriteCursor(C, StartAddress), CurWord(C.CurWord), NumBits(C.NumBits) {
 }
 

@@ -38,43 +38,15 @@
 #include <vector>
 
 #include "stream/Address.h"
-#include "stream/Page.h"
+//#include "stream/BlockEob.h"
 
 namespace wasm {
 
 namespace decode {
 
+class BlockEob;
+class Page;
 class PageCursor;
-
-// Holds the end of a block within a queue. The outermost block is
-// always defined as enclosing the entire queue. Note: EobBitAddress
-// is the extra bits in the next byte, efter EobAddress, when eob doesn't
-// align on a byte boundary (i.e. only applies to bit streams).
-class BlockEob : public std::enable_shared_from_this<BlockEob> {
-  BlockEob(const BlockEob&) = delete;
-  BlockEob& operator=(const BlockEob&) = delete;
-
- public:
-  explicit BlockEob(AddressType Address = kMaxEofAddress);
-  BlockEob(AddressType ByteAddr,
-           const std::shared_ptr<BlockEob> EnclosingEobPtr);
-  ~BlockEob();
-  AddressType& getEobAddress() { return EobAddress; }
-  void setEobAddress(const AddressType& Address) { EobAddress = Address; }
-  bool isGood() const { return isGoodAddress(EobAddress); }
-  bool isDefined() const { return isDefinedAddress(EobAddress); }
-  std::shared_ptr<BlockEob> getEnclosingEobPtr() const {
-    return EnclosingEobPtr;
-  }
-  void fail();
-  // For debugging.
-  FILE* describe(FILE* File) const;
-
- private:
-  AddressType EobAddress;
-  std::shared_ptr<BlockEob> EnclosingEobPtr;
-  void init() { assert(isGood()); }
-};
 
 class Queue : public std::enable_shared_from_this<Queue> {
   Queue(const Queue&) = delete;
@@ -97,27 +69,31 @@ class Queue : public std::enable_shared_from_this<Queue> {
 
   // Value unknown (returning maximum possible size) until frozen. When
   // frozen, returns the size of the buffer.
-  AddressType currentSize() { return EofPtr->getEobAddress(); }
+  AddressType currentSize() const;
 
-  AddressType fillSize() const { return LastPage->getMaxAddress(); }
+  AddressType fillSize() const;
 
   // Returns the actual size of the buffer (i.e. only those with pages still
   // in memory).
-  AddressType actualSize() const {
-    return LastPage->getMaxAddress() - FirstPage->getMinAddress();
-  }
+  AddressType actualSize() const;
+
+  AddressType getEofAddress() const;
 
   // Update Cursor to point to the given Address, and make (up to) WantedSize
   // elements available for reading. Returns the actual number of elements
   // available for reading. Note: Address will be moved to an error address
   // if an error occurs while reading.
-  AddressType readFromPage(AddressType& Address, AddressType WantedSize, PageCursor& Cursor);
+  AddressType readFromPage(AddressType& Address,
+                           AddressType WantedSize,
+                           PageCursor& Cursor);
 
   // Update Cursor to point to the given Address, and make (up to) WantedSize
   // elements available for writing. Returns the actual number of elements
   // available for writing. Note: Address will be moved to an error address
   // if an error occurs while writing.
-  AddressType writeToPage(AddressType& Address, AddressType WantedSize, PageCursor& Cursor);
+  AddressType writeToPage(AddressType& Address,
+                          AddressType WantedSize,
+                          PageCursor& Cursor);
 
   // Closes the queue (i.e. assumes all contents have been read/written).
   void close();
@@ -149,8 +125,6 @@ class Queue : public std::enable_shared_from_this<Queue> {
   // @param Size    The number of elements in the buffer to write.
   // @result        True if successful (i.e. not beyond eob address).
   bool write(AddressType& Address, uint8_t* Buffer, AddressType Size = 1);
-
-  AddressType getEofAddress() const { return EofPtr->getEobAddress(); }
 
   // Freezes eob of the queue. Not valid to read/write past the eob, once set.
   // Note: May change Address if queue is broken, or Address not valid.
@@ -192,11 +166,13 @@ class Queue : public std::enable_shared_from_this<Queue> {
   std::shared_ptr<Page> getReadPage(AddressType& Address) const;
   std::shared_ptr<Page> getWritePage(AddressType& Address) const;
   std::shared_ptr<Page> getCachedPage(AddressType& Address);
-  std::shared_ptr<Page> getDefinedPage(AddressType Index, AddressType& Address) const;
+  std::shared_ptr<Page> getDefinedPage(AddressType Index,
+                                       AddressType& Address) const;
   std::shared_ptr<Page> failThenGetErrorPage(AddressType& Address);
   std::shared_ptr<Page> getErrorPage();
   std::shared_ptr<Page> readFillToPage(AddressType Index, AddressType& Address);
-  std::shared_ptr<Page> writeFillToPage(AddressType Index, AddressType& Address);
+  std::shared_ptr<Page> writeFillToPage(AddressType Index,
+                                        AddressType& Address);
 
   bool isValidPageAddress(AddressType Address) {
     return PageIndex(Address) < PageMap.size();

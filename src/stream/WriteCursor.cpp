@@ -36,7 +36,7 @@ WriteCursor::WriteCursor(StreamType Type, std::shared_ptr<Queue> Que)
 WriteCursor::WriteCursor(const WriteCursor& C) : WriteCursorBase(C) {
 }
 
-WriteCursor::WriteCursor(const Cursor& C, size_t StartAddress)
+WriteCursor::WriteCursor(const Cursor& C, AddressType StartAddress)
     : WriteCursorBase(C, StartAddress) {
 }
 
@@ -46,7 +46,7 @@ WriteCursor::WriteCursor(const WriteCursorBase& C) : WriteCursorBase(C) {
 WriteCursor::~WriteCursor() {
 }
 
-void WriteCursor::writeFillWriteByte(uint8_t Byte) {
+void WriteCursor::writeFillWriteByte(ByteType Byte) {
   if (isIndexAtEndOfPage())
     writeFillBuffer();
   updateGuaranteedBeforeEob();

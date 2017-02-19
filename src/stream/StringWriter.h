@@ -16,12 +16,12 @@
 
 // Defines a string stream for reading.
 
-#ifndef DECOMPRESSOR_SRC_STREAM_STRINGWRITER_H
-#define DECOMPRESSOR_SRC_STREAM_STRINGWRITER_H
-
-#include "stream/RawStream.h"
+#ifndef DECOMPRESSOR_SRC_STREAM_STRINGWRITER_H_
+#define DECOMPRESSOR_SRC_STREAM_STRINGWRITER_H_
 
 #include <string>
+
+#include "stream/RawStream.h"
 
 namespace wasm {
 
@@ -33,11 +33,11 @@ class StringWriter : public RawStream {
   StringWriter& operator=(const StringWriter&) = delete;
 
  public:
-  StringWriter(std::string& Str) : Str(Str), IsFrozen(false) {}
-  ~StringWriter() {}
+  StringWriter(std::string& Str);
+  ~StringWriter();
 
-  size_t read(uint8_t* Buf, size_t Size = 1) OVERRIDE;
-  bool write(uint8_t* Buf, size_t Size = 1) OVERRIDE;
+  AddressType read(ByteType* Buf, AddressType Size = 1) OVERRIDE;
+  bool write(ByteType* Buf, AddressType Size = 1) OVERRIDE;
   bool freeze() OVERRIDE;
   bool atEof() OVERRIDE;
 
@@ -50,4 +50,4 @@ class StringWriter : public RawStream {
 
 }  // end of namespace wasm
 
-#endif  // DECOMPRESSOR_SRC_STREAM_STRINGWRITER_H
+#endif  // DECOMPRESSOR_SRC_STREAM_STRINGWRITER_H_

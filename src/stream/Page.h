@@ -62,7 +62,6 @@ class Page : public std::enable_shared_from_this<Page> {
   friend class Queue;
 
  public:
-
   Page(AddressType PageIndex);
   AddressType spaceRemaining() const;
   AddressType getPageIndex() const { return Index; }
@@ -70,7 +69,9 @@ class Page : public std::enable_shared_from_this<Page> {
   AddressType getMaxAddress() const { return MaxAddress; }
   AddressType getPageSize() const { return MaxAddress - MinAddress; }
   void setMaxAddress(AddressType NewValue) { MaxAddress = NewValue; }
-  void incrementMaxAddress(AddressType Increment = 1) { MaxAddress += Increment; }
+  void incrementMaxAddress(AddressType Increment = 1) {
+    MaxAddress += Increment;
+  }
   ByteType getByte(AddressType i) const { return Buffer[i]; }
   ByteType* getByteAddress(AddressType i) { return &Buffer[i]; }
 

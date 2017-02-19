@@ -19,8 +19,8 @@
 // beyond defined results, so that the corresponding read cursors can
 // assume all contents is defined.
 
-#ifndef DECOMPRESSOR_SRC_STREAM_WRITECURSOR2READQUEUE_H
-#define DECOMPRESSOR_SRC_STREAM_WRITECURSOR2READQUEUE_H
+#ifndef DECOMPRESSOR_SRC_STREAM_WRITECURSOR2READQUEUE_H_
+#define DECOMPRESSOR_SRC_STREAM_WRITECURSOR2READQUEUE_H_
 
 #include "stream/WriteCursorBase.h"
 
@@ -32,28 +32,24 @@ class WriteCursor2ReadQueue FINAL : public WriteCursorBase {
  public:
   // Note: The nullary write cursor should not be used until it has been
   // assigned a value.
-  WriteCursor2ReadQueue() : WriteCursorBase() {}
-
-  WriteCursor2ReadQueue(std::shared_ptr<Queue> Que)
-      : WriteCursorBase(StreamType::Byte, Que) {}
-
-  WriteCursor2ReadQueue(StreamType Type, std::shared_ptr<Queue> Que)
-      : WriteCursorBase(Type, Que) {}
-
-  explicit WriteCursor2ReadQueue(const WriteCursor2ReadQueue& C)
-      : WriteCursorBase(C) {}
-
-  WriteCursor2ReadQueue(const Cursor& C, size_t StartAddress)
-      : WriteCursorBase(C, StartAddress) {}
-
+  WriteCursor2ReadQueue();
+  WriteCursor2ReadQueue(std::shared_ptr<Queue> Que);
+  WriteCursor2ReadQueue(StreamType Type, std::shared_ptr<Queue> Que);
+  explicit WriteCursor2ReadQueue(const WriteCursor2ReadQueue& C);
+  WriteCursor2ReadQueue(const Cursor& C, AddressType StartAddress);
   ~WriteCursor2ReadQueue() OVERRIDE;
 
+  WriteCursor2ReadQueue& operator=(const WriteCursor2ReadQueue& C) {
+    WriteCursorBase::assign(C);
+    return *this;
+  }
+
  protected:
-  void writeFillWriteByte(uint8_t Byte) OVERRIDE;
+  void writeFillWriteByte(ByteType Byte) OVERRIDE;
 };
 
 }  // end of namespace decode
 
 }  // end of namespace wasm
 
-#endif  // DECOMPRESSOR_SRC_STREAM_WRITECURSOR2READQUEUE_H
+#endif  // DECOMPRESSOR_SRC_STREAM_WRITECURSOR2READQUEUE_H_

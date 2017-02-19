@@ -16,8 +16,8 @@
 
 // Defines a pointer to a byte stream for writing.
 
-#ifndef DECOMPRESSOR_SRC_STREAM_WRITECURSOR_H
-#define DECOMPRESSOR_SRC_STREAM_WRITECURSOR_H
+#ifndef DECOMPRESSOR_SRC_STREAM_WRITECURSOR_H_
+#define DECOMPRESSOR_SRC_STREAM_WRITECURSOR_H_
 
 #include "stream/WriteCursorBase.h"
 
@@ -33,7 +33,7 @@ class WriteCursor : public WriteCursorBase {
   WriteCursor(std::shared_ptr<Queue> Que);
   WriteCursor(StreamType Type, std::shared_ptr<Queue> Que);
   explicit WriteCursor(const WriteCursor& C);
-  WriteCursor(const Cursor& C, size_t StartAddress);
+  WriteCursor(const Cursor& C, AddressType StartAddress);
   WriteCursor(const WriteCursorBase& C);
   ~WriteCursor() OVERRIDE;
 
@@ -43,11 +43,11 @@ class WriteCursor : public WriteCursorBase {
   }
 
  protected:
-  void writeFillWriteByte(uint8_t Byte) OVERRIDE;
+  void writeFillWriteByte(ByteType Byte) OVERRIDE;
 };
 
 }  // end of namespace decode
 
 }  // end of namespace wasm
 
-#endif  // DECOMPRESSOR_SRC_STREAM_WRITECURSOR_H
+#endif  // DECOMPRESSOR_SRC_STREAM_WRITECURSOR_H_
