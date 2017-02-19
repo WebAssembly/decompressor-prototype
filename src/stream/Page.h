@@ -47,6 +47,7 @@
 #ifndef DECOMPRESSOR_SRC_STREAM_PAGE_H_
 #define DECOMPRESSOR_SRC_STREAM_PAGE_H_
 
+#include "stream/Address.h"
 #include "stream/RawStream.h"
 
 namespace wasm {
@@ -62,30 +63,22 @@ class Page : public std::enable_shared_from_this<Page> {
   friend class Queue;
 
  public:
-  static constexpr size_t SizeLog2 =
-#ifdef WASM_DECODE_PAGE_SIZE
-      WASM_DECODE_PAGE_SIZE
-#else
-      16
-#endif
-      ;
-  static constexpr size_t Size = 1 << SizeLog2;
-  static constexpr size_t Mask = Size - 1;
-
+#if 0
   // Page index associated with address in queue.
   static constexpr size_t index(size_t Address) {
-    return Address >> Page::SizeLog2;
+    return Address >> PageSizeLog2;
   }
 
   // Returns address within a Page that refers to address.
   static constexpr size_t address(size_t Address) {
-    return Address & Page::Mask;
+    return Address & PageMask;
   }
 
   // Returns the minimum address for a page index.
   static constexpr size_t minAddressForPage(size_t PageIndex) {
     return PageIndex << SizeLog2;
   }
+#endif
 
   Page(size_t PageIndex);
   size_t spaceRemaining() const;
@@ -103,7 +96,7 @@ class Page : public std::enable_shared_from_this<Page> {
 
  protected:
   // The contents of the page.
-  uint8_t Buffer[Page::Size];
+  uint8_t Buffer[PageSize];
   // The page index of the page.
   size_t Index;
   // Note: Buffer address range is [MinAddress, MaxAddress).

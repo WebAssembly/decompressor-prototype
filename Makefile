@@ -171,6 +171,7 @@ STRM_OBJDIR = $(OBJDIR)/stream
 STRM_OBJDIR_BOOT = $(OBJDIR_BOOT)/stream
 
 STRM_SRCS = \
+	Address.cpp \
 	ArrayReader.cpp \
 	BitReadCursor.cpp \
 	BitWriteCursor.cpp \

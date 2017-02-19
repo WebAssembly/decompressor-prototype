@@ -25,13 +25,13 @@ Page::Page(size_t PageIndex)
     : Index(PageIndex),
       MinAddress(minAddressForPage(PageIndex)),
       MaxAddress(minAddressForPage(PageIndex)) {
-  std::memset(&Buffer, 0, Page::Size);
+  std::memset(&Buffer, 0, PageSize);
 }
 
 size_t Page::spaceRemaining() const {
   return MinAddress == MaxAddress
-             ? Page::Size
-             : Page::Size - (Page::address(MaxAddress - 1) + 1);
+             ? PageSize
+             : PageSize - (PageAddress(MaxAddress - 1) + 1);
 }
 
 FILE* Page::describe(FILE* File) {
@@ -41,17 +41,17 @@ FILE* Page::describe(FILE* File) {
   return File;
 }
 
-#if 0
-PageCursor::PageCursor(Queue* Que)
-    : CurPage(Que->FirstPage), CurAddress(Que->FirstPage->getMinAddress()) {
-  assert(CurPage);
-}
-
 void describePage(FILE* File, Page* Pg) {
   if (Pg == nullptr)
     fprintf(File, " nullptr");
   else
     Pg->describe(File);
+}
+
+#if 0
+PageCursor::PageCursor(Queue* Que)
+    : CurPage(Que->FirstPage), CurAddress(Que->FirstPage->getMinAddress()) {
+  assert(CurPage);
 }
 
 FILE* PageCursor::describe(FILE* File, bool IncludePage) {

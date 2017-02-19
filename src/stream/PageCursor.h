@@ -47,116 +47,39 @@
 #ifndef DECOMPRESSOR_SRC_STREAM_PAGECURSOR_H_
 #define DECOMPRESSOR_SRC_STREAM_PAGECURSOR_H_
 
-#include "stream/Page.h"
+#include "utils/Defs.h"
 
 namespace wasm {
 
 namespace decode {
 
-#if 0
+class Page;
 class Queue;
 
-class Page : public std::enable_shared_from_this<Page> {
-  Page() = delete;
-  Page(const Page&) = delete;
-  Page& operator=(const Page&) = delete;
-  friend class Queue;
-
- public:
-  static constexpr size_t SizeLog2 =
-#ifdef WASM_DECODE_PAGE_SIZE
-      WASM_DECODE_PAGE_SIZE
-#else
-      16
-#endif
-      ;
-  static constexpr size_t Size = 1 << SizeLog2;
-  static constexpr size_t Mask = Size - 1;
-
-  // Page index associated with address in queue.
-  static constexpr size_t index(size_t Address) {
-    return Address >> Page::SizeLog2;
-  }
-
-  // Returns address within a Page that refers to address.
-  static constexpr size_t address(size_t Address) {
-    return Address & Page::Mask;
-  }
-
-  // Returns the minimum address for a page index.
-  static constexpr size_t minAddressForPage(size_t PageIndex) {
-    return PageIndex << SizeLog2;
-  }
-
-  Page(size_t PageIndex);
-  size_t spaceRemaining() const;
-  size_t getPageIndex() const { return Index; }
-  size_t getMinAddress() const { return MinAddress; }
-  size_t getMaxAddress() const { return MaxAddress; }
-  size_t getPageSize() const { return MaxAddress - MinAddress; }
-  void setMaxAddress(size_t NewValue) { MaxAddress = NewValue; }
-  void incrementMaxAddress(size_t Increment = 1) { MaxAddress += Increment; }
-  uint8_t getByte(size_t i) const { return Buffer[i]; }
-  uint8_t* getByteAddress(size_t i) { return &Buffer[i]; }
-
-  // For debugging only.
-  FILE* describe(FILE* File);
-
- protected:
-  // The contents of the page.
-  uint8_t Buffer[Page::Size];
-  // The page index of the page.
-  size_t Index;
-  // Note: Buffer address range is [MinAddress, MaxAddress).
-  size_t MinAddress;
-  size_t MaxAddress;
-  std::shared_ptr<Page> Next;
-};
-
-void describePage(FILE* File, Page* Pg);
-#endif
-
 class PageCursor {
+  PageCursor& operator=(const PageCursor&) = delete;
   friend class Queue;
 
  public:
-  PageCursor() : CurAddress(0) {}
+  PageCursor();
   PageCursor(Queue* Que);
-  PageCursor(std::shared_ptr<Page> CurPage, size_t CurAddress)
-      : CurPage(CurPage), CurAddress(CurAddress) {
-    assert(CurPage);
-  }
-  PageCursor(const PageCursor& PC)
-      : CurPage(PC.CurPage), CurAddress(PC.CurAddress) {
-    //    assert(CurPage);
-  }
-  PageCursor& operator=(const PageCursor& C) {
-    CurPage = C.CurPage;
-    CurAddress = C.CurAddress;
-    return *this;
-  }
-  size_t getMinAddress() const {
-    return CurPage ? CurPage->getMinAddress() : 0;
-  }
-  size_t getMaxAddress() const {
-    return CurPage ? CurPage->getMaxAddress() : 0;
-  }
-  bool isValidPageAddress(size_t Address) {
-    return getMinAddress() <= Address && Address < getMaxAddress();
-  }
+  PageCursor(std::shared_ptr<Page> CurPage, size_t CurAddress);
+  PageCursor(const PageCursor& PC);
+  ~PageCursor();
+  void assign(const PageCursor& C);
+  void swap(PageCursor& C);
+
+  size_t getMinAddress() const;
+  size_t getMaxAddress() const;
+  bool isValidPageAddress(size_t Address);
   void setCurAddress(size_t NewAddress) { CurAddress = NewAddress; }
   size_t getCurAddress() const { return CurAddress; }
-  size_t getRelativeAddress() const {
-    return CurAddress - CurPage->getMinAddress();
-  }
-  void setMaxAddress(size_t Address) { CurPage->setMaxAddress(Address); }
-  bool isIndexAtEndOfPage() const { return getCurAddress() == getMaxAddress(); }
-  uint8_t* getBufferPtr() {
-    assert(CurPage);
-    return CurPage->getByteAddress(getRelativeAddress());
-  }
+  size_t getRelativeAddress() const;
+  void setMaxAddress(size_t Address);
+  bool isIndexAtEndOfPage() const;
+  uint8_t* getBufferPtr();
   // For debugging only.
-  Page* getCurPage() const { return CurPage.get(); }
+  Page* getCurPage() const;
   FILE* describe(FILE* File, bool IncludePage = false);
 
  protected:

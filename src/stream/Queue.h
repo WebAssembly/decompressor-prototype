@@ -37,6 +37,7 @@
 
 #include <vector>
 
+#include "stream/Address.h"
 #include "stream/Page.h"
 
 namespace wasm {
@@ -44,28 +45,6 @@ namespace wasm {
 namespace decode {
 
 class PageCursor;
-
-// Note: We reserve the last page to be an "error" page. This allows us to
-// guarantee that read/write cursors are always associated with a (defined)
-// page.
-static constexpr size_t kMaxEofAddress = ~size_t(0) << Page::SizeLog2;
-static constexpr size_t kMaxPageIndex = Page::index(kMaxEofAddress);
-static constexpr size_t kErrorPageAddress = kMaxEofAddress + 1;
-static constexpr size_t kErrorPageIndex = Page::index(kErrorPageAddress);
-static constexpr size_t kUndefinedAddress = std::numeric_limits<size_t>::max();
-
-typedef size_t AddressType;
-
-inline bool isGoodAddress(AddressType Addr) {
-  return Addr <= kMaxEofAddress;
-}
-inline bool isDefinedAddress(AddressType Addr) {
-  return Addr != kUndefinedAddress;
-}
-inline void resetAddress(AddressType& Addr) {
-  Addr = 0;
-}
-void describeAddress(FILE* File, AddressType Addr);
 
 // Holds the end of a block within a queue. The outermost block is
 // always defined as enclosing the entire queue. Note: EobBitAddress
@@ -178,7 +157,7 @@ class Queue : public std::enable_shared_from_this<Queue> {
   void freezeEof(size_t& Address);
 
   bool isBroken(const PageCursor& C) const;
-  bool isEofFrozen();
+  bool isEofFrozen() const { return EofFrozen; }
   bool isGood() const { return Status == StatusValue::Good; }
 
   const std::shared_ptr<BlockEob>& getEofPtr() const { return EofPtr; }
@@ -220,7 +199,7 @@ class Queue : public std::enable_shared_from_this<Queue> {
   std::shared_ptr<Page> writeFillToPage(size_t Index, size_t& Address);
 
   bool isValidPageAddress(size_t Address) {
-    return Page::index(Address) < PageMap.size();
+    return PageIndex(Address) < PageMap.size();
   }
 
   // Dumps and deletes the first page.  Note: Dumping only occurs if a

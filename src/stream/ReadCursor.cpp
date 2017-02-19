@@ -16,6 +16,8 @@
 
 #include "stream/ReadCursor.h"
 
+#include "stream/Queue.h"
+
 namespace wasm {
 
 using namespace utils;
@@ -74,7 +76,7 @@ size_t ReadCursor::advance(size_t Distance) {
   size_t WantedAddress = CurAddress + Distance;
   size_t DistanceMoved = 0;
   while (CurAddress < WantedAddress && CurAddress < Que->getEofAddress()) {
-    size_t Size = Que->readFromPage(CurAddress, Page::Size, *this);
+    size_t Size = Que->readFromPage(CurAddress, PageSize, *this);
     if (Size == 0)
       break;
     CurAddress += Size;

@@ -19,6 +19,8 @@
 
 #include "stream/BitReadCursor.h"
 
+#include "stream/Page.h"
+
 namespace wasm {
 
 namespace decode {

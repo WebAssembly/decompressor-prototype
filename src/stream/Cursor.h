@@ -19,15 +19,16 @@
 #ifndef DECOMPRESSOR_SRC_STREAM_CURSOR_H
 #define DECOMPRESSOR_SRC_STREAM_CURSOR_H
 
+#include "stream/Address.h"
 #include "stream/PageCursor.h"
-#include "stream/Queue.h"
 #include "utils/Trace.h"
 
 namespace wasm {
 
 namespace decode {
 
-class Cursor;
+class BlockEob;
+class Queue;
 
 class Cursor : public PageCursor {
   Cursor& operator=(const Cursor&) = delete;
@@ -50,16 +51,16 @@ class Cursor : public PageCursor {
   void swap(Cursor& C);
   void assign(const Cursor& C);
   StreamType getType() const { return Type; }
-  bool isQueueGood() const { return Que->isGood(); }
-  bool isBroken() const { return Que->isBroken(*this); }
-  std::shared_ptr<Queue> getQueue() { return Que; }
-  bool isEofFrozen() const { return Que->isEofFrozen(); }
+  bool isQueueGood() const;
+  bool isBroken() const;
+  std::shared_ptr<Queue> getQueue();
+  bool isEofFrozen() const;
   virtual bool atEof() const;
-  size_t getEofAddress() const { return Que->getEofAddress(); }
-  AddressType& getEobAddress() const { return EobPtr->getEobAddress(); }
-  void freezeEof() { Que->freezeEof(CurAddress); }
+  size_t getEofAddress() const;
+  AddressType& getEobAddress() const;
+  void freezeEof();
   void close();
-  size_t fillSize() { return Que->fillSize(); }
+  size_t fillSize();
   size_t getAddress() const { return CurAddress; }
 
   // For debugging.
@@ -92,7 +93,7 @@ class Cursor : public PageCursor {
 
   // Creates new pages in buffer so that writes can occur. WantedSize is
   // a hint of the expecte growth.
-  void writeFillBuffer(size_t WantedSize = Page::Size);
+  void writeFillBuffer(size_t WantedSize = PageSize);
 
   void fail();
 };
