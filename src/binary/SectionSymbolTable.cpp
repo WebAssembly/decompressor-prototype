@@ -20,11 +20,21 @@
 
 #include "binary/SectionSymbolTable.h"
 
-using namespace wasm::decode;
+#include "sexp/Ast.h"
 
 namespace wasm {
 
+using namespace decode;
+
 namespace filt {
+
+SectionSymbolTable::SectionSymbolTable(std::shared_ptr<SymbolTable> Symtab)
+    : Symtab(Symtab) {
+}
+
+void SectionSymbolTable::addSymbol(const std::string& Name) {
+  addSymbol(Symtab->getSymbolDefinition(Name));
+}
 
 void SectionSymbolTable::addSymbol(SymbolNode* Sym) {
   if (Sym->getPredefinedSymbol() != PredefinedSymbol::Unknown)
@@ -34,6 +44,16 @@ void SectionSymbolTable::addSymbol(SymbolNode* Sym) {
     SymbolLookup[Sym] = Index;
     IndexLookup.push_back(Sym);
   }
+}
+
+void SectionSymbolTable::clear() {
+  Symtab->clear();
+  SymbolLookup.clear();
+  IndexLookup.clear();
+}
+
+void SectionSymbolTable::install(Node* Root) {
+  Symtab->install(Root);
 }
 
 void SectionSymbolTable::installSymbols(const Node* Nd) {
