@@ -21,8 +21,6 @@
 #define DECOMPRESSOR_SRC_STREAM_RAWSTREAM_H
 
 #include "utils/Defs.h"
-#include <cstring>
-#include <memory>
 
 namespace wasm {
 

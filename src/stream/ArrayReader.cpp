@@ -31,9 +31,7 @@ size_t ArrayReader::read(uint8_t* Buf, size_t Size) {
   return ActualSize;
 }
 
-bool ArrayReader::write(uint8_t* Buf, size_t Size) {
-  (void)Buf;
-  (void)Size;
+bool ArrayReader::write(uint8_t*, size_t) {
   return false;
 }
 

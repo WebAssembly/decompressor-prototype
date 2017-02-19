@@ -22,7 +22,44 @@ using namespace utils;
 
 namespace decode {
 
+Cursor::TraceContext::TraceContext(Cursor& Pos) : Pos(Pos) {
+}
 Cursor::TraceContext::~TraceContext() {
+}
+
+Cursor::Cursor(StreamType Type, std::shared_ptr<Queue> Que)
+    : PageCursor(Que->FirstPage, Que->FirstPage->getMinAddress()),
+      Type(Type),
+      Que(Que),
+      EobPtr(Que->getEofPtr()) {
+  updateGuaranteedBeforeEob();
+}
+
+Cursor::Cursor(const Cursor& C)
+    : PageCursor(C),
+      Type(C.Type),
+      Que(C.Que),
+      EobPtr(C.EobPtr),
+      CurByte(C.CurByte) {
+  updateGuaranteedBeforeEob();
+}
+
+Cursor::Cursor(const Cursor& C, size_t StartAddress, bool ForRead)
+    : PageCursor(C),
+      Type(C.Type),
+      Que(C.Que),
+      EobPtr(C.EobPtr),
+      CurByte(C.CurByte) {
+  CurPage = ForRead ? Que->getReadPage(StartAddress)
+                    : Que->getWritePage(StartAddress);
+  CurAddress = StartAddress;
+  updateGuaranteedBeforeEob();
+}
+
+Cursor::Cursor() : PageCursor(), Type(StreamType::Byte) {
+}
+
+Cursor::~Cursor() {
 }
 
 bool Cursor::atEof() const {
@@ -60,6 +97,11 @@ void Cursor::close() {
   CurPage = Que->getErrorPage();
   CurByte = 0;
   GuaranteedBeforeEob = false;
+}
+
+void Cursor::updateGuaranteedBeforeEob() {
+  GuaranteedBeforeEob =
+      CurPage ? std::min(CurPage->getMaxAddress(), EobPtr->getEobAddress()) : 0;
 }
 
 void Cursor::fail() {

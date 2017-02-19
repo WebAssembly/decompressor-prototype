@@ -16,9 +16,6 @@
 ///
 
 #include "stream/Queue.h"
-#include "stream/WriteUtils.h"
-
-#include <algorithm>
 
 namespace wasm {
 
@@ -26,6 +23,19 @@ namespace decode {
 
 void describeAddress(FILE* File, AddressType Addr) {
   fprintf(File, "@%" PRIxMAX, uintmax_t(Addr));
+}
+
+BlockEob::BlockEob(AddressType Address) : EobAddress(Address) {
+  init();
+}
+
+BlockEob::BlockEob(AddressType ByteAddr,
+                   const std::shared_ptr<BlockEob> EnclosingEobPtr)
+    : EobAddress(ByteAddr), EnclosingEobPtr(EnclosingEobPtr) {
+  init();
+}
+
+BlockEob::~BlockEob() {
 }
 
 void BlockEob::fail() {
@@ -95,6 +105,36 @@ std::shared_ptr<Page> Queue::getErrorPage() {
     return ErrorPage;
   ErrorPage = std::make_shared<Page>(kErrorPageIndex);
   return ErrorPage;
+}
+
+std::shared_ptr<Page> Queue::getReadPage(size_t& Address) const {
+  size_t Index = Page::index(Address);
+  if (Index >= PageMap.size())
+    return const_cast<Queue*>(this)->readFillToPage(Index, Address);
+  return getDefinedPage(Index, Address);
+}
+
+std::shared_ptr<Page> Queue::getWritePage(size_t& Address) const {
+  size_t Index = Page::index(Address);
+  if (Index >= PageMap.size())
+    return const_cast<Queue*>(this)->writeFillToPage(Index, Address);
+  return getDefinedPage(Index, Address);
+}
+
+std::shared_ptr<Page> Queue::getCachedPage(size_t& Address) {
+  size_t Index = Page::index(Address);
+  if (Index >= PageMap.size())
+    return failThenGetErrorPage(Address);
+  return getDefinedPage(Index, Address);
+}
+
+std::shared_ptr<Page> Queue::getDefinedPage(size_t Index,
+                                            size_t& Address) const {
+  assert(Index < PageMap.size());
+  std::shared_ptr<Page> Pg = PageMap[Index].lock();
+  if (Pg)
+    return Pg;
+  return const_cast<Queue*>(this)->failThenGetErrorPage(Address);
 }
 
 std::shared_ptr<Page> Queue::failThenGetErrorPage(size_t& Address) {

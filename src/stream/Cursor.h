@@ -38,52 +38,33 @@ class Cursor : public PageCursor {
     TraceContext& operator=(const TraceContext&) = delete;
 
    public:
-    TraceContext(Cursor& Pos) : Pos(Pos) {}
+    TraceContext(Cursor& Pos);
     ~TraceContext() OVERRIDE;
     void describe(FILE* File) OVERRIDE;
 
    private:
     Cursor& Pos;
   };
-  ~Cursor() {}
-
+  virtual ~Cursor();
   void swap(Cursor& C);
-
   void assign(const Cursor& C);
-
   StreamType getType() const { return Type; }
-
   bool isQueueGood() const { return Que->isGood(); }
-
   bool isBroken() const { return Que->isBroken(*this); }
-
   std::shared_ptr<Queue> getQueue() { return Que; }
-
   bool isEofFrozen() const { return Que->isEofFrozen(); }
-
   virtual bool atEof() const;
-
   size_t getEofAddress() const { return Que->getEofAddress(); }
-
   AddressType& getEobAddress() const { return EobPtr->getEobAddress(); }
-
   void freezeEof() { Que->freezeEof(CurAddress); }
-
   void close();
-
   size_t fillSize() { return Que->fillSize(); }
-
-  // ------------------------------------------------------------------------
-  // The following methods assume that the cursor is accessing a byte stream.
-  // ------------------------------------------------------------------------
-
   size_t getAddress() const { return CurAddress; }
 
   // For debugging.
   FILE* describe(FILE* File, bool IncludeDetail = false, bool AddEoln = false);
   // Adds any extentions to the page address, as defined in a derived class.
   virtual void describeDerivedExtensions(FILE* File, bool IncludeDetail);
-
   virtual utils::TraceClass::ContextPtr getTraceContext();
 
  protected:
@@ -95,44 +76,15 @@ class Cursor : public PageCursor {
   uint8_t CurByte;
   size_t GuaranteedBeforeEob;
 
-  Cursor(StreamType Type, std::shared_ptr<Queue> Que)
-      : PageCursor(Que->FirstPage, Que->FirstPage->getMinAddress()),
-        Type(Type),
-        Que(Que),
-        EobPtr(Que->getEofPtr()) {
-    updateGuaranteedBeforeEob();
-  }
-
-  explicit Cursor(const Cursor& C)
-      : PageCursor(C),
-        Type(C.Type),
-        Que(C.Que),
-        EobPtr(C.EobPtr),
-        CurByte(C.CurByte) {
-    updateGuaranteedBeforeEob();
-  }
-
-  Cursor(const Cursor& C, size_t StartAddress, bool ForRead)
-      : PageCursor(C),
-        Type(C.Type),
-        Que(C.Que),
-        EobPtr(C.EobPtr),
-        CurByte(C.CurByte) {
-    CurPage = ForRead ? Que->getReadPage(StartAddress)
-                      : Que->getWritePage(StartAddress);
-    CurAddress = StartAddress;
-    updateGuaranteedBeforeEob();
-  }
+  Cursor(StreamType Type, std::shared_ptr<Queue> Que);
+  explicit Cursor(const Cursor& C);
+  Cursor(const Cursor& C, size_t StartAddress, bool ForRead);
 
   // Note: The nullary cursor should not be used until it has been assigned
   // a valid value.
-  Cursor() : PageCursor(), Type(StreamType::Byte) {}
+  Cursor();
 
-  void updateGuaranteedBeforeEob() {
-    GuaranteedBeforeEob =
-        CurPage ? std::min(CurPage->getMaxAddress(), EobPtr->getEobAddress())
-                : 0;
-  }
+  void updateGuaranteedBeforeEob();
 
   // Returns true if able to fill the buffer with at least one byte.
   bool readFillBuffer();

@@ -35,10 +35,9 @@
 #ifndef DECOMPRESSOR_SRC_STREAM_QUEUE_H
 #define DECOMPRESSOR_SRC_STREAM_QUEUE_H
 
-#include "stream/Page.h"
-
-#include <memory>
 #include <vector>
+
+#include "stream/Page.h"
 
 namespace wasm {
 
@@ -75,15 +74,10 @@ class BlockEob : public std::enable_shared_from_this<BlockEob> {
   BlockEob& operator=(const BlockEob&) = delete;
 
  public:
-  explicit BlockEob(AddressType Address = kMaxEofAddress)
-      : EobAddress(Address) {
-    init();
-  }
+  explicit BlockEob(AddressType Address = kMaxEofAddress);
   BlockEob(AddressType ByteAddr,
-           const std::shared_ptr<BlockEob> EnclosingEobPtr)
-      : EobAddress(ByteAddr), EnclosingEobPtr(EnclosingEobPtr) {
-    init();
-  }
+           const std::shared_ptr<BlockEob> EnclosingEobPtr);
+  ~BlockEob();
   AddressType& getEobAddress() { return EobAddress; }
   void setEobAddress(const AddressType& Address) { EobAddress = Address; }
   bool isGood() const { return isGoodAddress(EobAddress); }
@@ -91,9 +85,7 @@ class BlockEob : public std::enable_shared_from_this<BlockEob> {
   std::shared_ptr<BlockEob> getEnclosingEobPtr() const {
     return EnclosingEobPtr;
   }
-
   void fail();
-
   // For debugging.
   FILE* describe(FILE* File) const;
 
@@ -198,6 +190,7 @@ class Queue : public std::enable_shared_from_this<Queue> {
   void describe(FILE* Out);
 
  protected:
+  typedef std::vector<std::weak_ptr<Page>> PageMapType;
   // Minimum peek size to maintain. That is, the minimal number of
   // bytes that the read can back up without freezing an address.
   size_t MinPeekSize;
@@ -212,48 +205,19 @@ class Queue : public std::enable_shared_from_this<Queue> {
   // Page to use if an error occurs.
   std::shared_ptr<Page> ErrorPage;
   // Fast page lookup map (from page index)
-  typedef std::vector<std::weak_ptr<Page>> PageMapType;
   PageMapType PageMap;
-
-  std::shared_ptr<Page> failThenGetErrorPage(size_t& Address);
 
   bool appendPage();
 
-  std::shared_ptr<Page> getErrorPage();
-
   // Returns the page in the queue referred to Address, or nullptr if no
   // such page is in the byte queue.
-  std::shared_ptr<Page> getReadPage(size_t& Address) const {
-    size_t Index = Page::index(Address);
-    if (Index >= PageMap.size())
-      return const_cast<Queue*>(this)->readFillToPage(Index, Address);
-    return getDefinedPage(Index, Address);
-  }
-
-  std::shared_ptr<Page> getWritePage(size_t& Address) const {
-    size_t Index = Page::index(Address);
-    if (Index >= PageMap.size())
-      return const_cast<Queue*>(this)->writeFillToPage(Index, Address);
-    return getDefinedPage(Index, Address);
-  }
-
-  std::shared_ptr<Page> getCachedPage(size_t& Address) {
-    size_t Index = Page::index(Address);
-    if (Index >= PageMap.size())
-      return failThenGetErrorPage(Address);
-    return getDefinedPage(Index, Address);
-  }
-
-  std::shared_ptr<Page> getDefinedPage(size_t Index, size_t& Address) const {
-    assert(Index < PageMap.size());
-    std::shared_ptr<Page> Pg = PageMap[Index].lock();
-    if (Pg)
-      return Pg;
-    return const_cast<Queue*>(this)->failThenGetErrorPage(Address);
-  }
-
+  std::shared_ptr<Page> getReadPage(size_t& Address) const;
+  std::shared_ptr<Page> getWritePage(size_t& Address) const;
+  std::shared_ptr<Page> getCachedPage(size_t& Address);
+  std::shared_ptr<Page> getDefinedPage(size_t Index, size_t& Address) const;
+  std::shared_ptr<Page> failThenGetErrorPage(size_t& Address);
+  std::shared_ptr<Page> getErrorPage();
   std::shared_ptr<Page> readFillToPage(size_t Index, size_t& Address);
-
   std::shared_ptr<Page> writeFillToPage(size_t Index, size_t& Address);
 
   bool isValidPageAddress(size_t Address) {
@@ -272,7 +236,6 @@ class Queue : public std::enable_shared_from_this<Queue> {
   // Returns true if successful. If applicable, reads from input to fill the
   // buffer as appropriate.
   virtual bool readFill(size_t Address);
-
   virtual bool writeFill(size_t Address, size_t WantedSize);
 };
 
