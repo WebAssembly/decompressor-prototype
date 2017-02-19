@@ -32,8 +32,8 @@
 // TODO(KarlSchimpf): Locking of reads/writes for threading has not yet been
 // addressed, and the current implementation is NOT thread safe.
 
-#ifndef DECOMPRESSOR_SRC_STREAM_QUEUE_H
-#define DECOMPRESSOR_SRC_STREAM_QUEUE_H
+#ifndef DECOMPRESSOR_SRC_STREAM_QUEUE_H_
+#define DECOMPRESSOR_SRC_STREAM_QUEUE_H_
 
 #include <vector>
 
@@ -93,17 +93,17 @@ class Queue : public std::enable_shared_from_this<Queue> {
   // Defines the maximum Peek size into the queue when reading. That
   // is, The minimal number of bytes that the reader can back up without
   // freezing an address. Defaults to 32.
-  void setMinPeekSize(size_t NewValue) { MinPeekSize = NewValue; }
+  void setMinPeekSize(AddressType NewValue) { MinPeekSize = NewValue; }
 
   // Value unknown (returning maximum possible size) until frozen. When
   // frozen, returns the size of the buffer.
-  size_t currentSize() { return EofPtr->getEobAddress(); }
+  AddressType currentSize() { return EofPtr->getEobAddress(); }
 
-  size_t fillSize() const { return LastPage->getMaxAddress(); }
+  AddressType fillSize() const { return LastPage->getMaxAddress(); }
 
   // Returns the actual size of the buffer (i.e. only those with pages still
   // in memory).
-  size_t actualSize() const {
+  AddressType actualSize() const {
     return LastPage->getMaxAddress() - FirstPage->getMinAddress();
   }
 
@@ -111,13 +111,13 @@ class Queue : public std::enable_shared_from_this<Queue> {
   // elements available for reading. Returns the actual number of elements
   // available for reading. Note: Address will be moved to an error address
   // if an error occurs while reading.
-  size_t readFromPage(size_t& Address, size_t WantedSize, PageCursor& Cursor);
+  AddressType readFromPage(AddressType& Address, AddressType WantedSize, PageCursor& Cursor);
 
   // Update Cursor to point to the given Address, and make (up to) WantedSize
   // elements available for writing. Returns the actual number of elements
   // available for writing. Note: Address will be moved to an error address
   // if an error occurs while writing.
-  size_t writeToPage(size_t& Address, size_t WantedSize, PageCursor& Cursor);
+  AddressType writeToPage(AddressType& Address, AddressType WantedSize, PageCursor& Cursor);
 
   // Closes the queue (i.e. assumes all contents have been read/written).
   void close();
@@ -136,7 +136,7 @@ class Queue : public std::enable_shared_from_this<Queue> {
   // @param Size    The number of requested elements to read.
   // @result        The actual number of elements read. If zero, the eob was
   //                reached. Valid return values are in [0..Size].
-  size_t read(size_t& Address, uint8_t* Buffer, size_t Size = 1);
+  AddressType read(AddressType& Address, uint8_t* Buffer, AddressType Size = 1);
 
   // Writes a contiquous sequence of bytes in the given buffer.
   //
@@ -148,13 +148,13 @@ class Queue : public std::enable_shared_from_this<Queue> {
   // @param Buffer  A pointer to the buffer of elements to write.
   // @param Size    The number of elements in the buffer to write.
   // @result        True if successful (i.e. not beyond eob address).
-  bool write(size_t& Address, uint8_t* Buffer, size_t Size = 1);
+  bool write(AddressType& Address, uint8_t* Buffer, AddressType Size = 1);
 
-  size_t getEofAddress() const { return EofPtr->getEobAddress(); }
+  AddressType getEofAddress() const { return EofPtr->getEobAddress(); }
 
   // Freezes eob of the queue. Not valid to read/write past the eob, once set.
   // Note: May change Address if queue is broken, or Address not valid.
-  void freezeEof(size_t& Address);
+  void freezeEof(AddressType& Address);
 
   bool isBroken(const PageCursor& C) const;
   bool isEofFrozen() const { return EofFrozen; }
@@ -171,7 +171,7 @@ class Queue : public std::enable_shared_from_this<Queue> {
   typedef std::vector<std::weak_ptr<Page>> PageMapType;
   // Minimum peek size to maintain. That is, the minimal number of
   // bytes that the read can back up without freezing an address.
-  size_t MinPeekSize;
+  AddressType MinPeekSize;
   // True if end of queue buffer has been frozen.
   bool EofFrozen;
   StatusValue Status;
@@ -189,16 +189,16 @@ class Queue : public std::enable_shared_from_this<Queue> {
 
   // Returns the page in the queue referred to Address, or nullptr if no
   // such page is in the byte queue.
-  std::shared_ptr<Page> getReadPage(size_t& Address) const;
-  std::shared_ptr<Page> getWritePage(size_t& Address) const;
-  std::shared_ptr<Page> getCachedPage(size_t& Address);
-  std::shared_ptr<Page> getDefinedPage(size_t Index, size_t& Address) const;
-  std::shared_ptr<Page> failThenGetErrorPage(size_t& Address);
+  std::shared_ptr<Page> getReadPage(AddressType& Address) const;
+  std::shared_ptr<Page> getWritePage(AddressType& Address) const;
+  std::shared_ptr<Page> getCachedPage(AddressType& Address);
+  std::shared_ptr<Page> getDefinedPage(AddressType Index, AddressType& Address) const;
+  std::shared_ptr<Page> failThenGetErrorPage(AddressType& Address);
   std::shared_ptr<Page> getErrorPage();
-  std::shared_ptr<Page> readFillToPage(size_t Index, size_t& Address);
-  std::shared_ptr<Page> writeFillToPage(size_t Index, size_t& Address);
+  std::shared_ptr<Page> readFillToPage(AddressType Index, AddressType& Address);
+  std::shared_ptr<Page> writeFillToPage(AddressType Index, AddressType& Address);
 
-  bool isValidPageAddress(size_t Address) {
+  bool isValidPageAddress(AddressType Address) {
     return PageIndex(Address) < PageMap.size();
   }
 
@@ -213,12 +213,12 @@ class Queue : public std::enable_shared_from_this<Queue> {
   // Fills buffer until we can read 1 or more bytes at the given address.
   // Returns true if successful. If applicable, reads from input to fill the
   // buffer as appropriate.
-  virtual bool readFill(size_t Address);
-  virtual bool writeFill(size_t Address, size_t WantedSize);
+  virtual bool readFill(AddressType Address);
+  virtual bool writeFill(AddressType Address, AddressType WantedSize);
 };
 
 }  // end of namespace decode
 
 }  // end of namespace wasm
 
-#endif  // DECOMPRESSOR_SRC_STREAM_QUEUE_H
+#endif  // DECOMPRESSOR_SRC_STREAM_QUEUE_H_

@@ -31,7 +31,7 @@ PageCursor::PageCursor(Queue* Que)
   assert(CurPage);
 }
 
-PageCursor::PageCursor(std::shared_ptr<Page> CurPage, size_t CurAddress)
+PageCursor::PageCursor(std::shared_ptr<Page> CurPage, AddressType CurAddress)
     : CurPage(CurPage), CurAddress(CurAddress) {
   assert(CurPage);
 }
@@ -54,23 +54,23 @@ void PageCursor::swap(PageCursor& C) {
   std::swap(CurAddress, C.CurAddress);
 }
 
-size_t PageCursor::getMinAddress() const {
+AddressType PageCursor::getMinAddress() const {
   return CurPage ? CurPage->getMinAddress() : 0;
 }
 
-size_t PageCursor::getMaxAddress() const {
+AddressType PageCursor::getMaxAddress() const {
   return CurPage ? CurPage->getMaxAddress() : 0;
 }
 
-bool PageCursor::isValidPageAddress(size_t Address) {
+bool PageCursor::isValidPageAddress(AddressType Address) {
   return getMinAddress() <= Address && Address < getMaxAddress();
 }
 
-size_t PageCursor::getRelativeAddress() const {
+AddressType PageCursor::getRelativeAddress() const {
   return CurAddress - CurPage->getMinAddress();
 }
 
-void PageCursor::setMaxAddress(size_t Address) {
+void PageCursor::setMaxAddress(AddressType Address) {
   CurPage->setMaxAddress(Address);
 }
 
@@ -78,7 +78,7 @@ bool PageCursor::isIndexAtEndOfPage() const {
   return getCurAddress() == getMaxAddress();
 }
 
-uint8_t* PageCursor::getBufferPtr() {
+ByteType* PageCursor::getBufferPtr() {
   assert(CurPage);
   return CurPage->getByteAddress(getRelativeAddress());
 }

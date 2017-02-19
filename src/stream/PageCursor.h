@@ -47,7 +47,7 @@
 #ifndef DECOMPRESSOR_SRC_STREAM_PAGECURSOR_H_
 #define DECOMPRESSOR_SRC_STREAM_PAGECURSOR_H_
 
-#include "utils/Defs.h"
+#include "stream/Address.h"
 
 namespace wasm {
 
@@ -63,21 +63,21 @@ class PageCursor {
  public:
   PageCursor();
   PageCursor(Queue* Que);
-  PageCursor(std::shared_ptr<Page> CurPage, size_t CurAddress);
+  PageCursor(std::shared_ptr<Page> CurPage, AddressType CurAddress);
   PageCursor(const PageCursor& PC);
   ~PageCursor();
   void assign(const PageCursor& C);
   void swap(PageCursor& C);
 
-  size_t getMinAddress() const;
-  size_t getMaxAddress() const;
-  bool isValidPageAddress(size_t Address);
-  void setCurAddress(size_t NewAddress) { CurAddress = NewAddress; }
-  size_t getCurAddress() const { return CurAddress; }
-  size_t getRelativeAddress() const;
-  void setMaxAddress(size_t Address);
+  AddressType getMinAddress() const;
+  AddressType getMaxAddress() const;
+  bool isValidPageAddress(AddressType Address);
+  void setCurAddress(AddressType NewAddress) { CurAddress = NewAddress; }
+  AddressType getCurAddress() const { return CurAddress; }
+  AddressType getRelativeAddress() const;
+  void setMaxAddress(AddressType Address);
   bool isIndexAtEndOfPage() const;
-  uint8_t* getBufferPtr();
+  ByteType* getBufferPtr();
   // For debugging only.
   Page* getCurPage() const;
   FILE* describe(FILE* File, bool IncludePage = false);
@@ -85,7 +85,7 @@ class PageCursor {
  protected:
   std::shared_ptr<Page> CurPage;
   // Absolute address.
-  size_t CurAddress;
+  AddressType CurAddress;
 };
 
 }  // end of namespace decode

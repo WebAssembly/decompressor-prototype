@@ -33,13 +33,13 @@ class BitWriteCursor : public WriteCursor {
   BitWriteCursor(std::shared_ptr<Queue> Que);
   BitWriteCursor(StreamType Type, std::shared_ptr<Queue> Que);
   BitWriteCursor(const BitWriteCursor& C);
-  BitWriteCursor(const BitWriteCursor& C, size_t StartAddress);
+  BitWriteCursor(const BitWriteCursor& C, AddressType StartAddress);
   ~BitWriteCursor() OVERRIDE;
   bool atEof() const OVERRIDE;
   void assign(const BitWriteCursor& C);
   void swap(BitWriteCursor& C);
-  void writeByte(uint8_t Byte) OVERRIDE;
-  void writeBit(uint8_t Bit);
+  void writeByte(ByteType Byte) OVERRIDE;
+  void writeBit(ByteType Bit);
   void alignToByte();
 
   BitWriteCursor& operator=(const BitWriteCursor& C) {

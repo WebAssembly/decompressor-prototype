@@ -26,7 +26,7 @@ namespace decode {
 namespace {
 
 constexpr BitWriteCursor::WordType BitsInByte =
-    BitWriteCursor::WordType(sizeof(uint8_t) * CHAR_BIT);
+    BitWriteCursor::WordType(sizeof(ByteType) * CHAR_BIT);
 
 }  // end of namespace
 
@@ -47,7 +47,7 @@ BitWriteCursor::BitWriteCursor(const BitWriteCursor& C)
     : WriteCursor(C), CurWord(C.CurWord), NumBits(C.NumBits) {
 }
 
-BitWriteCursor::BitWriteCursor(const BitWriteCursor& C, size_t StartAddress)
+BitWriteCursor::BitWriteCursor(const BitWriteCursor& C, AddressType StartAddress)
     : WriteCursor(C, StartAddress), CurWord(C.CurWord), NumBits(C.NumBits) {
 }
 
@@ -77,7 +77,7 @@ void BitWriteCursor::swap(BitWriteCursor& C) {
   std::swap(NumBits, C.NumBits);
 }
 
-void BitWriteCursor::writeByte(uint8_t Byte) {
+void BitWriteCursor::writeByte(ByteType Byte) {
   if (NumBits == 0)
     return WriteCursor::writeByte(Byte);
   CurWord = (CurWord << BitsInByte) | Byte;
@@ -85,7 +85,7 @@ void BitWriteCursor::writeByte(uint8_t Byte) {
   CurWord &= (1 << WordType(NumBits)) - 1;
 }
 
-void BitWriteCursor::writeBit(uint8_t Bit) {
+void BitWriteCursor::writeBit(ByteType Bit) {
   assert(Bit <= 1);
   CurWord = (CurWord << 1) | Bit;
   ++NumBits;

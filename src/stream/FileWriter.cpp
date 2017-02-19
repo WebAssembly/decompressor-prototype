@@ -44,11 +44,11 @@ FileWriter::~FileWriter() {
 bool FileWriter::saveBuffer() {
   if (CurSize == 0)
     return true;
-  size_t BufSize = CurSize;
+  AddressType BufSize = CurSize;
   CurSize = 0;
-  uint8_t* Buf = Bytes;
+  ByteType* Buf = Bytes;
   while (BufSize) {
-    size_t BytesWritten = fwrite(Buf, 1, BufSize, File);
+    AddressType BytesWritten = fwrite(Buf, 1, BufSize, File);
     if (BytesWritten <= 0)
       return false;
     Buf += BytesWritten;
@@ -57,19 +57,19 @@ bool FileWriter::saveBuffer() {
   return true;
 }
 
-size_t FileWriter::read(uint8_t* Buf, size_t Size) {
+AddressType FileWriter::read(ByteType* Buf, AddressType Size) {
   (void)Buf;
   (void)Size;
   return 0;
 }
 
-bool FileWriter::write(uint8_t* Buf, size_t Size) {
+bool FileWriter::write(ByteType* Buf, AddressType Size) {
   while (Size) {
     if (CurSize == kBufSize) {
       if (!saveBuffer())
         return false;
     }
-    size_t Count = std::min(Size, kBufSize - CurSize);
+    AddressType Count = std::min(Size, kBufSize - CurSize);
     memcpy(Bytes + CurSize, Buf, Count);
     Buf += Count;
     CurSize += Count;

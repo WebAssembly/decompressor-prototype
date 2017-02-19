@@ -26,6 +26,7 @@ namespace wasm {
 namespace decode {
 
 typedef size_t AddressType;
+typedef uint8_t ByteType;
 
 static constexpr AddressType PageSizeLog2 =
 #ifdef WASM_DECODE_PAGE_SIZE
@@ -38,12 +39,12 @@ static constexpr AddressType PageSize = 1 << PageSizeLog2;
 static constexpr AddressType PageMask = PageSize - 1;
 
 // Page index associated with address in queue.
-constexpr AddressType PageIndex(size_t Address) {
+constexpr AddressType PageIndex(AddressType Address) {
   return Address >> PageSizeLog2;
 }
 
 // Returns address within a Page that refers to address.
-constexpr AddressType PageAddress(size_t Address) {
+constexpr AddressType PageAddress(AddressType Address) {
   return Address & PageMask;
 }
 
@@ -55,7 +56,7 @@ constexpr AddressType minAddressForPage(AddressType PageIndex) {
 // Note: We reserve the last page to be an "error" page. This allows us to
 // guarantee that read/write cursors are always associated with a (defined)
 // page.
-static constexpr AddressType kMaxEofAddress = ~size_t(0) << PageSizeLog2;
+static constexpr AddressType kMaxEofAddress = ~AddressType(0) << PageSizeLog2;
 static constexpr AddressType kMaxPageIndex = PageIndex(kMaxEofAddress);
 static constexpr AddressType kErrorPageAddress = kMaxEofAddress + 1;
 static constexpr AddressType kErrorPageIndex = PageIndex(kErrorPageAddress);

@@ -21,14 +21,14 @@ namespace wasm {
 
 namespace decode {
 
-Page::Page(size_t PageIndex)
+Page::Page(AddressType PageIndex)
     : Index(PageIndex),
       MinAddress(minAddressForPage(PageIndex)),
       MaxAddress(minAddressForPage(PageIndex)) {
   std::memset(&Buffer, 0, PageSize);
 }
 
-size_t Page::spaceRemaining() const {
+AddressType Page::spaceRemaining() const {
   return MinAddress == MaxAddress
              ? PageSize
              : PageSize - (PageAddress(MaxAddress - 1) + 1);

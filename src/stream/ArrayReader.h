@@ -31,20 +31,20 @@ class ArrayReader : public RawStream {
   ArrayReader& operator=(const ArrayReader&) = delete;
 
  public:
-  ArrayReader(const uint8_t* Buffer, const size_t BufferSize)
+  ArrayReader(const ByteType* Buffer, const AddressType BufferSize)
       : Buffer(Buffer), BufferSize(BufferSize), CurPosition(0) {}
   ~ArrayReader() OVERRIDE;
 
-  size_t read(uint8_t* Buf, size_t Size = 1) OVERRIDE;
-  bool write(uint8_t* Buf, size_t Size = 1) OVERRIDE;
+  AddressType read(ByteType* Buf, AddressType Size = 1) OVERRIDE;
+  bool write(ByteType* Buf, AddressType Size = 1) OVERRIDE;
   bool freeze() OVERRIDE;
   bool atEof() OVERRIDE;
   bool hasErrors() OVERRIDE;
 
  protected:
-  const uint8_t* Buffer;
-  const size_t BufferSize;
-  size_t CurPosition;
+  const ByteType* Buffer;
+  const AddressType BufferSize;
+  AddressType CurPosition;
 };
 
 }  // end of namespace decode

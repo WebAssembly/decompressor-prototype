@@ -46,7 +46,7 @@ Cursor::Cursor(const Cursor& C)
   updateGuaranteedBeforeEob();
 }
 
-Cursor::Cursor(const Cursor& C, size_t StartAddress, bool ForRead)
+Cursor::Cursor(const Cursor& C, AddressType StartAddress, bool ForRead)
     : PageCursor(C),
       Type(C.Type),
       Que(C.Que),
@@ -103,7 +103,7 @@ bool Cursor::isEofFrozen() const {
   return Que->isEofFrozen();
 }
 
-size_t Cursor::getEofAddress() const {
+AddressType Cursor::getEofAddress() const {
   return Que->getEofAddress();
 }
 
@@ -115,7 +115,7 @@ void Cursor::freezeEof() {
   Que->freezeEof(CurAddress);
 }
 
-size_t Cursor::fillSize() {
+AddressType Cursor::fillSize() {
   return Que->fillSize();
 }
 
@@ -149,16 +149,16 @@ void Cursor::fail() {
 bool Cursor::readFillBuffer() {
   if (CurAddress >= Que->getEofAddress())
     return false;
-  size_t BufferSize = Que->readFromPage(CurAddress, PageSize, *this);
+  AddressType BufferSize = Que->readFromPage(CurAddress, PageSize, *this);
   return BufferSize > 0;
 }
 
-void Cursor::writeFillBuffer(size_t WantedSize) {
+void Cursor::writeFillBuffer(AddressType WantedSize) {
   if (CurAddress >= Que->getEofAddress()) {
     fail();
     return;
   }
-  size_t BufferSize = Que->writeToPage(CurAddress, WantedSize, *this);
+  AddressType BufferSize = Que->writeToPage(CurAddress, WantedSize, *this);
   if (BufferSize == 0)
     fail();
 }

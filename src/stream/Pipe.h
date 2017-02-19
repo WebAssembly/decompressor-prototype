@@ -20,52 +20,39 @@
 // read queue, until all write cursors can no longer reference the
 // contents.
 
-#ifndef DECOMPRESSOR_SRC_STREAM_PIPE_H
-#define DECOMPRESSOR_SRC_STREAM_PIPE_H
+#ifndef DECOMPRESSOR_SRC_STREAM_PIPE_H_
+#define DECOMPRESSOR_SRC_STREAM_PIPE_H_
 
-#include "stream/Queue.h"
-#include "stream/WriteCursor2ReadQueue.h"
+#include "utils/Defs.h"
 
 namespace wasm {
 
 namespace decode {
+
+class Queue;
+class WriteCursor2ReadQueue;
 
 class Pipe FINAL {
   Pipe(const Pipe&) = delete;
   Pipe& operator=(const Pipe&) = delete;
 
  public:
-  Pipe()
-      : Input(std::make_shared<PipeBackedQueue>(*this)),
-        Output(std::make_shared<Queue>()),
-        WritePos(Output) {}
-  ~Pipe() {}
-  std::shared_ptr<Queue> getInput() const { return Input; }
-  std::shared_ptr<Queue> getOutput() const { return Output; }
+  Pipe();
+  ~Pipe();
+  std::shared_ptr<Queue> getInput() const;
+  std::shared_ptr<Queue> getOutput() const;
 
  protected:
-  class PipeBackedQueue FINAL : public Queue {
-    PipeBackedQueue(const PipeBackedQueue&) = delete;
-    PipeBackedQueue& operator=(const PipeBackedQueue&) = delete;
-    PipeBackedQueue() = delete;
-
-   public:
-    PipeBackedQueue(Pipe& MyPipe) : Queue(), MyPipe(MyPipe) {}
-    ~PipeBackedQueue();
-
-   private:
-    Pipe& MyPipe;
-    void dumpFirstPage() OVERRIDE;
-  };
+  class PipeBackedQueue;
 
  private:
   std::shared_ptr<PipeBackedQueue> Input;
   std::shared_ptr<Queue> Output;
-  WriteCursor2ReadQueue WritePos;
+  std::unique_ptr<WriteCursor2ReadQueue> WritePos;
 };
 
 }  // end of namespace decode
 
 }  // end of namespace wasm
 
-#endif  // DECOMPRESSOR_SRC_STREAM_PIPE_H
+#endif  // DECOMPRESSOR_SRC_STREAM_PIPE_H_

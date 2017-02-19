@@ -48,7 +48,6 @@
 #define DECOMPRESSOR_SRC_STREAM_PAGE_H_
 
 #include "stream/Address.h"
-#include "stream/RawStream.h"
 
 namespace wasm {
 
@@ -64,28 +63,28 @@ class Page : public std::enable_shared_from_this<Page> {
 
  public:
 
-  Page(size_t PageIndex);
-  size_t spaceRemaining() const;
-  size_t getPageIndex() const { return Index; }
-  size_t getMinAddress() const { return MinAddress; }
-  size_t getMaxAddress() const { return MaxAddress; }
-  size_t getPageSize() const { return MaxAddress - MinAddress; }
-  void setMaxAddress(size_t NewValue) { MaxAddress = NewValue; }
-  void incrementMaxAddress(size_t Increment = 1) { MaxAddress += Increment; }
-  uint8_t getByte(size_t i) const { return Buffer[i]; }
-  uint8_t* getByteAddress(size_t i) { return &Buffer[i]; }
+  Page(AddressType PageIndex);
+  AddressType spaceRemaining() const;
+  AddressType getPageIndex() const { return Index; }
+  AddressType getMinAddress() const { return MinAddress; }
+  AddressType getMaxAddress() const { return MaxAddress; }
+  AddressType getPageSize() const { return MaxAddress - MinAddress; }
+  void setMaxAddress(AddressType NewValue) { MaxAddress = NewValue; }
+  void incrementMaxAddress(AddressType Increment = 1) { MaxAddress += Increment; }
+  ByteType getByte(AddressType i) const { return Buffer[i]; }
+  ByteType* getByteAddress(AddressType i) { return &Buffer[i]; }
 
   // For debugging only.
   FILE* describe(FILE* File);
 
- protected:
+ private:
   // The contents of the page.
-  uint8_t Buffer[PageSize];
+  ByteType Buffer[PageSize];
   // The page index of the page.
-  size_t Index;
+  AddressType Index;
   // Note: Buffer address range is [MinAddress, MaxAddress).
-  size_t MinAddress;
-  size_t MaxAddress;
+  AddressType MinAddress;
+  AddressType MaxAddress;
   std::shared_ptr<Page> Next;
 };
 

@@ -20,7 +20,7 @@
 #ifndef DECOMPRESSOR_SRC_STREAM_RAWSTREAM_H
 #define DECOMPRESSOR_SRC_STREAM_RAWSTREAM_H
 
-#include "utils/Defs.h"
+#include "stream/Address.h"
 
 namespace wasm {
 
@@ -40,18 +40,18 @@ class RawStream : public std::enable_shared_from_this<RawStream> {
   // @param BufSize - The size of the buffer to read into.
   // @result        - The number of bytes read, or 0 if unable
   //                  to read anymore bytes.
-  virtual size_t read(uint8_t* Buf, size_t Size = 1) = 0;
+  virtual AddressType read(ByteType* Buf, AddressType Size = 1) = 0;
 
   // Writes a contigues range of elements from a buffer.
   //
   // @param Buf     - A pointer to a buffer to write from.
   // @param BufSize - The size of the buffer to write from.
   // @result        - True if successful.
-  virtual bool write(uint8_t* Buf, size_t Size = 1) = 0;
+  virtual bool write(ByteType* Buf, AddressType Size = 1) = 0;
 
-  bool putc(uint8_t ch) { return write(&ch, 1); }
+  bool putc(ByteType ch) { return write(&ch, 1); }
 
-  bool puts(const char* str) { return write((uint8_t*)str, std::strlen(str)); }
+  bool puts(const char* str) { return write((ByteType*)str, std::strlen(str)); }
 
   virtual bool hasErrors() = 0;
 

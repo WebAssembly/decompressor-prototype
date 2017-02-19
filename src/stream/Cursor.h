@@ -19,7 +19,6 @@
 #ifndef DECOMPRESSOR_SRC_STREAM_CURSOR_H
 #define DECOMPRESSOR_SRC_STREAM_CURSOR_H
 
-#include "stream/Address.h"
 #include "stream/PageCursor.h"
 #include "utils/Trace.h"
 
@@ -56,12 +55,12 @@ class Cursor : public PageCursor {
   std::shared_ptr<Queue> getQueue();
   bool isEofFrozen() const;
   virtual bool atEof() const;
-  size_t getEofAddress() const;
+  AddressType getEofAddress() const;
   AddressType& getEobAddress() const;
   void freezeEof();
   void close();
-  size_t fillSize();
-  size_t getAddress() const { return CurAddress; }
+  AddressType fillSize();
+  AddressType getAddress() const { return CurAddress; }
 
   // For debugging.
   FILE* describe(FILE* File, bool IncludeDetail = false, bool AddEoln = false);
@@ -75,12 +74,12 @@ class Cursor : public PageCursor {
   std::shared_ptr<Queue> Que;
   // End of block address.
   std::shared_ptr<BlockEob> EobPtr;
-  uint8_t CurByte;
-  size_t GuaranteedBeforeEob;
+  ByteType CurByte;
+  AddressType GuaranteedBeforeEob;
 
   Cursor(StreamType Type, std::shared_ptr<Queue> Que);
   explicit Cursor(const Cursor& C);
-  Cursor(const Cursor& C, size_t StartAddress, bool ForRead);
+  Cursor(const Cursor& C, AddressType StartAddress, bool ForRead);
 
   // Note: The nullary cursor should not be used until it has been assigned
   // a valid value.
@@ -93,7 +92,7 @@ class Cursor : public PageCursor {
 
   // Creates new pages in buffer so that writes can occur. WantedSize is
   // a hint of the expecte growth.
-  void writeFillBuffer(size_t WantedSize = PageSize);
+  void writeFillBuffer(AddressType WantedSize = PageSize);
 
   void fail();
 };
