@@ -44,13 +44,10 @@
 // TODO(karlschimpf) The current implementation is NOT thread safe, but should
 // be easy to make thread safe.
 
-#ifndef DECOMPRESSOR_SRC_STREAM_PAGE_H
-#define DECOMPRESSOR_SRC_STREAM_PAGE_H
+#ifndef DECOMPRESSOR_SRC_STREAM_PAGE_H_
+#define DECOMPRESSOR_SRC_STREAM_PAGE_H_
 
 #include "stream/RawStream.h"
-
-#include <cstring>
-#include <memory>
 
 namespace wasm {
 
@@ -59,8 +56,10 @@ namespace decode {
 class Queue;
 
 class Page : public std::enable_shared_from_this<Page> {
+  Page() = delete;
   Page(const Page&) = delete;
   Page& operator=(const Page&) = delete;
+  friend class Queue;
 
  public:
   static constexpr size_t SizeLog2 =
@@ -89,25 +88,20 @@ class Page : public std::enable_shared_from_this<Page> {
   }
 
   Page(size_t PageIndex);
-
-  size_t spaceRemaining() const {
-    return MinAddress == MaxAddress
-               ? Page::Size
-               : Page::Size - (Page::address(MaxAddress - 1) + 1);
-  }
-
+  size_t spaceRemaining() const;
   size_t getPageIndex() const { return Index; }
-
   size_t getMinAddress() const { return MinAddress; }
-
   size_t getMaxAddress() const { return MaxAddress; }
-
   size_t getPageSize() const { return MaxAddress - MinAddress; }
-
   void setMaxAddress(size_t NewValue) { MaxAddress = NewValue; }
-
   void incrementMaxAddress(size_t Increment = 1) { MaxAddress += Increment; }
+  uint8_t getByte(size_t i) const { return Buffer[i]; }
+  uint8_t* getByteAddress(size_t i) { return &Buffer[i]; }
 
+  // For debugging only.
+  FILE* describe(FILE* File);
+
+ protected:
   // The contents of the page.
   uint8_t Buffer[Page::Size];
   // The page index of the page.
@@ -116,9 +110,6 @@ class Page : public std::enable_shared_from_this<Page> {
   size_t MinAddress;
   size_t MaxAddress;
   std::shared_ptr<Page> Next;
-
-  // For debugging only.
-  FILE* describe(FILE* File);
 };
 
 void describePage(FILE* File, Page* Pg);
@@ -160,7 +151,7 @@ class PageCursor {
   bool isIndexAtEndOfPage() const { return getCurAddress() == getMaxAddress(); }
   uint8_t* getBufferPtr() {
     assert(CurPage);
-    return CurPage->Buffer + getRelativeAddress();
+    return CurPage->getByteAddress(getRelativeAddress());
   }
   // For debugging only.
   Page* getCurPage() const { return CurPage.get(); }
@@ -176,4 +167,4 @@ class PageCursor {
 
 }  // end of namespace wasm
 
-#endif  // DECOMPRESSOR_SRC_STREAM_PAGE_H
+#endif  // DECOMPRESSOR_SRC_STREAM_PAGE_H_

@@ -30,7 +30,7 @@ WriteBackedQueue::~WriteBackedQueue() {
 void WriteBackedQueue::dumpFirstPage() {
   size_t Address = 0;
   size_t Size = FirstPage->getMaxAddress() - FirstPage->getMinAddress();
-  if (!Writer->write(&FirstPage->Buffer[Address], Size))
+  if (!Writer->write(FirstPage->getByteAddress(Address), Size))
     fail();
   Queue::dumpFirstPage();
 }

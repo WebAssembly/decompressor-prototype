@@ -28,6 +28,12 @@ Page::Page(size_t PageIndex)
   std::memset(&Buffer, 0, Page::Size);
 }
 
+size_t Page::spaceRemaining() const {
+  return MinAddress == MaxAddress
+             ? Page::Size
+             : Page::Size - (Page::address(MaxAddress - 1) + 1);
+}
+
 FILE* Page::describe(FILE* File) {
   fprintf(File, "Page[%" PRIuMAX "] [%" PRIxMAX "..%" PRIxMAX ") = %p",
           uintmax_t(Index), uintmax_t(MinAddress), uintmax_t(MaxAddress),

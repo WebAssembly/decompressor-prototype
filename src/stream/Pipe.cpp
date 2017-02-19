@@ -30,7 +30,7 @@ Pipe::PipeBackedQueue::~PipeBackedQueue() {
 void Pipe::PipeBackedQueue::dumpFirstPage() {
   // TODO(karlschimpf) Optimize this!
   for (size_t i = 0, Size = FirstPage->getPageSize(); i < Size; ++i)
-    MyPipe.WritePos.writeByte(FirstPage->Buffer[i]);
+    MyPipe.WritePos.writeByte(FirstPage->getByte(i));
   Queue::dumpFirstPage();
 }
 
