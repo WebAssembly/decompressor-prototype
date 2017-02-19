@@ -14,10 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <cstring>
-#include <unistd.h>
-
-#include <iostream>
 
 #include "algorithms/casm0x0.h"
 #include "algorithms/wasm0xd.h"
@@ -29,10 +25,7 @@
 #include "stream/FileReader.h"
 #include "stream/FileWriter.h"
 #include "stream/ReadBackedQueue.h"
-#include "stream/StreamReader.h"
-#include "stream/StreamWriter.h"
 #include "stream/WriteBackedQueue.h"
-#include "utils/Defs.h"
 #include "utils/ArgsParse.h"
 
 using namespace wasm;
@@ -41,24 +34,15 @@ using namespace wasm::decode;
 using namespace wasm::interp;
 using namespace wasm::utils;
 
-bool UseFileStreams = true;
 const char* InputFilename = "-";
 const char* OutputFilename = "-";
 
 std::shared_ptr<RawStream> getInput() {
-  if (UseFileStreams)
-    return std::make_shared<FileReader>(InputFilename);
-  if (InputFilename == std::string("-"))
-    return std::make_shared<StreamReader>(std::cin);
-  return std::make_shared<FstreamReader>(InputFilename);
+  return std::make_shared<FileReader>(InputFilename);
 }
 
 std::shared_ptr<RawStream> getOutput() {
-  if (UseFileStreams)
-    return std::make_shared<FileWriter>(OutputFilename);
-  if (OutputFilename == std::string("-"))
-    return std::make_shared<StreamWriter>(std::cout);
-  return std::make_shared<FstreamWriter>(OutputFilename);
+  return std::make_shared<FileWriter>(OutputFilename);
 }
 
 int runUsingCApi(bool TraceProgress) {
@@ -133,12 +117,6 @@ int main(const int Argc, const char* Argv[]) {
         OutputFilenameFlag.setShortName('o')
             .setOptionName("OUTPUT")
             .setDescription("Puts the decompressed input into file OUTPUT"));
-
-    ArgsParser::Toggle UseFileStreamsFlag(UseFileStreams);
-    Args.add(
-        UseFileStreamsFlag.setDefault(true).setShortName('s').setDescription(
-            "Toggles to use file streams (when true) "
-            "instead of C++ streams"));
 
     ArgsParser::Toggle MinimizeBlockSizeFlag(MinimizeBlockSize);
     Args.add(MinimizeBlockSizeFlag.setDefault(true)

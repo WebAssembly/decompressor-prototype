@@ -14,10 +14,6 @@
 // See the License for the specific language governing permissions ando
 // limitations under the License.
 
-#include <cstdlib>
-#include <cstring>
-#include <unistd.h>
-
 #include "algorithms/wasm0xd.h"
 #include "intcomp/IntCompress.h"
 #include "stream/FileReader.h"
