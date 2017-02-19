@@ -29,30 +29,22 @@ class WriteCursorBase : public Cursor {
  public:
   // Note: The nullary write cursor should not be used until it has been
   // assigned a value.
-  WriteCursorBase() : Cursor() {}
-
-  WriteCursorBase(std::shared_ptr<Queue> Que) : Cursor(StreamType::Byte, Que) {}
-
-  WriteCursorBase(StreamType Type, std::shared_ptr<Queue> Que)
-      : Cursor(Type, Que) {}
-
-  explicit WriteCursorBase(const WriteCursorBase& C) : Cursor(C) {}
-  WriteCursorBase(const Cursor& C, size_t StartAddress)
-      : Cursor(C, StartAddress, false) {}
-
-  virtual ~WriteCursorBase();
+  WriteCursorBase();
+  WriteCursorBase(std::shared_ptr<Queue> Que);
+  WriteCursorBase(StreamType Type, std::shared_ptr<Queue> Que);
+  explicit WriteCursorBase(const WriteCursorBase& C);
+  WriteCursorBase(const Cursor& C, size_t StartAddress);
+  ~WriteCursorBase() OVERRIDE;
+  // Writes next byte. Fails if at end of file.
+  virtual void writeByte(uint8_t Byte);
 
   WriteCursorBase& operator=(const WriteCursorBase& C) {
     assign(C);
     return *this;
   }
 
-  // Writes next byte. Fails if at end of file.
-  virtual void writeByte(uint8_t Byte);
-
  protected:
   void writeOneByte(uint8_t Byte);
-
   virtual void writeFillWriteByte(uint8_t Byte) = 0;
 };
 

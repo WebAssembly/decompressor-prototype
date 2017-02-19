@@ -29,44 +29,30 @@ namespace decode {
 class BitWriteCursor : public WriteCursor {
  public:
   typedef uint32_t WordType;
-
   BitWriteCursor();
-
   BitWriteCursor(std::shared_ptr<Queue> Que);
-
   BitWriteCursor(StreamType Type, std::shared_ptr<Queue> Que);
-
   BitWriteCursor(const BitWriteCursor& C);
-
   BitWriteCursor(const BitWriteCursor& C, size_t StartAddress);
-
   ~BitWriteCursor() OVERRIDE;
-
   bool atEof() const OVERRIDE;
-
   void assign(const BitWriteCursor& C);
+  void swap(BitWriteCursor& C);
+  void writeByte(uint8_t Byte) OVERRIDE;
+  void writeBit(uint8_t Bit);
+  void alignToByte();
 
   BitWriteCursor& operator=(const BitWriteCursor& C) {
     assign(C);
     return *this;
   }
 
-  void swap(BitWriteCursor& C);
-
-  void writeByte(uint8_t Byte) OVERRIDE;
-  void writeBit(uint8_t Bit);
-  void alignToByte();
-
   void describeDerivedExtensions(FILE* File, bool IncludeDetail) OVERRIDE;
 
  private:
   WordType CurWord;
   unsigned NumBits;
-
-  void initFields() {
-    CurWord = 0;
-    NumBits = 0;
-  }
+  void initFields();
 };
 
 }  // end of namespace decode

@@ -22,6 +22,27 @@ using namespace utils;
 
 namespace decode {
 
+WriteCursor::WriteCursor() : WriteCursorBase() {
+}
+
+WriteCursor::WriteCursor(std::shared_ptr<Queue> Que)
+    : WriteCursorBase(StreamType::Byte, Que) {
+}
+
+WriteCursor::WriteCursor(StreamType Type, std::shared_ptr<Queue> Que)
+    : WriteCursorBase(Type, Que) {
+}
+
+WriteCursor::WriteCursor(const WriteCursor& C) : WriteCursorBase(C) {
+}
+
+WriteCursor::WriteCursor(const Cursor& C, size_t StartAddress)
+    : WriteCursorBase(C, StartAddress) {
+}
+
+WriteCursor::WriteCursor(const WriteCursorBase& C) : WriteCursorBase(C) {
+}
+
 WriteCursor::~WriteCursor() {
 }
 

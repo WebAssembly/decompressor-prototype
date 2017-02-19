@@ -14,8 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Defines a pointer to a byte stream (for reading) that can written a bit at a
-// time.
+// Imgplements a pointer to a byte stream (for reading) that can written a bit
+// at a time.
 
 #include "stream/BitWriteCursor.h"
 
@@ -52,6 +52,11 @@ BitWriteCursor::BitWriteCursor(const BitWriteCursor& C, size_t StartAddress)
 }
 
 BitWriteCursor::~BitWriteCursor() {
+}
+
+void BitWriteCursor::initFields() {
+  CurWord = 0;
+  NumBits = 0;
 }
 
 bool BitWriteCursor::atEof() const {
