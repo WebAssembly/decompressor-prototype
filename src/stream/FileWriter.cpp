@@ -17,8 +17,6 @@
 
 #include "stream/FileWriter.h"
 
-#include <algorithm>
-#include <cstring>
 #include <fcntl.h>
 #include <unistd.h>
 
