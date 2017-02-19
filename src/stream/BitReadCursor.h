@@ -34,7 +34,7 @@ class BitReadCursor : public ReadCursor {
   BitReadCursor(StreamType Type, std::shared_ptr<Queue> Que);
   explicit BitReadCursor(const BitReadCursor& C);
   BitReadCursor(const BitReadCursor& C, size_t StartAddress);
-  ~BitReadCursor();
+  ~BitReadCursor() OVERRIDE;
 
   void assign(const BitReadCursor& C);
 
@@ -56,10 +56,7 @@ class BitReadCursor : public ReadCursor {
   WordType CurWord;
   unsigned NumBits;
 
-  void initFields() {
-    CurWord = 0;
-    NumBits = 0;
-  }
+  void initFields();
 };
 
 }  // end of namespace decode

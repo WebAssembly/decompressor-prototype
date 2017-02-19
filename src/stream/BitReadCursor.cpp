@@ -55,6 +55,11 @@ BitReadCursor::BitReadCursor(const BitReadCursor& C, size_t StartAddress)
 BitReadCursor::~BitReadCursor() {
 }
 
+void BitReadCursor::initFields() {
+  CurWord = 0;
+  NumBits = 0;
+}
+
 void BitReadCursor::assign(const BitReadCursor& C) {
   ReadCursor::assign(C);
   CurWord = C.CurWord;
