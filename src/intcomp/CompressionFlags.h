@@ -42,6 +42,8 @@ inline bool hasFlag(CollectionFlag F, CollectionFlags Flags) {
   return makeFlags(F) & Flags;
 }
 
+charstring getName(CollectionFlags Flags);
+
 struct CompressionFlags {
   size_t CountCutoff;
   size_t WeightCutoff;

@@ -240,6 +240,7 @@ INTCOMP_SRCS = \
 	AbbreviationCodegen.cpp \
 	AbbreviationsCollector.cpp \
 	AbbrevSelector.cpp \
+	CompressionFlags.cpp \
 	CountNodeCollector.cpp \
 	CountWriter.cpp \
 	IntCompress.cpp \
