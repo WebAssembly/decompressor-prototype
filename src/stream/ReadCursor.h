@@ -44,8 +44,7 @@ class ReadCursor : public Cursor {
     assign(C);
     return *this;
   }
-
-  bool atEob() OVERRIDE;
+  virtual bool atEob();
   void pushEobAddress(AddressType NewValue);
   void popEobAddress();
 
