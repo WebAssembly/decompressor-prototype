@@ -87,19 +87,6 @@ Page* PageCursor::getCurPage() const {
   return CurPage.get();
 }
 
-#if 0
-namespace {
-
-void describePage(FILE* File, Page* Pg) {
-  if (Pg == nullptr)
-    fprintf(File, " nullptr");
-  else
-    Pg->describe(File);
-}
-
-} // end of anonymous namespace
-#endif
-
 FILE* PageCursor::describe(FILE* File, bool IncludePage) {
   AddressType Addr(CurAddress);
   describeAddress(File, Addr);

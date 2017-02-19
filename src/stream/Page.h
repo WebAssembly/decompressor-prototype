@@ -63,22 +63,6 @@ class Page : public std::enable_shared_from_this<Page> {
   friend class Queue;
 
  public:
-#if 0
-  // Page index associated with address in queue.
-  static constexpr size_t index(size_t Address) {
-    return Address >> PageSizeLog2;
-  }
-
-  // Returns address within a Page that refers to address.
-  static constexpr size_t address(size_t Address) {
-    return Address & PageMask;
-  }
-
-  // Returns the minimum address for a page index.
-  static constexpr size_t minAddressForPage(size_t PageIndex) {
-    return PageIndex << SizeLog2;
-  }
-#endif
 
   Page(size_t PageIndex);
   size_t spaceRemaining() const;
@@ -106,58 +90,6 @@ class Page : public std::enable_shared_from_this<Page> {
 };
 
 void describePage(FILE* File, Page* Pg);
-
-#if 0
-class PageCursor {
-  friend class Queue;
-
- public:
-  PageCursor() : CurAddress(0) {}
-  PageCursor(Queue* Que);
-  PageCursor(std::shared_ptr<Page> CurPage, size_t CurAddress)
-      : CurPage(CurPage), CurAddress(CurAddress) {
-    assert(CurPage);
-  }
-  PageCursor(const PageCursor& PC)
-      : CurPage(PC.CurPage), CurAddress(PC.CurAddress) {
-    //    assert(CurPage);
-  }
-  PageCursor& operator=(const PageCursor& C) {
-    CurPage = C.CurPage;
-    CurAddress = C.CurAddress;
-    return *this;
-  }
-  size_t getMinAddress() const {
-    return CurPage ? CurPage->getMinAddress() : 0;
-  }
-  size_t getMaxAddress() const {
-    return CurPage ? CurPage->getMaxAddress() : 0;
-  }
-  bool isValidPageAddress(size_t Address) {
-    return getMinAddress() <= Address && Address < getMaxAddress();
-  }
-  void setCurAddress(size_t NewAddress) { CurAddress = NewAddress; }
-  size_t getCurAddress() const { return CurAddress; }
-  size_t getRelativeAddress() const {
-    return CurAddress - CurPage->getMinAddress();
-  }
-  void setMaxAddress(size_t Address) { CurPage->setMaxAddress(Address); }
-  bool isIndexAtEndOfPage() const { return getCurAddress() == getMaxAddress(); }
-  uint8_t* getBufferPtr() {
-    assert(CurPage);
-    return CurPage->getByteAddress(getRelativeAddress());
-  }
-  // For debugging only.
-  Page* getCurPage() const { return CurPage.get(); }
-  FILE* describe(FILE* File, bool IncludePage = false);
-
- protected:
-  std::shared_ptr<Page> CurPage;
-  // Absolute address.
-  size_t CurAddress;
-};
-
-#endif
 
 }  // end of namespace decode
 

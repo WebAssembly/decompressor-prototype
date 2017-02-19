@@ -48,21 +48,6 @@ void describePage(FILE* File, Page* Pg) {
     Pg->describe(File);
 }
 
-#if 0
-PageCursor::PageCursor(Queue* Que)
-    : CurPage(Que->FirstPage), CurAddress(Que->FirstPage->getMinAddress()) {
-  assert(CurPage);
-}
-
-FILE* PageCursor::describe(FILE* File, bool IncludePage) {
-  AddressType Addr(CurAddress);
-  describeAddress(File, Addr);
-  if (IncludePage)
-    describePage(File, CurPage.get());
-  return File;
-}
-#endif
-
 }  // end of namespace decode
 
 }  // end of namespace wasm

@@ -69,14 +69,9 @@ bool Cursor::atEof() const {
 }
 
 void Cursor::swap(Cursor& C) {
-#if 1
   PageCursor::swap(C);
-#endif
   std::swap(Type, C.Type);
   std::swap(Que, C.Que);
-#if 0
-  std::swap(static_cast<PageCursor&>(*this), static_cast<PageCursor&>(C));
-#endif
   std::swap(EobPtr, C.EobPtr);
   std::swap(CurByte, C.CurByte);
   std::swap(CurByte, C.CurByte);
@@ -84,14 +79,9 @@ void Cursor::swap(Cursor& C) {
 }
 
 void Cursor::assign(const Cursor& C) {
-#if 1
   PageCursor::assign(C);
-#endif
   Type = C.Type;
   Que = C.Que;
-#if 0
-  static_cast<PageCursor&>(*this) = static_cast<const PageCursor&>(C);
-#endif
   EobPtr = C.EobPtr;
   CurByte = C.CurByte;
   GuaranteedBeforeEob = C.GuaranteedBeforeEob;
