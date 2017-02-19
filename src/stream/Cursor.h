@@ -19,6 +19,7 @@
 #ifndef DECOMPRESSOR_SRC_STREAM_CURSOR_H
 #define DECOMPRESSOR_SRC_STREAM_CURSOR_H
 
+#include "stream/PageCursor.h"
 #include "stream/Queue.h"
 #include "utils/Trace.h"
 

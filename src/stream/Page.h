@@ -114,6 +114,7 @@ class Page : public std::enable_shared_from_this<Page> {
 
 void describePage(FILE* File, Page* Pg);
 
+#if 0
 class PageCursor {
   friend class Queue;
 
@@ -162,6 +163,8 @@ class PageCursor {
   // Absolute address.
   size_t CurAddress;
 };
+
+#endif
 
 }  // end of namespace decode
 

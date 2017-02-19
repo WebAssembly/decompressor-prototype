@@ -178,6 +178,7 @@ STRM_SRCS = \
 	FileWriter.cpp \
 	Cursor.cpp \
 	Page.cpp \
+	PageCursor.cpp \
 	Pipe.cpp \
 	Queue.cpp \
 	ReadCursor.cpp \

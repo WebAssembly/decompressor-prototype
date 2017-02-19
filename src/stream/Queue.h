@@ -43,6 +43,8 @@ namespace wasm {
 
 namespace decode {
 
+class PageCursor;
+
 // Note: We reserve the last page to be an "error" page. This allows us to
 // guarantee that read/write cursors are always associated with a (defined)
 // page.
@@ -175,11 +177,8 @@ class Queue : public std::enable_shared_from_this<Queue> {
   // Note: May change Address if queue is broken, or Address not valid.
   void freezeEof(size_t& Address);
 
-  bool isBroken(const PageCursor& C) const {
-    assert(C.CurPage);
-    return C.CurPage->getPageIndex() >= kErrorPageIndex;
-  }
-  bool isEofFrozen() const { return EofFrozen; }
+  bool isBroken(const PageCursor& C) const;
+  bool isEofFrozen();
   bool isGood() const { return Status == StatusValue::Good; }
 
   const std::shared_ptr<BlockEob>& getEofPtr() const { return EofPtr; }

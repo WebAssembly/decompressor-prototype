@@ -44,15 +44,16 @@
 // TODO(karlschimpf) The current implementation is NOT thread safe, but should
 // be easy to make thread safe.
 
-#ifndef DECOMPRESSOR_SRC_STREAM_PAGE_H_
-#define DECOMPRESSOR_SRC_STREAM_PAGE_H_
+#ifndef DECOMPRESSOR_SRC_STREAM_PAGECURSOR_H_
+#define DECOMPRESSOR_SRC_STREAM_PAGECURSOR_H_
 
-#include "stream/RawStream.h"
+#include "stream/Page.h"
 
 namespace wasm {
 
 namespace decode {
 
+#if 0
 class Queue;
 
 class Page : public std::enable_shared_from_this<Page> {
@@ -113,6 +114,7 @@ class Page : public std::enable_shared_from_this<Page> {
 };
 
 void describePage(FILE* File, Page* Pg);
+#endif
 
 class PageCursor {
   friend class Queue;
@@ -167,4 +169,4 @@ class PageCursor {
 
 }  // end of namespace wasm
 
-#endif  // DECOMPRESSOR_SRC_STREAM_PAGE_H_
+#endif  // DECOMPRESSOR_SRC_STREAM_PAGECURSOR_H_

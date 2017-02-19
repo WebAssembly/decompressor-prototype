@@ -14,13 +14,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "stream/Page.h"
+#include "stream/PageCursor.h"
+
 #include "stream/Queue.h"
 
 namespace wasm {
 
 namespace decode {
 
+#if 0
 Page::Page(size_t PageIndex)
     : Index(PageIndex),
       MinAddress(minAddressForPage(PageIndex)),
@@ -40,6 +42,7 @@ FILE* Page::describe(FILE* File) {
           (void*)this);
   return File;
 }
+#endif
 
 PageCursor::PageCursor(Queue* Que)
     : CurPage(Que->FirstPage), CurAddress(Que->FirstPage->getMinAddress()) {

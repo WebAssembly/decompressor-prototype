@@ -17,6 +17,8 @@
 
 #include "stream/Queue.h"
 
+#include "stream/PageCursor.h"
+
 namespace wasm {
 
 namespace decode {
@@ -267,6 +269,11 @@ void Queue::freezeEof(size_t& Address) {
     if (Cursor.CurPage->Next)
       Cursor.CurPage->Next.reset();
   }
+}
+
+bool Queue::isBroken(const PageCursor& C) const {
+  assert(C.CurPage);
+  return C.CurPage->getPageIndex() >= kErrorPageIndex;
 }
 
 size_t Queue::read(size_t& Address, uint8_t* ToBuf, size_t WantedSize) {

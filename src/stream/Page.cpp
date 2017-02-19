@@ -41,6 +41,7 @@ FILE* Page::describe(FILE* File) {
   return File;
 }
 
+#if 0
 PageCursor::PageCursor(Queue* Que)
     : CurPage(Que->FirstPage), CurAddress(Que->FirstPage->getMinAddress()) {
   assert(CurPage);
@@ -60,6 +61,7 @@ FILE* PageCursor::describe(FILE* File, bool IncludePage) {
     describePage(File, CurPage.get());
   return File;
 }
+#endif
 
 }  // end of namespace decode
 
