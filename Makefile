@@ -242,6 +242,7 @@ INTCOMP_SRCS = \
 	AbbrevSelector.cpp \
 	CompressionFlags.cpp \
 	CountNode.cpp \
+	CountNodeVisitor.cpp \
 	CountNodeCollector.cpp \
 	CountWriter.cpp \
 	IntCompress.cpp \
