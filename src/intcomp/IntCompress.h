@@ -21,7 +21,7 @@
 
 #include "intcomp/AbbrevAssignWriter.h"
 #include "intcomp/CompressionFlags.h"
-#include "intcomp/IntCountNode.h"
+#include "intcomp/CountNode.h"
 #include "interp/Interpreter.h"
 #include "interp/IntFormats.h"
 #include "interp/IntStream.h"

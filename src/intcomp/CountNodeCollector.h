@@ -21,7 +21,7 @@
 #define DECOMPRESSOR_SRC_INTCOMP_COUNTNODECOLLECTOR_H
 
 #include "intcomp/CompressionFlags.h"
-#include "intcomp/IntCountNode.h"
+#include "intcomp/CountNode.h"
 #include "utils/Trace.h"
 
 namespace wasm {

@@ -20,7 +20,7 @@
 #define DECOMPRESSOR_SRC_INTCOMP_ABBREVSELECTOR_H_
 
 #include "intcomp/CompressionFlags.h"
-#include "intcomp/IntCountNode.h"
+#include "intcomp/CountNode.h"
 #include "interp/IntFormats.h"
 #include "utils/circular-vector.h"
 #include "utils/Trace.h"

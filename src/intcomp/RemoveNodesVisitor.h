@@ -20,7 +20,7 @@
 #ifndef DECOMPRESSOR_SRC_INTCOMP_REMOVENODESVISITOR_H
 #define DECOMPRESSOR_SRC_INTCOMP_REMOVENODESVISITOR_H
 
-#include "intcomp/IntCountNode.h"
+#include "intcomp/CountNode.h"
 
 namespace wasm {
 

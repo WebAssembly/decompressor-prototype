@@ -19,7 +19,7 @@
 #ifndef DECOMPRESSOR_SRC_INTCOMP_ABBREVIATIONCODEGEN_H
 #define DECOMPRESSOR_SRC_INTCOMP_ABBREVIATIONCODEGEN_H
 
-#include "intcomp/IntCountNode.h"
+#include "intcomp/CountNode.h"
 #include "sexp/Ast.h"
 
 namespace wasm {
