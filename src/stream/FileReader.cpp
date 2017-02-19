@@ -17,7 +17,6 @@
 
 #include "stream/FileReader.h"
 
-#include <cstring>
 #include <fcntl.h>
 #include <unistd.h>
 
