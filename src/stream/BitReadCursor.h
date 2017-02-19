@@ -17,8 +17,8 @@
 // Defines a pointer to a byte stream (for reading) that can read a bit
 // at a time.
 
-#ifndef DECOMPRESSOR_SRC_STREAM_BITREADCURSOR_H
-#define DECOMPRESSOR_SRC_STREAM_BITREADCURSOR_H
+#ifndef DECOMPRESSOR_SRC_STREAM_BITREADCURSOR_H_
+#define DECOMPRESSOR_SRC_STREAM_BITREADCURSOR_H_
 
 #include "stream/ReadCursor.h"
 
@@ -33,8 +33,8 @@ class BitReadCursor : public ReadCursor {
   BitReadCursor(std::shared_ptr<Queue> Que);
   BitReadCursor(StreamType Type, std::shared_ptr<Queue> Que);
   explicit BitReadCursor(const BitReadCursor& C);
-  BitReadCursor(const BitReadCursor& C, size_t StartAddress);
-  ~BitReadCursor();
+  BitReadCursor(const BitReadCursor& C, AddressType StartAddress);
+  ~BitReadCursor() OVERRIDE;
 
   void assign(const BitReadCursor& C);
 
@@ -46,8 +46,8 @@ class BitReadCursor : public ReadCursor {
   void swap(BitReadCursor& C);
 
   bool atEob() OVERRIDE;
-  uint8_t readByte() OVERRIDE;
-  uint8_t readBit();
+  ByteType readByte() OVERRIDE;
+  ByteType readBit();
   void alignToByte();
 
   void describeDerivedExtensions(FILE* File, bool IncludeDetail) OVERRIDE;
@@ -56,14 +56,11 @@ class BitReadCursor : public ReadCursor {
   WordType CurWord;
   unsigned NumBits;
 
-  void initFields() {
-    CurWord = 0;
-    NumBits = 0;
-  }
+  void initFields();
 };
 
 }  // end of namespace decode
 
 }  // end of namespace wasm
 
-#endif  // DECOMPRESSOR_SRC_STREAM_BITREADCURSOR_H
+#endif  // DECOMPRESSOR_SRC_STREAM_BITREADCURSOR_H_

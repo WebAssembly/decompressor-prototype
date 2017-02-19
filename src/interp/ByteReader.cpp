@@ -158,7 +158,7 @@ void ByteReader::readFillStart() {
 void ByteReader::readFillMoreInput() {
   if (FillCursor.atEof())
     return;
-  FillCursor.advance(Page::Size);
+  FillCursor.advance(PageSize);
 }
 
 uint8_t ByteReader::readUint8() {

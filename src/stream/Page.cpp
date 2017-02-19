@@ -21,11 +21,17 @@ namespace wasm {
 
 namespace decode {
 
-Page::Page(size_t PageIndex)
+Page::Page(AddressType PageIndex)
     : Index(PageIndex),
       MinAddress(minAddressForPage(PageIndex)),
       MaxAddress(minAddressForPage(PageIndex)) {
-  std::memset(&Buffer, 0, Page::Size);
+  std::memset(&Buffer, 0, PageSize);
+}
+
+AddressType Page::spaceRemaining() const {
+  return MinAddress == MaxAddress
+             ? PageSize
+             : PageSize - (PageAddress(MaxAddress - 1) + 1);
 }
 
 FILE* Page::describe(FILE* File) {
@@ -35,24 +41,11 @@ FILE* Page::describe(FILE* File) {
   return File;
 }
 
-PageCursor::PageCursor(Queue* Que)
-    : CurPage(Que->FirstPage), CurAddress(Que->FirstPage->getMinAddress()) {
-  assert(CurPage);
-}
-
 void describePage(FILE* File, Page* Pg) {
   if (Pg == nullptr)
     fprintf(File, " nullptr");
   else
     Pg->describe(File);
-}
-
-FILE* PageCursor::describe(FILE* File, bool IncludePage) {
-  AddressType Addr(CurAddress);
-  describeAddress(File, Addr);
-  if (IncludePage)
-    describePage(File, CurPage.get());
-  return File;
 }
 
 }  // end of namespace decode

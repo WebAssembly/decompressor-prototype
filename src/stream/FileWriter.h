@@ -17,41 +17,37 @@
 
 // Writes text into a file descriptor.
 
-#ifndef DECOMPRESSOR_SRC_STREAM_FILEWRITER_H
-#define DECOMPRESSOR_SRC_STREAM_FILEWRITER_H
+#ifndef DECOMPRESSOR_SRC_STREAM_FILEWRITER_H_
+#define DECOMPRESSOR_SRC_STREAM_FILEWRITER_H_
 
 #include "stream/RawStream.h"
-
-#include <cstdio>
-#include <memory>
 
 namespace wasm {
 
 namespace decode {
 
 class FileWriter : public RawStream {
+  FileWriter() = delete;
   FileWriter(const FileWriter&) = delete;
   FileWriter& operator=(const FileWriter&) = delete;
 
  public:
   explicit FileWriter(const char* Filename);
-
   ~FileWriter() OVERRIDE;
-  size_t read(uint8_t* Buf, size_t Size = 1) OVERRIDE;
-  bool write(uint8_t* Buf, size_t Size = 1) OVERRIDE;
+  AddressType read(ByteType* Buf, AddressType Size = 1) OVERRIDE;
+  bool write(ByteType* Buf, AddressType Size = 1) OVERRIDE;
   bool freeze() OVERRIDE;
   bool atEof() OVERRIDE;
   bool hasErrors() OVERRIDE;
 
  protected:
   FILE* File;
-  static constexpr size_t kBufSize = 4096;
-  uint8_t Bytes[kBufSize];
-  size_t CurSize;
+  static constexpr AddressType kBufSize = 4096;
+  ByteType Bytes[kBufSize];
+  AddressType CurSize;
   bool FoundErrors;
   bool IsFrozen;
   bool CloseOnExit;
-
   bool saveBuffer();
 };
 

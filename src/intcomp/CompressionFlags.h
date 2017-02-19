@@ -42,6 +42,8 @@ inline bool hasFlag(CollectionFlag F, CollectionFlags Flags) {
   return makeFlags(F) & Flags;
 }
 
+charstring getName(CollectionFlags Flags);
+
 struct CompressionFlags {
   size_t CountCutoff;
   size_t WeightCutoff;
@@ -54,7 +56,6 @@ struct CompressionFlags {
   bool MinimizeCodeSize;
   bool UseHuffmanEncoding;
   bool TrimOverriddenPatterns;
-  bool CheckOverlapping;
   bool ReassignAbbreviations;
   interp::IntTypeFormat DefaultFormat;
   interp::IntTypeFormat LoopSizeFormat;

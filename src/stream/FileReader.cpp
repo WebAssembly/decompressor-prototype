@@ -17,7 +17,6 @@
 
 #include "stream/FileReader.h"
 
-#include <cstring>
 #include <fcntl.h>
 #include <unistd.h>
 
@@ -47,7 +46,7 @@ bool FileReader::hasErrors() {
 }
 
 void FileReader::fillBuffer() {
-  CurSize = fread(Bytes, sizeof(uint8_t), kBufSize, File);
+  CurSize = fread(Bytes, sizeof(ByteType), kBufSize, File);
   BytesRemaining = CurSize;
   if (CurSize < kBufSize) {
     if (ferror(File)) {
@@ -67,16 +66,16 @@ void FileReader::closeFile() {
   }
 }
 
-size_t FileReader::read(uint8_t* Buf, size_t Size) {
-  size_t Count = 0;
+AddressType FileReader::read(ByteType* Buf, AddressType Size) {
+  AddressType Count = 0;
   while (Size) {
     if (BytesRemaining >= Size) {
-      const size_t Index = CurSize - BytesRemaining;
+      const AddressType Index = CurSize - BytesRemaining;
       memcpy(Buf, Bytes + Index, Size);
       BytesRemaining -= Size;
       return Count + Size;
     } else if (BytesRemaining) {
-      const size_t Index = CurSize - BytesRemaining;
+      const AddressType Index = CurSize - BytesRemaining;
       memcpy(Buf, Bytes + Index, BytesRemaining);
       Buf += BytesRemaining;
       Count += BytesRemaining;
@@ -90,7 +89,7 @@ size_t FileReader::read(uint8_t* Buf, size_t Size) {
   return Count;
 }
 
-bool FileReader::write(uint8_t* Buf, size_t Size) {
+bool FileReader::write(ByteType* Buf, AddressType Size) {
   (void)Buf;
   (void)Size;
   return false;

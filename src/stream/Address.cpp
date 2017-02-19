@@ -1,4 +1,4 @@
-// -*- C++ -*- */
+// -*- C++ -*-
 //
 // Copyright 2016 WebAssembly Community Group participants
 //
@@ -14,40 +14,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Defines a string stream for reading.
-
-#ifndef DECOMPRESSOR_SRC_STREAM_STRINGWRITER_H_
-#define DECOMPRESSOR_SRC_STREAM_STRINGWRITER_H_
-
-#include <string>
-
-#include "stream/RawStream.h"
+#include "stream/Address.h"
 
 namespace wasm {
 
 namespace decode {
 
-class StringWriter : public RawStream {
-  StringWriter() = delete;
-  StringWriter(const StringWriter&) = delete;
-  StringWriter& operator=(const StringWriter&) = delete;
-
- public:
-  StringWriter(std::string& Str);
-  ~StringWriter();
-
-  AddressType read(ByteType* Buf, AddressType Size = 1) OVERRIDE;
-  bool write(ByteType* Buf, AddressType Size = 1) OVERRIDE;
-  bool freeze() OVERRIDE;
-  bool atEof() OVERRIDE;
-
- private:
-  std::string& Str;
-  bool IsFrozen;
-};
+void describeAddress(FILE* File, AddressType Addr) {
+  fprintf(File, "@%" PRIxMAX, uintmax_t(Addr));
+}
 
 }  // end of namespace decode
 
 }  // end of namespace wasm
-
-#endif  // DECOMPRESSOR_SRC_STREAM_STRINGWRITER_H_

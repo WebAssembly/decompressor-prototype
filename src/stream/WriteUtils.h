@@ -17,12 +17,10 @@
 
 // Defines write utilities.
 
-#ifndef DECOMPRESSOR_SRC_STREAM_WRITEUTILS_H
-#define DECOMPRESSOR_SRC_STREAM_WRITEUTILS_H
+#ifndef DECOMPRESSOR_SRC_STREAM_WRITEUTILS_H_
+#define DECOMPRESSOR_SRC_STREAM_WRITEUTILS_H_
 
 #include "utils/Defs.h"
-
-#include <cstdio>
 
 namespace wasm {
 
@@ -49,4 +47,4 @@ void writeInt(FILE* File, IntType Value, ValueFormat Format);
 
 }  // end of namespace wasm
 
-#endif  // DECOMPRESSOR_SRC_STREAM_WRITEUTILS_H
+#endif  // DECOMPRESSOR_SRC_STREAM_WRITEUTILS_H_

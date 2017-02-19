@@ -24,6 +24,8 @@
 #include "interp/DecompressSelector.h"
 #include "interp/Interpreter.h"
 #include "stream/Pipe.h"
+#include "stream/Queue.h"
+#include "stream/WriteCursor2ReadQueue.h"
 
 namespace wasm {
 

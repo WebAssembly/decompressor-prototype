@@ -15,15 +15,16 @@
 // limitations under the License.
 //
 
-#ifndef DECOMPRESSOR_SRC_STREAM_READBACKEDQUEUE_H
-#define DECOMPRESSOR_SRC_STREAM_READBACKEDQUEUE_H
+#ifndef DECOMPRESSOR_SRC_STREAM_READBACKEDQUEUE_H_
+#define DECOMPRESSOR_SRC_STREAM_READBACKEDQUEUE_H_
 
 #include "stream/Queue.h"
-#include "stream/RawStream.h"
 
 namespace wasm {
 
 namespace decode {
+
+class RawStream;
 
 // Read-only queue that is write-filled from a steam using the given
 // Reader.
@@ -33,11 +34,8 @@ class ReadBackedQueue FINAL : public Queue {
   ReadBackedQueue() = delete;
 
  public:
-  ReadBackedQueue(std::shared_ptr<RawStream> _Reader) {
-    assert(_Reader);
-    Reader = std::move(_Reader);
-  }
-  ~ReadBackedQueue() OVERRIDE {}
+  ReadBackedQueue(std::shared_ptr<RawStream> _Reader);
+  ~ReadBackedQueue() OVERRIDE;
 
  private:
   // Reader to write fill buffer as needed.
@@ -50,4 +48,4 @@ class ReadBackedQueue FINAL : public Queue {
 
 }  // end of namespace wasm
 
-#endif  // DECOMPRESSOR_SRC_STREAM_READBACKEDQUEUE_H
+#endif  // DECOMPRESSOR_SRC_STREAM_READBACKEDQUEUE_H_

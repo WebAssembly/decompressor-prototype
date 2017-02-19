@@ -588,6 +588,11 @@ void SymbolTable::installDefinitions(Node* Root) {
   }
 }
 
+void SymbolTable::describe(FILE* Out) {
+  TextWriter Writer;
+  Writer.write(Out, getInstalledRoot());
+}
+
 Node* SymbolTable::stripUsing(Node* Root,
                               std::function<Node*(Node*)> stripKid) {
   switch (Root->getType()) {

@@ -16,11 +16,35 @@
 
 #include "stream/ReadCursor.h"
 
+#include "stream/BlockEob.h"
+#include "stream/Queue.h"
+
 namespace wasm {
 
 using namespace utils;
 
 namespace decode {
+
+ReadCursor::ReadCursor() : Cursor() {
+}
+
+ReadCursor::ReadCursor(std::shared_ptr<Queue> Que)
+    : Cursor(StreamType::Byte, Que) {
+}
+
+ReadCursor::ReadCursor(StreamType Type, std::shared_ptr<Queue> Que)
+    : Cursor(Type, Que) {
+}
+
+ReadCursor::ReadCursor(const Cursor& C) : Cursor(C) {
+}
+
+ReadCursor::ReadCursor(const Cursor& C, size_t StartAddress)
+    : Cursor(C, StartAddress, true) {
+}
+
+ReadCursor::~ReadCursor() {
+}
 
 bool ReadCursor::atEob() {
   if (CurAddress < GuaranteedBeforeEob)
@@ -28,6 +52,17 @@ bool ReadCursor::atEob() {
   bool Result = CurAddress >= getEobAddress() || !readFillBuffer();
   updateGuaranteedBeforeEob();
   return Result;
+}
+
+void ReadCursor::pushEobAddress(AddressType NewValue) {
+  EobPtr = std::make_shared<BlockEob>(NewValue, EobPtr);
+  updateGuaranteedBeforeEob();
+}
+
+void ReadCursor::popEobAddress() {
+  EobPtr = EobPtr->getEnclosingEobPtr();
+  assert(EobPtr);
+  updateGuaranteedBeforeEob();
 }
 
 uint8_t ReadCursor::readByteAfterReadFill() {
@@ -42,7 +77,7 @@ size_t ReadCursor::advance(size_t Distance) {
   size_t WantedAddress = CurAddress + Distance;
   size_t DistanceMoved = 0;
   while (CurAddress < WantedAddress && CurAddress < Que->getEofAddress()) {
-    size_t Size = Que->readFromPage(CurAddress, Page::Size, *this);
+    size_t Size = Que->readFromPage(CurAddress, PageSize, *this);
     if (Size == 0)
       break;
     CurAddress += Size;

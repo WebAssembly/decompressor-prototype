@@ -15,15 +15,16 @@
 // limitations under the License.
 //
 
-#ifndef DECOMPRESSOR_SRC_STREAM_WRITEBACKEDQUEUE_H
-#define DECOMPRESSOR_SRC_STREAM_WRITEBACKEDQUEUE_H
+#ifndef DECOMPRESSOR_SRC_STREAM_WRITEBACKEDQUEUE_H_
+#define DECOMPRESSOR_SRC_STREAM_WRITEBACKEDQUEUE_H_
 
 #include "stream/Queue.h"
-#include "stream/RawStream.h"
 
 namespace wasm {
 
 namespace decode {
+
+class RawStream;
 
 // Write-only queue that is dumped to a stream using the given Writer.
 class WriteBackedQueue FINAL : public Queue {
@@ -32,11 +33,8 @@ class WriteBackedQueue FINAL : public Queue {
   WriteBackedQueue() = delete;
 
  public:
-  WriteBackedQueue(std::shared_ptr<RawStream> _Writer) {
-    assert(_Writer);
-    Writer = std::move(_Writer);
-  }
-  ~WriteBackedQueue();
+  WriteBackedQueue(std::shared_ptr<RawStream> _Writer);
+  ~WriteBackedQueue() OVERRIDE;
 
  private:
   // Writer to dump contents of queue, when the contents is no longer
@@ -50,4 +48,4 @@ class WriteBackedQueue FINAL : public Queue {
 
 }  // end of namespace wasm
 
-#endif  // DECOMPRESSOR_SRC_STREAM_WRITEBACKEDQUEUE_H
+#endif  // DECOMPRESSOR_SRC_STREAM_WRITEBACKEDQUEUE_H_

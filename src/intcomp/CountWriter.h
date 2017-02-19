@@ -20,7 +20,7 @@
 #ifndef DECOMPRESSOR_SRC_INTCOMP_COUNTWRITER_H
 #define DECOMPRESSOR_SRC_INTCOMP_COUNTWRITER_H
 
-#include "intcomp/IntCountNode.h"
+#include "intcomp/CountNode.h"
 #include "interp/Writer.h"
 
 #include <set>

@@ -44,8 +44,8 @@
 // TODO(karlschimpf) The current implementation is NOT thread safe, but should
 // be easy to make thread safe.
 
-#ifndef DECOMPRESSOR_SRC_STREAM_PAGE_H_
-#define DECOMPRESSOR_SRC_STREAM_PAGE_H_
+#ifndef DECOMPRESSOR_SRC_STREAM_PAGECURSOR_H_
+#define DECOMPRESSOR_SRC_STREAM_PAGECURSOR_H_
 
 #include "stream/Address.h"
 
@@ -53,46 +53,43 @@ namespace wasm {
 
 namespace decode {
 
+class Page;
 class Queue;
 
-class Page : public std::enable_shared_from_this<Page> {
-  Page() = delete;
-  Page(const Page&) = delete;
-  Page& operator=(const Page&) = delete;
+class PageCursor {
+  PageCursor& operator=(const PageCursor&) = delete;
   friend class Queue;
 
  public:
-  Page(AddressType PageIndex);
-  AddressType spaceRemaining() const;
-  AddressType getPageIndex() const { return Index; }
-  AddressType getMinAddress() const { return MinAddress; }
-  AddressType getMaxAddress() const { return MaxAddress; }
-  AddressType getPageSize() const { return MaxAddress - MinAddress; }
-  void setMaxAddress(AddressType NewValue) { MaxAddress = NewValue; }
-  void incrementMaxAddress(AddressType Increment = 1) {
-    MaxAddress += Increment;
-  }
-  ByteType getByte(AddressType i) const { return Buffer[i]; }
-  ByteType* getByteAddress(AddressType i) { return &Buffer[i]; }
+  PageCursor();
+  PageCursor(Queue* Que);
+  PageCursor(std::shared_ptr<Page> CurPage, AddressType CurAddress);
+  PageCursor(const PageCursor& PC);
+  ~PageCursor();
+  void assign(const PageCursor& C);
+  void swap(PageCursor& C);
 
+  AddressType getMinAddress() const;
+  AddressType getMaxAddress() const;
+  bool isValidPageAddress(AddressType Address);
+  void setCurAddress(AddressType NewAddress) { CurAddress = NewAddress; }
+  AddressType getCurAddress() const { return CurAddress; }
+  AddressType getRelativeAddress() const;
+  void setMaxAddress(AddressType Address);
+  bool isIndexAtEndOfPage() const;
+  ByteType* getBufferPtr();
   // For debugging only.
-  FILE* describe(FILE* File);
+  Page* getCurPage() const;
+  FILE* describe(FILE* File, bool IncludePage = false);
 
- private:
-  // The contents of the page.
-  ByteType Buffer[PageSize];
-  // The page index of the page.
-  AddressType Index;
-  // Note: Buffer address range is [MinAddress, MaxAddress).
-  AddressType MinAddress;
-  AddressType MaxAddress;
-  std::shared_ptr<Page> Next;
+ protected:
+  std::shared_ptr<Page> CurPage;
+  // Absolute address.
+  AddressType CurAddress;
 };
-
-void describePage(FILE* File, Page* Pg);
 
 }  // end of namespace decode
 
 }  // end of namespace wasm
 
-#endif  // DECOMPRESSOR_SRC_STREAM_PAGE_H_
+#endif  // DECOMPRESSOR_SRC_STREAM_PAGECURSOR_H_

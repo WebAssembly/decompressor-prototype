@@ -16,13 +16,54 @@
 
 #include "stream/Cursor.h"
 
+#include "stream/BlockEob.h"
+#include "stream/Page.h"
+#include "stream/Queue.h"
+
 namespace wasm {
 
 using namespace utils;
 
 namespace decode {
 
+Cursor::TraceContext::TraceContext(Cursor& Pos) : Pos(Pos) {
+}
 Cursor::TraceContext::~TraceContext() {
+}
+
+Cursor::Cursor(StreamType Type, std::shared_ptr<Queue> Que)
+    : PageCursor(Que->FirstPage, Que->FirstPage->getMinAddress()),
+      Type(Type),
+      Que(Que),
+      EobPtr(Que->getEofPtr()) {
+  updateGuaranteedBeforeEob();
+}
+
+Cursor::Cursor(const Cursor& C)
+    : PageCursor(C),
+      Type(C.Type),
+      Que(C.Que),
+      EobPtr(C.EobPtr),
+      CurByte(C.CurByte) {
+  updateGuaranteedBeforeEob();
+}
+
+Cursor::Cursor(const Cursor& C, AddressType StartAddress, bool ForRead)
+    : PageCursor(C),
+      Type(C.Type),
+      Que(C.Que),
+      EobPtr(C.EobPtr),
+      CurByte(C.CurByte) {
+  CurPage = ForRead ? Que->getReadPage(StartAddress)
+                    : Que->getWritePage(StartAddress);
+  CurAddress = StartAddress;
+  updateGuaranteedBeforeEob();
+}
+
+Cursor::Cursor() : PageCursor(), Type(StreamType::Byte) {
+}
+
+Cursor::~Cursor() {
 }
 
 bool Cursor::atEof() const {
@@ -30,9 +71,9 @@ bool Cursor::atEof() const {
 }
 
 void Cursor::swap(Cursor& C) {
+  PageCursor::swap(C);
   std::swap(Type, C.Type);
   std::swap(Que, C.Que);
-  std::swap(static_cast<PageCursor&>(*this), static_cast<PageCursor&>(C));
   std::swap(EobPtr, C.EobPtr);
   std::swap(CurByte, C.CurByte);
   std::swap(CurByte, C.CurByte);
@@ -40,12 +81,44 @@ void Cursor::swap(Cursor& C) {
 }
 
 void Cursor::assign(const Cursor& C) {
+  PageCursor::assign(C);
   Type = C.Type;
   Que = C.Que;
-  static_cast<PageCursor&>(*this) = static_cast<const PageCursor&>(C);
   EobPtr = C.EobPtr;
   CurByte = C.CurByte;
   GuaranteedBeforeEob = C.GuaranteedBeforeEob;
+}
+
+bool Cursor::isQueueGood() const {
+  return Que->isGood();
+}
+
+bool Cursor::isBroken() const {
+  return Que->isBroken(*this);
+}
+
+std::shared_ptr<Queue> Cursor::getQueue() {
+  return Que;
+}
+
+bool Cursor::isEofFrozen() const {
+  return Que->isEofFrozen();
+}
+
+AddressType Cursor::getEofAddress() const {
+  return Que->getEofAddress();
+}
+
+AddressType& Cursor::getEobAddress() const {
+  return EobPtr->getEobAddress();
+}
+
+void Cursor::freezeEof() {
+  Que->freezeEof(CurAddress);
+}
+
+AddressType Cursor::fillSize() {
+  return Que->fillSize();
 }
 
 void Cursor::TraceContext::describe(FILE* File) {
@@ -62,6 +135,11 @@ void Cursor::close() {
   GuaranteedBeforeEob = false;
 }
 
+void Cursor::updateGuaranteedBeforeEob() {
+  GuaranteedBeforeEob =
+      CurPage ? std::min(CurPage->getMaxAddress(), EobPtr->getEobAddress()) : 0;
+}
+
 void Cursor::fail() {
   Que->fail();
   CurPage = Que->getErrorPage();
@@ -73,16 +151,16 @@ void Cursor::fail() {
 bool Cursor::readFillBuffer() {
   if (CurAddress >= Que->getEofAddress())
     return false;
-  size_t BufferSize = Que->readFromPage(CurAddress, Page::Size, *this);
+  AddressType BufferSize = Que->readFromPage(CurAddress, PageSize, *this);
   return BufferSize > 0;
 }
 
-void Cursor::writeFillBuffer(size_t WantedSize) {
+void Cursor::writeFillBuffer(AddressType WantedSize) {
   if (CurAddress >= Que->getEofAddress()) {
     fail();
     return;
   }
-  size_t BufferSize = Que->writeToPage(CurAddress, WantedSize, *this);
+  AddressType BufferSize = Que->writeToPage(CurAddress, WantedSize, *this);
   if (BufferSize == 0)
     fail();
 }

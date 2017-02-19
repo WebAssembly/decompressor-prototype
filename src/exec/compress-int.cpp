@@ -11,12 +11,8 @@
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
+// See the License for the specific language governing permissions ando
 // limitations under the License.
-
-#include <cstdlib>
-#include <cstring>
-#include <unistd.h>
 
 #include "algorithms/wasm0xd.h"
 #include "intcomp/IntCompress.h"
@@ -69,11 +65,11 @@ int main(int Argc, const char* Argv[]) {
                      "File containing algorithm to parse WASM file "
                      "(rather than using builting algorithm)"));
 
-    ArgsParser::Optional<bool> UseHuffmanEncodingFlag(
+    ArgsParser::Toggle UseHuffmanEncodingFlag(
         MyCompressionFlags.UseHuffmanEncoding);
     Args.add(UseHuffmanEncodingFlag.setLongName("Huffman").setDescription(
-        "Usage Huffman encoding for pattern abbreviations instead"
-        "of a simple weighted ordering (experimental)"));
+        "Toggles usage Huffman encoding for pattern abbreviations instead"
+        "of a simple weighted ordering)"));
 
     ArgsParser::Optional<bool> TraceHuffmanAssignmentsFlag(
         MyCompressionFlags.TraceHuffmanAssignments);
@@ -151,14 +147,7 @@ int main(int Argc, const char* Argv[]) {
     ArgsParser::Toggle TrimOverriddenPatternsFlag(
         MyCompressionFlags.TrimOverriddenPatterns);
     Args.add(TrimOverriddenPatternsFlag.setLongName("trim").setDescription(
-        "Remove patterns if already implied by previous patterns"));
-
-    ArgsParser::Toggle CheckOverlappingPatternsFlag(
-        MyCompressionFlags.CheckOverlapping);
-    Args.add(CheckOverlappingPatternsFlag.setLongName("overlapping")
-                 .setDescription(
-                     "Overlap patterns to find better "
-                     "fit of abbreviations"));
+        "Toggles removing patterns if already implied by previous patterns"));
 
     ArgsParser::Optional<bool> TraceReadingInputFlag(
         MyCompressionFlags.TraceReadingInput);

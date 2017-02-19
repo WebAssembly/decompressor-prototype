@@ -171,19 +171,20 @@ STRM_OBJDIR = $(OBJDIR)/stream
 STRM_OBJDIR_BOOT = $(OBJDIR_BOOT)/stream
 
 STRM_SRCS = \
+	Address.cpp \
 	ArrayReader.cpp \
 	BitReadCursor.cpp \
 	BitWriteCursor.cpp \
+	BlockEob.cpp \
 	FileReader.cpp \
 	FileWriter.cpp \
 	Cursor.cpp \
 	Page.cpp \
+	PageCursor.cpp \
 	Pipe.cpp \
 	Queue.cpp \
 	ReadCursor.cpp \
 	ReadBackedQueue.cpp \
-	StreamReader.cpp \
-	StreamWriter.cpp \
 	StringReader.cpp \
 	StringWriter.cpp \
 	WriteBackedQueue.cpp \
@@ -240,10 +241,12 @@ INTCOMP_SRCS = \
 	AbbreviationCodegen.cpp \
 	AbbreviationsCollector.cpp \
 	AbbrevSelector.cpp \
+	CompressionFlags.cpp \
+	CountNode.cpp \
+	CountNodeVisitor.cpp \
 	CountNodeCollector.cpp \
 	CountWriter.cpp \
 	IntCompress.cpp \
-	IntCountNode.cpp \
 	RemoveNodesVisitor.cpp
 
 INTCOMP_OBJS = $(patsubst %.cpp, $(INTCOMP_OBJDIR)/%.o, $(INTCOMP_SRCS))
@@ -1042,7 +1045,6 @@ test-parser: $(TEST_EXECDIR)/TestParser
 
 test-raw-streams: $(TEST_EXECDIR)/TestRawStreams
 	$< -i $(TEST_DEFAULT_DF) | diff - $(TEST_DEFAULT_DF)
-	$< -i $(TEST_DEFAULT_DF) -s | diff - $(TEST_DEFAULT_DF)
 	@echo "*** test raw streams passed ***"
 
 .PHONY: test-raw-streams

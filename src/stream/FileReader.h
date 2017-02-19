@@ -16,13 +16,10 @@
 
 // Reads text from a file descriptor.
 
-#ifndef DECOMPRESSOR_SRC_STREAM_FILEREADER_H
-#define DECOMPRESSOR_SRC_STREAM_FILEREADER_H
+#ifndef DECOMPRESSOR_SRC_STREAM_FILEREADER_H_
+#define DECOMPRESSOR_SRC_STREAM_FILEREADER_H_
 
 #include "stream/RawStream.h"
-
-#include <cstdio>
-#include <memory>
 
 namespace wasm {
 
@@ -35,25 +32,22 @@ class FileReader : public RawStream {
 
  public:
   FileReader(const char* Filename);
-
   ~FileReader() OVERRIDE;
-
-  size_t read(uint8_t* Buf, size_t Size = 1) OVERRIDE;
-  bool write(uint8_t* Buf, size_t Size = 1) OVERRIDE;
+  AddressType read(ByteType* Buf, AddressType Size = 1) OVERRIDE;
+  bool write(ByteType* Buf, AddressType Size = 1) OVERRIDE;
   bool freeze() OVERRIDE;
   bool atEof() OVERRIDE;
   bool hasErrors() OVERRIDE;
 
  protected:
   FILE* File;
-  static constexpr size_t kBufSize = 4096;
-  uint8_t Bytes[kBufSize];
-  size_t CurSize;
-  size_t BytesRemaining;
+  static constexpr AddressType kBufSize = 4096;
+  ByteType Bytes[kBufSize];
+  AddressType CurSize;
+  AddressType BytesRemaining;
   bool FoundErrors;
   bool AtEof;
   bool CloseOnExit;
-
   void closeFile();
   void fillBuffer();
 };
@@ -62,4 +56,4 @@ class FileReader : public RawStream {
 
 }  // end of namespace wasm
 
-#endif  // DECOMPRESSOR_SRC_STREAM_FILEREADER_H
+#endif  // DECOMPRESSOR_SRC_STREAM_FILEREADER_H_

@@ -24,16 +24,14 @@ namespace decode {
 ArrayReader::~ArrayReader() {
 }
 
-size_t ArrayReader::read(uint8_t* Buf, size_t Size) {
-  size_t ActualSize = std::min(Size, BufferSize - CurPosition);
-  for (size_t i = 0; i < ActualSize; ++i)
+AddressType ArrayReader::read(ByteType* Buf, AddressType Size) {
+  AddressType ActualSize = std::min(Size, BufferSize - CurPosition);
+  for (AddressType i = 0; i < ActualSize; ++i)
     Buf[i] = Buffer[CurPosition++];
   return ActualSize;
 }
 
-bool ArrayReader::write(uint8_t* Buf, size_t Size) {
-  (void)Buf;
-  (void)Size;
+bool ArrayReader::write(ByteType*, AddressType) {
   return false;
 }
 

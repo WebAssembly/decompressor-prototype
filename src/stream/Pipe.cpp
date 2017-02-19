@@ -17,21 +17,59 @@
 
 #include "stream/Pipe.h"
 
+#include "stream/Page.h"
+#include "stream/Queue.h"
+#include "stream/WriteCursor2ReadQueue.h"
+
 namespace wasm {
 
 namespace decode {
+
+class Pipe::PipeBackedQueue FINAL : public Queue {
+  PipeBackedQueue(const PipeBackedQueue&) = delete;
+  PipeBackedQueue& operator=(const PipeBackedQueue&) = delete;
+  PipeBackedQueue() = delete;
+
+ public:
+  PipeBackedQueue(Pipe& MyPipe);
+  ~PipeBackedQueue();
+
+ private:
+  Pipe& MyPipe;
+  void dumpFirstPage() OVERRIDE;
+};
+
+Pipe::PipeBackedQueue::PipeBackedQueue(Pipe& MyPipe) : Queue(), MyPipe(MyPipe) {
+}
+
+void Pipe::PipeBackedQueue::dumpFirstPage() {
+  // TODO(karlschimpf) Optimize this!
+  for (AddressType i = 0, Size = FirstPage->getPageSize(); i < Size; ++i)
+    MyPipe.WritePos->writeByte(FirstPage->getByte(i));
+  Queue::dumpFirstPage();
+}
+
+Pipe::Pipe()
+    : Input(std::make_shared<PipeBackedQueue>(*this)),
+      Output(std::make_shared<Queue>()),
+      WritePos(utils::make_unique<WriteCursor2ReadQueue>(Output)) {
+}
+
+Pipe::~Pipe() {
+}
+
+std::shared_ptr<Queue> Pipe::getInput() const {
+  return Input;
+}
+
+std::shared_ptr<Queue> Pipe::getOutput() const {
+  return Output;
+}
 
 Pipe::PipeBackedQueue::~PipeBackedQueue() {
   // NOTE: we must override the base destructor so that calls to dumpFirstPage
   // is the one local to this class!
   close();
-}
-
-void Pipe::PipeBackedQueue::dumpFirstPage() {
-  // TODO(karlschimpf) Optimize this!
-  for (size_t i = 0, Size = FirstPage->getPageSize(); i < Size; ++i)
-    MyPipe.WritePos.writeByte(FirstPage->Buffer[i]);
-  Queue::dumpFirstPage();
 }
 
 }  // end of decode namespace

@@ -22,7 +22,7 @@
 #include <vector>
 
 #include "intcomp/CompressionFlags.h"
-#include "intcomp/IntCountNode.h"
+#include "intcomp/CountNode.h"
 #include "interp/IntStream.h"
 #include "interp/IntWriter.h"
 #include "utils/circular-vector.h"

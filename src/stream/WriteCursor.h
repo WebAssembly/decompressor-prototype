@@ -16,8 +16,8 @@
 
 // Defines a pointer to a byte stream for writing.
 
-#ifndef DECOMPRESSOR_SRC_STREAM_WRITECURSOR_H
-#define DECOMPRESSOR_SRC_STREAM_WRITECURSOR_H
+#ifndef DECOMPRESSOR_SRC_STREAM_WRITECURSOR_H_
+#define DECOMPRESSOR_SRC_STREAM_WRITECURSOR_H_
 
 #include "stream/WriteCursorBase.h"
 
@@ -29,29 +29,25 @@ class WriteCursor : public WriteCursorBase {
  public:
   // Note: The nullary write cursor should not be used until it has been
   // assigned a value.
-  WriteCursor() : WriteCursorBase() {}
-
-  WriteCursor(std::shared_ptr<Queue> Que)
-      : WriteCursorBase(StreamType::Byte, Que) {}
-
-  WriteCursor(StreamType Type, std::shared_ptr<Queue> Que)
-      : WriteCursorBase(Type, Que) {}
-
-  explicit WriteCursor(const WriteCursor& C) : WriteCursorBase(C) {}
-
-  WriteCursor(const Cursor& C, size_t StartAddress)
-      : WriteCursorBase(C, StartAddress) {}
-
-  WriteCursor(const WriteCursorBase& C) : WriteCursorBase(C) {}
-
+  WriteCursor();
+  WriteCursor(std::shared_ptr<Queue> Que);
+  WriteCursor(StreamType Type, std::shared_ptr<Queue> Que);
+  explicit WriteCursor(const WriteCursor& C);
+  WriteCursor(const Cursor& C, AddressType StartAddress);
+  WriteCursor(const WriteCursorBase& C);
   ~WriteCursor() OVERRIDE;
 
+  WriteCursor& operator=(const WriteCursor& C) {
+    assign(C);
+    return *this;
+  }
+
  protected:
-  void writeFillWriteByte(uint8_t Byte) OVERRIDE;
+  void writeFillWriteByte(ByteType Byte) OVERRIDE;
 };
 
 }  // end of namespace decode
 
 }  // end of namespace wasm
 
-#endif  // DECOMPRESSOR_SRC_STREAM_WRITECURSOR_H
+#endif  // DECOMPRESSOR_SRC_STREAM_WRITECURSOR_H_

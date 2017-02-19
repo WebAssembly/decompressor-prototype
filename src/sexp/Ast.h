@@ -215,6 +215,8 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
   std::shared_ptr<utils::TraceClass> getTracePtr();
   utils::TraceClass& getTrace() { return *getTracePtr(); }
 
+  void describe(FILE* Out);
+
  private:
   std::vector<Node*>* Allocated;
   std::shared_ptr<utils::TraceClass> Trace;

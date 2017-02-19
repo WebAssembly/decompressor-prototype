@@ -16,13 +16,10 @@
 
 // Converts binary algorithm file back to textual form.
 
-#include <cstdlib>
-
 #if WASM_BOOT == 0
 #include "algorithms/casm0x0.h"
 #endif
 #include "sexp/CasmReader.h"
-#include "sexp/TextWriter.h"
 #include "utils/ArgsParse.h"
 
 using namespace wasm;
@@ -177,7 +174,6 @@ int main(int Argc, const char* Argv[]) {
   if (Verbose && strcmp(OutputFilename, "-") != 0)
     fprintf(stderr, "Writing file: %s\n", OutputFilename);
   OutputHandler Output(OutputFilename);
-  TextWriter Writer;
-  Writer.write(Output.getFile(), Reader.getReadSymtab().get());
+  Reader.getReadSymtab()->describe(Output.getFile());
   return exit_status(EXIT_SUCCESS);
 }

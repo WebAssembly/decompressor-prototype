@@ -19,6 +19,8 @@
 
 #include "stream/BitReadCursor.h"
 
+#include "stream/Page.h"
+
 namespace wasm {
 
 namespace decode {
@@ -26,7 +28,7 @@ namespace decode {
 namespace {
 
 constexpr BitReadCursor::WordType BitsInByte =
-    BitReadCursor::WordType(sizeof(uint8_t) * CHAR_BIT);
+    BitReadCursor::WordType(sizeof(ByteType) * CHAR_BIT);
 
 }  // end of namespace
 
@@ -48,11 +50,16 @@ BitReadCursor::BitReadCursor(const BitReadCursor& C)
     : ReadCursor(C), CurWord(C.CurWord), NumBits(C.NumBits) {
 }
 
-BitReadCursor::BitReadCursor(const BitReadCursor& C, size_t StartAddress)
+BitReadCursor::BitReadCursor(const BitReadCursor& C, AddressType StartAddress)
     : ReadCursor(C, StartAddress), CurWord(C.CurWord), NumBits(C.NumBits) {
 }
 
 BitReadCursor::~BitReadCursor() {
+}
+
+void BitReadCursor::initFields() {
+  CurWord = 0;
+  NumBits = 0;
 }
 
 void BitReadCursor::assign(const BitReadCursor& C) {
@@ -74,7 +81,7 @@ void BitReadCursor::alignToByte() {
 }
 
 void BitReadCursor::describeDerivedExtensions(FILE* File, bool IncludeDetail) {
-  size_t Address = getAddress();
+  AddressType Address = getAddress();
   if (NumBits == 0 || Address == 0) {
     ReadCursor::describeDerivedExtensions(File, IncludeDetail);
     if (NumBits > 0)
@@ -92,7 +99,7 @@ void BitReadCursor::describeDerivedExtensions(FILE* File, bool IncludeDetail) {
   do {                                                          \
     if (NumBits >= MaskSize) {                                  \
       NumBits -= MaskSize;                                      \
-      uint8_t Value = uint8_t(CurWord >> NumBits);              \
+      ByteType Value = ByteType(CurWord >> NumBits);            \
       CurWord &= ~(Mask << NumBits);                            \
       return Value;                                             \
     }                                                           \
@@ -104,7 +111,7 @@ void BitReadCursor::describeDerivedExtensions(FILE* File, bool IncludeDetail) {
   } while (1);                                                  \
   /* Leftover bits, fix (as best as possible) */                \
   fail();                                                       \
-  uint8_t Value = uint8_t(CurWord);                             \
+  ByteType Value = ByteType(CurWord);                           \
   CurWord = 0;                                                  \
   NumBits = 0;                                                  \
   return Value;
@@ -124,13 +131,13 @@ bool BitReadCursor::atEob() {
   return NumBits == 0;
 }
 
-uint8_t BitReadCursor::readByte() {
+ByteType BitReadCursor::readByte() {
   if (NumBits == 0)
     return ReadCursor::readByte();
   BITREAD(ByteMask, BitsInByte);
 }
 
-uint8_t BitReadCursor::readBit() {
+ByteType BitReadCursor::readBit() {
   BITREAD(1, 1);
 }
 

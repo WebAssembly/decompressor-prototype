@@ -16,25 +16,21 @@
 
 // Converts textual algorithm into binary file form.
 
-#include <cstdlib>
-#include <cctype>
-#include <set>
-
 #if WASM_BOOT == 0
 #include "algorithms/casm0x0.h"
 #endif
 #include "sexp/CasmReader.h"
 #include "sexp/CasmWriter.h"
-#include "sexp/TextWriter.h"
 #include "stream/FileWriter.h"
 #include "stream/ReadCursor.h"
 #include "stream/WriteBackedQueue.h"
 #include "utils/ArgsParse.h"
 
-using namespace wasm;
-using namespace wasm::decode;
-using namespace wasm::filt;
-using namespace wasm::utils;
+namespace wasm {
+
+using namespace decode;
+using namespace filt;
+using namespace utils;
 
 namespace {
 
@@ -554,6 +550,13 @@ void CodeGenerator::generateImplFile(bool UseArrayImpl) {
 
 }  // end of anonymous namespace
 
+}  // end of namespace wasm;
+
+using namespace wasm;
+using namespace wasm::decode;
+using namespace wasm::filt;
+using namespace wasm::utils;
+
 int main(int Argc, charstring Argv[]) {
   charstring InputFilename = "-";
   charstring OutputFilename = "-";
@@ -756,10 +759,8 @@ int main(int Argc, charstring Argv[]) {
 #endif
   }
 
-  if (ShowSavedCast) {
-    TextWriter Writer;
-    Writer.write(stderr, InputSymtab->getInstalledRoot());
-  }
+  if (ShowSavedCast)
+    InputSymtab->describe(stderr);
 
   if (Verbose && strcmp(OutputFilename, "-") != 0)
     fprintf(stderr, "Opening file: %s\n", OutputFilename);

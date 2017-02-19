@@ -16,8 +16,8 @@
 
 // Defines a (non-file based) integer stream.
 
-#ifndef DECOMPRESSOR_SRC_INTERP_INTSTREAM_H
-#define DECOMPRESSOR_SRC_INTERP_INTSTREAM_H
+#ifndef DECOMPRESSOR_SRC_INTERP_INTSTREAM_H_
+#define DECOMPRESSOR_SRC_INTERP_INTSTREAM_H_
 
 #include "utils/Defs.h"
 #include "utils/Trace.h"
@@ -181,4 +181,4 @@ class IntStream : public std::enable_shared_from_this<IntStream> {
 
 }  // end of namespace wasm
 
-#endif  // DECOMPRESSOR_SRC_INTERP_INTSTREAM_H
+#endif  // DECOMPRESSOR_SRC_INTERP_INTSTREAM_H_

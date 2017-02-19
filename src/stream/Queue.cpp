@@ -16,31 +16,14 @@
 ///
 
 #include "stream/Queue.h"
-#include "stream/WriteUtils.h"
 
-#include <algorithm>
+#include "stream/BlockEob.h"
+#include "stream/Page.h"
+#include "stream/PageCursor.h"
 
 namespace wasm {
 
 namespace decode {
-
-void describeAddress(FILE* File, AddressType Addr) {
-  fprintf(File, "@%" PRIxMAX, uintmax_t(Addr));
-}
-
-void BlockEob::fail() {
-  BlockEob* Next = this;
-  while (Next) {
-    resetAddress(Next->EobAddress);
-    Next = Next->EnclosingEobPtr.get();
-  }
-}
-
-FILE* BlockEob::describe(FILE* File) const {
-  fprintf(File, "eob=");
-  describeAddress(File, EobAddress);
-  return File;
-}
 
 Queue::Queue()
     : MinPeekSize(32),
@@ -48,14 +31,14 @@ Queue::Queue()
       Status(StatusValue::Good),
       EofPtr(std::make_shared<BlockEob>()) {
   // Verify we have space for kErrorPageAddress and kUndefinedAddress.
-  assert(Page::SizeLog2 > 1);
+  assert(PageSizeLog2 > 1);
   LastPage = FirstPage = std::make_shared<Page>(0);
   PageMap.push_back(LastPage);
 }
 
 void Queue::close() {
   if (!isEofFrozen()) {
-    size_t EofAddress = LastPage->getMaxAddress();
+    AddressType EofAddress = LastPage->getMaxAddress();
     freezeEof(EofAddress);
   }
   while (FirstPage)
@@ -66,11 +49,27 @@ Queue::~Queue() {
   close();
 }
 
+AddressType Queue::currentSize() const {
+  return EofPtr->getEobAddress();
+}
+
+AddressType Queue::fillSize() const {
+  return LastPage->getMaxAddress();
+}
+
+AddressType Queue::actualSize() const {
+  return LastPage->getMaxAddress() - FirstPage->getMinAddress();
+}
+
+AddressType Queue::getEofAddress() const {
+  return EofPtr->getEobAddress();
+}
+
 void Queue::describe(FILE* Out) {
   fprintf(Out, "**** Queue %p ***\n", (void*)this);
   fprintf(Out, "First = %p, Last = %p\n", (void*)FirstPage.get(),
           (void*)LastPage.get());
-  for (size_t i = 0; i < PageMap.size(); ++i) {
+  for (AddressType i = 0; i < PageMap.size(); ++i) {
     std::shared_ptr<Page> Pg = PageMap[i].lock();
     if (Pg)
       Pg->describe(Out);
@@ -97,14 +96,44 @@ std::shared_ptr<Page> Queue::getErrorPage() {
   return ErrorPage;
 }
 
-std::shared_ptr<Page> Queue::failThenGetErrorPage(size_t& Address) {
+std::shared_ptr<Page> Queue::getReadPage(AddressType& Address) const {
+  AddressType Index = PageIndex(Address);
+  if (Index >= PageMap.size())
+    return const_cast<Queue*>(this)->readFillToPage(Index, Address);
+  return getDefinedPage(Index, Address);
+}
+
+std::shared_ptr<Page> Queue::getWritePage(AddressType& Address) const {
+  AddressType Index = PageIndex(Address);
+  if (Index >= PageMap.size())
+    return const_cast<Queue*>(this)->writeFillToPage(Index, Address);
+  return getDefinedPage(Index, Address);
+}
+
+std::shared_ptr<Page> Queue::getCachedPage(AddressType& Address) {
+  AddressType Index = PageIndex(Address);
+  if (Index >= PageMap.size())
+    return failThenGetErrorPage(Address);
+  return getDefinedPage(Index, Address);
+}
+
+std::shared_ptr<Page> Queue::getDefinedPage(AddressType Index,
+                                            AddressType& Address) const {
+  assert(Index < PageMap.size());
+  std::shared_ptr<Page> Pg = PageMap[Index].lock();
+  if (Pg)
+    return Pg;
+  return const_cast<Queue*>(this)->failThenGetErrorPage(Address);
+}
+
+std::shared_ptr<Page> Queue::failThenGetErrorPage(AddressType& Address) {
   fail();
   Address = kErrorPageAddress;
   return getErrorPage();
 }
 
 bool Queue::appendPage() {
-  size_t NewPageIndex = LastPage->getPageIndex() + 1;
+  AddressType NewPageIndex = LastPage->getPageIndex() + 1;
   if (NewPageIndex > kMaxPageIndex)
     return false;
   std::shared_ptr<Page> NewPage = std::make_shared<Page>(NewPageIndex);
@@ -123,17 +152,17 @@ void Queue::dumpPreviousPages() {
     dumpFirstPage();
 }
 
-bool Queue::readFill(size_t Address) {
+bool Queue::readFill(AddressType Address) {
   return Address < LastPage->getMaxAddress();
 }
 
-bool Queue::writeFill(size_t Address, size_t WantedSize) {
+bool Queue::writeFill(AddressType Address, AddressType WantedSize) {
   Address += WantedSize;
   // Expand till page exists.
   while (Address > LastPage->getMaxAddress()) {
     if (EofFrozen)
       return false;
-    size_t MaxLimit = LastPage->getMinAddress() + Page::Size;
+    AddressType MaxLimit = LastPage->getMinAddress() + PageSize;
     if (Address >= MaxLimit) {
       LastPage->setMaxAddress(MaxLimit);
       if (!appendPage())
@@ -145,15 +174,15 @@ bool Queue::writeFill(size_t Address, size_t WantedSize) {
   return true;
 }
 
-std::shared_ptr<Page> Queue::readFillToPage(size_t Index, size_t& Address) {
+std::shared_ptr<Page> Queue::readFillToPage(AddressType Index,
+                                            AddressType& Address) {
   while (Index > LastPage->Index) {
-    bool ReadFillNextPage = readFill(LastPage->getMinAddress() + Page::Size);
+    bool ReadFillNextPage = readFill(LastPage->getMinAddress() + PageSize);
     if (!ReadFillNextPage && Index > LastPage->Index) {
       // This should only happen if we reach eof. Verify,
       // If so, allow page wrap so that we can have a cursor pointing
       // to the eof position.
-      if ((LastPage->getMinAddress() + Page::Size !=
-           LastPage->getMaxAddress()) ||
+      if ((LastPage->getMinAddress() + PageSize != LastPage->getMaxAddress()) ||
           !appendPage())
         return failThenGetErrorPage(Address);
     }
@@ -161,15 +190,15 @@ std::shared_ptr<Page> Queue::readFillToPage(size_t Index, size_t& Address) {
   return getDefinedPage(Index, Address);
 }
 
-std::shared_ptr<Page> Queue::writeFillToPage(size_t Index, size_t& Address) {
+std::shared_ptr<Page> Queue::writeFillToPage(AddressType Index,
+                                             AddressType& Address) {
   while (Index > LastPage->Index) {
-    bool WriteFillNextPage = writeFill(LastPage->getMinAddress(), Page::Size);
+    bool WriteFillNextPage = writeFill(LastPage->getMinAddress(), PageSize);
     if (!WriteFillNextPage && Index > LastPage->Index) {
       // This should only happen if we reach eof. Verify,
       // If so, allow page wrap so that we can have a cursor pointing
       // to the eof position.
-      if ((LastPage->getMinAddress() + Page::Size !=
-           LastPage->getMaxAddress()) ||
+      if ((LastPage->getMinAddress() + PageSize != LastPage->getMaxAddress()) ||
           !appendPage())
         return failThenGetErrorPage(Address);
     }
@@ -177,9 +206,9 @@ std::shared_ptr<Page> Queue::writeFillToPage(size_t Index, size_t& Address) {
   return getDefinedPage(Index, Address);
 }
 
-size_t Queue::readFromPage(size_t& Address,
-                           size_t WantedSize,
-                           PageCursor& Cursor) {
+AddressType Queue::readFromPage(AddressType& Address,
+                                AddressType WantedSize,
+                                PageCursor& Cursor) {
   // Start by read-filling if necessary.
   if (Address >= LastPage->getMaxAddress() && !readFill(Address))
     return 0;
@@ -193,9 +222,9 @@ size_t Queue::readFromPage(size_t& Address,
   return WantedSize;
 }
 
-size_t Queue::writeToPage(size_t& Address,
-                          size_t WantedSize,
-                          PageCursor& Cursor) {
+AddressType Queue::writeToPage(AddressType& Address,
+                               AddressType WantedSize,
+                               PageCursor& Cursor) {
   // Expand till page exists.
   if (!writeFill(Address, WantedSize))
     return 0;
@@ -208,7 +237,7 @@ size_t Queue::writeToPage(size_t& Address,
   return WantedSize;
 }
 
-void Queue::freezeEof(size_t& Address) {
+void Queue::freezeEof(AddressType& Address) {
   assert(Address <= kMaxEofAddress && "WASM stream too big to process");
   if (EofFrozen && Address != EofPtr->getEobAddress()) {
     fail();
@@ -229,11 +258,18 @@ void Queue::freezeEof(size_t& Address) {
   }
 }
 
-size_t Queue::read(size_t& Address, uint8_t* ToBuf, size_t WantedSize) {
-  size_t Count = 0;
+bool Queue::isBroken(const PageCursor& C) const {
+  assert(C.CurPage);
+  return C.CurPage->getPageIndex() >= kErrorPageIndex;
+}
+
+AddressType Queue::read(AddressType& Address,
+                        uint8_t* ToBuf,
+                        AddressType WantedSize) {
+  AddressType Count = 0;
   PageCursor Cursor(this);
   while (WantedSize) {
-    size_t FoundSize = readFromPage(Address, WantedSize, Cursor);
+    AddressType FoundSize = readFromPage(Address, WantedSize, Cursor);
     if (FoundSize == 0)
       return Count;
     uint8_t* FromBuf = Cursor.getBufferPtr();
@@ -245,10 +281,12 @@ size_t Queue::read(size_t& Address, uint8_t* ToBuf, size_t WantedSize) {
   return Count;
 }
 
-bool Queue::write(size_t& Address, uint8_t* FromBuf, size_t WantedSize) {
+bool Queue::write(AddressType& Address,
+                  uint8_t* FromBuf,
+                  AddressType WantedSize) {
   PageCursor Cursor(this);
   while (WantedSize) {
-    size_t FoundSize = writeToPage(Address, WantedSize, Cursor);
+    AddressType FoundSize = writeToPage(Address, WantedSize, Cursor);
     if (FoundSize == 0)
       return false;
     uint8_t* ToBuf = Cursor.getBufferPtr();

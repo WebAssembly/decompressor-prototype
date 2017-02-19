@@ -19,8 +19,6 @@
 
 #include "stream/FileReader.h"
 #include "stream/FileWriter.h"
-#include "stream/StreamReader.h"
-#include "stream/StreamWriter.h"
 
 #include <cstdlib>
 #include <iostream>
@@ -30,24 +28,15 @@ using namespace wasm::decode;
 
 namespace {
 
-bool UseFileStreams = true;
 const char* InputFilename = "-";
 const char* OutputFilename = "-";
 
 std::shared_ptr<RawStream> getInput() {
-  if (UseFileStreams)
-    return std::make_shared<FileReader>(InputFilename);
-  if (InputFilename == std::string("-"))
-    return std::make_shared<StreamReader>(std::cin);
-  return std::make_shared<FstreamReader>(OutputFilename);
+  return std::make_shared<FileReader>(InputFilename);
 }
 
 std::shared_ptr<RawStream> getOutput() {
-  if (UseFileStreams)
-    return std::make_shared<FileWriter>(OutputFilename);
-  if (OutputFilename == std::string("-"))
-    return std::make_shared<StreamWriter>(std::cout);
-  return std::make_shared<FstreamWriter>(OutputFilename);
+  return std::make_shared<FileWriter>(OutputFilename);
 }
 
 void usage(char* AppName) {
@@ -103,8 +92,6 @@ int main(int Argc, char* Argv[]) {
         return exit_status(EXIT_FAILURE);
       }
       BufSize = Size;
-    } else if (Argv[i] == std::string("-s")) {
-      UseFileStreams = true;
     } else if (Argv[i] == std::string("-h") ||
                (Argv[i] == std::string("--help"))) {
       usage(Argv[0]);

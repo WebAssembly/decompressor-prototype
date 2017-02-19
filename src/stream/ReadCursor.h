@@ -20,9 +20,12 @@
 #define DECOMPRESSOR_SRC_STREAM_READCURSOR_H
 
 #include "stream/Cursor.h"
-#include "utils/Trace.h"
 
 namespace wasm {
+
+namespace utils {
+class TraceClass;
+}  // end of namespace utils
 
 namespace decode {
 
@@ -30,36 +33,20 @@ class ReadCursor : public Cursor {
  public:
   // Note: The nullary read cursor should not be used until it has been assigned
   // a valid value.
-  ReadCursor() : Cursor() {}
-
-  ReadCursor(std::shared_ptr<Queue> Que) : Cursor(StreamType::Byte, Que) {}
-
-  ReadCursor(StreamType Type, std::shared_ptr<Queue> Que) : Cursor(Type, Que) {}
-
-  explicit ReadCursor(const Cursor& C) : Cursor(C) {}
-
-  ReadCursor(const Cursor& C, size_t StartAddress)
-      : Cursor(C, StartAddress, true) {}
-
-  ~ReadCursor() {}
+  ReadCursor();
+  ReadCursor(std::shared_ptr<Queue> Que);
+  ReadCursor(StreamType Type, std::shared_ptr<Queue> Que);
+  explicit ReadCursor(const Cursor& C);
+  ReadCursor(const Cursor& C, size_t StartAddress);
+  ~ReadCursor() OVERRIDE;
 
   ReadCursor& operator=(const ReadCursor& C) {
     assign(C);
     return *this;
   }
-
   virtual bool atEob();
-
-  void pushEobAddress(AddressType NewValue) {
-    EobPtr = std::make_shared<BlockEob>(NewValue, EobPtr);
-    updateGuaranteedBeforeEob();
-  }
-
-  void popEobAddress() {
-    EobPtr = EobPtr->getEnclosingEobPtr();
-    assert(EobPtr);
-    updateGuaranteedBeforeEob();
-  }
+  void pushEobAddress(AddressType NewValue);
+  void popEobAddress();
 
   // Reads next byte. Returns zero if at end of file.
   virtual uint8_t readByte();
@@ -71,7 +58,6 @@ class ReadCursor : public Cursor {
 
  protected:
   uint8_t readOneByte();
-
   uint8_t readByteAfterReadFill();
 };
 

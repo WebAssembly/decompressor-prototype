@@ -20,17 +20,35 @@ namespace wasm {
 
 namespace decode {
 
+WriteCursorBase::WriteCursorBase() : Cursor() {
+}
+
+WriteCursorBase::WriteCursorBase(std::shared_ptr<Queue> Que)
+    : Cursor(StreamType::Byte, Que) {
+}
+
+WriteCursorBase::WriteCursorBase(StreamType Type, std::shared_ptr<Queue> Que)
+    : Cursor(Type, Que) {
+}
+
+WriteCursorBase::WriteCursorBase(const WriteCursorBase& C) : Cursor(C) {
+}
+
+WriteCursorBase::WriteCursorBase(const Cursor& C, AddressType StartAddress)
+    : Cursor(C, StartAddress, false) {
+}
+
 WriteCursorBase::~WriteCursorBase() {
 }
 
-void WriteCursorBase::writeByte(uint8_t Byte) {
+void WriteCursorBase::writeByte(ByteType Byte) {
   if (CurAddress < GuaranteedBeforeEob)
     writeOneByte(Byte);
   else
     writeFillWriteByte(Byte);
 }
 
-void WriteCursorBase::writeOneByte(uint8_t Byte) {
+void WriteCursorBase::writeOneByte(ByteType Byte) {
   *getBufferPtr() = Byte;
   ++CurAddress;
 }
