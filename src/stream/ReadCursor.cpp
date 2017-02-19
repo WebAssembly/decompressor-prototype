@@ -22,18 +22,26 @@ using namespace utils;
 
 namespace decode {
 
-ReadCursor::ReadCursor() : Cursor() {}
+ReadCursor::ReadCursor() : Cursor() {
+}
 
-ReadCursor::ReadCursor(std::shared_ptr<Queue> Que) : Cursor(StreamType::Byte, Que) {}
+ReadCursor::ReadCursor(std::shared_ptr<Queue> Que)
+    : Cursor(StreamType::Byte, Que) {
+}
 
-ReadCursor::ReadCursor(StreamType Type, std::shared_ptr<Queue> Que) : Cursor(Type, Que) {}
+ReadCursor::ReadCursor(StreamType Type, std::shared_ptr<Queue> Que)
+    : Cursor(Type, Que) {
+}
 
-ReadCursor::ReadCursor(const Cursor& C) : Cursor(C) {}
+ReadCursor::ReadCursor(const Cursor& C) : Cursor(C) {
+}
 
 ReadCursor::ReadCursor(const Cursor& C, size_t StartAddress)
-    : Cursor(C, StartAddress, true) {}
+    : Cursor(C, StartAddress, true) {
+}
 
-ReadCursor::~ReadCursor() {}
+ReadCursor::~ReadCursor() {
+}
 
 bool ReadCursor::atEob() {
   if (CurAddress < GuaranteedBeforeEob)
