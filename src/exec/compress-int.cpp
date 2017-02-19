@@ -69,11 +69,11 @@ int main(int Argc, const char* Argv[]) {
                      "File containing algorithm to parse WASM file "
                      "(rather than using builting algorithm)"));
 
-    ArgsParser::Optional<bool> UseHuffmanEncodingFlag(
+    ArgsParser::Toggle UseHuffmanEncodingFlag(
         MyCompressionFlags.UseHuffmanEncoding);
     Args.add(UseHuffmanEncodingFlag.setLongName("Huffman").setDescription(
-        "Usage Huffman encoding for pattern abbreviations instead"
-        "of a simple weighted ordering (experimental)"));
+        "Toggles usage Huffman encoding for pattern abbreviations instead"
+        "of a simple weighted ordering)"));
 
     ArgsParser::Optional<bool> TraceHuffmanAssignmentsFlag(
         MyCompressionFlags.TraceHuffmanAssignments);
@@ -151,14 +151,7 @@ int main(int Argc, const char* Argv[]) {
     ArgsParser::Toggle TrimOverriddenPatternsFlag(
         MyCompressionFlags.TrimOverriddenPatterns);
     Args.add(TrimOverriddenPatternsFlag.setLongName("trim").setDescription(
-        "Remove patterns if already implied by previous patterns"));
-
-    ArgsParser::Toggle CheckOverlappingPatternsFlag(
-        MyCompressionFlags.CheckOverlapping);
-    Args.add(CheckOverlappingPatternsFlag.setLongName("overlapping")
-                 .setDescription(
-                     "Overlap patterns to find better "
-                     "fit of abbreviations"));
+        "Toggles removing patterns if already implied by previous patterns"));
 
     ArgsParser::Optional<bool> TraceReadingInputFlag(
         MyCompressionFlags.TraceReadingInput);
