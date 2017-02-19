@@ -241,10 +241,10 @@ INTCOMP_SRCS = \
 	AbbreviationsCollector.cpp \
 	AbbrevSelector.cpp \
 	CompressionFlags.cpp \
+	CountNode.cpp \
 	CountNodeCollector.cpp \
 	CountWriter.cpp \
 	IntCompress.cpp \
-	IntCountNode.cpp \
 	RemoveNodesVisitor.cpp
 
 INTCOMP_OBJS = $(patsubst %.cpp, $(INTCOMP_OBJDIR)/%.o, $(INTCOMP_SRCS))
