@@ -24,7 +24,8 @@
 #include <unordered_map>
 #include <vector>
 #include <memory>
-// #include "sexp/Ast.h"
+
+#include "utils/Defs.h"
 
 namespace wasm {
 
