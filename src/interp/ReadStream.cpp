@@ -19,6 +19,8 @@
 #include "interp/ReadStream.h"
 
 #include "interp/FormatHelpers.h"
+#include "stream/ReadCursor.h"
+#include "utils/Casting.h"
 
 namespace wasm {
 

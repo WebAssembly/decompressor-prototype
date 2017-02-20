@@ -18,6 +18,9 @@
 
 #include "interp/ByteReadStream.h"
 
+#include "stream/ReadCursor.h"
+#include "sexp/Ast.h"
+
 namespace wasm {
 
 using namespace decode;
