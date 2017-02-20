@@ -21,6 +21,7 @@
 
 #include "interp/IntFormats.h"
 #include "sexp/Ast.h"
+#include "utils/Defs.h"
 #include "utils/Trace.h"
 
 namespace wasm {

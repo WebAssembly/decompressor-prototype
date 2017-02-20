@@ -19,6 +19,7 @@
 
 #include "sexp/InflateAst.h"
 
+#include "binary/SectionSymbolTable.h"
 #include "sexp/TextWriter.h"
 #include "utils/Casting.h"
 
@@ -32,7 +33,7 @@ namespace filt {
 
 InflateAst::InflateAst()
     : Symtab(std::make_shared<SymbolTable>()),
-      SectionSymtab(Symtab),
+      SectionSymtab(utils::make_unique<SectionSymbolTable>(Symtab)),
       ValuesTop(0),
       Values(ValuesTop),
       AstsTop(nullptr),
@@ -278,7 +279,7 @@ bool InflateAst::applyOp(IntType Op) {
     case OpSwitch:
       return buildNary<SwitchNode>();
     case OpSymbol: {
-      SymbolNode* Sym = SectionSymtab.getIndexSymbol(Values.popValue());
+      SymbolNode* Sym = SectionSymtab->getIndexSymbol(Values.popValue());
       Values.pop();
       if (Sym == nullptr) {
         return failWriteActionMalformed();
@@ -430,7 +431,7 @@ bool InflateAst::writeAction(const filt::SymbolNode* Action) {
         Values.pop();
       SymbolNameSize = 0;
       TRACE(string, "Name", Name);
-      SectionSymtab.addSymbol(Name);
+      SectionSymtab->addSymbol(Name);
       return true;
     }
     case PredefinedSymbol::Symbol_lookup:
