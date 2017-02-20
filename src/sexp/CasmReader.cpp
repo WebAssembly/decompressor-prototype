@@ -31,9 +31,6 @@
 #include "stream/FileReader.h"
 #include "stream/ReadBackedQueue.h"
 
-#include <cstdlib>
-#include <cstring>
-
 namespace wasm {
 
 using namespace filt;

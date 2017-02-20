@@ -16,21 +16,25 @@
 
 // Declare a class to write a CASM (binary compressed) algorithm file.
 
-#ifndef DECOMPRESSOR_SRC_CASM_CASM_WRITER_H
-#define DECOMPRESSOR_SRC_CASM_CASM_WRITER_H
+#ifndef DECOMPRESSOR_SRC_CASM_CASM_WRITER_H_
+#define DECOMPRESSOR_SRC_CASM_CASM_WRITER_H_
 
-#include "interp/IntStream.h"
 #include "utils/Defs.h"
-#include "sexp/Ast.h"
-#include "stream/Queue.h"
-#include "stream/BitWriteCursor.h"
-#include "utils/Defs.h"
-
-#include <memory>
 
 namespace wasm {
 
+namespace interp {
+class IntStream;
+} // end of namespace interp
+
+namespace filt {
+class SymbolTable;
+} // end of namespace fllt;
+
 namespace decode {
+
+class BitWriteCursor;
+class Queue;
 
 class CasmWriter {
   CasmWriter(const CasmWriter&) = delete;
@@ -96,4 +100,4 @@ class CasmWriter {
 
 }  // end of namespace wasm
 
-#endif  // DECOMPRESSOR_SRC_CASM_CASM_WRITER_H
+#endif  // DECOMPRESSOR_SRC_CASM_CASM_WRITER_H_

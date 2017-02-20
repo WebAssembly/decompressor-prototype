@@ -19,6 +19,7 @@
 #if WASM_BOOT == 0
 #include "algorithms/casm0x0.h"
 #endif
+#include "sexp/Ast.h"
 #include "sexp/CasmReader.h"
 #include "sexp/CasmWriter.h"
 #include "stream/FileWriter.h"
