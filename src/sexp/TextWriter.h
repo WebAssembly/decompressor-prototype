@@ -17,18 +17,21 @@
 
 /* Defines a textual writer of filter s-expressions */
 
-#ifndef DECOMPRESSOR_SRC_EXP_TEXTWRITER_H
-#define DECOMPRESSOR_SRC_EXP_TEXTWRITER_H
+#ifndef DECOMPRESSOR_SRC_EXP_TEXTWRITER_H_
+#define DECOMPRESSOR_SRC_EXP_TEXTWRITER_H_
 
-#include "sexp/Ast.h"
-#include "utils/Defs.h"
-
-#include <cstdio>
 #include <unordered_set>
+#include <vector>
+
+#include "sexp/NodeType.h"
+#include "utils/Defs.h"
 
 namespace wasm {
 
 namespace filt {
+
+class Node;
+class SymbolTable;
 
 class TextWriter {
   TextWriter(const TextWriter&) = delete;
@@ -64,9 +67,7 @@ class TextWriter {
   TextWriter();
 
   // Pretty prints s-expression installed in symbol table.
-  void write(FILE* File, SymbolTable* Symtab) {
-    write(File, Symtab->getInstalledRoot());
-  }
+void write(FILE* File, SymbolTable* Symtab);
 
   // Pretty prints s-expression (defined by Root) to File.
   void write(FILE* File, const Node* Root);
@@ -94,26 +95,13 @@ class TextWriter {
   void writeNodeKidsAbbrev(const Node* Node, bool EmbeddedInParent);
 
   void writeIndent();
-
-  void writeNewline() {
-    if (!LineEmpty)
-      fputc('\n', File);
-    LineEmpty = true;
-  }
-
-  void maybeWriteNewline(bool Yes) {
-    if (Yes)
-      writeNewline();
-  }
-
-  void writeSpace() {
-    fputc(' ', File);
-    LineEmpty = false;
-  }
+  void writeNewline();
+  void maybeWriteNewline(bool Yes);
+  void writeSpace();
 };
 
 }  // end of namespace filt
 
 }  // end of namespace wasm
 
-#endif  // DECOMPRESSOR_SRC_EXP_TEXTWRITER_H
+#endif  // DECOMPRESSOR_SRC_EXP_TEXTWRITER_H_

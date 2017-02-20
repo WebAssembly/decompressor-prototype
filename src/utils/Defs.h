@@ -27,6 +27,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <cctype>
 
 #include <limits>
 #include <memory>
