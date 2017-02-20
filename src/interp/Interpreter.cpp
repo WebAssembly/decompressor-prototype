@@ -19,9 +19,13 @@
 
 #include "interp/Interpreter.h"
 
+#include "interp/AlgorithmSelector.h"
 #include "interp/Reader.h"
+#include "interp/Writer.h"
+#include "sexp/Ast.h"
 #include "sexp/TextWriter.h"
 #include "utils/Casting.h"
+#include "utils/Trace.h"
 
 #define LOG_TRUE_VALUE 1
 #define LOG_FALSE_VALUE 0
@@ -103,6 +107,63 @@ InterpreterFlags::InterpreterFlags()
     : TraceProgress(false), TraceIntermediateStreams(false) {
 }
 
+Interpreter::CallFrame::CallFrame() {
+  reset();
+}
+
+Interpreter::CallFrame::CallFrame(Method CallMethod, const filt::Node* Nd)
+    : CallMethod(CallMethod),
+      CallState(State::Enter),
+      CallModifier(MethodModifier::ReadAndWrite),
+      Nd(Nd) {
+}
+
+Interpreter::CallFrame::CallFrame(const CallFrame& M)
+    : CallMethod(M.CallMethod),
+      CallState(M.CallState),
+      CallModifier(M.CallModifier),
+      Nd(M.Nd) {
+}
+
+void Interpreter::CallFrame::reset() {
+  CallMethod = Method::Started;
+  CallState = State::Enter;
+  CallModifier = MethodModifier::ReadAndWrite;
+  Nd = nullptr;
+  ReturnValue = 0;
+}
+
+void Interpreter::CallFrame::fail() {
+  CallMethod = Method::Finished;
+  CallState = State::Failed;
+  CallModifier = MethodModifier::ReadAndWrite;
+  Nd = nullptr;
+  ReturnValue = 0;
+}
+
+Interpreter::EvalFrame::EvalFrame() {
+  reset();
+}
+
+Interpreter::EvalFrame::EvalFrame(const filt::EvalNode* Caller,
+                                  size_t CallingEvalIndex)
+    : Caller(Caller), CallingEvalIndex(CallingEvalIndex) {
+  assert(Caller != nullptr);
+}
+
+Interpreter::EvalFrame::EvalFrame(const EvalFrame& F)
+    : Caller(F.Caller), CallingEvalIndex(F.CallingEvalIndex) {
+}
+
+bool Interpreter::EvalFrame::isDefined() const {
+  return Caller != nullptr;
+}
+
+void Interpreter::EvalFrame::reset() {
+  Caller = nullptr;
+  CallingEvalIndex = 0;
+}
+
 void Interpreter::setInput(std::shared_ptr<Reader> Value) {
   Input = Value;
   if (Trace) {
@@ -131,7 +192,7 @@ void Interpreter::setTraceProgress(bool NewValue) {
   getTrace().setTraceProgress(NewValue);
 }
 
-TraceClass::ContextPtr Interpreter::getTraceContext() {
+TraceContextPtr Interpreter::getTraceContext() {
   return Input->getTraceContext();
 }
 
@@ -191,7 +252,7 @@ Interpreter::Interpreter(std::shared_ptr<Reader> Input,
       Output(Output),
       Flags(Flags),
       Symtab(Symtab),
-      LastReadValue(0),
+      //      LastReadValue(0),
       DispatchedMethod(Method::NO_SUCH_METHOD),
       Catch(Method::NO_SUCH_METHOD),
       CatchStack(Catch),
@@ -206,6 +267,34 @@ Interpreter::Interpreter(std::shared_ptr<Reader> Input,
       OpcodeLocalsStack(OpcodeLocals),
       HeaderOverride(nullptr),
       FreezeEofAtExit(true) {
+  init();
+}
+
+Interpreter::Interpreter(std::shared_ptr<Reader> Input,
+                         std::shared_ptr<Writer> Output,
+                         const InterpreterFlags& Flags)
+    : Input(Input),
+      Output(Output),
+      Flags(Flags),
+      DispatchedMethod(Method::NO_SUCH_METHOD),
+      Catch(Method::NO_SUCH_METHOD),
+      CatchStack(Catch),
+      CatchState(State::NO_SUCH_STATE),
+      IsFatalFailure(false),
+      FrameStack(Frame),
+      CallingEvalStack(CallingEval),
+      LoopCounter(0),
+      LoopCounterStack(LoopCounter),
+      LocalsBase(0),
+      LocalsBaseStack(LocalsBase),
+      OpcodeLocalsStack(OpcodeLocals),
+      HeaderOverride(nullptr),
+      FreezeEofAtExit(true) {
+  init();
+}
+
+void Interpreter::init() {
+  LastReadValue = 0;
   CurSectionName.reserve(MaxExpectedSectionNameSize);
   FrameStack.reserve(DefaultStackSize);
   CallingEvalStack.reserve(DefaultStackSize);
@@ -271,6 +360,10 @@ void Interpreter::describeCallingEvalStack(FILE* File) {
   fprintf(File, "************************\n");
 }
 
+void Interpreter::describePeekPosStack(FILE* Out) {
+  Input->describePeekPosStack(Out);
+}
+
 void Interpreter::describeLoopCounterStack(FILE* File) {
   fprintf(File, "*** Loop Counter Stack ***\n");
   for (const auto& Count : LoopCounterStack.iterRange(1))
@@ -313,6 +406,15 @@ void Interpreter::describeState(FILE* File) {
   if (!OpcodeLocalsStack.empty())
     describeOpcodeLocalsStack(File);
   Output->describeState(File);
+}
+
+void Interpreter::traceEnterFrame() {
+  assert(Frame.CallState == State::Enter);
+  TRACE_BLOCK(traceEnterFrameInternal(););
+}
+
+void Interpreter::traceExitFrame() {
+  TRACE_EXIT_OVERRIDE(getName(Frame.CallMethod));
 }
 
 void Interpreter::reset() {
@@ -450,7 +552,7 @@ void Interpreter::handleOtherMethods() {
         // If reached, we finished processing the input.
         assert(FrameStack.empty());
         Frame.CallMethod = Method::Finished;
-        if (processedInputCorrectly())
+        if (Input->processedInputCorrectly())
           Frame.CallState = State::Succeeded;
         else
           return throwMessage("Malformed input in compressed file");
@@ -483,6 +585,11 @@ void Interpreter::algorithmStart() {
   callTopLevel(Method::GetAlgorithm, nullptr);
 }
 
+void Interpreter::algorithmRead() {
+  algorithmStart();
+  algorithmReadBackFilled();
+}
+
 void Interpreter::algorithmResume() {
 // TODO(karlschimpf) Add catches for methods that modify local statcks, so
 // that state is correctly cleaned up on a throw.
@@ -490,9 +597,9 @@ void Interpreter::algorithmResume() {
   TRACE_METHOD("resume");
   TRACE_BLOCK({ describeState(tracE.getFile()); });
 #endif
-  if (!canProcessMoreInputNow())
+  if (!Input->canProcessMoreInputNow())
     return;
-  while (stillMoreInputToProcessNow()) {
+  while (Input->stillMoreInputToProcessNow()) {
     if (errorsFound())
       break;
 #if LOG_CALLSTACKS
@@ -507,11 +614,11 @@ void Interpreter::algorithmResume() {
             Frame.CallState = State::Loop;
             break;
           case State::Loop:
-            if (atInputEob()) {
+            if (Input->atInputEob()) {
               Frame.CallState = State::Exit;
               break;
             }
-            LastReadValue = readUint8();
+            LastReadValue = Input->readUint8();
             Output->writeUint8(LastReadValue);
             break;
           case State::Exit:
@@ -567,7 +674,7 @@ void Interpreter::algorithmResume() {
                       "Format header contains badly formed constant");
                 IntTypeFormat TypeFormat = Lit->getIntTypeFormat();
                 IntType FoundValue;
-                if (!readHeaderValue(TypeFormat, FoundValue)) {
+                if (!Input->readHeaderValue(TypeFormat, FoundValue)) {
                   TRACE(IntType, "Found", FoundValue);
                   return throwMessage("Unable to read header value");
                 }
@@ -686,7 +793,7 @@ void Interpreter::algorithmResume() {
             break;
           case OpCallback: {  // Method::Eval
             SymbolNode* Action = dyn_cast<SymbolNode>(Frame.Nd->getKid(0));
-            if (!readAction(Action) || !writeAction(Action))
+            if (!Input->readAction(Action) || !Output->writeAction(Action))
               return throwMessage("Unable to apply action: " +
                                   Action->getName());
             popAndReturn(LastReadValue);
@@ -718,13 +825,13 @@ void Interpreter::algorithmResume() {
           case OpPeek:
             switch (Frame.CallState) {
               case State::Enter:
-                pushPeekPos();
+                Input->pushPeekPos();
                 Frame.CallState = State::Exit;
                 call(Method::Eval, MethodModifier::ReadOnly,
                      Frame.Nd->getKid(0));
                 break;
               case State::Exit:
-                popPeekPos();
+                Input->popPeekPos();
                 popAndReturn(Frame.ReturnValue);
                 break;
               default:
@@ -753,7 +860,7 @@ void Interpreter::algorithmResume() {
           case OpVaruint32:
           case OpVaruint64: {
             if (hasReadMode())
-              if (!readValue(Frame.Nd, LastReadValue))
+              if (!Input->readValue(Frame.Nd, LastReadValue))
                 return throwCantRead();
             if (hasWriteMode()) {
               if (!Output->writeValue(LastReadValue, Frame.Nd))
@@ -764,7 +871,7 @@ void Interpreter::algorithmResume() {
           }
           case OpBinaryEval:
             if (hasReadMode())
-              if (!readBinary(Frame.Nd, LastReadValue))
+              if (!Input->readBinary(Frame.Nd, LastReadValue))
                 return throwCantRead();
             if (hasWriteMode())
               if (!Output->writeBinary(LastReadValue, Frame.Nd))
@@ -957,7 +1064,7 @@ void Interpreter::algorithmResume() {
                 Frame.CallState = State::Loop;
                 break;
               case State::Loop:
-                if (atInputEob()) {
+                if (Input->atInputEob()) {
                   Frame.CallState = State::Exit;
                   break;
                 }
@@ -1216,20 +1323,20 @@ void Interpreter::algorithmResume() {
         switch (Frame.CallState) {
           case State::Enter:
             assert(CatchStack.empty());
-            assert(sizePeekPosStack() == 0);
+            assert(Input->sizePeekPosStack() == 0);
             assert(LoopCounterStack.empty());
             CatchStack.push(Method::GetAlgorithm);
-            pushPeekPos();
+            Input->pushPeekPos();
             LoopCounterStack.push(0);
             Frame.CallState = State::Loop;
             break;
           case State::Loop:
             assert(CatchStack.size() == 1);
-            assert(sizePeekPosStack() == 1);
+            assert(Input->sizePeekPosStack() == 1);
             assert(LoopCounterStack.size() == 1);
             if (LoopCounter >= Selectors.size()) {
               CatchStack.pop();
-              popPeekPos();
+              Input->popPeekPos();
               LoopCounterStack.pop();
               return throwMessage("Unable to find algorithm to apply!");
             }
@@ -1239,11 +1346,11 @@ void Interpreter::algorithmResume() {
             break;
           case State::Step2:
             assert(CatchStack.size() == 1);
-            assert(sizePeekPosStack() == 1);
+            assert(Input->sizePeekPosStack() == 1);
             assert(LoopCounterStack.size() == 1);
             // Found algorithm. Install and then use.
             CatchStack.pop();
-            popPeekPos();
+            Input->popPeekPos();
             TRACE(size_t, "Select counter", LoopCounter);
             if (!Selectors[LoopCounter]->configure(this))
               return fail("Problems configuring reader for found header");
@@ -1253,14 +1360,14 @@ void Interpreter::algorithmResume() {
             break;
           case State::Step3:
             assert(CatchStack.empty());
-            assert(sizePeekPosStack() == 0);
+            assert(Input->sizePeekPosStack() == 0);
             assert(LoopCounterStack.size() == 1);
             Frame.CallState = State::Step4;
             call(Method::GetFile, Frame.CallModifier, Frame.Nd);
             break;
           case State::Step4:
             assert(CatchStack.empty());
-            assert(sizePeekPosStack() == 0);
+            assert(Input->sizePeekPosStack() == 0);
             assert(LoopCounterStack.size() == 1);
             // Parsed data associated with algorithm. Now process rest of input.
             TRACE(size_t, "Select counter", LoopCounter);
@@ -1276,13 +1383,13 @@ void Interpreter::algorithmResume() {
               return throwMessage(
                   "Unable to reset state after appplying algorithm");
             TRACE_MESSAGE("Reset did not specify any more symtabs");
-            if (atInputEob()) {
+            if (Input->atInputEob()) {
               LoopCounterStack.pop();
               Frame.CallState = State::Exit;
               break;
             }
             CatchStack.push(Method::GetAlgorithm);
-            pushPeekPos();
+            Input->pushPeekPos();
             LoopCounter = 0;
             Frame.CallState = State::Loop;
             break;
@@ -1292,11 +1399,11 @@ void Interpreter::algorithmResume() {
               default:
                 return rethrow();
               case State::Step2:
-                assert(sizePeekPosStack() == 1);
+                assert(Input->sizePeekPosStack() == 1);
                 assert(LoopCounterStack.size() == 1);
                 CatchStack.push(Method::GetAlgorithm);
-                popPeekPos();
-                pushPeekPos();
+                Input->popPeekPos();
+                Input->pushPeekPos();
                 LoopCounter++;
                 Frame.CallState = State::Loop;
                 break;
@@ -1304,7 +1411,7 @@ void Interpreter::algorithmResume() {
             break;
           case State::Exit:
             assert(CatchStack.empty());
-            assert(sizePeekPosStack() == 0);
+            assert(Input->sizePeekPosStack() == 0);
             assert(LoopCounterStack.empty());
             popAndReturn();
             break;
@@ -1446,9 +1553,9 @@ void Interpreter::algorithmReadBackFilled() {
 #if LOG_RUNMETHODS
   TRACE_METHOD("readBackFilled");
 #endif
-  readFillStart();
+  Input->readFillStart();
   while (!isFinished()) {
-    readFillMoreInput();
+    Input->readFillMoreInput();
     algorithmResume();
   }
 }

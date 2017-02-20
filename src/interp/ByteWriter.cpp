@@ -19,6 +19,10 @@
 #include "interp/ByteWriter.h"
 
 #include "interp/ByteWriteStream.h"
+#include "interp/WriteStream.h"
+#include "sexp/Ast.h"
+#include "stream/WriteCursor.h"
+#include "utils/Casting.h"
 
 namespace wasm {
 
@@ -42,11 +46,15 @@ void ByteWriter::reset() {
   BlockStartStack.clear();
 }
 
+void ByteWriter::setPos(const decode::BitWriteCursor& NewPos) {
+  WritePos = NewPos;
+}
+
 BitWriteCursor& ByteWriter::getPos() {
   return WritePos;
 }
 
-TraceClass::ContextPtr ByteWriter::getTraceContext() {
+TraceContextPtr ByteWriter::getTraceContext() {
   return WritePos.getTraceContext();
 }
 

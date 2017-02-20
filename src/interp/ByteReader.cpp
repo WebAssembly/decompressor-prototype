@@ -19,6 +19,9 @@
 #include "interp/ByteReader.h"
 
 #include "interp/ByteReadStream.h"
+#include "interp/ReadStream.h"
+#include "sexp/Ast.h"
+#include "utils/Casting.h"
 
 namespace wasm {
 
@@ -42,7 +45,7 @@ void ByteReader::setReadPos(const decode::BitReadCursor& StartPos) {
   ReadPos = StartPos;
 }
 
-TraceClass::ContextPtr ByteReader::getTraceContext() {
+TraceContextPtr ByteReader::getTraceContext() {
   return ReadPos.getTraceContext();
 }
 

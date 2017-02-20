@@ -20,11 +20,13 @@
 #define DECOMPRESSOR_SRC_INTERP_WRITER_H
 
 #include "interp/IntFormats.h"
-#include "sexp/Ast.h"
-#include "utils/Defs.h"
-#include "utils/Trace.h"
+#include "utils/TraceAPI.h"
 
 namespace wasm {
+
+namespace filt {
+class SymbolNode;
+}  // end of namespace filt
 
 namespace interp {
 
@@ -61,8 +63,8 @@ class Writer {
   virtual void setMinimizeBlockSize(bool NewValue);
   virtual void describeState(FILE* File);
 
-  virtual utils::TraceClass::ContextPtr getTraceContext();
-  bool hasTrace() { return bool(Trace) && Trace->getTraceProgress(); }
+  virtual utils::TraceContextPtr getTraceContext();
+  bool hasTrace();
   virtual void setTrace(std::shared_ptr<utils::TraceClass> Trace);
   std::shared_ptr<utils::TraceClass> getTracePtr();
   utils::TraceClass& getTrace() { return *getTracePtr(); }

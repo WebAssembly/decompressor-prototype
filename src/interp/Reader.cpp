@@ -18,6 +18,9 @@
 
 #include "interp/Reader.h"
 
+#include "sexp/Ast.h"
+#include "utils/Trace.h"
+
 namespace wasm {
 
 using namespace decode;
@@ -26,8 +29,8 @@ using namespace utils;
 
 namespace interp {
 
-TraceClass::ContextPtr Reader::getTraceContext() {
-  TraceClass::ContextPtr Ptr;
+TraceContextPtr Reader::getTraceContext() {
+  TraceContextPtr Ptr;
   return Ptr;
 }
 
@@ -55,6 +58,30 @@ std::shared_ptr<TraceClass> Reader::getTracePtr() {
 }
 
 void Reader::reset() {
+}
+
+uint8_t Reader::readUint8() {
+  return readVaruint64();
+}
+
+uint32_t Reader::readUint32() {
+  return readVaruint64();
+}
+
+uint64_t Reader::readUint64() {
+  return readVaruint64();
+}
+
+int32_t Reader::readVarint32() {
+  return readVaruint64();
+}
+
+int64_t Reader::readVarint64() {
+  return readVaruint64();
+}
+
+uint32_t Reader::readVaruint32() {
+  return readVaruint64();
 }
 
 bool Reader::readBinary(const Node*, IntType& Value) {

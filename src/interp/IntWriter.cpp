@@ -18,6 +18,8 @@
 
 #include "interp/IntWriter.h"
 
+#include "sexp/Ast.h"
+
 namespace wasm {
 
 using namespace decode;
@@ -36,7 +38,7 @@ void IntWriter::reset() {
   Pos = StartPos;
 }
 
-TraceClass::ContextPtr IntWriter::getTraceContext() {
+TraceContextPtr IntWriter::getTraceContext() {
   return Pos.getTraceContext();
 }
 

@@ -16,8 +16,8 @@
 
 // Defines the control flags for the interpreter.
 
-#ifndef DECOMPRESSOR_SRC_INTERP_INTERPRETERFLAGS_H
-#define DECOMPRESSOR_SRC_INTERP_INTERPRETERFLAGS_H
+#ifndef DECOMPRESSOR_SRC_INTERP_INTERPRETERFLAGS_H_
+#define DECOMPRESSOR_SRC_INTERP_INTERPRETERFLAGS_H_
 
 namespace wasm {
 
@@ -33,4 +33,4 @@ struct InterpreterFlags {
 
 }  // end of namespace wasm
 
-#endif  // DECOMPRESSOR_SRC_INTERP_INTERPRETERFLAGS_H
+#endif  // DECOMPRESSOR_SRC_INTERP_INTERPRETERFLAGS_H_

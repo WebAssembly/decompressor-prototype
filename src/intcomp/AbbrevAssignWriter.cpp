@@ -18,6 +18,7 @@
 
 #include "intcomp/AbbrevAssignWriter.h"
 #include "intcomp/AbbrevSelector.h"
+#include "sexp/Ast.h"
 
 namespace wasm {
 

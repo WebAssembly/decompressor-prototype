@@ -20,12 +20,13 @@
 #define DECOMPRESSOR_SRC_INTERP_BYTEREADER_H
 
 #include "interp/Reader.h"
-#include "interp/ReadStream.h"
 #include "stream/BitReadCursor.h"
 
 namespace wasm {
 
 namespace interp {
+
+class ReadStream;
 
 class ByteReader : public Reader {
   ByteReader() = delete;
@@ -60,7 +61,7 @@ class ByteReader : public Reader {
   uint32_t readVaruint32() OVERRIDE;
   uint64_t readVaruint64() OVERRIDE;
   bool readBinary(const filt::Node* Encoding, decode::IntType& Value) OVERRIDE;
-  utils::TraceClass::ContextPtr getTraceContext() OVERRIDE;
+  utils::TraceContextPtr getTraceContext() OVERRIDE;
 
  private:
   decode::BitReadCursor ReadPos;

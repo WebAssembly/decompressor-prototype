@@ -1,4 +1,4 @@
-// -*- C++ -*-
+// -*- C++ -*- */
 //
 // Copyright 2016 WebAssembly Community Group participants
 //
@@ -14,16 +14,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "stream/Address.h"
+#include "interp/AlgorithmSelector.h"
 
 namespace wasm {
 
-namespace decode {
+namespace interp {
 
-void describeAddress(FILE* File, AddressType Addr) {
-  fprintf(File, "@%" PRIxMAX, uintmax_t(Addr));
+AlgorithmSelector::AlgorithmSelector(const InterpreterFlags& Flags)
+    : Flags(Flags) {
 }
 
-}  // end of namespace decode
+AlgorithmSelector::~AlgorithmSelector() {
+}
+
+}  // end of namespace interp
 
 }  // end of namespace wasm

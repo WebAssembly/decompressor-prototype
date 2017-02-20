@@ -19,13 +19,17 @@
 #ifndef DECOMPRESSOR_SRC_INTERP_READSTREAM_H
 #define DECOMPRESSOR_SRC_INTERP_READSTREAM_H
 
-#include "sexp/Ast.h"
-#include "stream/ReadCursor.h"
-#include "utils/Casting.h"
-
-#include <memory>
+#include "utils/Defs.h"
 
 namespace wasm {
+
+namespace decode {
+class ReadCursor;
+}  // end of namespace decode
+
+namespace filt {
+class Node;
+}
 
 namespace interp {
 

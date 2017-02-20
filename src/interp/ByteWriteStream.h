@@ -21,8 +21,6 @@
 
 #include "interp/WriteStream.h"
 
-#include <memory>
-
 namespace wasm {
 
 namespace interp {

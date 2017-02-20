@@ -16,42 +16,34 @@
 
 // Defines a reader from a (non-file based) integer stream.
 
-#ifndef DECOMPRESSOR_SRC_INTERP_INTINTERPRETER_H
-#define DECOMPRESSOR_SRC_INTERP_INTINTERPRETER_H
+#ifndef DECOMPRESSOR_SRC_INTERP_INTINTERPRETER_H_
+#define DECOMPRESSOR_SRC_INTERP_INTINTERPRETER_H_
 
 #include "interp/Interpreter.h"
-#include "interp/IntStream.h"
-#include "interp/IntReader.h"
-#include "utils/Defs.h"
-#include "utils/ValueStack.h"
-
-#include <memory>
 
 namespace wasm {
 
 namespace interp {
 
-class IntInterperter : public Interpreter {
-  IntInterperter() = delete;
-  IntInterperter(const IntInterperter&) = delete;
-  IntInterperter& operator=(const IntInterperter&) = delete;
+class IntReader;
+
+class IntInterpreter : public Interpreter {
+  IntInterpreter() = delete;
+  IntInterpreter(const IntInterpreter&) = delete;
+  IntInterpreter& operator=(const IntInterpreter&) = delete;
 
  public:
-  IntInterperter(std::shared_ptr<IntReader> Input,
+  IntInterpreter(std::shared_ptr<IntReader> Input,
                  std::shared_ptr<Writer> Output,
                  const InterpreterFlags& Flags,
                  std::shared_ptr<filt::SymbolTable> Symtab);
-  ~IntInterperter() OVERRIDE;
+  ~IntInterpreter() OVERRIDE;
 
   // Read based on structure of input integer stream.
   void structuralStart();
-  void structuralResume();
+  void structuralRead();
   void structuralReadBackFilled();
-
-  void structuralRead() {
-    structuralStart();
-    structuralReadBackFilled();
-  }
+  void structuralResume();
 
  private:
   const char* getDefaultTraceName() const OVERRIDE;
@@ -62,4 +54,4 @@ class IntInterperter : public Interpreter {
 
 }  // end of namespace wasm
 
-#endif  // DECOMPRESSOR_SRC_INTERP_INTINTERPRETER_H
+#endif  // DECOMPRESSOR_SRC_INTERP_INTINTERPRETER_H_

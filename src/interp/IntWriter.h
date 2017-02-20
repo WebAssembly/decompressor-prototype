@@ -16,14 +16,11 @@
 
 // Defines a writer for a (non-file based) integer stream.
 
-#ifndef DECOMPRESSOR_SRC_INTERP_INTWRITER_H
-#define DECOMPRESSOR_SRC_INTERP_INTWRITER_H
+#ifndef DECOMPRESSOR_SRC_INTERP_INTWRITER_H_
+#define DECOMPRESSOR_SRC_INTERP_INTWRITER_H_
 
 #include "interp/IntStream.h"
 #include "interp/Writer.h"
-#include "utils/Defs.h"
-
-#include <memory>
 
 namespace wasm {
 
@@ -45,7 +42,7 @@ class IntWriter : public Writer {
   bool writeHeaderValue(decode::IntType Value,
                         interp::IntTypeFormat Format) OVERRIDE;
   bool writeAction(const filt::SymbolNode* Action) OVERRIDE;
-  utils::TraceClass::ContextPtr getTraceContext() OVERRIDE;
+  utils::TraceContextPtr getTraceContext() OVERRIDE;
   void describeState(FILE* File) OVERRIDE;
   size_t getIndex() const { return Pos.getIndex(); }
 
@@ -60,4 +57,4 @@ class IntWriter : public Writer {
 
 }  // end of namespace wasm
 
-#endif  // DECOMPRESSOR_SRC_INTERP_INTWRITER_H
+#endif  // DECOMPRESSOR_SRC_INTERP_INTWRITER_H_

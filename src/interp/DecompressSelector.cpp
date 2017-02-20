@@ -30,10 +30,12 @@
 
 #include "interp/DecompressSelector.h"
 
+#include "interp/Interpreter.h"
 #include "interp/IntReader.h"
 #include "interp/IntWriter.h"
-#include "interp/Reader.h"
+#include "sexp/Ast.h"
 #include "sexp/InflateAst.h"
+#include "utils/Trace.h"
 
 namespace wasm {
 
@@ -41,10 +43,26 @@ using namespace filt;
 
 namespace interp {
 
+DecompAlgState::DecompAlgState() {
+}
+
+DecompAlgState::~DecompAlgState() {
+}
+
+DecompressSelector::DecompressSelector(std::shared_ptr<SymbolTable> Symtab,
+                                       std::shared_ptr<DecompAlgState> State,
+                                       bool IsAlgorithm,
+                                       const InterpreterFlags& Flags)
+    : AlgorithmSelector(Flags),
+      Symtab(Symtab),
+      State(State),
+      IsAlgorithm(IsAlgorithm) {
+}
+
 DecompressSelector::~DecompressSelector() {
 }
 
-const filt::FileHeaderNode* DecompressSelector::getTargetHeader() {
+const FileHeaderNode* DecompressSelector::getTargetHeader() {
   return Symtab->getTargetHeader();
 }
 

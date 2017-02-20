@@ -33,7 +33,7 @@ class Cursor : public PageCursor {
   Cursor& operator=(const Cursor&) = delete;
 
  public:
-  class TraceContext : public utils::TraceClass::Context {
+  class TraceContext : public utils::TraceContext {
     TraceContext() = delete;
     TraceContext(const TraceContext&) = delete;
     TraceContext& operator=(const TraceContext&) = delete;
@@ -66,7 +66,7 @@ class Cursor : public PageCursor {
   FILE* describe(FILE* File, bool IncludeDetail = false, bool AddEoln = false);
   // Adds any extentions to the page address, as defined in a derived class.
   virtual void describeDerivedExtensions(FILE* File, bool IncludeDetail);
-  virtual utils::TraceClass::ContextPtr getTraceContext();
+  virtual utils::TraceContextPtr getTraceContext();
 
  protected:
   StreamType Type;

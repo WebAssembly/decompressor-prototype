@@ -102,6 +102,11 @@ typedef const char* charstring;
 
 namespace decode {
 
+typedef size_t AddressType;
+typedef uint8_t ByteType;
+
+void describeAddress(FILE* File, AddressType Addr);
+
 typedef uint64_t IntType;
 typedef int64_t SignedIntType;
 

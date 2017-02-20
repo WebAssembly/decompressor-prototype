@@ -47,7 +47,7 @@
 #ifndef DECOMPRESSOR_SRC_STREAM_PAGECURSOR_H_
 #define DECOMPRESSOR_SRC_STREAM_PAGECURSOR_H_
 
-#include "stream/Address.h"
+#include "stream/PageAddress.h"
 
 namespace wasm {
 

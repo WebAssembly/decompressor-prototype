@@ -15,31 +15,23 @@
  * limitations under the License.
  */
 
-// Defines possible ways of formating integers (i.e. IntType).
+// Defines minimal API to tracing for header files.
 
-#ifndef DECOMPRESSOR_SRC_STREAM_VALUEFORMAT_H_
-#define DECOMPRESSOR_SRC_STREAM_VALUEFORMAT_H_
+#ifndef DECOMPRESSOR_SRC_UTILS_TRACEAPI_H_
+#define DECOMPRESSOR_SRC_UTILS_TRACEAPI_H_
 
 #include "utils/Defs.h"
 
 namespace wasm {
 
-namespace decode {
+namespace utils {
 
-enum class ValueFormat { Decimal, SignedDecimal, Hexidecimal };
+class TraceContext;
+class TraceClass;
+typedef std::shared_ptr<TraceContext> TraceContextPtr;
 
-constexpr ValueFormat getValueFormat(int i) {
-  return static_cast<ValueFormat>(i);
-}
-
-const char* getName(ValueFormat Format);
-
-constexpr char getHexCharForDigit(char Digit) {
-  return Digit < 10 ? '0' + Digit : 'a' + (Digit - 10);
-}
-
-}  // end of namespace decode
+}  // end of namespace utils
 
 }  // end of namespace wasm
 
-#endif  // DECOMPRESSOR_SRC_STREAM_VALUEFORMAT_H_
+#endif  // DECOMPRESSOR_SRC_UTILS_TRACEAPI_H_

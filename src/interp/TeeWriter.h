@@ -18,13 +18,12 @@
 // Note: Write contexts and tracing is controllable for each
 // individual writer in the tee.
 
-#ifndef DECOMPRESSOR_SRC_INTERP_TEEWRITER_H
-#define DECOMPRESSOR_SRC_INTERP_TEEWRITER_H
+#ifndef DECOMPRESSOR_SRC_INTERP_TEEWRITER_H_
+#define DECOMPRESSOR_SRC_INTERP_TEEWRITER_H_
+
+#include <vector>
 
 #include "interp/Writer.h"
-
-#include <memory>
-#include <vector>
 
 namespace wasm {
 
@@ -85,7 +84,7 @@ class TeeWriter : public Writer {
   void setMinimizeBlockSize(bool NewValue) OVERRIDE;
   void describeState(FILE* File) OVERRIDE;
 
-  utils::TraceClass::ContextPtr getTraceContext() OVERRIDE;
+  utils::TraceContextPtr getTraceContext() OVERRIDE;
   void setTrace(std::shared_ptr<utils::TraceClass> Trace) OVERRIDE;
 
  private:
@@ -97,4 +96,4 @@ class TeeWriter : public Writer {
 
 }  // end of namespace wasm
 
-#endif  //  DECOMPRESSOR_SRC_INTERP_TEEWRITER_H
+#endif  //  DECOMPRESSOR_SRC_INTERP_TEEWRITER_H_

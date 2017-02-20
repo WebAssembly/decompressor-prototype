@@ -18,6 +18,12 @@
 
 #include "interp/IntInterpreter.h"
 
+#include "interp/IntReader.h"
+#include "interp/IntStream.h"
+#include "interp/Writer.h"
+#include "sexp/Ast.h"
+#include "utils/Trace.h"
+
 namespace wasm {
 
 using namespace decode;
@@ -26,31 +32,33 @@ using namespace utils;
 
 namespace interp {
 
-IntInterperter::IntInterperter(std::shared_ptr<IntReader> Input,
+IntInterpreter::IntInterpreter(std::shared_ptr<IntReader> Input,
                                std::shared_ptr<Writer> Output,
                                const InterpreterFlags& Flags,
                                std::shared_ptr<filt::SymbolTable> Symtab)
     : Interpreter(Input, Output, Flags, Symtab), IntInput(Input) {
-  // TODO(karlschimpf) Modify structuralStart() to mimic algorithmStart(),
-  // except that it calls structuralResume() to remove this assertion.
-  assert(Symtab && "IntInterperter must be given algorithm at construction");
 }
 
-IntInterperter::~IntInterperter() {
+IntInterpreter::~IntInterpreter() {
 }
 
-const char* IntInterperter::getDefaultTraceName() const {
+const char* IntInterpreter::getDefaultTraceName() const {
   return "IntReader";
 }
 
-void IntInterperter::structuralStart() {
-  algorithmStart();
+void IntInterpreter::structuralStart() {
+  assert(Symtab && "IntInterpreter must be given algorithm at construction");
+  return callTopLevel(Method::GetFile, nullptr);
 }
 
-void IntInterperter::structuralResume() {
-  if (!canProcessMoreInputNow())
+void IntInterpreter::structuralRead() {
+  structuralStart();
+  structuralReadBackFilled();
+}
+void IntInterpreter::structuralResume() {
+  if (!Input->canProcessMoreInputNow())
     return;
-  while (stillMoreInputToProcessNow()) {
+  while (Input->stillMoreInputToProcessNow()) {
     if (errorsFound())
       break;
     switch (Frame.CallMethod) {
@@ -61,7 +69,7 @@ void IntInterperter::structuralResume() {
           case State::Enter:
             for (auto Pair : IntInput->getStream()->getHeader()) {
               IntType Value;
-              if (!readHeaderValue(Pair.second, Value)) {
+              if (!Input->readHeaderValue(Pair.second, Value)) {
                 TRACE(IntType, "Lit Value", Pair.first);
                 TRACE(string, "Lit format", wasm::interp::getName(Pair.second));
                 return throwMessage("unable to read header literal");
@@ -182,10 +190,10 @@ void IntInterperter::structuralResume() {
   }
 }
 
-void IntInterperter::structuralReadBackFilled() {
-  readFillStart();
+void IntInterpreter::structuralReadBackFilled() {
+  Input->readFillStart();
   while (!isFinished()) {
-    readFillMoreInput();
+    Input->readFillMoreInput();
     structuralResume();
   }
 }

@@ -17,6 +17,8 @@
 // implements a writer for wasm/casm files.
 
 #include "interp/Writer.h"
+#include "sexp/Ast.h"
+#include "utils/Trace.h"
 
 namespace wasm {
 
@@ -57,9 +59,13 @@ void Writer::setMinimizeBlockSize(bool NewValue) {
   MinimizeBlockSize = NewValue;
 }
 
-TraceClass::ContextPtr Writer::getTraceContext() {
-  TraceClass::ContextPtr Ptr;
+TraceContextPtr Writer::getTraceContext() {
+  TraceContextPtr Ptr;
   return Ptr;
+}
+
+bool Writer::hasTrace() {
+  return bool(Trace) && Trace->getTraceProgress();
 }
 
 std::shared_ptr<TraceClass> Writer::getTracePtr() {

@@ -14,19 +14,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Defines constants and types associated with addresses.
+// Defines constants and types associated with addresses for paging.
 
-#ifndef DECOMPRESSOR_SRC_STREAM_ADDRESS_H_
-#define DECOMPRESSOR_SRC_STREAM_ADDRESS_H_
+#ifndef DECOMPRESSOR_SRC_STREAM_PAGE_ADDRES_H_
+#define DECOMPRESSOR_SRC_STREAM_PAGE_ADDRES_H_
 
 #include "utils/Defs.h"
 
 namespace wasm {
 
 namespace decode {
-
-typedef size_t AddressType;
-typedef uint8_t ByteType;
 
 static constexpr AddressType PageSizeLog2 =
 #ifdef WASM_DECODE_PAGE_SIZE
@@ -66,17 +63,17 @@ static constexpr AddressType kUndefinedAddress =
 inline bool isGoodAddress(AddressType Addr) {
   return Addr <= kMaxEofAddress;
 }
+
 inline bool isDefinedAddress(AddressType Addr) {
   return Addr != kUndefinedAddress;
 }
+
 inline void resetAddress(AddressType& Addr) {
   Addr = 0;
 }
-
-void describeAddress(FILE* File, AddressType Addr);
 
 }  // end of namespace decode
 
 }  // end of namespace wasm
 
-#endif  // DECOMPRESSOR_SRC_STREAM_ADDRESS_H_
+#endif  // DECOMPRESSOR_SRC_STREAM_PAGE_ADDRES_H_

@@ -18,12 +18,35 @@
 
 #include "interp/IntStream.h"
 
+#include "utils/Trace.h"
+
 namespace wasm {
 
 using namespace decode;
 using namespace utils;
 
 namespace interp {
+
+IntStream::Block::Block(size_t BeginIndex, size_t EndIndex)
+    : BeginIndex(BeginIndex), EndIndex(EndIndex) {
+}
+
+IntStream::Block::~Block() {
+}
+
+class IntStream::Cursor::TraceContext : public utils::TraceContext {
+  TraceContext() = delete;
+  TraceContext(const TraceContext&) = delete;
+  TraceContext& operator=(const TraceContext&) = delete;
+
+ public:
+  TraceContext(Cursor& Pos) : Pos(Pos) {}
+  ~TraceContext() OVERRIDE;
+  void describe(FILE* File);
+
+ private:
+  Cursor& Pos;
+};
 
 void IntStream::Block::describe(FILE* File) {
   fprintf(File, "[%" PRIxMAX "", uintmax_t(BeginIndex));
@@ -39,6 +62,9 @@ void IntStream::Cursor::TraceContext::describe(FILE* File) {
   Pos.describe(File);
 }
 
+IntStream::Cursor::Cursor() : Index(0) {
+}
+
 IntStream::Cursor::Cursor(StreamPtr Stream) : Index(0), Stream(Stream) {
   assert(Stream);
   EnclosingBlocks.push_back(Stream->TopBlock);
@@ -51,6 +77,9 @@ IntStream::Cursor::Cursor(const IntStream::Cursor& C)
       Stream(C.Stream) {
 }
 
+IntStream::Cursor::~Cursor() {
+}
+
 IntStream::Cursor& IntStream::Cursor::operator=(const IntStream::Cursor& C) {
   Index = C.Index;
   EnclosingBlocks = C.EnclosingBlocks;
@@ -58,7 +87,7 @@ IntStream::Cursor& IntStream::Cursor::operator=(const IntStream::Cursor& C) {
   return *this;
 }
 
-TraceClass::ContextPtr IntStream::Cursor::getTraceContext() {
+TraceContextPtr IntStream::Cursor::getTraceContext() {
   return std::make_shared<IntStream::Cursor::TraceContext>(*this);
 }
 
@@ -105,6 +134,18 @@ IntStream::BlockPtr IntStream::Cursor::closeBlock() {
   return Blk;
 }
 
+IntStream::WriteCursor::WriteCursor() : Cursor() {
+}
+
+IntStream::WriteCursor::WriteCursor(StreamPtr Stream) : Cursor(Stream) {
+}
+
+IntStream::WriteCursor::WriteCursor(const Cursor& C) : Cursor(C) {
+}
+
+IntStream::WriteCursor::~WriteCursor() {
+}
+
 bool IntStream::WriteCursor::write(IntType Value) {
   // TODO(karlschimpf): Add capability to communicate failure to caller.
   assert(!EnclosingBlocks.empty());
@@ -144,6 +185,22 @@ bool IntStream::WriteCursor::closeBlock() {
   return true;
 }
 
+IntStream::ReadCursor::ReadCursor() : Cursor() {
+}
+
+IntStream::ReadCursor::ReadCursor(StreamPtr Stream)
+    : Cursor(Stream),
+      NextBlock(Stream->getBlocksBegin()),
+      EndBlocks(Stream->getBlocksEnd()) {
+}
+
+IntStream::ReadCursor::ReadCursor(const ReadCursor& C)
+    : Cursor(C), NextBlock(C.NextBlock), EndBlocks(C.EndBlocks) {
+}
+
+IntStream::ReadCursor::~ReadCursor() {
+}
+
 IntType IntStream::ReadCursor::read() {
   // TODO(karlschimpf): Add capability to communicate failure to caller.
   assert(!EnclosingBlocks.empty());
@@ -173,12 +230,36 @@ bool IntStream::ReadCursor::closeBlock() {
   return Blk->getEndIndex() == Index;
 }
 
+IntStream::IntStream() {
+  reset();
+}
+
+IntStream::~IntStream() {
+}
+
 void IntStream::reset() {
   Header.clear();
   Values.clear();
   TopBlock = std::make_shared<Block>();
   isFrozenFlag = false;
   Blocks.clear();
+}
+
+size_t IntStream::getNumIntegers() const {
+  return Values.size() + Blocks.size() * 2;
+}
+
+IntStream::BlockIterator IntStream::getBlocksBegin() {
+  return Blocks.begin();
+}
+
+IntStream::BlockIterator IntStream::getBlocksEnd() {
+  return Blocks.end();
+}
+
+void IntStream::appendHeader(decode::IntType Value,
+                             interp::IntTypeFormat Format) {
+  Header.push_back(std::make_pair(Value, Format));
 }
 
 void IntStream::describe(FILE* File, const char* Name) {

@@ -20,8 +20,10 @@
 #include "sexp/InflateAst.h"
 
 #include "binary/SectionSymbolTable.h"
+#include "sexp/Ast.h"
 #include "sexp/TextWriter.h"
 #include "utils/Casting.h"
+#include "utils/Trace.h"
 
 namespace wasm {
 

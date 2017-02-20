@@ -23,31 +23,34 @@
 // they are queued.  The last algorithm is run using the original
 // writer.
 
-#ifndef DECOMPRESSOR_SRC_INTERP_DECOMPRESSSELECTOR_H
-#define DECOMPRESSOR_SRC_INTERP_DECOMPRESSSELECTOR_H
+#ifndef DECOMPRESSOR_SRC_INTERP_DECOMPRESSSELECTOR_H_
+#define DECOMPRESSOR_SRC_INTERP_DECOMPRESSSELECTOR_H_
 
-#include "interp/Interpreter.h"
-
-#include <memory>
 #include <queue>
+
+#include "interp/AlgorithmSelector.h"
 
 namespace wasm {
 
 namespace filt {
+class FileHeaderNode;
 class InflateAst;
-}
+class SymbolTable;
+}  // end of namespace filt;
 
 namespace interp {
 
+class Interpreter;
 class IntStream;
+class Writer;
 
 class DecompAlgState : public std::enable_shared_from_this<DecompAlgState> {
   DecompAlgState(const DecompAlgState&) = delete;
   DecompAlgState operator=(const DecompAlgState&) = delete;
 
  public:
-  DecompAlgState() {}
-  virtual ~DecompAlgState() {}
+  DecompAlgState();
+  virtual ~DecompAlgState();
 
   // TODO(karlschimpf) Choose a queue data structure instead.
   std::queue<std::shared_ptr<filt::SymbolTable>> AlgQueue;
@@ -66,11 +69,7 @@ class DecompressSelector : public AlgorithmSelector {
   DecompressSelector(std::shared_ptr<filt::SymbolTable> Symtab,
                      std::shared_ptr<DecompAlgState> State,
                      bool IsAlgorithm,
-                     const InterpreterFlags& Flags)
-      : AlgorithmSelector(Flags),
-        Symtab(Symtab),
-        State(State),
-        IsAlgorithm(IsAlgorithm) {}
+                     const InterpreterFlags& Flags);
   ~DecompressSelector() OVERRIDE;
   const filt::FileHeaderNode* getTargetHeader() OVERRIDE;
   bool configure(Interpreter* R) OVERRIDE;
@@ -93,4 +92,4 @@ class DecompressSelector : public AlgorithmSelector {
 
 }  // end of namespace wasm
 
-#endif  // DECOMPRESSOR_SRC_INTERP_DECOMPRESSSELECTOR_H
+#endif  // DECOMPRESSOR_SRC_INTERP_DECOMPRESSSELECTOR_H_

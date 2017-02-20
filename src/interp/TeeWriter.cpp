@@ -174,10 +174,10 @@ void TeeWriter::describeState(FILE* File) {
     Nd.getWriter()->describeState(File);
 }
 
-TraceClass::ContextPtr TeeWriter::getTraceContext() {
+TraceContextPtr TeeWriter::getTraceContext() {
   if (ContextWriter)
     return ContextWriter->getTraceContext();
-  return TraceClass::ContextPtr();
+  return TraceContextPtr();
 }
 
 void TeeWriter::setTrace(std::shared_ptr<TraceClass> NewTrace) {

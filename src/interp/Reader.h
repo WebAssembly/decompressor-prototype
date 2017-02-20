@@ -16,18 +16,19 @@
 
 // Defines a reader for wasm/casm files.
 
-#ifndef DECOMPRESSOR_SRC_INTERP_READER_H
-#define DECOMPRESSOR_SRC_INTERP_READER_H
+#ifndef DECOMPRESSOR_SRC_INTERP_READER_H_
+#define DECOMPRESSOR_SRC_INTERP_READER_H_
 
-#include "interp/Interpreter.def"
-#include "interp/Writer.h"
-#include "utils/Trace.h"
+#include "interp/IntFormats.h"
+#include "utils/TraceAPI.h"
 #include "utils/ValueStack.h"
 
 namespace wasm {
 
 namespace filt {
 
+class Node;
+class SymbolNode;
 class TextWriter;
 
 }  // end of namespace filt.
@@ -41,7 +42,7 @@ class Reader : public std::enable_shared_from_this<Reader> {
  public:
   Reader() {}
   virtual ~Reader() {}
-  virtual utils::TraceClass::ContextPtr getTraceContext();
+  virtual utils::TraceContextPtr getTraceContext();
   void setTraceProgress(bool NewValue);
   bool hasTrace() { return bool(Trace); }
   void setTrace(std::shared_ptr<utils::TraceClass> Trace);
@@ -65,12 +66,12 @@ class Reader : public std::enable_shared_from_this<Reader> {
   virtual void readFillStart() = 0;
   virtual void readFillMoreInput() = 0;
   // Hard coded reads.
-  virtual uint8_t readUint8() = 0;
-  virtual uint32_t readUint32() = 0;
-  virtual uint64_t readUint64() = 0;
-  virtual int32_t readVarint32() = 0;
-  virtual int64_t readVarint64() = 0;
-  virtual uint32_t readVaruint32() = 0;
+  virtual uint8_t readUint8();
+  virtual uint32_t readUint32();
+  virtual uint64_t readUint64();
+  virtual int32_t readVarint32();
+  virtual int64_t readVarint64();
+  virtual uint32_t readVaruint32();
   virtual uint64_t readVaruint64() = 0;
   virtual bool readBinary(const filt::Node* Encoding, decode::IntType& Value);
   virtual bool readValue(const filt::Node* Format, decode::IntType& Value);
@@ -85,4 +86,4 @@ class Reader : public std::enable_shared_from_this<Reader> {
 
 }  // end of namespace wasm
 
-#endif  // DECOMPRESSOR_SRC_INTERP_READER_H
+#endif  // DECOMPRESSOR_SRC_INTERP_READER_H_
