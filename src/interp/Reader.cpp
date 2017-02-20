@@ -18,6 +18,9 @@
 
 #include "interp/Reader.h"
 
+#include "sexp/Ast.h"
+#include "utils/Trace.h"
+
 namespace wasm {
 
 using namespace decode;

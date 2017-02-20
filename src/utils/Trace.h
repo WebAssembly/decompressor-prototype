@@ -20,6 +20,10 @@
 #ifndef DECOMPRESSOR_SRC_UTILS_TRACE_H
 #define DECOMPRESSOR_SRC_UTILS_TRACE_H
 
+#include <vector>
+
+#include "utils/TraceAPI.h"
+
 #ifdef NDEBUG
 
 #define TRACE_METHOD_USING(Name, Trace)
@@ -91,10 +95,6 @@
 #define TRACE_BLOCK(code) TRACE_BLOCK_USING(getTrace(), code)
 #endif
 
-#include "utils/Defs.h"
-
-#include <memory>
-#include <vector>
 
 namespace wasm {
 
@@ -116,8 +116,6 @@ class TraceContext : public std::enable_shared_from_this<TraceContext> {
  protected:
   TraceContext();
 };
-
-typedef std::shared_ptr<TraceContext> TraceContextPtr;
 
 class TraceClass : public std::enable_shared_from_this<TraceClass> {
   TraceClass(const TraceClass&) = delete;

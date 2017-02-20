@@ -20,12 +20,13 @@
 #define DECOMPRESSOR_SRC_INTERP_BYTEREADER_H
 
 #include "interp/Reader.h"
-#include "interp/ReadStream.h"
 #include "stream/BitReadCursor.h"
 
 namespace wasm {
 
 namespace interp {
+
+class ReadStream;
 
 class ByteReader : public Reader {
   ByteReader() = delete;

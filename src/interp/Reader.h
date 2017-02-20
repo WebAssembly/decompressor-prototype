@@ -16,21 +16,19 @@
 
 // Defines a reader for wasm/casm files.
 
-#ifndef DECOMPRESSOR_SRC_INTERP_READER_H
-#define DECOMPRESSOR_SRC_INTERP_READER_H
+#ifndef DECOMPRESSOR_SRC_INTERP_READER_H_
+#define DECOMPRESSOR_SRC_INTERP_READER_H_
 
-#include "interp/Interpreter.def"
-#include "interp/Writer.h"
+#include "interp/IntFormats.h"
+#include "utils/TraceAPI.h"
 #include "utils/ValueStack.h"
 
 namespace wasm {
 
-namespace utils {
-class Trace;
-}  // end of namespace utils
-
 namespace filt {
 
+class Node;
+class SymbolNode;
 class TextWriter;
 
 }  // end of namespace filt.
@@ -88,4 +86,4 @@ class Reader : public std::enable_shared_from_this<Reader> {
 
 }  // end of namespace wasm
 
-#endif  // DECOMPRESSOR_SRC_INTERP_READER_H
+#endif  // DECOMPRESSOR_SRC_INTERP_READER_H_

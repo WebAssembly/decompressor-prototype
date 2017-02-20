@@ -19,6 +19,8 @@
 #include "interp/ByteReader.h"
 
 #include "interp/ByteReadStream.h"
+#include "interp/ReadStream.h"
+#include "sexp/Ast.h"
 #include "utils/Casting.h"
 
 namespace wasm {
