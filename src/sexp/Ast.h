@@ -15,16 +15,6 @@
 // limitations under the License.
 
 // Defines an internal model of filter AST's.
-//
-// NOTE: template classes define  virtual:
-//
-//    virtual void forceCompilation();
-//
-// This is done to force the compilation of virtuals associated with the
-// class to be put in file Ast.cpp.
-//
-// Note: Classes allow an optional allocator as the first argument. This
-// allows the creator to decide what allocator will be used internally.
 
 #ifndef DECOMPRESSOR_SRC_SEXP_AST_H
 #define DECOMPRESSOR_SRC_SEXP_AST_H
@@ -96,27 +86,18 @@ extern AstTraitsType AstTraits[NumNodeTypes];
 
 // Models integer values (as used in AST nodes).
 class IntegerValue {
+  IntegerValue& operator=(const IntegerValue&) = delete;
+
  public:
-  IntegerValue()
-      : Type(NO_SUCH_NODETYPE),
-        Value(0),
-        Format(decode::ValueFormat::Decimal),
-        isDefault(false) {}
-  explicit IntegerValue(decode::IntType Value, decode::ValueFormat Format)
-      : Type(NO_SUCH_NODETYPE),
-        Value(Value),
-        Format(Format),
-        isDefault(false) {}
+  IntegerValue();
+  explicit IntegerValue(decode::IntType Value, decode::ValueFormat Format);
   IntegerValue(NodeType Type,
                decode::IntType Value,
                decode::ValueFormat Format,
-               bool isDefault = false)
-      : Type(Type), Value(Value), Format(Format), isDefault(isDefault) {}
-  explicit IntegerValue(const IntegerValue& V)
-      : Type(V.Type),
-        Value(V.Value),
-        Format(V.Format),
-        isDefault(V.isDefault) {}
+               bool isDefault = false);
+  explicit IntegerValue(const IntegerValue& V);
+  ~IntegerValue();
+
   virtual int compare(const IntegerValue& V) const;
   bool operator<(const IntegerValue& V) const { return compare(V) < 0; }
   bool operator<=(const IntegerValue& V) const { return compare(V) <= 0; }
@@ -149,11 +130,11 @@ static constexpr uint32_t NumPredefinedSymbols = 1
 static constexpr PredefinedSymbol MaxPredefinedSymbol =
     PredefinedSymbol(NumPredefinedSymbols - 1);
 
-extern PredefinedSymbol toPredefinedSymbol(uint32_t Value);
-extern const char* getName(PredefinedSymbol);
+PredefinedSymbol toPredefinedSymbol(uint32_t Value);
+const char* getName(PredefinedSymbol);
 
 // TODO(karlschimpf): Code no longer uses allocator. Remove from API.
-class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
+class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   SymbolTable(const SymbolTable&) = delete;
   SymbolTable& operator=(const SymbolTable&) = delete;
 
@@ -161,7 +142,7 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
   explicit SymbolTable();
   ~SymbolTable();
   // Gets existing symbol if known. Otherwise returns nullptr.
-  SymbolNode* getSymbol(const std::string& Name) { return SymbolMap[Name]; }
+  SymbolNode* getSymbol(const std::string& Name);
   SymbolNode* getPredefined(PredefinedSymbol Sym) {
     return (*Predefined)[uint32_t(Sym)];
   }
@@ -187,7 +168,7 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
   const Node* getInstalledRoot() const { return Root; }
   const FileHeaderNode* getSourceHeader() const;
   const FileHeaderNode* getTargetHeader() const { return TargetHeader; }
-  void clear() { SymbolMap.clear(); }
+  void clear();
   int getNextCreationIndex() { return ++NextCreationIndex; }
 
   template <typename T>
@@ -203,9 +184,7 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
 
   // Strips all callback actions from the algorithm, except for the names
   // specified. Returns the updated tree.
-  void stripCallbacksExcept(std::set<std::string>& KeepActions) {
-    install(stripCallbacksExcept(KeepActions, Root));
-  }
+  void stripCallbacksExcept(std::set<std::string>& KeepActions);
 
   // Strips out literal definitions and replaces literal uses.
   void stripLiterals();
@@ -213,8 +192,9 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
   void setTraceProgress(bool NewValue);
   virtual void setTrace(std::shared_ptr<utils::TraceClass> Trace);
   std::shared_ptr<utils::TraceClass> getTracePtr();
-  utils::TraceClass& getTrace() { return *getTracePtr(); }
 
+  // For debugging.
+  utils::TraceClass& getTrace();
   void describe(FILE* Out);
 
  private:
@@ -249,59 +229,47 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
 };
 
 class Node {
+  Node() = delete;
   Node(const Node&) = delete;
   Node& operator=(const Node&) = delete;
-  Node() = delete;
   friend class SymbolTable;
 
  public:
   typedef size_t IndexType;
   class Iterator {
+    Iterator() = delete;
+
    public:
-    explicit Iterator(const Node* Nd, int Index) : Nd(Nd), Index(Index) {}
-    Iterator(const Iterator& Iter) : Nd(Iter.Nd), Index(Iter.Index) {}
-    Iterator& operator=(const Iterator& Iter) {
-      Nd = Iter.Nd;
-      Index = Iter.Index;
-      return *this;
-    }
+    explicit Iterator(const Node* Nd, int Index);
+    Iterator(const Iterator& Iter);
+    Iterator& operator=(const Iterator& Iter);
     void operator++() { ++Index; }
     void operator--() { --Index; }
-    bool operator==(const Iterator& Iter) {
-      return Nd == Iter.Nd && Index == Iter.Index;
-    }
-    bool operator!=(const Iterator& Iter) {
-      return Nd != Iter.Nd || Index != Iter.Index;
-    }
-    Node* operator*() const { return Nd->getKid(Index); }
+    bool operator==(const Iterator& Iter);
+    bool operator!=(const Iterator& Iter);
+    Node* operator*() const;
 
    private:
     const Node* Nd;
     int Index;
   };
 
-  virtual ~Node() {}
+  virtual ~Node();
 
   SymbolTable& getSymtab() { return Symtab; }
-
   NodeType getRtClassId() const { return Type; }
-
   NodeType getType() const { return Type; }
-
-  const char* getName() const { return getNodeSexpName(getType()); }
-
-  const char* getNodeName() const { return getNodeTypeName(getType()); }
-
-  utils::TraceClass& getTrace() const { return Symtab.getTrace(); }
-
+  const char* getName() const;
+  const char* getNodeName() const;
+  utils::TraceClass& getTrace() const;
   bool hasKids() const { return getNumKids() > 0; }
 
   // General API to children.
   virtual int getNumKids() const = 0;
-
   virtual Node* getKid(int Index) const = 0;
-
   virtual void setKid(int Index, Node* N) = 0;
+  void setLastKid(Node* N);
+  Node* getLastKid() const;
 
   // Counts number of nodes in tree defined by this.
   size_t getTreeSize() const;
@@ -315,24 +283,16 @@ class Node {
   bool validateKids(NodeVectorType& Parents);
   bool validateSubtree(NodeVectorType& Parents);
 
-  void setLastKid(Node* N) { setKid(getNumKids() - 1, N); }
-
-  Node* getLastKid() const {
-    if (int Size = getNumKids())
-      return getKid(Size - 1);
-    return nullptr;
-  }
-
   // WARNING: Only supported if underlying type allows.
   virtual void append(Node* Kid);
 
   int getCreationIndex() const { return CreationIndex; }
 
   // General iterators for walking kids.
-  Iterator begin() const { return Iterator(this, 0); }
-  Iterator end() const { return Iterator(this, getNumKids()); }
-  Iterator rbegin() const { return Iterator(this, getNumKids() - 1); }
-  Iterator rend() const { return Iterator(this, -1); }
+  Iterator begin() const;
+  Iterator end() const;
+  Iterator rbegin() const;
+  Iterator rend() const;
 
   // Returns true if the node defines an AST node that corresponds to an
   // integer format (i.e. IntTypeFormat);
@@ -346,55 +306,50 @@ class Node {
   NodeType Type;
   SymbolTable& Symtab;
   int CreationIndex;
-  Node(SymbolTable& Symtab, NodeType Type)
-      : Type(Type),
-        Symtab(Symtab),
-        CreationIndex(Symtab.getNextCreationIndex()) {}
+  Node(SymbolTable& Symtab, NodeType Type);
   virtual void clearCaches(NodeVectorType& AdditionalNodes);
   virtual void installCaches(NodeVectorType& AdditionalNodes);
 };
 
 class NullaryNode : public Node {
+  NullaryNode() = delete;
   NullaryNode(const NullaryNode&) = delete;
   NullaryNode& operator=(const NullaryNode&) = delete;
 
  public:
-  ~NullaryNode() OVERRIDE {}
+  ~NullaryNode() OVERRIDE;
+  int getNumKids() const OVERRIDE FINAL;
+  Node* getKid(int Index) const OVERRIDE FINAL;
+  void setKid(int Index, Node* N) FINAL;
 
   static bool implementsClass(NodeType Type);
 
-  int getNumKids() const FINAL { return 0; }
-
-  Node* getKid(int Index) const FINAL;
-
-  void setKid(int Index, Node* N) FINAL;
-
  protected:
-  NullaryNode(SymbolTable& Symtab, NodeType Type) : Node(Symtab, Type) {}
+  NullaryNode(SymbolTable& Symtab, NodeType Type);
 };
 
-#define X(tag, NODE_DECLS)                                                    \
-  class tag##Node FINAL : public NullaryNode {                                \
-    tag##Node(const tag##Node&) = delete;                                     \
-    tag##Node& operator=(const tag##Node&) = delete;                          \
-    virtual void forceCompilation();                                          \
-                                                                              \
-   public:                                                                    \
-    explicit tag##Node(SymbolTable& Symtab) : NullaryNode(Symtab, Op##tag) {} \
-    ~tag##Node() OVERRIDE {}                                                  \
-    static bool implementsClass(NodeType Type) { return Type == Op##tag; }    \
-    NODE_DECLS                                                                \
+#define X(tag, NODE_DECLS)                                                 \
+  class tag##Node FINAL : public NullaryNode {                             \
+    tag##Node() = delete;                                                  \
+    tag##Node(const tag##Node&) = delete;                                  \
+    tag##Node& operator=(const tag##Node&) = delete;                       \
+                                                                           \
+   public:                                                                 \
+    explicit tag##Node(SymbolTable& Symtab);                               \
+    ~tag##Node() OVERRIDE;                                                 \
+    static bool implementsClass(NodeType Type) { return Type == Op##tag; } \
+    NODE_DECLS                                                             \
   };
 AST_NULLARYNODE_TABLE
 #undef X
 
 class IntegerNode : public NullaryNode {
+  IntegerNode() = delete;
   IntegerNode(const IntegerNode&) = delete;
   IntegerNode& operator=(const IntegerNode&) = delete;
-  IntegerNode() = delete;
 
  public:
-  ~IntegerNode() OVERRIDE {}
+  ~IntegerNode() OVERRIDE;
   decode::ValueFormat getFormat() const { return Format; }
   decode::IntType getValue() const { return Value; }
   static bool implementsClass(NodeType Type);
@@ -410,33 +365,22 @@ class IntegerNode : public NullaryNode {
               NodeType Type,
               decode::IntType Value,
               decode::ValueFormat Format,
-              bool isDefault = false)
-      : NullaryNode(Symtab, Type),
-        Value(Value),
-        Format(Format),
-        isDefault(isDefault) {}
+              bool isDefault = false);
 };
 
 #define X(tag, format, defval, mergable, NODE_DECLS)                       \
   class tag##Node FINAL : public IntegerNode {                             \
+    tag##Node() = delete;                                                  \
     tag##Node(const tag##Node&) = delete;                                  \
     tag##Node& operator=(const tag##Node&) = delete;                       \
-    tag##Node() = delete;                                                  \
-    virtual void forceCompilation();                                       \
                                                                            \
    public:                                                                 \
     tag##Node(SymbolTable& Symtab,                                         \
               decode::IntType Value,                                       \
-              decode::ValueFormat Format = decode::ValueFormat::Decimal)   \
-        : IntegerNode(Symtab, Op##tag, Value, Format, false) {}            \
-    tag##Node(SymbolTable& Symtab)                                         \
-        : IntegerNode(Symtab,                                              \
-                      Op##tag,                                             \
-                      (defval),                                            \
-                      decode::ValueFormat::Decimal,                        \
-                      true) {}                                             \
-    ~tag##Node() OVERRIDE {}                                               \
+              decode::ValueFormat Format = decode::ValueFormat::Decimal);  \
                                                                            \
+    tag##Node(SymbolTable& Symtab);                                        \
+    ~tag##Node() OVERRIDE;                                                 \
     static bool implementsClass(NodeType Type) { return Type == Op##tag; } \
     NODE_DECLS                                                             \
   };
@@ -448,25 +392,17 @@ AST_INTEGERNODE_TABLE
 // root) for the accept node. Note: The Value is unique for each accept, and
 // therefore is used as the (case) selector value.
 class BinaryLeafNode : public IntegerNode {
+  BinaryLeafNode() = delete;
   BinaryLeafNode(const BinaryLeafNode&) = delete;
   BinaryLeafNode& operator=(const BinaryLeafNode&) = delete;
-  BinaryLeafNode() = delete;
 
  public:
-  BinaryLeafNode(SymbolTable& Symtab, NodeType Type)
-      : IntegerNode(Symtab, Type, 0, decode::ValueFormat::Hexidecimal, true),
-        NumBits(0) {}
+  BinaryLeafNode(SymbolTable& Symtab, NodeType Type);
   BinaryLeafNode(SymbolTable& Symtab,
                  NodeType Type,
                  decode::IntType Value,
-                 unsigned NumBits)
-      : IntegerNode(Symtab,
-                    Type,
-                    Value,
-                    decode::ValueFormat::Hexidecimal,
-                    false),
-        NumBits(NumBits) {}
-  ~BinaryLeafNode() OVERRIDE {}
+                 unsigned NumBits);
+  ~BinaryLeafNode() OVERRIDE;
   bool validateNode(NodeVectorType& Parents) OVERRIDE;
   unsigned getNumBits() const { return NumBits; }
 
@@ -476,56 +412,51 @@ class BinaryLeafNode : public IntegerNode {
   unsigned NumBits;
 };
 
-class BinaryAcceptNode : public BinaryLeafNode {
+class BinaryAcceptNode FINAL : public BinaryLeafNode {
+  BinaryAcceptNode() = delete;
   BinaryAcceptNode(const BinaryAcceptNode&) = delete;
   BinaryAcceptNode& operator=(const BinaryAcceptNode&) = delete;
-  BinaryAcceptNode() = delete;
 
  public:
-  BinaryAcceptNode(SymbolTable& Symtab)
-      : BinaryLeafNode(Symtab, OpBinaryAccept) {}
-  BinaryAcceptNode(SymbolTable& Symtab, decode::IntType Value, unsigned NumBits)
-      : BinaryLeafNode(Symtab, OpBinaryAccept, Value, NumBits) {}
-  ~BinaryAcceptNode() OVERRIDE {}
+  BinaryAcceptNode(SymbolTable& Symtab);
+  BinaryAcceptNode(SymbolTable& Symtab,
+                   decode::IntType Value,
+                   unsigned NumBits);
+  ~BinaryAcceptNode() OVERRIDE;
 
   static bool implementsClass(NodeType Type) { return Type == OpBinaryAccept; }
 };
 
-class BinaryRejectNode : public BinaryLeafNode {
+class BinaryRejectNode FINAL : public BinaryLeafNode {
+  BinaryRejectNode() = delete;
   BinaryRejectNode(const BinaryRejectNode&) = delete;
   BinaryRejectNode& operator=(const BinaryRejectNode&) = delete;
-  BinaryRejectNode() = delete;
 
  public:
-  BinaryRejectNode(SymbolTable& Symtab)
-      : BinaryLeafNode(Symtab, OpBinaryReject) {}
-  BinaryRejectNode(SymbolTable& Symtab, decode::IntType Value, unsigned NumBits)
-      : BinaryLeafNode(Symtab, OpBinaryReject, Value, NumBits) {}
-  ~BinaryRejectNode() OVERRIDE {}
+  BinaryRejectNode(SymbolTable& Symtab);
+  BinaryRejectNode(SymbolTable& Symtab,
+                   decode::IntType Value,
+                   unsigned NumBits);
+  ~BinaryRejectNode() OVERRIDE;
 
   static bool implementsClass(NodeType Type) { return Type == OpBinaryReject; }
 };
 
 class SymbolNode FINAL : public NullaryNode {
+  SymbolNode() = delete;
   SymbolNode(const SymbolNode&) = delete;
   SymbolNode& operator=(const SymbolNode&) = delete;
-  SymbolNode() = delete;
   friend class SymbolTable;
 
  public:
-  SymbolNode(SymbolTable& Symtab, const std::string& Name)
-      : NullaryNode(Symtab, OpSymbol), Name(Name) {
-    init();
-  }
-  ~SymbolNode() OVERRIDE {}
+  SymbolNode(SymbolTable& Symtab, const std::string& Name);
+  ~SymbolNode() OVERRIDE;
   const std::string& getName() const { return Name; }
   const Node* getDefineDefinition() const { return DefineDefinition; }
   void setDefineDefinition(Node* Defn) { DefineDefinition = Defn; }
   const Node* getLiteralDefinition() const { return LiteralDefinition; }
   void setLiteralDefinition(Node* Defn) { LiteralDefinition = Defn; }
-
   PredefinedSymbol getPredefinedSymbol() const { return PredefinedValue; }
-
   static bool implementsClass(NodeType Type) { return Type == OpSymbol; }
 
  private:
@@ -533,49 +464,39 @@ class SymbolNode FINAL : public NullaryNode {
   Node* DefineDefinition;
   Node* LiteralDefinition;
   PredefinedSymbol PredefinedValue;
-  void init() {
-    DefineDefinition = nullptr;
-    LiteralDefinition = nullptr;
-    PredefinedValue = PredefinedSymbol::Unknown;
-  }
+  void init();
   void clearCaches(NodeVectorType& AdditionalNodes) OVERRIDE;
   void installCaches(NodeVectorType& AdditionalNodes) OVERRIDE;
   void setPredefinedSymbol(PredefinedSymbol NewValue);
 };
 
 class UnaryNode : public Node {
+  UnaryNode() = delete;
   UnaryNode(const UnaryNode&) = delete;
   UnaryNode& operator=(const UnaryNode&) = delete;
 
  public:
-  ~UnaryNode() OVERRIDE {}
-
-  int getNumKids() const FINAL { return 1; }
-
-  Node* getKid(int Index) const FINAL;
-
-  void setKid(int Index, Node* N) FINAL;
+  ~UnaryNode() OVERRIDE;
+  int getNumKids() const OVERRIDE FINAL;
+  Node* getKid(int Index) const OVERRIDE FINAL;
+  void setKid(int Index, Node* N) OVERRIDE FINAL;
 
   static bool implementsClass(NodeType Type);
 
  protected:
   Node* Kids[1];
-  UnaryNode(SymbolTable& Symtab, NodeType Type, Node* Kid)
-      : Node(Symtab, Type) {
-    Kids[0] = Kid;
-  }
+  UnaryNode(SymbolTable& Symtab, NodeType Type, Node* Kid);
 };
 
 #define X(tag, NODE_DECLS)                                                 \
   class tag##Node FINAL : public UnaryNode {                               \
+    tag##Node() = delete;                                                  \
     tag##Node(const tag##Node&) = delete;                                  \
     tag##Node& operator=(const tag##Node&) = delete;                       \
-    virtual void forceCompilation();                                       \
                                                                            \
    public:                                                                 \
-    tag##Node(SymbolTable& Symtab, Node* Kid)                              \
-        : UnaryNode(Symtab, Op##tag, Kid) {}                               \
-    ~tag##Node() OVERRIDE {}                                               \
+    tag##Node(SymbolTable& Symtab, Node* Kid);                             \
+    ~tag##Node() OVERRIDE;                                                 \
     static bool implementsClass(NodeType Type) { return Op##tag == Type; } \
     NODE_DECLS                                                             \
   };
@@ -583,39 +504,32 @@ AST_UNARYNODE_TABLE
 #undef X
 
 class BinaryNode : public Node {
+  BinaryNode() = delete;
   BinaryNode(const BinaryNode&) = delete;
   BinaryNode& operator=(const BinaryNode&) = delete;
 
  public:
-  ~BinaryNode() OVERRIDE {}
-
-  int getNumKids() const FINAL { return 2; }
-
-  Node* getKid(int Index) const FINAL;
-
-  void setKid(int Index, Node* N) FINAL;
+  ~BinaryNode() OVERRIDE;
+  int getNumKids() const OVERRIDE FINAL;
+  Node* getKid(int Index) const OVERRIDE FINAL;
+  void setKid(int Index, Node* N) OVERRIDE FINAL;
 
   static bool implementsClass(NodeType Type);
 
  protected:
   Node* Kids[2];
-  BinaryNode(SymbolTable& Symtab, NodeType Type, Node* Kid1, Node* Kid2)
-      : Node(Symtab, Type) {
-    Kids[0] = Kid1;
-    Kids[1] = Kid2;
-  }
+  BinaryNode(SymbolTable& Symtab, NodeType Type, Node* Kid1, Node* Kid2);
 };
 
 #define X(tag, NODE_DECLS)                                                 \
   class tag##Node FINAL : public BinaryNode {                              \
+    tag##Node() = delete;                                                  \
     tag##Node(const tag##Node&) = delete;                                  \
     tag##Node& operator=(const tag##Node&) = delete;                       \
-    virtual void forceCompilation();                                       \
                                                                            \
    public:                                                                 \
-    tag##Node(SymbolTable& Symtab, Node* Kid1, Node* Kid2)                 \
-        : BinaryNode(Symtab, Op##tag, Kid1, Kid2) {}                       \
-    ~tag##Node() OVERRIDE {}                                               \
+    tag##Node(SymbolTable& Symtab, Node* Kid1, Node* Kid2);                \
+    ~tag##Node() OVERRIDE;                                                 \
     static bool implementsClass(NodeType Type) { return Op##tag == Type; } \
     NODE_DECLS                                                             \
   };
@@ -623,17 +537,15 @@ AST_BINARYNODE_TABLE
 #undef X
 
 class TernaryNode : public Node {
+  TernaryNode() = delete;
   TernaryNode(const TernaryNode&) = delete;
   TernaryNode& operator=(const TernaryNode&) = delete;
 
  public:
-  ~TernaryNode() OVERRIDE {}
-
-  int getNumKids() const FINAL { return 3; }
-
-  Node* getKid(int Index) const FINAL;
-
-  void setKid(int Index, Node* N) FINAL;
+  ~TernaryNode() OVERRIDE;
+  int getNumKids() const OVERRIDE FINAL;
+  Node* getKid(int Index) const OVERRIDE FINAL;
+  void setKid(int Index, Node* N) OVERRIDE FINAL;
 
   static bool implementsClass(NodeType Type);
 
@@ -643,24 +555,18 @@ class TernaryNode : public Node {
               NodeType Type,
               Node* Kid1,
               Node* Kid2,
-              Node* Kid3)
-      : Node(Symtab, Type) {
-    Kids[0] = Kid1;
-    Kids[1] = Kid2;
-    Kids[2] = Kid3;
-  }
+              Node* Kid3);
 };
 
 #define X(tag, NODE_DECLS)                                                 \
   class tag##Node FINAL : public TernaryNode {                             \
+    tag##Node() = delete;                                                  \
     tag##Node(const tag##Node&) = delete;                                  \
     tag##Node& operator=(const tag##Node&) = delete;                       \
-    virtual void forceCompilation();                                       \
                                                                            \
    public:                                                                 \
-    tag##Node(SymbolTable& Symtab, Node* Kid1, Node* Kid2, Node* Kid3)     \
-        : TernaryNode(Symtab, Op##tag, Kid1, Kid2, Kid3) {}                \
-    ~tag##Node() OVERRIDE {}                                               \
+    tag##Node(SymbolTable& Symtab, Node* Kid1, Node* Kid2, Node* Kid3);    \
+    ~tag##Node() OVERRIDE;                                                 \
     static bool implementsClass(NodeType Type) { return Op##tag == Type; } \
     NODE_DECLS                                                             \
   };
@@ -668,36 +574,34 @@ AST_TERNARYNODE_TABLE
 #undef X
 
 class NaryNode : public Node {
+  NaryNode() = delete;
   NaryNode(const NaryNode&) = delete;
   NaryNode& operator=(const NaryNode&) = delete;
 
  public:
-  int getNumKids() const OVERRIDE FINAL { return Kids.size(); }
-
-  Node* getKid(int Index) const OVERRIDE FINAL { return Kids[Index]; }
-
-  void setKid(int Index, Node* N) OVERRIDE FINAL { Kids[Index] = N; }
-
+  ~NaryNode() OVERRIDE;
+  int getNumKids() const OVERRIDE FINAL;
+  Node* getKid(int Index) const OVERRIDE FINAL;
+  void setKid(int Index, Node* N) OVERRIDE FINAL;
   void append(Node* Kid) FINAL OVERRIDE;
-  void clearKids() { Kids.clear(); }
-  ~NaryNode() OVERRIDE {}
+  void clearKids();
 
   static bool implementsClass(NodeType Type);
 
  protected:
   std::vector<Node*> Kids;
-  NaryNode(SymbolTable& Symtab, NodeType Type) : Node(Symtab, Type) {}
+  NaryNode(SymbolTable& Symtab, NodeType Type);
 };
 
 #define X(tag, NODE_DECLS)                                                 \
   class tag##Node FINAL : public NaryNode {                                \
+    tag##Node() = delete;                                                  \
     tag##Node(const tag##Node&) = delete;                                  \
     tag##Node& operator=(const tag##Node&) = delete;                       \
-    virtual void forceCompilation();                                       \
                                                                            \
    public:                                                                 \
-    explicit tag##Node(SymbolTable& Symtab) : NaryNode(Symtab, Op##tag) {} \
-    ~tag##Node() OVERRIDE {}                                               \
+    explicit tag##Node(SymbolTable& Symtab);                               \
+    ~tag##Node() OVERRIDE;                                                 \
     static bool implementsClass(NodeType Type) { return Op##tag == Type; } \
     NODE_DECLS                                                             \
   };
@@ -705,10 +609,12 @@ AST_NARYNODE_TABLE
 #undef X
 
 class SelectBaseNode : public NaryNode {
+  SelectBaseNode() = delete;
   SelectBaseNode(const SelectBaseNode&) = delete;
   SelectBaseNode& operator=(const SelectBaseNode&) = delete;
 
  public:
+  ~SelectBaseNode() OVERRIDE;
   void clearCaches(NodeVectorType& AdditionalNodes) OVERRIDE;
   void installCaches(NodeVectorType& AdditionalNodes) OVERRIDE;
   const CaseNode* getCase(decode::IntType Key) const;
@@ -717,18 +623,18 @@ class SelectBaseNode : public NaryNode {
   // TODO(karlschimpf) Hook this up to an allocator?
   std::unordered_map<decode::IntType, const CaseNode*> LookupMap;
 
-  SelectBaseNode(SymbolTable& Symtab, NodeType Type) : NaryNode(Symtab, Type) {}
+  SelectBaseNode(SymbolTable& Symtab, NodeType Type);
 };
 
 #define X(tag, NODE_DECLS)                                                 \
   class tag##Node FINAL : public SelectBaseNode {                          \
+    tag##Node() = delete;                                                  \
     tag##Node(const tag##Node&) = delete;                                  \
     tag##Node& operator=(const tag##Node&) = delete;                       \
-    virtual void forceCompilation();                                       \
                                                                            \
    public:                                                                 \
-    explicit tag##Node(SymbolTable& Symtab)                                \
-        : SelectBaseNode(Symtab, Op##tag) {}                               \
+    explicit tag##Node(SymbolTable& Symtab);                               \
+    ~tag##Node() OVERRIDE;                                                 \
     static bool implementsClass(NodeType Type) { return Op##tag == Type; } \
     NODE_DECLS                                                             \
   };
@@ -736,11 +642,13 @@ AST_SELECTNODE_TABLE
 #undef X
 
 class OpcodeNode FINAL : public SelectBaseNode {
+  OpcodeNode() = delete;
   OpcodeNode(const OpcodeNode&) = delete;
   OpcodeNode& operator=(const OpcodeNode&) = delete;
 
  public:
-  explicit OpcodeNode(SymbolTable& Symtab) : SelectBaseNode(Symtab, OpOpcode) {}
+  explicit OpcodeNode(SymbolTable& Symtab);
+  ~OpcodeNode() OVERRIDE;
   static bool implementsClass(NodeType Type) { return OpOpcode == Type; }
   const CaseNode* getWriteCase(decode::IntType Value,
                                uint32_t& SelShift,
@@ -753,22 +661,28 @@ class OpcodeNode FINAL : public SelectBaseNode {
   // encoded into range [Min, Max]. Therefore, they are not used in
   // comparison.
   class WriteRange {
-    WriteRange() = delete;
-
    public:
+    // Do not use this form, unless assigned to. Initializes with undefined
+    // range.
+    WriteRange();
     WriteRange(const CaseNode* Case,
                decode::IntType Min,
                decode::IntType Max,
-               uint32_t ShiftValue)
-        : Case(Case), Min(Min), Max(Max), ShiftValue(ShiftValue) {}
-    ~WriteRange() {}
+               uint32_t ShiftValue);
+    WriteRange(const WriteRange& R);
+    void assign(const WriteRange& R);
+    WriteRange& operator=(const WriteRange& R) {
+      assign(R);
+      return *this;
+    }
+    ~WriteRange();
     const CaseNode* getCase() const { return Case; }
     decode::IntType getMin() const { return Min; }
     decode::IntType getMax() const { return Max; }
     uint32_t getShiftValue() const { return ShiftValue; }
     int compare(const WriteRange& R) const;
     bool operator<(const WriteRange& R) const { return compare(R) < 0; }
-    utils::TraceClass& getTrace() const { return Case->getTrace(); }
+    utils::TraceClass& getTrace() const;
 
    private:
     const CaseNode* Case;
@@ -776,6 +690,7 @@ class OpcodeNode FINAL : public SelectBaseNode {
     decode::IntType Max;
     uint32_t ShiftValue;
   };
+
   void clearCaches(NodeVectorType& AdditionalNodes) OVERRIDE;
   void installCaches(NodeVectorType& AdditionalNodes) OVERRIDE;
   typedef std::vector<WriteRange> CaseRangeVectorType;
