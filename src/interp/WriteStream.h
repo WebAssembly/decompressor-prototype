@@ -19,13 +19,17 @@
 #ifndef DECOMPRESSOR_SRC_INTERP_WRITESTREAM_H
 #define DECOMPRESSOR_SRC_INTERP_WRITESTREAM_H
 
-#include "sexp/Ast.h"
-#include "stream/WriteCursor.h"
-#include "utils/Casting.h"
-
-#include <memory>
+#include "utils/Defs.h"
 
 namespace wasm {
+
+namespace decode {
+class WriteCursor;
+}  // end of namespace decode
+
+namespace filt {
+class CallbackNode;
+}  // end of namespace filt
 
 namespace interp {
 
@@ -83,7 +87,7 @@ class WriteStream : public std::enable_shared_from_this<WriteStream> {
   static bool implementsClass(decode::StreamType /*RtClassId*/) { return true; }
 
  protected:
-  WriteStream(decode::StreamType Type) : Type(Type) {}
+  WriteStream(decode::StreamType Type);
   decode::StreamType Type;
 };
 

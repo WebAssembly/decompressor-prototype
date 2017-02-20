@@ -20,6 +20,9 @@
 
 #include "interp/ByteWriteStream.h"
 #include "interp/WriteStream.h"
+#include "sexp/Ast.h"
+#include "stream/WriteCursor.h"
+#include "utils/Casting.h"
 
 namespace wasm {
 

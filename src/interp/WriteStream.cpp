@@ -19,6 +19,9 @@
 #include "interp/WriteStream.h"
 
 #include "interp/FormatHelpers.h"
+#include "sexp/Ast.h"
+#include "stream/WriteCursor.h"
+#include "utils/Casting.h"
 
 namespace wasm {
 
@@ -26,6 +29,9 @@ using namespace decode;
 using namespace filt;
 
 namespace interp {
+
+WriteStream::WriteStream(decode::StreamType Type) : Type(Type) {
+}
 
 WriteStream::~WriteStream() {
 }

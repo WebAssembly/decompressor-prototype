@@ -19,13 +19,10 @@
 #ifndef DECOMPRESSOR_SRC_INTERP_INTSTREAM_H_
 #define DECOMPRESSOR_SRC_INTERP_INTSTREAM_H_
 
-#include "utils/Defs.h"
-#include "utils/Trace.h"
-#include "interp/IntFormats.h"
-
-#include <map>
-#include <memory>
 #include <vector>
+
+#include "interp/IntFormats.h"
+#include "utils/TraceAPI.h"
 
 namespace wasm {
 
@@ -52,8 +49,8 @@ class IntStream : public std::enable_shared_from_this<IntStream> {
 
    public:
     explicit Block(size_t BeginIndex = 0,
-                   size_t EndIndex = std::numeric_limits<size_t>::max())
-        : BeginIndex(BeginIndex), EndIndex(EndIndex) {}
+                   size_t EndIndex = std::numeric_limits<size_t>::max());
+    ~Block();
     size_t getBeginIndex() const { return BeginIndex; }
     size_t getEndIndex() const { return EndIndex; }
 
@@ -67,25 +64,13 @@ class IntStream : public std::enable_shared_from_this<IntStream> {
 
   class Cursor : public std::enable_shared_from_this<Cursor> {
    public:
-    class TraceContext : public utils::TraceContext {
-      TraceContext() = delete;
-      TraceContext(const TraceContext&) = delete;
-      TraceContext& operator=(const TraceContext&) = delete;
+    class TraceContext;
 
-     public:
-      TraceContext(Cursor& Pos) : Pos(Pos) {}
-      ~TraceContext() OVERRIDE;
-      void describe(FILE* File);
-
-     private:
-      Cursor& Pos;
-    };
-
-    Cursor() : Index(0) {}
+    Cursor();
     explicit Cursor(StreamPtr Stream);
     explicit Cursor(const Cursor& C);
     Cursor& operator=(const Cursor& C);
-    ~Cursor() {}
+    ~Cursor();
     size_t getIndex() const { return Index; }
     size_t streamSize() const { return Stream->size(); }
     bool atEof() const;
@@ -107,9 +92,10 @@ class IntStream : public std::enable_shared_from_this<IntStream> {
 
   class WriteCursor : public Cursor {
    public:
-    WriteCursor() : Cursor() {}
-    explicit WriteCursor(StreamPtr Stream) : Cursor(Stream) {}
-    explicit WriteCursor(const Cursor& C) : Cursor(C) {}
+    WriteCursor();
+    explicit WriteCursor(StreamPtr Stream);
+    explicit WriteCursor(const Cursor& C);
+    ~WriteCursor();
     WriteCursor& operator=(const WriteCursor& C) {
       Cursor::operator=(C);
       return *this;
@@ -122,13 +108,10 @@ class IntStream : public std::enable_shared_from_this<IntStream> {
 
   class ReadCursor : public Cursor {
    public:
-    ReadCursor() : Cursor() {}
-    explicit ReadCursor(StreamPtr Stream)
-        : Cursor(Stream),
-          NextBlock(Stream->getBlocksBegin()),
-          EndBlocks(Stream->getBlocksEnd()) {}
-    explicit ReadCursor(const ReadCursor& C)
-        : Cursor(C), NextBlock(C.NextBlock), EndBlocks(C.EndBlocks) {}
+    ReadCursor();
+    explicit ReadCursor(StreamPtr Stream);
+    explicit ReadCursor(const ReadCursor& C);
+    ~ReadCursor();
     ReadCursor& operator=(const ReadCursor& C) {
       Cursor::operator=(C);
       NextBlock = C.NextBlock;
@@ -147,24 +130,22 @@ class IntStream : public std::enable_shared_from_this<IntStream> {
   };
 
   // WARNING: Don't call constructor directly. Call std::make_shared().
-  IntStream() { reset(); }
+  IntStream();
   void reset();
-  ~IntStream() {}
+  ~IntStream();
 
   size_t size() const { return Values.size(); }
-  size_t getNumIntegers() const { return Values.size() + Blocks.size() * 2; }
+  size_t getNumIntegers() const;
   BlockPtr getTopBlock() { return TopBlock; }
   bool isFrozen() const { return isFrozenFlag; }
 
-  BlockIterator getBlocksBegin() { return Blocks.begin(); }
-  BlockIterator getBlocksEnd() { return Blocks.end(); }
+  BlockIterator getBlocksBegin();
+  BlockIterator getBlocksEnd();
 
   void describe(FILE* File, const char* Name = nullptr);
 
   const HeaderVector& getHeader() { return Header; }
-  void appendHeader(decode::IntType Value, interp::IntTypeFormat Format) {
-    Header.push_back(std::make_pair(Value, Format));
-  }
+  void appendHeader(decode::IntType Value, interp::IntTypeFormat Format);
 
  private:
   HeaderVector Header;

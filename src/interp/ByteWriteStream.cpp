@@ -18,6 +18,7 @@
 
 #include "interp/ByteWriteStream.h"
 #include "stream/ReadCursor.h"
+#include "stream/WriteCursor.h"
 
 namespace wasm {
 

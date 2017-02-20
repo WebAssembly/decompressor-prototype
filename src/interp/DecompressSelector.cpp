@@ -35,6 +35,7 @@
 #include "interp/IntWriter.h"
 #include "sexp/Ast.h"
 #include "sexp/InflateAst.h"
+#include "utils/Trace.h"
 
 namespace wasm {
 

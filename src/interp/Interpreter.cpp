@@ -115,13 +115,15 @@ Interpreter::CallFrame::CallFrame(Method CallMethod, const filt::Node* Nd)
     : CallMethod(CallMethod),
       CallState(State::Enter),
       CallModifier(MethodModifier::ReadAndWrite),
-      Nd(Nd) {}
+      Nd(Nd) {
+}
 
 Interpreter::CallFrame::CallFrame(const CallFrame& M)
     : CallMethod(M.CallMethod),
       CallState(M.CallState),
       CallModifier(M.CallModifier),
-      Nd(M.Nd) {}
+      Nd(M.Nd) {
+}
 
 void Interpreter::CallFrame::reset() {
   CallMethod = Method::Started;
@@ -139,17 +141,23 @@ void Interpreter::CallFrame::fail() {
   ReturnValue = 0;
 }
 
-Interpreter::EvalFrame::EvalFrame() { reset(); }
+Interpreter::EvalFrame::EvalFrame() {
+  reset();
+}
 
-Interpreter::EvalFrame::EvalFrame(const filt::EvalNode* Caller, size_t CallingEvalIndex)
+Interpreter::EvalFrame::EvalFrame(const filt::EvalNode* Caller,
+                                  size_t CallingEvalIndex)
     : Caller(Caller), CallingEvalIndex(CallingEvalIndex) {
   assert(Caller != nullptr);
 }
 
 Interpreter::EvalFrame::EvalFrame(const EvalFrame& F)
-    : Caller(F.Caller), CallingEvalIndex(F.CallingEvalIndex) {}
+    : Caller(F.Caller), CallingEvalIndex(F.CallingEvalIndex) {
+}
 
-bool Interpreter::EvalFrame::isDefined() const { return Caller != nullptr; }
+bool Interpreter::EvalFrame::isDefined() const {
+  return Caller != nullptr;
+}
 
 void Interpreter::EvalFrame::reset() {
   Caller = nullptr;

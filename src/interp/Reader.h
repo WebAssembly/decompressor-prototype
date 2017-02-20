@@ -66,12 +66,12 @@ class Reader : public std::enable_shared_from_this<Reader> {
   virtual void readFillStart() = 0;
   virtual void readFillMoreInput() = 0;
   // Hard coded reads.
-  virtual uint8_t readUint8() = 0;
-  virtual uint32_t readUint32() = 0;
-  virtual uint64_t readUint64() = 0;
-  virtual int32_t readVarint32() = 0;
-  virtual int64_t readVarint64() = 0;
-  virtual uint32_t readVaruint32() = 0;
+  virtual uint8_t readUint8();
+  virtual uint32_t readUint32();
+  virtual uint64_t readUint64();
+  virtual int32_t readVarint32();
+  virtual int64_t readVarint64();
+  virtual uint32_t readVaruint32();
   virtual uint64_t readVaruint64() = 0;
   virtual bool readBinary(const filt::Node* Encoding, decode::IntType& Value);
   virtual bool readValue(const filt::Node* Format, decode::IntType& Value);

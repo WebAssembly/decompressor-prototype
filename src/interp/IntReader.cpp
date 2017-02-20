@@ -123,30 +123,6 @@ decode::IntType IntReader::read() {
   return Pos.read();
 }
 
-uint8_t IntReader::readUint8() {
-  return read();
-}
-
-uint32_t IntReader::readUint32() {
-  return read();
-}
-
-uint64_t IntReader::readUint64() {
-  return read();
-}
-
-int32_t IntReader::readVarint32() {
-  return read();
-}
-
-int64_t IntReader::readVarint64() {
-  return read();
-}
-
-uint32_t IntReader::readVaruint32() {
-  return read();
-}
-
 uint64_t IntReader::readVaruint64() {
   return read();
 }

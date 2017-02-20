@@ -22,6 +22,7 @@
 #include "interp/IntStream.h"
 #include "interp/Writer.h"
 #include "sexp/Ast.h"
+#include "utils/Trace.h"
 
 namespace wasm {
 

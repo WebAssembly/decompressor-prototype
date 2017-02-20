@@ -21,10 +21,6 @@
 
 #include "interp/IntStream.h"
 #include "interp/Reader.h"
-//#include "utils/Defs.h"
-//#include "utils/ValueStack.h"
-
-#include <memory>
 
 namespace wasm {
 
@@ -59,26 +55,10 @@ class IntReader : public Reader {
   bool readAction(const filt::SymbolNode* Action) OVERRIDE;
   void readFillStart() OVERRIDE;
   void readFillMoreInput() OVERRIDE;
-  uint8_t readUint8() OVERRIDE;
-  uint32_t readUint32() OVERRIDE;
-  uint64_t readUint64() OVERRIDE;
-  int32_t readVarint32() OVERRIDE;
-  int64_t readVarint64() OVERRIDE;
-  uint32_t readVaruint32() OVERRIDE;
   uint64_t readVaruint64() OVERRIDE;
   bool readHeaderValue(interp::IntTypeFormat Format,
                        decode::IntType& Value) OVERRIDE;
   utils::TraceContextPtr getTraceContext() OVERRIDE;
-
-  // Read based on structure of input integer stream.
-  void structuralStart();
-  void structuralResume();
-  void structuralReadBackFilled();
-
-  void structuralRead() {
-    structuralStart();
-    structuralReadBackFilled();
-  }
 
  private:
   IntStream::ReadCursor Pos;
