@@ -21,8 +21,8 @@
 
 #include "interp/IntStream.h"
 #include "interp/Reader.h"
-#include "utils/Defs.h"
-#include "utils/ValueStack.h"
+//#include "utils/Defs.h"
+//#include "utils/ValueStack.h"
 
 #include <memory>
 

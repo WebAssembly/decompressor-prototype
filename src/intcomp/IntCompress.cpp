@@ -130,7 +130,7 @@ bool IntCompressor::compressUpToSize(size_t Size) {
   Writer->setCountCutoff(MyFlags.CountCutoff);
   Writer->setUpToSize(Size);
 
-  IntInterperter Reader(std::make_shared<IntReader>(Contents), Writer,
+  IntInterpreter Reader(std::make_shared<IntReader>(Contents), Writer,
                         MyFlags.MyInterpFlags, Symtab);
   if (MyFlags.TraceReadingIntStream)
     Reader.getTrace().setTraceProgress(true);
@@ -229,7 +229,7 @@ bool IntCompressor::generateIntOutput(CountNode::PtrSet& Assignments) {
       Root, Assignments, EncodingRoot, IntOutput,
       MyFlags.PatternLengthLimit * MyFlags.PatternLengthMultiplier,
       !MyFlags.UseHuffmanEncoding, MyFlags);
-  IntInterperter Interp(std::make_shared<IntReader>(Contents), Writer,
+  IntInterpreter Interp(std::make_shared<IntReader>(Contents), Writer,
                         MyFlags.MyInterpFlags, Symtab);
   if (MyFlags.TraceIntStreamGeneration)
     Interp.setTraceProgress(true);
