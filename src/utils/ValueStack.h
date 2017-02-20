@@ -21,6 +21,8 @@
 
 #include <vector>
 
+#include "utils/Defs.h"
+
 namespace wasm {
 
 namespace utils {

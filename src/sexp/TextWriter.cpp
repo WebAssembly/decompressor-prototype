@@ -18,11 +18,14 @@
 /* Implements a textual writer of filter s-expressions */
 
 #include "sexp/TextWriter.h"
-#include "stream/WriteUtils.h"
 
-#include <cctype>
+//#include <cctype>
 #define __STDC_FORMAT_MACROS 1
 #include <inttypes.h>
+
+#include "sexp/Ast.h"
+#include "stream/WriteUtils.h"
+#include "utils/Casting.h"
 
 namespace wasm {
 
@@ -88,6 +91,10 @@ TextWriter::Parenthesize::~Parenthesize() {
   fputc(')', Writer->File);
   Writer->LineEmpty = false;
   Writer->maybeWriteNewline(AddNewline);
+}
+
+void TextWriter::write(FILE* File, SymbolTable* Symtab) {
+  write(File, Symtab->getInstalledRoot());
 }
 
 void TextWriter::write(FILE* File, const Node* Root) {
@@ -343,6 +350,22 @@ void TextWriter::writeNodeAbbrev(const Node* Nd,
       writeNodeAbbrev(Nd->getKid(0), AddNewline, EmbedInParent);
       break;
   }
+}
+
+void TextWriter::writeNewline() {
+  if (!LineEmpty)
+    fputc('\n', File);
+  LineEmpty = true;
+}
+
+void TextWriter::maybeWriteNewline(bool Yes) {
+  if (Yes)
+    writeNewline();
+}
+
+void TextWriter::writeSpace() {
+  fputc(' ', File);
+  LineEmpty = false;
 }
 
 }  // end of namespace filt

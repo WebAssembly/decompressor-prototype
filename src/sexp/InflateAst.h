@@ -24,13 +24,14 @@
 #ifndef DECOMPRESSOR_SRC_SEXP_INFLATEAST_H
 #define DECOMPRESSOR_SRC_SEXP_INFLATEAST_H
 
-#include "binary/SectionSymbolTable.h"
-#include "interp/Writer.h"
 #include "utils/ValueStack.h"
+#include "interp/Writer.h"
 
 namespace wasm {
 
 namespace filt {
+
+class SectionSymbolTable;
 
 class InflateAst : public interp::Writer {
   InflateAst(const InflateAst&) = delete;
@@ -62,7 +63,7 @@ class InflateAst : public interp::Writer {
 
  private:
   std::shared_ptr<SymbolTable> Symtab;
-  SectionSymbolTable SectionSymtab;
+  std::unique_ptr<SectionSymbolTable> SectionSymtab;
   decode::IntType ValuesTop;
   utils::ValueStack<decode::IntType> Values;
   Node* AstsTop;

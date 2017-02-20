@@ -17,15 +17,27 @@
 // Defines a converter of an Ast algorithm, to the corresponding
 // (integer) CASM stream.
 
-#ifndef DECOMPRESSOR_SRC_SEXP_FLATTENAST_H
-#define DECOMPRESSOR_SRC_SEXP_FLATTENAST_H
+#ifndef DECOMPRESSOR_SRC_SEXP_FLATTENAST_H_
+#define DECOMPRESSOR_SRC_SEXP_FLATTENAST_H_
 
-#include "binary/SectionSymbolTable.h"
-#include "interp/IntWriter.h"
+#include "utils/Defs.h"
 
 namespace wasm {
 
+namespace interp {
+class IntStream;
+class IntWriter;
+}  // end of namespace interp
+
+namespace utils {
+class TraceClass;
+}  // end of namespace utils
+
 namespace filt {
+
+class Node;
+class SectionSymbolTable;
+class SymbolTable;
 
 class FlattenAst {
   FlattenAst() = delete;
@@ -50,15 +62,15 @@ class FlattenAst {
  private:
   std::shared_ptr<interp::IntWriter> Writer;
   std::shared_ptr<SymbolTable> Symtab;
-  SectionSymbolTable SectionSymtab;
+  std::unique_ptr<SectionSymbolTable> SectionSymtab;
   bool FreezeEofOnDestruct;
   bool HasErrors;
   bool WrotePrimaryHeader;
   std::shared_ptr<utils::TraceClass> Trace;
 
   void flattenNode(const Node* Nd);
-  void reportError(const char* Message);
-  void reportError(const char* Message, const Node* Nd);
+  void reportError(charstring Message);
+  void reportError(charstring Message, const Node* Nd);
   void freezeOutput();
 };
 
@@ -66,4 +78,4 @@ class FlattenAst {
 
 }  // end of namespace wasm
 
-#endif  // DECOMPRESSOR_SRC_SEXP_FLATTENAST_H
+#endif  // DECOMPRESSOR_SRC_SEXP_FLATTENAST_H_

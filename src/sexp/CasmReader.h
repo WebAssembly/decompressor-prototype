@@ -19,18 +19,20 @@
 // NOTE: In the methods below, if argument Filename == '-', then stdin will
 // be used.
 
-#ifndef DECOMPRESSOR_SRC_CASM_CASM_READER_H
-#define DECOMPRESSOR_SRC_CASM_CASM_READER_H
+#ifndef DECOMPRESSOR_SRC_CASM_CASM_READER_H_
+#define DECOMPRESSOR_SRC_CASM_CASM_READER_H_
 
-#include "sexp/Ast.h"
-#include "stream/Queue.h"
 #include "utils/Defs.h"
-
-#include <memory>
 
 namespace wasm {
 
+namespace filt {
+class SymbolTable;
+}  // end of namespace filt
+
 namespace decode {
+
+class Queue;
 
 class CasmReader {
   CasmReader(const CasmReader&) = delete;
@@ -84,4 +86,4 @@ class CasmReader {
 
 }  // end of namespace wasm
 
-#endif  // DECOMPRESSOR_SRC_CASM_CASM_READER_H
+#endif  // DECOMPRESSOR_SRC_CASM_CASM_READER_H_

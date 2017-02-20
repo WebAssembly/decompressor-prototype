@@ -28,9 +28,11 @@
 %define parse.assert
 
 %code requires {
+#include <string>
+
 #include "sexp/Ast.h"
 #include "stream/WriteUtils.h"
-#include <string>
+#include "utils/Casting.h"
 
 namespace wasm {
 namespace filt {

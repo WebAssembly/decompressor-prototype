@@ -21,6 +21,7 @@
 #include "binary/SectionSymbolTable.h"
 
 #include "sexp/Ast.h"
+#include "utils/Casting.h"
 
 namespace wasm {
 

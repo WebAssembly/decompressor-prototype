@@ -18,16 +18,18 @@
 
 #include "sexp/CasmWriter.h"
 
-#include "utils/Defs.h"
+//#include "utils/Defs.h"
 
 #if WASM_BOOT == 0
 #include "algorithms/casm0x0.h"
 #endif
-
 #include "interp/ByteWriter.h"
 #include "interp/Interpreter.h"
 #include "interp/IntReader.h"
+#include "interp/IntStream.h"
+#include "interp/Writer.h"
 #include "interp/TeeWriter.h"
+#include "sexp/Ast.h"
 #include "sexp/FlattenAst.h"
 #include "sexp/InflateAst.h"
 

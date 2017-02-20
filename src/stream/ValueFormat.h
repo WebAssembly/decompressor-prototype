@@ -15,25 +15,29 @@
  * limitations under the License.
  */
 
-// Defines write utilities.
+// Defines possible ways of formating integers (i.e. IntType).
 
-#ifndef DECOMPRESSOR_SRC_STREAM_WRITEUTILS_H_
-#define DECOMPRESSOR_SRC_STREAM_WRITEUTILS_H_
-
-#include "utils/Defs.h"
-#include "stream/ValueFormat.h"
+#ifndef DECOMPRESSOR_SRC_STREAM_VALUEFORMAT_H_
+#define DECOMPRESSOR_SRC_STREAM_VALUEFORMAT_H_
 
 namespace wasm {
 
 namespace decode {
 
-typedef char WriteIntBufferType[256];
-void writeInt(WriteIntBufferType, IntType Value, ValueFormat Format);
+enum class ValueFormat { Decimal, SignedDecimal, Hexidecimal };
 
-void writeInt(FILE* File, IntType Value, ValueFormat Format);
+constexpr ValueFormat getValueFormat(int i) {
+  return static_cast<ValueFormat>(i);
+}
+
+const char* getName(ValueFormat Format);
+
+constexpr char getHexCharForDigit(uint8_t Digit) {
+  return Digit < 10 ? '0' + Digit : 'a' + (Digit - 10);
+}
 
 }  // end of namespace decode
 
 }  // end of namespace wasm
 
-#endif  // DECOMPRESSOR_SRC_STREAM_WRITEUTILS_H_
+#endif  // DECOMPRESSOR_SRC_STREAM_VALUEFORMAT_H_

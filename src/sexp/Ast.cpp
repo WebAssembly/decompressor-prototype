@@ -19,17 +19,13 @@
 
 #include "sexp/Ast.h"
 
-#include "interp/IntFormats.h"
-#include "sexp/InflateAst.h"
-#include "sexp/TextWriter.h"
-#include "stream/ArrayReader.h"
-#include "stream/ReadBackedQueue.h"
-#include "utils/Defs.h"
-
 #include <algorithm>
-#include <cstring>
-#include <unordered_map>
-#include <unordered_set>
+
+#include "interp/IntFormats.h"
+#include "sexp/TextWriter.h"
+#include "stream/WriteUtils.h"
+#include "utils/Casting.h"
+#include "utils/Trace.h"
 
 namespace wasm {
 
@@ -252,9 +248,79 @@ const char* getNodeTypeName(NodeType Type) {
   return Name;
 }
 
+Node::Iterator::Iterator(const Node* Nd, int Index) : Nd(Nd), Index(Index) {
+}
+
+Node::Iterator::Iterator(const Iterator& Iter)
+    : Nd(Iter.Nd), Index(Iter.Index) {
+}
+
+Node::Iterator& Node::Iterator::operator=(const Iterator& Iter) {
+  Nd = Iter.Nd;
+  Index = Iter.Index;
+  return *this;
+}
+
+bool Node::Iterator::operator==(const Iterator& Iter) {
+  return Nd == Iter.Nd && Index == Iter.Index;
+}
+
+bool Node::Iterator::operator!=(const Iterator& Iter) {
+  return Nd != Iter.Nd || Index != Iter.Index;
+}
+
+Node* Node::Iterator::operator*() const {
+  return Nd->getKid(Index);
+}
+
+Node::Node(SymbolTable& Symtab, NodeType Type)
+    : Type(Type), Symtab(Symtab), CreationIndex(Symtab.getNextCreationIndex()) {
+}
+
+Node::~Node() {
+}
+
 bool Node::definesIntTypeFormat() const {
   IntTypeFormat Format;
   return extractIntTypeFormat(this, Format);
+}
+
+const char* Node::getName() const {
+  return getNodeSexpName(getType());
+}
+
+const char* Node::getNodeName() const {
+  return getNodeTypeName(getType());
+}
+
+utils::TraceClass& Node::getTrace() const {
+  return Symtab.getTrace();
+}
+
+void Node::setLastKid(Node* N) {
+  setKid(getNumKids() - 1, N);
+}
+
+Node* Node::getLastKid() const {
+  if (int Size = getNumKids())
+    return getKid(Size - 1);
+  return nullptr;
+}
+
+Node::Iterator Node::begin() const {
+  return Iterator(this, 0);
+}
+
+Node::Iterator Node::end() const {
+  return Iterator(this, getNumKids());
+}
+
+Node::Iterator Node::rbegin() const {
+  return Iterator(this, getNumKids() - 1);
+}
+
+Node::Iterator Node::rend() const {
+  return Iterator(this, -1);
 }
 
 IntTypeFormat Node::getIntTypeFormat() const {
@@ -277,10 +343,35 @@ size_t Node::getTreeSize() const {
   return Count;
 }
 
+IntegerValue::IntegerValue()
+    : Type(NO_SUCH_NODETYPE),
+      Value(0),
+      Format(decode::ValueFormat::Decimal),
+      isDefault(false) {
+}
+
+IntegerValue::IntegerValue(decode::IntType Value, decode::ValueFormat Format)
+    : Type(NO_SUCH_NODETYPE), Value(Value), Format(Format), isDefault(false) {
+}
+
+IntegerValue::IntegerValue(NodeType Type,
+                           decode::IntType Value,
+                           decode::ValueFormat Format,
+                           bool isDefault)
+    : Type(Type), Value(Value), Format(Format), isDefault(isDefault) {
+}
+
+IntegerValue::IntegerValue(const IntegerValue& V)
+    : Type(V.Type), Value(V.Value), Format(V.Format), isDefault(V.isDefault) {
+}
+
 void IntegerValue::describe(FILE* Out) const {
   fprintf(Out, "%s<", getNodeSexpName(Type));
   writeInt(Out, Value, Format);
   fprintf(Out, ", %s>", getName(Format));
+}
+
+IntegerValue::~IntegerValue() {
 }
 
 int IntegerValue::compare(const IntegerValue& V) const {
@@ -338,6 +429,20 @@ bool Node::validateNode(NodeVectorType& Scope) {
   return true;
 }
 
+SymbolNode::SymbolNode(SymbolTable& Symtab, const std::string& Name)
+    : NullaryNode(Symtab, OpSymbol), Name(Name) {
+  init();
+}
+
+SymbolNode::~SymbolNode() {
+}
+
+void SymbolNode::init() {
+  DefineDefinition = nullptr;
+  LiteralDefinition = nullptr;
+  PredefinedValue = PredefinedSymbol::Unknown;
+}
+
 void SymbolNode::setPredefinedSymbol(PredefinedSymbol NewValue) {
   if (PredefinedValue != PredefinedSymbol::Unknown)
     fatal(std::string("Can't define \"") + filt::getName(PredefinedValue) +
@@ -380,6 +485,14 @@ SymbolTable::SymbolTable()
 SymbolTable::~SymbolTable() {
   clear();
   deallocateNodes();
+}
+
+SymbolNode* SymbolTable::getSymbol(const std::string& Name) {
+  return SymbolMap[Name];
+}
+
+void SymbolTable::clear() {
+  SymbolMap.clear();
 }
 
 void SymbolTable::setTraceProgress(bool NewValue) {
@@ -588,9 +701,17 @@ void SymbolTable::installDefinitions(Node* Root) {
   }
 }
 
+TraceClass& SymbolTable::getTrace() {
+  return *getTracePtr();
+}
+
 void SymbolTable::describe(FILE* Out) {
   TextWriter Writer;
   Writer.write(Out, getInstalledRoot());
+}
+
+void SymbolTable::stripCallbacksExcept(std::set<std::string>& KeepActions) {
+  install(stripCallbacksExcept(KeepActions, Root));
 }
 
 Node* SymbolTable::stripUsing(Node* Root,
@@ -689,6 +810,17 @@ Node* SymbolTable::stripLiteralDefs(Node* Root) {
   return create<VoidNode>();
 }
 
+NullaryNode::NullaryNode(SymbolTable& Symtab, NodeType Type)
+    : Node(Symtab, Type) {
+}
+
+NullaryNode::~NullaryNode() {
+}
+
+int NullaryNode::getNumKids() const {
+  return 0;
+}
+
 Node* NullaryNode::getKid(int) const {
   return nullptr;
 }
@@ -710,9 +842,26 @@ bool NullaryNode::implementsClass(NodeType Type) {
 }
 
 #define X(tag, NODE_DECLS) \
-  void tag##Node::forceCompilation() {}
+  tag##Node::tag##Node(SymbolTable& Symtab) : NullaryNode(Symtab, Op##tag) {}
 AST_NULLARYNODE_TABLE
 #undef X
+
+#define X(tag, NODE_DECLS) \
+  tag##Node::~tag##Node() {}
+AST_NULLARYNODE_TABLE
+#undef X
+
+UnaryNode::UnaryNode(SymbolTable& Symtab, NodeType Type, Node* Kid)
+    : Node(Symtab, Type) {
+  Kids[0] = Kid;
+}
+
+UnaryNode::~UnaryNode() {
+}
+
+int UnaryNode::getNumKids() const {
+  return 1;
+}
 
 Node* UnaryNode::getKid(int Index) const {
   if (Index < 1)
@@ -738,10 +887,30 @@ bool UnaryNode::implementsClass(NodeType Type) {
   }
 }
 
-#define X(tag, NODE_DECLS) \
-  void tag##Node::forceCompilation() {}
+#define X(tag, NODE_DECLS)                             \
+  tag##Node::tag##Node(SymbolTable& Symtab, Node* Kid) \
+      : UnaryNode(Symtab, Op##tag, Kid) {}
 AST_UNARYNODE_TABLE
 #undef X
+
+#define X(tag, NODE_DECLS) \
+  tag##Node::~tag##Node() {}
+AST_UNARYNODE_TABLE
+#undef X
+
+IntegerNode::IntegerNode(SymbolTable& Symtab,
+                         NodeType Type,
+                         decode::IntType Value,
+                         decode::ValueFormat Format,
+                         bool isDefault)
+    : NullaryNode(Symtab, Type),
+      Value(Value),
+      Format(Format),
+      isDefault(isDefault) {
+}
+
+IntegerNode::~IntegerNode() {
+}
 
 bool IntegerNode::implementsClass(NodeType Type) {
   switch (Type) {
@@ -756,8 +925,22 @@ bool IntegerNode::implementsClass(NodeType Type) {
   }
 }
 
+#define X(tag, format, defval, mergable, NODE_DECLS)               \
+  tag##Node::tag##Node(SymbolTable& Symtab, decode::IntType Value, \
+                       decode::ValueFormat Format)                 \
+      : IntegerNode(Symtab, Op##tag, Value, Format, false) {}
+AST_INTEGERNODE_TABLE
+#undef X
+
+#define X(tag, format, defval, mergable, NODE_DECLS)                         \
+  tag##Node::tag##Node(SymbolTable& Symtab)                                  \
+      : IntegerNode(Symtab, Op##tag, (defval), decode::ValueFormat::Decimal, \
+                    true) {}
+AST_INTEGERNODE_TABLE
+#undef X
+
 #define X(tag, format, defval, mergable, NODE_DECLS) \
-  void tag##Node::forceCompilation() {}
+  tag##Node::~tag##Node() {}
 AST_INTEGERNODE_TABLE
 #undef X
 
@@ -783,6 +966,22 @@ bool ParamNode::validateNode(NodeVectorType& Parents) {
     return true;
   }
   return false;
+}
+
+BinaryLeafNode::BinaryLeafNode(SymbolTable& Symtab, NodeType Type)
+    : IntegerNode(Symtab, Type, 0, decode::ValueFormat::Hexidecimal, true),
+      NumBits(0) {
+}
+
+BinaryLeafNode::BinaryLeafNode(SymbolTable& Symtab,
+                               NodeType Type,
+                               decode::IntType Value,
+                               unsigned NumBits)
+    : IntegerNode(Symtab, Type, Value, decode::ValueFormat::Hexidecimal, false),
+      NumBits(NumBits) {
+}
+
+BinaryLeafNode::~BinaryLeafNode() {
 }
 
 bool BinaryLeafNode::implementsClass(NodeType Type) {
@@ -852,6 +1051,48 @@ bool BinaryLeafNode::validateNode(NodeVectorType& Parents) {
   return false;
 }
 
+BinaryAcceptNode::BinaryAcceptNode(SymbolTable& Symtab)
+    : BinaryLeafNode(Symtab, OpBinaryAccept) {
+}
+
+BinaryAcceptNode::BinaryAcceptNode(SymbolTable& Symtab,
+                                   decode::IntType Value,
+                                   unsigned NumBits)
+    : BinaryLeafNode(Symtab, OpBinaryAccept, Value, NumBits) {
+}
+
+BinaryAcceptNode::~BinaryAcceptNode() {
+}
+
+BinaryRejectNode::BinaryRejectNode(SymbolTable& Symtab)
+    : BinaryLeafNode(Symtab, OpBinaryReject) {
+}
+
+BinaryRejectNode::BinaryRejectNode(SymbolTable& Symtab,
+                                   decode::IntType Value,
+                                   unsigned NumBits)
+    : BinaryLeafNode(Symtab, OpBinaryReject, Value, NumBits) {
+}
+
+BinaryRejectNode::~BinaryRejectNode() {
+}
+
+BinaryNode::BinaryNode(SymbolTable& Symtab,
+                       NodeType Type,
+                       Node* Kid1,
+                       Node* Kid2)
+    : Node(Symtab, Type) {
+  Kids[0] = Kid1;
+  Kids[1] = Kid2;
+}
+
+BinaryNode::~BinaryNode() {
+}
+
+int BinaryNode::getNumKids() const {
+  return 2;
+}
+
 Node* BinaryNode::getKid(int Index) const {
   if (Index < 2)
     return Kids[Index];
@@ -875,10 +1116,34 @@ bool BinaryNode::implementsClass(NodeType Type) {
   }
 }
 
-#define X(tag, NODE_DECLS) \
-  void tag##Node::forceCompilation() {}
+#define X(tag, NODE_DECLS)                                          \
+  tag##Node::tag##Node(SymbolTable& Symtab, Node* Kid1, Node* Kid2) \
+      : BinaryNode(Symtab, Op##tag, Kid1, Kid2) {}
 AST_BINARYNODE_TABLE
 #undef X
+
+#define X(tag, NODE_DECLS) \
+  tag##Node::~tag##Node() {}
+AST_BINARYNODE_TABLE
+#undef X
+
+TernaryNode::TernaryNode(SymbolTable& Symtab,
+                         NodeType Type,
+                         Node* Kid1,
+                         Node* Kid2,
+                         Node* Kid3)
+    : Node(Symtab, Type) {
+  Kids[0] = Kid1;
+  Kids[1] = Kid2;
+  Kids[2] = Kid3;
+}
+
+TernaryNode::~TernaryNode() {
+}
+
+int TernaryNode::getNumKids() const {
+  return 3;
+}
 
 Node* TernaryNode::getKid(int Index) const {
   if (Index < 3)
@@ -903,8 +1168,15 @@ bool TernaryNode::implementsClass(NodeType Type) {
   }
 }
 
+#define X(tag, NODE_DECLS)                                          \
+  tag##Node::tag##Node(SymbolTable& Symtab, Node* Kid1, Node* Kid2, \
+                       Node* Kid3)                                  \
+      : TernaryNode(Symtab, Op##tag, Kid1, Kid2, Kid3) {}
+AST_TERNARYNODE_TABLE
+#undef X
+
 #define X(tag, NODE_DECLS) \
-  void tag##Node::forceCompilation() {}
+  tag##Node::~tag##Node() {}
 AST_TERNARYNODE_TABLE
 #undef X
 
@@ -937,6 +1209,32 @@ Node* DefineNode::getBody() const {
   return Nd;
 }
 
+NaryNode::NaryNode(SymbolTable& Symtab, NodeType Type) : Node(Symtab, Type) {
+}
+
+NaryNode::~NaryNode() {
+}
+
+int NaryNode::getNumKids() const {
+  return Kids.size();
+}
+
+Node* NaryNode::getKid(int Index) const {
+  return Kids[Index];
+}
+
+void NaryNode::setKid(int Index, Node* N) {
+  Kids[Index] = N;
+}
+
+void NaryNode::clearKids() {
+  Kids.clear();
+}
+
+void NaryNode::append(Node* Kid) {
+  Kids.emplace_back(Kid);
+}
+
 bool NaryNode::implementsClass(NodeType Type) {
   switch (Type) {
     default:
@@ -949,14 +1247,19 @@ bool NaryNode::implementsClass(NodeType Type) {
   }
 }
 
-void NaryNode::append(Node* Kid) {
-  Kids.emplace_back(Kid);
-}
-
 #define X(tag, NODE_DECLS) \
-  void tag##Node::forceCompilation() {}
+  tag##Node::tag##Node(SymbolTable& Symtab) : NaryNode(Symtab, Op##tag) {}
 AST_NARYNODE_TABLE
 #undef X
+
+#define X(tag, NODE_DECLS) \
+  tag##Node::~tag##Node() {}
+AST_NARYNODE_TABLE
+#undef X
+
+SymbolNode* EvalNode::getCallName() const {
+  return dyn_cast<SymbolNode>(getKid(0));
+}
 
 bool EvalNode::validateNode(NodeVectorType& Parents) {
   const auto* Sym = dyn_cast<SymbolNode>(getKid(0));
@@ -976,6 +1279,17 @@ bool EvalNode::validateNode(NodeVectorType& Parents) {
     return false;
   }
   return true;
+}
+
+SymbolNode* SectionNode::getSymbol() const {
+  return dyn_cast<SymbolNode>(getKid(0));
+}
+
+SelectBaseNode::~SelectBaseNode() {
+}
+
+SelectBaseNode::SelectBaseNode(SymbolTable& Symtab, NodeType Type)
+    : NaryNode(Symtab, Type) {
 }
 
 const CaseNode* SelectBaseNode::getCase(IntType Key) const {
@@ -1003,22 +1317,6 @@ void SelectBaseNode::installCaches(NodeVectorType& AdditionalNodes) {
       }
     }
   }
-}
-
-int OpcodeNode::WriteRange::compare(const WriteRange& R) const {
-  if (Min < R.Min)
-    return -1;
-  if (Min > R.Min)
-    return 1;
-  if (Max < R.Max)
-    return -1;
-  if (Max > R.Max)
-    return 1;
-  if ((void*)Case < (void*)R.Case)
-    return -1;
-  if ((void*)Case > (void*)R.Case)
-    return 1;
-  return 0;
 }
 
 namespace {
@@ -1130,9 +1428,20 @@ bool collectCaseWidths(IntType Key,
 }  // end of anonymous namespace
 
 #define X(tag, NODE_DECLS) \
-  void tag##Node::forceCompilation() {}
+  tag##Node::tag##Node(SymbolTable& Symtab) : SelectBaseNode(Symtab, Op##tag) {}
 AST_SELECTNODE_TABLE
 #undef X
+
+#define X(tag, NODE_DECLS) \
+  tag##Node::~tag##Node() {}
+AST_SELECTNODE_TABLE
+#undef X
+
+OpcodeNode::OpcodeNode(SymbolTable& Symtab) : SelectBaseNode(Symtab, OpOpcode) {
+}
+
+OpcodeNode::~OpcodeNode() {
+}
 
 void OpcodeNode::clearCaches(NodeVectorType& AdditionalNodes) {
   SelectBaseNode::clearCaches(AdditionalNodes);
@@ -1204,6 +1513,51 @@ const CaseNode* OpcodeNode::getWriteCase(decode::IntType Value,
   }
   SelShift = 0;
   return nullptr;
+}
+
+OpcodeNode::WriteRange::WriteRange()
+    : Case(nullptr), Min(0), Max(0), ShiftValue(0) {
+}
+
+OpcodeNode::WriteRange::WriteRange(const CaseNode* Case,
+                                   decode::IntType Min,
+                                   decode::IntType Max,
+                                   uint32_t ShiftValue)
+    : Case(Case), Min(Min), Max(Max), ShiftValue(ShiftValue) {
+}
+
+OpcodeNode::WriteRange::WriteRange(const WriteRange& R)
+    : Case(R.Case), Min(R.Min), Max(R.Max), ShiftValue(R.ShiftValue) {
+}
+
+OpcodeNode::WriteRange::~WriteRange() {
+}
+
+void OpcodeNode::WriteRange::assign(const WriteRange& R) {
+  Case = R.Case;
+  Min = R.Min;
+  Max = R.Max;
+  ShiftValue = R.ShiftValue;
+}
+
+int OpcodeNode::WriteRange::compare(const WriteRange& R) const {
+  if (Min < R.Min)
+    return -1;
+  if (Min > R.Min)
+    return 1;
+  if (Max < R.Max)
+    return -1;
+  if (Max > R.Max)
+    return 1;
+  if ((void*)Case < (void*)R.Case)
+    return -1;
+  if ((void*)Case > (void*)R.Case)
+    return 1;
+  return 0;
+}
+
+utils::TraceClass& OpcodeNode::WriteRange::getTrace() const {
+  return Case->getTrace();
 }
 
 BinaryEvalNode::BinaryEvalNode(SymbolTable& Symtab, Node* Encoding)
