@@ -31,174 +31,73 @@ template <class Type, class ReadCursor>
 Type readFixed(ReadCursor& Pos);
 
 template <class Type, class ReadCursor>
-#if 0
-Type readLEB128Loop(ReadCursor& Pos, uint32_t& Shift, decode::ByteType& Chunk) {
-  Type Value = 0;
-  Shift = 0;
-  while (true) {
-    Chunk = Pos.readByte();
-    Type Data = Chunk & ~(decode::ByteType(1) << 7);
-    Value |= Data << Shift;
-    Shift += 7;
-    if ((Chunk >> 7) == 0)
-      return Value;
-  }
-}
-#else
 Type readLEB128Loop(ReadCursor& Pos, uint32_t& Shift, decode::ByteType& Chunk);
-#endif
 
 template <class Type, class ReadCursor>
-Type readLEB128(ReadCursor& Pos) {
-  uint32_t Shift;
-  decode::ByteType Chunk;
-  return readLEB128Loop<Type>(Pos, Shift, Chunk);
-}
+Type readLEB128(ReadCursor& Pos);
 
 template <class Type, class ReadCursor>
-Type readSignedLEB128(ReadCursor& Pos) {
-  uint32_t Shift;
-  uint8_t Chunk;
-  Type Value = readLEB128Loop<Type>(Pos, Shift, Chunk);
-  if ((Chunk & 0x40) && (Shift < sizeof(Type) * CHAR_BIT))
-    Value |= ~Type(0) << Shift;
-  return Value;
-}
+Type readSignedLEB128(ReadCursor& Pos);
 
 template <class ReadCursor>
-uint8_t readUint8(ReadCursor& Pos) {
-  return Pos.readByte();
-}
+uint8_t readUint8(ReadCursor& Pos);
 
 template <class ReadCursor>
-uint32_t readUint32(ReadCursor& Pos) {
-  return fmt::readFixed<uint32_t>(Pos);
-}
+uint32_t readUint32(ReadCursor& Pos);
 
 template <class ReadCursor>
-uint64_t readUint64(ReadCursor& Pos) {
-  return fmt::readFixed<uint64_t>(Pos);
-}
+uint64_t readUint64(ReadCursor& Pos);
 
 template <class ReadCursor>
-int32_t readVarint32(ReadCursor& Pos) {
-  return fmt::readSignedLEB128<uint32_t>(Pos);
-}
+int32_t readVarint32(ReadCursor& Pos);
 
 template <class ReadCursor>
-int64_t readVarint64(ReadCursor& Pos) {
-  return fmt::readSignedLEB128<uint64_t>(Pos);
-}
+int64_t readVarint64(ReadCursor& Pos);
 
 template <class ReadCursor>
-uint32_t readVaruint32(ReadCursor& Pos) {
-  return fmt::readLEB128<uint32_t>(Pos);
-}
+uint32_t readVaruint32(ReadCursor& Pos);
 
 template <class ReadCursor>
-uint64_t readVaruint64(ReadCursor& Pos) {
-  return fmt::readLEB128<uint64_t>(Pos);
-}
-
-// Define LEB128 writers.
-#ifdef LEB128_LOOP_UNTIL
-#error("LEB128_LOOP_UNTIL already defined!")
-#else
-#define LEB128_LOOP_UNTIL(EndCond) \
-  do {                             \
-    decode::ByteType Byte = Value & 0x7f;       \
-    Value >>= 7;                   \
-    if (EndCond) {                 \
-      Pos.writeByte(Byte);         \
-      break;                       \
-    } else {                       \
-      Pos.writeByte(Byte | 0x80);  \
-    }                              \
-  } while (true)
+uint64_t readVaruint64(ReadCursor& Pos);
 
 template <class Type, class WriteCursor>
-void writeLEB128(Type Value, WriteCursor& Pos) {
-  LEB128_LOOP_UNTIL(Value == 0);
-}
+void writeLEB128(Type Value, WriteCursor& Pos);
 
 template <class Type, class WriteCursor>
-void writePositiveLEB128(Type Value, WriteCursor& Pos) {
-  LEB128_LOOP_UNTIL(Value == 0 && !(Byte & 0x40));
-}
+void writePositiveLEB128(Type Value, WriteCursor& Pos);
 
 template <class Type, class WriteCursor>
-void writeNegativeLEB128(Type Value, WriteCursor& Pos) {
-  LEB128_LOOP_UNTIL(Value == -1 && (Byte & 0x40));
-}
+void writeNegativeLEB128(Type Value, WriteCursor& Pos);
 
 template <class Type, class WriteCursor>
-void writeFixedLEB128(Type Value, WriteCursor& Pos) {
-  constexpr uint32_t BitsInWord = sizeof(Type) * CHAR_BIT;
-  constexpr uint32_t ChunkSize = CHAR_BIT - 1;
-  constexpr uint32_t ChunksInWord = (BitsInWord + ChunkSize - 1) / ChunkSize;
-  uint32_t Count = 0;
-  LEB128_LOOP_UNTIL(++Count == ChunksInWord);
-}
-
-#undef LEB128_LOOP_UNTIL
-
-#endif
+void writeFixedLEB128(Type Value, WriteCursor& Pos);
 
 template <class Type, class WriteCursor>
-void writeFixed(Type Value, WriteCursor& Pos) {
-  constexpr uint32_t WordSize = sizeof(Type);
-  constexpr Type Mask = (Type(1) << CHAR_BIT) - 1;
-  for (uint32_t i = 0; i < WordSize; ++i) {
-    Pos.writeByte(uint8_t(Value & Mask));
-    Value >>= CHAR_BIT;
-  }
-}
+void writeFixed(Type Value, WriteCursor& Pos);
 
 template <class WriteCursor>
-void writeUint8(uint8_t Value, WriteCursor& Pos) {
-  Pos.writeByte(Value);
-}
+void writeUint8(uint8_t Value, WriteCursor& Pos);
 
 template <class WriteCursor>
-void writeUint32(uint32_t Value, WriteCursor& Pos) {
-  writeFixed(Value, Pos);
-}
+void writeUint32(uint32_t Value, WriteCursor& Pos);
 
 template <class WriteCursor>
-void writeUint64(uint64_t Value, WriteCursor& Pos) {
-  writeFixed(Value, Pos);
-}
+void writeUint64(uint64_t Value, WriteCursor& Pos);
 
 template <class WriteCursor>
-void writeVarint32(int32_t Value, WriteCursor& Pos) {
-  if (Value < 0)
-    writeNegativeLEB128(Value, Pos);
-  else
-    writePositiveLEB128(Value, Pos);
-}
+void writeVarint32(int32_t Value, WriteCursor& Pos);
 
 template <class WriteCursor>
-void writeVarint64(int64_t Value, WriteCursor& Pos) {
-  if (Value < 0)
-    writeNegativeLEB128(Value, Pos);
-  else
-    writePositiveLEB128(Value, Pos);
-}
+void writeVarint64(int64_t Value, WriteCursor& Pos);
 
 template <class WriteCursor>
-void writeVaruint32(uint32_t Value, WriteCursor& Pos) {
-  writeLEB128(Value, Pos);
-}
+void writeVaruint32(uint32_t Value, WriteCursor& Pos);
 
 template <class WriteCursor>
-void writeVaruint64(uint64_t Value, WriteCursor& Pos) {
-  writeLEB128(Value, Pos);
-}
+void writeVaruint64(uint64_t Value, WriteCursor& Pos);
 
 template <class WriteCursor>
-void writeFixedVaruint32(uint32_t Value, WriteCursor& Pos) {
-  writeFixedLEB128(Value, Pos);
-}
+void writeFixedVaruint32(uint32_t Value, WriteCursor& Pos);
 
 }  // end of namespace fmt
 

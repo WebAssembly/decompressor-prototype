@@ -19,7 +19,7 @@
 
 #include "interp/IntFormats.h"
 
-#include "interp/FormatHelpers.h"
+#include "interp/FormatHelpers-templates.cpp"
 #include "sexp/Ast.h"
 
 namespace wasm {

@@ -179,11 +179,13 @@ STRM_SRCS = \
 	Pipe.cpp \
 	Queue.cpp \
 	ReadCursor.cpp \
+	ReadCursorFormatHelpers.cpp \
 	ReadBackedQueue.cpp \
 	StringReader.cpp \
 	StringWriter.cpp \
 	WriteBackedQueue.cpp \
 	WriteCursor.cpp \
+	WriteCursorFormatHelpers.cpp \
 	WriteCursorBase.cpp \
 	WriteCursor2ReadQueue.cpp \
 	WriteUtils.cpp
@@ -207,7 +209,6 @@ INTERP_SRCS_BASE = \
 	ByteWriter.cpp \
 	ByteWriteStream.cpp \
 	DecompressSelector.cpp \
-	FormatHelpers.cpp \
 	Interpreter.cpp \
 	IntFormats.cpp \
 	IntInterpreter.cpp \
