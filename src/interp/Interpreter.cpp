@@ -19,6 +19,7 @@
 
 #include "interp/Interpreter.h"
 
+#include "interp/AlgorithmSelector.h"
 #include "interp/Reader.h"
 #include "sexp/TextWriter.h"
 #include "utils/Casting.h"
@@ -191,7 +192,7 @@ Interpreter::Interpreter(std::shared_ptr<Reader> Input,
       Output(Output),
       Flags(Flags),
       Symtab(Symtab),
-      LastReadValue(0),
+      //      LastReadValue(0),
       DispatchedMethod(Method::NO_SUCH_METHOD),
       Catch(Method::NO_SUCH_METHOD),
       CatchStack(Catch),
@@ -206,6 +207,36 @@ Interpreter::Interpreter(std::shared_ptr<Reader> Input,
       OpcodeLocalsStack(OpcodeLocals),
       HeaderOverride(nullptr),
       FreezeEofAtExit(true) {
+  init();
+}
+
+Interpreter::Interpreter(std::shared_ptr<Reader> Input,
+                         std::shared_ptr<Writer> Output,
+                         const InterpreterFlags& Flags)
+    : Input(Input),
+      Output(Output),
+      Flags(Flags),
+      Symtab(std::make_shared<SymbolTable>()),
+      //      LastReadValue(0),
+      DispatchedMethod(Method::NO_SUCH_METHOD),
+      Catch(Method::NO_SUCH_METHOD),
+      CatchStack(Catch),
+      CatchState(State::NO_SUCH_STATE),
+      IsFatalFailure(false),
+      FrameStack(Frame),
+      CallingEvalStack(CallingEval),
+      LoopCounter(0),
+      LoopCounterStack(LoopCounter),
+      LocalsBase(0),
+      LocalsBaseStack(LocalsBase),
+      OpcodeLocalsStack(OpcodeLocals),
+      HeaderOverride(nullptr),
+      FreezeEofAtExit(true) {
+  init();
+}
+
+void Interpreter::init() {
+  LastReadValue = 0;
   CurSectionName.reserve(MaxExpectedSectionNameSize);
   FrameStack.reserve(DefaultStackSize);
   CallingEvalStack.reserve(DefaultStackSize);

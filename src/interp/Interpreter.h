@@ -39,6 +39,7 @@ class TextWriter;
 
 namespace interp {
 
+class AlgorithmSelector;
 class Interpreter;
 
 class Interpreter {
@@ -50,8 +51,10 @@ class Interpreter {
   Interpreter(std::shared_ptr<Reader> Input,
               std::shared_ptr<Writer> Output,
               const InterpreterFlags& Flags,
-              std::shared_ptr<filt::SymbolTable> Symtab =
-                  std::shared_ptr<filt::SymbolTable>());
+              std::shared_ptr<filt::SymbolTable> Symtab);
+  Interpreter(std::shared_ptr<Reader> Input,
+              std::shared_ptr<Writer> Output,
+              const InterpreterFlags& Flags);
   virtual ~Interpreter();
 
   void useFileHeader(const filt::FileHeaderNode* Header) {
@@ -352,6 +355,8 @@ class Interpreter {
     return Input->readHeaderValue(Format, Value);
   }
   virtual const char* getDefaultTraceName() const;
+
+  void init();
 };
 
 }  // end of namespace interp
