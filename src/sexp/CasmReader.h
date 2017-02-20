@@ -28,7 +28,7 @@ namespace wasm {
 
 namespace filt {
 class SymbolTable;
-} // end of namespace filt
+}  // end of namespace filt
 
 namespace decode {
 

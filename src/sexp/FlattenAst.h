@@ -27,11 +27,11 @@ namespace wasm {
 namespace interp {
 class IntStream;
 class IntWriter;
-} // end of namespace interp
+}  // end of namespace interp
 
 namespace utils {
 class TraceClass;
-} // end of namespace utils
+}  // end of namespace utils
 
 namespace filt {
 

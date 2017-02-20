@@ -25,11 +25,11 @@ namespace wasm {
 
 namespace interp {
 class IntStream;
-} // end of namespace interp
+}  // end of namespace interp
 
 namespace filt {
 class SymbolTable;
-} // end of namespace fllt;
+}  // end of namespace fllt;
 
 namespace decode {
 

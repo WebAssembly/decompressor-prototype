@@ -67,7 +67,7 @@ class TextWriter {
   TextWriter();
 
   // Pretty prints s-expression installed in symbol table.
-void write(FILE* File, SymbolTable* Symtab);
+  void write(FILE* File, SymbolTable* Symtab);
 
   // Pretty prints s-expression (defined by Root) to File.
   void write(FILE* File, const Node* Root);

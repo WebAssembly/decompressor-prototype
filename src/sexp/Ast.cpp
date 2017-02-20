@@ -894,7 +894,7 @@ AST_UNARYNODE_TABLE
 #undef X
 
 #define X(tag, NODE_DECLS) \
-  tag##Node::~tag##Node() OVERRIDE {}
+  tag##Node::~tag##Node() {}
 AST_UNARYNODE_TABLE
 #undef X
 
@@ -940,7 +940,7 @@ AST_INTEGERNODE_TABLE
 #undef X
 
 #define X(tag, format, defval, mergable, NODE_DECLS) \
-  tag##Node::~tag##Node() OVERRIDE {}
+  tag##Node::~tag##Node() {}
 AST_INTEGERNODE_TABLE
 #undef X
 
@@ -1123,7 +1123,7 @@ AST_BINARYNODE_TABLE
 #undef X
 
 #define X(tag, NODE_DECLS) \
-  tag##Node::~tag##Node() OVERRIDE {}
+  tag##Node::~tag##Node() {}
 AST_BINARYNODE_TABLE
 #undef X
 
@@ -1176,7 +1176,7 @@ AST_TERNARYNODE_TABLE
 #undef X
 
 #define X(tag, NODE_DECLS) \
-  tag##Node::~tag##Node() OVERRIDE {}
+  tag##Node::~tag##Node() {}
 AST_TERNARYNODE_TABLE
 #undef X
 
@@ -1212,7 +1212,7 @@ Node* DefineNode::getBody() const {
 NaryNode::NaryNode(SymbolTable& Symtab, NodeType Type) : Node(Symtab, Type) {
 }
 
-NaryNode::~NaryNode() OVERRIDE {
+NaryNode::~NaryNode() {
 }
 
 int NaryNode::getNumKids() const {
@@ -1253,7 +1253,7 @@ AST_NARYNODE_TABLE
 #undef X
 
 #define X(tag, NODE_DECLS) \
-  tag##Node::~tag##Node() OVERRIDE {}
+  tag##Node::~tag##Node() {}
 AST_NARYNODE_TABLE
 #undef X
 
