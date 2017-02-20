@@ -20,7 +20,7 @@
 #ifndef DECOMPRESSOR_SRC_STREAM_RAWSTREAM_H
 #define DECOMPRESSOR_SRC_STREAM_RAWSTREAM_H
 
-#include "stream/Address.h"
+#include "utils/Defs.h"
 
 namespace wasm {
 

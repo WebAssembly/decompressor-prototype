@@ -31,7 +31,9 @@ namespace wasm {
 
 namespace filt {
 
+class FileNode;
 class SectionSymbolTable;
+class SymbolTable;
 
 class InflateAst : public interp::Writer {
   InflateAst(const InflateAst&) = delete;

@@ -19,6 +19,7 @@
 #include "interp/ByteWriter.h"
 
 #include "interp/ByteWriteStream.h"
+#include "interp/WriteStream.h"
 
 namespace wasm {
 
@@ -40,6 +41,10 @@ ByteWriter::~ByteWriter() {
 void ByteWriter::reset() {
   BlockStart = BitWriteCursor();
   BlockStartStack.clear();
+}
+
+void ByteWriter::setPos(const decode::BitWriteCursor& NewPos) {
+  WritePos = NewPos;
 }
 
 BitWriteCursor& ByteWriter::getPos() {

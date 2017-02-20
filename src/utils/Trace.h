@@ -95,7 +95,6 @@
 #define TRACE_BLOCK(code) TRACE_BLOCK_USING(getTrace(), code)
 #endif
 
-
 namespace wasm {
 
 namespace filt {

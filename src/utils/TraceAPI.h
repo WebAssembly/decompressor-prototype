@@ -34,4 +34,4 @@ typedef std::shared_ptr<TraceContext> TraceContextPtr;
 
 }  // end of namespace wasm
 
-#endif // DECOMPRESSOR_SRC_UTILS_TRACEAPI_H_
+#endif  // DECOMPRESSOR_SRC_UTILS_TRACEAPI_H_

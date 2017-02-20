@@ -20,11 +20,12 @@
 #ifndef DECOMPRESSOR_SRC_INTERP_INTERPRETER_H
 #define DECOMPRESSOR_SRC_INTERP_INTERPRETER_H
 
+#include "interp/AlgorithmSelector.h"
 #include "interp/Interpreter.def"
-
 #include "interp/InterpreterFlags.h"
 #include "interp/Reader.h"
 #include "interp/Writer.h"
+#include "sexp/Ast.h"
 #include "utils/Trace.h"
 #include "utils/ValueStack.h"
 
@@ -39,29 +40,6 @@ class TextWriter;
 namespace interp {
 
 class Interpreter;
-
-class AlgorithmSelector
-    : public std::enable_shared_from_this<AlgorithmSelector> {
-  AlgorithmSelector(const AlgorithmSelector&) = delete;
-  AlgorithmSelector& operator=(const AlgorithmSelector&) = delete;
-
- public:
-  explicit AlgorithmSelector(const InterpreterFlags& Flags) : Flags(Flags) {}
-  virtual ~AlgorithmSelector() {}
-
-  // Returns the header to match.
-  virtual const filt::FileHeaderNode* getTargetHeader() = 0;
-
-  // Called if header matches. Allows selector to reconfigure the reader.
-  // Will read from input if symbol table (i.e. algorith) is set.
-  virtual bool configure(Interpreter* R) = 0;
-
-  // Called after reading from file using the symbol table. Allows one
-  // to restore/reconfigure the reader.
-  virtual bool reset(Interpreter* R) = 0;
-
-  const InterpreterFlags& Flags;
-};
 
 class Interpreter {
   Interpreter() = delete;

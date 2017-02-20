@@ -19,8 +19,6 @@
 #include "interp/ByteWriteStream.h"
 #include "stream/ReadCursor.h"
 
-#include <iostream>
-
 namespace wasm {
 
 using namespace decode;

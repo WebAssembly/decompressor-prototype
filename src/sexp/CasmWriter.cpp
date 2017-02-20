@@ -91,7 +91,7 @@ const BitWriteCursor& CasmWriter::writeBinary(
   MyReader.algorithmReadBackFilled();
   if (MyReader.errorsFound())
     ErrorsFound = true;
-  return StrmWriter->getWritePos();
+  return StrmWriter->getPos();
 }
 
 #if WASM_BOOT == 0

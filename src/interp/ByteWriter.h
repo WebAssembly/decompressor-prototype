@@ -20,13 +20,14 @@
 #define DECOMPRESSOR_SRC_INTERP_BYTEWRITER_H
 
 #include "interp/Writer.h"
-#include "interp/WriteStream.h"
 #include "stream/BitWriteCursor.h"
 #include "utils/ValueStack.h"
 
 namespace wasm {
 
 namespace interp {
+
+class WriteStream;
 
 class ByteWriter : public Writer {
   ByteWriter() = delete;
@@ -36,12 +37,10 @@ class ByteWriter : public Writer {
  public:
   ByteWriter(std::shared_ptr<decode::Queue> Output);
   ~ByteWriter() OVERRIDE;
-  decode::BitWriteCursor& getPos();
   utils::TraceContextPtr getTraceContext() OVERRIDE;
 
-  void setPos(const decode::BitWriteCursor& NewPos) { WritePos = NewPos; }
-  const decode::BitWriteCursor& getWritePos() const { return WritePos; }
-
+  decode::BitWriteCursor& getPos();
+  void setPos(const decode::BitWriteCursor& NewPos);
   void reset() OVERRIDE;
   decode::StreamType getStreamType() const OVERRIDE;
   bool writeUint8(uint8_t Value) OVERRIDE;

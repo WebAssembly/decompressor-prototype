@@ -34,6 +34,10 @@ namespace wasm {
 
 namespace decode {
 
+void describeAddress(FILE* File, AddressType Addr) {
+  fprintf(File, "@%" PRIxMAX, uintmax_t(Addr));
+}
+
 void fprint_IntType(FILE* File, IntType Value) {
   SignedIntType SignedValue = SignedIntType(Value);
   if (SignedValue < 0) {

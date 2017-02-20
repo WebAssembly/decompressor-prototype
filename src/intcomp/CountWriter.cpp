@@ -17,6 +17,7 @@
 // Implements a writer that counts usage patterns within the written values.
 
 #include "intcomp/CountWriter.h"
+#include "sexp/Ast.h"
 
 namespace wasm {
 

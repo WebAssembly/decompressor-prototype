@@ -37,8 +37,7 @@
 
 #include <vector>
 
-#include "stream/Address.h"
-//#include "stream/BlockEob.h"
+#include "stream/PageAddress.h"
 
 namespace wasm {
 

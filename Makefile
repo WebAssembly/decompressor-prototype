@@ -167,7 +167,6 @@ STRM_OBJDIR = $(OBJDIR)/stream
 STRM_OBJDIR_BOOT = $(OBJDIR_BOOT)/stream
 
 STRM_SRCS = \
-	Address.cpp \
 	ArrayReader.cpp \
 	BitReadCursor.cpp \
 	BitWriteCursor.cpp \
@@ -202,11 +201,13 @@ INTERP_OBJDIR = $(OBJDIR)/interp
 INTERP_OBJDIR_BOOT = $(OBJDIR_BOOT)/interp
 
 INTERP_SRCS_BASE = \
+	AlgorithmSelector.cpp \
 	ByteReader.cpp \
 	ByteReadStream.cpp \
 	ByteWriter.cpp \
 	ByteWriteStream.cpp \
 	DecompressSelector.cpp \
+	FormatHelpers.cpp \
 	Interpreter.cpp \
 	IntFormats.cpp \
 	IntInterpreter.cpp \

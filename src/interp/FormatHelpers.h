@@ -16,8 +16,8 @@
 
 // Defines helper methods for WASM formats.
 
-#ifndef DECOMPRESSOR_SRC_INTERP_FORMATHELPERS_H
-#define DECOMPRESSOR_SRC_INTERP_FORMATHELPERS_H
+#ifndef DECOMPRESSOR_SRC_INTERP_FORMATHELPERS_H_
+#define DECOMPRESSOR_SRC_INTERP_FORMATHELPERS_H_
 
 #include "utils/Defs.h"
 
@@ -28,35 +28,30 @@ namespace interp {
 namespace fmt {
 
 template <class Type, class ReadCursor>
-Type readFixed(ReadCursor& Pos) {
-  Type Value = 0;
-  constexpr uint32_t WordSize = sizeof(Type);
-  uint32_t Shift = 0;
-  for (uint32_t i = 0; i < WordSize; ++i) {
-    Value |= Type(Pos.readByte()) << Shift;
-    Shift += CHAR_BIT;
-  }
-  return Value;
-}
+Type readFixed(ReadCursor& Pos);
 
 template <class Type, class ReadCursor>
-Type readLEB128Loop(ReadCursor& Pos, uint32_t& Shift, uint8_t& Chunk) {
+#if 0
+Type readLEB128Loop(ReadCursor& Pos, uint32_t& Shift, decode::ByteType& Chunk) {
   Type Value = 0;
   Shift = 0;
   while (true) {
     Chunk = Pos.readByte();
-    Type Data = Chunk & ~(uint8_t(1) << 7);
+    Type Data = Chunk & ~(decode::ByteType(1) << 7);
     Value |= Data << Shift;
     Shift += 7;
     if ((Chunk >> 7) == 0)
       return Value;
   }
 }
+#else
+Type readLEB128Loop(ReadCursor& Pos, uint32_t& Shift, decode::ByteType& Chunk);
+#endif
 
 template <class Type, class ReadCursor>
 Type readLEB128(ReadCursor& Pos) {
   uint32_t Shift;
-  uint8_t Chunk;
+  decode::ByteType Chunk;
   return readLEB128Loop<Type>(Pos, Shift, Chunk);
 }
 
@@ -111,7 +106,7 @@ uint64_t readVaruint64(ReadCursor& Pos) {
 #else
 #define LEB128_LOOP_UNTIL(EndCond) \
   do {                             \
-    uint8_t Byte = Value & 0x7f;   \
+    decode::ByteType Byte = Value & 0x7f;       \
     Value >>= 7;                   \
     if (EndCond) {                 \
       Pos.writeByte(Byte);         \
@@ -211,4 +206,4 @@ void writeFixedVaruint32(uint32_t Value, WriteCursor& Pos) {
 
 }  // end of namespace wasm
 
-#endif  // DECOMPRESSOR_SRC_INTERP_FORMATHELPERS_H
+#endif  // DECOMPRESSOR_SRC_INTERP_FORMATHELPERS_H_
