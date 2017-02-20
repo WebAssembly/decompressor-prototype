@@ -17,22 +17,24 @@
 // Defines an interpreter of that reads a file and applies algorithms to the
 // data in the file.
 
-#ifndef DECOMPRESSOR_SRC_INTERP_INTERPRETER_H
-#define DECOMPRESSOR_SRC_INTERP_INTERPRETER_H
+#ifndef DECOMPRESSOR_SRC_INTERP_INTERPRETER_H_
+#define DECOMPRESSOR_SRC_INTERP_INTERPRETER_H_
 
-#include "interp/AlgorithmSelector.h"
 #include "interp/Interpreter.def"
 #include "interp/InterpreterFlags.h"
-#include "interp/Reader.h"
-#include "interp/Writer.h"
-#include "sexp/Ast.h"
-#include "utils/Trace.h"
+#include "stream/ValueFormat.h"
+#include "utils/TraceAPI.h"
 #include "utils/ValueStack.h"
 
 namespace wasm {
 
 namespace filt {
 
+class CaseNode;
+class EvalNode;
+class FileHeaderNode;
+class Node;
+class SymbolTable;
 class TextWriter;
 
 }  // end of namespace filt.
@@ -41,6 +43,8 @@ namespace interp {
 
 class AlgorithmSelector;
 class Interpreter;
+class Reader;
+class Writer;
 
 class Interpreter {
   Interpreter() = delete;
@@ -51,10 +55,10 @@ class Interpreter {
   Interpreter(std::shared_ptr<Reader> Input,
               std::shared_ptr<Writer> Output,
               const InterpreterFlags& Flags,
-              std::shared_ptr<filt::SymbolTable> Symtab);
+                std::shared_ptr<filt::SymbolTable> Symtab);
   Interpreter(std::shared_ptr<Reader> Input,
               std::shared_ptr<Writer> Output,
-              const InterpreterFlags& Flags);
+                const InterpreterFlags& Flags);
   virtual ~Interpreter();
 
   void useFileHeader(const filt::FileHeaderNode* Header) {
@@ -88,10 +92,7 @@ class Interpreter {
   // Reads from backfilled input stream.
   void algorithmReadBackFilled();
 
-  void algorithmRead() {
-    algorithmStart();
-    algorithmReadBackFilled();
-  }
+  void algorithmRead();
 
   // Check status of read.
   bool isFinished() const { return Frame.CallMethod == Method::Finished; }
@@ -170,31 +171,11 @@ class Interpreter {
 
   // The call stack of methods being applied.
   struct CallFrame {
-    CallFrame() { reset(); }
-    CallFrame(Method CallMethod, const filt::Node* Nd)
-        : CallMethod(CallMethod),
-          CallState(State::Enter),
-          CallModifier(MethodModifier::ReadAndWrite),
-          Nd(Nd) {}
-    CallFrame(const CallFrame& M)
-        : CallMethod(M.CallMethod),
-          CallState(M.CallState),
-          CallModifier(M.CallModifier),
-          Nd(M.Nd) {}
-    void reset() {
-      CallMethod = Method::Started;
-      CallState = State::Enter;
-      CallModifier = MethodModifier::ReadAndWrite;
-      Nd = nullptr;
-      ReturnValue = 0;
-    }
-    void fail() {
-      CallMethod = Method::Finished;
-      CallState = State::Failed;
-      CallModifier = MethodModifier::ReadAndWrite;
-      Nd = nullptr;
-      ReturnValue = 0;
-    }
+    CallFrame();
+    CallFrame(Method CallMethod, const filt::Node* Nd);
+    CallFrame(const CallFrame& M);
+    void reset();
+    void fail();
     void describe(FILE* File, filt::TextWriter* Writer) const;
     Method CallMethod;
     State CallState;
@@ -208,18 +189,11 @@ class Interpreter {
 
   // The stack of calling "eval" expressions.
   struct EvalFrame {
-    EvalFrame() { reset(); }
-    EvalFrame(const filt::EvalNode* Caller, size_t CallingEvalIndex)
-        : Caller(Caller), CallingEvalIndex(CallingEvalIndex) {
-      assert(Caller != nullptr);
-    }
-    EvalFrame(const EvalFrame& F)
-        : Caller(F.Caller), CallingEvalIndex(F.CallingEvalIndex) {}
-    bool isDefined() const { return Caller != nullptr; }
-    void reset() {
-      Caller = nullptr;
-      CallingEvalIndex = 0;
-    }
+    EvalFrame();
+    EvalFrame(const filt::EvalNode* Caller, size_t CallingEvalIndex);
+    EvalFrame(const EvalFrame& F);
+    bool isDefined() const;
+    void reset();
     void describe(FILE* File, filt::TextWriter* Writer) const;
     const filt::EvalNode* Caller;
     size_t CallingEvalIndex;
@@ -298,62 +272,18 @@ class Interpreter {
 
   void popAndReturn(decode::IntType Value = 0);
 
-  // Dispatches writeAction to Output. Captures special cases if needed by the
-  // reader.
-  bool writeAction(const filt::SymbolNode* Action) {
-    return Output->writeAction(Action);
-  }
-
   // For debugging only.
-
-  void traceEnterFrame() {
-    assert(Frame.CallState == State::Enter);
-    TRACE_BLOCK(traceEnterFrameInternal(););
-  }
+  void traceEnterFrame();
   void traceEnterFrameInternal();
-  void traceExitFrame() { TRACE_EXIT_OVERRIDE(getName(Frame.CallMethod)); }
+  void traceExitFrame();
 
   void describeFrameStack(FILE* Out);
   void describeCallingEvalStack(FILE* Out);
-  void describePeekPosStack(FILE* Out) { Input->describePeekPosStack(Out); }
+  void describePeekPosStack(FILE* Out);
   void describeLoopCounterStack(FILE* Out);
   void describeLocalsStack(FILE* Out);
   void describeOpcodeLocalsStack(FILE* Out);
   virtual void describeState(FILE* Out);
-
-  bool canProcessMoreInputNow() { return Input->canProcessMoreInputNow(); }
-  bool stillMoreInputToProcessNow() {
-    return Input->stillMoreInputToProcessNow();
-  }
-  bool atInputEob() { return Input->atInputEob(); }
-  void resetPeekPosStack() { Input->resetPeekPosStack(); }
-  void pushPeekPos() { Input->pushPeekPos(); }
-  void popPeekPos() { Input->popPeekPos(); }
-  size_t sizePeekPosStack() { return Input->sizePeekPosStack(); }
-  decode::StreamType getStreamType() { return Input->getStreamType(); }
-  bool processedInputCorrectly() { return Input->processedInputCorrectly(); }
-  bool readAction(const filt::SymbolNode* Action) {
-    return Input->readAction(Action);
-  }
-  void readFillStart() { Input->readFillStart(); }
-  void readFillMoreInput() { Input->readFillMoreInput(); }
-  // Hard coded reads.
-  uint8_t readUint8() { return Input->readUint8(); }
-  uint32_t readUint32() { return Input->readUint32(); }
-  uint64_t readUint64() { return Input->readUint64(); }
-  int32_t readVarint32() { return Input->readVarint32(); }
-  int64_t readVarint64() { return Input->readVarint64(); }
-  uint32_t readVaruint32() { return Input->readVaruint32(); }
-  uint64_t readVaruint64() { return Input->readVaruint64(); }
-  bool readBinary(const filt::Node* Format, decode::IntType& Value) {
-    return Input->readBinary(Format, Value);
-  }
-  bool readValue(const filt::Node* Format, decode::IntType& Value) {
-    return Input->readValue(Format, Value);
-  }
-  bool readHeaderValue(interp::IntTypeFormat Format, decode::IntType& Value) {
-    return Input->readHeaderValue(Format, Value);
-  }
   virtual const char* getDefaultTraceName() const;
 
   void init();
@@ -363,4 +293,4 @@ class Interpreter {
 
 }  // end of namespace wasm
 
-#endif  // DECOMPRESSOR_SRC_INTERP_INTERPRETER_H
+#endif  // DECOMPRESSOR_SRC_INTERP_INTERPRETER_H_

@@ -19,6 +19,7 @@
 #include "interp/IntReader.h"
 
 #include "interp/Interpreter.h"
+#include "sexp/Ast.h"
 
 namespace wasm {
 

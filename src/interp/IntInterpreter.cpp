@@ -18,6 +18,9 @@
 
 #include "interp/IntInterpreter.h"
 
+#include "interp/Writer.h"
+#include "sexp/Ast.h"
+
 namespace wasm {
 
 using namespace decode;
@@ -48,9 +51,9 @@ void IntInterperter::structuralStart() {
 }
 
 void IntInterperter::structuralResume() {
-  if (!canProcessMoreInputNow())
+  if (!Input->canProcessMoreInputNow())
     return;
-  while (stillMoreInputToProcessNow()) {
+  while (Input->stillMoreInputToProcessNow()) {
     if (errorsFound())
       break;
     switch (Frame.CallMethod) {
@@ -61,7 +64,7 @@ void IntInterperter::structuralResume() {
           case State::Enter:
             for (auto Pair : IntInput->getStream()->getHeader()) {
               IntType Value;
-              if (!readHeaderValue(Pair.second, Value)) {
+              if (!Input->readHeaderValue(Pair.second, Value)) {
                 TRACE(IntType, "Lit Value", Pair.first);
                 TRACE(string, "Lit format", wasm::interp::getName(Pair.second));
                 return throwMessage("unable to read header literal");
@@ -183,9 +186,9 @@ void IntInterperter::structuralResume() {
 }
 
 void IntInterperter::structuralReadBackFilled() {
-  readFillStart();
+  Input->readFillStart();
   while (!isFinished()) {
-    readFillMoreInput();
+    Input->readFillMoreInput();
     structuralResume();
   }
 }

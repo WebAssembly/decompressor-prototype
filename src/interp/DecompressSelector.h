@@ -29,8 +29,6 @@
 #include <queue>
 
 #include "interp/AlgorithmSelector.h"
-//#include "utils/Defs.h"
-//#include "interp/Interpreter.h"
 
 namespace wasm {
 

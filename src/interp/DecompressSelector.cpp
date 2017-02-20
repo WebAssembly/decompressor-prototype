@@ -33,6 +33,7 @@
 #include "interp/Interpreter.h"
 #include "interp/IntReader.h"
 #include "interp/IntWriter.h"
+#include "sexp/Ast.h"
 #include "sexp/InflateAst.h"
 
 namespace wasm {

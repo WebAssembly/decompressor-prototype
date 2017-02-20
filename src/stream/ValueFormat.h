@@ -20,6 +20,8 @@
 #ifndef DECOMPRESSOR_SRC_STREAM_VALUEFORMAT_H_
 #define DECOMPRESSOR_SRC_STREAM_VALUEFORMAT_H_
 
+#include "utils/Defs.h"
+
 namespace wasm {
 
 namespace decode {
@@ -32,7 +34,7 @@ constexpr ValueFormat getValueFormat(int i) {
 
 const char* getName(ValueFormat Format);
 
-constexpr char getHexCharForDigit(uint8_t Digit) {
+constexpr char getHexCharForDigit(char Digit) {
   return Digit < 10 ? '0' + Digit : 'a' + (Digit - 10);
 }
 
