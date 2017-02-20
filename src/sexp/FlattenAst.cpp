@@ -19,6 +19,8 @@
 
 #include "sexp/FlattenAst.h"
 
+#include "binary/SectionSymbolTable.h"
+#include "interp/IntWriter.h"
 #include "sexp/TextWriter.h"
 #include "utils/Casting.h"
 #include "utils/Trace.h"
@@ -35,7 +37,7 @@ FlattenAst::FlattenAst(std::shared_ptr<IntStream> Output,
                        std::shared_ptr<SymbolTable> Symtab)
     : Writer(std::make_shared<IntWriter>(Output)),
       Symtab(Symtab),
-      SectionSymtab(Symtab),
+      SectionSymtab(utils::make_unique<SectionSymbolTable>(Symtab)),
       FreezeEofOnDestruct(true),
       HasErrors(false),
       WrotePrimaryHeader(false) {
@@ -79,12 +81,12 @@ std::shared_ptr<TraceClass> FlattenAst::getTracePtr() {
   return Trace;
 }
 
-void FlattenAst::reportError(const char* Message) {
+void FlattenAst::reportError(charstring Message) {
   fprintf(stderr, "Error: %s\n", Message);
   HasErrors = true;
 }
 
-void FlattenAst::reportError(const char* Label, const Node* Nd) {
+void FlattenAst::reportError(charstring Label, const Node* Nd) {
   fprintf(stderr, "%s: ", Label);
   TextWriter Writer;
   Writer.writeAbbrev(stderr, Nd);
@@ -203,9 +205,9 @@ void FlattenAst::flattenNode(const Node* Nd) {
     case OpSection: {
       Writer->writeAction(Symtab->getPredefined(PredefinedSymbol::Block_enter));
       const auto* Section = cast<SectionNode>(Nd);
-      SectionSymtab.installSection(Section);
+      SectionSymtab->installSection(Section);
       const SectionSymbolTable::IndexLookupType& Vector =
-          SectionSymtab.getVector();
+          SectionSymtab->getVector();
       Writer->write(Vector.size());
       TRACE(size_t, "Number symbols", Vector.size());
       for (const SymbolNode* Symbol : Vector) {
@@ -219,7 +221,7 @@ void FlattenAst::flattenNode(const Node* Nd) {
         flattenNode(Nd->getKid(i));
       Writer->writeUint8(Opcode);
       Writer->writeAction(Symtab->getPredefined(PredefinedSymbol::Block_exit));
-      SectionSymtab.clear();
+      SectionSymtab->clear();
       break;
     }
     case OpDefine:
@@ -240,7 +242,7 @@ void FlattenAst::flattenNode(const Node* Nd) {
     case OpSymbol: {
       Writer->write(Opcode);
       SymbolNode* Sym = cast<SymbolNode>(const_cast<Node*>(Nd));
-      Writer->write(SectionSymtab.getSymbolIndex(Sym));
+      Writer->write(SectionSymtab->getSymbolIndex(Sym));
       break;
     }
   }

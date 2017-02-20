@@ -25,8 +25,8 @@
 #define DECOMPRESSOR_SRC_SEXP_INFLATEAST_H
 
 #include "binary/SectionSymbolTable.h"
-#include "interp/Writer.h"
 #include "utils/ValueStack.h"
+#include "interp/Writer.h"
 
 namespace wasm {
 

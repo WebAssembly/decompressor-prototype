@@ -127,10 +127,6 @@ SEXP_SRCS_BOOT = $(SEXP_SRCS_BASE)
 SEXP_OBJS = $(patsubst %.cpp, $(SEXP_OBJDIR)/%.o, $(SEXP_SRCS))
 SEXP_OBJS_BOOT = $(patsubst %.cpp, $(SEXP_OBJDIR_BOOT)/%.o, $(SEXP_SRCS_BOOT))
 
-SEXP_DEFAULT_DFS = defaults-0xd.df
-
-SEXP_DEFAULT_ORIGSRCS = $(patsubst %.df, $(SEXP_SRCDIR)/%.df, $(SEXP_DEFAULT_DFS))
-
 GENSRCS += $(SEXP_DEFAULT_SRCS)
 
 SEXP_LIB = $(LIBDIR)/$(LIBPREFIX)sexp.a
@@ -138,7 +134,7 @@ SEXP_LIB_BOOT = $(LIBDIR_BOOT)/$(LIBPREFIX)sexp.a
 
 # This is the default file used by tests.
 
-SEXP_DEFAULT_DF = $(SEXP_SRCDIR)/defaults-0xd.df
+SEXP_DEFAULT_DF = $(TEST_SRCS_DIR)/defaults-0xd.df
 TEST_DEFAULT_DF = $(TEST_SRCS_DIR)/defaults-0xd.df
 TEST_DEFAULT_WASM = $(TEST_SRCS_DIR)/defaults-0xd.wasm
 TEST_DEFAULT_WASM_W = $(TEST_SRCS_DIR)/defaults-0xd.wasm-w
