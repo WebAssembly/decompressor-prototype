@@ -58,7 +58,7 @@ IntStream::Cursor& IntStream::Cursor::operator=(const IntStream::Cursor& C) {
   return *this;
 }
 
-TraceClass::ContextPtr IntStream::Cursor::getTraceContext() {
+TraceContextPtr IntStream::Cursor::getTraceContext() {
   return std::make_shared<IntStream::Cursor::TraceContext>(*this);
 }
 

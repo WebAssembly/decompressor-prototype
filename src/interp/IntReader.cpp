@@ -39,7 +39,7 @@ IntReader::IntReader(std::shared_ptr<IntStream> Input)
 IntReader::~IntReader() {
 }
 
-TraceClass::ContextPtr IntReader::getTraceContext() {
+TraceContextPtr IntReader::getTraceContext() {
   return Pos.getTraceContext();
 }
 

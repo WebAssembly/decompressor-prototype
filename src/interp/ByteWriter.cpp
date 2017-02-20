@@ -46,7 +46,7 @@ BitWriteCursor& ByteWriter::getPos() {
   return WritePos;
 }
 
-TraceClass::ContextPtr ByteWriter::getTraceContext() {
+TraceContextPtr ByteWriter::getTraceContext() {
   return WritePos.getTraceContext();
 }
 

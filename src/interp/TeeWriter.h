@@ -85,7 +85,7 @@ class TeeWriter : public Writer {
   void setMinimizeBlockSize(bool NewValue) OVERRIDE;
   void describeState(FILE* File) OVERRIDE;
 
-  utils::TraceClass::ContextPtr getTraceContext() OVERRIDE;
+  utils::TraceContextPtr getTraceContext() OVERRIDE;
   void setTrace(std::shared_ptr<utils::TraceClass> Trace) OVERRIDE;
 
  private:

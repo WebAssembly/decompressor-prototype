@@ -43,7 +43,7 @@ void ByteReader::setReadPos(const decode::BitReadCursor& StartPos) {
   ReadPos = StartPos;
 }
 
-TraceClass::ContextPtr ByteReader::getTraceContext() {
+TraceContextPtr ByteReader::getTraceContext() {
   return ReadPos.getTraceContext();
 }
 

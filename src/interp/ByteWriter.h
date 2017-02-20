@@ -37,7 +37,7 @@ class ByteWriter : public Writer {
   ByteWriter(std::shared_ptr<decode::Queue> Output);
   ~ByteWriter() OVERRIDE;
   decode::BitWriteCursor& getPos();
-  utils::TraceClass::ContextPtr getTraceContext() OVERRIDE;
+  utils::TraceContextPtr getTraceContext() OVERRIDE;
 
   void setPos(const decode::BitWriteCursor& NewPos) { WritePos = NewPos; }
   const decode::BitWriteCursor& getWritePos() const { return WritePos; }

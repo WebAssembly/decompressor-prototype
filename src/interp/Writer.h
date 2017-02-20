@@ -61,7 +61,7 @@ class Writer {
   virtual void setMinimizeBlockSize(bool NewValue);
   virtual void describeState(FILE* File);
 
-  virtual utils::TraceClass::ContextPtr getTraceContext();
+  virtual utils::TraceContextPtr getTraceContext();
   bool hasTrace() { return bool(Trace) && Trace->getTraceProgress(); }
   virtual void setTrace(std::shared_ptr<utils::TraceClass> Trace);
   std::shared_ptr<utils::TraceClass> getTracePtr();

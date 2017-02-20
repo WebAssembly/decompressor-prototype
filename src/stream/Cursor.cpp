@@ -125,7 +125,7 @@ void Cursor::TraceContext::describe(FILE* File) {
   Pos.describe(File);
 }
 
-TraceClass::ContextPtr Cursor::getTraceContext() {
+TraceContextPtr Cursor::getTraceContext() {
   return std::make_shared<Cursor::TraceContext>(*this);
 }
 

@@ -104,6 +104,21 @@ class Node;
 
 namespace utils {
 
+// Models calling contexts to be associated with each trace line.
+class TraceContext : public std::enable_shared_from_this<TraceContext> {
+  TraceContext(const TraceContext&) = delete;
+  TraceContext& operator=(const TraceContext&) = delete;
+
+ public:
+  virtual ~TraceContext();
+  virtual void describe(FILE* File) = 0;
+
+ protected:
+  TraceContext();
+};
+
+typedef std::shared_ptr<TraceContext> TraceContextPtr;
+
 class TraceClass : public std::enable_shared_from_this<TraceClass> {
   TraceClass(const TraceClass&) = delete;
   TraceClass& operator=(const TraceClass&) = delete;
@@ -131,19 +146,6 @@ class TraceClass : public std::enable_shared_from_this<TraceClass> {
    private:
     TraceClass& Cls;
   };
-  // Models calling contexts to be associated with each trace line.
-  class Context : public std::enable_shared_from_this<Context> {
-    Context(const Context&) = delete;
-    Context& operator=(const Context&) = delete;
-
-   public:
-    virtual ~Context() {}
-    virtual void describe(FILE* File) = 0;
-
-   protected:
-    Context() {}
-  };
-  typedef std::shared_ptr<Context> ContextPtr;
 
   TraceClass();
   explicit TraceClass(charstring Label);
@@ -153,7 +155,7 @@ class TraceClass : public std::enable_shared_from_this<TraceClass> {
   void enter(charstring Name);
   void exit(charstring Name = nullptr);
   virtual void traceContext() const;
-  void addContext(ContextPtr Ctx);
+  void addContext(TraceContextPtr Ctx);
   void clearContexts();
 
   // Prints trace prefix only.
@@ -270,7 +272,7 @@ class TraceClass : public std::enable_shared_from_this<TraceClass> {
   int IndentLevel;
   bool TraceProgress;
   std::vector<charstring> CallStack;
-  std::vector<ContextPtr> ContextList;
+  std::vector<TraceContextPtr> ContextList;
 
   FILE* tracePrefixInternal(const std::string& Message);
   void traceMessageInternal(const std::string& Message);

@@ -57,8 +57,8 @@ void Writer::setMinimizeBlockSize(bool NewValue) {
   MinimizeBlockSize = NewValue;
 }
 
-TraceClass::ContextPtr Writer::getTraceContext() {
-  TraceClass::ContextPtr Ptr;
+TraceContextPtr Writer::getTraceContext() {
+  TraceContextPtr Ptr;
   return Ptr;
 }
 

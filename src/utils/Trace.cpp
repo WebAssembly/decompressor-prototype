@@ -25,6 +25,12 @@ using namespace decode;
 
 namespace utils {
 
+TraceContext::TraceContext() {
+}
+
+TraceContext::~TraceContext() {
+}
+
 void TraceClass::init() {
   Label = "Trace";
   File = stderr;
@@ -55,7 +61,7 @@ TraceClass::TraceClass(charstring Lbl, FILE* Fl) {
 TraceClass::~TraceClass() {
 }
 
-void TraceClass::addContext(ContextPtr NewCtx) {
+void TraceClass::addContext(TraceContextPtr NewCtx) {
   if (!NewCtx)
     return;
   for (auto Ctx : ContextList)

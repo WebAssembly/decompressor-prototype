@@ -131,7 +131,7 @@ void Interpreter::setTraceProgress(bool NewValue) {
   getTrace().setTraceProgress(NewValue);
 }
 
-TraceClass::ContextPtr Interpreter::getTraceContext() {
+TraceContextPtr Interpreter::getTraceContext() {
   return Input->getTraceContext();
 }
 

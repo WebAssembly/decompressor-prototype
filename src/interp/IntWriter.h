@@ -45,7 +45,7 @@ class IntWriter : public Writer {
   bool writeHeaderValue(decode::IntType Value,
                         interp::IntTypeFormat Format) OVERRIDE;
   bool writeAction(const filt::SymbolNode* Action) OVERRIDE;
-  utils::TraceClass::ContextPtr getTraceContext() OVERRIDE;
+  utils::TraceContextPtr getTraceContext() OVERRIDE;
   void describeState(FILE* File) OVERRIDE;
   size_t getIndex() const { return Pos.getIndex(); }
 

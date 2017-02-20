@@ -141,7 +141,7 @@ class Interpreter {
   void failNotImplemented();
 
   // Returns non-null context handler if applicable.
-  utils::TraceClass::ContextPtr getTraceContext();
+  utils::TraceContextPtr getTraceContext();
   void setTraceProgress(bool NewValue);
   void setTrace(std::shared_ptr<utils::TraceClass> Trace);
   std::shared_ptr<utils::TraceClass> getTracePtr();

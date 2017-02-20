@@ -36,7 +36,7 @@ void IntWriter::reset() {
   Pos = StartPos;
 }
 
-TraceClass::ContextPtr IntWriter::getTraceContext() {
+TraceContextPtr IntWriter::getTraceContext() {
   return Pos.getTraceContext();
 }
 

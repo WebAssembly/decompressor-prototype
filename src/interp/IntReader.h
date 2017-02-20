@@ -68,7 +68,7 @@ class IntReader : public Reader {
   uint64_t readVaruint64() OVERRIDE;
   bool readHeaderValue(interp::IntTypeFormat Format,
                        decode::IntType& Value) OVERRIDE;
-  utils::TraceClass::ContextPtr getTraceContext() OVERRIDE;
+  utils::TraceContextPtr getTraceContext() OVERRIDE;
 
   // Read based on structure of input integer stream.
   void structuralStart();

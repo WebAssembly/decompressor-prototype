@@ -21,10 +21,13 @@
 
 #include "interp/Interpreter.def"
 #include "interp/Writer.h"
-#include "utils/Trace.h"
 #include "utils/ValueStack.h"
 
 namespace wasm {
+
+namespace utils {
+class Trace;
+}  // end of namespace utils
 
 namespace filt {
 
@@ -41,7 +44,7 @@ class Reader : public std::enable_shared_from_this<Reader> {
  public:
   Reader() {}
   virtual ~Reader() {}
-  virtual utils::TraceClass::ContextPtr getTraceContext();
+  virtual utils::TraceContextPtr getTraceContext();
   void setTraceProgress(bool NewValue);
   bool hasTrace() { return bool(Trace); }
   void setTrace(std::shared_ptr<utils::TraceClass> Trace);

@@ -25,7 +25,7 @@ namespace wasm {
 
 namespace decode {
 class ReadCursor;
-} // end of namespace decode
+}  // end of namespace decode
 
 namespace filt {
 class Node;

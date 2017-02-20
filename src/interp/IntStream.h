@@ -67,7 +67,7 @@ class IntStream : public std::enable_shared_from_this<IntStream> {
 
   class Cursor : public std::enable_shared_from_this<Cursor> {
    public:
-    class TraceContext : public utils::TraceClass::Context {
+    class TraceContext : public utils::TraceContext {
       TraceContext() = delete;
       TraceContext(const TraceContext&) = delete;
       TraceContext& operator=(const TraceContext&) = delete;
@@ -96,7 +96,7 @@ class IntStream : public std::enable_shared_from_this<IntStream> {
     FILE* describe(FILE* File,
                    bool IncludeDetail = false,
                    bool AddEoln = false);
-    utils::TraceClass::ContextPtr getTraceContext();
+    utils::TraceContextPtr getTraceContext();
 
    protected:
     size_t Index;

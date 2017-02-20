@@ -26,8 +26,8 @@ using namespace utils;
 
 namespace interp {
 
-TraceClass::ContextPtr Reader::getTraceContext() {
-  TraceClass::ContextPtr Ptr;
+TraceContextPtr Reader::getTraceContext() {
+  TraceContextPtr Ptr;
   return Ptr;
 }
 
