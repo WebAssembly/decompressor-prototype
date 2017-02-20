@@ -18,7 +18,9 @@
 // (integer) CASM stream.
 
 #include "sexp/FlattenAst.h"
+
 #include "sexp/TextWriter.h"
+#include "utils/Casting.h"
 #include "utils/Trace.h"
 
 namespace wasm {

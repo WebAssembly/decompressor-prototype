@@ -190,16 +190,12 @@
 
 #define EVAL_DECLS                                                             \
  public:                                                                       \
-  SymbolNode* getCallName() const {                                            \
-    return dyn_cast<SymbolNode>(getKid(0));                                    \
-  }                                                                            \
+  SymbolNode* getCallName() const;                                             \
   bool validateNode(NodeVectorType &Parents) OVERRIDE;                         \
 
 #define SECTION_DECLS                                                          \
  public:                                                                       \
-  SymbolNode* getSymbol() const {                                              \
-    return dyn_cast<SymbolNode>(getKid(0));                                    \
-  }                                                                            \
+  SymbolNode* getSymbol() const;                                               \
 
 //#define X(tag, NODE_DECLS)
 #define AST_TERNARYNODE_TABLE                                                  \

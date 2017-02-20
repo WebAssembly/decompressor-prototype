@@ -18,11 +18,13 @@
 /* Implements a textual writer of filter s-expressions */
 
 #include "sexp/TextWriter.h"
-#include "stream/WriteUtils.h"
 
 #include <cctype>
 #define __STDC_FORMAT_MACROS 1
 #include <inttypes.h>
+
+#include "stream/WriteUtils.h"
+#include "utils/Casting.h"
 
 namespace wasm {
 

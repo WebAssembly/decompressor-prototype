@@ -19,17 +19,13 @@
 
 #include "sexp/Ast.h"
 
-#include "interp/IntFormats.h"
-#include "sexp/InflateAst.h"
-#include "sexp/TextWriter.h"
-#include "stream/ArrayReader.h"
-#include "stream/ReadBackedQueue.h"
-#include "utils/Defs.h"
-
 #include <algorithm>
-#include <cstring>
-#include <unordered_map>
-#include <unordered_set>
+
+#include "interp/IntFormats.h"
+#include "sexp/TextWriter.h"
+#include "stream/WriteUtils.h"
+#include "utils/Casting.h"
+#include "utils/Trace.h"
 
 namespace wasm {
 
@@ -1261,6 +1257,10 @@ AST_NARYNODE_TABLE
 AST_NARYNODE_TABLE
 #undef X
 
+SymbolNode* EvalNode::getCallName() const {
+  return dyn_cast<SymbolNode>(getKid(0));
+}
+
 bool EvalNode::validateNode(NodeVectorType& Parents) {
   const auto* Sym = dyn_cast<SymbolNode>(getKid(0));
   assert(Sym);
@@ -1279,6 +1279,10 @@ bool EvalNode::validateNode(NodeVectorType& Parents) {
     return false;
   }
   return true;
+}
+
+SymbolNode* SectionNode::getSymbol() const {
+  return dyn_cast<SymbolNode>(getKid(0));
 }
 
 SelectBaseNode::~SelectBaseNode() {

@@ -16,31 +16,26 @@
 
 // Defines an internal model of filter AST's.
 
-#ifndef DECOMPRESSOR_SRC_SEXP_AST_H
-#define DECOMPRESSOR_SRC_SEXP_AST_H
+#ifndef DECOMPRESSOR_SRC_SEXP_AST_H_
+#define DECOMPRESSOR_SRC_SEXP_AST_H_
+
+#include <map>
+#include <set>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
 #include "interp/IntFormats.h"
 #include "sexp/Ast.def"
 #include "sexp/NodeType.h"
 #include "sexp/PredefinedStrings.def"
-#include "stream/WriteUtils.h"
-#include "utils/Casting.h"
-#include "utils/Defs.h"
-#include "utils/initialized_ptr.h"
-#include "utils/Trace.h"
-
-#include <array>
-#include <functional>
-#include <limits>
-#include <memory>
-#include <map>
-#include <set>
-#include <string>
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
+#include "stream/ValueFormat.h"
 
 namespace wasm {
+
+namespace utils {
+class TraceClass;
+}  // end of namespace utils
 
 namespace filt {
 
@@ -722,4 +717,4 @@ class BinaryEvalNode : public UnaryNode {
 
 }  // end of namespace wasm
 
-#endif  // DECOMPRESSOR_SRC_SEXP_AST_H
+#endif  // DECOMPRESSOR_SRC_SEXP_AST_H_

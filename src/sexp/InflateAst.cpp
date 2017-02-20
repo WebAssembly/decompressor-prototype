@@ -18,7 +18,9 @@
 // AST algorithm.
 
 #include "sexp/InflateAst.h"
+
 #include "sexp/TextWriter.h"
+#include "utils/Casting.h"
 
 namespace wasm {
 
