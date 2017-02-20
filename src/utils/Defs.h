@@ -102,7 +102,6 @@ typedef const char* charstring;
 
 namespace decode {
 
-
 typedef size_t AddressType;
 typedef uint8_t ByteType;
 

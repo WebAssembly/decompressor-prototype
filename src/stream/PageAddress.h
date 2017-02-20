@@ -76,4 +76,4 @@ inline void resetAddress(AddressType& Addr) {
 
 }  // end of namespace wasm
 
-#endif // DECOMPRESSOR_SRC_STREAM_PAGE_ADDRES_H_
+#endif  // DECOMPRESSOR_SRC_STREAM_PAGE_ADDRES_H_

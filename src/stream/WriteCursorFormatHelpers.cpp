@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "interp/FormatHelpers-templates.cpp"
+#include "interp/FormatHelpers-templates.h"
 #include "stream/WriteCursor.h"
 
 namespace wasm {
@@ -23,69 +23,62 @@ namespace interp {
 
 namespace fmt {
 
-template
-void writeUint8<decode::WriteCursor>(uint8_t, decode::WriteCursor&);
+template void writeUint8<decode::WriteCursor>(uint8_t, decode::WriteCursor&);
 
-template
-void writeUint32<decode::WriteCursor>(uint32_t, decode::WriteCursor&);
+template void writeUint32<decode::WriteCursor>(uint32_t, decode::WriteCursor&);
 
-template
-void writeUint64<decode::WriteCursor>(uint64_t, decode::WriteCursor&);
+template void writeUint64<decode::WriteCursor>(uint64_t, decode::WriteCursor&);
 
-template
-void writeVarint32<decode::WriteCursor>(int32_t, decode::WriteCursor&);
+template void writeVarint32<decode::WriteCursor>(int32_t, decode::WriteCursor&);
 
-template
-void writeVarint64<decode::WriteCursor>(int64_t, decode::WriteCursor&);
+template void writeVarint64<decode::WriteCursor>(int64_t, decode::WriteCursor&);
 
-template
-void writeVaruint32<decode::WriteCursor>(uint32_t, decode::WriteCursor&);
+template void writeVaruint32<decode::WriteCursor>(uint32_t,
+                                                  decode::WriteCursor&);
 
-template
-void writeVaruint64<decode::WriteCursor>(uint64_t, decode::WriteCursor&);
+template void writeVaruint64<decode::WriteCursor>(uint64_t,
+                                                  decode::WriteCursor&);
 
-template
-void writeFixedVaruint32<decode::WriteCursor>(uint32_t, decode::WriteCursor&);
+template void writeFixedVaruint32<decode::WriteCursor>(uint32_t,
+                                                       decode::WriteCursor&);
 
-template
-void writeLEB128<uint32_t, decode::WriteCursor>(uint32_t, decode::WriteCursor&);
+template void writeLEB128<uint32_t, decode::WriteCursor>(uint32_t,
+                                                         decode::WriteCursor&);
 
 // TODO - factor out int32_t
-template
-void writePositiveLEB128<int32_t, decode::WriteCursor>(
-    int32_t, decode::WriteCursor&);
+template void writePositiveLEB128<int32_t, decode::WriteCursor>(
+    int32_t,
+    decode::WriteCursor&);
 
-template
-void writeNegativeLEB128<int32_t, decode::WriteCursor>(
-    int32_t Value, decode::WriteCursor& Pos);
+template void writeNegativeLEB128<int32_t, decode::WriteCursor>(
+    int32_t Value,
+    decode::WriteCursor& Pos);
 
-template
-void writeFixedLEB128<uint32_t, decode::WriteCursor>(
-    uint32_t, decode::WriteCursor&);
+template void writeFixedLEB128<uint32_t, decode::WriteCursor>(
+    uint32_t,
+    decode::WriteCursor&);
 
-template
-void writeFixed<uint32_t, decode::WriteCursor>(
-    uint32_t, decode::WriteCursor&);
+template void writeFixed<uint32_t, decode::WriteCursor>(uint32_t,
+                                                        decode::WriteCursor&);
 
-template
-void writeLEB128<uint64_t, decode::WriteCursor>(uint64_t, decode::WriteCursor&);
+template void writeLEB128<uint64_t, decode::WriteCursor>(uint64_t,
+                                                         decode::WriteCursor&);
 
-template
-void writePositiveLEB128<uint64_t, decode::WriteCursor>(
-    uint64_t, decode::WriteCursor&);
+template void writePositiveLEB128<uint64_t, decode::WriteCursor>(
+    uint64_t,
+    decode::WriteCursor&);
 
 // TODO - factor out int64_t
-template
-void writeNegativeLEB128<int64_t, decode::WriteCursor>(
-    int64_t, decode::WriteCursor&);
+template void writeNegativeLEB128<int64_t, decode::WriteCursor>(
+    int64_t,
+    decode::WriteCursor&);
 
-template
-void writeFixedLEB128<int64_t, decode::WriteCursor>(
-    int64_t, decode::WriteCursor&);
+template void writeFixedLEB128<int64_t, decode::WriteCursor>(
+    int64_t,
+    decode::WriteCursor&);
 
-template
-void writeFixed<uint64_t, decode::WriteCursor>(
-    uint64_t, decode::WriteCursor&);
+template void writeFixed<uint64_t, decode::WriteCursor>(uint64_t,
+                                                        decode::WriteCursor&);
 
 }  // end of namespace fmt
 
