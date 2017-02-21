@@ -67,20 +67,6 @@ BinaryEvalNode* SymbolTable::create<BinaryEvalNode>(Node* Kid) {
   return Nd;
 }
 
-template <>
-BinaryRejectNode* SymbolTable::create<BinaryRejectNode>() {
-  BinaryRejectNode* Nd = new BinaryRejectNode(*this);
-  Allocated->push_back(Nd);
-  return Nd;
-}
-
-BinaryRejectNode* SymbolTable::createBinaryReject(IntType Value,
-                                                  unsigned NumBits) {
-  BinaryRejectNode* Nd = new BinaryRejectNode(*this, Value, NumBits);
-  Allocated->push_back(Nd);
-  return Nd;
-}
-
 #define X(tag, NODE_DECLS)                      \
   template <>                                   \
   tag##Node* SymbolTable::create<tag##Node>() { \
@@ -917,7 +903,6 @@ bool IntegerNode::implementsClass(NodeType Type) {
     default:
       return false;
     case OpBinaryAccept:
-    case OpBinaryReject:
 #define X(tag, format, defval, mergable, NODE_DECLS) case Op##tag:
       AST_INTEGERNODE_TABLE
 #undef X
@@ -985,7 +970,7 @@ BinaryLeafNode::~BinaryLeafNode() {
 }
 
 bool BinaryLeafNode::implementsClass(NodeType Type) {
-  return Type == OpBinaryAccept || Type == OpBinaryReject;
+  return Type == OpBinaryAccept;
 }
 
 bool BinaryLeafNode::validateNode(NodeVectorType& Parents) {
@@ -1062,19 +1047,6 @@ BinaryAcceptNode::BinaryAcceptNode(SymbolTable& Symtab,
 }
 
 BinaryAcceptNode::~BinaryAcceptNode() {
-}
-
-BinaryRejectNode::BinaryRejectNode(SymbolTable& Symtab)
-    : BinaryLeafNode(Symtab, OpBinaryReject) {
-}
-
-BinaryRejectNode::BinaryRejectNode(SymbolTable& Symtab,
-                                   decode::IntType Value,
-                                   unsigned NumBits)
-    : BinaryLeafNode(Symtab, OpBinaryReject, Value, NumBits) {
-}
-
-BinaryRejectNode::~BinaryRejectNode() {
 }
 
 BinaryNode::BinaryNode(SymbolTable& Symtab,
@@ -1562,7 +1534,7 @@ utils::TraceClass& OpcodeNode::WriteRange::getTrace() const {
 
 BinaryEvalNode::BinaryEvalNode(SymbolTable& Symtab, Node* Encoding)
     : UnaryNode(Symtab, OpBinaryEval, Encoding),
-      NotFound(Symtab.create<BinaryRejectNode>()) {
+      NotFound(Symtab.create<ErrorNode>()) {
 }
 
 BinaryEvalNode::~BinaryEvalNode() {

@@ -48,9 +48,8 @@
 (literal 'varuint64'      (u8.const 0x26))
 (literal 'opcode'         (u8.const 0x27))
 (literal 'accept'         (u8.const 0x28))
-(literal 'reject'         (u8.const 0x29))
-(literal 'binary'         (u8.const 0x2a))
-(literal 'bin.eval'       (u8.const 0x2b))
+(literal 'binary'         (u8.const 0x29))
+(literal 'bin.eval'       (u8.const 0x2a))
 
 # Boolean expressions
 (literal 'and'            (u8.const 0x30))
@@ -158,7 +157,6 @@
     (case 'params'              (eval 'int.value' (varuint32)))
     (case 'peek'                (=> 'postorder.inst'))
     (case 'read'                (=> 'postorder.inst'))
-    (case 'reject'              (=> 'postorder.inst'))
     (case 'rename'              (=> 'postorder.inst'))
     (case 'section'             (=> 'postorder.inst'))
     (case 'sequence'            (eval 'nary.node'))

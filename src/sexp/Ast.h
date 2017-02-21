@@ -422,21 +422,6 @@ class BinaryAcceptNode FINAL : public BinaryLeafNode {
   static bool implementsClass(NodeType Type) { return Type == OpBinaryAccept; }
 };
 
-class BinaryRejectNode FINAL : public BinaryLeafNode {
-  BinaryRejectNode() = delete;
-  BinaryRejectNode(const BinaryRejectNode&) = delete;
-  BinaryRejectNode& operator=(const BinaryRejectNode&) = delete;
-
- public:
-  BinaryRejectNode(SymbolTable& Symtab);
-  BinaryRejectNode(SymbolTable& Symtab,
-                   decode::IntType Value,
-                   unsigned NumBits);
-  ~BinaryRejectNode() OVERRIDE;
-
-  static bool implementsClass(NodeType Type) { return Type == OpBinaryReject; }
-};
-
 class SymbolNode FINAL : public NullaryNode {
   SymbolNode() = delete;
   SymbolNode(const SymbolNode&) = delete;
@@ -710,7 +695,7 @@ class BinaryEvalNode : public UnaryNode {
 
  private:
   std::unordered_map<decode::IntType, const Node*> LookupMap;
-  BinaryRejectNode* NotFound;
+  Node* NotFound;
 };
 
 }  // end of namespace filt
