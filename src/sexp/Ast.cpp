@@ -42,7 +42,8 @@ void TraceClass::trace_node_ptr(const char* Name, const Node* Nd) {
   TextWriter Writer;
   Writer.writeAbbrev(File, Nd);
 }
-}
+
+}  // end of namespace utils.
 
 namespace filt {
 

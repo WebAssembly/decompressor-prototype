@@ -45,6 +45,7 @@ CasmWriter::CasmWriter()
     : MinimizeBlockSize(true),
       FreezeEofAtExit(true),
       ErrorsFound(false),
+      BitCompress(false),
       TraceWriter(false),
       TraceFlatten(false),
       TraceTree(false) {
@@ -58,7 +59,7 @@ void CasmWriter::writeBinary(std::shared_ptr<SymbolTable> Symtab,
     Trace->setTraceProgress(true);
     Flattener.setTrace(Trace);
   }
-  if (!Flattener.flatten())
+  if (!Flattener.flatten(BitCompress))
     ErrorsFound = true;
 }
 

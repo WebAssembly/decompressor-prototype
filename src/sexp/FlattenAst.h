@@ -35,6 +35,7 @@ class TraceClass;
 
 namespace filt {
 
+class BinaryEvalNode;
 class Node;
 class SectionSymbolTable;
 class SymbolTable;
@@ -50,7 +51,7 @@ class FlattenAst {
 
   ~FlattenAst();
 
-  bool flatten();
+  bool flatten(bool BitCompress = false);
 
   void setFreezeEofOnDestruct(bool Value) { FreezeEofOnDestruct = Value; }
 
@@ -66,12 +67,14 @@ class FlattenAst {
   bool FreezeEofOnDestruct;
   bool HasErrors;
   bool WrotePrimaryHeader;
+  bool BitCompress;
   std::shared_ptr<utils::TraceClass> Trace;
 
   void flattenNode(const Node* Nd);
   void reportError(charstring Message);
   void reportError(charstring Message, const Node* Nd);
   void freezeOutput();
+  bool binaryEvalEncode(const BinaryEvalNode* Eval);
 };
 
 }  // end of namespace filt

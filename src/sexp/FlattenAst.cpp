@@ -41,14 +41,16 @@ FlattenAst::FlattenAst(std::shared_ptr<IntStream> Output,
       SectionSymtab(utils::make_unique<SectionSymbolTable>(Symtab)),
       FreezeEofOnDestruct(true),
       HasErrors(false),
-      WrotePrimaryHeader(false) {
+      WrotePrimaryHeader(false),
+      BitCompress(false) {
 }
 
 FlattenAst::~FlattenAst() {
   freezeOutput();
 }
 
-bool FlattenAst::flatten() {
+bool FlattenAst::flatten(bool BitCompressValue) {
+  BitCompress = BitCompressValue;
   flattenNode(Symtab->getInstalledRoot());
   freezeOutput();
   return !HasErrors;
@@ -94,6 +96,12 @@ void FlattenAst::reportError(charstring Label, const Node* Nd) {
   HasErrors = true;
 }
 
+bool FlattenAst::binaryEvalEncode(const BinaryEvalNode* Nd) {
+  (void)Nd;
+  fprintf(stderr, "Sorry: BinaryEval bit encoding not implemented\n");
+  return false;
+}
+
 void FlattenAst::flattenNode(const Node* Nd) {
   if (HasErrors)
     return;
@@ -101,6 +109,7 @@ void FlattenAst::flattenNode(const Node* Nd) {
   TRACE(node_ptr, nullptr, Nd);
   switch (NodeType Opcode = Nd->getType()) {
     case NO_SUCH_NODETYPE:
+    case OpBinaryEvalBits:
     case OpUnknownSection: {
       reportError("Unexpected s-expression, can't write!");
       reportError("s-expression: ", Nd);
@@ -120,11 +129,14 @@ void FlattenAst::flattenNode(const Node* Nd) {
   }
       AST_INTEGERNODE_TABLE
 #undef X
+    case OpBinaryEval:
+      if (BitCompress && binaryEvalEncode(cast<BinaryEvalNode>(Nd)))
+        break;
+    // Not binary encoding, Intentionally fall to next case that
+    // will generate non-compressed form.
     case OpAnd:
     case OpBlock:
-    // TODO(karlschimpf): Compress BinaryAccept/Select into bitsequence?
     case OpBinaryAccept:
-    case OpBinaryEval:
     case OpBinarySelect:
     case OpBitwiseAnd:
     case OpBitwiseNegate:

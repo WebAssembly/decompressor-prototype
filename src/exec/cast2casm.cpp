@@ -22,6 +22,7 @@
 #include "sexp/Ast.h"
 #include "sexp/CasmReader.h"
 #include "sexp/CasmWriter.h"
+#include "sexp/TextWriter.h"
 #include "stream/FileWriter.h"
 #include "stream/ReadCursor.h"
 #include "stream/WriteBackedQueue.h"
@@ -99,7 +100,7 @@ class CodeGenerator {
   void generateFunctionFooter();
   void generateCreate(charstring NodeType);
   void generateReturnCreate(charstring NodeType);
-  size_t generateBadLocal();
+  size_t generateBadLocal(const Node* Nd);
   void generateArrayName() {
     puts(FunctionName);
     puts("Array");
@@ -186,7 +187,10 @@ void CodeGenerator::generateAlgorithmHeader() {
   puts("()");
 }
 
-size_t CodeGenerator::generateBadLocal() {
+size_t CodeGenerator::generateBadLocal(const Node* Nd) {
+  TextWriter Writer;
+  fprintf(stderr, "Unrecognized: ");
+  Writer.writeAbbrev(stderr, Nd);
   size_t Index = NextIndex++;
   ErrorsFound = true;
   generateLocalVar("Node", Index);
@@ -348,13 +352,15 @@ size_t CodeGenerator::generateNaryNode(charstring NodeType, const Node* Nd) {
 
 size_t CodeGenerator::generateNode(const Node* Nd) {
   if (Nd == nullptr)
-    return generateBadLocal();
+    return generateBadLocal(Nd);
 
   switch (Nd->getType()) {
     default:
-      return generateBadLocal();
+      return generateBadLocal(Nd);
     case OpAnd:
       return generateBinaryNode("AndNode", Nd);
+    case OpBit:
+      return generateNullaryNode("BitNode", Nd);
     case OpBitwiseAnd:
       return generateBinaryNode("BitwiseAndNode", Nd);
     case OpBitwiseNegate:
@@ -575,6 +581,7 @@ int main(int Argc, charstring Argv[]) {
   bool StripActions = false;
   bool StripLiterals = false;
   bool ShowSavedCast = false;
+  bool BitCompress = false;
   std::set<std::string> KeepActions;
   {
     ArgsParser Args("Converts compression algorithm from text to binary");
@@ -597,6 +604,12 @@ int main(int Argc, charstring Argv[]) {
 
                  .setLongName("expect-fail")
                  .setDescription("Succeed on failure/fail on success"));
+
+    ArgsParser::Optional<bool> BitCompressFlag(BitCompress);
+    Args.add(BitCompressFlag.setLongName("bit-compress")
+                 .setDescription(
+                     "Perform bit compresssion on binary opcode "
+                     "expressions"));
 
     ArgsParser::Toggle MinimizeBlockFlag(MinimizeBlockSize);
     Args.add(MinimizeBlockFlag.setDefault(true)
@@ -789,7 +802,8 @@ int main(int Argc, charstring Argv[]) {
     Writer.setTraceWriter(TraceWrite)
         .setTraceFlatten(TraceFlatten)
         .setTraceTree(TraceTree)
-        .setMinimizeBlockSize(MinimizeBlockSize);
+        .setMinimizeBlockSize(MinimizeBlockSize)
+        .setBitCompress(BitCompress);
     Writer.writeBinary(InputSymtab, OutputStream, AlgSymtab);
     if (Writer.hasErrors()) {
       fprintf(stderr, "Problems writing: %s\n", OutputFilename);
