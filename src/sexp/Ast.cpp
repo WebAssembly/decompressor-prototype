@@ -1300,6 +1300,13 @@ bool getCaseSelectorWidth(const Node* Nd, uint32_t& Width) {
       // Not allowed in opcode cases.
       describeNode("Non-fixed width opcode format", Nd);
       return false;
+    case OpBit:
+      Width = 1;
+      if (Width >= MaxOpcodeWidth) {
+        describeNode("Bit size not valid", Nd);
+        return false;
+      }
+      return true;
     case OpUint8:
     case OpUint32:
     case OpUint64:

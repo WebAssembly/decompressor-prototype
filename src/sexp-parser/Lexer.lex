@@ -213,6 +213,7 @@ letter	[a-zA-Z]
 "accept"          return Parser::make_ACCEPT(Driver.getLoc());
 "and"             return Parser::make_AND(Driver.getLoc());
 "binary"          return Parser::make_BINARY(Driver.getLoc());
+"bit"             return Parser::make_BIT(Driver.getLoc());
 "block"           return Parser::make_BLOCK(Driver.getLoc());
 "bitwise"         return Parser::make_BITWISE(Driver.getLoc());
 "case"            return Parser::make_CASE(Driver.getLoc());
