@@ -80,6 +80,7 @@ struct IntValue {
 %token ACCEPT        "accept"
 %token AND           "and"
 %token BINARY        "binary"
+%token BIT           "bit"
 %token BITWISE       "bitwise"
 %token BLOCK         "block"
 %token CASE          "case"
@@ -407,6 +408,9 @@ file_header_write
 fixed_format_directive
         : "(" "void" ")" {
             $$ = Driver.create<VoidNode>();
+          }
+        | "(" "bit" ")" {
+            $$ = Driver.create<BitNode>();
           }
         | "(" "uint8" ")" {
             $$ = Driver.create<Uint8Node>();
