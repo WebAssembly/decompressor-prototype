@@ -95,6 +95,9 @@ bool Reader::readBinary(const Node*, IntType& Value) {
 
 bool Reader::readValue(const filt::Node* Format, IntType& Value) {
   switch (Format->getType()) {
+    case OpBit:
+      Value = readBit();
+      return true;
     case OpUint8:
       Value = readUint8();
       return true;

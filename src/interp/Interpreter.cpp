@@ -851,6 +851,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
+          case OpBit:
           case OpUint32:
           case OpUint64:
           case OpUint8:

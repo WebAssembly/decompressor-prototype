@@ -33,6 +33,8 @@ ByteReadStream::~ByteReadStream() {
 
 IntType ByteReadStream::readValue(ReadCursor& Pos, const filt::Node* Format) {
   switch (Format->getType()) {
+    case OpBit:
+      return readBit(Pos);
     case OpUint32:
       return readUint32(Pos);
     case OpUint64:

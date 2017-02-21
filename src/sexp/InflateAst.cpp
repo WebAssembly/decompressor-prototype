@@ -161,10 +161,6 @@ bool InflateAst::writeVaruint64(uint64_t Value) {
   return write(Value);
 }
 
-bool InflateAst::writeValue(decode::IntType Value, const filt::Node*) {
-  return write(Value);
-}
-
 bool InflateAst::writeTypedValue(decode::IntType Value, interp::IntTypeFormat) {
   return write(Value);
 }
@@ -203,6 +199,8 @@ bool InflateAst::applyOp(IntType Op) {
       return buildUnary<BinaryEvalNode>();
     case OpBinarySelect:
       return buildBinary<BinarySelectNode>();
+    case OpBit:
+      return buildNullary<BitNode>();
     case OpBitwiseAnd:
       return buildBinary<BitwiseAndNode>();
     case OpBitwiseOr:

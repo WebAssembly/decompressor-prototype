@@ -150,6 +150,7 @@ void FlattenAst::flattenNode(const Node* Nd) {
     case OpLiteralUse:
     case OpUint32:
     case OpUint64:
+    case OpBit:
     case OpUint8:
     case OpVarint32:
     case OpVarint64:
