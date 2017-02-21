@@ -62,9 +62,9 @@
   X(Varuint64,         0x26, "varuint64",        nullptr,           0, 0)      \
   X(Opcode,            0x27, "opcode",           nullptr,           0, 0)      \
   X(BinaryAccept,      0x28, "accept",           nullptr,           0, 0)      \
-  X(BinaryReject,      0x29, "reject",           nullptr,           0, 0)      \
-  X(BinarySelect,      0x2a, "binary",           nullptr,           0, 0)      \
-  X(BinaryEval,        0x2b, "opcode",           "BinaryEval",      1, 0)      \
+  X(BinarySelect,      0x29, "binary",           nullptr,           0, 0)      \
+  X(BinaryEval,        0x2a, "opcode",           "BinaryEval",      1, 0)      \
+  X(Bit,               0x2b, "bit",              nullptr,           0, 0 )     \
                                                                                \
   /* Boolean Expressions */                                                    \
   X(And,               0x30, "and",              nullptr,           2, 0)      \
@@ -106,6 +106,7 @@
 
 //#define X(tag, NODE_DECLS)
 #define AST_NULLARYNODE_TABLE                                                  \
+  X(Bit,)                                                                      \
   X(Error,)                                                                    \
   X(LastRead,)                                                                 \
   X(Uint32,)                                                                   \

@@ -36,6 +36,10 @@ WriteStream::WriteStream(decode::StreamType Type) : Type(Type) {
 WriteStream::~WriteStream() {
 }
 
+void WriteStream::writeBit(uint8_t Value, WriteCursor& Pos) {
+  Pos.writeBit(Value);
+}
+
 void WriteStream::writeUint8(uint8_t Value, WriteCursor& Pos) {
   fmt::writeUint8(Value, Pos);
 }

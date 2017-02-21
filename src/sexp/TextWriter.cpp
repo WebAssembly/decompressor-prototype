@@ -185,7 +185,7 @@ void TextWriter::writeNode(const Node* Nd,
     if (!Int->isDefaultValue()) {
       fputc(' ', File);
       writeInt(File, Int->getValue(), Int->getFormat());
-      if (const auto* Accept = dyn_cast<BinaryLeafNode>(Int)) {
+      if (const auto* Accept = dyn_cast<BinaryAcceptNode>(Int)) {
         fputc(':', File);
         fprintf(File, "%u", Accept->getNumBits());
       }

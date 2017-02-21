@@ -43,6 +43,7 @@ class ReadStream : public std::enable_shared_from_this<ReadStream> {
   virtual ~ReadStream();
 
   // Hard coded reads.
+  uint8_t readBit(decode::ReadCursor& Pos);
   uint8_t readUint8(decode::ReadCursor& Pos);
   uint32_t readUint32(decode::ReadCursor& Pos);
   uint64_t readUint64(decode::ReadCursor& Pos);

@@ -40,7 +40,6 @@ class TraceClass;
 namespace filt {
 
 class BinaryAcceptNode;
-class BinaryRejectNode;
 class FileHeaderNode;
 class IntegerNode;
 class Node;
@@ -175,7 +174,6 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   template <typename T>
   T* create(Node* Nd1, Node* Nd2, Node* Nd3);
   BinaryAcceptNode* createBinaryAccept(decode::IntType Value, unsigned NumBits);
-  BinaryRejectNode* createBinaryReject(decode::IntType Value, unsigned NumBits);
 
   // Strips all callback actions from the algorithm, except for the names
   // specified. Returns the updated tree.
@@ -386,28 +384,7 @@ AST_INTEGERNODE_TABLE
 // bits used to reach this accept, and Value encodes the path (from leaf to
 // root) for the accept node. Note: The Value is unique for each accept, and
 // therefore is used as the (case) selector value.
-class BinaryLeafNode : public IntegerNode {
-  BinaryLeafNode() = delete;
-  BinaryLeafNode(const BinaryLeafNode&) = delete;
-  BinaryLeafNode& operator=(const BinaryLeafNode&) = delete;
-
- public:
-  BinaryLeafNode(SymbolTable& Symtab, NodeType Type);
-  BinaryLeafNode(SymbolTable& Symtab,
-                 NodeType Type,
-                 decode::IntType Value,
-                 unsigned NumBits);
-  ~BinaryLeafNode() OVERRIDE;
-  bool validateNode(NodeVectorType& Parents) OVERRIDE;
-  unsigned getNumBits() const { return NumBits; }
-
-  static bool implementsClass(NodeType Type);
-
- protected:
-  unsigned NumBits;
-};
-
-class BinaryAcceptNode FINAL : public BinaryLeafNode {
+class BinaryAcceptNode FINAL : public IntegerNode {
   BinaryAcceptNode() = delete;
   BinaryAcceptNode(const BinaryAcceptNode&) = delete;
   BinaryAcceptNode& operator=(const BinaryAcceptNode&) = delete;
@@ -418,23 +395,13 @@ class BinaryAcceptNode FINAL : public BinaryLeafNode {
                    decode::IntType Value,
                    unsigned NumBits);
   ~BinaryAcceptNode() OVERRIDE;
+  bool validateNode(NodeVectorType& Parents) OVERRIDE;
+  unsigned getNumBits() const { return NumBits; }
 
   static bool implementsClass(NodeType Type) { return Type == OpBinaryAccept; }
-};
 
-class BinaryRejectNode FINAL : public BinaryLeafNode {
-  BinaryRejectNode() = delete;
-  BinaryRejectNode(const BinaryRejectNode&) = delete;
-  BinaryRejectNode& operator=(const BinaryRejectNode&) = delete;
-
- public:
-  BinaryRejectNode(SymbolTable& Symtab);
-  BinaryRejectNode(SymbolTable& Symtab,
-                   decode::IntType Value,
-                   unsigned NumBits);
-  ~BinaryRejectNode() OVERRIDE;
-
-  static bool implementsClass(NodeType Type) { return Type == OpBinaryReject; }
+ protected:
+  unsigned NumBits;
 };
 
 class SymbolNode FINAL : public NullaryNode {
@@ -704,13 +671,13 @@ class BinaryEvalNode : public UnaryNode {
   bool validateNode(NodeVectorType& Parents) OVERRIDE;
 
   const Node* getEncoding(decode::IntType Value) const;
-  bool addEncoding(BinaryLeafNode* Encoding);
+  bool addEncoding(BinaryAcceptNode* Encoding);
 
   static bool implementsClass(NodeType Type) { return OpBinaryEval == Type; }
 
  private:
   std::unordered_map<decode::IntType, const Node*> LookupMap;
-  BinaryRejectNode* NotFound;
+  Node* NotFound;
 };
 
 }  // end of namespace filt

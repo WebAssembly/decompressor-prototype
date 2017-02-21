@@ -47,7 +47,7 @@ class BitReadCursor : public ReadCursor {
 
   bool atEob() OVERRIDE;
   ByteType readByte() OVERRIDE;
-  ByteType readBit();
+  ByteType readBit() OVERRIDE;
   void alignToByte();
 
   void describeDerivedExtensions(FILE* File, bool IncludeDetail) OVERRIDE;

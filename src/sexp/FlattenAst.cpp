@@ -125,7 +125,6 @@ void FlattenAst::flattenNode(const Node* Nd) {
     // TODO(karlschimpf): Compress BinaryAccept/Select into bitsequence?
     case OpBinaryAccept:
     case OpBinaryEval:
-    case OpBinaryReject:
     case OpBinarySelect:
     case OpBitwiseAnd:
     case OpBitwiseNegate:
@@ -151,6 +150,7 @@ void FlattenAst::flattenNode(const Node* Nd) {
     case OpLiteralUse:
     case OpUint32:
     case OpUint64:
+    case OpBit:
     case OpUint8:
     case OpVarint32:
     case OpVarint64:

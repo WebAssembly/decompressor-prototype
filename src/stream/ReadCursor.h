@@ -49,7 +49,8 @@ class ReadCursor : public Cursor {
   void popEobAddress();
 
   // Reads next byte. Returns zero if at end of file.
-  virtual uint8_t readByte();
+  virtual ByteType readByte();
+  virtual ByteType readBit();
 
   // Try to advance Distance bytes. Returns actual number of bytes advanced.  If
   // zero is returned (and Distance > 0), no more bytes are available to advance

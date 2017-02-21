@@ -53,6 +53,7 @@ class ByteReader : public Reader {
   virtual bool readAction(const filt::SymbolNode* Action) OVERRIDE;
   void readFillStart() OVERRIDE;
   void readFillMoreInput() OVERRIDE;
+  uint8_t readBit() OVERRIDE;
   uint8_t readUint8() OVERRIDE;
   uint32_t readUint32() OVERRIDE;
   uint64_t readUint64() OVERRIDE;

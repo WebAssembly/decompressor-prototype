@@ -632,7 +632,6 @@ void Interpreter::algorithmResume() {
         switch (Frame.Nd->getType()) {
           case NO_SUCH_NODETYPE:
           case OpBinaryAccept:
-          case OpBinaryReject:
           case OpBinarySelect:
           case OpParams:
           case OpLastSymbolIs:
@@ -852,6 +851,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
+          case OpBit:
           case OpUint32:
           case OpUint64:
           case OpUint8:

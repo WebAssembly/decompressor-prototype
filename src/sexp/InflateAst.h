@@ -56,7 +56,6 @@ class InflateAst : public interp::Writer {
   bool writeVarint64(int64_t Value) OVERRIDE;
   bool writeVaruint32(uint32_t Value) OVERRIDE;
   bool writeVaruint64(uint64_t Value) OVERRIDE;
-  bool writeValue(decode::IntType Value, const filt::Node* Format) OVERRIDE;
   bool writeTypedValue(decode::IntType Value,
                        interp::IntTypeFormat Format) OVERRIDE;
   bool writeHeaderValue(decode::IntType Value,

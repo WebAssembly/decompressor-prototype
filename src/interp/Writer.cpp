@@ -31,6 +31,10 @@ namespace interp {
 Writer::~Writer() {
 }
 
+bool Writer::writeBit(uint8_t Value) {
+  return writeVaruint64(Value & 0x1);
+}
+
 bool Writer::writeUint8(uint8_t Value) {
   return writeVaruint64(Value);
 }
@@ -119,6 +123,9 @@ bool Writer::writeValue(decode::IntType Value, const filt::Node* Format) {
   // Note: We pass through virtual functions to force any applicable cast
   // conversions.
   switch (Format->getType()) {
+    case OpBit:
+      writeBit(Value);
+      return true;
     case OpUint8:
       writeUint8(Value);
       return true;

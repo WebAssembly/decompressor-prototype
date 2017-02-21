@@ -39,7 +39,7 @@ class BitWriteCursor : public WriteCursor {
   void assign(const BitWriteCursor& C);
   void swap(BitWriteCursor& C);
   void writeByte(ByteType Byte) OVERRIDE;
-  void writeBit(ByteType Bit);
+  void writeBit(ByteType Bit) OVERRIDE;
   void alignToByte();
 
   BitWriteCursor& operator=(const BitWriteCursor& C) {

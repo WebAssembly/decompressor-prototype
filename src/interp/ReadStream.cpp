@@ -32,6 +32,10 @@ namespace interp {
 ReadStream::~ReadStream() {
 }
 
+uint8_t ReadStream::readBit(ReadCursor& Pos) {
+  return Pos.readBit();
+}
+
 uint8_t ReadStream::readUint8(ReadCursor& Pos) {
   return fmt::readUint8(Pos);
 }
