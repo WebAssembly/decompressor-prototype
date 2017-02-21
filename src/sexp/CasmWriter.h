@@ -72,6 +72,11 @@ class CasmWriter {
     return *this;
   }
 
+  CasmWriter& setBitCompress(bool Value) {
+    BitCompress = Value;
+    return *this;
+  }
+
   CasmWriter& setTraceWriter(bool Value) {
     TraceWriter = Value;
     return *this;
@@ -91,6 +96,7 @@ class CasmWriter {
   bool MinimizeBlockSize;
   bool FreezeEofAtExit;
   bool ErrorsFound;
+  bool BitCompress;
   bool TraceWriter;
   bool TraceFlatten;
   bool TraceTree;

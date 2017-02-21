@@ -65,6 +65,8 @@
   X(BinarySelect,      0x29, "binary",           nullptr,           0, 0)      \
   X(BinaryEval,        0x2a, "opcode",           "BinaryEval",      1, 0)      \
   X(Bit,               0x2b, "bit",              nullptr,           0, 0 )     \
+  /* Temporary until fully implemented */                                      \
+  X(BinaryEvalBits,    0x2c, "opcode.bits"    , nullptr,           0, 0)       \
                                                                                \
   /* Boolean Expressions */                                                    \
   X(And,               0x30, "and",              nullptr,           2, 0)      \

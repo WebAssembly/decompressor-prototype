@@ -50,6 +50,7 @@
 (literal 'accept'         (u8.const 0x28))
 (literal 'binary'         (u8.const 0x29))
 (literal 'bin.eval'       (u8.const 0x2a))
+(literal 'bit'            (u8.const 0x2b))
 
 # Boolean expressions
 (literal 'and'            (u8.const 0x30))
@@ -119,6 +120,14 @@
   (=> 'nary.inst')
 )
 
+(define 'opcode.node' (params)
+  (loop (seq (varuint32) (=> 'opcode.begin'))
+    (bit)
+    (=> 'opcode.bit')
+  )
+  (=> 'opcode.inst')
+)
+
 (define 'node' (params)
   (switch (uint8)
     (error)
@@ -126,6 +135,7 @@
     (case 'and'                 (=> 'postorder.inst'))
     (case 'binary'              (=> 'postorder.inst'))
     (case 'bin.eval'            (=> 'postorder.inst'))
+    (case 'bit'                 (=> 'postorder.inst'))
     (case 'bitwise.and'         (=> 'postorder.inst'))
     (case 'bitwise.negate'      (=> 'postorder.inst'))
     (case 'bitwise.or'          (=> 'postorder.inst'))
@@ -152,6 +162,7 @@
     (case 'map'                 (eval 'nary.node'))
     (case 'not'                 (=> 'postorder.inst'))
     (case 'opcode'              (eval 'nary.node'))
+    # (case 'opcode'              (eval 'opcode.node'))
     (case 'or'                  (=> 'postorder.inst'))
     (case 'param'               (eval 'int.value' (varuint32)))
     (case 'params'              (eval 'int.value' (varuint32)))
