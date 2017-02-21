@@ -65,12 +65,17 @@ void ReadCursor::popEobAddress() {
   updateGuaranteedBeforeEob();
 }
 
-uint8_t ReadCursor::readByteAfterReadFill() {
+ByteType ReadCursor::readByteAfterReadFill() {
   bool atEof = isIndexAtEndOfPage() && !readFillBuffer();
   updateGuaranteedBeforeEob();
   if (atEof)
     return 0;
   return readOneByte();
+}
+
+ByteType ReadCursor::readBit() {
+  fail();
+  return 0;
 }
 
 size_t ReadCursor::advance(size_t Distance) {
@@ -87,14 +92,14 @@ size_t ReadCursor::advance(size_t Distance) {
   return DistanceMoved;
 }
 
-uint8_t ReadCursor::readByte() {
+ByteType ReadCursor::readByte() {
   return (CurAddress < GuaranteedBeforeEob) ? readOneByte()
                                             : readByteAfterReadFill();
 }
 
-uint8_t ReadCursor::readOneByte() {
+ByteType ReadCursor::readOneByte() {
   assert(CurPage);
-  uint8_t Byte = *getBufferPtr();
+  ByteType Byte = *getBufferPtr();
   ++CurAddress;
   return Byte;
 }

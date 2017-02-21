@@ -37,6 +37,7 @@ class WriteCursorBase : public Cursor {
   ~WriteCursorBase() OVERRIDE;
   // Writes next byte. Fails if at end of file.
   virtual void writeByte(ByteType Byte);
+  virtual void writeBit(ByteType Bit);
 
   WriteCursorBase& operator=(const WriteCursorBase& C) {
     assign(C);

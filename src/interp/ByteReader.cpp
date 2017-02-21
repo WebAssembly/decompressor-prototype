@@ -165,7 +165,7 @@ void ByteReader::readFillMoreInput() {
 }
 
 uint8_t ByteReader::readBit() {
-  return ReadPos.readBit();
+  return Input->readBit(ReadPos);
 }
 
 uint8_t ByteReader::readUint8() {

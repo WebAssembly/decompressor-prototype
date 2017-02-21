@@ -67,7 +67,7 @@ decode::StreamType ByteWriter::getStreamType() const {
 }
 
 bool ByteWriter::writeBit(uint8_t Value) {
-  WritePos.writeBit(uint8_t(Value & 0x1));
+  Stream->writeBit(Value, WritePos);
   return WritePos.isQueueGood();
 }
 

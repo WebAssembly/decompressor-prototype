@@ -48,6 +48,10 @@ void WriteCursorBase::writeByte(ByteType Byte) {
     writeFillWriteByte(Byte);
 }
 
+void WriteCursorBase::writeBit(ByteType Bit) {
+  fail();
+}
+
 void WriteCursorBase::writeOneByte(ByteType Byte) {
   *getBufferPtr() = Byte;
   ++CurAddress;

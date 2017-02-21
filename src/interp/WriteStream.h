@@ -41,6 +41,7 @@ class WriteStream : public std::enable_shared_from_this<WriteStream> {
 
  public:
   virtual ~WriteStream();
+  void writeBit(uint8_t Value, decode::WriteCursor& Pos);
   void writeUint8(uint8_t Value, decode::WriteCursor& Pos);
   void writeUint32(uint32_t Value, decode::WriteCursor& Pos);
   void writeInt32(int32_t Value, decode::WriteCursor& Pos) {
