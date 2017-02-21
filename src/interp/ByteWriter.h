@@ -43,6 +43,7 @@ class ByteWriter : public Writer {
   void setPos(const decode::BitWriteCursor& NewPos);
   void reset() OVERRIDE;
   decode::StreamType getStreamType() const OVERRIDE;
+  bool writeBit(uint8_t Value) OVERRIDE;
   bool writeUint8(uint8_t Value) OVERRIDE;
   bool writeUint32(uint32_t Value) OVERRIDE;
   bool writeUint64(uint64_t Value) OVERRIDE;

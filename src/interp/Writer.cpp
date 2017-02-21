@@ -31,6 +31,10 @@ namespace interp {
 Writer::~Writer() {
 }
 
+bool Writer::writeBit(uint8_t Value) {
+  return writeVaruint64(Value & 0x1);
+}
+
 bool Writer::writeUint8(uint8_t Value) {
   return writeVaruint64(Value);
 }

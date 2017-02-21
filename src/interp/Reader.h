@@ -66,6 +66,7 @@ class Reader : public std::enable_shared_from_this<Reader> {
   virtual void readFillStart() = 0;
   virtual void readFillMoreInput() = 0;
   // Hard coded reads.
+  virtual uint8_t readBit();
   virtual uint8_t readUint8();
   virtual uint32_t readUint32();
   virtual uint64_t readUint64();

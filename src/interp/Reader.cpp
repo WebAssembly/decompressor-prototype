@@ -60,28 +60,32 @@ std::shared_ptr<TraceClass> Reader::getTracePtr() {
 void Reader::reset() {
 }
 
+uint8_t Reader::readBit() {
+  return readVaruint64() & 0x1;
+}
+
 uint8_t Reader::readUint8() {
-  return readVaruint64();
+  return uint8_t(readVaruint64());
 }
 
 uint32_t Reader::readUint32() {
-  return readVaruint64();
+  return uint32_t(readVaruint64());
 }
 
 uint64_t Reader::readUint64() {
-  return readVaruint64();
+  return uint64_t(readVaruint64());
 }
 
 int32_t Reader::readVarint32() {
-  return readVaruint64();
+  return int32_t(readVaruint64());
 }
 
 int64_t Reader::readVarint64() {
-  return readVaruint64();
+  return int64_t(readVaruint64());
 }
 
 uint32_t Reader::readVaruint32() {
-  return readVaruint64();
+  return uint32_t(readVaruint64());
 }
 
 bool Reader::readBinary(const Node*, IntType& Value) {

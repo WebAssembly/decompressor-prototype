@@ -164,6 +164,10 @@ void ByteReader::readFillMoreInput() {
   FillCursor.advance(PageSize);
 }
 
+uint8_t ByteReader::readBit() {
+  return ReadPos.readBit();
+}
+
 uint8_t ByteReader::readUint8() {
   return Input->readUint8(ReadPos);
 }
