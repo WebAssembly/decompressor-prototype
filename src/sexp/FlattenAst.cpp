@@ -19,6 +19,8 @@
 
 #include "sexp/FlattenAst.h"
 
+#include <algorithm>
+
 #include "binary/SectionSymbolTable.h"
 #include "interp/IntWriter.h"
 #include "sexp/Ast.h"
@@ -97,9 +99,38 @@ void FlattenAst::reportError(charstring Label, const Node* Nd) {
 }
 
 bool FlattenAst::binaryEvalEncode(const BinaryEvalNode* Nd) {
-  (void)Nd;
-  fprintf(stderr, "Sorry: BinaryEval bit encoding not implemented\n");
-  return false;
+  TRACE_METHOD("binaryEValEncode");
+  // Build a (reversed) postorder sequence of nodes, and then reverse.
+  std::vector<uint8_t> PostorderEncoding;
+  std::vector<Node*> Frontier;
+  Frontier.push_back(Nd->getKid(0));
+  while (!Frontier.empty()) {
+    Node* Nd = Frontier.back();
+    Frontier.pop_back();
+    switch (Nd->getType()) {
+      default:
+        // Not suitable for bit encoding.
+        return false;
+      case OpBinarySelect:
+        PostorderEncoding.push_back(1);
+        break;
+      case OpBinaryAccept:
+        PostorderEncoding.push_back(0);
+        break;
+    }
+    for (int i = 0; i < Nd->getNumKids(); ++i)
+      Frontier.push_back(Nd->getKid(i));
+  }
+  std::reverse(PostorderEncoding.begin(), PostorderEncoding.end());
+  // Can bit encode tree (1 => BinaryEvalNode, 0 => BinaryAcceptNode).
+  Writer->write(OpBinaryEvalBits);
+  TRACE(size_t, "NumBIts", PostorderEncoding.size());
+  Writer->write(PostorderEncoding.size());
+  for (uint8_t Val : PostorderEncoding) {
+    TRACE(uint8_t, "bit", Val);
+    Writer->writeBit(Val);
+  }
+  return true;
 }
 
 void FlattenAst::flattenNode(const Node* Nd) {
