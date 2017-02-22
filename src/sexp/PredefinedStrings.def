@@ -18,6 +18,9 @@
 //#define X(tag, name)
 #define PREDEFINED_SYMBOLS_TABLE                                               \
 X(Align, "align") \
+X(Binary_begin, "binary.begin") \
+X(Binary_bit, "binary.bit") \
+X(Binary_end, "binary.end") \
 X(Block_enter, "block.enter") \
 X(Block_enter_readonly, "block.enter.readonly") \
 X(Block_enter_writeonly, "block.enter.writeonly") \

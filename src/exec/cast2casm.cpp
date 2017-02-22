@@ -570,6 +570,8 @@ int main(int Argc, charstring Argv[]) {
   charstring AlgorithmFilename = nullptr;
   bool MinimizeBlockSize = false;
   bool Verbose = false;
+  bool TraceInputTree = false;
+  bool TraceAlgorithm = false;
   bool TraceFlatten = false;
   bool TraceLexer = false;
   bool TraceParser = false;
@@ -578,6 +580,7 @@ int main(int Argc, charstring Argv[]) {
   charstring FunctionName = nullptr;
   bool UseArrayImpl = false;
   bool HeaderFile;
+  bool StripAll = false;
   bool StripActions = false;
   bool StripLiterals = false;
   bool ShowSavedCast = false;
@@ -634,6 +637,15 @@ int main(int Argc, charstring Argv[]) {
         VerboseFlag.setShortName('v').setLongName("verbose").setDescription(
             "Show progress and tree written to binary file"));
 
+    ArgsParser::Optional<bool> TraceInputTreeFlag(TraceInputTree);
+    Args.add(TraceInputTreeFlag.setLongName("verbose=input")
+                 .setDescription("Show generated AST from reading input"));
+
+    ArgsParser::Optional<bool> TraceAlgorithmFlag(TraceAlgorithm);
+    Args.add(
+        TraceAlgorithmFlag.setLongName("verbose=algorithm")
+            .setDescription("Show algorithm used to generate compressed file"));
+
     ArgsParser::Optional<bool> TraceFlattenFlag(TraceFlatten);
     Args.add(TraceFlattenFlag.setLongName("verbose=flatten")
                  .setDescription("Show how algorithms are flattened"));
@@ -679,6 +691,10 @@ int main(int Argc, charstring Argv[]) {
         "of implementatoin file (only applies when "
         "'--function Name' is specified)"));
 
+    ArgsParser::Optional<bool> StripAllFlag(StripAll);
+    Args.add(StripAllFlag.setShortName('s').setLongName("strip").setDescription(
+        "Apply all strip actions to input"));
+
     ArgsParser::Optional<bool> StripActionsFlag(StripActions);
     Args.add(StripActionsFlag.setLongName("strip-actions")
                  .setDescription("Remove callback actions from input."));
@@ -712,6 +728,11 @@ int main(int Argc, charstring Argv[]) {
     // Be sure to update implications!
     if (TraceTree)
       TraceWrite = true;
+
+    if (StripAll) {
+      StripActions = true;
+      StripLiterals = true;
+    }
 
     // TODO(karlschimpf) Extend ArgsParser to be able to return option
     // name so that we don't have hard-coded dependency.
@@ -748,7 +769,10 @@ int main(int Argc, charstring Argv[]) {
   }
   if (StripLiterals)
     InputSymtab->stripLiterals();
-
+  if (TraceInputTree) {
+    TextWriter Writer;
+    Writer.write(stderr, InputSymtab.get());
+  }
   if (Verbose) {
     if (AlgorithmFilename)
       fprintf(stderr, "Reading algorithms file: %s\n", AlgorithmFilename);
@@ -771,6 +795,11 @@ int main(int Argc, charstring Argv[]) {
   } else {
     AlgSymtab = getAlgcasm0x0Symtab();
 #endif
+  }
+
+  if (TraceAlgorithm) {
+    TextWriter Writer;
+    Writer.write(stderr, AlgSymtab.get());
   }
 
   if (ShowSavedCast)

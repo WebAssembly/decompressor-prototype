@@ -339,6 +339,27 @@ bool InflateAst::writeAction(const filt::SymbolNode* Action) {
 #endif
   PredefinedSymbol Name = Action->getPredefinedSymbol();
   switch (Name) {
+    case PredefinedSymbol::Binary_begin:
+      // TODO(karlschimpf): Can we remove AstMarkers?
+      AstMarkers.push(Asts.size());
+      return true;
+    case PredefinedSymbol::Binary_bit:
+      switch (ValuesTop) {
+        case 0:
+          Values.push(OpBinaryAccept);
+          return buildNullary<BinaryAcceptNode>();
+        case 1:
+          Values.push(OpBinaryEval);
+          return buildBinary<BinarySelectNode>();
+        default:
+          fprintf(stderr, "Binary encoding Value not 0/1: %" PRIuMAX "\n",
+                  uintmax_t(ValuesTop));
+          return failWriteActionMalformed();
+      }
+      WASM_RETURN_UNREACHABLE(false);
+    case PredefinedSymbol::Binary_end:
+      Values.push(OpBinaryEval);
+      return buildUnary<BinaryEvalNode>();
     case PredefinedSymbol::Block_enter:
     case PredefinedSymbol::Block_exit:
       return true;

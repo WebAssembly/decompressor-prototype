@@ -531,7 +531,7 @@ $(ALG_GEN_SRCS): $(ALG_GENDIR)/%.cast: $(ALG_SRCDIR)/%.cast
 $(ALG_GEN_H_SRCS): $(ALG_GENDIR)/%.h: $(ALG_GENDIR)/%.cast \
 		$(BUILD_EXECDIR_BOOT)/cast2casm
 	$(BUILD_EXECDIR_BOOT)/cast2casm -a $(ALG_GENDIR_ALG) \
-		$< -o $@ --header --function \
+		$< -o $@ --header --strip-literals --function \
 		$(patsubst $(ALG_GENDIR)/%.cast, getAlg%Symtab, $<)
 
 $(ALG_GEN_CPP_SRCS): $(ALG_GENDIR)/%.cpp: $(ALG_GENDIR)/%.cast \
@@ -540,7 +540,7 @@ $(ALG_GEN_CPP_SRCS): $(ALG_GENDIR)/%.cpp: $(ALG_GENDIR)/%.cast \
 		$< -o $@ --strip-literals --function \
 		$(patsubst $(ALG_GENDIR)/%.cast, getAlg%Symtab, $<) \
 		$(if $(call eq, "$(ALG_GENDIR)/casm0x0.cast", "$<") \
-                      ,  , --strip-actions --array)
+                      ,  , --array)
 
 -include $(foreach dep,$(ALG_GEN_CPP_SRCS:.cpp=.d),$(ALG_OBJDIR)/$(dep))
 
@@ -1133,7 +1133,7 @@ $(TEST_CASM_WASM_W_FILES): $(TEST_SRCS_DIR)/%.wasm-w: $(TEST_SRCS_DIR)/%.df \
 		$(BUILD_EXECDIR)/cast2casm
 	rm -rf $@; $(BUILD_EXECDIR)/cast2casm -m $< -o $@
 
-$(TEST_CASM_DF_OUT_FILES): $(TEST_SRCS_DIR)/%.df-out: $(TEST_SRCS_DIR)/%.wasm \
+$(TEST_CASM_DF_OUT_FILES): $(TEST_SRCS_DIR)/%.df-out: $(TEST_SRCS_DIR)/%.df \
 		$(BUILD_EXECDIR)/casm2cast
 	rm -rf $@; $(BUILD_EXECDIR)/casm2cast $< -o $@
 
