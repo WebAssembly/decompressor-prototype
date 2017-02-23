@@ -94,6 +94,7 @@ const BitWriteCursor IntCompressor::writeCodeOutput(
       .setTraceTree(MyFlags.TraceWritingCodeOutput)
       .setMinimizeBlockSize(MyFlags.MinimizeCodeSize)
       .setFreezeEofAtExit(false)
+      .setBitCompress(MyFlags.BitCompressOpcodes)
       .writeBinary(Symtab, Output);
 }
 

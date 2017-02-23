@@ -46,6 +46,7 @@ CompressionFlags::CompressionFlags()
       MinimizeCodeSize(true),
       UseHuffmanEncoding(false),
       TrimOverriddenPatterns(false),
+      BitCompressOpcodes(false),
       ReassignAbbreviations(true),
       DefaultFormat(IntTypeFormat::Varint64),
       LoopSizeFormat(IntTypeFormat::Varuint64),

@@ -133,7 +133,9 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   SymbolTable& operator=(const SymbolTable&) = delete;
 
  public:
+  // Use std::make_shared() to build.
   explicit SymbolTable();
+  explicit SymbolTable(std::shared_ptr<SymbolTable> EnclosingScope);
   ~SymbolTable();
   // Gets existing symbol if known. Otherwise returns nullptr.
   SymbolNode* getSymbol(const std::string& Name);
@@ -191,6 +193,7 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   void describe(FILE* Out);
 
  private:
+  std::shared_ptr<SymbolTable> EnclosingScope;
   std::vector<Node*>* Allocated;
   std::shared_ptr<utils::TraceClass> Trace;
   Node* Root;

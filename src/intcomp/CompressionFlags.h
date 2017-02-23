@@ -56,6 +56,7 @@ struct CompressionFlags {
   bool MinimizeCodeSize;
   bool UseHuffmanEncoding;
   bool TrimOverriddenPatterns;
+  bool BitCompressOpcodes;
   bool ReassignAbbreviations;
   interp::IntTypeFormat DefaultFormat;
   interp::IntTypeFormat LoopSizeFormat;

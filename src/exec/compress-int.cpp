@@ -74,10 +74,21 @@ int main(int Argc, const char* Argv[]) {
     ArgsParser::Optional<bool> TraceHuffmanAssignmentsFlag(
         MyCompressionFlags.TraceHuffmanAssignments);
     Args.add(
-        TraceHuffmanAssignmentsFlag.setLongName("verbose=Huffman-assignments")
+        TraceHuffmanAssignmentsFlag
+        .setDefault(true)
+            .setLongName("verbose=Huffman-assignments")
             .setDescription(
                 "Show defined Huffman encoding assignments for "
                 "to use for pattern abbreviations"));
+
+    ArgsParser::Optional<bool> TraceBitCompressOpcodesFlag(
+        MyCompressionFlags.BitCompressOpcodes);
+    Args.add(
+        TraceBitCompressOpcodesFlag
+        .setDefault(true)
+        .setLongName("bit-compress")
+        .setDescription(
+            "Perform bit compresssion on binary opcode expressions"));
 
     ArgsParser::Optional<size_t> CountCutoffFlag(
         MyCompressionFlags.CountCutoff);
@@ -146,7 +157,9 @@ int main(int Argc, const char* Argv[]) {
 
     ArgsParser::Toggle TrimOverriddenPatternsFlag(
         MyCompressionFlags.TrimOverriddenPatterns);
-    Args.add(TrimOverriddenPatternsFlag.setLongName("trim").setDescription(
+    Args.add(TrimOverriddenPatternsFlag
+             .setDefault(true)
+             .setLongName("trim").setDescription(
         "Toggles removing patterns if already implied by previous patterns"));
 
     ArgsParser::Optional<bool> TraceReadingInputFlag(

@@ -456,16 +456,24 @@ void SymbolNode::installCaches(NodeVectorType& AdditionalNodes) {
     AdditionalNodes.push_back(LiteralDefinition);
 }
 
+SymbolTable::SymbolTable(std::shared_ptr<SymbolTable> EnclosingScope)
+    : EnclosingScope(EnclosingScope) {
+}
+
 SymbolTable::SymbolTable()
-    // TODO(karlschimpf) Switch Alloc to an ArenaAllocator once working.
+#if 0
     // TODO(karlschimpf) Figure out why we can't deallocate Allocated!
     : Allocated(new std::vector<Node*>()),
       Root(nullptr),
       TargetHeader(nullptr),
       Error(nullptr),
       NextCreationIndex(0),
-      Predefined(new std::vector<SymbolNode*>()) {
+      Predefined(new std::vector<SymbolNode*>())
+#endif
+{
+#if 0
   Error = create<ErrorNode>();
+#endif
   init();
 }
 
@@ -504,6 +512,14 @@ void SymbolTable::deallocateNodes() {
 }
 
 void SymbolTable::init() {
+#if 1
+  Allocated = new std::vector<Node*>();
+  Root = nullptr;
+  TargetHeader = nullptr;
+  NextCreationIndex = 0;
+  Predefined = new std::vector<SymbolNode*>();
+  Error = create<ErrorNode>();
+#endif
   Predefined->reserve(NumPredefinedSymbols);
   for (size_t i = 0; i < NumPredefinedSymbols; ++i) {
     SymbolNode* Nd = getSymbolDefinition(PredefinedName[i]);
