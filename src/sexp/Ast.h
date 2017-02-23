@@ -140,7 +140,7 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   // Gets existing symbol if known. Otherwise returns nullptr.
   SymbolNode* getSymbol(const std::string& Name);
   SymbolNode* getPredefined(PredefinedSymbol Sym) {
-    return (*Predefined)[uint32_t(Sym)];
+    return Predefined[uint32_t(Sym)];
   }
   // Gets existing symbol if known. Otherwise returns newly created symbol.
   // Used to keep symbols unique within filter s-expressions.
@@ -194,7 +194,7 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
 
  private:
   std::shared_ptr<SymbolTable> EnclosingScope;
-  std::vector<Node*>* Allocated;
+  std::vector<Node*> Allocated;
   std::shared_ptr<utils::TraceClass> Trace;
   Node* Root;
   const FileHeaderNode* TargetHeader;
@@ -202,8 +202,7 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   int NextCreationIndex;
   std::map<std::string, SymbolNode*> SymbolMap;
   std::map<IntegerValue, IntegerNode*> IntMap;
-  // TODO(karlschimpf) Figure out why vector destroy not working.
-  std::vector<SymbolNode*>* Predefined;
+  std::vector<SymbolNode*> Predefined;
   CallbackNode* BlockEnterCallback;
   CallbackNode* BlockExitCallback;
 
