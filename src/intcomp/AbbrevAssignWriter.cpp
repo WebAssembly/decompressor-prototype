@@ -180,11 +180,12 @@ AbbrevAssignWriter::AbbrevAssignWriter(
     size_t BufSize,
     bool AssumeByteAlignment,
     const CompressionFlags& MyFlags)
-    : MyFlags(MyFlags),
+    : Writer(false),
+      MyFlags(MyFlags),
       Root(Root),
       Assignments(Assignments),
       EncodingRoot(EncodingRoot),
-      Writer(Output),
+      OutWriter(Output),
       Buffer(BufSize),
       AssumeByteAlignment(AssumeByteAlignment),
       ProgressCount(0) {
@@ -227,7 +228,7 @@ void AbbrevAssignWriter::forwardOtherValue(IntType Value) {
 
 void AbbrevAssignWriter::setTrace(std::shared_ptr<TraceClass> Trace) {
   Writer::setTrace(Trace);
-  Writer.setTrace(Trace);
+  OutWriter.setTrace(Trace);
 }
 
 StreamType AbbrevAssignWriter::getStreamType() const {
@@ -297,44 +298,40 @@ bool AbbrevAssignWriter::flushValues() {
         return false;
       case ValueType::Abbreviation: {
         AbbrevValue* Abbrev = cast<AbbrevValue>(Value);
-        Writer.write(Abbrev->getAbbreviation()->getAbbrevIndex());
+        OutWriter.write(Abbrev->getAbbreviation()->getAbbrevIndex());
         break;
       }
       case ValueType::Default: {
         DefaultValue* Default = cast<DefaultValue>(Value);
-        Writer.write(Default->getValue());
+        OutWriter.write(Default->getValue());
         break;
       }
       case ValueType::Loop: {
         LoopValue* Loop = cast<LoopValue>(Value);
-        Writer.write(Loop->getValue());
+        OutWriter.write(Loop->getValue());
       }
     }
   }
-  return Writer.writeFreezeEof();
+  return OutWriter.writeFreezeEof();
 }
 
 bool AbbrevAssignWriter::writeHeaderValue(decode::IntType Value,
                                           interp::IntTypeFormat Format) {
-  return Writer.writeHeaderValue(Value, Format);
+  return OutWriter.writeHeaderValue(Value, Format);
 }
 
-bool AbbrevAssignWriter::writeAction(const filt::SymbolNode* Action) {
-  switch (Action->getPredefinedSymbol()) {
-    case PredefinedSymbol::Block_enter:
-      writeUntilBufferEmpty();
-      flushDefaultValues();
-      forwardAbbrev(Root->getBlockEnter());
-      return true;
-    case PredefinedSymbol::Block_exit:
-      writeUntilBufferEmpty();
-      flushDefaultValues();
-      forwardAbbrev(Root->getBlockExit());
-      return true;
-    default:
-      // There should not be any other actions!!
-      return false;
-  }
+bool AbbrevAssignWriter::writeBlockEnter() {
+  writeUntilBufferEmpty();
+  flushDefaultValues();
+  forwardAbbrev(Root->getBlockEnter());
+  return true;
+}
+
+bool AbbrevAssignWriter::writeBlockExit() {
+  writeUntilBufferEmpty();
+  flushDefaultValues();
+  forwardAbbrev(Root->getBlockExit());
+  return true;
 }
 
 void AbbrevAssignWriter::bufferValue(IntType Value) {

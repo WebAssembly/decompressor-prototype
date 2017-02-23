@@ -30,7 +30,8 @@ using namespace utils;
 namespace interp {
 
 IntReader::IntReader(std::shared_ptr<IntStream> Input)
-    : Pos(Input),
+    : Reader(true),
+      Pos(Input),
       Input(Input),
       HeaderIndex(0),
       StillAvailable(0),
@@ -100,17 +101,12 @@ bool IntReader::processedInputCorrectly() {
   return Pos.atEnd();
 }
 
-bool IntReader::readAction(const SymbolNode* Action) {
-  switch (Action->getPredefinedSymbol()) {
-    case PredefinedSymbol::Block_enter:
-    case PredefinedSymbol::Block_enter_readonly:
-      return Pos.openBlock();
-    case PredefinedSymbol::Block_exit:
-    case PredefinedSymbol::Block_exit_readonly:
-      return Pos.closeBlock();
-    default:
-      return true;
-  }
+bool IntReader::readBlockEnter() {
+  return Pos.openBlock();
+}
+
+bool IntReader::readBlockExit() {
+  return Pos.closeBlock();
 }
 
 void IntReader::readFillStart() {

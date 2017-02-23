@@ -50,7 +50,6 @@ class ByteReader : public Reader {
   size_t sizePeekPosStack() OVERRIDE;
   decode::StreamType getStreamType() OVERRIDE;
   bool processedInputCorrectly() OVERRIDE;
-  virtual bool readAction(const filt::SymbolNode* Action) OVERRIDE;
   void readFillStart() OVERRIDE;
   void readFillMoreInput() OVERRIDE;
   uint8_t readBit() OVERRIDE;
@@ -61,6 +60,9 @@ class ByteReader : public Reader {
   int64_t readVarint64() OVERRIDE;
   uint32_t readVaruint32() OVERRIDE;
   uint64_t readVaruint64() OVERRIDE;
+  bool alignToByte() OVERRIDE;
+  bool readBlockEnter() OVERRIDE;
+  bool readBlockExit() OVERRIDE;
   bool readBinary(const filt::Node* Encoding, decode::IntType& Value) OVERRIDE;
   utils::TraceContextPtr getTraceContext() OVERRIDE;
 

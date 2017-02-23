@@ -63,6 +63,10 @@ void Writer::setMinimizeBlockSize(bool NewValue) {
   MinimizeBlockSize = NewValue;
 }
 
+bool Writer::alignToByte() {
+  return true;
+}
+
 TraceContextPtr Writer::getTraceContext() {
   TraceContextPtr Ptr;
   return Ptr;
@@ -149,6 +153,29 @@ bool Writer::writeValue(decode::IntType Value, const filt::Node* Format) {
       return true;
     default:
       return false;
+  }
+}
+
+bool Writer::writeBlockEnter() {
+  return true;
+}
+
+bool Writer::writeBlockExit() {
+  return true;
+}
+
+bool Writer::writeAction(const SymbolNode* Action) {
+  switch (Action->getPredefinedSymbol()) {
+    case PredefinedSymbol::Block_enter:
+    case PredefinedSymbol::Block_enter_writeonly:
+      return writeBlockEnter();
+    case PredefinedSymbol::Block_exit:
+    case PredefinedSymbol::Block_exit_writeonly:
+      return writeBlockExit();
+    case PredefinedSymbol::Align:
+      return alignToByte();
+    default:
+      return DefaultWriteAction;
   }
 }
 

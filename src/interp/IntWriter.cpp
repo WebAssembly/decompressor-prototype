@@ -29,7 +29,7 @@ using namespace utils;
 namespace interp {
 
 IntWriter::IntWriter(std::shared_ptr<IntStream> Output)
-    : Output(Output), Pos(Output) {
+    : Writer(true), Output(Output), Pos(Output) {
 }
 
 void IntWriter::reset() {
@@ -54,6 +54,14 @@ bool IntWriter::writeVaruint64(uint64_t Value) {
   return write(Value);
 }
 
+bool IntWriter::writeBlockEnter() {
+  return Pos.openBlock();
+}
+
+bool IntWriter::writeBlockExit() {
+  return Pos.closeBlock();
+}
+
 bool IntWriter::writeFreezeEof() {
   return Pos.freezeEof();
 }
@@ -61,21 +69,6 @@ bool IntWriter::writeFreezeEof() {
 bool IntWriter::writeHeaderValue(IntType Value, IntTypeFormat Format) {
   Output->appendHeader(Value, Format);
   return true;
-}
-
-bool IntWriter::writeAction(const filt::SymbolNode* Action) {
-  switch (Action->getPredefinedSymbol()) {
-    case PredefinedSymbol::Block_enter:
-    case PredefinedSymbol::Block_enter_writeonly:
-      return Pos.openBlock();
-    case PredefinedSymbol::Block_exit:
-    case PredefinedSymbol::Block_exit_writeonly:
-      return Pos.closeBlock();
-    default:
-      // Ignore all other actions, since they do not involve
-      // changing the integer sequence.
-      return true;
-  }
 }
 
 void IntWriter::describeState(FILE* File) {

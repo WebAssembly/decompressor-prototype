@@ -40,7 +40,6 @@ class Reader : public std::enable_shared_from_this<Reader> {
   Reader& operator=(const Reader&) = delete;
 
  public:
-  Reader() {}
   virtual ~Reader() {}
   virtual utils::TraceContextPtr getTraceContext();
   void setTraceProgress(bool NewValue);
@@ -62,7 +61,7 @@ class Reader : public std::enable_shared_from_this<Reader> {
   virtual size_t sizePeekPosStack() = 0;
   virtual decode::StreamType getStreamType() = 0;
   virtual bool processedInputCorrectly() = 0;
-  virtual bool readAction(const filt::SymbolNode* Action) = 0;
+  virtual bool readAction(const filt::SymbolNode* Action);
   virtual void readFillStart() = 0;
   virtual void readFillMoreInput() = 0;
   // Hard coded reads.
@@ -74,6 +73,9 @@ class Reader : public std::enable_shared_from_this<Reader> {
   virtual int64_t readVarint64();
   virtual uint32_t readVaruint32();
   virtual uint64_t readVaruint64() = 0;
+  virtual bool alignToByte();
+  virtual bool readBlockEnter();
+  virtual bool readBlockExit();
   virtual bool readBinary(const filt::Node* Encoding, decode::IntType& Value);
   virtual bool readValue(const filt::Node* Format, decode::IntType& Value);
   virtual bool readHeaderValue(interp::IntTypeFormat Format,
@@ -81,6 +83,9 @@ class Reader : public std::enable_shared_from_this<Reader> {
 
  protected:
   std::shared_ptr<utils::TraceClass> Trace;
+  // Defines value to return if readAction can't handle.
+  const bool DefaultReadAction;
+  Reader(bool DefaultReadAction) : DefaultReadAction(DefaultReadAction) {}
 };
 
 }  // end of namespace interp

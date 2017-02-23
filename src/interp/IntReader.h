@@ -52,10 +52,11 @@ class IntReader : public Reader {
   size_t sizePeekPosStack() OVERRIDE;
   decode::StreamType getStreamType() OVERRIDE;
   bool processedInputCorrectly() OVERRIDE;
-  bool readAction(const filt::SymbolNode* Action) OVERRIDE;
   void readFillStart() OVERRIDE;
   void readFillMoreInput() OVERRIDE;
   uint64_t readVaruint64() OVERRIDE;
+  bool readBlockEnter() OVERRIDE;
+  bool readBlockExit() OVERRIDE;
   bool readHeaderValue(interp::IntTypeFormat Format,
                        decode::IntType& Value) OVERRIDE;
   utils::TraceContextPtr getTraceContext() OVERRIDE;

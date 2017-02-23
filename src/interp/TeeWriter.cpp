@@ -25,7 +25,7 @@ using namespace utils;
 
 namespace interp {
 
-TeeWriter::TeeWriter() : Writer() {
+TeeWriter::TeeWriter() : Writer(true) {
 }
 
 TeeWriter::~TeeWriter() {
@@ -117,6 +117,30 @@ bool TeeWriter::writeVaruint64(uint64_t Value) {
     if (!Nd.getWriter()->writeVaruint64(Value))
       return false;
   return true;
+}
+
+bool TeeWriter::alignToByte() {
+  bool Result = true;
+  for (Node& Nd : Writers)
+    if (!Nd.getWriter()->alignToByte())
+      Result = false;
+  return Result;
+}
+
+bool TeeWriter::writeBlockEnter() {
+  bool Result = true;
+  for (Node& Nd : Writers)
+    if (!Nd.getWriter()->writeBlockEnter())
+      Result = false;
+  return Result;
+}
+
+bool TeeWriter::writeBlockExit() {
+  bool Result = true;
+  for (Node& Nd : Writers)
+    if (!Nd.getWriter()->writeBlockExit())
+      Result = false;
+  return Result;
 }
 
 bool TeeWriter::writeFreezeEof() {
