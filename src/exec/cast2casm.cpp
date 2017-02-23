@@ -584,7 +584,7 @@ int main(int Argc, charstring Argv[]) {
   bool StripActions = false;
   bool StripLiterals = false;
   bool ShowSavedCast = false;
-  bool BitCompress = false;
+  bool BitCompress = true;
   std::set<std::string> KeepActions;
   {
     ArgsParser Args("Converts compression algorithm from text to binary");

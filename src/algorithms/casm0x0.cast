@@ -127,6 +127,7 @@
     (=> 'binary.bit')
   )
   (=> 'binary.end')
+  (=> 'align')
 )
 
 (define 'node' (params)
