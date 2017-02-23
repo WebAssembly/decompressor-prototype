@@ -26,6 +26,10 @@ namespace intcomp {
 using namespace decode;
 using namespace filt;
 
+CountWriter::CountWriter(CountNode::RootPtr Root)
+    : Writer(true), Root(Root), CountCutoff(1), UpToSize(0) {
+}
+
 CountWriter::~CountWriter() {
 }
 
@@ -59,19 +63,16 @@ bool CountWriter::writeVaruint64(uint64_t Value) {
   return true;
 }
 
-bool CountWriter::writeAction(const filt::SymbolNode* Action) {
-  switch (Action->getPredefinedSymbol()) {
-    case PredefinedSymbol::Block_enter:
-      Frontier.clear();
-      Root->getBlockEnter()->increment();
-      return true;
-    case PredefinedSymbol::Block_exit:
-      Frontier.clear();
-      Root->getBlockExit()->increment();
-      return true;
-    default:
-      return true;
-  }
+bool CountWriter::writeBlockEnter() {
+  Frontier.clear();
+  Root->getBlockEnter()->increment();
+  return true;
+}
+
+bool CountWriter::writeBlockExit() {
+  Frontier.clear();
+  Root->getBlockExit()->increment();
+  return true;
 }
 
 bool CountWriter::writeHeaderValue(decode::IntType Value,

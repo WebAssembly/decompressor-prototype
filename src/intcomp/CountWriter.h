@@ -43,8 +43,7 @@ class CountWriter : public interp::Writer {
  public:
   typedef std::vector<CountNode::IntPtr> IntFrontier;
   typedef std::set<CountNode::IntPtr> CountNodeIntSet;
-  CountWriter(CountNode::RootPtr Root)
-      : Root(Root), CountCutoff(1), UpToSize(0) {}
+  CountWriter(CountNode::RootPtr Root);
 
   ~CountWriter() OVERRIDE;
 
@@ -62,7 +61,8 @@ class CountWriter : public interp::Writer {
   bool writeVaruint64(uint64_t Value) OVERRIDE;
   bool writeHeaderValue(decode::IntType Value,
                         interp::IntTypeFormat Format) OVERRIDE;
-  bool writeAction(const filt::SymbolNode* Action) OVERRIDE;
+  bool writeBlockEnter() OVERRIDE;
+  bool writeBlockExit() OVERRIDE;
 
  private:
   CountNode::RootPtr Root;

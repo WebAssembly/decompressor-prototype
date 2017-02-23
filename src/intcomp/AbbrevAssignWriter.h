@@ -53,7 +53,8 @@ class AbbrevAssignWriter : public interp::Writer {
   bool writeFreezeEof() OVERRIDE;
   bool writeHeaderValue(decode::IntType Value,
                         interp::IntTypeFormat Format) OVERRIDE;
-  bool writeAction(const filt::SymbolNode* Action) OVERRIDE;
+  bool writeBlockEnter() OVERRIDE;
+  bool writeBlockExit() OVERRIDE;
 
   void setTrace(std::shared_ptr<utils::TraceClass> Trace) OVERRIDE;
 
@@ -62,7 +63,7 @@ class AbbrevAssignWriter : public interp::Writer {
   CountNode::RootPtr Root;
   CountNode::PtrSet& Assignments;
   utils::HuffmanEncoder::NodePtr& EncodingRoot;
-  interp::IntWriter Writer;
+  interp::IntWriter OutWriter;
   utils::circular_vector<decode::IntType> Buffer;
   std::vector<decode::IntType> DefaultValues;
   // Intermediate structure. Allows us to change encoding of

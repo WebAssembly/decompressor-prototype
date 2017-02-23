@@ -37,7 +37,6 @@ class Writer {
   Writer& operator=(const Writer&) = delete;
 
  public:
-  explicit Writer() : MinimizeBlockSize(false) {}
   virtual ~Writer();
 
   virtual void reset();
@@ -52,6 +51,9 @@ class Writer {
   virtual bool writeVarint64(int64_t Value);
   virtual bool writeVaruint32(uint32_t Value);
   virtual bool writeVaruint64(uint64_t Value) = 0;
+  virtual bool alignToByte();
+  virtual bool writeBlockEnter();
+  virtual bool writeBlockExit();
   virtual bool writeFreezeEof();
   virtual bool writeBinary(decode::IntType Value, const filt::Node* Encoding);
   virtual bool writeValue(decode::IntType Value, const filt::Node* Format);
@@ -59,7 +61,7 @@ class Writer {
                                interp::IntTypeFormat Format);
   virtual bool writeHeaderValue(decode::IntType Value,
                                 interp::IntTypeFormat Format);
-  virtual bool writeAction(const filt::SymbolNode* Action) = 0;
+  virtual bool writeAction(const filt::SymbolNode* Action);
 
   virtual void setMinimizeBlockSize(bool NewValue);
   virtual void describeState(FILE* File);
@@ -72,7 +74,11 @@ class Writer {
 
  protected:
   bool MinimizeBlockSize;
+  // Defines value to return if writeAction can't handle.
+  const bool DefaultWriteAction;
   std::shared_ptr<utils::TraceClass> Trace;
+  explicit Writer(bool DefaultWriteAction)
+      : MinimizeBlockSize(false), DefaultWriteAction(DefaultWriteAction) {}
 
   virtual const char* getDefaultTraceName() const;
 };

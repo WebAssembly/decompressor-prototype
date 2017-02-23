@@ -38,10 +38,11 @@ class IntWriter : public Writer {
   decode::StreamType getStreamType() const OVERRIDE;
   bool write(decode::IntType Value) { return Pos.write(Value); }
   bool writeVaruint64(uint64_t Value) OVERRIDE;
+  bool writeBlockEnter() OVERRIDE;
+  bool writeBlockExit() OVERRIDE;
   bool writeFreezeEof() OVERRIDE;
   bool writeHeaderValue(decode::IntType Value,
                         interp::IntTypeFormat Format) OVERRIDE;
-  bool writeAction(const filt::SymbolNode* Action) OVERRIDE;
   utils::TraceContextPtr getTraceContext() OVERRIDE;
   void describeState(FILE* File) OVERRIDE;
   size_t getIndex() const { return Pos.getIndex(); }

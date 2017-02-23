@@ -32,7 +32,8 @@ using namespace utils;
 namespace interp {
 
 ByteReader::ByteReader(std::shared_ptr<decode::Queue> StrmInput)
-    : ReadPos(StreamType::Byte, StrmInput),
+    : Reader(true),
+      ReadPos(StreamType::Byte, StrmInput),
       Input(std::make_shared<ByteReadStream>()),
       FillPos(0),
       PeekPosStack(PeekPos) {
@@ -108,30 +109,21 @@ bool ByteReader::processedInputCorrectly() {
   return ReadPos.atEof() && ReadPos.isQueueGood();
 }
 
-bool ByteReader::readAction(const SymbolNode* Action) {
-  switch (Action->getPredefinedSymbol()) {
-    case PredefinedSymbol::Block_enter:
-    case PredefinedSymbol::Block_enter_readonly: {
-      // Force alignment before processing, in case non-byte encodings
-      // are used.
-      ReadPos.alignToByte();
-      const uint32_t OldSize = Input->readBlockSize(ReadPos);
-      TRACE(uint32_t, "block size", OldSize);
-      Input->pushEobAddress(ReadPos, OldSize);
-      return true;
-    }
-    case PredefinedSymbol::Block_exit:
-    case PredefinedSymbol::Block_exit_readonly:
-      // Force alignment before processing, in case non-byte encodings
-      ReadPos.alignToByte();
-      ReadPos.popEobAddress();
-      return true;
-    case PredefinedSymbol::Align:
-      ReadPos.alignToByte();
-      return true;
-    default:
-      return true;
-  }
+bool ByteReader::readBlockEnter() {
+  // Force alignment before processing, in case non-byte encodings
+  // are used.
+  alignToByte();
+  const uint32_t OldSize = Input->readBlockSize(ReadPos);
+  TRACE(uint32_t, "block size", OldSize);
+  Input->pushEobAddress(ReadPos, OldSize);
+  return true;
+}
+
+bool ByteReader::readBlockExit() {
+  // Force alignment before processing, in case non-byte encodings
+  alignToByte();
+  ReadPos.popEobAddress();
+  return true;
 }
 
 bool ByteReader::readBinary(const Node* Eval, IntType& Value) {
@@ -162,6 +154,11 @@ void ByteReader::readFillMoreInput() {
   if (FillCursor.atEof())
     return;
   FillCursor.advance(PageSize);
+}
+
+bool ByteReader::alignToByte() {
+  ReadPos.alignToByte();
+  return true;
 }
 
 uint8_t ByteReader::readBit() {

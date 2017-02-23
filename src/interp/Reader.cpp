@@ -60,6 +60,18 @@ std::shared_ptr<TraceClass> Reader::getTracePtr() {
 void Reader::reset() {
 }
 
+bool Reader::alignToByte() {
+  return true;
+}
+
+bool Reader::readBlockEnter() {
+  return true;
+}
+
+bool Reader::readBlockExit() {
+  return true;
+}
+
 uint8_t Reader::readBit() {
   return readVaruint64() & 0x1;
 }
@@ -139,6 +151,21 @@ bool Reader::readHeaderValue(IntTypeFormat Format, IntType& Value) {
     default:
       Value = 0;
       return false;
+  }
+}
+
+bool Reader::readAction(const SymbolNode* Action) {
+  switch (Action->getPredefinedSymbol()) {
+    case PredefinedSymbol::Block_enter:
+    case PredefinedSymbol::Block_enter_readonly:
+      return readBlockEnter();
+    case PredefinedSymbol::Block_exit:
+    case PredefinedSymbol::Block_exit_readonly:
+      return readBlockExit();
+    case PredefinedSymbol::Align:
+      return alignToByte();
+    default:
+      return DefaultReadAction;
   }
 }
 

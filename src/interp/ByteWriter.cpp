@@ -33,7 +33,8 @@ using namespace utils;
 namespace interp {
 
 ByteWriter::ByteWriter(std::shared_ptr<decode::Queue> Output)
-    : WritePos(StreamType::Byte, Output),
+    : Writer(true),
+      WritePos(StreamType::Byte, Output),
       Stream(std::make_shared<ByteWriteStream>()),
       BlockStartStack(BlockStart) {
 }
@@ -129,58 +130,52 @@ bool ByteWriter::writeBinary(IntType Value, const Node* Encoding) {
   return true;
 }
 
-bool ByteWriter::writeAction(const SymbolNode* Action) {
-  switch (Action->getPredefinedSymbol()) {
-    case PredefinedSymbol::Block_enter:
-    case PredefinedSymbol::Block_enter_writeonly:
-      // Force alignment before processing, in case non-byte encodings
-      // are used.
-      WritePos.alignToByte();
-      BlockStartStack.push(WritePos);
-      Stream->writeFixedBlockSize(WritePos, 0);
-      BlockStartStack.push(WritePos);
-      return true;
-    case PredefinedSymbol::Block_exit:
-    case PredefinedSymbol::Block_exit_writeonly:
-      // Force alignment before processing, in case non-byte encodings
-      // are used.
-      WritePos.alignToByte();
-      if (MinimizeBlockSize) {
-        // Mimimized block. Backpatch new size of block. If needed, move
-        // block to fill gap between fixed and variable widths for block
-        // size.
-        WriteCursor WriteAfterSizeWrite(BlockStart);
-        BlockStartStack.pop();
-        const size_t NewSize = Stream->getBlockSize(BlockStart, WritePos);
-        TRACE(uint32_t, "New block size", NewSize);
-        Stream->writeVarintBlockSize(BlockStart, NewSize);
-        size_t SizeAfterBackPatch = Stream->getStreamAddress(BlockStart);
-        size_t SizeAfterSizeWrite =
-            Stream->getStreamAddress(WriteAfterSizeWrite);
-        size_t Diff = SizeAfterSizeWrite - SizeAfterBackPatch;
-        if (Diff) {
-          size_t CurAddress = Stream->getStreamAddress(WritePos);
-          Stream->moveBlock(BlockStart, SizeAfterSizeWrite,
-                            (CurAddress - Diff) - SizeAfterBackPatch);
-          WritePos.swap(BlockStart);
-        }
-      } else {
-        // Non-minimized block. Just backpatch in new size.
-        WriteCursor WriteAfterSizeWrite(BlockStart);
-        BlockStartStack.pop();
-        const size_t NewSize = Stream->getBlockSize(BlockStart, WritePos);
-        TRACE(uint32_t, "New block size", NewSize);
-        Stream->writeFixedBlockSize(BlockStart, NewSize);
-      }
-      BlockStartStack.pop();
-      return true;
-    case PredefinedSymbol::Align:
-      WritePos.alignToByte();
-      return true;
-    default:
-      break;
+bool ByteWriter::alignToByte() {
+  WritePos.alignToByte();
+  return true;
+}
+
+bool ByteWriter::writeBlockEnter() {
+  // Force alignment before processing, in case non-byte encodings
+  // are used.
+  alignToByte();
+  BlockStartStack.push(WritePos);
+  Stream->writeFixedBlockSize(WritePos, 0);
+  BlockStartStack.push(WritePos);
+  return true;
+}
+
+bool ByteWriter::writeBlockExit() {
+  // Force alignment before processing, in case non-byte encodings
+  // are used.
+  WritePos.alignToByte();
+  if (MinimizeBlockSize) {
+    // Mimimized block. Backpatch new size of block. If needed, move
+    // block to fill gap between fixed and variable widths for block
+    // size.
+    WriteCursor WriteAfterSizeWrite(BlockStart);
+    BlockStartStack.pop();
+    const size_t NewSize = Stream->getBlockSize(BlockStart, WritePos);
+    TRACE(uint32_t, "New block size", NewSize);
+    Stream->writeVarintBlockSize(BlockStart, NewSize);
+    size_t SizeAfterBackPatch = Stream->getStreamAddress(BlockStart);
+    size_t SizeAfterSizeWrite = Stream->getStreamAddress(WriteAfterSizeWrite);
+    size_t Diff = SizeAfterSizeWrite - SizeAfterBackPatch;
+    if (Diff) {
+      size_t CurAddress = Stream->getStreamAddress(WritePos);
+      Stream->moveBlock(BlockStart, SizeAfterSizeWrite,
+                        (CurAddress - Diff) - SizeAfterBackPatch);
+      WritePos.swap(BlockStart);
+    }
+  } else {
+    // Non-minimized block. Just backpatch in new size.
+    WriteCursor WriteAfterSizeWrite(BlockStart);
+    BlockStartStack.pop();
+    const size_t NewSize = Stream->getBlockSize(BlockStart, WritePos);
+    TRACE(uint32_t, "New block size", NewSize);
+    Stream->writeFixedBlockSize(BlockStart, NewSize);
   }
-  // Ignore other actions.
+  BlockStartStack.pop();
   return true;
 }
 

@@ -34,7 +34,8 @@ using namespace utils;
 namespace filt {
 
 InflateAst::InflateAst()
-    : Symtab(std::make_shared<SymbolTable>()),
+    : Writer(false),
+      Symtab(std::make_shared<SymbolTable>()),
       SectionSymtab(utils::make_unique<SectionSymbolTable>(Symtab)),
       ValuesTop(0),
       Values(ValuesTop),
@@ -360,9 +361,6 @@ bool InflateAst::writeAction(const filt::SymbolNode* Action) {
     case PredefinedSymbol::Binary_end:
       Values.push(OpBinaryEval);
       return buildUnary<BinaryEvalNode>();
-    case PredefinedSymbol::Block_enter:
-    case PredefinedSymbol::Block_exit:
-      return true;
     case PredefinedSymbol::Instruction_begin:
       AstMarkers.push(Asts.size());
       return true;
@@ -467,7 +465,7 @@ bool InflateAst::writeAction(const filt::SymbolNode* Action) {
       TRACE(size_t, "nary node size", Values.size());
       return applyOp(Values[Values.size() - 2]);
     default:
-      break;
+      return Writer::writeAction(Action);
   }
   return false;
 }
