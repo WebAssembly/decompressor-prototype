@@ -165,13 +165,19 @@
   X(BitwiseAnd,)                                                               \
   X(BitwiseOr,)                                                                \
   X(BitwiseXor,)                                                               \
-  X(Case,)                                                                     \
+  X(Case, CASE_DECLS)                                                          \
   X(IfThen,)                                                                   \
   X(Loop,)                                                                     \
   X(Or,)                                                                       \
   X(Rename,)                                                                   \
   X(Set,)                                                                      \
   X(LiteralDef,)                                                               \
+
+#define CASE_DECLS                                                             \
+  decode::IntType getValue() const { return Value; }                           \
+  bool validateNode(NodeVectorType &Parents) OVERRIDE;                         \
+ private:                                                                      \
+  decode::IntType Value;                                                       \
 
 //#define X(tag, NODE_DECLS)
 #define AST_SELECTNODE_TABLE                                                   \

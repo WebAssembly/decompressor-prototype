@@ -193,6 +193,8 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   virtual void setTrace(std::shared_ptr<utils::TraceClass> Trace);
   std::shared_ptr<utils::TraceClass> getTracePtr();
 
+  FILE* error();
+
   // For debugging.
   utils::TraceClass& getTrace();
   void describe(FILE* Out);
@@ -301,6 +303,8 @@ class Node {
   bool definesIntTypeFormat() const;
   // Gets the corresponding format if definesIntTypeFormat() returns true.
   interp::IntTypeFormat getIntTypeFormat() const;
+
+  FILE* error() { return Symtab.error(); }
 
   static bool implementsClass(NodeType /*Type*/) { return true; }
 
@@ -634,14 +638,11 @@ class SelectBaseNode : public NaryNode {
 
  public:
   ~SelectBaseNode() OVERRIDE;
-  void clearCaches(NodeVectorType& AdditionalNodes) OVERRIDE;
-  void installCaches(NodeVectorType& AdditionalNodes) OVERRIDE;
   const CaseNode* getCase(decode::IntType Key) const;
+  bool addCase(const CaseNode* Case);
+  static bool implementsClass(NodeType Type);
 
  protected:
-#if 0
-  std::unordered_map<decode::IntType, const CaseNode*> LookupMap;
-#endif
   SelectBaseNode(SymbolTable& Symtab, NodeType Type);
   IntLookupNode* getIntLookup() const;
 };

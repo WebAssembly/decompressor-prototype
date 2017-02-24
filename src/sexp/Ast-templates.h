@@ -55,5 +55,4 @@ T* SymbolTable::create(Node* Kid1, Node* Kid2, Node* Kid3) {
 
 }  // end of namespace wasm
 
-
-#endif // DECOMPRESSOR_SRC_SEXP_AST_TEMPLATES_H_
+#endif  // DECOMPRESSOR_SRC_SEXP_AST_TEMPLATES_H_

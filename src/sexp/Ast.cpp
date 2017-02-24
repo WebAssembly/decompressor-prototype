@@ -422,6 +422,11 @@ SymbolTable::~SymbolTable() {
   deallocateNodes();
 }
 
+FILE* SymbolTable::error() {
+  fputs("Error: ", stderr);
+  return stderr;
+}
+
 SymbolNode* SymbolTable::getSymbol(const std::string& Name) {
   return SymbolMap[Name];
 }
@@ -786,8 +791,7 @@ bool NullaryNode::implementsClass(NodeType Type) {
 AST_NULLARYNODE_TABLE
 #undef X
 
-#define X(tag, NODE_DECLS)                      \
-  template tag##Node* SymbolTable::create<tag##Node>();
+#define X(tag, NODE_DECLS) template tag##Node* SymbolTable::create<tag##Node>();
 AST_NULLARYNODE_TABLE
 #undef X
 
@@ -838,7 +842,7 @@ bool UnaryNode::implementsClass(NodeType Type) {
 AST_UNARYNODE_TABLE
 #undef X
 
-#define X(tag, NODE_DECLS)                               \
+#define X(tag, NODE_DECLS) \
   template tag##Node* SymbolTable::create<tag##Node>(Node * Nd);
 AST_UNARYNODE_TABLE
 #undef X
@@ -906,8 +910,8 @@ bool ParamNode::validateNode(NodeVectorType& Parents) {
     TRACE(node_ptr, "Enclosing define", Nd);
     // Scope found. Check if parameter is legal.
     if (!Define->isValidParam(getValue())) {
-      FILE* Out = getTrace().getFile();
-      fputs("Error: Param ", Out);
+      FILE* Out = error();
+      fputs("Param ", Out);
       fprint_IntType(Out, getValue());
       fprintf(Out, " not defined for method: %s\n", Define->getName().c_str());
       return false;
@@ -974,16 +978,15 @@ bool BinaryAcceptNode::validateNode(NodeVectorType& Parents) {
         isDefault = false;
         Format = ValueFormat::Hexidecimal;
         if (!cast<BinaryEvalNode>(Nd)->addEncoding(this)) {
-          fprintf(getTrace().getFile(),
-                  "Error: Can't install opcode, malformed: %s\n", getName());
+          fprintf(error(), "Can't install opcode, malformed: %s\n", getName());
           Success = false;
         }
         return Success;
       }
       case OpBinarySelect:
         if (MyNumBits >= sizeof(IntType) * CHAR_BIT) {
-          FILE* Out = getTrace().getFile();
-          fprintf(Out, "Error: Binary path too long for %s node\n", getName());
+          FILE* Out = error();
+          fprintf(Out, "Binary path too long for %s node\n", getName());
           return false;
         }
         MyValue <<= 1;
@@ -994,10 +997,10 @@ bool BinaryAcceptNode::validateNode(NodeVectorType& Parents) {
         break;
       default: {
         // Exit loop and fail.
-        FILE* Out = getTrace().getFile();
+        FILE* Out = error();
         TextWriter Writer;
         Writer.write(Out, this);
-        fprintf(Out, "Error: Doesn't appear under %s\n",
+        fprintf(Out, "Doesn't appear under %s\n",
                 getNodeSexpName(NodeType::OpBinaryEval));
         fprintf(Out, "Appears in:\n");
         Writer.write(Out, Nd);
@@ -1005,8 +1008,7 @@ bool BinaryAcceptNode::validateNode(NodeVectorType& Parents) {
       }
     }
   }
-  fprintf(getTrace().getFile(), "Error: %s can't appear at top level\n",
-          getName());
+  fprintf(error(), "%s can't appear at top level\n", getName());
   return false;
 }
 
@@ -1055,7 +1057,7 @@ bool BinaryNode::implementsClass(NodeType Type) {
 AST_BINARYNODE_TABLE
 #undef X
 
-#define X(tag, NODE_DECLS)                                            \
+#define X(tag, NODE_DECLS) \
   template tag##Node* SymbolTable::create<tag##Node>(Node * Nd1, Node * Nd2);
 AST_BINARYNODE_TABLE
 #undef X
@@ -1113,8 +1115,9 @@ bool TernaryNode::implementsClass(NodeType Type) {
 AST_TERNARYNODE_TABLE
 #undef X
 
-#define X(tag, NODE_DECLS)                                          \
-  template tag##Node* SymbolTable::create<tag##Node>(Node * Nd1, Node * Nd2, Node * Nd3);
+#define X(tag, NODE_DECLS)                                                   \
+  template tag##Node* SymbolTable::create<tag##Node>(Node * Nd1, Node * Nd2, \
+                                                     Node * Nd3);
 AST_TERNARYNODE_TABLE
 #undef X
 
@@ -1195,8 +1198,7 @@ bool NaryNode::implementsClass(NodeType Type) {
 AST_NARYNODE_TABLE
 #undef X
 
-#define X(tag, NODE_DECLS)                      \
-  template tag##Node* SymbolTable::create<tag##Node>();
+#define X(tag, NODE_DECLS) template tag##Node* SymbolTable::create<tag##Node>();
 AST_NARYNODE_TABLE
 #undef X
 
@@ -1232,6 +1234,18 @@ bool EvalNode::validateNode(NodeVectorType& Parents) {
 SelectBaseNode::~SelectBaseNode() {
 }
 
+bool SelectBaseNode::implementsClass(NodeType Type) {
+  switch (Type) {
+    default:
+      return false;
+#define X(tag, NODE_DECLS) \
+  case Op##tag:            \
+    return true;
+      AST_SELECTNODE_TABLE
+#undef X
+  }
+}
+
 SelectBaseNode::SelectBaseNode(SymbolTable& Symtab, NodeType Type)
     : NaryNode(Symtab, Type) {
 }
@@ -1252,33 +1266,49 @@ const CaseNode* SelectBaseNode::getCase(IntType Key) const {
   return nullptr;
 }
 
-void SelectBaseNode::clearCaches(NodeVectorType& AdditionalNodes) {
-#if 0
-  LookupMap.clear();
-#endif
+bool SelectBaseNode::addCase(const CaseNode* Case) {
+  return getIntLookup()->add(Case->getValue(), Case);
 }
 
-void SelectBaseNode::installCaches(NodeVectorType& AdditionalNodes) {
-  // TODO(karlschimpf): move this to validateNode.
-  IntLookupNode* Lookup = getIntLookup();
-  for (auto* Kid : *this) {
-    if (const auto* Case = dyn_cast<CaseNode>(Kid)) {
-      const auto* CaseExp = Case->getKid(0);
-      if (const auto* LitUse = dyn_cast<LiteralUseNode>(CaseExp)) {
-        SymbolNode* Sym = dyn_cast<SymbolNode>(LitUse->getKid(0));
-        if (const auto* LitDef = Sym->getLiteralDefinition()) {
-          CaseExp = LitDef->getKid(1);
-        }
-      }
-      if (const auto* Key = dyn_cast<IntegerNode>(CaseExp)) {
-#if 1
-        Lookup->add(Key->getValue(), Case);
-#else
-        LookupMap[Key->getValue()] = Case;
-#endif
+bool CaseNode::validateNode(NodeVectorType& Parents) {
+  TRACE_METHOD("validateNode");
+  TRACE(node_ptr, nullptr, this);
+
+  {  // Cache value.
+    Value = 0;
+    const auto* CaseExp = getKid(0);
+    if (const auto* LitUse = dyn_cast<LiteralUseNode>(CaseExp)) {
+      SymbolNode* Sym = dyn_cast<SymbolNode>(LitUse->getKid(0));
+      if (const auto* LitDef = Sym->getLiteralDefinition()) {
+        CaseExp = LitDef->getKid(1);
       }
     }
+    if (const auto* Key = dyn_cast<IntegerNode>(CaseExp)) {
+      Value = Key->getValue();
+    } else {
+      fprintf(error(), "Case value not found\n");
+      return false;
+    }
   }
+
+  // Install case on enclosing selector.
+  for (size_t i = Parents.size(); i > 0; --i) {
+    auto* Nd = Parents[i - 1];
+    if (auto* Sel = dyn_cast<SelectBaseNode>(Nd)) {
+      if (Sel->addCase(this))
+        return true;
+      FILE* Out = error();
+      fprintf(Out, "Duplicate case entries for value: %" PRIuMAX "\n",
+              uintmax_t(Value));
+      TextWriter Writer;
+      Writer.write(Out, Sel->getCase(Value));
+      fputs("vs\n", Out);
+      Writer.write(Out, this);
+      return false;
+    }
+  }
+  fprintf(error(), "Case not enclosed in corresponding selector\n");
+  return false;
 }
 
 namespace {
@@ -1401,8 +1431,7 @@ bool collectCaseWidths(IntType Key,
 AST_SELECTNODE_TABLE
 #undef X
 
-#define X(tag, NODE_DECLS)                      \
-  template tag##Node* SymbolTable::create<tag##Node>();
+#define X(tag, NODE_DECLS) template tag##Node* SymbolTable::create<tag##Node>();
 AST_SELECTNODE_TABLE
 #undef X
 
