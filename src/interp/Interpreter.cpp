@@ -1199,6 +1199,12 @@ void Interpreter::algorithmResume() {
               case State::Enter: {
                 auto* Sym = dyn_cast<SymbolNode>(Frame.Nd->getKid(0));
                 assert(Sym);
+                // Note: To handle local algorithm overrides (when processing
+                // code in an enclosing scope) we need to get the definition
+                // from the current algorithm, not the algorithm the symbol was
+                // defined in.
+                Sym = Symtab->getSymbol(Sym->getName());
+                assert(Sym);
                 auto* Defn = dyn_cast<DefineNode>(Sym->getDefineDefinition());
                 assert(Defn);
                 auto* NumParams = dyn_cast<ParamsNode>(Defn->getKid(1));

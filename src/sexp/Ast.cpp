@@ -440,15 +440,19 @@ void SymbolNode::setPredefinedSymbol(PredefinedSymbol NewValue) {
 // a node type is not defined with the correct template class.
 
 void SymbolNode::clearCaches(NodeVectorType& AdditionalNodes) {
+#if 0
   const Node* DefineDefinition = getDefineDefinition();
   if (DefineDefinition)
     AdditionalNodes.push_back(const_cast<Node*>(DefineDefinition));
+#endif
 }
 
 void SymbolNode::installCaches(NodeVectorType& AdditionalNodes) {
+#if 0
   const Node* DefineDefinition = getDefineDefinition();
   if (DefineDefinition)
     AdditionalNodes.push_back(const_cast<Node*>(DefineDefinition));
+#endif
 }
 
 SymbolTable::SymbolTable(std::shared_ptr<SymbolTable> EnclosingScope)
