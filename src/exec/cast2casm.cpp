@@ -611,8 +611,7 @@ int main(int Argc, charstring Argv[]) {
     ArgsParser::Optional<bool> BitCompressFlag(BitCompress);
     Args.add(BitCompressFlag.setLongName("bit-compress")
                  .setDescription(
-                     "Perform bit compresssion on binary opcode "
-                     "expressions"));
+                     "Perform bit compresssion on binary opcode expressions"));
 
     ArgsParser::Toggle MinimizeBlockFlag(MinimizeBlockSize);
     Args.add(MinimizeBlockFlag.setDefault(true)

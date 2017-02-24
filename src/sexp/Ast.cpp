@@ -50,21 +50,21 @@ namespace filt {
 template <>
 BinaryAcceptNode* SymbolTable::create<BinaryAcceptNode>() {
   BinaryAcceptNode* Nd = new BinaryAcceptNode(*this);
-  Allocated->push_back(Nd);
+  Allocated.push_back(Nd);
   return Nd;
 }
 
 BinaryAcceptNode* SymbolTable::createBinaryAccept(IntType Value,
                                                   unsigned NumBits) {
   BinaryAcceptNode* Nd = new BinaryAcceptNode(*this, Value, NumBits);
-  Allocated->push_back(Nd);
+  Allocated.push_back(Nd);
   return Nd;
 }
 
 template <>
 BinaryEvalNode* SymbolTable::create<BinaryEvalNode>(Node* Kid) {
   BinaryEvalNode* Nd = new BinaryEvalNode(*this, Kid);
-  Allocated->push_back(Nd);
+  Allocated.push_back(Nd);
   return Nd;
 }
 
@@ -72,7 +72,7 @@ BinaryEvalNode* SymbolTable::create<BinaryEvalNode>(Node* Kid) {
   template <>                                   \
   tag##Node* SymbolTable::create<tag##Node>() { \
     tag##Node* tag##Nd = new tag##Node(*this);  \
-    Allocated->push_back(tag##Nd);              \
+    Allocated.push_back(tag##Nd);               \
     return tag##Nd;                             \
   }
 AST_NULLARYNODE_TABLE
@@ -82,7 +82,7 @@ AST_NULLARYNODE_TABLE
   template <>                                            \
   tag##Node* SymbolTable::create<tag##Node>(Node * Nd) { \
     tag##Node* tag##Nd = new tag##Node(*this, Nd);       \
-    Allocated->push_back(tag##Nd);                       \
+    Allocated.push_back(tag##Nd);                        \
     return tag##Nd;                                      \
   }
 AST_UNARYNODE_TABLE
@@ -92,7 +92,7 @@ AST_UNARYNODE_TABLE
   template <>                                                         \
   tag##Node* SymbolTable::create<tag##Node>(Node * Nd1, Node * Nd2) { \
     tag##Node* tag##Nd = new tag##Node(*this, Nd1, Nd2);              \
-    Allocated->push_back(tag##Nd);                                    \
+    Allocated.push_back(tag##Nd);                                     \
     return tag##Nd;                                                   \
   }
 AST_BINARYNODE_TABLE
@@ -103,7 +103,7 @@ AST_BINARYNODE_TABLE
   tag##Node* SymbolTable::create<tag##Node>(Node * Nd1, Node * Nd2, \
                                             Node * Nd3) {           \
     tag##Node* tag##Nd = new tag##Node(*this, Nd1, Nd2, Nd3);       \
-    Allocated->push_back(tag##Nd);                                  \
+    Allocated.push_back(tag##Nd);                                   \
     return tag##Nd;                                                 \
   }
 AST_TERNARYNODE_TABLE
@@ -113,7 +113,7 @@ AST_TERNARYNODE_TABLE
   template <>                                   \
   tag##Node* SymbolTable::create<tag##Node>() { \
     tag##Node* tag##Nd = new tag##Node(*this);  \
-    Allocated->push_back(tag##Nd);              \
+    Allocated.push_back(tag##Nd);               \
     return tag##Nd;                             \
   }
 AST_NARYNODE_TABLE
@@ -123,7 +123,7 @@ AST_NARYNODE_TABLE
   template <>                                   \
   tag##Node* SymbolTable::create<tag##Node>() { \
     tag##Node* tag##Nd = new tag##Node(*this);  \
-    Allocated->push_back(tag##Nd);              \
+    Allocated.push_back(tag##Nd);               \
     return tag##Nd;                             \
   }
 AST_SELECTNODE_TABLE
@@ -132,7 +132,7 @@ AST_SELECTNODE_TABLE
 template <>
 OpcodeNode* SymbolTable::create<OpcodeNode>() {
   OpcodeNode* Nd = new OpcodeNode(*this);
-  Allocated->push_back(Nd);
+  Allocated.push_back(Nd);
   return Nd;
 }
 
@@ -456,16 +456,11 @@ void SymbolNode::installCaches(NodeVectorType& AdditionalNodes) {
     AdditionalNodes.push_back(LiteralDefinition);
 }
 
-SymbolTable::SymbolTable()
-    // TODO(karlschimpf) Switch Alloc to an ArenaAllocator once working.
-    // TODO(karlschimpf) Figure out why we can't deallocate Allocated!
-    : Allocated(new std::vector<Node*>()),
-      Root(nullptr),
-      TargetHeader(nullptr),
-      Error(nullptr),
-      NextCreationIndex(0),
-      Predefined(new std::vector<SymbolNode*>()) {
-  Error = create<ErrorNode>();
+SymbolTable::SymbolTable(std::shared_ptr<SymbolTable> EnclosingScope)
+    : EnclosingScope(EnclosingScope) {
+}
+
+SymbolTable::SymbolTable() {
   init();
 }
 
@@ -499,28 +494,32 @@ std::shared_ptr<TraceClass> SymbolTable::getTracePtr() {
 }
 
 void SymbolTable::deallocateNodes() {
-  for (Node* Nd : *Allocated)
+  for (Node* Nd : Allocated)
     delete Nd;
 }
 
 void SymbolTable::init() {
-  Predefined->reserve(NumPredefinedSymbols);
+  Root = nullptr;
+  TargetHeader = nullptr;
+  NextCreationIndex = 0;
+  Error = create<ErrorNode>();
+  Predefined.reserve(NumPredefinedSymbols);
   for (size_t i = 0; i < NumPredefinedSymbols; ++i) {
     SymbolNode* Nd = getSymbolDefinition(PredefinedName[i]);
-    Predefined->push_back(Nd);
+    Predefined.push_back(Nd);
     Nd->setPredefinedSymbol(toPredefinedSymbol(i));
   }
-  BlockEnterCallback = create<CallbackNode>(
-      (*Predefined)[uint32_t(PredefinedSymbol::Block_enter)]);
-  BlockExitCallback = create<CallbackNode>(
-      (*Predefined)[uint32_t(PredefinedSymbol::Block_exit)]);
+  BlockEnterCallback =
+      create<CallbackNode>(Predefined[uint32_t(PredefinedSymbol::Block_enter)]);
+  BlockExitCallback =
+      create<CallbackNode>(Predefined[uint32_t(PredefinedSymbol::Block_exit)]);
 }
 
 SymbolNode* SymbolTable::getSymbolDefinition(const std::string& Name) {
   SymbolNode* Node = SymbolMap[Name];
   if (Node == nullptr) {
     Node = new SymbolNode(*this, Name);
-    Allocated->push_back(Node);
+    Allocated.push_back(Node);
     SymbolMap[Name] = Node;
   }
   return Node;
@@ -534,13 +533,13 @@ SymbolNode* SymbolTable::getSymbolDefinition(const std::string& Name) {
       IntegerNode* Node = IntMap[I];                                 \
       if (Node == nullptr) {                                         \
         Node = new tag##Node(*this, Value, Format);                  \
-        Allocated->push_back(Node);                                  \
+        Allocated.push_back(Node);                                   \
         IntMap[I] = Node;                                            \
       }                                                              \
       return dyn_cast<tag##Node>(Node);                              \
     }                                                                \
     tag##Node* Node = new tag##Node(*this, Value, Format);           \
-    Allocated->push_back(Node);                                      \
+    Allocated.push_back(Node);                                       \
     return Node;                                                     \
   }                                                                  \
   tag##Node* SymbolTable::get##tag##Definition() {                   \
@@ -549,13 +548,13 @@ SymbolNode* SymbolTable::getSymbolDefinition(const std::string& Name) {
       IntegerNode* Node = IntMap[I];                                 \
       if (Node == nullptr) {                                         \
         Node = new tag##Node(*this);                                 \
-        Allocated->push_back(Node);                                  \
+        Allocated.push_back(Node);                                   \
         IntMap[I] = Node;                                            \
       }                                                              \
       return dyn_cast<tag##Node>(Node);                              \
     }                                                                \
     tag##Node* Node = new tag##Node(*this);                          \
-    Allocated->push_back(Node);                                      \
+    Allocated.push_back(Node);                                       \
     return Node;                                                     \
   }
 AST_INTEGERNODE_TABLE
