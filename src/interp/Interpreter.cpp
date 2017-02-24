@@ -631,6 +631,7 @@ void Interpreter::algorithmResume() {
       case Method::Eval:
         switch (Frame.Nd->getType()) {
           case NO_SUCH_NODETYPE:
+          case OpSymbolDefn:
           case OpBinaryEvalBits:
           case OpBinaryAccept:
           case OpBinarySelect:

@@ -68,6 +68,13 @@ BinaryEvalNode* SymbolTable::create<BinaryEvalNode>(Node* Kid) {
   return Nd;
 }
 
+template<>
+SymbolDefnNode* SymbolTable::create<SymbolDefnNode>() {
+  SymbolDefnNode* Nd = new SymbolDefnNode(*this);
+  Allocated.push_back(Nd);
+  return Nd;
+}
+
 #define X(tag, NODE_DECLS)                      \
   template <>                                   \
   tag##Node* SymbolTable::create<tag##Node>() { \
@@ -416,6 +423,17 @@ bool Node::validateNode(NodeVectorType& Scope) {
   return true;
 }
 
+SymbolDefnNode::SymbolDefnNode(SymbolTable& Symab)
+    : NullaryNode(Symtab, OpSymbolDefn),
+      Symbol(nullptr),
+      DefineDefinition(nullptr),
+      LiteralDefinition(nullptr) {
+}
+
+const std::string& SymbolDefnNode::getName() const {
+  return Symbol->getName();
+}
+
 SymbolNode::SymbolNode(SymbolTable& Symtab, const std::string& Name)
     : NullaryNode(Symtab, OpSymbol), Name(Name) {
   init();
@@ -426,8 +444,20 @@ SymbolNode::~SymbolNode() {
 
 void SymbolNode::init() {
   DefineDefinition = nullptr;
+#if 0
   LiteralDefinition = nullptr;
+#endif
   PredefinedValue = PredefinedSymbol::Unknown;
+}
+
+SymbolDefnNode* SymbolNode::getSymbolDefn() const {
+  SymbolDefnNode* Defn = cast<SymbolDefnNode>(Symtab.getCachedValue(this));
+  if (Defn == nullptr) {
+    Defn = Symtab.create<SymbolDefnNode>();
+    Defn->setSymbol(this);
+    Symtab.setCachedValue(this, Defn);
+  }
+  return Defn;
 }
 
 void SymbolNode::setPredefinedSymbol(PredefinedSymbol NewValue) {
@@ -445,15 +475,19 @@ void SymbolNode::setPredefinedSymbol(PredefinedSymbol NewValue) {
 void SymbolNode::clearCaches(NodeVectorType& AdditionalNodes) {
   if (DefineDefinition)
     AdditionalNodes.push_back(DefineDefinition);
+#if 0
   if (LiteralDefinition)
     AdditionalNodes.push_back(LiteralDefinition);
+#endif
 }
 
 void SymbolNode::installCaches(NodeVectorType& AdditionalNodes) {
   if (DefineDefinition)
     AdditionalNodes.push_back(DefineDefinition);
+#if 0
   if (LiteralDefinition)
     AdditionalNodes.push_back(LiteralDefinition);
+#endif
 }
 
 SymbolTable::SymbolTable(std::shared_ptr<SymbolTable> EnclosingScope)
@@ -1242,9 +1276,11 @@ bool EvalNode::validateNode(NodeVectorType& Parents) {
   return true;
 }
 
+#if 0
 SymbolNode* SectionNode::getSymbol() const {
   return dyn_cast<SymbolNode>(getKid(0));
 }
+#endif
 
 SelectBaseNode::~SelectBaseNode() {
 }

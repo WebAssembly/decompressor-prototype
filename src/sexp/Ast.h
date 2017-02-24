@@ -178,9 +178,8 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   BinaryAcceptNode* createBinaryAccept(decode::IntType Value, unsigned NumBits);
 
   // Returns the cached value associated with a node, or nullptr if not cached.
-  Node* getCachedValue(Node* Nd) { return CachedValue[Nd]; }
-
-  void setCachedValue(Node* Nd, Node* Value) { CachedValue[Nd] = Value; }
+  Node* getCachedValue(const Node* Nd) const { return CachedValue[Nd]; }
+  void setCachedValue(const Node* Nd, Node* Value) { CachedValue[Nd] = Value; }
 
   // Strips all callback actions from the algorithm, except for the names
   // specified. Returns the updated tree.
@@ -198,7 +197,7 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   void describe(FILE* Out);
 
  private:
-  typedef std::map<Node*, Node*> CachedValueMap;
+  typedef std::map<const Node*, Node*> CachedValueMap;
   std::shared_ptr<SymbolTable> EnclosingScope;
   std::vector<Node*> Allocated;
   std::shared_ptr<utils::TraceClass> Trace;
@@ -211,7 +210,7 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   std::vector<SymbolNode*> Predefined;
   CallbackNode* BlockEnterCallback;
   CallbackNode* BlockExitCallback;
-  CachedValueMap CachedValue;
+  mutable CachedValueMap CachedValue;
 
   void init();
   void deallocateNodes();
@@ -491,6 +490,29 @@ class BinaryAcceptNode FINAL : public IntegerNode {
   unsigned NumBits;
 };
 
+// Holds cached information about a Symbol
+class SymbolDefnNode FINAL : public NullaryNode {
+  SymbolDefnNode() = delete;
+  SymbolDefnNode(const SymbolDefnNode&) = delete;
+  SymbolDefnNode& operator=(const SymbolDefnNode&) = delete;
+public:
+  SymbolDefnNode(SymbolTable& Symtab);
+  const SymbolNode* getSymbol() const { return Symbol; }
+  void setSymbol(const SymbolNode* Nd) { Symbol = Nd; }
+  const std::string& getName() const;
+  const Node* getDefineDefinition() { return DefineDefinition; }
+  void setDefineDefinition(const Node* Defn) { DefineDefinition = Defn; }
+  const Node* getLiteralDefinition() const { return LiteralDefinition; }
+  void setLiteralDefinition(const Node* Defn) { LiteralDefinition = Defn; }
+
+  static bool implementsClass(NodeType Type) { return Type == OpSymbolDefn; }
+
+private:
+  const SymbolNode* Symbol;
+  const Node* DefineDefinition;
+  const Node* LiteralDefinition;
+};
+
 class SymbolNode FINAL : public NullaryNode {
   SymbolNode() = delete;
   SymbolNode(const SymbolNode&) = delete;
@@ -503,17 +525,29 @@ class SymbolNode FINAL : public NullaryNode {
   const std::string& getName() const { return Name; }
   const Node* getDefineDefinition() const { return DefineDefinition; }
   void setDefineDefinition(Node* Defn) { DefineDefinition = Defn; }
+#if 0
   const Node* getLiteralDefinition() const { return LiteralDefinition; }
   void setLiteralDefinition(Node* Defn) { LiteralDefinition = Defn; }
+#else
+  const Node* getLiteralDefinition() const {
+    return getSymbolDefn()->getLiteralDefinition();
+  }
+  void setLiteralDefinition(Node* Defn) {
+    getSymbolDefn()->setLiteralDefinition(Defn);
+  }
+#endif
   PredefinedSymbol getPredefinedSymbol() const { return PredefinedValue; }
   static bool implementsClass(NodeType Type) { return Type == OpSymbol; }
 
  private:
   std::string Name;
   Node* DefineDefinition;
+#if 0
   Node* LiteralDefinition;
+#endif
   PredefinedSymbol PredefinedValue;
   void init();
+  SymbolDefnNode* getSymbolDefn() const;
   void clearCaches(NodeVectorType& AdditionalNodes) OVERRIDE;
   void installCaches(NodeVectorType& AdditionalNodes) OVERRIDE;
   void setPredefinedSymbol(PredefinedSymbol NewValue);
