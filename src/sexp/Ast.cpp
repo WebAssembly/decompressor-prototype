@@ -857,10 +857,7 @@ IntegerNode::IntegerNode(SymbolTable& Symtab,
                          decode::IntType Value,
                          decode::ValueFormat Format,
                          bool isDefault)
-    : NullaryNode(Symtab, Type),
-      Value(Value),
-      Format(Format),
-      isDefault(isDefault) {
+    : NullaryNode(Symtab, Type), Value(Type, Value, Format, isDefault) {
 }
 
 IntegerNode::~IntegerNode() {
@@ -964,7 +961,8 @@ bool BinaryAcceptNode::validateNode(NodeVectorType& Parents) {
     switch (Nd->getType()) {
       case OpBinaryEval: {
         bool Success = true;
-        if (!isDefault && (MyValue != Value || MyNumBits != NumBits)) {
+        if (!Value.isDefault &&
+            (MyValue != Value.Value || MyNumBits != NumBits)) {
           describeNode("Malformed", this);
           fprintf(stderr, "Expected (%s ", getName());
           writeInt(stderr, MyValue, ValueFormat::Hexidecimal);
@@ -973,10 +971,10 @@ bool BinaryAcceptNode::validateNode(NodeVectorType& Parents) {
         }
         TRACE(IntType, "Value", MyValue);
         TRACE(unsigned_int, "Bits", MyNumBits);
-        Value = MyValue;
+        Value.Value = MyValue;
         NumBits = MyNumBits;
-        isDefault = false;
-        Format = ValueFormat::Hexidecimal;
+        Value.isDefault = false;
+        Value.Format = ValueFormat::Hexidecimal;
         if (!cast<BinaryEvalNode>(Nd)->addEncoding(this)) {
           fprintf(error(), "Can't install opcode, malformed: %s\n", getName());
           Success = false;

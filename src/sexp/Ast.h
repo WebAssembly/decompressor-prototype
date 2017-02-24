@@ -341,15 +341,19 @@ class IntegerNode : public NullaryNode {
 
  public:
   ~IntegerNode() OVERRIDE;
-  decode::ValueFormat getFormat() const { return Format; }
-  decode::IntType getValue() const { return Value; }
+  decode::ValueFormat getFormat() const { return Value.Format; }
+  decode::IntType getValue() const { return Value.Value; }
+  bool isDefaultValue() const { return Value.isDefault; }
   static bool implementsClass(NodeType Type);
-  bool isDefaultValue() const { return isDefault; }
 
  protected:
+#if 0
   decode::IntType Value;
   decode::ValueFormat Format;
   bool isDefault;
+#else
+  IntegerValue Value;
+#endif
   // Note: ValueFormat provided so that we can echo back out same
   // representation as when lexing s-expressions.
   IntegerNode(SymbolTable& Symtab,
