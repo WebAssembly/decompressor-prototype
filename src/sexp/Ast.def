@@ -106,6 +106,7 @@
   /* Internal (not opcodes in compressed file) */                              \
   X(UnknownSection,    0xFF, "unknown.section", nullptr,           1, 0)       \
   X(SymbolDefn,        0x100, "symbol.defn",    nullptr,           0, 0)       \
+  X(IntLookup,         0x101, "int.lookup",     nullptr,           0, 0)       \
 
 //#define X(tag, NODE_DECLS)
 #define AST_NULLARYNODE_TABLE                                                  \

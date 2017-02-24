@@ -47,6 +47,13 @@ void TraceClass::trace_node_ptr(const char* Name, const Node* Nd) {
 
 namespace filt {
 
+template <class T>
+T* SymbolTable::create() {
+  T* Nd = new T(*this);
+  Allocated.push_back(Nd);
+  return Nd;
+}
+
 template <>
 BinaryAcceptNode* SymbolTable::create<BinaryAcceptNode>() {
   BinaryAcceptNode* Nd = new BinaryAcceptNode(*this);
@@ -64,13 +71,6 @@ BinaryAcceptNode* SymbolTable::createBinaryAccept(IntType Value,
 template <>
 BinaryEvalNode* SymbolTable::create<BinaryEvalNode>(Node* Kid) {
   BinaryEvalNode* Nd = new BinaryEvalNode(*this, Kid);
-  Allocated.push_back(Nd);
-  return Nd;
-}
-
-template <>
-SymbolDefnNode* SymbolTable::create<SymbolDefnNode>() {
-  SymbolDefnNode* Nd = new SymbolDefnNode(*this);
   Allocated.push_back(Nd);
   return Nd;
 }
@@ -423,11 +423,34 @@ bool Node::validateNode(NodeVectorType& Scope) {
   return true;
 }
 
-SymbolDefnNode::SymbolDefnNode(SymbolTable& Symab)
+IntLookupNode::IntLookupNode(SymbolTable& Symtab)
+    : NullaryNode(Symtab, OpIntLookup) {
+}
+
+IntLookupNode::~IntLookupNode() {
+}
+
+const Node* IntLookupNode::get(decode::IntType Value) const {
+  if (Lookup.count(Value))
+    return Lookup[Value];
+  return nullptr;
+}
+
+bool IntLookupNode::add(decode::IntType Value, const Node* Nd) {
+  if (Lookup.count(Value))
+    return false;
+  Lookup[Value] = Nd;
+  return true;
+}
+
+SymbolDefnNode::SymbolDefnNode(SymbolTable& Symtab)
     : NullaryNode(Symtab, OpSymbolDefn),
       Symbol(nullptr),
       DefineDefinition(nullptr),
       LiteralDefinition(nullptr) {
+}
+
+SymbolDefnNode::~SymbolDefnNode() {
 }
 
 const std::string& SymbolDefnNode::getName() const {
@@ -1549,33 +1572,31 @@ utils::TraceClass& OpcodeNode::WriteRange::getTrace() const {
 }
 
 BinaryEvalNode::BinaryEvalNode(SymbolTable& Symtab, Node* Encoding)
-    : UnaryNode(Symtab, OpBinaryEval, Encoding),
-      NotFound(Symtab.create<ErrorNode>()) {
+    : UnaryNode(Symtab, OpBinaryEval, Encoding) {
 }
 
 BinaryEvalNode::~BinaryEvalNode() {
 }
 
-bool BinaryEvalNode::validateNode(NodeVectorType& Parents) {
-  LookupMap.clear();
-  if (!validateKid(Parents, NotFound)) {
-    return false;
+IntLookupNode* BinaryEvalNode::getIntLookup() const {
+  IntLookupNode* Lookup = cast<IntLookupNode>(Symtab.getCachedValue(this));
+  if (Lookup == nullptr) {
+    Lookup = Symtab.create<IntLookupNode>();
+    Symtab.setCachedValue(this, Lookup);
   }
-  return true;
+  return Lookup;
 }
 
 const Node* BinaryEvalNode::getEncoding(IntType Value) const {
-  if (LookupMap.count(Value))
-    return LookupMap.at(Value);
-  return NotFound;
+  IntLookupNode* Lookup = getIntLookup();
+  const Node* Nd = Lookup->get(Value);
+  if (Nd == nullptr)
+    Nd = Symtab.getError();
+  return Nd;
 }
 
 bool BinaryEvalNode::addEncoding(BinaryAcceptNode* Encoding) {
-  IntType Value = Encoding->getValue();
-  if (LookupMap.count(Value))
-    return false;
-  LookupMap[Value] = Encoding;
-  return true;
+  return getIntLookup()->add(Encoding->getValue(), Encoding);
 }
 
 }  // end of namespace filt

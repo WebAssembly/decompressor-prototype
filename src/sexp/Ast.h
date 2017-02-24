@@ -162,6 +162,7 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   // Install definitions in tree defined by root.
   void install(Node* Root);
   const Node* getInstalledRoot() const { return Root; }
+  Node* getError() const { return Error; }
   const FileHeaderNode* getSourceHeader() const;
   const FileHeaderNode* getTargetHeader() const { return TargetHeader; }
   void clear();
@@ -329,6 +330,31 @@ class NullaryNode : public Node {
   NullaryNode(SymbolTable& Symtab, NodeType Type);
 };
 
+class IntegerNode : public NullaryNode {
+  IntegerNode() = delete;
+  IntegerNode(const IntegerNode&) = delete;
+  IntegerNode& operator=(const IntegerNode&) = delete;
+
+ public:
+  ~IntegerNode() OVERRIDE;
+  decode::ValueFormat getFormat() const { return Format; }
+  decode::IntType getValue() const { return Value; }
+  static bool implementsClass(NodeType Type);
+  bool isDefaultValue() const { return isDefault; }
+
+ protected:
+  decode::IntType Value;
+  decode::ValueFormat Format;
+  bool isDefault;
+  // Note: ValueFormat provided so that we can echo back out same
+  // representation as when lexing s-expressions.
+  IntegerNode(SymbolTable& Symtab,
+              NodeType Type,
+              decode::IntType Value,
+              decode::ValueFormat Format,
+              bool isDefault = false);
+};
+
 class UnaryNode : public Node {
   UnaryNode() = delete;
   UnaryNode(const UnaryNode&) = delete;
@@ -407,6 +433,22 @@ class NaryNode : public Node {
   NaryNode(SymbolTable& Symtab, NodeType Type);
 };
 
+class IntLookupNode FINAL : public NullaryNode {
+  IntLookupNode() = delete;
+  IntLookupNode(const IntLookupNode&) = delete;
+  IntLookupNode& operator=(const IntLookupNode&) = delete;
+
+ public:
+  typedef std::unordered_map<decode::IntType, const Node*> LookupMap;
+  explicit IntLookupNode(SymbolTable&);
+  ~IntLookupNode() OVERRIDE;
+  const Node* get(decode::IntType Value) const;
+  bool add(decode::IntType Value, const Node* Nd);
+
+ private:
+  mutable LookupMap Lookup;
+};
+
 #define X(tag, NODE_DECLS)                                                 \
   class tag##Node FINAL : public NullaryNode {                             \
     tag##Node() = delete;                                                  \
@@ -421,31 +463,6 @@ class NaryNode : public Node {
   };
 AST_NULLARYNODE_TABLE
 #undef X
-
-class IntegerNode : public NullaryNode {
-  IntegerNode() = delete;
-  IntegerNode(const IntegerNode&) = delete;
-  IntegerNode& operator=(const IntegerNode&) = delete;
-
- public:
-  ~IntegerNode() OVERRIDE;
-  decode::ValueFormat getFormat() const { return Format; }
-  decode::IntType getValue() const { return Value; }
-  static bool implementsClass(NodeType Type);
-  bool isDefaultValue() const { return isDefault; }
-
- protected:
-  decode::IntType Value;
-  decode::ValueFormat Format;
-  bool isDefault;
-  // Note: ValueFormat provided so that we can echo back out same
-  // representation as when lexing s-expressions.
-  IntegerNode(SymbolTable& Symtab,
-              NodeType Type,
-              decode::IntType Value,
-              decode::ValueFormat Format,
-              bool isDefault = false);
-};
 
 #define X(tag, format, defval, mergable, NODE_DECLS)                       \
   class tag##Node FINAL : public IntegerNode {                             \
@@ -498,6 +515,7 @@ class SymbolDefnNode FINAL : public NullaryNode {
 
  public:
   SymbolDefnNode(SymbolTable& Symtab);
+  ~SymbolDefnNode() OVERRIDE;
   const SymbolNode* getSymbol() const { return Symbol; }
   void setSymbol(const SymbolNode* Nd) { Symbol = Nd; }
   const std::string& getName() const;
@@ -707,7 +725,6 @@ class BinaryEvalNode : public UnaryNode {
  public:
   explicit BinaryEvalNode(SymbolTable& Symtab, Node* Encoding);
   ~BinaryEvalNode() OVERRIDE;
-  bool validateNode(NodeVectorType& Parents) OVERRIDE;
 
   const Node* getEncoding(decode::IntType Value) const;
   bool addEncoding(BinaryAcceptNode* Encoding);
@@ -715,8 +732,7 @@ class BinaryEvalNode : public UnaryNode {
   static bool implementsClass(NodeType Type) { return OpBinaryEval == Type; }
 
  private:
-  std::unordered_map<decode::IntType, const Node*> LookupMap;
-  Node* NotFound;
+  IntLookupNode* getIntLookup() const;
 };
 
 }  // end of namespace filt
