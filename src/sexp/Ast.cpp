@@ -1236,17 +1236,31 @@ SelectBaseNode::SelectBaseNode(SymbolTable& Symtab, NodeType Type)
     : NaryNode(Symtab, Type) {
 }
 
+IntLookupNode* SelectBaseNode::getIntLookup() const {
+  IntLookupNode* Lookup = cast<IntLookupNode>(Symtab.getCachedValue(this));
+  if (Lookup == nullptr) {
+    Lookup = Symtab.create<IntLookupNode>();
+    Symtab.setCachedValue(this, Lookup);
+  }
+  return Lookup;
+}
+
 const CaseNode* SelectBaseNode::getCase(IntType Key) const {
-  if (LookupMap.count(Key))
-    return LookupMap.at(Key);
+  IntLookupNode* Lookup = getIntLookup();
+  if (const CaseNode* Case = dyn_cast<CaseNode>(Lookup->get(Key)))
+    return Case;
   return nullptr;
 }
 
 void SelectBaseNode::clearCaches(NodeVectorType& AdditionalNodes) {
+#if 0
   LookupMap.clear();
+#endif
 }
 
 void SelectBaseNode::installCaches(NodeVectorType& AdditionalNodes) {
+  // TODO(karlschimpf): move this to validateNode.
+  IntLookupNode* Lookup = getIntLookup();
   for (auto* Kid : *this) {
     if (const auto* Case = dyn_cast<CaseNode>(Kid)) {
       const auto* CaseExp = Case->getKid(0);
@@ -1257,7 +1271,11 @@ void SelectBaseNode::installCaches(NodeVectorType& AdditionalNodes) {
         }
       }
       if (const auto* Key = dyn_cast<IntegerNode>(CaseExp)) {
+#if 1
+        Lookup->add(Key->getValue(), Case);
+#else
         LookupMap[Key->getValue()] = Case;
+#endif
       }
     }
   }

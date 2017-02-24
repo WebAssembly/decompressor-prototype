@@ -639,10 +639,11 @@ class SelectBaseNode : public NaryNode {
   const CaseNode* getCase(decode::IntType Key) const;
 
  protected:
-  // TODO(karlschimpf) Hook this up to an allocator?
+#if 0
   std::unordered_map<decode::IntType, const CaseNode*> LookupMap;
-
+#endif
   SelectBaseNode(SymbolTable& Symtab, NodeType Type);
+  IntLookupNode* getIntLookup() const;
 };
 
 #define X(tag, NODE_DECLS)                                                 \
