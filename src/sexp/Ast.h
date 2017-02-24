@@ -193,7 +193,9 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   virtual void setTrace(std::shared_ptr<utils::TraceClass> Trace);
   std::shared_ptr<utils::TraceClass> getTracePtr();
 
-  FILE* error();
+  FILE* getErrorFile() const;
+  // getErrorFile with error prefix added.
+  FILE* error() const;
 
   // For debugging.
   utils::TraceClass& getTrace();
@@ -304,6 +306,7 @@ class Node {
   // Gets the corresponding format if definesIntTypeFormat() returns true.
   interp::IntTypeFormat getIntTypeFormat() const;
 
+  FILE* getErrorFile() const { return Symtab.getErrorFile(); }
   FILE* error() { return Symtab.error(); }
 
   static bool implementsClass(NodeType /*Type*/) { return true; }
@@ -347,13 +350,7 @@ class IntegerNode : public NullaryNode {
   static bool implementsClass(NodeType Type);
 
  protected:
-#if 0
-  decode::IntType Value;
-  decode::ValueFormat Format;
-  bool isDefault;
-#else
   IntegerValue Value;
-#endif
   // Note: ValueFormat provided so that we can echo back out same
   // representation as when lexing s-expressions.
   IntegerNode(SymbolTable& Symtab,
@@ -716,11 +713,9 @@ class OpcodeNode FINAL : public SelectBaseNode {
     uint32_t ShiftValue;
   };
 
-  void clearCaches(NodeVectorType& AdditionalNodes) OVERRIDE;
-  void installCaches(NodeVectorType& AdditionalNodes) OVERRIDE;
+  bool validateNode(NodeVectorType& Paremts) OVERRIDE;
   typedef std::vector<WriteRange> CaseRangeVectorType;
   CaseRangeVectorType CaseRangeVector;
-  void installCaseRanges();
 };
 
 class BinaryEvalNode : public UnaryNode {

@@ -51,10 +51,12 @@ namespace filt {
 
 namespace {
 
-void describeNode(const char* Message, const Node* Nd) {
+void errorDescribeNode(const char* Message, const Node* Nd) {
   TextWriter Writer;
-  fprintf(stderr, "%s:\n", Message);
-  Writer.write(stderr, Nd);
+  FILE* Out = Nd->getErrorFile();
+  if (Message)
+    fprintf(Out, "%s:\n", Message);
+  Writer.write(Out, Nd);
 }
 
 static const char* PredefinedName[NumPredefinedSymbols]{
@@ -422,9 +424,14 @@ SymbolTable::~SymbolTable() {
   deallocateNodes();
 }
 
-FILE* SymbolTable::error() {
-  fputs("Error: ", stderr);
+FILE* SymbolTable::getErrorFile() const {
   return stderr;
+}
+
+FILE* SymbolTable::error() const {
+  FILE* Out = getErrorFile();
+  fputs("Error: ", Out);
+  return Out;
 }
 
 SymbolNode* SymbolTable::getSymbol(const std::string& Name) {
@@ -610,7 +617,7 @@ void SymbolTable::installDefinitions(Node* Root) {
         DefineSymbol->setDefineDefinition(Root);
         return;
       }
-      describeNode("Malformed", Root);
+      errorDescribeNode("Malformed define", Root);
       fatal("Malformed define s-expression found!");
       return;
     }
@@ -619,7 +626,7 @@ void SymbolTable::installDefinitions(Node* Root) {
         LiteralSymbol->setLiteralDefinition(Root);
         return;
       }
-      describeNode("Malformed", Root);
+      errorDescribeNode("Malformed", Root);
       fatal("Malformed literal s-expression found!");
       return;
     }
@@ -631,7 +638,7 @@ void SymbolTable::installDefinitions(Node* Root) {
           return;
         }
       }
-      describeNode("Malformed", Root);
+      errorDescribeNode("Malformed", Root);
       fatal("Malformed rename s-expression found!");
       return;
     }
@@ -640,7 +647,7 @@ void SymbolTable::installDefinitions(Node* Root) {
         UndefineSymbol->setDefineDefinition(nullptr);
         return;
       }
-      describeNode("Can't undefine", Root);
+      errorDescribeNode("Can't undefine", Root);
       fatal("Malformed undefine s-expression found!");
     }
   }
@@ -739,8 +746,9 @@ Node* SymbolTable::stripLiteralUses(Node* Root) {
   }
   // If reached, this is a use without a def, so remove.
   TextWriter Writer;
-  fprintf(stderr, "error: No literal definition for: ");
-  Writer.write(stderr, Root);
+  FILE* Out = error();
+  fprintf(Out, "No literal definition for: ");
+  Writer.write(Out, Root);
   return create<VoidNode>();
 }
 
@@ -963,10 +971,11 @@ bool BinaryAcceptNode::validateNode(NodeVectorType& Parents) {
         bool Success = true;
         if (!Value.isDefault &&
             (MyValue != Value.Value || MyNumBits != NumBits)) {
-          describeNode("Malformed", this);
-          fprintf(stderr, "Expected (%s ", getName());
-          writeInt(stderr, MyValue, ValueFormat::Hexidecimal);
-          fprintf(stderr, ":%u)\n", MyNumBits);
+          FILE* Out = error();
+          fprintf(Out, "Expected (%s ", getName());
+          writeInt(Out, MyValue, ValueFormat::Hexidecimal);
+          fprintf(Out, ":%u)\n", MyNumBits);
+          errorDescribeNode("Malformed", this);
           Success = false;
         }
         TRACE(IntType, "Value", MyValue);
@@ -1214,16 +1223,16 @@ bool EvalNode::validateNode(NodeVectorType& Parents) {
   assert(Sym);
   const auto* Defn = dyn_cast<DefineNode>(Sym->getDefineDefinition());
   if (Defn == nullptr) {
-    fprintf(stderr, "Can't find define for symbol!\n");
-    describeNode("In", this);
+    fprintf(error(), "Can't find define for symbol!\n");
+    errorDescribeNode("In", this);
     return false;
   }
   const auto* Params = dyn_cast<ParamsNode>(Defn->getKid(1));
   assert(Params);
   if (int(Params->getValue()) != getNumKids() - 1) {
-    fprintf(stderr, "Eval called with wrong number of arguments!\n");
-    describeNode("bad eval", this);
-    describeNode("called define", Defn);
+    fprintf(error(), "Eval called with wrong number of arguments!\n");
+    errorDescribeNode("bad eval", this);
+    errorDescribeNode("called define", Defn);
     return false;
   }
   return true;
@@ -1317,10 +1326,10 @@ IntType getWidthMask(uint32_t BitWidth) {
   return std::numeric_limits<IntType>::max() >> (MaxOpcodeWidth - BitWidth);
 }
 
-IntType getIntegerValue(Node* N) {
-  if (auto* IntVal = dyn_cast<IntegerNode>(N))
+IntType getIntegerValue(Node* Nd) {
+  if (auto* IntVal = dyn_cast<IntegerNode>(Nd))
     return IntVal->getValue();
-  fatal("Integer value expected but not found");
+  errorDescribeNode("Integer value expected but not found", Nd);
   return 0;
 }
 
@@ -1328,12 +1337,12 @@ bool getCaseSelectorWidth(const Node* Nd, uint32_t& Width) {
   switch (Nd->getType()) {
     default:
       // Not allowed in opcode cases.
-      describeNode("Non-fixed width opcode format", Nd);
+      errorDescribeNode("Non-fixed width opcode format", Nd);
       return false;
     case OpBit:
       Width = 1;
       if (Width >= MaxOpcodeWidth) {
-        describeNode("Bit size not valid", Nd);
+        errorDescribeNode("Bit size not valid", Nd);
         return false;
       }
       return true;
@@ -1344,7 +1353,7 @@ bool getCaseSelectorWidth(const Node* Nd, uint32_t& Width) {
   }
   Width = getIntegerValue(Nd->getKid(0));
   if (Width == 0 || Width >= MaxOpcodeWidth) {
-    describeNode("Bit size not valid", Nd);
+    errorDescribeNode("Bit size not valid", Nd);
     return false;
   }
   return true;
@@ -1364,7 +1373,7 @@ bool collectCaseWidths(IntType Key,
   switch (Nd->getType()) {
     default:
       // Not allowed in opcode cases.
-      describeNode("Non-fixed width opcode format", Nd);
+      errorDescribeNode("Non-fixed width opcode format", Nd);
       return false;
     case OpOpcode:
       if (isa<LastReadNode>(Nd->getKid(0))) {
@@ -1378,18 +1387,18 @@ bool collectCaseWidths(IntType Key,
             // Already handled by outer case.
             continue;
           if (!collectCaseWidths(CaseKey, CaseBody, CaseWidths)) {
-            describeNode("Inside", Nd);
+            errorDescribeNode("Inside", Nd);
             return false;
           }
         }
       } else {
         uint32_t Width;
         if (!getCaseSelectorWidth(Nd->getKid(0), Width)) {
-          describeNode("Inside", Nd);
+          errorDescribeNode("Inside", Nd);
           return false;
         }
         if (Width >= MaxOpcodeWidth) {
-          describeNode("Bit width(s) too big", Nd);
+          errorDescribeNode("Bit width(s) too big", Nd);
           return false;
         }
         CaseWidths.insert(Width);
@@ -1401,13 +1410,13 @@ bool collectCaseWidths(IntType Key,
           const Node* CaseBody = Case->getKid(1);
           std::unordered_set<uint32_t> LocalCaseWidths;
           if (!collectCaseWidths(CaseKey, CaseBody, LocalCaseWidths)) {
-            describeNode("Inside", Nd);
+            errorDescribeNode("Inside", Nd);
             return false;
           }
           for (uint32_t CaseWidth : LocalCaseWidths) {
             uint32_t CombinedWidth = Width + CaseWidth;
             if (CombinedWidth >= MaxOpcodeWidth) {
-              describeNode("Bit width(s) too big", Nd);
+              errorDescribeNode("Bit width(s) too big", Nd);
               return false;
             }
             CaseWidths.insert(CombinedWidth);
@@ -1446,16 +1455,16 @@ template OpcodeNode* SymbolTable::create<OpcodeNode>();
 OpcodeNode::~OpcodeNode() {
 }
 
-void OpcodeNode::clearCaches(NodeVectorType& AdditionalNodes) {
-  SelectBaseNode::clearCaches(AdditionalNodes);
+bool OpcodeNode::validateNode(NodeVectorType& Parents) {
+  TRACE_METHOD("validateNode");
+  TRACE(node_ptr, nullptr, this);
   CaseRangeVector.clear();
-}
 
-void OpcodeNode::installCaseRanges() {
   uint32_t InitialWidth;
   if (!getCaseSelectorWidth(getKid(0), InitialWidth)) {
-    describeNode("Inside", this);
-    fatal("Unable to install caches for opcode s-expression");
+    errorDescribeNode("Inside", this);
+    errorDescribeNode("Opcode value doesn't have fixed width", getKid(0));
+    return false;
   }
   for (int i = 1, NumKids = getNumKids(); i < NumKids; ++i) {
     assert(isa<CaseNode>(Kids[i]));
@@ -1463,15 +1472,15 @@ void OpcodeNode::installCaseRanges() {
     std::unordered_set<uint32_t> CaseWidths;
     IntType Key = getIntegerValue(Case->getKid(0));
     if (!collectCaseWidths(Key, Case->getKid(1), CaseWidths)) {
-      describeNode("Inside", Case);
-      describeNode("Inside ", this);
-      fatal("Unable to install caches for opcode s-expression");
+      errorDescribeNode("Unable to install caches for opcode s-expression",
+                        this);
+      return false;
     }
     for (uint32_t NestedWidth : CaseWidths) {
       uint32_t Width = InitialWidth + NestedWidth;
       if (Width > MaxOpcodeWidth) {
-        describeNode("Bit width(s) too big", this);
-        fatal("Unable to install caches for opcode s-expression");
+        errorDescribeNode("Bit width(s) too big", this);
+        return false;
       }
       IntType Min = Key << NestedWidth;
       IntType Max = Min + getWidthMask(NestedWidth);
@@ -1485,19 +1494,13 @@ void OpcodeNode::installCaseRanges() {
     const WriteRange& R1 = CaseRangeVector[i];
     const WriteRange& R2 = CaseRangeVector[i + 1];
     if (R1.getMax() >= R2.getMin()) {
-      describeNode("Range 1", R1.getCase());
-      describeNode("Range 2", R2.getCase());
-      describeNode("Inside", this);
-      fatal("Opcode case ranges not unique");
+      errorDescribeNode("Range 1", R1.getCase());
+      errorDescribeNode("Range 2", R2.getCase());
+      errorDescribeNode("Opcode case ranges not unique", this);
+      return false;
     }
   }
-}
-
-void OpcodeNode::installCaches(NodeVectorType& AdditionalNodes) {
-  TRACE_METHOD("OpcodeNode::installCaches");
-  TRACE(node_ptr, nullptr, this);
-  SelectBaseNode::installCaches(AdditionalNodes);
-  installCaseRanges();
+  return true;
 }
 
 const CaseNode* OpcodeNode::getWriteCase(decode::IntType Value,
