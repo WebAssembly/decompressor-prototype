@@ -177,6 +177,11 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   T* create(Node* Nd1, Node* Nd2, Node* Nd3);
   BinaryAcceptNode* createBinaryAccept(decode::IntType Value, unsigned NumBits);
 
+  // Returns the cached value associated with a node, or nullptr if not cached.
+  Node* getCachedValue(Node* Nd) { return CachedValue[Nd]; }
+
+  void setCachedValue(Node* Nd, Node* Value) { CachedValue[Nd] = Value; }
+
   // Strips all callback actions from the algorithm, except for the names
   // specified. Returns the updated tree.
   void stripCallbacksExcept(std::set<std::string>& KeepActions);
@@ -193,6 +198,7 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   void describe(FILE* Out);
 
  private:
+  typedef std::map<Node*, Node*> CachedValueMap;
   std::shared_ptr<SymbolTable> EnclosingScope;
   std::vector<Node*> Allocated;
   std::shared_ptr<utils::TraceClass> Trace;
@@ -205,6 +211,7 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   std::vector<SymbolNode*> Predefined;
   CallbackNode* BlockEnterCallback;
   CallbackNode* BlockExitCallback;
+  CachedValueMap CachedValue;
 
   void init();
   void deallocateNodes();
@@ -323,6 +330,84 @@ class NullaryNode : public Node {
   NullaryNode(SymbolTable& Symtab, NodeType Type);
 };
 
+class UnaryNode : public Node {
+  UnaryNode() = delete;
+  UnaryNode(const UnaryNode&) = delete;
+  UnaryNode& operator=(const UnaryNode&) = delete;
+
+ public:
+  ~UnaryNode() OVERRIDE;
+  int getNumKids() const OVERRIDE FINAL;
+  Node* getKid(int Index) const OVERRIDE FINAL;
+  void setKid(int Index, Node* N) OVERRIDE FINAL;
+
+  static bool implementsClass(NodeType Type);
+
+ protected:
+  Node* Kids[1];
+  UnaryNode(SymbolTable& Symtab, NodeType Type, Node* Kid);
+};
+
+class BinaryNode : public Node {
+  BinaryNode() = delete;
+  BinaryNode(const BinaryNode&) = delete;
+  BinaryNode& operator=(const BinaryNode&) = delete;
+
+ public:
+  ~BinaryNode() OVERRIDE;
+  int getNumKids() const OVERRIDE FINAL;
+  Node* getKid(int Index) const OVERRIDE FINAL;
+  void setKid(int Index, Node* N) OVERRIDE FINAL;
+
+  static bool implementsClass(NodeType Type);
+
+ protected:
+  Node* Kids[2];
+  BinaryNode(SymbolTable& Symtab, NodeType Type, Node* Kid1, Node* Kid2);
+};
+
+class TernaryNode : public Node {
+  TernaryNode() = delete;
+  TernaryNode(const TernaryNode&) = delete;
+  TernaryNode& operator=(const TernaryNode&) = delete;
+
+ public:
+  ~TernaryNode() OVERRIDE;
+  int getNumKids() const OVERRIDE FINAL;
+  Node* getKid(int Index) const OVERRIDE FINAL;
+  void setKid(int Index, Node* N) OVERRIDE FINAL;
+
+  static bool implementsClass(NodeType Type);
+
+ protected:
+  Node* Kids[3];
+  TernaryNode(SymbolTable& Symtab,
+              NodeType Type,
+              Node* Kid1,
+              Node* Kid2,
+              Node* Kid3);
+};
+
+class NaryNode : public Node {
+  NaryNode() = delete;
+  NaryNode(const NaryNode&) = delete;
+  NaryNode& operator=(const NaryNode&) = delete;
+
+ public:
+  ~NaryNode() OVERRIDE;
+  int getNumKids() const OVERRIDE FINAL;
+  Node* getKid(int Index) const OVERRIDE FINAL;
+  void setKid(int Index, Node* N) OVERRIDE FINAL;
+  void append(Node* Kid) FINAL OVERRIDE;
+  void clearKids();
+
+  static bool implementsClass(NodeType Type);
+
+ protected:
+  std::vector<Node*> Kids;
+  NaryNode(SymbolTable& Symtab, NodeType Type);
+};
+
 #define X(tag, NODE_DECLS)                                                 \
   class tag##Node FINAL : public NullaryNode {                             \
     tag##Node() = delete;                                                  \
@@ -434,24 +519,6 @@ class SymbolNode FINAL : public NullaryNode {
   void setPredefinedSymbol(PredefinedSymbol NewValue);
 };
 
-class UnaryNode : public Node {
-  UnaryNode() = delete;
-  UnaryNode(const UnaryNode&) = delete;
-  UnaryNode& operator=(const UnaryNode&) = delete;
-
- public:
-  ~UnaryNode() OVERRIDE;
-  int getNumKids() const OVERRIDE FINAL;
-  Node* getKid(int Index) const OVERRIDE FINAL;
-  void setKid(int Index, Node* N) OVERRIDE FINAL;
-
-  static bool implementsClass(NodeType Type);
-
- protected:
-  Node* Kids[1];
-  UnaryNode(SymbolTable& Symtab, NodeType Type, Node* Kid);
-};
-
 #define X(tag, NODE_DECLS)                                                 \
   class tag##Node FINAL : public UnaryNode {                               \
     tag##Node() = delete;                                                  \
@@ -466,24 +533,6 @@ class UnaryNode : public Node {
   };
 AST_UNARYNODE_TABLE
 #undef X
-
-class BinaryNode : public Node {
-  BinaryNode() = delete;
-  BinaryNode(const BinaryNode&) = delete;
-  BinaryNode& operator=(const BinaryNode&) = delete;
-
- public:
-  ~BinaryNode() OVERRIDE;
-  int getNumKids() const OVERRIDE FINAL;
-  Node* getKid(int Index) const OVERRIDE FINAL;
-  void setKid(int Index, Node* N) OVERRIDE FINAL;
-
-  static bool implementsClass(NodeType Type);
-
- protected:
-  Node* Kids[2];
-  BinaryNode(SymbolTable& Symtab, NodeType Type, Node* Kid1, Node* Kid2);
-};
 
 #define X(tag, NODE_DECLS)                                                 \
   class tag##Node FINAL : public BinaryNode {                              \
@@ -500,28 +549,6 @@ class BinaryNode : public Node {
 AST_BINARYNODE_TABLE
 #undef X
 
-class TernaryNode : public Node {
-  TernaryNode() = delete;
-  TernaryNode(const TernaryNode&) = delete;
-  TernaryNode& operator=(const TernaryNode&) = delete;
-
- public:
-  ~TernaryNode() OVERRIDE;
-  int getNumKids() const OVERRIDE FINAL;
-  Node* getKid(int Index) const OVERRIDE FINAL;
-  void setKid(int Index, Node* N) OVERRIDE FINAL;
-
-  static bool implementsClass(NodeType Type);
-
- protected:
-  Node* Kids[3];
-  TernaryNode(SymbolTable& Symtab,
-              NodeType Type,
-              Node* Kid1,
-              Node* Kid2,
-              Node* Kid3);
-};
-
 #define X(tag, NODE_DECLS)                                                 \
   class tag##Node FINAL : public TernaryNode {                             \
     tag##Node() = delete;                                                  \
@@ -536,26 +563,6 @@ class TernaryNode : public Node {
   };
 AST_TERNARYNODE_TABLE
 #undef X
-
-class NaryNode : public Node {
-  NaryNode() = delete;
-  NaryNode(const NaryNode&) = delete;
-  NaryNode& operator=(const NaryNode&) = delete;
-
- public:
-  ~NaryNode() OVERRIDE;
-  int getNumKids() const OVERRIDE FINAL;
-  Node* getKid(int Index) const OVERRIDE FINAL;
-  void setKid(int Index, Node* N) OVERRIDE FINAL;
-  void append(Node* Kid) FINAL OVERRIDE;
-  void clearKids();
-
-  static bool implementsClass(NodeType Type);
-
- protected:
-  std::vector<Node*> Kids;
-  NaryNode(SymbolTable& Symtab, NodeType Type);
-};
 
 #define X(tag, NODE_DECLS)                                                 \
   class tag##Node FINAL : public NaryNode {                                \
