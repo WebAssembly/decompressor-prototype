@@ -501,7 +501,7 @@ class SymbolDefnNode FINAL : public NullaryNode {
   const SymbolNode* getSymbol() const { return Symbol; }
   void setSymbol(const SymbolNode* Nd) { Symbol = Nd; }
   const std::string& getName() const;
-  const Node* getDefineDefinition() { return DefineDefinition; }
+  const Node* getDefineDefinition() const { return DefineDefinition; }
   void setDefineDefinition(const Node* Defn) { DefineDefinition = Defn; }
   const Node* getLiteralDefinition() const { return LiteralDefinition; }
   void setLiteralDefinition(const Node* Defn) { LiteralDefinition = Defn; }
@@ -524,28 +524,23 @@ class SymbolNode FINAL : public NullaryNode {
   SymbolNode(SymbolTable& Symtab, const std::string& Name);
   ~SymbolNode() OVERRIDE;
   const std::string& getName() const { return Name; }
-  const Node* getDefineDefinition() const { return DefineDefinition; }
-  void setDefineDefinition(Node* Defn) { DefineDefinition = Defn; }
-#if 0
-  const Node* getLiteralDefinition() const { return LiteralDefinition; }
-  void setLiteralDefinition(Node* Defn) { LiteralDefinition = Defn; }
-#else
+  const Node* getDefineDefinition() const {
+    return getSymbolDefn()->getDefineDefinition();
+  }
+  void setDefineDefinition(const Node* Defn) {
+    getSymbolDefn()->setDefineDefinition(Defn);
+  }
   const Node* getLiteralDefinition() const {
     return getSymbolDefn()->getLiteralDefinition();
   }
-  void setLiteralDefinition(Node* Defn) {
+  void setLiteralDefinition(const Node* Defn) {
     getSymbolDefn()->setLiteralDefinition(Defn);
   }
-#endif
   PredefinedSymbol getPredefinedSymbol() const { return PredefinedValue; }
   static bool implementsClass(NodeType Type) { return Type == OpSymbol; }
 
  private:
   std::string Name;
-  Node* DefineDefinition;
-#if 0
-  Node* LiteralDefinition;
-#endif
   PredefinedSymbol PredefinedValue;
   void init();
   SymbolDefnNode* getSymbolDefn() const;

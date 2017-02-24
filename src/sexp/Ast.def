@@ -182,7 +182,7 @@
   X(Define, DEFINE_DECLS)                                                      \
   X(Eval, EVAL_DECLS)                                                          \
   X(FileHeader,)                                                               \
-  X(Section, SECTION_DECLS)                                                    \
+  X(Section,)                                                                  \
   X(Sequence,)                                                                 \
   X(Write,)                                                                    \
 
@@ -196,10 +196,6 @@
  public:                                                                       \
   SymbolNode* getCallName() const;                                             \
   bool validateNode(NodeVectorType &Parents) OVERRIDE;                         \
-
-#define SECTION_DECLS                                                          \
- public:                                                                       \
-  /* SymbolNode* getSymbol() const; */                                               \
 
 //#define X(tag, NODE_DECLS)
 #define AST_TERNARYNODE_TABLE                                                  \

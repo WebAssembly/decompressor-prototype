@@ -443,10 +443,6 @@ SymbolNode::~SymbolNode() {
 }
 
 void SymbolNode::init() {
-  DefineDefinition = nullptr;
-#if 0
-  LiteralDefinition = nullptr;
-#endif
   PredefinedValue = PredefinedSymbol::Unknown;
 }
 
@@ -473,21 +469,15 @@ void SymbolNode::setPredefinedSymbol(PredefinedSymbol NewValue) {
 // a node type is not defined with the correct template class.
 
 void SymbolNode::clearCaches(NodeVectorType& AdditionalNodes) {
+  const Node* DefineDefinition = getDefineDefinition();
   if (DefineDefinition)
-    AdditionalNodes.push_back(DefineDefinition);
-#if 0
-  if (LiteralDefinition)
-    AdditionalNodes.push_back(LiteralDefinition);
-#endif
+    AdditionalNodes.push_back(const_cast<Node*>(DefineDefinition));
 }
 
 void SymbolNode::installCaches(NodeVectorType& AdditionalNodes) {
+  const Node* DefineDefinition = getDefineDefinition();
   if (DefineDefinition)
-    AdditionalNodes.push_back(DefineDefinition);
-#if 0
-  if (LiteralDefinition)
-    AdditionalNodes.push_back(LiteralDefinition);
-#endif
+    AdditionalNodes.push_back(const_cast<Node*>(DefineDefinition));
 }
 
 SymbolTable::SymbolTable(std::shared_ptr<SymbolTable> EnclosingScope)
@@ -1275,12 +1265,6 @@ bool EvalNode::validateNode(NodeVectorType& Parents) {
   }
   return true;
 }
-
-#if 0
-SymbolNode* SectionNode::getSymbol() const {
-  return dyn_cast<SymbolNode>(getKid(0));
-}
-#endif
 
 SelectBaseNode::~SelectBaseNode() {
 }
