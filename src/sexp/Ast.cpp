@@ -362,7 +362,47 @@ SymbolDefnNode::~SymbolDefnNode() {
 }
 
 const std::string& SymbolDefnNode::getName() const {
-  return Symbol->getName();
+  if (Symbol)
+    return Symbol->getName();
+  static std::string Unknown("???");
+  return Unknown;
+}
+
+const DefineNode* SymbolDefnNode::getDefineDefinition() const {
+  if (DefineDefinition)
+    return DefineDefinition;
+  if (Symbol == nullptr)
+    return nullptr;
+  SymbolTable* Scope = &Symtab;
+  if (Scope == nullptr)
+    return nullptr;
+  Scope = Scope->getEnclosingScope();
+  if (Scope == nullptr)
+    return nullptr;
+  const std::string& Name = Symbol->getName();
+  SymbolNode* Sym = Scope->getSymbol(Name);
+  if (Sym == nullptr)
+    return nullptr;
+  return DefineDefinition = const_cast<DefineNode*>(Sym->getDefineDefinition());
+}
+
+const LiteralDefNode* SymbolDefnNode::getLiteralDefinition() const {
+  if (LiteralDefinition)
+    return LiteralDefinition;
+  if (Symbol == nullptr)
+    return nullptr;
+  SymbolTable* Scope = &Symtab;
+  if (Scope == nullptr)
+    return nullptr;
+  Scope = Scope->getEnclosingScope();
+  if (Scope == nullptr)
+    return nullptr;
+  const std::string& Name = Symbol->getName();
+  SymbolNode* Sym = Scope->getSymbol(Name);
+  if (Sym == nullptr)
+    return nullptr;
+  return LiteralDefinition =
+             const_cast<LiteralDefNode*>(Sym->getLiteralDefinition());
 }
 
 SymbolNode::SymbolNode(SymbolTable& Symtab, const std::string& Name)
@@ -435,6 +475,7 @@ FILE* SymbolTable::error() const {
 }
 
 SymbolNode* SymbolTable::getSymbol(const std::string& Name) {
+  // TODO(karlschimpf) -- Dont overfill.
   return SymbolMap[Name];
 }
 
@@ -614,7 +655,7 @@ void SymbolTable::installDefinitions(Node* Root) {
       return;
     case OpDefine: {
       if (auto* DefineSymbol = dyn_cast<SymbolNode>(Root->getKid(0))) {
-        DefineSymbol->setDefineDefinition(Root);
+        DefineSymbol->setDefineDefinition(cast<DefineNode>(Root));
         return;
       }
       errorDescribeNode("Malformed define", Root);
@@ -623,7 +664,7 @@ void SymbolTable::installDefinitions(Node* Root) {
     }
     case OpLiteralDef: {
       if (auto* LiteralSymbol = dyn_cast<SymbolNode>(Root->getKid(0))) {
-        LiteralSymbol->setLiteralDefinition(Root);
+        LiteralSymbol->setLiteralDefinition(cast<LiteralDefNode>(Root));
         return;
       }
       errorDescribeNode("Malformed", Root);
@@ -633,7 +674,7 @@ void SymbolTable::installDefinitions(Node* Root) {
     case OpRename: {
       if (auto* OldSymbol = dyn_cast<SymbolNode>(Root->getKid(0))) {
         if (auto* NewSymbol = dyn_cast<SymbolNode>(Root->getKid(1))) {
-          Node* Defn = const_cast<Node*>(OldSymbol->getDefineDefinition());
+          const DefineNode* Defn = OldSymbol->getDefineDefinition();
           NewSymbol->setDefineDefinition(Defn);
           return;
         }

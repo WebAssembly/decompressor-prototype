@@ -40,8 +40,10 @@ class TraceClass;
 namespace filt {
 
 class BinaryAcceptNode;
+class DefineNode;
 class FileHeaderNode;
 class IntegerNode;
+class LiteralDefNode;
 class Node;
 class SymbolNode;
 class SymbolTable;
@@ -137,6 +139,7 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   explicit SymbolTable();
   explicit SymbolTable(std::shared_ptr<SymbolTable> EnclosingScope);
   ~SymbolTable();
+  SymbolTable* getEnclosingScope() { return EnclosingScope.get(); }
   // Gets existing symbol if known. Otherwise returns nullptr.
   SymbolNode* getSymbol(const std::string& Name);
   SymbolNode* getPredefined(PredefinedSymbol Sym) {
@@ -524,17 +527,19 @@ class SymbolDefnNode FINAL : public NullaryNode {
   const SymbolNode* getSymbol() const { return Symbol; }
   void setSymbol(const SymbolNode* Nd) { Symbol = Nd; }
   const std::string& getName() const;
-  const Node* getDefineDefinition() const { return DefineDefinition; }
-  void setDefineDefinition(const Node* Defn) { DefineDefinition = Defn; }
-  const Node* getLiteralDefinition() const { return LiteralDefinition; }
-  void setLiteralDefinition(const Node* Defn) { LiteralDefinition = Defn; }
+  const DefineNode* getDefineDefinition() const;
+  void setDefineDefinition(const DefineNode* Defn) { DefineDefinition = Defn; }
+  const LiteralDefNode* getLiteralDefinition() const;
+  void setLiteralDefinition(const LiteralDefNode* Defn) {
+    LiteralDefinition = Defn;
+  }
 
   static bool implementsClass(NodeType Type) { return Type == OpSymbolDefn; }
 
  private:
   const SymbolNode* Symbol;
-  const Node* DefineDefinition;
-  const Node* LiteralDefinition;
+  mutable const DefineNode* DefineDefinition;
+  mutable const LiteralDefNode* LiteralDefinition;
 };
 
 class SymbolNode FINAL : public NullaryNode {
@@ -547,16 +552,16 @@ class SymbolNode FINAL : public NullaryNode {
   SymbolNode(SymbolTable& Symtab, const std::string& Name);
   ~SymbolNode() OVERRIDE;
   const std::string& getName() const { return Name; }
-  const Node* getDefineDefinition() const {
+  const DefineNode* getDefineDefinition() const {
     return getSymbolDefn()->getDefineDefinition();
   }
-  void setDefineDefinition(const Node* Defn) {
+  void setDefineDefinition(const DefineNode* Defn) {
     getSymbolDefn()->setDefineDefinition(Defn);
   }
-  const Node* getLiteralDefinition() const {
+  const LiteralDefNode* getLiteralDefinition() const {
     return getSymbolDefn()->getLiteralDefinition();
   }
-  void setLiteralDefinition(const Node* Defn) {
+  void setLiteralDefinition(const LiteralDefNode* Defn) {
     getSymbolDefn()->setLiteralDefinition(Defn);
   }
   PredefinedSymbol getPredefinedSymbol() const { return PredefinedValue; }
