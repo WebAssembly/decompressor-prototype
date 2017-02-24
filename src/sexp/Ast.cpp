@@ -68,7 +68,7 @@ BinaryEvalNode* SymbolTable::create<BinaryEvalNode>(Node* Kid) {
   return Nd;
 }
 
-template<>
+template <>
 SymbolDefnNode* SymbolTable::create<SymbolDefnNode>() {
   SymbolDefnNode* Nd = new SymbolDefnNode(*this);
   Allocated.push_back(Nd);

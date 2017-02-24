@@ -495,7 +495,8 @@ class SymbolDefnNode FINAL : public NullaryNode {
   SymbolDefnNode() = delete;
   SymbolDefnNode(const SymbolDefnNode&) = delete;
   SymbolDefnNode& operator=(const SymbolDefnNode&) = delete;
-public:
+
+ public:
   SymbolDefnNode(SymbolTable& Symtab);
   const SymbolNode* getSymbol() const { return Symbol; }
   void setSymbol(const SymbolNode* Nd) { Symbol = Nd; }
@@ -507,7 +508,7 @@ public:
 
   static bool implementsClass(NodeType Type) { return Type == OpSymbolDefn; }
 
-private:
+ private:
   const SymbolNode* Symbol;
   const Node* DefineDefinition;
   const Node* LiteralDefinition;
