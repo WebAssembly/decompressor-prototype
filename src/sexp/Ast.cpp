@@ -27,6 +27,8 @@
 #include "utils/Casting.h"
 #include "utils/Trace.h"
 
+#include "sexp/Ast-templates.h"
+
 namespace wasm {
 
 using namespace decode;
@@ -46,102 +48,6 @@ void TraceClass::trace_node_ptr(const char* Name, const Node* Nd) {
 }  // end of namespace utils.
 
 namespace filt {
-
-template <class T>
-T* SymbolTable::create() {
-  T* Nd = new T(*this);
-  Allocated.push_back(Nd);
-  return Nd;
-}
-
-template <>
-BinaryAcceptNode* SymbolTable::create<BinaryAcceptNode>() {
-  BinaryAcceptNode* Nd = new BinaryAcceptNode(*this);
-  Allocated.push_back(Nd);
-  return Nd;
-}
-
-BinaryAcceptNode* SymbolTable::createBinaryAccept(IntType Value,
-                                                  unsigned NumBits) {
-  BinaryAcceptNode* Nd = new BinaryAcceptNode(*this, Value, NumBits);
-  Allocated.push_back(Nd);
-  return Nd;
-}
-
-template <>
-BinaryEvalNode* SymbolTable::create<BinaryEvalNode>(Node* Kid) {
-  BinaryEvalNode* Nd = new BinaryEvalNode(*this, Kid);
-  Allocated.push_back(Nd);
-  return Nd;
-}
-
-#define X(tag, NODE_DECLS)                      \
-  template <>                                   \
-  tag##Node* SymbolTable::create<tag##Node>() { \
-    tag##Node* tag##Nd = new tag##Node(*this);  \
-    Allocated.push_back(tag##Nd);               \
-    return tag##Nd;                             \
-  }
-AST_NULLARYNODE_TABLE
-#undef X
-
-#define X(tag, NODE_DECLS)                               \
-  template <>                                            \
-  tag##Node* SymbolTable::create<tag##Node>(Node * Nd) { \
-    tag##Node* tag##Nd = new tag##Node(*this, Nd);       \
-    Allocated.push_back(tag##Nd);                        \
-    return tag##Nd;                                      \
-  }
-AST_UNARYNODE_TABLE
-#undef X
-
-#define X(tag, NODE_DECLS)                                            \
-  template <>                                                         \
-  tag##Node* SymbolTable::create<tag##Node>(Node * Nd1, Node * Nd2) { \
-    tag##Node* tag##Nd = new tag##Node(*this, Nd1, Nd2);              \
-    Allocated.push_back(tag##Nd);                                     \
-    return tag##Nd;                                                   \
-  }
-AST_BINARYNODE_TABLE
-#undef X
-
-#define X(tag, NODE_DECLS)                                          \
-  template <>                                                       \
-  tag##Node* SymbolTable::create<tag##Node>(Node * Nd1, Node * Nd2, \
-                                            Node * Nd3) {           \
-    tag##Node* tag##Nd = new tag##Node(*this, Nd1, Nd2, Nd3);       \
-    Allocated.push_back(tag##Nd);                                   \
-    return tag##Nd;                                                 \
-  }
-AST_TERNARYNODE_TABLE
-#undef X
-
-#define X(tag, NODE_DECLS)                      \
-  template <>                                   \
-  tag##Node* SymbolTable::create<tag##Node>() { \
-    tag##Node* tag##Nd = new tag##Node(*this);  \
-    Allocated.push_back(tag##Nd);               \
-    return tag##Nd;                             \
-  }
-AST_NARYNODE_TABLE
-#undef X
-
-#define X(tag, NODE_DECLS)                      \
-  template <>                                   \
-  tag##Node* SymbolTable::create<tag##Node>() { \
-    tag##Node* tag##Nd = new tag##Node(*this);  \
-    Allocated.push_back(tag##Nd);               \
-    return tag##Nd;                             \
-  }
-AST_SELECTNODE_TABLE
-#undef X
-
-template <>
-OpcodeNode* SymbolTable::create<OpcodeNode>() {
-  OpcodeNode* Nd = new OpcodeNode(*this);
-  Allocated.push_back(Nd);
-  return Nd;
-}
 
 namespace {
 
@@ -880,6 +786,11 @@ bool NullaryNode::implementsClass(NodeType Type) {
 AST_NULLARYNODE_TABLE
 #undef X
 
+#define X(tag, NODE_DECLS)                      \
+  template tag##Node* SymbolTable::create<tag##Node>();
+AST_NULLARYNODE_TABLE
+#undef X
+
 #define X(tag, NODE_DECLS) \
   tag##Node::~tag##Node() {}
 AST_NULLARYNODE_TABLE
@@ -924,6 +835,11 @@ bool UnaryNode::implementsClass(NodeType Type) {
 #define X(tag, NODE_DECLS)                             \
   tag##Node::tag##Node(SymbolTable& Symtab, Node* Kid) \
       : UnaryNode(Symtab, Op##tag, Kid) {}
+AST_UNARYNODE_TABLE
+#undef X
+
+#define X(tag, NODE_DECLS)                               \
+  template tag##Node* SymbolTable::create<tag##Node>(Node * Nd);
 AST_UNARYNODE_TABLE
 #undef X
 
@@ -1018,6 +934,15 @@ BinaryAcceptNode::BinaryAcceptNode(SymbolTable& Symtab,
                   decode::ValueFormat::Hexidecimal,
                   NumBits) {
 }
+
+BinaryAcceptNode* SymbolTable::createBinaryAccept(IntType Value,
+                                                  unsigned NumBits) {
+  BinaryAcceptNode* Nd = new BinaryAcceptNode(*this, Value, NumBits);
+  Allocated.push_back(Nd);
+  return Nd;
+}
+
+template BinaryAcceptNode* SymbolTable::create<BinaryAcceptNode>();
 
 BinaryAcceptNode::~BinaryAcceptNode() {
 }
@@ -1130,6 +1055,11 @@ bool BinaryNode::implementsClass(NodeType Type) {
 AST_BINARYNODE_TABLE
 #undef X
 
+#define X(tag, NODE_DECLS)                                            \
+  template tag##Node* SymbolTable::create<tag##Node>(Node * Nd1, Node * Nd2);
+AST_BINARYNODE_TABLE
+#undef X
+
 #define X(tag, NODE_DECLS) \
   tag##Node::~tag##Node() {}
 AST_BINARYNODE_TABLE
@@ -1180,6 +1110,11 @@ bool TernaryNode::implementsClass(NodeType Type) {
   tag##Node::tag##Node(SymbolTable& Symtab, Node* Kid1, Node* Kid2, \
                        Node* Kid3)                                  \
       : TernaryNode(Symtab, Op##tag, Kid1, Kid2, Kid3) {}
+AST_TERNARYNODE_TABLE
+#undef X
+
+#define X(tag, NODE_DECLS)                                          \
+  template tag##Node* SymbolTable::create<tag##Node>(Node * Nd1, Node * Nd2, Node * Nd3);
 AST_TERNARYNODE_TABLE
 #undef X
 
@@ -1257,6 +1192,11 @@ bool NaryNode::implementsClass(NodeType Type) {
 
 #define X(tag, NODE_DECLS) \
   tag##Node::tag##Node(SymbolTable& Symtab) : NaryNode(Symtab, Op##tag) {}
+AST_NARYNODE_TABLE
+#undef X
+
+#define X(tag, NODE_DECLS)                      \
+  template tag##Node* SymbolTable::create<tag##Node>();
 AST_NARYNODE_TABLE
 #undef X
 
@@ -1443,6 +1383,11 @@ bool collectCaseWidths(IntType Key,
 AST_SELECTNODE_TABLE
 #undef X
 
+#define X(tag, NODE_DECLS)                      \
+  template tag##Node* SymbolTable::create<tag##Node>();
+AST_SELECTNODE_TABLE
+#undef X
+
 #define X(tag, NODE_DECLS) \
   tag##Node::~tag##Node() {}
 AST_SELECTNODE_TABLE
@@ -1450,6 +1395,8 @@ AST_SELECTNODE_TABLE
 
 OpcodeNode::OpcodeNode(SymbolTable& Symtab) : SelectBaseNode(Symtab, OpOpcode) {
 }
+
+template OpcodeNode* SymbolTable::create<OpcodeNode>();
 
 OpcodeNode::~OpcodeNode() {
 }
@@ -1574,6 +1521,8 @@ utils::TraceClass& OpcodeNode::WriteRange::getTrace() const {
 BinaryEvalNode::BinaryEvalNode(SymbolTable& Symtab, Node* Encoding)
     : UnaryNode(Symtab, OpBinaryEval, Encoding) {
 }
+
+template BinaryEvalNode* SymbolTable::create<BinaryEvalNode>(Node* Kid);
 
 BinaryEvalNode::~BinaryEvalNode() {
 }
