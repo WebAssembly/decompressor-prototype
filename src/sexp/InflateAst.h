@@ -46,6 +46,9 @@ class InflateAst : public interp::Writer {
     Values.push(Value);
     return true;
   }
+  void setInstallDuringInflation(bool NewValue) {
+    InstallDuringInflation = NewValue;
+  }
   FileNode* getGeneratedFile() const;
   std::shared_ptr<SymbolTable> getSymtab() { return Symtab; }
   decode::StreamType getStreamType() const OVERRIDE;
@@ -73,6 +76,7 @@ class InflateAst : public interp::Writer {
   size_t ValueMarker;
   size_t AstMarkersTop;
   utils::ValueStack<size_t> AstMarkers;
+  bool InstallDuringInflation;
 
   std::shared_ptr<utils::TraceClass> Trace;
 

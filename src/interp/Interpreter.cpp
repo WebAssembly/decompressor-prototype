@@ -577,6 +577,17 @@ void Interpreter::handleOtherMethods() {
   }
 }
 
+std::shared_ptr<SymbolTable> Interpreter::getDefaultAlgorithm(
+    const Node* Header) {
+  for (std::shared_ptr<AlgorithmSelector>& Sel : Selectors) {
+    std::shared_ptr<SymbolTable> Symtab = Sel->getSymtab();
+    if (*Header == *Symtab->getTargetHeader()) {
+      return Symtab;
+    }
+  }
+  return std::shared_ptr<SymbolTable>();
+}
+
 void Interpreter::algorithmStart() {
   if (Symtab.get() != nullptr)
     return callTopLevel(Method::GetFile, nullptr);
@@ -1380,7 +1391,7 @@ void Interpreter::algorithmResume() {
             }
             Frame.CallState = State::Step2;
             call(Method::Eval, MethodModifier::ReadOnly,
-                 Selectors[LoopCounter]->getTargetHeader());
+                 Selectors[LoopCounter]->getSymtab()->getTargetHeader());
             break;
           case State::Step2:
             assert(CatchStack.size() == 1);

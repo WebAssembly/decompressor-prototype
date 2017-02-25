@@ -44,7 +44,8 @@ InflateAst::InflateAst()
       SymbolNameSize(0),
       ValueMarker(0),
       AstMarkersTop(0),
-      AstMarkers(AstMarkersTop) {
+      AstMarkers(AstMarkersTop),
+      InstallDuringInflation(true) {
 }
 
 InflateAst::~InflateAst() {
@@ -268,7 +269,8 @@ bool InflateAst::applyOp(IntType Op) {
       FileNode* File = getGeneratedFile();
       if (File == nullptr)
         return failBuild("InflateAst", "Did not generate a file node");
-      Symtab->install(File);
+      if (InstallDuringInflation)
+        Symtab->install(File);
       return true;
     }
     case OpSequence:

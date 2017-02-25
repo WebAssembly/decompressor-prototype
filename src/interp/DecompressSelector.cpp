@@ -53,18 +53,17 @@ DecompressSelector::DecompressSelector(std::shared_ptr<SymbolTable> Symtab,
                                        std::shared_ptr<DecompAlgState> State,
                                        bool IsAlgorithm,
                                        const InterpreterFlags& Flags)
-    : AlgorithmSelector(Flags),
-      Symtab(Symtab),
-      State(State),
-      IsAlgorithm(IsAlgorithm) {
+    : AlgorithmSelector(Symtab, Flags), State(State), IsAlgorithm(IsAlgorithm) {
 }
 
 DecompressSelector::~DecompressSelector() {
 }
 
+#if 0
 const FileHeaderNode* DecompressSelector::getTargetHeader() {
   return Symtab->getTargetHeader();
 }
+#endif
 
 bool DecompressSelector::configure(Interpreter* R) {
   TRACE_USING(R->getTrace(), bool, "IsAlgorithm", IsAlgorithm);
@@ -76,6 +75,7 @@ bool DecompressSelector::configureAlgorithm(Interpreter* R) {
   R->setSymbolTable(Symtab);
   State->OrigWriter = R->getWriter();
   State->Inflator = std::make_shared<InflateAst>();
+  State->Inflator->setInstallDuringInflation(false);
   R->setWriter(State->Inflator);
   return true;
 }
@@ -113,7 +113,9 @@ bool DecompressSelector::resetAlgorithm(Interpreter* R) {
   R->setWriter(State->OrigWriter);
   State->OrigWriter->reset();
   assert(State->Inflator);
-  State->AlgQueue.push(State->Inflator->getSymtab());
+  std::shared_ptr<SymbolTable> Symtab = State->Inflator->getSymtab();
+  Symtab->install(State->Inflator->getGeneratedFile());
+  State->AlgQueue.push(Symtab);
   State->Inflator.reset();
   return true;
 }

@@ -262,6 +262,9 @@ class Interpreter {
 
   void reset();
 
+  std::shared_ptr<filt::SymbolTable> getDefaultAlgorithm(
+      const filt::Node* TargetHeader);
+
   void handleOtherMethods();
 
   // Initializes all internal stacks, for an initial call to Method with

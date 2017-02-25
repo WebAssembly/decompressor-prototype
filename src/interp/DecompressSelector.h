@@ -71,12 +71,10 @@ class DecompressSelector : public AlgorithmSelector {
                      bool IsAlgorithm,
                      const InterpreterFlags& Flags);
   ~DecompressSelector() OVERRIDE;
-  const filt::FileHeaderNode* getTargetHeader() OVERRIDE;
   bool configure(Interpreter* R) OVERRIDE;
   bool reset(Interpreter* R) OVERRIDE;
 
  private:
-  std::shared_ptr<filt::SymbolTable> Symtab;
   std::shared_ptr<DecompAlgState> State;
   bool IsAlgorithm;
 

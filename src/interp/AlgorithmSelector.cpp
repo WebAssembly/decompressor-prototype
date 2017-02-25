@@ -18,10 +18,13 @@
 
 namespace wasm {
 
+using namespace filt;
+
 namespace interp {
 
-AlgorithmSelector::AlgorithmSelector(const InterpreterFlags& Flags)
-    : Flags(Flags) {
+AlgorithmSelector::AlgorithmSelector(std::shared_ptr<SymbolTable> Symtab,
+                                     const InterpreterFlags& Flags)
+    : Flags(Flags), Symtab(Symtab) {
 }
 
 AlgorithmSelector::~AlgorithmSelector() {

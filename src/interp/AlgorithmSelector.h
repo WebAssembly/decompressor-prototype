@@ -25,7 +25,7 @@
 namespace wasm {
 
 namespace filt {
-class FileHeaderNode;
+class SymbolTable;
 }  // end of namespace filt
 
 namespace interp {
@@ -38,11 +38,12 @@ class AlgorithmSelector
   AlgorithmSelector& operator=(const AlgorithmSelector&) = delete;
 
  public:
-  explicit AlgorithmSelector(const InterpreterFlags& Flags);
+  explicit AlgorithmSelector(std::shared_ptr<filt::SymbolTable> Symtab,
+                             const InterpreterFlags& Flags);
   virtual ~AlgorithmSelector();
 
-  // Returns the header to match.
-  virtual const filt::FileHeaderNode* getTargetHeader() = 0;
+  // Returns the symbol table defined by the selector.
+  std::shared_ptr<filt::SymbolTable> getSymtab() { return Symtab; }
 
   // Called if header matches. Allows selector to reconfigure the reader.
   // Will read from input if symbol table (i.e. algorith) is set.
@@ -53,6 +54,9 @@ class AlgorithmSelector
   virtual bool reset(Interpreter* R) = 0;
 
   const InterpreterFlags& Flags;
+
+ protected:
+  std::shared_ptr<filt::SymbolTable> Symtab;
 };
 
 }  // end of namespace interp
