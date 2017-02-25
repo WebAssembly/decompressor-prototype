@@ -172,7 +172,6 @@
     (case 'rename'              (=> 'postorder.inst'))
     (case 'section'             (=> 'postorder.inst'))
     (case 'sequence'            (eval 'nary.node'))
-    (case 'sequence'            (eval 'nary.node'))
     (case 'set'                 (=> 'postorder.inst'))
     (case 'switch'              (eval 'nary.node'))
     (case 'symbol'              (eval 'symbol.lookup'))      

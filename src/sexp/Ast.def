@@ -105,6 +105,8 @@
                                                                                \
   /* Internal (not opcodes in compressed file) */                              \
   X(UnknownSection,    0xFF, "unknown.section", nullptr,           1, 0)       \
+  X(SymbolDefn,        0x100, "symbol.defn",    nullptr,           0, 0)       \
+  X(IntLookup,         0x101, "int.lookup",     nullptr,           0, 0)       \
 
 //#define X(tag, NODE_DECLS)
 #define AST_NULLARYNODE_TABLE                                                  \
@@ -163,13 +165,19 @@
   X(BitwiseAnd,)                                                               \
   X(BitwiseOr,)                                                                \
   X(BitwiseXor,)                                                               \
-  X(Case,)                                                                     \
+  X(Case, CASE_DECLS)                                                          \
   X(IfThen,)                                                                   \
   X(Loop,)                                                                     \
   X(Or,)                                                                       \
   X(Rename,)                                                                   \
   X(Set,)                                                                      \
   X(LiteralDef,)                                                               \
+
+#define CASE_DECLS                                                             \
+  decode::IntType getValue() const { return Value; }                           \
+  bool validateNode(NodeVectorType &Parents) OVERRIDE;                         \
+ private:                                                                      \
+  decode::IntType Value;                                                       \
 
 //#define X(tag, NODE_DECLS)
 #define AST_SELECTNODE_TABLE                                                   \
@@ -181,7 +189,7 @@
   X(Define, DEFINE_DECLS)                                                      \
   X(Eval, EVAL_DECLS)                                                          \
   X(FileHeader,)                                                               \
-  X(Section, SECTION_DECLS)                                                    \
+  X(Section,)                                                                  \
   X(Sequence,)                                                                 \
   X(Write,)                                                                    \
 
@@ -195,10 +203,6 @@
  public:                                                                       \
   SymbolNode* getCallName() const;                                             \
   bool validateNode(NodeVectorType &Parents) OVERRIDE;                         \
-
-#define SECTION_DECLS                                                          \
- public:                                                                       \
-  SymbolNode* getSymbol() const;                                               \
 
 //#define X(tag, NODE_DECLS)
 #define AST_TERNARYNODE_TABLE                                                  \
