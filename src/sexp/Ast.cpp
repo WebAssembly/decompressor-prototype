@@ -182,6 +182,46 @@ Node::Node(SymbolTable& Symtab, NodeType Type)
 Node::~Node() {
 }
 
+int Node::compare(const Node* Nd) const {
+  int Diff = compareNode(Nd);
+  if (Diff != 0)
+    return Diff;
+  // Structurally compare subtrees. Note; we assume that if compareNode()==0,
+  // the node must have the same number of children.
+  std::vector<std::pair<const Node*, const Node*>> Frontier;
+  Frontier.push_back(std::make_pair(this, Nd));
+  while (!Frontier.empty()) {
+    std::pair<const Node*, const Node*>& Pair = Frontier.back();
+    for (int i = 0, Size = Pair.first->getNumKids(); i < Size; ++i) {
+      const Node* N1 = Pair.first->getKid(i);
+      const Node* N2 = Pair.second->getKid(i);
+      Diff = N1->compareNode(N2);
+      if (Diff != 0)
+        return Diff;
+      Frontier.push_back(std::make_pair(N1, N2));
+    }
+    Frontier.pop_back();
+  }
+  return true;
+}
+
+int Node::compareNode(const Node* Nd) const {
+  return int(Type) - int(Nd->Type);
+}
+
+int Node::compareIncomparable(const Node* Nd) const {
+  // First use creation index to try and make value consistent between runs.
+  int Diff = getCreationIndex() - Nd->getCreationIndex();
+  if (Diff != 0)
+    return Diff;
+  // At this point, drop to implementation detail.
+  if (this < Nd)
+    return -1;
+  if (this > Nd)
+    return 1;
+  return 0;
+}
+
 bool Node::definesIntTypeFormat() const {
   IntTypeFormat Format;
   return extractIntTypeFormat(this, Format);
@@ -296,11 +336,13 @@ void Node::append(Node*) {
   decode::fatal("Node::append not supported for ast node!");
 }
 
+#if 0
 void Node::clearCaches(NodeVectorType& AdditionalNodes) {
 }
 
 void Node::installCaches(NodeVectorType& AdditionalNodes) {
 }
+#endif
 
 bool Node::validateKid(NodeVectorType& Parents, Node* Kid) {
   Parents.push_back(this);
@@ -338,6 +380,13 @@ IntLookupNode::IntLookupNode(SymbolTable& Symtab)
 IntLookupNode::~IntLookupNode() {
 }
 
+int IntLookupNode::compareNode(const Node* Nd) const {
+  int Diff = NullaryNode::compareNode(Nd);
+  if (Diff != 0)
+    return Diff;
+  return compareIncomparable(Nd);
+}
+
 const Node* IntLookupNode::get(decode::IntType Value) const {
   if (Lookup.count(Value))
     return Lookup[Value];
@@ -361,6 +410,13 @@ SymbolDefnNode::SymbolDefnNode(SymbolTable& Symtab)
 SymbolDefnNode::~SymbolDefnNode() {
 }
 
+int SymbolDefnNode::compareNode(const Node* Nd) const {
+  int Diff = NullaryNode::compareNode(Nd);
+  if (Diff != 0)
+    return Diff;
+  return compareIncomparable(Nd);
+}
+
 const std::string& SymbolDefnNode::getName() const {
   if (Symbol)
     return Symbol->getName();
@@ -371,6 +427,7 @@ const std::string& SymbolDefnNode::getName() const {
 const DefineNode* SymbolDefnNode::getDefineDefinition() const {
   if (DefineDefinition)
     return DefineDefinition;
+  // Not defined locally, find enclosing definition.
   if (Symbol == nullptr)
     return nullptr;
   SymbolTable* Scope = &Symtab;
@@ -381,14 +438,15 @@ const DefineNode* SymbolDefnNode::getDefineDefinition() const {
     return nullptr;
   const std::string& Name = Symbol->getName();
   SymbolNode* Sym = Scope->getSymbol(Name);
-  if (Sym == nullptr)
-    return nullptr;
-  return DefineDefinition = const_cast<DefineNode*>(Sym->getDefineDefinition());
+  if (Sym != nullptr)
+    DefineDefinition = const_cast<DefineNode*>(Sym->getDefineDefinition());
+  return DefineDefinition;
 }
 
 const LiteralDefNode* SymbolDefnNode::getLiteralDefinition() const {
   if (LiteralDefinition)
     return LiteralDefinition;
+  // Not defined locally, find enclosing definition.
   if (Symbol == nullptr)
     return nullptr;
   SymbolTable* Scope = &Symtab;
@@ -399,10 +457,10 @@ const LiteralDefNode* SymbolDefnNode::getLiteralDefinition() const {
     return nullptr;
   const std::string& Name = Symbol->getName();
   SymbolNode* Sym = Scope->getSymbol(Name);
-  if (Sym == nullptr)
-    return nullptr;
-  return LiteralDefinition =
-             const_cast<LiteralDefNode*>(Sym->getLiteralDefinition());
+  if (Sym != nullptr)
+    LiteralDefinition =
+        const_cast<LiteralDefNode*>(Sym->getLiteralDefinition());
+  return LiteralDefinition;
 }
 
 SymbolNode::SymbolNode(SymbolTable& Symtab, const std::string& Name)
@@ -415,6 +473,15 @@ SymbolNode::~SymbolNode() {
 
 void SymbolNode::init() {
   PredefinedValue = PredefinedSymbol::Unknown;
+}
+
+int SymbolNode::compareNode(const Node* Nd) const {
+  int Diff = NullaryNode::compareNode(Nd);
+  if (Diff != 0)
+    return Diff;
+  assert(isa<SymbolNode>(Nd));
+  const auto* SymNd = cast<SymbolNode>(Nd);
+  return Name.compare(SymNd->Name);
 }
 
 SymbolDefnNode* SymbolNode::getSymbolDefn() const {
@@ -853,6 +920,15 @@ IntegerNode::IntegerNode(SymbolTable& Symtab,
 IntegerNode::~IntegerNode() {
 }
 
+int IntegerNode::compareNode(const Node* Nd) const {
+  int Diff = NullaryNode::compareNode(Nd);
+  if (Diff != 0)
+    return Diff;
+  assert(isa<IntegerNode>(Nd));
+  const auto* IntNd = cast<IntegerNode>(Nd);
+  return Value.compare(IntNd->Value);
+}
+
 bool IntegerNode::implementsClass(NodeType Type) {
   switch (Type) {
     default:
@@ -936,6 +1012,15 @@ BinaryAcceptNode* SymbolTable::createBinaryAccept(IntType Value,
 template BinaryAcceptNode* SymbolTable::create<BinaryAcceptNode>();
 
 BinaryAcceptNode::~BinaryAcceptNode() {
+}
+
+int BinaryAcceptNode::compareNode(const Node* Nd) const {
+  int Diff = IntegerNode::compareNode(Nd);
+  if (Diff != 0)
+    return Diff;
+  assert(isa<BinaryAcceptNode>(Nd));
+  const auto* BaNd = cast<BinaryAcceptNode>(Nd);
+  return int(NumBits) - int(BaNd->NumBits);
 }
 
 bool BinaryAcceptNode::validateNode(NodeVectorType& Parents) {
@@ -1148,6 +1233,13 @@ NaryNode::NaryNode(SymbolTable& Symtab, NodeType Type) : Node(Symtab, Type) {
 }
 
 NaryNode::~NaryNode() {
+}
+
+int NaryNode::compareNode(const Node* Nd) const {
+  int Diff = Node::compareNode(Nd);
+  if (Diff != 0)
+    return Diff;
+  return getNumKids() - Nd->getNumKids();
 }
 
 int NaryNode::getNumKids() const {

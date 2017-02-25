@@ -279,6 +279,21 @@ class Node {
   void setLastKid(Node* N);
   Node* getLastKid() const;
 
+  // Following define (structural) compare.
+  int compare(const Node* Nd) const;
+  // Following only compares nodes, not kids.
+  virtual int compareNode(const Node* Nd) const;
+  // Returns comparison value for nodes that don't define a complete
+  // structural compare.
+  int compareIncomparable(const Node* Nd) const;
+
+  bool operator<(const Node* Nd) const { return compare(Nd) < 0; }
+  bool operator<=(const Node* Nd) const { return compare(Nd) <= 0; }
+  bool operator==(const Node* Nd) const { return compare(Nd) == 0; }
+  bool operator!=(const Node* Nd) const { return compare(Nd) != 0; }
+  bool operator>=(const Node* Nd) const { return compare(Nd) >= 0; }
+  bool operator>(const Node* Nd) const { return compare(Nd) > 0; }
+
   // Counts number of nodes in tree defined by this.
   size_t getTreeSize() const;
 
@@ -318,9 +333,30 @@ class Node {
   SymbolTable& Symtab;
   int CreationIndex;
   Node(SymbolTable& Symtab, NodeType Type);
+#if 0
   virtual void clearCaches(NodeVectorType& AdditionalNodes);
   virtual void installCaches(NodeVectorType& AdditionalNodes);
+#endif
 };
+
+inline bool operator<(const Node& N1, const Node& N2) {
+  return N1 < N2;
+}
+inline bool operator<=(const Node& N1, const Node& N2) {
+  return N1 <= N2;
+}
+inline bool operator==(const Node& N1, const Node& N2) {
+  return N1 == N2;
+}
+inline bool operator!=(const Node& N1, const Node& N2) {
+  return N1 != N2;
+}
+inline bool operator>=(const Node& N1, const Node& N2) {
+  return N1 >= N2;
+}
+inline bool operator>(const Node& N1, const Node& N2) {
+  return N1 > N2;
+}
 
 class NullaryNode : public Node {
   NullaryNode() = delete;
@@ -346,9 +382,11 @@ class IntegerNode : public NullaryNode {
 
  public:
   ~IntegerNode() OVERRIDE;
+  int compareNode(const Node* Nd) const OVERRIDE;
   decode::ValueFormat getFormat() const { return Value.Format; }
   decode::IntType getValue() const { return Value.Value; }
   bool isDefaultValue() const { return Value.isDefault; }
+
   static bool implementsClass(NodeType Type);
 
  protected:
@@ -427,6 +465,7 @@ class NaryNode : public Node {
 
  public:
   ~NaryNode() OVERRIDE;
+  int compareNode(const Node*) const OVERRIDE;
   int getNumKids() const OVERRIDE FINAL;
   Node* getKid(int Index) const OVERRIDE FINAL;
   void setKid(int Index, Node* N) OVERRIDE FINAL;
@@ -449,6 +488,7 @@ class IntLookupNode FINAL : public NullaryNode {
   typedef std::unordered_map<decode::IntType, const Node*> LookupMap;
   explicit IntLookupNode(SymbolTable&);
   ~IntLookupNode() OVERRIDE;
+  int compareNode(const Node* Nd) const OVERRIDE;
   const Node* get(decode::IntType Value) const;
   bool add(decode::IntType Value, const Node* Nd);
 
@@ -505,6 +545,7 @@ class BinaryAcceptNode FINAL : public IntegerNode {
                    decode::IntType Value,
                    unsigned NumBits);
   ~BinaryAcceptNode() OVERRIDE;
+  int compareNode(const Node*) const OVERRIDE;
   bool validateNode(NodeVectorType& Parents) OVERRIDE;
   unsigned getNumBits() const { return NumBits; }
 
@@ -523,6 +564,7 @@ class SymbolDefnNode FINAL : public NullaryNode {
  public:
   SymbolDefnNode(SymbolTable& Symtab);
   ~SymbolDefnNode() OVERRIDE;
+  int compareNode(const Node* Nd) const;
   const SymbolNode* getSymbol() const { return Symbol; }
   void setSymbol(const SymbolNode* Nd) { Symbol = Nd; }
   const std::string& getName() const;
@@ -550,6 +592,7 @@ class SymbolNode FINAL : public NullaryNode {
  public:
   SymbolNode(SymbolTable& Symtab, const std::string& Name);
   ~SymbolNode() OVERRIDE;
+  int compareNode(const Node* Nd) const OVERRIDE;
   const std::string& getName() const { return Name; }
   const DefineNode* getDefineDefinition() const {
     return getSymbolDefn()->getDefineDefinition();
