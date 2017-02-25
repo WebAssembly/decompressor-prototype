@@ -66,8 +66,21 @@ class TextWriter {
   static bool UseNodeTypeNames;
   TextWriter();
 
+  TextWriter& operator++() {
+    ++IndentCount;
+    return *this;
+  }
+
+  TextWriter& operator--() {
+    --IndentCount;
+    return *this;
+  }
+
   // Pretty prints s-expression installed in symbol table.
   void write(FILE* File, SymbolTable* Symtab);
+  void write(FILE* File, std::shared_ptr<SymbolTable> Symtab) {
+    write(File, Symtab.get());
+  }
 
   // Pretty prints s-expression (defined by Root) to File.
   void write(FILE* File, const Node* Root);

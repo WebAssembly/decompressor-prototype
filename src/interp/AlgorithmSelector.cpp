@@ -22,7 +22,8 @@ using namespace filt;
 
 namespace interp {
 
-AlgorithmSelector::AlgorithmSelector() {}
+AlgorithmSelector::AlgorithmSelector() {
+}
 
 AlgorithmSelector::~AlgorithmSelector() {
 }

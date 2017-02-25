@@ -95,6 +95,13 @@ TextWriter::Parenthesize::~Parenthesize() {
 
 void TextWriter::write(FILE* File, SymbolTable* Symtab) {
   write(File, Symtab->getInstalledRoot());
+  Symtab = Symtab->getEnclosingScope();
+  while (Symtab != nullptr) {
+    writeIndent();
+    fprintf(File, "Enclosing scope:\n");
+    write(File, Symtab->getInstalledRoot());
+    Symtab = Symtab->getEnclosingScope();
+  }
 }
 
 void TextWriter::write(FILE* File, const Node* Root) {

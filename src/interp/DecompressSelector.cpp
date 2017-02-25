@@ -37,6 +37,10 @@
 #include "sexp/InflateAst.h"
 #include "utils/Trace.h"
 
+#if 1
+#include "sexp/TextWriter.h"
+#endif
+
 namespace wasm {
 
 using namespace filt;
@@ -50,9 +54,10 @@ DecompAlgState::DecompAlgState(Interpreter* MyInterpreter)
 DecompAlgState::~DecompAlgState() {
 }
 
-DecompressSelector::DecompressSelector(std::shared_ptr<filt::SymbolTable> Symtab,
-                                       std::shared_ptr<DecompAlgState> State,
-                                       bool IsAlgorithm)
+DecompressSelector::DecompressSelector(
+    std::shared_ptr<filt::SymbolTable> Symtab,
+    std::shared_ptr<DecompAlgState> State,
+    bool IsAlgorithm)
     : AlgorithmSelector(),
       Symtab(Symtab),
       State(State),
@@ -98,8 +103,8 @@ bool DecompressSelector::applyNextQueuedAlgorithm(Interpreter* R) {
 }
 
 bool DecompressSelector::configureData(Interpreter* R) {
-  if (State->IntermediateStream
-      && State->MyInterpreter->getFlags().TraceIntermediateStreams)
+  if (State->IntermediateStream &&
+      State->MyInterpreter->getFlags().TraceIntermediateStreams)
     State->IntermediateStream->describe(stderr, "Intermediate stream");
   return State->AlgQueue.empty() ? applyDataAlgorithm(R)
                                  : applyNextQueuedAlgorithm(R);
@@ -115,10 +120,28 @@ bool DecompressSelector::resetAlgorithm(Interpreter* R) {
   R->setWriter(State->OrigWriter);
   State->OrigWriter->reset();
   assert(State->Inflator);
-  std::shared_ptr<SymbolTable> Symtab = State->Inflator->getSymtab();
-  Symtab->install(State->Inflator->getGeneratedFile());
+  FileNode* Root = State->Inflator->getGeneratedFile();
+  fprintf(stderr, "Root = %p\n", (void*)Root);
+  if (Root == nullptr) {
+    State->Inflator.reset();
+    fprintf(stderr, "reasetAlgorithm = false\n");
+    return false;
+  }
+
+#if 0
+#if 0
+  Symtab->setEnclosingScope(State->MyInterpreter->getDefaultAlgorithm(
+      Root->getTargetHeader()));
+#else
+  State->MyInterpreter->getDefaultAlgorithm(Root->getTargetHeader());
+#endif
+#endif
+  Symtab->install(Root);
   State->AlgQueue.push(Symtab);
   State->Inflator.reset();
+#if 1
+  fprintf(stderr, "reasetAlgorithm = true\n");
+#endif
   return true;
 }
 

@@ -102,7 +102,7 @@ class Driver {
 
   void setParsedAst(Node* Ast) {
     ParsedAst = Ast;
-    Table->install(ParsedAst);
+    Table->install(dyn_cast<FileNode>(ParsedAst));
   }
 
   // Error handling.

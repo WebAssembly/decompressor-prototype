@@ -42,6 +42,7 @@ namespace filt {
 class BinaryAcceptNode;
 class DefineNode;
 class FileHeaderNode;
+class FileNode;
 class IntegerNode;
 class LiteralDefNode;
 class Node;
@@ -141,6 +142,9 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   explicit SymbolTable(std::shared_ptr<SymbolTable> EnclosingScope);
   ~SymbolTable();
   SymbolTable* getEnclosingScope() { return EnclosingScope.get(); }
+  void setEnclosingScope(std::shared_ptr<SymbolTable> Value) {
+      EnclosingScope = Value;
+  }
   // Gets existing symbol if known. Otherwise returns nullptr.
   SymbolNode* getSymbol(const std::string& Name);
   // Returns local version of symbol definitions associated with the
@@ -168,11 +172,15 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   }
   const CallbackNode* getBlockExitCallback() const { return BlockExitCallback; }
   // Install definitions in tree defined by root.
-  void install(Node* Root);
-  const Node* getInstalledRoot() const { return Root; }
+  void install(FileNode* Root);
+  const FileNode* getInstalledRoot() const { return Root; }
   Node* getError() const { return Error; }
   const FileHeaderNode* getSourceHeader() const;
+#if 0
   const FileHeaderNode* getTargetHeader() const { return TargetHeader; }
+#else
+  const FileHeaderNode* getTargetHeader() const;
+#endif
   void clear();
   int getNextCreationIndex() { return ++NextCreationIndex; }
 
@@ -214,8 +222,10 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   std::shared_ptr<SymbolTable> EnclosingScope;
   std::vector<Node*> Allocated;
   std::shared_ptr<utils::TraceClass> Trace;
-  Node* Root;
+  FileNode* Root;
+#if 0
   const FileHeaderNode* TargetHeader;
+#endif
   Node* Error;
   int NextCreationIndex;
   std::map<std::string, SymbolNode*> SymbolMap;

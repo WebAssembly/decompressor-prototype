@@ -53,7 +53,7 @@ void SectionSymbolTable::clear() {
   IndexLookup.clear();
 }
 
-void SectionSymbolTable::install(Node* Root) {
+void SectionSymbolTable::install(FileNode* Root) {
   Symtab->install(Root);
 }
 

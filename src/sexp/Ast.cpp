@@ -336,14 +336,6 @@ void Node::append(Node*) {
   decode::fatal("Node::append not supported for ast node!");
 }
 
-#if 0
-void Node::clearCaches(NodeVectorType& AdditionalNodes) {
-}
-
-void Node::installCaches(NodeVectorType& AdditionalNodes) {
-}
-#endif
-
 bool Node::validateKid(NodeVectorType& Parents, Node* Kid) {
   Parents.push_back(this);
   bool Result = Kid->validateSubtree(Parents);
@@ -566,7 +558,6 @@ void SymbolTable::deallocateNodes() {
 
 void SymbolTable::init() {
   Root = nullptr;
-  TargetHeader = nullptr;
   NextCreationIndex = 0;
   Error = create<ErrorNode>();
   Predefined.reserve(NumPredefinedSymbols);
@@ -626,7 +617,7 @@ SymbolNode* SymbolTable::getSymbolDefinition(const std::string& Name) {
 AST_INTEGERNODE_TABLE
 #undef X
 
-void SymbolTable::install(Node* Root) {
+void SymbolTable::install(FileNode* Root) {
   TRACE_METHOD("install");
   CachedValue.clear();
   this->Root = Root;
@@ -639,7 +630,25 @@ void SymbolTable::install(Node* Root) {
 const FileHeaderNode* SymbolTable::getSourceHeader() const {
   if (Root == nullptr)
     return nullptr;
+#if 1
+  return Root->getSourceHeader();
+#else
   return dyn_cast<FileHeaderNode>(Root->getKid(0));
+#endif
+}
+
+const FileHeaderNode* SymbolTable::getTargetHeader() const {
+  if (Root == nullptr)
+    return nullptr;
+#if 0
+  const FileHeaderNode* Header = dyn_cast<FileHeaderNode>(Root->getKid(1));
+
+  if (Header == nullptr)
+    Header = dyn_cast<FileHeaderNode>(Root->getKid(0));
+  return Header;
+#else
+  return Root->getTargetHeader();
+#endif
 }
 
 void SymbolTable::installDefinitions(Node* Root) {
@@ -651,12 +660,6 @@ void SymbolTable::installDefinitions(Node* Root) {
     default:
       return;
     case OpFile:
-      if (TargetHeader == nullptr) {
-        TargetHeader = dyn_cast<FileHeaderNode>(Root->getKid(1));
-        if (TargetHeader == nullptr)
-          TargetHeader = getSourceHeader();
-      }
-    // intentionally fall to next case.
     case OpSection:
       for (Node* Kid : *Root)
         installDefinitions(Kid);
@@ -712,7 +715,7 @@ void SymbolTable::describe(FILE* Out) {
 }
 
 void SymbolTable::stripCallbacksExcept(std::set<std::string>& KeepActions) {
-  install(stripCallbacksExcept(KeepActions, Root));
+  install(dyn_cast<FileNode>(stripCallbacksExcept(KeepActions, Root)));
 }
 
 Node* SymbolTable::stripUsing(Node* Root,
@@ -774,7 +777,7 @@ Node* SymbolTable::stripCallbacksExcept(std::set<std::string>& KeepActions,
 }
 
 void SymbolTable::stripLiterals() {
-  install(stripLiteralDefs(stripLiteralUses(Root)));
+  install(dyn_cast<FileNode>(stripLiteralDefs(dyn_cast<FileNode>(stripLiteralUses(Root)))));
 }
 
 Node* SymbolTable::stripLiteralUses(Node* Root) {
@@ -1310,6 +1313,17 @@ bool EvalNode::validateNode(NodeVectorType& Parents) {
     return false;
   }
   return true;
+}
+
+const FileHeaderNode* FileNode::getSourceHeader() const {
+  return dyn_cast<FileHeaderNode>(getKid(0));
+}
+
+const FileHeaderNode* FileNode::getTargetHeader() const {
+  const FileHeaderNode* Header = dyn_cast<FileHeaderNode>(getKid(1));
+  if (Header == nullptr)
+    Header = dyn_cast<FileHeaderNode>(getKid(0));
+  return Header;
 }
 
 SelectBaseNode::~SelectBaseNode() {

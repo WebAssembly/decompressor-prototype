@@ -104,7 +104,9 @@ struct {
 }  // end of anonymous namespace
 
 InterpreterFlags::InterpreterFlags()
-    : TraceProgress(false), TraceIntermediateStreams(false) {
+    : TraceProgress(false),
+      TraceIntermediateStreams(false),
+      TraceAppliedAlgorithms(false) {
 }
 
 Interpreter::CallFrame::CallFrame() {
@@ -581,10 +583,16 @@ std::shared_ptr<SymbolTable> Interpreter::getDefaultAlgorithm(
     const Node* Header) {
   for (std::shared_ptr<AlgorithmSelector>& Sel : Selectors) {
     std::shared_ptr<SymbolTable> Symtab = Sel->getSymtab();
-    if (*Header == *Symtab->getTargetHeader()) {
+    const Node* Target = Symtab->getTargetHeader();
+    if (Header == Target)
+      // In same algorithm, ignore.
+      continue;
+    if (*Header == *Target)
       return Symtab;
-    }
   }
+  fprintf(stderr, "Couldn't find default for:\n");
+  TextWriter Writer;
+  (++Writer).write(stderr, Header);
   return std::shared_ptr<SymbolTable>();
 }
 
@@ -1412,6 +1420,11 @@ void Interpreter::algorithmResume() {
             assert(Input->sizePeekPosStack() == 0);
             assert(LoopCounterStack.size() == 1);
             Frame.CallState = State::Step4;
+            if (Flags.TraceAppliedAlgorithms) {
+              fprintf(stderr, "Applying Algorithm:\n");
+              TextWriter Writer;
+              (++Writer).write(stderr, Symtab.get());
+            }
             call(Method::GetFile, Frame.CallModifier, Frame.Nd);
             break;
           case State::Step4:
