@@ -639,7 +639,6 @@ void Interpreter::algorithmResume() {
           case OpParams:
           case OpLastSymbolIs:
           case OpLiteralDef:
-          case OpLiteralUse:
           case OpFile:
           case OpLocals:
           case OpRename:
@@ -1194,6 +1193,33 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
+          case OpLiteralUse:  // Method::Eval
+            switch (Frame.CallState) {
+              case State::Enter: {
+                Frame.CallState = State::Exit;
+                auto* Sym = dyn_cast<SymbolNode>(Frame.Nd->getKid(0));
+                assert(Sym);
+                // Note: To handle local algorithm overrides (when processing
+                // code in an enclosing scope) we need to get the definition
+                // from the current algorithm, not the algorithm the symbol was
+                // defined in.
+                const LiteralDefNode* Defn =
+                    Symtab->getSymbolDefn(Sym)->getLiteralDefinition();
+                if (Defn == nullptr) {
+                  fprintf(stderr, "Eval can't find literal: %s\n",
+                          Sym->getName().c_str());
+                  return throwMessage("Unable to evaluate literal");
+                }
+                call(Method::Eval, Frame.CallModifier, Defn);
+                break;
+              }
+              case State::Exit:
+                popAndReturn();
+                break;
+              default:
+                return failBadState();
+            }
+            break;
           case OpEval:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter: {
@@ -1203,10 +1229,13 @@ void Interpreter::algorithmResume() {
                 // code in an enclosing scope) we need to get the definition
                 // from the current algorithm, not the algorithm the symbol was
                 // defined in.
-                Sym = Symtab->getSymbol(Sym->getName());
-                assert(Sym);
-                auto* Defn = dyn_cast<DefineNode>(Sym->getDefineDefinition());
-                assert(Defn);
+                const DefineNode* Defn =
+                    Symtab->getSymbolDefn(Sym)->getDefineDefinition();
+                if (Defn == nullptr) {
+                  fprintf(stderr, "Eval can't find definition: %s\n",
+                          Sym->getName().c_str());
+                  return throwMessage("Unable to evaluate call");
+                }
                 auto* NumParams = dyn_cast<ParamsNode>(Defn->getKid(1));
                 assert(NumParams);
                 int NumCallArgs = Frame.Nd->getNumKids() - 1;

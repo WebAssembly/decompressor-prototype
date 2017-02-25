@@ -440,19 +440,9 @@ void SymbolNode::setPredefinedSymbol(PredefinedSymbol NewValue) {
 // a node type is not defined with the correct template class.
 
 void SymbolNode::clearCaches(NodeVectorType& AdditionalNodes) {
-#if 0
-  const Node* DefineDefinition = getDefineDefinition();
-  if (DefineDefinition)
-    AdditionalNodes.push_back(const_cast<Node*>(DefineDefinition));
-#endif
 }
 
 void SymbolNode::installCaches(NodeVectorType& AdditionalNodes) {
-#if 0
-  const Node* DefineDefinition = getDefineDefinition();
-  if (DefineDefinition)
-    AdditionalNodes.push_back(const_cast<Node*>(DefineDefinition));
-#endif
 }
 
 SymbolTable::SymbolTable(std::shared_ptr<SymbolTable> EnclosingScope)
@@ -481,6 +471,16 @@ FILE* SymbolTable::error() const {
 SymbolNode* SymbolTable::getSymbol(const std::string& Name) {
   // TODO(karlschimpf) -- Dont overfill.
   return SymbolMap[Name];
+}
+
+SymbolDefnNode* SymbolTable::getSymbolDefn(const SymbolNode* Sym) {
+  SymbolDefnNode* Defn = cast<SymbolDefnNode>(getCachedValue(Sym));
+  if (Defn == nullptr) {
+    Defn = create<SymbolDefnNode>();
+    Defn->setSymbol(Sym);
+    setCachedValue(Sym, Defn);
+  }
+  return Defn;
 }
 
 void SymbolTable::clear() {

@@ -45,6 +45,7 @@ class FileHeaderNode;
 class IntegerNode;
 class LiteralDefNode;
 class Node;
+class SymbolDefnNode;
 class SymbolNode;
 class SymbolTable;
 class CallbackNode;
@@ -142,6 +143,10 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   SymbolTable* getEnclosingScope() { return EnclosingScope.get(); }
   // Gets existing symbol if known. Otherwise returns nullptr.
   SymbolNode* getSymbol(const std::string& Name);
+  // Returns local version of symbol definitions associated with the
+  // symbol. Used to get local cached symbol definitions when interpreting
+  // nodes with a symbol lookup, such as EvalNode.
+  SymbolDefnNode* getSymbolDefn(const SymbolNode* Symbol);
   SymbolNode* getPredefined(PredefinedSymbol Sym) {
     return Predefined[uint32_t(Sym)];
   }
