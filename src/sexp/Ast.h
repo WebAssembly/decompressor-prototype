@@ -229,12 +229,6 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   void deallocateNodes();
 
   void installDefinitions(Node* Root);
-  void clearSubtreeCaches(Node* Nd,
-                          VisitedNodesType& VisitedNodes,
-                          NodeVectorType& AdditionalNodes);
-  void installSubtreeCaches(Node* Nd,
-                            VisitedNodesType& VisitedNoes,
-                            NodeVectorType& AdditionalNodes);
 
   Node* stripUsing(Node* Root, std::function<Node*(Node*)> stripKid);
   Node* stripCallbacksExcept(std::set<std::string>& KeepActions, Node* Root);
@@ -577,8 +571,6 @@ class SymbolNode FINAL : public NullaryNode {
   PredefinedSymbol PredefinedValue;
   void init();
   SymbolDefnNode* getSymbolDefn() const;
-  void clearCaches(NodeVectorType& AdditionalNodes) OVERRIDE;
-  void installCaches(NodeVectorType& AdditionalNodes) OVERRIDE;
   void setPredefinedSymbol(PredefinedSymbol NewValue);
 };
 

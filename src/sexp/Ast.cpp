@@ -434,17 +434,6 @@ void SymbolNode::setPredefinedSymbol(PredefinedSymbol NewValue) {
   PredefinedValue = NewValue;
 }
 
-// Note: we create duumy virtual forceCompilation() to force legal
-// class definitions to be compiled in here. Classes not explicitly
-// instantiated here will not link. This used to force an error if
-// a node type is not defined with the correct template class.
-
-void SymbolNode::clearCaches(NodeVectorType& AdditionalNodes) {
-}
-
-void SymbolNode::installCaches(NodeVectorType& AdditionalNodes) {
-}
-
 SymbolTable::SymbolTable(std::shared_ptr<SymbolTable> EnclosingScope)
     : EnclosingScope(EnclosingScope) {
 }
@@ -574,62 +563,10 @@ void SymbolTable::install(Node* Root) {
   TRACE_METHOD("install");
   CachedValue.clear();
   this->Root = Root;
-  // Before starting, clear all known caches.
-  VisitedNodesType VisitedNodes;
-  NodeVectorType AdditionalNodes;
-  for (const auto& Pair : SymbolMap)
-    clearSubtreeCaches(Pair.second, VisitedNodes, AdditionalNodes);
-  clearSubtreeCaches(Root, VisitedNodes, AdditionalNodes);
-  NodeVectorType MoreNodes;
-  while (!AdditionalNodes.empty()) {
-    MoreNodes.swap(AdditionalNodes);
-    while (!MoreNodes.empty()) {
-      Node* Nd = MoreNodes.back();
-      MoreNodes.pop_back();
-      clearSubtreeCaches(Nd, VisitedNodes, AdditionalNodes);
-    }
-  }
-  VisitedNodes.clear();
   installDefinitions(Root);
   std::vector<Node*> Parents;
   if (!Root->validateSubtree(Parents))
     fatal("Unable to install algorthms, validation failed!");
-  for (const auto& Pair : SymbolMap)
-    installSubtreeCaches(Pair.second, VisitedNodes, AdditionalNodes);
-  while (!AdditionalNodes.empty()) {
-    MoreNodes.swap(AdditionalNodes);
-    while (!MoreNodes.empty()) {
-      Node* Nd = MoreNodes.back();
-      MoreNodes.pop_back();
-      installSubtreeCaches(Nd, VisitedNodes, AdditionalNodes);
-    }
-  }
-}
-
-void SymbolTable::clearSubtreeCaches(Node* Nd,
-                                     VisitedNodesType& VisitedNodes,
-                                     NodeVectorType& AdditionalNodes) {
-  if (VisitedNodes.count(Nd))
-    return;
-  TRACE_METHOD("clearSubtreeCaches");
-  TRACE(node_ptr, nullptr, Nd);
-  VisitedNodes.insert(Nd);
-  Nd->clearCaches(AdditionalNodes);
-  for (auto* Kid : *Nd)
-    AdditionalNodes.push_back(Kid);
-}
-
-void SymbolTable::installSubtreeCaches(Node* Nd,
-                                       VisitedNodesType& VisitedNodes,
-                                       NodeVectorType& AdditionalNodes) {
-  if (VisitedNodes.count(Nd))
-    return;
-  TRACE_METHOD("installSubtreeCaches");
-  TRACE(node_ptr, nullptr, Nd);
-  VisitedNodes.insert(Nd);
-  Nd->installCaches(AdditionalNodes);
-  for (auto* Kid : *Nd)
-    AdditionalNodes.push_back(Kid);
 }
 
 const FileHeaderNode* SymbolTable::getSourceHeader() const {
