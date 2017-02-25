@@ -371,6 +371,7 @@ const std::string& SymbolDefnNode::getName() const {
 const DefineNode* SymbolDefnNode::getDefineDefinition() const {
   if (DefineDefinition)
     return DefineDefinition;
+  // Not defined locally, find enclosing definition.
   if (Symbol == nullptr)
     return nullptr;
   SymbolTable* Scope = &Symtab;
@@ -381,14 +382,15 @@ const DefineNode* SymbolDefnNode::getDefineDefinition() const {
     return nullptr;
   const std::string& Name = Symbol->getName();
   SymbolNode* Sym = Scope->getSymbol(Name);
-  if (Sym == nullptr)
-    return nullptr;
-  return DefineDefinition = const_cast<DefineNode*>(Sym->getDefineDefinition());
+  if (Sym != nullptr)
+    DefineDefinition = const_cast<DefineNode*>(Sym->getDefineDefinition());
+  return DefineDefinition;
 }
 
 const LiteralDefNode* SymbolDefnNode::getLiteralDefinition() const {
   if (LiteralDefinition)
     return LiteralDefinition;
+  // Not defined locally, find enclosing definition.
   if (Symbol == nullptr)
     return nullptr;
   SymbolTable* Scope = &Symtab;
@@ -399,10 +401,10 @@ const LiteralDefNode* SymbolDefnNode::getLiteralDefinition() const {
     return nullptr;
   const std::string& Name = Symbol->getName();
   SymbolNode* Sym = Scope->getSymbol(Name);
-  if (Sym == nullptr)
-    return nullptr;
-  return LiteralDefinition =
-             const_cast<LiteralDefNode*>(Sym->getLiteralDefinition());
+  if (Sym != nullptr)
+    LiteralDefinition =
+        const_cast<LiteralDefNode*>(Sym->getLiteralDefinition());
+  return LiteralDefinition;
 }
 
 SymbolNode::SymbolNode(SymbolTable& Symtab, const std::string& Name)
