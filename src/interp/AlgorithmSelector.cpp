@@ -22,10 +22,7 @@ using namespace filt;
 
 namespace interp {
 
-AlgorithmSelector::AlgorithmSelector(std::shared_ptr<SymbolTable> Symtab,
-                                     const InterpreterFlags& Flags)
-    : Flags(Flags), Symtab(Symtab) {
-}
+AlgorithmSelector::AlgorithmSelector() {}
 
 AlgorithmSelector::~AlgorithmSelector() {
 }

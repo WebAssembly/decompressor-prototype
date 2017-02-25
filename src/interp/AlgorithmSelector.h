@@ -38,12 +38,11 @@ class AlgorithmSelector
   AlgorithmSelector& operator=(const AlgorithmSelector&) = delete;
 
  public:
-  explicit AlgorithmSelector(std::shared_ptr<filt::SymbolTable> Symtab,
-                             const InterpreterFlags& Flags);
+  explicit AlgorithmSelector();
   virtual ~AlgorithmSelector();
 
   // Returns the symbol table defined by the selector.
-  std::shared_ptr<filt::SymbolTable> getSymtab() { return Symtab; }
+  virtual std::shared_ptr<filt::SymbolTable> getSymtab() = 0;
 
   // Called if header matches. Allows selector to reconfigure the reader.
   // Will read from input if symbol table (i.e. algorith) is set.
@@ -52,11 +51,6 @@ class AlgorithmSelector
   // Called after reading from file using the symbol table. Allows one
   // to restore/reconfigure the reader.
   virtual bool reset(Interpreter* R) = 0;
-
-  const InterpreterFlags& Flags;
-
- protected:
-  std::shared_ptr<filt::SymbolTable> Symtab;
 };
 
 }  // end of namespace interp

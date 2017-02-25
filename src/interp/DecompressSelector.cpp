@@ -43,27 +43,28 @@ using namespace filt;
 
 namespace interp {
 
-DecompAlgState::DecompAlgState() {
+DecompAlgState::DecompAlgState(Interpreter* MyInterpreter)
+    : MyInterpreter(MyInterpreter) {
 }
 
 DecompAlgState::~DecompAlgState() {
 }
 
-DecompressSelector::DecompressSelector(std::shared_ptr<SymbolTable> Symtab,
+DecompressSelector::DecompressSelector(std::shared_ptr<filt::SymbolTable> Symtab,
                                        std::shared_ptr<DecompAlgState> State,
-                                       bool IsAlgorithm,
-                                       const InterpreterFlags& Flags)
-    : AlgorithmSelector(Symtab, Flags), State(State), IsAlgorithm(IsAlgorithm) {
+                                       bool IsAlgorithm)
+    : AlgorithmSelector(),
+      Symtab(Symtab),
+      State(State),
+      IsAlgorithm(IsAlgorithm) {
 }
 
 DecompressSelector::~DecompressSelector() {
 }
 
-#if 0
-const FileHeaderNode* DecompressSelector::getTargetHeader() {
-  return Symtab->getTargetHeader();
+std::shared_ptr<SymbolTable> DecompressSelector::getSymtab() {
+  return Symtab;
 }
-#endif
 
 bool DecompressSelector::configure(Interpreter* R) {
   TRACE_USING(R->getTrace(), bool, "IsAlgorithm", IsAlgorithm);
@@ -97,7 +98,8 @@ bool DecompressSelector::applyNextQueuedAlgorithm(Interpreter* R) {
 }
 
 bool DecompressSelector::configureData(Interpreter* R) {
-  if (State->IntermediateStream && Flags.TraceIntermediateStreams)
+  if (State->IntermediateStream
+      && State->MyInterpreter->getFlags().TraceIntermediateStreams)
     State->IntermediateStream->describe(stderr, "Intermediate stream");
   return State->AlgQueue.empty() ? applyDataAlgorithm(R)
                                  : applyNextQueuedAlgorithm(R);

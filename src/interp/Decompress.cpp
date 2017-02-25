@@ -182,10 +182,11 @@ void* create_decompressor() {
   Decomp->MyReader =
       std::make_shared<Interpreter>(std::make_shared<ByteReader>(Decomp->Input),
                                     Decomp->Writer, Decomp->Flags);
+  Decomp->AlgState->setInterpreter(Decomp->MyReader.get());
   Decomp->MyReader->addSelector(std::make_shared<DecompressSelector>(
-      getAlgwasm0xdSymtab(), Decomp->AlgState, false, Decomp->Flags));
+      getAlgwasm0xdSymtab(), Decomp->AlgState, false));
   Decomp->MyReader->addSelector(std::make_shared<DecompressSelector>(
-      getAlgcasm0x0Symtab(), Decomp->AlgState, true, Decomp->Flags));
+      getAlgcasm0x0Symtab(), Decomp->AlgState, true));
   Decomp->MyReader->algorithmStart();
   return Decomp;
 }
