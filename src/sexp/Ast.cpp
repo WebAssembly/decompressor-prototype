@@ -186,8 +186,8 @@ int Node::compare(const Node* Nd) const {
   int Diff = compareNode(Nd);
   if (Diff != 0)
     return Diff;
-// Structurally compare subtrees. Note; we assume that if compareNode()==0,
-// the node must have the same number of children.
+  // Structurally compare subtrees. Note; we assume that if compareNode()==0,
+  // the node must have the same number of children.
   std::vector<const Node*> Frontier;
   Frontier.push_back(this);
   Frontier.push_back(Nd);
@@ -399,7 +399,7 @@ IntLookupNode::IntLookupNode(SymbolTable& Symtab)
 IntLookupNode::~IntLookupNode() {
 }
 
-const Node* IntLookupNode::get(decode::IntType Value) const {
+const Node* IntLookupNode::get(decode::IntType Value) {
   if (Lookup.count(Value))
     return Lookup[Value];
   return nullptr;
@@ -429,7 +429,7 @@ const std::string& SymbolDefnNode::getName() const {
   return Unknown;
 }
 
-const DefineNode* SymbolDefnNode::getDefineDefinition() const {
+const DefineNode* SymbolDefnNode::getDefineDefinition() {
   if (DefineDefinition)
     return DefineDefinition;
   // Not defined locally, find enclosing definition.
@@ -448,7 +448,7 @@ const DefineNode* SymbolDefnNode::getDefineDefinition() const {
   return DefineDefinition;
 }
 
-const LiteralDefNode* SymbolDefnNode::getLiteralDefinition() const {
+const LiteralDefNode* SymbolDefnNode::getLiteralDefinition() {
   if (LiteralDefinition)
     return LiteralDefinition;
   // Not defined locally, find enclosing definition.
@@ -510,7 +510,6 @@ void SymbolNode::setPredefinedSymbol(PredefinedSymbol NewValue) {
 PredefinedSymbol SymbolNode::getPredefinedSymbol() const {
   if (PredefinedValueIsCached)
     return PredefinedValue;
-  PredefinedValueIsCached = true;
   const char* SymName = Name.c_str();
   for (size_t i = 1; i < NumPredefinedSymbols; ++i) {
     if (strcmp(PredefinedName[i], SymName) == 0) {
@@ -518,6 +517,7 @@ PredefinedSymbol SymbolNode::getPredefinedSymbol() const {
       break;
     }
   }
+  PredefinedValueIsCached = true;
   return PredefinedValue;
 }
 
@@ -529,9 +529,31 @@ SymbolTable::SymbolTable() {
   init();
 }
 
+void SymbolTable::init() {
+  Root = nullptr;
+  NextCreationIndex = 0;
+  Error = create<ErrorNode>();
+  BlockEnterCallback = nullptr;
+  BlockExitCallback = nullptr;
+}
+
 SymbolTable::~SymbolTable() {
   clear();
   deallocateNodes();
+}
+
+const CallbackNode* SymbolTable::getBlockEnterCallback() {
+  if (BlockEnterCallback == nullptr)
+    BlockEnterCallback =
+        create<CallbackNode>(getPredefined(PredefinedSymbol::Block_enter));
+  return BlockEnterCallback;
+}
+
+const CallbackNode* SymbolTable::getBlockExitCallback() {
+  if (BlockExitCallback == nullptr)
+    BlockExitCallback =
+        create<CallbackNode>(getPredefined(PredefinedSymbol::Block_exit));
+  return BlockExitCallback;
 }
 
 FILE* SymbolTable::getErrorFile() const {
@@ -545,8 +567,9 @@ FILE* SymbolTable::error() const {
 }
 
 SymbolNode* SymbolTable::getSymbol(const std::string& Name) {
-  // TODO(karlschimpf) -- Dont overfill with nullptr's.
-  return SymbolMap[Name];
+  if (SymbolMap.count(Name))
+    return SymbolMap[Name];
+  return nullptr;
 }
 
 SymbolDefnNode* SymbolTable::getSymbolDefn(const SymbolNode* Sym) {
@@ -582,16 +605,6 @@ std::shared_ptr<TraceClass> SymbolTable::getTracePtr() {
 void SymbolTable::deallocateNodes() {
   for (Node* Nd : Allocated)
     delete Nd;
-}
-
-void SymbolTable::init() {
-  Root = nullptr;
-  NextCreationIndex = 0;
-  Error = create<ErrorNode>();
-  BlockEnterCallback =
-      create<CallbackNode>(getPredefined(PredefinedSymbol::Block_enter));
-  BlockExitCallback =
-      create<CallbackNode>(getPredefined(PredefinedSymbol::Block_exit));
 }
 
 SymbolNode* SymbolTable::getSymbolDefinition(const std::string& Name) {

@@ -167,10 +167,8 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   AST_INTEGERNODE_TABLE
 #undef X
   // Gets actions corresponding to enter/exit block.
-  const CallbackNode* getBlockEnterCallback() const {
-    return BlockEnterCallback;
-  }
-  const CallbackNode* getBlockExitCallback() const { return BlockExitCallback; }
+  const CallbackNode* getBlockEnterCallback();
+  const CallbackNode* getBlockExitCallback();
   // Install definitions in tree defined by root.
   void install(FileNode* Root);
   const FileNode* getInstalledRoot() const { return Root; }
@@ -191,7 +189,7 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   BinaryAcceptNode* createBinaryAccept(decode::IntType Value, unsigned NumBits);
 
   // Returns the cached value associated with a node, or nullptr if not cached.
-  Node* getCachedValue(const Node* Nd) const { return CachedValue[Nd]; }
+  Node* getCachedValue(const Node* Nd) { return CachedValue[Nd]; }
   void setCachedValue(const Node* Nd, Node* Value) { CachedValue[Nd] = Value; }
 
   // Strips all callback actions from the algorithm, except for the names
@@ -226,7 +224,7 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   std::map<PredefinedSymbol, SymbolNode*> PredefinedMap;
   CallbackNode* BlockEnterCallback;
   CallbackNode* BlockExitCallback;
-  mutable CachedValueMap CachedValue;
+  CachedValueMap CachedValue;
 
   void init();
   void deallocateNodes();
@@ -499,11 +497,11 @@ class IntLookupNode FINAL : public CachedNode {
   typedef std::unordered_map<decode::IntType, const Node*> LookupMap;
   explicit IntLookupNode(SymbolTable&);
   ~IntLookupNode() OVERRIDE;
-  const Node* get(decode::IntType Value) const;
+  const Node* get(decode::IntType Value);
   bool add(decode::IntType Value, const Node* Nd);
 
  private:
-  mutable LookupMap Lookup;
+  LookupMap Lookup;
 };
 
 #define X(tag, NODE_DECLS)                                                 \
@@ -577,9 +575,9 @@ class SymbolDefnNode FINAL : public CachedNode {
   const SymbolNode* getSymbol() const { return Symbol; }
   void setSymbol(const SymbolNode* Nd) { Symbol = Nd; }
   const std::string& getName() const;
-  const DefineNode* getDefineDefinition() const;
+  const DefineNode* getDefineDefinition();
   void setDefineDefinition(const DefineNode* Defn) { DefineDefinition = Defn; }
-  const LiteralDefNode* getLiteralDefinition() const;
+  const LiteralDefNode* getLiteralDefinition();
   void setLiteralDefinition(const LiteralDefNode* Defn) {
     LiteralDefinition = Defn;
   }
@@ -588,8 +586,8 @@ class SymbolDefnNode FINAL : public CachedNode {
 
  private:
   const SymbolNode* Symbol;
-  mutable const DefineNode* DefineDefinition;
-  mutable const LiteralDefNode* LiteralDefinition;
+  const DefineNode* DefineDefinition;
+  const LiteralDefNode* LiteralDefinition;
 };
 
 class SymbolNode FINAL : public NullaryNode {
