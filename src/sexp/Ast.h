@@ -147,16 +147,16 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   }
   // Gets existing symbol if known. Otherwise returns nullptr.
   SymbolNode* getSymbol(const std::string& Name);
+  // Returns the corresponding symbol for the predefined symbol (creates if
+  // necessary).
+  SymbolNode* getPredefined(PredefinedSymbol Sym);
+  // Gets existing symbol if known. Otherwise returns newly created symbol.
+  // Used to keep symbols unique within filter s-expressions.
+  SymbolNode* getSymbolDefinition(const std::string& Name);
   // Returns local version of symbol definitions associated with the
   // symbol. Used to get local cached symbol definitions when interpreting
   // nodes with a symbol lookup, such as EvalNode.
   SymbolDefnNode* getSymbolDefn(const SymbolNode* Symbol);
-  SymbolNode* getPredefined(PredefinedSymbol Sym) {
-    return Predefined[uint32_t(Sym)];
-  }
-  // Gets existing symbol if known. Otherwise returns newly created symbol.
-  // Used to keep symbols unique within filter s-expressions.
-  SymbolNode* getSymbolDefinition(const std::string& Name);
 
 // Gets integer node (as defined by the arguments) if known. Otherwise
 // returns newly created integer.
@@ -223,7 +223,7 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   int NextCreationIndex;
   std::map<std::string, SymbolNode*> SymbolMap;
   std::map<IntegerValue, IntegerNode*> IntMap;
-  std::vector<SymbolNode*> Predefined;
+  std::map<PredefinedSymbol, SymbolNode*> PredefinedMap;
   CallbackNode* BlockEnterCallback;
   CallbackNode* BlockExitCallback;
   mutable CachedValueMap CachedValue;
@@ -272,7 +272,7 @@ class Node {
   NodeType getType() const { return Type; }
   const char* getName() const;
   const char* getNodeName() const;
-  utils::TraceClass& getTrace() const;
+  utils::TraceClass& getTrace() const { return Symtab.getTrace(); }
   bool hasKids() const { return getNumKids() > 0; }
 
   // General API to children.
@@ -615,12 +615,14 @@ class SymbolNode FINAL : public NullaryNode {
   void setLiteralDefinition(const LiteralDefNode* Defn) {
     getSymbolDefn()->setLiteralDefinition(Defn);
   }
-  PredefinedSymbol getPredefinedSymbol() const { return PredefinedValue; }
+  PredefinedSymbol getPredefinedSymbol() const;
+
   static bool implementsClass(NodeType Type) { return Type == OpSymbol; }
 
  private:
   std::string Name;
-  PredefinedSymbol PredefinedValue;
+  mutable PredefinedSymbol PredefinedValue;
+  mutable bool PredefinedValueIsCached;
   void init();
   SymbolDefnNode* getSymbolDefn() const;
   void setPredefinedSymbol(PredefinedSymbol NewValue);
