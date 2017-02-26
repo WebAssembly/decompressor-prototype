@@ -184,9 +184,9 @@ void* create_decompressor() {
                                     Decomp->Writer, Decomp->Flags);
   Decomp->AlgState->setInterpreter(Decomp->MyReader.get());
   Decomp->MyReader->addSelector(std::make_shared<DecompressSelector>(
-      getAlgwasm0xdSymtab(), Decomp->AlgState, false));
+      getAlgcasm0x0Symtab(), Decomp->AlgState));
   Decomp->MyReader->addSelector(std::make_shared<DecompressSelector>(
-      getAlgcasm0x0Symtab(), Decomp->AlgState, true));
+      getAlgwasm0xdSymtab(), Decomp->AlgState));
   Decomp->MyReader->algorithmStart();
   return Decomp;
 }

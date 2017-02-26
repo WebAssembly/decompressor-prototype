@@ -175,6 +175,9 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   Node* getError() const { return Error; }
   const FileHeaderNode* getSourceHeader() const;
   const FileHeaderNode* getTargetHeader() const;
+  // True if root specifies how to read an algorithm (i.e. the source and target
+  // headers are the same).
+  bool specifiesAlgorithm() const;
   void clear();
   int getNextCreationIndex() { return ++NextCreationIndex; }
 
@@ -319,8 +322,6 @@ class Node {
 
   FILE* getErrorFile() const { return Symtab.getErrorFile(); }
   FILE* error() { return Symtab.error(); }
-
-  static bool implementsClass(NodeType /*Type*/) { return true; }
 
  protected:
   NodeType Type;

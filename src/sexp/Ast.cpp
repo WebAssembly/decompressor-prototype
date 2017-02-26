@@ -183,6 +183,8 @@ Node::~Node() {
 }
 
 int Node::compare(const Node* Nd) const {
+  if (this == Nd)
+    return 0;
   int Diff = compareNode(Nd);
   if (Diff != 0)
     return Diff;
@@ -201,7 +203,9 @@ int Node::compare(const Node* Nd) const {
     for (int i = 0, Size = Nd1->getNumKids(); i < Size; ++i) {
       const Node* Kid1 = Nd1->getKid(i);
       const Node* Kid2 = Nd2->getKid(i);
-      Diff = Nd1->compareNode(Nd2);
+      if (Kid1 == Kid2)
+        continue;
+      Diff = Kid1->compareNode(Kid2);
       if (Diff != 0)
         return Diff;
       Frontier.push_back(Kid1);
@@ -682,6 +686,12 @@ const FileHeaderNode* SymbolTable::getTargetHeader() const {
   if (Root == nullptr)
     return nullptr;
   return Root->getTargetHeader();
+}
+
+bool SymbolTable::specifiesAlgorithm() const {
+  if (Root == nullptr)
+    return false;
+  return *Root->getSourceHeader() == *Root->getTargetHeader();
 }
 
 void SymbolTable::installDefinitions(Node* Root) {

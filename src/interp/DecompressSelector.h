@@ -70,8 +70,7 @@ class DecompressSelector : public AlgorithmSelector {
 
  public:
   DecompressSelector(std::shared_ptr<filt::SymbolTable> Symtab,
-                     std::shared_ptr<DecompAlgState> State,
-                     bool IsAlgorithm);
+                     std::shared_ptr<DecompAlgState> State);
   ~DecompressSelector() OVERRIDE;
   std::shared_ptr<filt::SymbolTable> getSymtab() OVERRIDE;
   bool configure(Interpreter* R) OVERRIDE;

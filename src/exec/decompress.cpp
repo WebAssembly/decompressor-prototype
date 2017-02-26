@@ -199,10 +199,10 @@ int main(const int Argc, const char* Argv[]) {
         std::make_shared<ByteReader>(std::make_shared<ReadBackedQueue>(Input)),
         Writer, InterpFlags);
     auto AlgState = std::make_shared<DecompAlgState>(&Decompressor);
-    Decompressor.addSelector(std::make_shared<DecompressSelector>(
-        getAlgwasm0xdSymtab(), AlgState, false));
-    Decompressor.addSelector(std::make_shared<DecompressSelector>(
-        getAlgcasm0x0Symtab(), AlgState, true));
+    Decompressor.addSelector(
+        std::make_shared<DecompressSelector>(getAlgcasm0x0Symtab(), AlgState));
+    Decompressor.addSelector(
+        std::make_shared<DecompressSelector>(getAlgwasm0xdSymtab(), AlgState));
     Writer->setMinimizeBlockSize(MinimizeBlockSize);
     if (InterpFlags.TraceProgress) {
       auto Trace = std::make_shared<TraceClass>("Decompress");
