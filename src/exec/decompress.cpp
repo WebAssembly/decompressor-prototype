@@ -22,6 +22,7 @@
 #include "interp/ByteReader.h"
 #include "interp/ByteWriter.h"
 #include "interp/Interpreter.h"
+#include "sexp/CasmReader.h"
 #include "stream/FileReader.h"
 #include "stream/FileWriter.h"
 #include "stream/ReadBackedQueue.h"
@@ -94,6 +95,7 @@ int main(const int Argc, const char* Argv[]) {
   bool UseCApi = false;
   size_t NumTries = 1;
   InterpreterFlags InterpFlags;
+  std::vector<charstring> Algorithms;
 
   {
     ArgsParser Args("Decompress WASM binary file");
@@ -111,6 +113,14 @@ int main(const int Argc, const char* Argv[]) {
     ArgsParser::Required<charstring> InputFilenameFlag(InputFilename);
     Args.add(InputFilenameFlag.setOptionName("INPUT")
                  .setDescription("INPUT is the File to decompress"));
+
+    ArgsParser::RepeatableVector<charstring> AlgorithmsFlag(Algorithms);
+    Args.add(AlgorithmsFlag.setShortName('a')
+                 .setLongName("algorithm")
+                 .setOptionName("FILE")
+                 .setDescription(
+                     "Parse FILE and add algorithm before the set of known "
+                     "algorithms."));
 
     ArgsParser::Optional<charstring> OutputFilenameFlag(OutputFilename);
     Args.add(
@@ -174,6 +184,20 @@ int main(const int Argc, const char* Argv[]) {
     return exit_status(runUsingCApi(Verbose >= 1));
   }
 
+  std::vector<std::shared_ptr<SymbolTable>> AdditionalAlgorithms;
+  for (const std::string& File : Algorithms) {
+    const char* Filename = File.c_str();
+    if (Verbose)
+      fprintf(stderr, "Opening algorithm file: %s\n", Filename);
+    CasmReader Reader;
+    Reader.readText(Filename);
+    if (Reader.hasErrors()) {
+      fprintf(stderr, "Unable to parse: %s\n", Filename);
+      return exit_status(EXIT_FAILURE);
+    }
+    AdditionalAlgorithms.push_back(Reader.getReadSymtab());
+  }
+
   bool Succeeded = true;  // until proven otherwise.
   for (size_t i = 0; i < NumTries; ++i) {
     if (Verbose)
@@ -192,6 +216,7 @@ int main(const int Argc, const char* Argv[]) {
     }
     if (Verbose)
       fprintf(stderr, "Decompressing...\n");
+    // Create input, output, and decompressor.
     std::shared_ptr<Queue> BackedOutput =
         std::make_shared<WriteBackedQueue>(Output);
     auto Writer = std::make_shared<ByteWriter>(BackedOutput);
@@ -199,10 +224,17 @@ int main(const int Argc, const char* Argv[]) {
         std::make_shared<ByteReader>(std::make_shared<ReadBackedQueue>(Input)),
         Writer, InterpFlags);
     auto AlgState = std::make_shared<DecompAlgState>(&Decompressor);
+    // Add additional algorithms first, so that they can override.
+    for (std::shared_ptr<SymbolTable> Symtab : AdditionalAlgorithms) {
+      Decompressor.addSelector(
+          std::make_shared<DecompressSelector>(Symtab, AlgState));
+    }
+    // Add default predefined algorithsm.
     Decompressor.addSelector(
         std::make_shared<DecompressSelector>(getAlgcasm0x0Symtab(), AlgState));
     Decompressor.addSelector(
         std::make_shared<DecompressSelector>(getAlgwasm0xdSymtab(), AlgState));
+    // Decompress.
     Writer->setMinimizeBlockSize(MinimizeBlockSize);
     if (InterpFlags.TraceProgress) {
       auto Trace = std::make_shared<TraceClass>("Decompress");

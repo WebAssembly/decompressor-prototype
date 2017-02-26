@@ -249,6 +249,27 @@ class ArgsParser {
     set_type& Values;
   };
 
+  template <class T>
+  class RepeatableVector : public OptionalArg {
+    RepeatableVector() = delete;
+    RepeatableVector(const RepeatableVector&) = delete;
+    RepeatableVector& operator=(const RepeatableVector&) = delete;
+
+   public:
+    typedef std::vector<T> vector_type;
+    explicit RepeatableVector(vector_type& Values,
+                              charstring Description = nullptr)
+        : OptionalArg(Description), Values(Values) {}
+
+    bool select(ArgsParser* Parser, charstring Add) OVERRIDE;
+    void describeDefault(FILE* Out,
+                         size_t TabSize,
+                         size_t& Indent) const OVERRIDE;
+
+   protected:
+    vector_type& Values;
+  };
+
   class RequiredArg : public Arg {
     RequiredArg() = delete;
     RequiredArg(const RequiredArg&) = delete;
