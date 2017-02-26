@@ -20,8 +20,7 @@ namespace wasm {
 
 namespace interp {
 
-AlgorithmSelector::AlgorithmSelector(const InterpreterFlags& Flags)
-    : Flags(Flags) {
+AlgorithmSelector::AlgorithmSelector() {
 }
 
 AlgorithmSelector::~AlgorithmSelector() {

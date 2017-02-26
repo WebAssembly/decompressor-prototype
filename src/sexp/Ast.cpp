@@ -186,12 +186,37 @@ int Node::compare(const Node* Nd) const {
   int Diff = compareNode(Nd);
   if (Diff != 0)
     return Diff;
-  // Structurally compare subtrees. Note; we assume that if compareNode()==0,
-  // the node must have the same number of children.
+// Structurally compare subtrees. Note; we assume that if compareNode()==0,
+// the node must have the same number of children.
+#if 0
   std::vector<std::pair<const Node*, const Node*>> Frontier;
   Frontier.push_back(std::make_pair(this, Nd));
+#else
+  std::vector<const Node*> Frontier;
+  Frontier.push_back(this);
+  Frontier.push_back(Nd);
+#endif
   while (!Frontier.empty()) {
-    std::pair<const Node*, const Node*>& Pair = Frontier.back();
+#if 1
+    const Node* Nd2 = Frontier.back();
+    Frontier.pop_back();
+    assert(!Frontier.empty());
+    const Node* Nd1 = Frontier.back();
+    Frontier.pop_back();
+    assert(Nd1->getNumKids() == Nd2->getNumKids());
+    for (int i = 0, Size = Nd1->getNumKids(); i < Size; ++i) {
+      const Node* Kid1 = Nd1->getKid(i);
+      const Node* Kid2 = Nd2->getKid(i);
+      Diff = Nd1->compareNode(Nd2);
+      if (Diff != 0)
+        return Diff;
+      Frontier.push_back(Kid1);
+      Frontier.push_back(Kid2);
+    }
+#else
+    std::pair<const Node*, const Node*> Pair = Frontier.back();
+    Frontier.pop_back();
+    assert(Pair.first->getNumKids() == Pair.second->getNumKids());
     for (int i = 0, Size = Pair.first->getNumKids(); i < Size; ++i) {
       const Node* N1 = Pair.first->getKid(i);
       const Node* N2 = Pair.second->getKid(i);
@@ -200,9 +225,9 @@ int Node::compare(const Node* Nd) const {
         return Diff;
       Frontier.push_back(std::make_pair(N1, N2));
     }
-    Frontier.pop_back();
+#endif
   }
-  return true;
+  return 0;
 }
 
 int Node::compareNode(const Node* Nd) const {
@@ -335,14 +360,6 @@ int IntegerValue::compare(const IntegerValue& V) const {
 void Node::append(Node*) {
   decode::fatal("Node::append not supported for ast node!");
 }
-
-#if 0
-void Node::clearCaches(NodeVectorType& AdditionalNodes) {
-}
-
-void Node::installCaches(NodeVectorType& AdditionalNodes) {
-}
-#endif
 
 bool Node::validateKid(NodeVectorType& Parents, Node* Kid) {
   Parents.push_back(this);
@@ -566,7 +583,6 @@ void SymbolTable::deallocateNodes() {
 
 void SymbolTable::init() {
   Root = nullptr;
-  TargetHeader = nullptr;
   NextCreationIndex = 0;
   Error = create<ErrorNode>();
   Predefined.reserve(NumPredefinedSymbols);
@@ -626,7 +642,7 @@ SymbolNode* SymbolTable::getSymbolDefinition(const std::string& Name) {
 AST_INTEGERNODE_TABLE
 #undef X
 
-void SymbolTable::install(Node* Root) {
+void SymbolTable::install(FileNode* Root) {
   TRACE_METHOD("install");
   CachedValue.clear();
   this->Root = Root;
@@ -639,7 +655,13 @@ void SymbolTable::install(Node* Root) {
 const FileHeaderNode* SymbolTable::getSourceHeader() const {
   if (Root == nullptr)
     return nullptr;
-  return dyn_cast<FileHeaderNode>(Root->getKid(0));
+  return Root->getSourceHeader();
+}
+
+const FileHeaderNode* SymbolTable::getTargetHeader() const {
+  if (Root == nullptr)
+    return nullptr;
+  return Root->getTargetHeader();
 }
 
 void SymbolTable::installDefinitions(Node* Root) {
@@ -651,12 +673,6 @@ void SymbolTable::installDefinitions(Node* Root) {
     default:
       return;
     case OpFile:
-      if (TargetHeader == nullptr) {
-        TargetHeader = dyn_cast<FileHeaderNode>(Root->getKid(1));
-        if (TargetHeader == nullptr)
-          TargetHeader = getSourceHeader();
-      }
-    // intentionally fall to next case.
     case OpSection:
       for (Node* Kid : *Root)
         installDefinitions(Kid);
@@ -712,7 +728,7 @@ void SymbolTable::describe(FILE* Out) {
 }
 
 void SymbolTable::stripCallbacksExcept(std::set<std::string>& KeepActions) {
-  install(stripCallbacksExcept(KeepActions, Root));
+  install(dyn_cast<FileNode>(stripCallbacksExcept(KeepActions, Root)));
 }
 
 Node* SymbolTable::stripUsing(Node* Root,
@@ -774,7 +790,8 @@ Node* SymbolTable::stripCallbacksExcept(std::set<std::string>& KeepActions,
 }
 
 void SymbolTable::stripLiterals() {
-  install(stripLiteralDefs(stripLiteralUses(Root)));
+  install(dyn_cast<FileNode>(
+      stripLiteralDefs(dyn_cast<FileNode>(stripLiteralUses(Root)))));
 }
 
 Node* SymbolTable::stripLiteralUses(Node* Root) {
@@ -1310,6 +1327,17 @@ bool EvalNode::validateNode(NodeVectorType& Parents) {
     return false;
   }
   return true;
+}
+
+const FileHeaderNode* FileNode::getSourceHeader() const {
+  return dyn_cast<FileHeaderNode>(getKid(0));
+}
+
+const FileHeaderNode* FileNode::getTargetHeader() const {
+  const FileHeaderNode* Header = dyn_cast<FileHeaderNode>(getKid(1));
+  if (Header == nullptr)
+    Header = dyn_cast<FileHeaderNode>(getKid(0));
+  return Header;
 }
 
 SelectBaseNode::~SelectBaseNode() {

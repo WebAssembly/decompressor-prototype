@@ -32,6 +32,7 @@ namespace wasm {
 namespace filt {
 
 class Node;
+class FileNode;
 class SymbolNode;
 class SymbolTable;
 class SectionNode;
@@ -54,7 +55,7 @@ class SectionSymbolTable {
   void clear();
   SymbolNode* getIndexSymbol(IndexType Index);
   bool empty() const { return IndexLookup.empty(); }
-  void install(Node* Root);
+  void install(FileNode* Root);
 
  private:
   // Cache that holds the set of uniquified symbols.

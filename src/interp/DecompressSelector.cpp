@@ -43,17 +43,18 @@ using namespace filt;
 
 namespace interp {
 
-DecompAlgState::DecompAlgState() {
+DecompAlgState::DecompAlgState(Interpreter* MyInterpreter)
+    : MyInterpreter(MyInterpreter) {
 }
 
 DecompAlgState::~DecompAlgState() {
 }
 
-DecompressSelector::DecompressSelector(std::shared_ptr<SymbolTable> Symtab,
-                                       std::shared_ptr<DecompAlgState> State,
-                                       bool IsAlgorithm,
-                                       const InterpreterFlags& Flags)
-    : AlgorithmSelector(Flags),
+DecompressSelector::DecompressSelector(
+    std::shared_ptr<filt::SymbolTable> Symtab,
+    std::shared_ptr<DecompAlgState> State,
+    bool IsAlgorithm)
+    : AlgorithmSelector(),
       Symtab(Symtab),
       State(State),
       IsAlgorithm(IsAlgorithm) {
@@ -62,8 +63,8 @@ DecompressSelector::DecompressSelector(std::shared_ptr<SymbolTable> Symtab,
 DecompressSelector::~DecompressSelector() {
 }
 
-const FileHeaderNode* DecompressSelector::getTargetHeader() {
-  return Symtab->getTargetHeader();
+std::shared_ptr<SymbolTable> DecompressSelector::getSymtab() {
+  return Symtab;
 }
 
 bool DecompressSelector::configure(Interpreter* R) {
@@ -76,6 +77,7 @@ bool DecompressSelector::configureAlgorithm(Interpreter* R) {
   R->setSymbolTable(Symtab);
   State->OrigWriter = R->getWriter();
   State->Inflator = std::make_shared<InflateAst>();
+  State->Inflator->setInstallDuringInflation(false);
   R->setWriter(State->Inflator);
   return true;
 }
@@ -97,7 +99,8 @@ bool DecompressSelector::applyNextQueuedAlgorithm(Interpreter* R) {
 }
 
 bool DecompressSelector::configureData(Interpreter* R) {
-  if (State->IntermediateStream && Flags.TraceIntermediateStreams)
+  if (State->IntermediateStream &&
+      State->MyInterpreter->getFlags().TraceIntermediateStreams)
     State->IntermediateStream->describe(stderr, "Intermediate stream");
   return State->AlgQueue.empty() ? applyDataAlgorithm(R)
                                  : applyNextQueuedAlgorithm(R);
@@ -113,7 +116,16 @@ bool DecompressSelector::resetAlgorithm(Interpreter* R) {
   R->setWriter(State->OrigWriter);
   State->OrigWriter->reset();
   assert(State->Inflator);
-  State->AlgQueue.push(State->Inflator->getSymtab());
+  FileNode* Root = State->Inflator->getGeneratedFile();
+  if (Root == nullptr) {
+    State->Inflator.reset();
+    return false;
+  }
+  std::shared_ptr<SymbolTable> Algorithm = State->Inflator->getSymtab();
+  Algorithm->setEnclosingScope(
+      State->MyInterpreter->getDefaultAlgorithm(Root->getTargetHeader()));
+  Algorithm->install(Root);
+  State->AlgQueue.push(Algorithm);
   State->Inflator.reset();
   return true;
 }

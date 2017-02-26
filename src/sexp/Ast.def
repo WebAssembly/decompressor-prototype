@@ -206,8 +206,12 @@
 
 //#define X(tag, NODE_DECLS)
 #define AST_TERNARYNODE_TABLE                                                  \
-  X(File,)                                                                     \
+  X(File, FILE_DECLS)                                                          \
   X(IfThenElse,)                                                               \
+
+#define FILE_DECLS                                                             \
+  const FileHeaderNode* getSourceHeader() const;                               \
+  const FileHeaderNode* getTargetHeader() const;                               \
 
 //#define X(tag)
 #define AST_NODE_HAS_HIDDEN_SEQ                                                \

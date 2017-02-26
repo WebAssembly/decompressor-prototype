@@ -27,6 +27,7 @@ struct InterpreterFlags {
   InterpreterFlags();
   bool TraceProgress;
   bool TraceIntermediateStreams;
+  bool TraceAppliedAlgorithms;
 };
 
 }  // end of namespace interp

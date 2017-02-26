@@ -65,6 +65,8 @@ class Interpreter {
     HeaderOverride = Header;
   }
 
+  const InterpreterFlags& getFlags() const { return Flags; }
+
   std::shared_ptr<Reader> getInput() { return Input; }
   void setInput(std::shared_ptr<Reader> Value);
 
@@ -80,6 +82,9 @@ class Interpreter {
   void setFreezeEofAtExit(bool NewValue) { FreezeEofAtExit = NewValue; }
 
   void addSelector(std::shared_ptr<AlgorithmSelector> Selector);
+
+  std::shared_ptr<filt::SymbolTable> getDefaultAlgorithm(
+      const filt::Node* TargetHeader);
 
   // Starts up decompression using a (file) algorithm.
   void algorithmStart();

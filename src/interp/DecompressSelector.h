@@ -47,12 +47,15 @@ class Writer;
 class DecompAlgState : public std::enable_shared_from_this<DecompAlgState> {
   DecompAlgState(const DecompAlgState&) = delete;
   DecompAlgState operator=(const DecompAlgState&) = delete;
+  friend class DecompressSelector;
 
  public:
-  DecompAlgState();
+  explicit DecompAlgState(Interpreter* MyInterpreter = nullptr);
   virtual ~DecompAlgState();
+  void setInterpreter(Interpreter* NewValue) { MyInterpreter = NewValue; }
 
-  // TODO(karlschimpf) Choose a queue data structure instead.
+ private:
+  Interpreter* MyInterpreter;
   std::queue<std::shared_ptr<filt::SymbolTable>> AlgQueue;
   std::shared_ptr<filt::InflateAst> Inflator;
   std::shared_ptr<filt::SymbolTable> OrigSymtab;
@@ -68,10 +71,9 @@ class DecompressSelector : public AlgorithmSelector {
  public:
   DecompressSelector(std::shared_ptr<filt::SymbolTable> Symtab,
                      std::shared_ptr<DecompAlgState> State,
-                     bool IsAlgorithm,
-                     const InterpreterFlags& Flags);
+                     bool IsAlgorithm);
   ~DecompressSelector() OVERRIDE;
-  const filt::FileHeaderNode* getTargetHeader() OVERRIDE;
+  std::shared_ptr<filt::SymbolTable> getSymtab() OVERRIDE;
   bool configure(Interpreter* R) OVERRIDE;
   bool reset(Interpreter* R) OVERRIDE;
 

@@ -104,7 +104,9 @@ struct {
 }  // end of anonymous namespace
 
 InterpreterFlags::InterpreterFlags()
-    : TraceProgress(false), TraceIntermediateStreams(false) {
+    : TraceProgress(false),
+      TraceIntermediateStreams(false),
+      TraceAppliedAlgorithms(false) {
 }
 
 Interpreter::CallFrame::CallFrame() {
@@ -575,6 +577,20 @@ void Interpreter::handleOtherMethods() {
         return;
     }
   }
+}
+
+std::shared_ptr<SymbolTable> Interpreter::getDefaultAlgorithm(
+    const Node* Header) {
+  for (std::shared_ptr<AlgorithmSelector>& Sel : Selectors) {
+    std::shared_ptr<SymbolTable> Symtab = Sel->getSymtab();
+    const Node* Target = Symtab->getTargetHeader();
+    if (Header == Target)
+      // In same algorithm, ignore.
+      continue;
+    if (*Header == *Target)
+      return Symtab;
+  }
+  return std::shared_ptr<SymbolTable>();
 }
 
 void Interpreter::algorithmStart() {
@@ -1380,7 +1396,7 @@ void Interpreter::algorithmResume() {
             }
             Frame.CallState = State::Step2;
             call(Method::Eval, MethodModifier::ReadOnly,
-                 Selectors[LoopCounter]->getTargetHeader());
+                 Selectors[LoopCounter]->getSymtab()->getTargetHeader());
             break;
           case State::Step2:
             assert(CatchStack.size() == 1);
@@ -1401,6 +1417,11 @@ void Interpreter::algorithmResume() {
             assert(Input->sizePeekPosStack() == 0);
             assert(LoopCounterStack.size() == 1);
             Frame.CallState = State::Step4;
+            if (Flags.TraceAppliedAlgorithms) {
+              fprintf(stderr, "Applying Algorithm:\n");
+              TextWriter Writer;
+              (++Writer).write(stderr, Symtab.get());
+            }
             call(Method::GetFile, Frame.CallModifier, Frame.Nd);
             break;
           case State::Step4:
