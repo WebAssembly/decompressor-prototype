@@ -499,6 +499,9 @@ void CodeGenerator::generateArrayImplFile() {
   generateAlgorithmHeader();
   puts(
       " {\n"
+      "  static std::shared_ptr<SymbolTable> Symtable;\n"
+      "  if (Symtable)\n"
+      "    return Symtable;\n"
       "  auto ArrayInput = std::make_shared<ArrayReader>(\n"
       "    ");
   generateArrayName();
@@ -510,7 +513,8 @@ void CodeGenerator::generateArrayImplFile() {
       "  CasmReader Reader;\n"
       "  Reader.readBinary(Input);\n"
       "  assert(!Reader.hasErrors());\n"
-      "  return Reader.getReadSymtab();\n");
+      "  Symtable = Reader.getReadSymtab();\n"
+      "  return Symtable;\n");
   generateFunctionFooter();
 }
 
@@ -522,7 +526,10 @@ void CodeGenerator::generateFunctionImplFile() {
   generateAlgorithmHeader();
   puts(
       " {\n"
-      "  auto Symtable = std::make_shared<SymbolTable>();\n"
+      "  static std::shared_ptr<SymbolTable> Symtable;\n"
+      "  if (Symtable)\n"
+      "    return Symtable;\n"
+      "  Symtable = std::make_shared<SymbolTable>();\n"
       "  SymbolTable* Symtab = Symtable.get();\n"
       "  Symtab->install(");
   generateFunctionCall(Index);
