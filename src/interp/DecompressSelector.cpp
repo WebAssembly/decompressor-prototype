@@ -52,12 +52,11 @@ DecompAlgState::~DecompAlgState() {
 
 DecompressSelector::DecompressSelector(
     std::shared_ptr<filt::SymbolTable> Symtab,
-    std::shared_ptr<DecompAlgState> State,
-    bool IsAlgorithm)
+    std::shared_ptr<DecompAlgState> State)
     : AlgorithmSelector(),
       Symtab(Symtab),
       State(State),
-      IsAlgorithm(IsAlgorithm) {
+      IsAlgorithm(Symtab->specifiesAlgorithm()) {
 }
 
 DecompressSelector::~DecompressSelector() {
