@@ -147,16 +147,16 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   }
   // Gets existing symbol if known. Otherwise returns nullptr.
   SymbolNode* getSymbol(const std::string& Name);
+  // Returns the corresponding symbol for the predefined symbol (creates if
+  // necessary).
+  SymbolNode* getPredefined(PredefinedSymbol Sym);
+  // Gets existing symbol if known. Otherwise returns newly created symbol.
+  // Used to keep symbols unique within filter s-expressions.
+  SymbolNode* getSymbolDefinition(const std::string& Name);
   // Returns local version of symbol definitions associated with the
   // symbol. Used to get local cached symbol definitions when interpreting
   // nodes with a symbol lookup, such as EvalNode.
   SymbolDefnNode* getSymbolDefn(const SymbolNode* Symbol);
-  SymbolNode* getPredefined(PredefinedSymbol Sym) {
-    return Predefined[uint32_t(Sym)];
-  }
-  // Gets existing symbol if known. Otherwise returns newly created symbol.
-  // Used to keep symbols unique within filter s-expressions.
-  SymbolNode* getSymbolDefinition(const std::string& Name);
 
 // Gets integer node (as defined by the arguments) if known. Otherwise
 // returns newly created integer.
@@ -167,10 +167,8 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   AST_INTEGERNODE_TABLE
 #undef X
   // Gets actions corresponding to enter/exit block.
-  const CallbackNode* getBlockEnterCallback() const {
-    return BlockEnterCallback;
-  }
-  const CallbackNode* getBlockExitCallback() const { return BlockExitCallback; }
+  const CallbackNode* getBlockEnterCallback();
+  const CallbackNode* getBlockExitCallback();
   // Install definitions in tree defined by root.
   void install(FileNode* Root);
   const FileNode* getInstalledRoot() const { return Root; }
@@ -191,7 +189,7 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   BinaryAcceptNode* createBinaryAccept(decode::IntType Value, unsigned NumBits);
 
   // Returns the cached value associated with a node, or nullptr if not cached.
-  Node* getCachedValue(const Node* Nd) const { return CachedValue[Nd]; }
+  Node* getCachedValue(const Node* Nd) { return CachedValue[Nd]; }
   void setCachedValue(const Node* Nd, Node* Value) { CachedValue[Nd] = Value; }
 
   // Strips all callback actions from the algorithm, except for the names
@@ -223,10 +221,10 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   int NextCreationIndex;
   std::map<std::string, SymbolNode*> SymbolMap;
   std::map<IntegerValue, IntegerNode*> IntMap;
-  std::vector<SymbolNode*> Predefined;
+  std::map<PredefinedSymbol, SymbolNode*> PredefinedMap;
   CallbackNode* BlockEnterCallback;
   CallbackNode* BlockExitCallback;
-  mutable CachedValueMap CachedValue;
+  CachedValueMap CachedValue;
 
   void init();
   void deallocateNodes();
@@ -272,7 +270,7 @@ class Node {
   NodeType getType() const { return Type; }
   const char* getName() const;
   const char* getNodeName() const;
-  utils::TraceClass& getTrace() const;
+  utils::TraceClass& getTrace() const { return Symtab.getTrace(); }
   bool hasKids() const { return getNumKids() > 0; }
 
   // General API to children.
@@ -365,6 +363,25 @@ class NullaryNode : public Node {
 
  protected:
   NullaryNode(SymbolTable& Symtab, NodeType Type);
+};
+
+// Base class for cached data. What these nodes have in common is that
+// they are uncomparable because their content updates dynamically as
+// data is cached. As a result, we use this base class to capture that
+// concept.
+class CachedNode : public NullaryNode {
+  CachedNode() = delete;
+  CachedNode(const CachedNode&) = delete;
+  CachedNode& operator=(const CachedNode&) = delete;
+
+ public:
+  ~CachedNode() OVERRIDE;
+  int compareNode(const Node* Nd) const OVERRIDE;
+
+  static bool implementsClass(NodeType Type);
+
+ protected:
+  CachedNode(SymbolTable& Symtab, NodeType Type);
 };
 
 class IntegerNode : public NullaryNode {
@@ -471,7 +488,7 @@ class NaryNode : public Node {
   NaryNode(SymbolTable& Symtab, NodeType Type);
 };
 
-class IntLookupNode FINAL : public NullaryNode {
+class IntLookupNode FINAL : public CachedNode {
   IntLookupNode() = delete;
   IntLookupNode(const IntLookupNode&) = delete;
   IntLookupNode& operator=(const IntLookupNode&) = delete;
@@ -480,12 +497,11 @@ class IntLookupNode FINAL : public NullaryNode {
   typedef std::unordered_map<decode::IntType, const Node*> LookupMap;
   explicit IntLookupNode(SymbolTable&);
   ~IntLookupNode() OVERRIDE;
-  int compareNode(const Node* Nd) const OVERRIDE;
-  const Node* get(decode::IntType Value) const;
+  const Node* get(decode::IntType Value);
   bool add(decode::IntType Value, const Node* Nd);
 
  private:
-  mutable LookupMap Lookup;
+  LookupMap Lookup;
 };
 
 #define X(tag, NODE_DECLS)                                                 \
@@ -548,7 +564,7 @@ class BinaryAcceptNode FINAL : public IntegerNode {
 };
 
 // Holds cached information about a Symbol
-class SymbolDefnNode FINAL : public NullaryNode {
+class SymbolDefnNode FINAL : public CachedNode {
   SymbolDefnNode() = delete;
   SymbolDefnNode(const SymbolDefnNode&) = delete;
   SymbolDefnNode& operator=(const SymbolDefnNode&) = delete;
@@ -556,13 +572,12 @@ class SymbolDefnNode FINAL : public NullaryNode {
  public:
   SymbolDefnNode(SymbolTable& Symtab);
   ~SymbolDefnNode() OVERRIDE;
-  int compareNode(const Node* Nd) const;
   const SymbolNode* getSymbol() const { return Symbol; }
   void setSymbol(const SymbolNode* Nd) { Symbol = Nd; }
   const std::string& getName() const;
-  const DefineNode* getDefineDefinition() const;
+  const DefineNode* getDefineDefinition();
   void setDefineDefinition(const DefineNode* Defn) { DefineDefinition = Defn; }
-  const LiteralDefNode* getLiteralDefinition() const;
+  const LiteralDefNode* getLiteralDefinition();
   void setLiteralDefinition(const LiteralDefNode* Defn) {
     LiteralDefinition = Defn;
   }
@@ -571,8 +586,8 @@ class SymbolDefnNode FINAL : public NullaryNode {
 
  private:
   const SymbolNode* Symbol;
-  mutable const DefineNode* DefineDefinition;
-  mutable const LiteralDefNode* LiteralDefinition;
+  const DefineNode* DefineDefinition;
+  const LiteralDefNode* LiteralDefinition;
 };
 
 class SymbolNode FINAL : public NullaryNode {
@@ -598,12 +613,14 @@ class SymbolNode FINAL : public NullaryNode {
   void setLiteralDefinition(const LiteralDefNode* Defn) {
     getSymbolDefn()->setLiteralDefinition(Defn);
   }
-  PredefinedSymbol getPredefinedSymbol() const { return PredefinedValue; }
+  PredefinedSymbol getPredefinedSymbol() const;
+
   static bool implementsClass(NodeType Type) { return Type == OpSymbol; }
 
  private:
   std::string Name;
-  PredefinedSymbol PredefinedValue;
+  mutable PredefinedSymbol PredefinedValue;
+  mutable bool PredefinedValueIsCached;
   void init();
   SymbolDefnNode* getSymbolDefn() const;
   void setPredefinedSymbol(PredefinedSymbol NewValue);
