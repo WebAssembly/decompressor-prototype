@@ -224,6 +224,12 @@ void TextWriter::writeNode(const Node* Nd,
       for (auto* Kid : *Nd)
         writeNode(Kid, true, false);
       break;
+    case OpSymbolDefn: {
+      Parenthesize _(this, Type, AddNewline);
+      writeSpace();
+      writeNode(cast<SymbolDefnNode>(Nd)->getSymbol(), false);
+      break;
+    }
     case OpSymbol: {
       Indent _(this, AddNewline);
       const auto* Sym = cast<SymbolNode>(Nd);
@@ -351,6 +357,7 @@ void TextWriter::writeNodeAbbrev(const Node* Nd,
       return;
     }
     case OpSymbol:
+    case OpSymbolDefn:
       writeNode(Nd, AddNewline, EmbedInParent);
       return;
     case OpLiteralUse:

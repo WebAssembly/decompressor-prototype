@@ -390,18 +390,36 @@ bool Node::validateNode(NodeVectorType& Scope) {
   return true;
 }
 
-IntLookupNode::IntLookupNode(SymbolTable& Symtab)
-    : NullaryNode(Symtab, OpIntLookup) {
+CachedNode::CachedNode(SymbolTable& Symtab, NodeType Type)
+    : NullaryNode(Symtab, Type) {
 }
 
-IntLookupNode::~IntLookupNode() {
+CachedNode::~CachedNode() {
 }
 
-int IntLookupNode::compareNode(const Node* Nd) const {
+int CachedNode::compareNode(const Node* Nd) const {
   int Diff = NullaryNode::compareNode(Nd);
   if (Diff != 0)
     return Diff;
   return compareIncomparable(Nd);
+}
+
+bool CachedNode::implementsClass(NodeType Type) {
+  switch (Type) {
+    default:
+      return false;
+#define X(tag) case Op##tag:
+      AST_CACHEDNODE_TABLE
+#undef X
+      return true;
+  }
+}
+
+IntLookupNode::IntLookupNode(SymbolTable& Symtab)
+    : CachedNode(Symtab, OpIntLookup) {
+}
+
+IntLookupNode::~IntLookupNode() {
 }
 
 const Node* IntLookupNode::get(decode::IntType Value) const {
@@ -418,20 +436,13 @@ bool IntLookupNode::add(decode::IntType Value, const Node* Nd) {
 }
 
 SymbolDefnNode::SymbolDefnNode(SymbolTable& Symtab)
-    : NullaryNode(Symtab, OpSymbolDefn),
+    : CachedNode(Symtab, OpSymbolDefn),
       Symbol(nullptr),
       DefineDefinition(nullptr),
       LiteralDefinition(nullptr) {
 }
 
 SymbolDefnNode::~SymbolDefnNode() {
-}
-
-int SymbolDefnNode::compareNode(const Node* Nd) const {
-  int Diff = NullaryNode::compareNode(Nd);
-  if (Diff != 0)
-    return Diff;
-  return compareIncomparable(Nd);
 }
 
 const std::string& SymbolDefnNode::getName() const {

@@ -193,6 +193,11 @@
   X(Sequence,)                                                                 \
   X(Write,)                                                                    \
 
+//#define X(tag)
+#define AST_CACHEDNODE_TABLE                                                   \
+  X(SymbolDefn)                                                                \
+  X(IntLookup)                                                                 \
+
 #define DEFINE_DECLS                                                           \
   bool isValidParam(decode::IntType Index);                                    \
   const std::string getName() const;                                           \

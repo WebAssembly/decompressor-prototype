@@ -367,6 +367,25 @@ class NullaryNode : public Node {
   NullaryNode(SymbolTable& Symtab, NodeType Type);
 };
 
+// Base class for cached data. What these nodes have in common is that
+// they are uncomparable because their content updates dynamically as
+// data is cached. As a result, we use this base class to capture that
+// concept.
+class CachedNode : public NullaryNode {
+  CachedNode() = delete;
+  CachedNode(const CachedNode&) = delete;
+  CachedNode& operator=(const CachedNode&) = delete;
+
+ public:
+  ~CachedNode() OVERRIDE;
+  int compareNode(const Node* Nd) const OVERRIDE;
+
+  static bool implementsClass(NodeType Type);
+
+ protected:
+  CachedNode(SymbolTable& Symtab, NodeType Type);
+};
+
 class IntegerNode : public NullaryNode {
   IntegerNode() = delete;
   IntegerNode(const IntegerNode&) = delete;
@@ -471,7 +490,7 @@ class NaryNode : public Node {
   NaryNode(SymbolTable& Symtab, NodeType Type);
 };
 
-class IntLookupNode FINAL : public NullaryNode {
+class IntLookupNode FINAL : public CachedNode {
   IntLookupNode() = delete;
   IntLookupNode(const IntLookupNode&) = delete;
   IntLookupNode& operator=(const IntLookupNode&) = delete;
@@ -480,7 +499,6 @@ class IntLookupNode FINAL : public NullaryNode {
   typedef std::unordered_map<decode::IntType, const Node*> LookupMap;
   explicit IntLookupNode(SymbolTable&);
   ~IntLookupNode() OVERRIDE;
-  int compareNode(const Node* Nd) const OVERRIDE;
   const Node* get(decode::IntType Value) const;
   bool add(decode::IntType Value, const Node* Nd);
 
@@ -548,7 +566,7 @@ class BinaryAcceptNode FINAL : public IntegerNode {
 };
 
 // Holds cached information about a Symbol
-class SymbolDefnNode FINAL : public NullaryNode {
+class SymbolDefnNode FINAL : public CachedNode {
   SymbolDefnNode() = delete;
   SymbolDefnNode(const SymbolDefnNode&) = delete;
   SymbolDefnNode& operator=(const SymbolDefnNode&) = delete;
@@ -556,7 +574,6 @@ class SymbolDefnNode FINAL : public NullaryNode {
  public:
   SymbolDefnNode(SymbolTable& Symtab);
   ~SymbolDefnNode() OVERRIDE;
-  int compareNode(const Node* Nd) const;
   const SymbolNode* getSymbol() const { return Symbol; }
   void setSymbol(const SymbolNode* Nd) { Symbol = Nd; }
   const std::string& getName() const;
