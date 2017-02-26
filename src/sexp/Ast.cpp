@@ -186,12 +186,37 @@ int Node::compare(const Node* Nd) const {
   int Diff = compareNode(Nd);
   if (Diff != 0)
     return Diff;
-  // Structurally compare subtrees. Note; we assume that if compareNode()==0,
-  // the node must have the same number of children.
+// Structurally compare subtrees. Note; we assume that if compareNode()==0,
+// the node must have the same number of children.
+#if 0
   std::vector<std::pair<const Node*, const Node*>> Frontier;
   Frontier.push_back(std::make_pair(this, Nd));
+#else
+  std::vector<const Node*> Frontier;
+  Frontier.push_back(this);
+  Frontier.push_back(Nd);
+#endif
   while (!Frontier.empty()) {
-    std::pair<const Node*, const Node*>& Pair = Frontier.back();
+#if 1
+    const Node* Nd2 = Frontier.back();
+    Frontier.pop_back();
+    assert(!Frontier.empty());
+    const Node* Nd1 = Frontier.back();
+    Frontier.pop_back();
+    assert(Nd1->getNumKids() == Nd2->getNumKids());
+    for (int i = 0, Size = Nd1->getNumKids(); i < Size; ++i) {
+      const Node* Kid1 = Nd1->getKid(i);
+      const Node* Kid2 = Nd2->getKid(i);
+      Diff = Nd1->compareNode(Nd2);
+      if (Diff != 0)
+        return Diff;
+      Frontier.push_back(Kid1);
+      Frontier.push_back(Kid2);
+    }
+#else
+    std::pair<const Node*, const Node*> Pair = Frontier.back();
+    Frontier.pop_back();
+    assert(Pair.first->getNumKids() == Pair.second->getNumKids());
     for (int i = 0, Size = Pair.first->getNumKids(); i < Size; ++i) {
       const Node* N1 = Pair.first->getKid(i);
       const Node* N2 = Pair.second->getKid(i);
@@ -200,9 +225,9 @@ int Node::compare(const Node* Nd) const {
         return Diff;
       Frontier.push_back(std::make_pair(N1, N2));
     }
-    Frontier.pop_back();
+#endif
   }
-  return true;
+  return 0;
 }
 
 int Node::compareNode(const Node* Nd) const {
@@ -630,25 +655,13 @@ void SymbolTable::install(FileNode* Root) {
 const FileHeaderNode* SymbolTable::getSourceHeader() const {
   if (Root == nullptr)
     return nullptr;
-#if 1
   return Root->getSourceHeader();
-#else
-  return dyn_cast<FileHeaderNode>(Root->getKid(0));
-#endif
 }
 
 const FileHeaderNode* SymbolTable::getTargetHeader() const {
   if (Root == nullptr)
     return nullptr;
-#if 0
-  const FileHeaderNode* Header = dyn_cast<FileHeaderNode>(Root->getKid(1));
-
-  if (Header == nullptr)
-    Header = dyn_cast<FileHeaderNode>(Root->getKid(0));
-  return Header;
-#else
   return Root->getTargetHeader();
-#endif
 }
 
 void SymbolTable::installDefinitions(Node* Root) {
@@ -777,7 +790,8 @@ Node* SymbolTable::stripCallbacksExcept(std::set<std::string>& KeepActions,
 }
 
 void SymbolTable::stripLiterals() {
-  install(dyn_cast<FileNode>(stripLiteralDefs(dyn_cast<FileNode>(stripLiteralUses(Root)))));
+  install(dyn_cast<FileNode>(
+      stripLiteralDefs(dyn_cast<FileNode>(stripLiteralUses(Root)))));
 }
 
 Node* SymbolTable::stripLiteralUses(Node* Root) {

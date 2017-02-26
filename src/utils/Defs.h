@@ -49,8 +49,6 @@ namespace wasm {
 #define WASM_RETURN_UNREACHABLE(V) assert(false)
 #endif
 
-#define WASM_CALL_MEMBER_FN(object, ptrToMember) ((object).*(ptrToMember))
-
 #ifdef NDEBUG
 inline bool isRelease() {
   return true;

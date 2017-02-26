@@ -143,7 +143,7 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   ~SymbolTable();
   SymbolTable* getEnclosingScope() { return EnclosingScope.get(); }
   void setEnclosingScope(std::shared_ptr<SymbolTable> Value) {
-      EnclosingScope = Value;
+    EnclosingScope = Value;
   }
   // Gets existing symbol if known. Otherwise returns nullptr.
   SymbolNode* getSymbol(const std::string& Name);
@@ -176,11 +176,7 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   const FileNode* getInstalledRoot() const { return Root; }
   Node* getError() const { return Error; }
   const FileHeaderNode* getSourceHeader() const;
-#if 0
-  const FileHeaderNode* getTargetHeader() const { return TargetHeader; }
-#else
   const FileHeaderNode* getTargetHeader() const;
-#endif
   void clear();
   int getNextCreationIndex() { return ++NextCreationIndex; }
 
@@ -223,9 +219,6 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   std::vector<Node*> Allocated;
   std::shared_ptr<utils::TraceClass> Trace;
   FileNode* Root;
-#if 0
-  const FileHeaderNode* TargetHeader;
-#endif
   Node* Error;
   int NextCreationIndex;
   std::map<std::string, SymbolNode*> SymbolMap;
@@ -297,13 +290,6 @@ class Node {
   // structural compare.
   int compareIncomparable(const Node* Nd) const;
 
-  bool operator<(const Node* Nd) const { return compare(Nd) < 0; }
-  bool operator<=(const Node* Nd) const { return compare(Nd) <= 0; }
-  bool operator==(const Node* Nd) const { return compare(Nd) == 0; }
-  bool operator!=(const Node* Nd) const { return compare(Nd) != 0; }
-  bool operator>=(const Node* Nd) const { return compare(Nd) >= 0; }
-  bool operator>(const Node* Nd) const { return compare(Nd) > 0; }
-
   // Counts number of nodes in tree defined by this.
   size_t getTreeSize() const;
 
@@ -343,29 +329,25 @@ class Node {
   SymbolTable& Symtab;
   int CreationIndex;
   Node(SymbolTable& Symtab, NodeType Type);
-#if 0
-  virtual void clearCaches(NodeVectorType& AdditionalNodes);
-  virtual void installCaches(NodeVectorType& AdditionalNodes);
-#endif
 };
 
 inline bool operator<(const Node& N1, const Node& N2) {
-  return N1 < N2;
+  return N1.compare(&N2) < 0;
 }
 inline bool operator<=(const Node& N1, const Node& N2) {
-  return N1 <= N2;
+  return N1.compare(&N2) <= 0;
 }
 inline bool operator==(const Node& N1, const Node& N2) {
-  return N1 == N2;
+  return N1.compare(&N2) == 0;
 }
 inline bool operator!=(const Node& N1, const Node& N2) {
-  return N1 != N2;
+  return N1.compare(&N2) != 0;
 }
 inline bool operator>=(const Node& N1, const Node& N2) {
-  return N1 >= N2;
+  return N1.compare(&N2) >= 0;
 }
 inline bool operator>(const Node& N1, const Node& N2) {
-  return N1 > N2;
+  return N1.compare(&N2) > 0;
 }
 
 class NullaryNode : public Node {

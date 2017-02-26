@@ -18,8 +18,6 @@
 
 namespace wasm {
 
-using namespace filt;
-
 namespace interp {
 
 AlgorithmSelector::AlgorithmSelector() {

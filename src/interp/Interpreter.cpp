@@ -590,9 +590,6 @@ std::shared_ptr<SymbolTable> Interpreter::getDefaultAlgorithm(
     if (*Header == *Target)
       return Symtab;
   }
-  fprintf(stderr, "Couldn't find default for:\n");
-  TextWriter Writer;
-  (++Writer).write(stderr, Header);
   return std::shared_ptr<SymbolTable>();
 }
 

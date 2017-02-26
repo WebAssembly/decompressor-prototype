@@ -37,10 +37,6 @@
 #include "sexp/InflateAst.h"
 #include "utils/Trace.h"
 
-#if 1
-#include "sexp/TextWriter.h"
-#endif
-
 namespace wasm {
 
 using namespace filt;
@@ -121,27 +117,16 @@ bool DecompressSelector::resetAlgorithm(Interpreter* R) {
   State->OrigWriter->reset();
   assert(State->Inflator);
   FileNode* Root = State->Inflator->getGeneratedFile();
-  fprintf(stderr, "Root = %p\n", (void*)Root);
   if (Root == nullptr) {
     State->Inflator.reset();
-    fprintf(stderr, "reasetAlgorithm = false\n");
     return false;
   }
-
-#if 0
-#if 0
-  Symtab->setEnclosingScope(State->MyInterpreter->getDefaultAlgorithm(
-      Root->getTargetHeader()));
-#else
-  State->MyInterpreter->getDefaultAlgorithm(Root->getTargetHeader());
-#endif
-#endif
-  Symtab->install(Root);
-  State->AlgQueue.push(Symtab);
+  std::shared_ptr<SymbolTable> Algorithm = State->Inflator->getSymtab();
+  Algorithm->setEnclosingScope(
+      State->MyInterpreter->getDefaultAlgorithm(Root->getTargetHeader()));
+  Algorithm->install(Root);
+  State->AlgQueue.push(Algorithm);
   State->Inflator.reset();
-#if 1
-  fprintf(stderr, "reasetAlgorithm = true\n");
-#endif
   return true;
 }
 
