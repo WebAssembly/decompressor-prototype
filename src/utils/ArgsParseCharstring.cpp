@@ -55,6 +55,23 @@ bool ArgsParser::Required<charstring>::select(ArgsParser* Parser,
   return true;
 }
 
+template <>
+bool ArgsParser::RepeatableVector<charstring>::select(ArgsParser* Parser,
+                                                      charstring Add) {
+  if (!validOptionValue(Parser, Add))
+    return false;
+  Values.push_back(Add);
+  return true;
+}
+
+template <>
+void ArgsParser::RepeatableVector<charstring>::describeDefault(
+    FILE* Out,
+    size_t TabSize,
+    size_t& Indent) const {
+  printDescriptionContinue(Out, TabSize, Indent, " (can be repeated)");
+}
+
 }  // end of namespace utils
 
 }  // end of namespace wasm
