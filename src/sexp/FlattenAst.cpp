@@ -143,7 +143,6 @@ void FlattenAst::flattenNode(const Node* Nd) {
     case OpBinaryEvalBits:
     case OpIntLookup:
     case OpSymbolDefn:
-    case OpTable:
     case OpUnknownSection: {
       reportError("Unexpected s-expression, can't write!");
       reportError("s-expression: ", Nd);
@@ -172,32 +171,33 @@ void FlattenAst::flattenNode(const Node* Nd) {
     case OpBlock:
     case OpBinaryAccept:
     case OpBinarySelect:
+    case OpBit:
     case OpBitwiseAnd:
     case OpBitwiseNegate:
     case OpBitwiseOr:
     case OpBitwiseXor:
     case OpCallback:
     case OpCase:
-    case OpOr:
-    case OpNot:
     case OpError:
     case OpIfThen:
     case OpIfThenElse:
-    case OpLastSymbolIs:
-    case OpLoop:
-    case OpLoopUnbounded:
-    case OpPeek:
-    case OpRead:
-    case OpUndefine:
     case OpLastRead:
-    case OpRename:
-    case OpSet:
+    case OpLastSymbolIs:
     case OpLiteralDef:
     case OpLiteralUse:
+    case OpLoop:
+    case OpLoopUnbounded:
+    case OpNot:
+    case OpOr:
+    case OpPeek:
+    case OpRead:
+    case OpRename:
+    case OpSet:
+    case OpTable:
     case OpUint32:
     case OpUint64:
-    case OpBit:
     case OpUint8:
+    case OpUndefine:
     case OpVarint32:
     case OpVarint64:
     case OpVaruint32:

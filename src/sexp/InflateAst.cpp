@@ -289,6 +289,8 @@ bool InflateAst::applyOp(IntType Op) {
       Asts.push(Sym);
       return true;
     }
+    case OpTable:
+      return buildBinary<TableNode>();
     case OpUndefine:
       return buildUnary<UndefineNode>();
     case OpUnknownSection:

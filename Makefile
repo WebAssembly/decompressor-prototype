@@ -379,7 +379,8 @@ TEST_WASM_COMP_FILES = $(patsubst %.wast, $(TEST_0XD_GENDIR)/%.wasm-comp, \
 
 TEST_CASM_SRCS = \
 	Wasm0xd.cast \
-	ExprRedirects.cast
+	ExprRedirects.cast \
+	TableEx.cast
 
 TEST_CASM_SRC_FILES = $(patsubst %.cast, $(TEST_SRCS_DIR)/%.cast, \
 			$(TEST_CASM_SRCS))
