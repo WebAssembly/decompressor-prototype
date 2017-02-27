@@ -245,6 +245,7 @@ letter	[a-zA-Z]
 "set"             return Parser::make_SET(Driver.getLoc());
 "switch"          return Parser::make_SWITCH(Driver.getLoc());
 "symbol"          return Parser::make_SYMBOL(Driver.getLoc());
+"table"           return Parser::make_TABLE(Driver.getLoc());
 "uint8"           return Parser::make_UINT8(Driver.getLoc());
 "uint32"          return Parser::make_UINT32(Driver.getLoc());
 "uint64"          return Parser::make_UINT64(Driver.getLoc());

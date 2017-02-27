@@ -117,6 +117,7 @@ struct IntValue {
 %token SET           "set"
 %token SWITCH        "switch"
 %token SYMBOL        "symbol"
+%token TABLE         "table"
 %token UINT8         "uint8"
 %token UINT32        "uint32"
 %token UINT64        "uint64"
@@ -152,6 +153,7 @@ struct IntValue {
 %type <wasm::filt::Node *> file
 %type <wasm::filt::Node *> file_header
 %type <wasm::filt::Node *> file_header_args
+%type <wasm::filt::Node *> file_header_write
 %type <wasm::filt::Node *> fixed_format_directive
 %type <wasm::filt::Node *> format_binary
 %type <wasm::filt::Node *> format_directive
@@ -166,8 +168,8 @@ struct IntValue {
 %type <wasm::filt::Node *> section
 %type <wasm::filt::Node *> sequence_args
 %type <wasm::filt::Node *> symbol
+%type <wasm::filt::Node *> table_args
 %type <wasm::filt::Node *> write_args
-%type <wasm::filt::Node *> file_header_write
 
 %start file
 
@@ -179,14 +181,7 @@ block_args
           }
         | block_args expression {
             $$ = $1;
-            Node* StmtList = $1->getLastKid();
-            auto* Seq = dyn_cast<SequenceNode>(StmtList);
-            if (Seq == nullptr) {
-              Seq = Driver.create<SequenceNode>();
-              Seq->append(StmtList);
-              $1->setLastKid(Seq);
-            }
-            Seq->append($2);
+            Driver.appendArgument($1, $2);
           }
         ;
 
@@ -228,14 +223,7 @@ case_args
         | case_args expression {
             // remaining expressions of case.
             $$ = $1;
-            Node *StmtList = $1->getLastKid();
-            auto *Seq = dyn_cast<SequenceNode>(StmtList);
-            if (Seq == nullptr) {
-              Seq = Driver.create<SequenceNode>();
-              Seq->append(StmtList);
-              $1->setLastKid(Seq);
-            }
-            Seq->append($2);
+            Driver.appendArgument($1, $2);
           }
         ;
 
@@ -297,14 +285,7 @@ define_args
           }
         | define_args expression {
             $$ = $1;
-            Node *LastKid = $1->getLastKid();
-            auto *Seq = dyn_cast<SequenceNode>(LastKid);
-            if (Seq == nullptr) {
-              Seq = Driver.create<SequenceNode>();
-              Seq->append(LastKid);
-              $1->setLastKid(Seq);
-            }
-            Seq->append($2);
+            Driver.appendArgument($1, $2);
           }
         ;
 
@@ -336,6 +317,9 @@ expression
         | "(" expression_redirect ")" {
             $$ = $2;
           }
+        |  "(" "table" table_args ")" {
+            $$ = $3;
+           }
         ;
 
 expression_redirect
@@ -347,14 +331,7 @@ expression_redirect
           }
         | expression_redirect expression {
             $$ = $1;
-            Node* ExpList = $1->getLastKid();
-            auto* Seq = dyn_cast<SequenceNode>(ExpList);
-            if (Seq == nullptr) {
-              Seq = Driver.create<SequenceNode>();
-              Seq->append(ExpList);
-              $$->setLastKid(Seq);
-            }
-            Seq->append($2);
+            Driver.appendArgument($1, $2);
           }
         ;
 
@@ -500,14 +477,7 @@ loop_body
           }
         | loop_body expression {
             $$ = $1;
-            Node *StmtList = $1->getLastKid();
-            auto *Seq = dyn_cast<SequenceNode>(StmtList);
-            if (Seq == nullptr) {
-              Seq = Driver.create<SequenceNode>();
-              Seq->append(StmtList);
-              $1->setLastKid(Seq);
-            }
-            Seq->append($2);
+            Driver.appendArgument($1, $2);
           }
         ;
 
@@ -587,6 +557,16 @@ write_args
         ;
 
 symbol  : IDENTIFIER { $$ = Driver.getSymbolDefinition($1); }
+        ;
+
+table_args
+        : expression expression {
+            $$ = Driver.create<TableNode>($1, $2);
+          }
+        | table_args expression {
+            Driver.appendArgument($1, $2);
+            $$ = $1;
+          }
         ;
 
 %%
