@@ -179,6 +179,16 @@ bool ByteWriter::writeBlockExit() {
   return true;
 }
 
+bool ByteWriter::tablePush(IntType Value) {
+  // TODO(karlschimpf): Implement concept
+  return true;
+}
+
+bool ByteWriter::tablePop() {
+  // TODO(karlschimpf): Implement concept
+  return true;
+}
+
 void ByteWriter::describeBlockStartStack(FILE* File) {
   if (BlockStartStack.empty())
     return;

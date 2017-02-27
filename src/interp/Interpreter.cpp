@@ -660,7 +660,6 @@ void Interpreter::algorithmResume() {
           case OpRename:
           case OpSymbol:
           case OpSection:
-          case OpTable:
           case OpUndefine:
           case OpUnknownSection:  // Method::Eval
             return failNotImplemented();
@@ -1046,6 +1045,35 @@ void Interpreter::algorithmResume() {
                 break;
               case State::Exit:
                 LoopCounterStack.pop();
+                popAndReturn(LastReadValue);
+                break;
+              default:
+                return failBadState();
+            }
+            break;
+          case OpTable:  // Method::Eval
+            switch (Frame.CallState) {
+              case State::Enter:
+                Frame.CallState = State::Step2;
+                call(Method::Eval, Frame.CallModifier, Frame.Nd->getKid(0));
+                break;
+              case State::Step2:
+                if (hasReadMode())
+                  if (!Input->tablePush(Frame.ReturnValue))
+                    return throwCantRead();
+                if (hasWriteMode())
+                  if (!Output->tablePush(Frame.ReturnValue))
+                    return throwCantWrite();
+                Frame.CallState = State::Step3;
+                call(Method::Eval, Frame.CallModifier, Frame.Nd->getKid(1));
+                break;
+              case State::Exit:
+                if (hasReadMode())
+                  if (!Input->tablePop())
+                    return throwCantRead();
+                if (hasWriteMode())
+                  if (!Output->tablePop())
+                    return throwCantWrite();
                 popAndReturn(LastReadValue);
                 break;
               default:

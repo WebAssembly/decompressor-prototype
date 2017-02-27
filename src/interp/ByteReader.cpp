@@ -84,10 +84,6 @@ bool ByteReader::atInputEof() {
   return ReadPos.atEof();
 }
 
-void ByteReader::resetPeekPosStack() {
-  PeekPos = BitReadCursor();
-}
-
 void ByteReader::pushPeekPos() {
   PeekPosStack.push(ReadPos);
 }
@@ -191,6 +187,16 @@ uint32_t ByteReader::readVaruint32() {
 
 uint64_t ByteReader::readVaruint64() {
   return Input->readVaruint64(ReadPos);
+}
+
+bool ByteReader::tablePush(IntType Value) {
+  // TODO(karlschimpf): Implement concept
+  return true;
+}
+
+bool ByteReader::tablePop() {
+  // TODO(karlschimpf): Implement concept
+  return true;
 }
 
 void ByteReader::describePeekPosStack(FILE* File) {

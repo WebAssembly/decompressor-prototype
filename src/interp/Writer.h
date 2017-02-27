@@ -62,6 +62,8 @@ class Writer {
   virtual bool writeHeaderValue(decode::IntType Value,
                                 interp::IntTypeFormat Format);
   virtual bool writeAction(const filt::SymbolNode* Action);
+  virtual bool tablePush(decode::IntType Value);
+  virtual bool tablePop();
 
   virtual void setMinimizeBlockSize(bool NewValue);
   virtual void describeState(FILE* File);
