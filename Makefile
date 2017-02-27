@@ -127,14 +127,11 @@ SEXP_SRCS_BOOT = $(SEXP_SRCS_BASE)
 SEXP_OBJS = $(patsubst %.cpp, $(SEXP_OBJDIR)/%.o, $(SEXP_SRCS))
 SEXP_OBJS_BOOT = $(patsubst %.cpp, $(SEXP_OBJDIR_BOOT)/%.o, $(SEXP_SRCS_BOOT))
 
-GENSRCS += $(SEXP_DEFAULT_SRCS)
-
 SEXP_LIB = $(LIBDIR)/$(LIBPREFIX)sexp.a
 SEXP_LIB_BOOT = $(LIBDIR_BOOT)/$(LIBPREFIX)sexp.a
 
 # This is the default file used by tests.
 
-SEXP_DEFAULT_DF = $(TEST_SRCS_DIR)/defaults-0xd.df
 TEST_DEFAULT_DF = $(TEST_SRCS_DIR)/defaults-0xd.df
 TEST_DEFAULT_WASM = $(TEST_SRCS_DIR)/defaults-0xd.wasm
 TEST_DEFAULT_WASM_W = $(TEST_SRCS_DIR)/defaults-0xd.wasm-w
@@ -499,16 +496,6 @@ gen-parser: $(PARSER_GENDIR)/Parser.tab.cpp
 
 .PHONY: gen-parser
 
-$(SEXP_DEFAULT_SRCS): | $(SEXP_GENDIR)
-
-$(SEXP_GENDIR):
-	mkdir -p $@
-
-$(SEXP_DEFAULT_GENSRCS): $(SEXP_GENDIR)/%.df: $(SEXP_SRCDIR)/%.df
-	cp $< $@
-
-$(SEXP_DEFAULT_GENSRCS): | $(SEXP_GENDIR)
-
 ###### Compiliing binary generation Sources ######
 
 $(ALG_OBJS): | $(ALG_OBJDIR)
@@ -674,13 +661,8 @@ $(SEXP_OBJS): $(SEXP_OBJDIR)/%.o: $(SEXP_SRCDIR)/%.cpp $(GENSRCS)
 $(SEXP_OBJS_BOOT): $(SEXP_OBJDIR_BOOT)/%.o: $(SEXP_SRCDIR)/%.cpp $(GENSRCS_BOOT)
 	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
 
--include $(foreach dep,$(SEXP_DEFAULT_SRCS:.cpp=.d),$(SEXP_OBJDIR)/$(dep))
-
-$(SEXP_DEFAULT_OBJS): $(SEXP_OBJDIR)/%.o: $(SEXP_GENDIR)/%.cpp $(GENSRCS)
-	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
-
-$(SEXP_LIB): $(SEXP_OBJS) $(SEXP_DEFAULT_OBJS)
-	ar -rs $@ $(SEXP_OBJS) $(SEXP_DEFAULT_OBJS)
+$(SEXP_LIB): $(SEXP_OBJS)
+	ar -rs $@ $(SEXP_OBJS)
 	ranlib $@
 
 $(SEXP_LIB_BOOT): $(SEXP_OBJS_BOOT)
@@ -992,7 +974,7 @@ $(TEST_WASM_SW_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm-sw: \
 
 $(TEST_WASM_WPD_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm-wpd: \
 		$(TEST_0XD_SRCDIR)/%.wasm-w \
-		$(BUILD_EXECDIR)/decompress $(SEXP_DEFAULT_GENSRCS)
+		$(BUILD_EXECDIR)/decompress
 	$(BUILD_EXECDIR)/decompress -p -d $(SEXP_GENDIR)/defaults-0xd.df \
 		 $< | cmp - $<
 
@@ -1029,7 +1011,6 @@ test-casm-cast: $(BUILD_EXECDIR)/cast2casm $(BUILD_EXECDIR)/casm2cast \
 .PHONY: test-casm-cast
 
 test-parser: $(TEST_EXECDIR)/TestParser
-	$< -w $(SEXP_DEFAULT_DF) | diff - $(TEST_DEFAULT_DF)
 	$< -w $(TEST_DEFAULT_DF) | diff - $(TEST_DEFAULT_DF)
 	$< --expect-fail $(TEST_SRCS_DIR)/MismatchedParens.df 2>&1 | \
 		diff - $(TEST_SRCS_DIR)/MismatchedParens.df-out

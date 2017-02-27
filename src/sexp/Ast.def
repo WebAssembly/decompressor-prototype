@@ -250,6 +250,7 @@
   X(Section)                                                                   \
   X(Undefine)                                                                  \
   X(UnknownSection)                                                            \
+  X(Table)                                                                     \
   X(Write)                                                                     \
 
 #endif // DECOMPRESSOR_SRC_AST_DEF
