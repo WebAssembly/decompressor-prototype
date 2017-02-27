@@ -169,6 +169,14 @@ bool Reader::readAction(const SymbolNode* Action) {
   }
 }
 
+bool Reader::tablePush(IntType Value) {
+  return true;
+}
+
+bool Reader::tablePop() {
+  return true;
+}
+
 }  // end of namespace interp
 
 }  // end of namespace wasm

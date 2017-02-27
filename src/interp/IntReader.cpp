@@ -75,11 +75,6 @@ bool IntReader::atInputEof() {
   return Pos.atEof();
 }
 
-void IntReader::resetPeekPosStack() {
-  PeekPos = IntStream::ReadCursor();
-  PeekPosStack.clear();
-}
-
 void IntReader::pushPeekPos() {
   PeekPosStack.push(PeekPos);
 }

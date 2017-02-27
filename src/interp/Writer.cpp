@@ -183,6 +183,14 @@ bool Writer::writeHeaderValue(IntType Value, IntTypeFormat Format) {
   return writeTypedValue(Value, Format);
 }
 
+bool Writer::tablePush(IntType Value) {
+  return true;
+}
+
+bool Writer::tablePop() {
+  return true;
+}
+
 void Writer::describeState(FILE* File) {
 }
 

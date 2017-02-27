@@ -55,7 +55,6 @@ class Reader : public std::enable_shared_from_this<Reader> {
   virtual bool stillMoreInputToProcessNow() = 0;
   virtual bool atInputEof() = 0;
   virtual bool atInputEob() = 0;
-  virtual void resetPeekPosStack() = 0;
   virtual void pushPeekPos() = 0;
   virtual void popPeekPos() = 0;
   virtual size_t sizePeekPosStack() = 0;
@@ -80,6 +79,11 @@ class Reader : public std::enable_shared_from_this<Reader> {
   virtual bool readValue(const filt::Node* Format, decode::IntType& Value);
   virtual bool readHeaderValue(interp::IntTypeFormat Format,
                                decode::IntType& Value);
+  // WARNING: If overridden in reader, also override in writer so that you get
+  // a consistent implementation. By default, the (space) optimization defined
+  // by the corresponding TableNode algorithm operator is ignored.
+  virtual bool tablePush(decode::IntType Value);
+  virtual bool tablePop();
 
  protected:
   std::shared_ptr<utils::TraceClass> Trace;

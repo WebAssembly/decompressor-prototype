@@ -46,7 +46,6 @@ class IntReader : public Reader {
   bool stillMoreInputToProcessNow() OVERRIDE;
   bool atInputEob() OVERRIDE;
   bool atInputEof() OVERRIDE;
-  void resetPeekPosStack() OVERRIDE;
   void pushPeekPos() OVERRIDE;
   void popPeekPos() OVERRIDE;
   size_t sizePeekPosStack() OVERRIDE;

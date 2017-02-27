@@ -19,6 +19,8 @@
 #ifndef DECOMPRESSOR_SRC_INTERP_BYTEWRITER_H
 #define DECOMPRESSOR_SRC_INTERP_BYTEWRITER_H
 
+#include <map>
+
 #include "interp/Writer.h"
 #include "stream/BitWriteCursor.h"
 #include "utils/ValueStack.h"
@@ -56,6 +58,8 @@ class ByteWriter : public Writer {
   bool writeBlockExit() OVERRIDE;
   bool writeFreezeEof() OVERRIDE;
   bool writeBinary(decode::IntType, const filt::Node* Encoding) OVERRIDE;
+  bool tablePush(decode::IntType Value) OVERRIDE;
+  bool tablePop() OVERRIDE;
 
   void describeState(FILE* File) OVERRIDE;
 
@@ -67,6 +71,9 @@ class ByteWriter : public Writer {
   utils::ValueStack<decode::BitWriteCursor> BlockStartStack;
   void describeBlockStartStack(FILE* File);
   const char* getDefaultTraceName() const OVERRIDE;
+  // The map of write cursors associated with table indices.
+  typedef std::map<decode::IntType, decode::BitWriteCursor> TableType;
+  TableType Table;
 };
 
 }  // end of namespace interp

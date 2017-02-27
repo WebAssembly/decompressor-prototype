@@ -19,6 +19,8 @@
 #ifndef DECOMPRESSOR_SRC_INTERP_BYTEREADER_H
 #define DECOMPRESSOR_SRC_INTERP_BYTEREADER_H
 
+#include <map>
+
 #include "interp/Reader.h"
 #include "stream/BitReadCursor.h"
 
@@ -44,7 +46,6 @@ class ByteReader : public Reader {
   bool stillMoreInputToProcessNow() OVERRIDE;
   bool atInputEof() OVERRIDE;
   bool atInputEob() OVERRIDE;
-  void resetPeekPosStack() OVERRIDE;
   void pushPeekPos() OVERRIDE;
   void popPeekPos() OVERRIDE;
   size_t sizePeekPosStack() OVERRIDE;
@@ -64,6 +65,9 @@ class ByteReader : public Reader {
   bool readBlockEnter() OVERRIDE;
   bool readBlockExit() OVERRIDE;
   bool readBinary(const filt::Node* Encoding, decode::IntType& Value) OVERRIDE;
+  bool tablePush(decode::IntType Value) OVERRIDE;
+  bool tablePop() OVERRIDE;
+
   utils::TraceContextPtr getTraceContext() OVERRIDE;
 
  private:
@@ -73,9 +77,12 @@ class ByteReader : public Reader {
   size_t FillPos;
   // The input cursor position if back filling.
   decode::ReadCursor FillCursor;
-  // The stack of read cursors (used by peek)
+  // The stack of read cursors (used by peek).
   decode::BitReadCursor PeekPos;
   utils::ValueStack<decode::BitReadCursor> PeekPosStack;
+  // The map of read cursors associated with table indices.
+  typedef std::map<decode::IntType, decode::BitReadCursor> TableType;
+  TableType Table;
 };
 
 }  // end of namespace interp
