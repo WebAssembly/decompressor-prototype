@@ -660,6 +660,7 @@ void Interpreter::algorithmResume() {
           case OpRename:
           case OpSymbol:
           case OpSection:
+          case OpTable:
           case OpUndefine:
           case OpUnknownSection:  // Method::Eval
             return failNotImplemented();

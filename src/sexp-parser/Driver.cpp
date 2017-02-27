@@ -23,6 +23,17 @@ namespace {
 const char* ErrorLevelName[] = {"warning", "error", "fatal"};
 }
 
+void Driver::appendArgument(Node* Nd, Node* Arg) {
+  Node* LastKid = Nd->getLastKid();
+  auto* Seq = dyn_cast<SequenceNode>(LastKid);
+  if (Seq == nullptr) {
+    Seq = create<SequenceNode>();
+    Seq->append(LastKid);
+    Nd->setLastKid(Seq);
+  }
+  Seq->append(Arg);
+}
+
 const char* Driver::getName(ErrorLevel Level) {
   size_t Index = size_t(Level);
   if (Index < size(ErrorLevelName))

@@ -79,6 +79,8 @@ class Driver {
     return Table->getSymbolDefinition(Name);
   }
 
+  void appendArgument(Node* Nd, Node* Arg);
+
   // The name of the file being parsed.
   std::string& getFilename() { return Filename; }
 

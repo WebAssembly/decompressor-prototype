@@ -83,6 +83,7 @@
   X(Read,              0x41, "read",             nullptr,           1, 0)      \
   X(LastRead,          0x42, "read",             "lastRead",        0, 0)      \
   X(Write,             0x43, "write",            nullptr,           1, 1)      \
+  X(Table,             0x44, "table",            nullptr,           1, 1)      \
                                                                                \
   /* Other */                                                                  \
   X(Param,             0x51, "param",            nullptr,           1, 0)      \
@@ -167,11 +168,12 @@
   X(BitwiseXor,)                                                               \
   X(Case, CASE_DECLS)                                                          \
   X(IfThen,)                                                                   \
+  X(LiteralDef,)                                                               \
   X(Loop,)                                                                     \
   X(Or,)                                                                       \
   X(Rename,)                                                                   \
   X(Set,)                                                                      \
-  X(LiteralDef,)                                                               \
+  X(Table,)                                                                    \
 
 #define CASE_DECLS                                                             \
   decode::IntType getValue() const { return Value; }                           \
@@ -227,6 +229,7 @@
   X(LoopUnbounded)                                                             \
   X(Peek)                                                                      \
   X(Read)                                                                      \
+  X(Table)                                                                     \
 
 //#define X(tag)
 #define AST_NODE_NEVER_SAME_LINE                                               \
