@@ -60,9 +60,6 @@ BINARY_OBJDIR_BOOT = $(OBJDIR_BOOT)/binary
 BINARY_SRCS = \
 	SectionSymbolTable.cpp
 
-#	BinaryReader.cpp
-#	BinaryWriter.cpp
-
 BINARY_OBJS=$(patsubst %.cpp, $(BINARY_OBJDIR)/%.o, $(BINARY_SRCS))
 BINARY_OBJS_BOOT=$(patsubst %.cpp, $(BINARY_OBJDIR_BOOT)/%.o, $(BINARY_SRCS))
 
@@ -127,17 +124,14 @@ SEXP_SRCS_BOOT = $(SEXP_SRCS_BASE)
 SEXP_OBJS = $(patsubst %.cpp, $(SEXP_OBJDIR)/%.o, $(SEXP_SRCS))
 SEXP_OBJS_BOOT = $(patsubst %.cpp, $(SEXP_OBJDIR_BOOT)/%.o, $(SEXP_SRCS_BOOT))
 
-GENSRCS += $(SEXP_DEFAULT_SRCS)
-
 SEXP_LIB = $(LIBDIR)/$(LIBPREFIX)sexp.a
 SEXP_LIB_BOOT = $(LIBDIR_BOOT)/$(LIBPREFIX)sexp.a
 
 # This is the default file used by tests.
 
-SEXP_DEFAULT_DF = $(TEST_SRCS_DIR)/defaults-0xd.df
-TEST_DEFAULT_DF = $(TEST_SRCS_DIR)/defaults-0xd.df
-TEST_DEFAULT_WASM = $(TEST_SRCS_DIR)/defaults-0xd.wasm
-TEST_DEFAULT_WASM_W = $(TEST_SRCS_DIR)/defaults-0xd.wasm-w
+TEST_DEFAULT_CAST = $(TEST_SRCS_DIR)/Wasm0xd.cast
+TEST_DEFAULT_CASM = $(TEST_SRCS_DIR)/Wasm0xd.casm
+TEST_DEFAULT_CASM_M = $(TEST_SRCS_DIR)/Wasm0xd.casm-m
 
 ###### Default algorithms ######
 
@@ -361,14 +355,14 @@ WABT_WAST_DIR = $(WABT_DIR)/third_party/testsuite
 TEST_WASM_SRC_FILES = $(patsubst %.wast, $(TEST_0XD_SRCDIR)/%.wasm, \
                         $(TEST_WASM_SRCS))
 
-TEST_WASM_W_SRC_FILES = $(patsubst %.wast, $(TEST_0XD_SRCDIR)/%.wasm-w, \
+TEST_CASM_M_SRC_FILES = $(patsubst %.wast, $(TEST_0XD_SRCDIR)/%.wasm-w, \
                         $(TEST_WASM_SRCS))
 
 # The following groups are for different types of tests on decompress.
 TEST_WASM_GEN_FILES = $(patsubst %.wast, $(TEST_0XD_GENDIR)/%.wasm, \
                        $(TEST_WASM_SRCS))
 
-TEST_WASM_W_GEN_FILES = $(patsubst %.wast, $(TEST_0XD_GENDIR)/%.wasm-w, \
+TEST_WASM_M_GEN_FILES = $(patsubst %.wast, $(TEST_0XD_GENDIR)/%.wasm-w, \
                        $(TEST_WASM_SRCS))
 
 TEST_WASM_WS_GEN_FILES = $(patsubst %.wast, $(TEST_0XD_GENDIR)/%.wasm-ws, \
@@ -384,28 +378,28 @@ TEST_WASM_COMP_FILES = $(patsubst %.wast, $(TEST_0XD_GENDIR)/%.wasm-comp, \
                         $(TEST_WASM_SRCS))
 
 TEST_CASM_SRCS = \
-	defaults-0xd.df \
-	ExprRedirects.df
+	Wasm0xd.cast \
+	ExprRedirects.cast
 
-TEST_CASM_SRC_FILES = $(patsubst %.df, $(TEST_SRCS_DIR)/%.df, \
+TEST_CASM_SRC_FILES = $(patsubst %.cast, $(TEST_SRCS_DIR)/%.cast, \
 			$(TEST_CASM_SRCS))
 
-TEST_CASM_WASM_FILES = $(patsubst %.df, $(TEST_SRCS_DIR)/%.wasm, \
+TEST_CASM_CASM_FILES = $(patsubst %.cast, $(TEST_SRCS_DIR)/%.casm, \
 			$(TEST_CASM_SRCS))
 
-TEST_CASM_WASM_W_FILES = $(patsubst %.df, $(TEST_SRCS_DIR)/%.wasm-w, \
+TEST_CASM_CASM_M_FILES = $(patsubst %.cast, $(TEST_SRCS_DIR)/%.casm-m, \
 			  $(TEST_CASM_SRCS))
 
-TEST_CASM_DF_OUT_FILES = $(patsubst %.df, $(TEST_SRCS_DIR)/%.df-out, \
+TEST_CASM_CAST_OUT_FILES = $(patsubst %.cast, $(TEST_SRCS_DIR)/%.cast-out, \
 			  $(TEST_CASM_SRCS))
 
-TEST_CASM_GEN_FILES = $(patsubst %.df, $(TEST_0XD_GENDIR)/%.wasm, \
+TEST_CASM_GEN_FILES = $(patsubst %.cast, $(TEST_0XD_GENDIR)/%.casm, \
 	 	  	$(TEST_CASM_SRCS))
 
-TEST_CASM_W_GEN_FILES = $(patsubst %.df, $(TEST_0XD_GENDIR)/%.wasm-w, \
+TEST_WASM_M_GEN_FILES = $(patsubst %.cast, $(TEST_0XD_GENDIR)/%.casm-m, \
 	 	  	$(TEST_CASM_SRCS))
 
-TEST_CASM_DF_GEN_FILES = $(patsubst %.df, $(TEST_0XD_GENDIR)/%.df-out, \
+TEST_CASM_DF_GEN_FILES = $(patsubst %.cast, $(TEST_0XD_GENDIR)/%.cast-out, \
 	 	  	$(TEST_CASM_SRCS))
 
 ###### General compilation definitions ######
@@ -498,16 +492,6 @@ gen-lexer: $(PARSER_GENDIR)/Lexer.cpp gen-parser
 gen-parser: $(PARSER_GENDIR)/Parser.tab.cpp
 
 .PHONY: gen-parser
-
-$(SEXP_DEFAULT_SRCS): | $(SEXP_GENDIR)
-
-$(SEXP_GENDIR):
-	mkdir -p $@
-
-$(SEXP_DEFAULT_GENSRCS): $(SEXP_GENDIR)/%.df: $(SEXP_SRCDIR)/%.df
-	cp $< $@
-
-$(SEXP_DEFAULT_GENSRCS): | $(SEXP_GENDIR)
 
 ###### Compiliing binary generation Sources ######
 
@@ -674,13 +658,8 @@ $(SEXP_OBJS): $(SEXP_OBJDIR)/%.o: $(SEXP_SRCDIR)/%.cpp $(GENSRCS)
 $(SEXP_OBJS_BOOT): $(SEXP_OBJDIR_BOOT)/%.o: $(SEXP_SRCDIR)/%.cpp $(GENSRCS_BOOT)
 	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
 
--include $(foreach dep,$(SEXP_DEFAULT_SRCS:.cpp=.d),$(SEXP_OBJDIR)/$(dep))
-
-$(SEXP_DEFAULT_OBJS): $(SEXP_OBJDIR)/%.o: $(SEXP_GENDIR)/%.cpp $(GENSRCS)
-	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
-
-$(SEXP_LIB): $(SEXP_OBJS) $(SEXP_DEFAULT_OBJS)
-	ar -rs $@ $(SEXP_OBJS) $(SEXP_DEFAULT_OBJS)
+$(SEXP_LIB): $(SEXP_OBJS)
+	ar -rs $@ $(SEXP_OBJS)
 	ranlib $@
 
 $(SEXP_LIB_BOOT): $(SEXP_OBJS_BOOT)
@@ -917,7 +896,7 @@ test-huffman: $(TEST_EXECDIR)/TestHuffman
 
 test-decompress: \
 	$(TEST_WASM_GEN_FILES) \
-	$(TEST_WASM_W_GEN_FILES) \
+	$(TEST_WASM_M_GEN_FILES) \
 	$(TEST_WASM_CAPI_GEN_FILES) \
 	$(TEST_WASM_WS_GEN_FILES) \
 	$(TEST_WASM_SW_GEN_FILES)
@@ -930,27 +909,27 @@ test-compress: $(TEST_WASM_COMP_FILES)
 
 .PHONY: test-compress
 
-$(TEST_CASM_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm: $(TEST_SRCS_DIR)/%.df \
+$(TEST_CASM_GEN_FILES): $(TEST_0XD_GENDIR)/%.casm: $(TEST_SRCS_DIR)/%.cast \
 		$(BUILD_EXECDIR)/cast2casm
 	$(BUILD_EXECDIR)/cast2casm $< | \
-		cmp - $(patsubst %.df, %.wasm, $<)
+		cmp - $(patsubst %.cast, %.casm, $<)
 
 .PHONY: $(TEST_CASM_GEN_FILES)
 
-$(TEST_CASM_W_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm-w: $(TEST_SRCS_DIR)/%.df \
+$(TEST_WASM_M_GEN_FILES): $(TEST_0XD_GENDIR)/%.casm-m: $(TEST_SRCS_DIR)/%.cast \
 		$(BUILD_EXECDIR)/cast2casm
 	$(BUILD_EXECDIR)/cast2casm -m $< | \
-		cmp - $(patsubst %.df, %.wasm-w, $<)
+		cmp - $(patsubst %.cast, %.casm-m, $<)
 
-.PHONY: $(TEST_CASM_W_GEN_FILES)
+.PHONY: $(TEST_WASM_M_GEN_FILES)
 
-$(TEST_CASM_DF_GEN_FILES): $(TEST_0XD_GENDIR)/%.df-out: $(TEST_SRCS_DIR)/%.wasm \
-		$(TEST_SRCS_DIR)/%.wasm $(BUILD_EXECDIR)/casm2cast
+$(TEST_CASM_DF_GEN_FILES): $(TEST_0XD_GENDIR)/%.cast-out: $(TEST_SRCS_DIR)/%.casm \
+		$(TEST_SRCS_DIR)/%.casm $(BUILD_EXECDIR)/casm2cast
 	$(BUILD_EXECDIR)/casm2cast $< | \
-		cmp - $(patsubst %.wasm, %.df-out, $<)
+		cmp - $(patsubst %.casm, %.cast-out, $<)
 	$(BUILD_EXECDIR)/casm2cast \
-		$(patsubst %.wasm, %.wasm-w, $<) | \
-		cmp - $(patsubst %.wasm, %.df-out, $<)
+		$(patsubst %.casm, %.casm-m, $<) | \
+		cmp - $(patsubst %.casm, %.cast-out, $<)
 
 .PHONY: $(TEST_CASM_DF_GEN_FILES)
 
@@ -970,13 +949,6 @@ $(TEST_WASM_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm: $(TEST_0XD_SRCDIR)/%.wasm \
 
 .PHONY: $(TEST_WASM_GEN_FILES)
 
-$(TEST_WASM_W_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm-w: \
-		$(TEST_0XD_SRCDIR)/%.wasm-w $(BUILD_EXECDIR)/decompress
-	$(BUILD_EXECDIR)/decompress -m $< | cmp - $<
-
-.PHONY: $(TEST_WASM_W_GEN_FILES)
-
-
 $(TEST_WASM_WS_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm-ws: \
 		$(TEST_0XD_SRCDIR)/%.wasm $(BUILD_EXECDIR)/decompress
 	$(BUILD_EXECDIR)/decompress $<-w | cmp - $<
@@ -992,8 +964,8 @@ $(TEST_WASM_SW_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm-sw: \
 
 $(TEST_WASM_WPD_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm-wpd: \
 		$(TEST_0XD_SRCDIR)/%.wasm-w \
-		$(BUILD_EXECDIR)/decompress $(SEXP_DEFAULT_GENSRCS)
-	$(BUILD_EXECDIR)/decompress -p -d $(SEXP_GENDIR)/defaults-0xd.df \
+		$(BUILD_EXECDIR)/decompress
+	$(BUILD_EXECDIR)/decompress -p -d $(ALG_SRCDIR)/wasm0xd.cast \
 		 $< | cmp - $<
 
 .PHOHY: $(TEST_WASM_WPD_GEN_FILES)
@@ -1005,14 +977,14 @@ $(TEST_WASM_CAPI_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm-capi: \
 
 .PHOHY: $(TEST_WASM_WPD_GEN_FILES)
 
-test-cast2casm: $(TEST_CASM_GEN_FILES) $(TEST_CASM_W_GEN_FILES)
+test-cast2casm: $(TEST_CASM_GEN_FILES) $(TEST_WASM_M_GEN_FILES)
 	@echo "*** cast2casm tests passed ***"
 
 .PHONY: test-cast2cast
 
 test-casm2cast: $(BUILD_EXECDIR)/casm2cast $(TEST_CASM_DF_GEN_FILES) 
-	$< $(TEST_DEFAULT_WASM) | diff - $(TEST_DEFAULT_DF)
-	$< $(TEST_DEFAULT_WASM_W) | diff - $(TEST_DEFAULT_DF)
+	$< $(TEST_DEFAULT_CASM) | diff - $(TEST_DEFAULT_CAST)
+	$< $(TEST_DEFAULT_CASM_M) | diff - $(TEST_DEFAULT_CAST)
 	@echo "*** casm2cast tests passed ***"
 
 .PHONY: test-casm2cast
@@ -1029,12 +1001,11 @@ test-casm-cast: $(BUILD_EXECDIR)/cast2casm $(BUILD_EXECDIR)/casm2cast \
 .PHONY: test-casm-cast
 
 test-parser: $(TEST_EXECDIR)/TestParser
-	$< -w $(SEXP_DEFAULT_DF) | diff - $(TEST_DEFAULT_DF)
-	$< -w $(TEST_DEFAULT_DF) | diff - $(TEST_DEFAULT_DF)
-	$< --expect-fail $(TEST_SRCS_DIR)/MismatchedParens.df 2>&1 | \
-		diff - $(TEST_SRCS_DIR)/MismatchedParens.df-out
-	$< -w $(TEST_SRCS_DIR)/ExprRedirects.df | \
-		diff - $(TEST_SRCS_DIR)/ExprRedirects.df-out
+	$< -w $(TEST_DEFAULT_CAST) | diff - $(TEST_DEFAULT_CAST)
+	$< --expect-fail $(TEST_SRCS_DIR)/MismatchedParens.cast 2>&1 | \
+		diff - $(TEST_SRCS_DIR)/MismatchedParens.cast-out
+	$< -w $(TEST_SRCS_DIR)/ExprRedirects.cast | \
+		diff - $(TEST_SRCS_DIR)/ExprRedirects.cast-out
 	$< -w $(TEST_SRCS_DIR)/BinaryFormat.cast | \
 		diff - $(TEST_SRCS_DIR)/BinaryFormat.cast-out
 	@echo "*** parser tests passed ***"
@@ -1042,23 +1013,23 @@ test-parser: $(TEST_EXECDIR)/TestParser
 .PHONY: test-parser
 
 test-raw-streams: $(TEST_EXECDIR)/TestRawStreams
-	$< -i $(TEST_DEFAULT_DF) | diff - $(TEST_DEFAULT_DF)
+	$< -i $(TEST_DEFAULT_CAST) | diff - $(TEST_DEFAULT_CAST)
 	@echo "*** test raw streams passed ***"
 
 .PHONY: test-raw-streams
 
 test-byte-queues: $(TEST_EXECDIR)/TestByteQueues
-	$< -i $(TEST_DEFAULT_DF) | diff - $(TEST_DEFAULT_DF)
-	$< -c 2 -i $(TEST_DEFAULT_DF) | diff - $(TEST_DEFAULT_DF)
-	$< -c 3 -i $(TEST_DEFAULT_DF) | diff - $(TEST_DEFAULT_DF)
-	$< -c 4 -i $(TEST_DEFAULT_DF) | diff - $(TEST_DEFAULT_DF)
-	$< -c 5 -i $(TEST_DEFAULT_DF) | diff - $(TEST_DEFAULT_DF)
-	$< -c 6 -i $(TEST_DEFAULT_DF) | diff - $(TEST_DEFAULT_DF)
-	$< -c 7 -i $(TEST_DEFAULT_DF) | diff - $(TEST_DEFAULT_DF)
-	$< -c 13 -i $(TEST_DEFAULT_DF) | diff - $(TEST_DEFAULT_DF)
-	$< -c 119 -i $(TEST_DEFAULT_DF) | diff - $(TEST_DEFAULT_DF)
-	$< -c 2323 -i $(TEST_DEFAULT_DF) | diff - $(TEST_DEFAULT_DF)
-	$< -c 3231 -i $(TEST_DEFAULT_DF) | diff - $(TEST_DEFAULT_DF)
+	$< -i $(TEST_DEFAULT_CAST) | diff - $(TEST_DEFAULT_CAST)
+	$< -c 2 -i $(TEST_DEFAULT_CAST) | diff - $(TEST_DEFAULT_CAST)
+	$< -c 3 -i $(TEST_DEFAULT_CAST) | diff - $(TEST_DEFAULT_CAST)
+	$< -c 4 -i $(TEST_DEFAULT_CAST) | diff - $(TEST_DEFAULT_CAST)
+	$< -c 5 -i $(TEST_DEFAULT_CAST) | diff - $(TEST_DEFAULT_CAST)
+	$< -c 6 -i $(TEST_DEFAULT_CAST) | diff - $(TEST_DEFAULT_CAST)
+	$< -c 7 -i $(TEST_DEFAULT_CAST) | diff - $(TEST_DEFAULT_CAST)
+	$< -c 13 -i $(TEST_DEFAULT_CAST) | diff - $(TEST_DEFAULT_CAST)
+	$< -c 119 -i $(TEST_DEFAULT_CAST) | diff - $(TEST_DEFAULT_CAST)
+	$< -c 2323 -i $(TEST_DEFAULT_CAST) | diff - $(TEST_DEFAULT_CAST)
+	$< -c 3231 -i $(TEST_DEFAULT_CAST) | diff - $(TEST_DEFAULT_CAST)
 	@echo "*** test byte queues passed ***"
 
 .PHONY: test-byte-queues
@@ -1107,33 +1078,28 @@ ifneq ($(UPDATE), 0)
 
 update-all: wabt-submodule gen \
 	$(TEST_WASM_SRC_FILES) \
-	$(TEST_WASM_W_SRC_FILES) \
-	$(TEST_DEFAULT_DF) \
-	$(TEST_CASM_WASM_FILES) \
-	$(TEST_CASM_WASM_W_FILES) \
-	$(TEST_CASM_DF_OUT_FILES)
+	$(TEST_CASM_M_SRC_FILES) \
+	$(TEST_CASM_CASM_FILES) \
+	$(TEST_CASM_CASM_M_FILES) \
+	$(TEST_CASM_CAST_OUT_FILES)
 
 $(TEST_WASM_SRC_FILES): $(TEST_0XD_SRCDIR)/%.wasm: $(WABT_WAST_DIR)/%.wast \
 		wabt-submodule
 	$(WABT_DIR)/out/wast2wasm -o $@ $<
 
-$(TEST_WASM_W_SRC_FILES): $(TEST_0XD_SRCDIR)/%.wasm-w: $(WABT_WAST_DIR)/%.wast \
+$(TEST_CASM_M_SRC_FILES): $(TEST_0XD_SRCDIR)/%.wasm-w: $(WABT_WAST_DIR)/%.wast \
 		wabt-submodule
 	$(WABT_DIR)/out/wast2wasm --no-canonicalize-leb128s -o $@ $<
 
-$(TEST_DEFAULT_DF): $(TEST_SRCS_DIR)/%.df: $(SEXP_SRCDIR)/%.df \
-		 $(TEST_EXECDIR)/TestParser
-	rm -rf $@; $(TEST_EXECDIR)/TestParser -w $< > $@
-
-$(TEST_CASM_WASM_FILES): $(TEST_SRCS_DIR)/%.wasm: $(TEST_SRCS_DIR)/%.df \
+$(TEST_CASM_CASM_FILES): $(TEST_SRCS_DIR)/%.casm: $(TEST_SRCS_DIR)/%.cast \
 		$(BUILD_EXECDIR)/cast2casm
 	rm -rf $@; $(BUILD_EXECDIR)/cast2casm $< -o $@
 
-$(TEST_CASM_WASM_W_FILES): $(TEST_SRCS_DIR)/%.wasm-w: $(TEST_SRCS_DIR)/%.df \
+$(TEST_CASM_CASM_M_FILES): $(TEST_SRCS_DIR)/%.casm-m: $(TEST_SRCS_DIR)/%.cast \
 		$(BUILD_EXECDIR)/cast2casm
 	rm -rf $@; $(BUILD_EXECDIR)/cast2casm -m $< -o $@
 
-$(TEST_CASM_DF_OUT_FILES): $(TEST_SRCS_DIR)/%.df-out: $(TEST_SRCS_DIR)/%.df \
+$(TEST_CASM_CAST_OUT_FILES): $(TEST_SRCS_DIR)/%.cast-out: $(TEST_SRCS_DIR)/%.casm \
 		$(BUILD_EXECDIR)/casm2cast
 	rm -rf $@; $(BUILD_EXECDIR)/casm2cast $< -o $@
 
