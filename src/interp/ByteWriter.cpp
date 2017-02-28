@@ -18,9 +18,12 @@
 
 #include "interp/ByteWriter.h"
 
+#include <unordered_set>
+
 #include "interp/ByteWriteStream.h"
 #include "interp/WriteStream.h"
 #include "sexp/Ast.h"
+#include "stream/Queue.h"
 #include "stream/WriteCursor.h"
 #include "utils/Casting.h"
 
@@ -32,14 +35,66 @@ using namespace utils;
 
 namespace interp {
 
+// This class is used to implement the Table operator interface. It uses
+// a scratchpad for writing. This is done to simplify the write API. The
+// cursors/methods do not need to know if they are working on the scratchpad
+// instead of the output stream. This solution is inefficient. However,the
+// assumption is that if you are writing to such a stream, you probably are
+// running inside a compressor where the performance is not important.
+class ByteWriter::TableHandler {
+  TableHandler() = delete;
+  TableHandler(const TableHandler&) = delete;
+  TableHandler& operator=(const TableHandler&) = delete;
+
+ public:
+  explicit TableHandler(ByteWriter& Writer) : Writer(Writer) {}
+  ~TableHandler() {}
+
+  bool tablePush(IntType Value) {
+    if (Cached.count(Value)) {
+      BitWriteCursor TmpCursor(std::make_shared<Queue>());
+      CursorStack.push_back(Writer.WritePos);
+      Writer.WritePos = TmpCursor;
+      RestoreStack.push_back(true);
+      return true;
+    }
+    Cached.insert(Value);
+    RestoreStack.push_back(false);
+    return true;
+  }
+
+  bool tablePop() {
+    if (RestoreStack.empty())
+      return false;
+    bool Restore = RestoreStack.back();
+    RestoreStack.pop_back();
+    if (!Restore)
+      return true;
+    if (CursorStack.empty())
+      return false;
+    Writer.WritePos = CursorStack.back();
+    CursorStack.pop_back();
+    return true;
+  }
+
+ private:
+  ByteWriter& Writer;
+  std::unordered_set<IntType> Cached;
+  std::shared_ptr<Queue> ScratchQueue;
+  std::vector<bool> RestoreStack;
+  std::vector<BitWriteCursor> CursorStack;
+};
+
 ByteWriter::ByteWriter(std::shared_ptr<decode::Queue> Output)
     : Writer(true),
       WritePos(StreamType::Byte, Output),
       Stream(std::make_shared<ByteWriteStream>()),
-      BlockStartStack(BlockStart) {
+      BlockStartStack(BlockStart),
+      TblHandler(nullptr) {
 }
 
 ByteWriter::~ByteWriter() {
+  delete TblHandler;
 }
 
 void ByteWriter::reset() {
@@ -180,13 +235,15 @@ bool ByteWriter::writeBlockExit() {
 }
 
 bool ByteWriter::tablePush(IntType Value) {
-  // TODO(karlschimpf): Implement concept
-  return true;
+  if (TblHandler == nullptr)
+    TblHandler = new TableHandler(*this);
+  return TblHandler->tablePush(Value);
 }
 
 bool ByteWriter::tablePop() {
-  // TODO(karlschimpf): Implement concept
-  return true;
+  if (TblHandler == nullptr)
+    return false;
+  return TblHandler->tablePop();
 }
 
 void ByteWriter::describeBlockStartStack(FILE* File) {

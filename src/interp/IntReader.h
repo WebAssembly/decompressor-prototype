@@ -64,6 +64,8 @@ class IntReader : public Reader {
   utils::TraceContextPtr getTraceContext() OVERRIDE;
 
  private:
+  class TableHandler;
+
   IntStream::ReadCursor Pos;
   IntStream::StreamPtr Input;
   size_t HeaderIndex;
@@ -72,9 +74,7 @@ class IntReader : public Reader {
   size_t StillAvailable;
   IntStream::ReadCursor SavedPos;
   utils::ValueStack<IntStream::Cursor> SavedPosStack;
-  std::vector<bool> TableRestoreFromSavedPos;
-  typedef std::map<decode::IntType, IntStream::ReadCursor> TableType;
-  TableType Table;
+  TableHandler* TblHandler;
 };
 
 }  // end of namespace interp

@@ -70,6 +70,8 @@ class ByteReader : public Reader {
   utils::TraceContextPtr getTraceContext() OVERRIDE;
 
  private:
+  class TableHandler;
+
   decode::BitReadCursor ReadPos;
   std::shared_ptr<ReadStream> Input;
   // The input position needed to fill to process now.
@@ -79,10 +81,7 @@ class ByteReader : public Reader {
   // The stack of saved read cursors.
   decode::BitReadCursor SavedPos;
   utils::ValueStack<decode::BitReadCursor> SavedPosStack;
-  std::vector<bool> TableRestoreFromSavedPos;
-  // The map of read cursors associated with table indices.
-  typedef std::map<decode::IntType, decode::BitReadCursor> TableType;
-  TableType Table;
+  TableHandler* TblHandler;
 };
 
 }  // end of namespace interp

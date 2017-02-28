@@ -29,16 +29,59 @@ using namespace utils;
 
 namespace interp {
 
+class IntReader::TableHandler {
+  TableHandler() = delete;
+  TableHandler(const TableHandler&) = delete;
+  TableHandler& operator=(const TableHandler&) = delete;
+
+ public:
+  explicit TableHandler(IntReader& Reader) : Reader(Reader) {}
+  ~TableHandler() {}
+
+  bool tablePush(IntType Value) {
+    TableType::iterator Iter = Table.find(Value);
+    if (Iter == Table.end()) {
+      Table[Value] = Reader.Pos;
+      RestoreStack.push_back(false);
+    } else {
+      if (!Reader.pushPeekPos())
+        return false;
+      Reader.Pos = Iter->second;
+      RestoreStack.push_back(true);
+    }
+    return true;
+  }
+
+  bool tablePop() {
+    if (RestoreStack.empty())
+      return false;
+    bool Restore = RestoreStack.back();
+    RestoreStack.pop_back();
+    if (Restore)
+      if (!Reader.popPeekPos())
+        return false;
+    return true;
+  }
+
+ private:
+  IntReader& Reader;
+  std::vector<bool> RestoreStack;
+  typedef std::map<decode::IntType, IntStream::ReadCursor> TableType;
+  TableType Table;
+};
+
 IntReader::IntReader(std::shared_ptr<IntStream> Input)
     : Reader(true),
       Pos(Input),
       Input(Input),
       HeaderIndex(0),
       StillAvailable(0),
-      SavedPosStack(SavedPos) {
+      SavedPosStack(SavedPos),
+      TblHandler(nullptr) {
 }
 
 IntReader::~IntReader() {
+  delete TblHandler;
 }
 
 TraceContextPtr IntReader::getTraceContext() {
@@ -131,26 +174,15 @@ bool IntReader::readHeaderValue(IntTypeFormat Format, IntType& Value) {
 }
 
 bool IntReader::tablePush(IntType Value) {
-  TableType::iterator Iter = Table.find(Value);
-  if (Iter == Table.end()) {
-    Table[Value] = Pos;
-    TableRestoreFromSavedPos.push_back(false);
-  } else {
-    if (!pushPeekPos())
-      return false;
-    Pos = Iter->second;
-    TableRestoreFromSavedPos.push_back(true);
-  }
-  return true;
+  if (TblHandler == nullptr)
+    TblHandler = new TableHandler(*this);
+  return TblHandler->tablePush(Value);
 }
 
 bool IntReader::tablePop() {
-  bool Restore = TableRestoreFromSavedPos.back();
-  TableRestoreFromSavedPos.pop_back();
-  if (Restore)
-    if (!popPeekPos())
-      return false;
-  return true;
+  if (TblHandler == nullptr)
+    return false;
+  return TblHandler->tablePop();
 }
 
 void IntReader::describePeekPosStack(FILE* File) {

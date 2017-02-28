@@ -31,15 +31,61 @@ using namespace utils;
 
 namespace interp {
 
+// Implemented separately so that details are not exposed to users of a
+// ByteReader.
+class ByteReader::TableHandler {
+  TableHandler() = delete;
+  TableHandler(const TableHandler&) = delete;
+  TableHandler& operator=(const TableHandler&) = delete;
+
+ public:
+  explicit TableHandler(ByteReader& Reader) : Reader(Reader) {}
+  ~TableHandler() {}
+
+  bool tablePush(IntType Value) {
+    TableType::iterator Iter = Table.find(Value);
+    if (Iter == Table.end()) {
+      Table[Value] = Reader.ReadPos;
+      RestoreStack.push_back(false);
+    } else {
+      if (!Reader.pushPeekPos())
+        return false;
+      Reader.ReadPos = Iter->second;
+      RestoreStack.push_back(true);
+    }
+    return true;
+  }
+
+  bool tablePop() {
+    if (RestoreStack.empty())
+      return false;
+    bool Restore = RestoreStack.back();
+    RestoreStack.pop_back();
+    if (Restore)
+      if (!Reader.popPeekPos())
+        return false;
+    return true;
+  }
+
+ private:
+  ByteReader& Reader;
+  std::vector<bool> RestoreStack;
+  // The map of read cursors associated with table indices.
+  typedef std::map<decode::IntType, decode::BitReadCursor> TableType;
+  TableType Table;
+};
+
 ByteReader::ByteReader(std::shared_ptr<decode::Queue> StrmInput)
     : Reader(true),
       ReadPos(StreamType::Byte, StrmInput),
       Input(std::make_shared<ByteReadStream>()),
       FillPos(0),
-      SavedPosStack(SavedPos) {
+      SavedPosStack(SavedPos),
+      TblHandler(nullptr) {
 }
 
 ByteReader::~ByteReader() {
+  delete TblHandler;
 }
 
 void ByteReader::setReadPos(const decode::BitReadCursor& StartPos) {
@@ -190,26 +236,15 @@ uint64_t ByteReader::readVaruint64() {
 }
 
 bool ByteReader::tablePush(IntType Value) {
-  TableType::iterator Iter = Table.find(Value);
-  if (Iter == Table.end()) {
-    Table[Value] = ReadPos;
-    TableRestoreFromSavedPos.push_back(false);
-  } else {
-    if (!pushPeekPos())
-      return false;
-    ReadPos = Iter->second;
-    TableRestoreFromSavedPos.push_back(true);
-  }
-  return true;
+  if (TblHandler == nullptr)
+    TblHandler = new TableHandler(*this);
+  return TblHandler->tablePush(Value);
 }
 
 bool ByteReader::tablePop() {
-  bool Restore = TableRestoreFromSavedPos.back();
-  TableRestoreFromSavedPos.pop_back();
-  if (Restore)
-    if (!popPeekPos())
-      return false;
-  return true;
+  if (TblHandler == nullptr)
+    return false;
+  return TblHandler->tablePop();
 }
 
 void ByteReader::describePeekPosStack(FILE* File) {
