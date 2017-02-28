@@ -842,13 +842,15 @@ void Interpreter::algorithmResume() {
           case OpPeek:
             switch (Frame.CallState) {
               case State::Enter:
-                Input->pushPeekPos();
+                if (!Input->pushPeekPos())
+                  return failBadState();
                 Frame.CallState = State::Exit;
                 call(Method::Eval, MethodModifier::ReadOnly,
                      Frame.Nd->getKid(0));
                 break;
               case State::Exit:
-                Input->popPeekPos();
+                if (!Input->popPeekPos())
+                  return failBadState();
                 popAndReturn(Frame.ReturnValue);
                 break;
               default:
@@ -1406,20 +1408,20 @@ void Interpreter::algorithmResume() {
         switch (Frame.CallState) {
           case State::Enter:
             assert(CatchStack.empty());
-            assert(Input->sizePeekPosStack() == 0);
             assert(LoopCounterStack.empty());
             CatchStack.push(Method::GetAlgorithm);
-            Input->pushPeekPos();
+            if (!Input->pushPeekPos())
+              return failBadState();
             LoopCounterStack.push(0);
             Frame.CallState = State::Loop;
             break;
           case State::Loop:
             assert(CatchStack.size() == 1);
-            assert(Input->sizePeekPosStack() == 1);
             assert(LoopCounterStack.size() == 1);
             if (LoopCounter >= Selectors.size()) {
               CatchStack.pop();
-              Input->popPeekPos();
+              if (!Input->popPeekPos())
+                return failBadState();
               LoopCounterStack.pop();
               return throwMessage("Unable to find algorithm to apply!");
             }
@@ -1429,11 +1431,11 @@ void Interpreter::algorithmResume() {
             break;
           case State::Step2:
             assert(CatchStack.size() == 1);
-            assert(Input->sizePeekPosStack() == 1);
             assert(LoopCounterStack.size() == 1);
             // Found algorithm. Install and then use.
             CatchStack.pop();
-            Input->popPeekPos();
+            if (!Input->popPeekPos())
+              return failBadState();
             TRACE(size_t, "Select counter", LoopCounter);
             if (!Selectors[LoopCounter]->configure(this))
               return fail("Problems configuring reader for found header");
@@ -1443,7 +1445,6 @@ void Interpreter::algorithmResume() {
             break;
           case State::Step3:
             assert(CatchStack.empty());
-            assert(Input->sizePeekPosStack() == 0);
             assert(LoopCounterStack.size() == 1);
             Frame.CallState = State::Step4;
             if (Flags.TraceAppliedAlgorithms) {
@@ -1455,7 +1456,6 @@ void Interpreter::algorithmResume() {
             break;
           case State::Step4:
             assert(CatchStack.empty());
-            assert(Input->sizePeekPosStack() == 0);
             assert(LoopCounterStack.size() == 1);
             // Parsed data associated with algorithm. Now process rest of input.
             TRACE(size_t, "Select counter", LoopCounter);
@@ -1477,7 +1477,8 @@ void Interpreter::algorithmResume() {
               break;
             }
             CatchStack.push(Method::GetAlgorithm);
-            Input->pushPeekPos();
+            if (!Input->pushPeekPos())
+              return failBadState();
             LoopCounter = 0;
             Frame.CallState = State::Loop;
             break;
@@ -1487,11 +1488,10 @@ void Interpreter::algorithmResume() {
               default:
                 return rethrow();
               case State::Step2:
-                assert(Input->sizePeekPosStack() == 1);
                 assert(LoopCounterStack.size() == 1);
                 CatchStack.push(Method::GetAlgorithm);
-                Input->popPeekPos();
-                Input->pushPeekPos();
+                if (!(Input->popPeekPos() && Input->pushPeekPos()))
+                  return failBadState();
                 LoopCounter++;
                 Frame.CallState = State::Loop;
                 break;
@@ -1499,7 +1499,6 @@ void Interpreter::algorithmResume() {
             break;
           case State::Exit:
             assert(CatchStack.empty());
-            assert(Input->sizePeekPosStack() == 0);
             assert(LoopCounterStack.empty());
             popAndReturn();
             break;

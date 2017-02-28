@@ -55,9 +55,8 @@ class Reader : public std::enable_shared_from_this<Reader> {
   virtual bool stillMoreInputToProcessNow() = 0;
   virtual bool atInputEof() = 0;
   virtual bool atInputEob() = 0;
-  virtual void pushPeekPos() = 0;
-  virtual void popPeekPos() = 0;
-  virtual size_t sizePeekPosStack() = 0;
+  virtual bool pushPeekPos() = 0;
+  virtual bool popPeekPos() = 0;
   virtual decode::StreamType getStreamType() = 0;
   virtual bool processedInputCorrectly() = 0;
   virtual bool readAction(const filt::SymbolNode* Action);

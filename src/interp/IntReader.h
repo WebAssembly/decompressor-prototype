@@ -19,6 +19,8 @@
 #ifndef DECOMPRESSOR_SRC_INTERP_INTREADER_H
 #define DECOMPRESSOR_SRC_INTERP_INTREADER_H
 
+#include <map>
+
 #include "interp/IntStream.h"
 #include "interp/Reader.h"
 
@@ -46,9 +48,8 @@ class IntReader : public Reader {
   bool stillMoreInputToProcessNow() OVERRIDE;
   bool atInputEob() OVERRIDE;
   bool atInputEof() OVERRIDE;
-  void pushPeekPos() OVERRIDE;
-  void popPeekPos() OVERRIDE;
-  size_t sizePeekPosStack() OVERRIDE;
+  bool pushPeekPos() OVERRIDE;
+  bool popPeekPos() OVERRIDE;
   decode::StreamType getStreamType() OVERRIDE;
   bool processedInputCorrectly() OVERRIDE;
   void readFillStart() OVERRIDE;
@@ -58,6 +59,8 @@ class IntReader : public Reader {
   bool readBlockExit() OVERRIDE;
   bool readHeaderValue(interp::IntTypeFormat Format,
                        decode::IntType& Value) OVERRIDE;
+  bool tablePush(decode::IntType Value) OVERRIDE;
+  bool tablePop() OVERRIDE;
   utils::TraceContextPtr getTraceContext() OVERRIDE;
 
  private:
@@ -67,9 +70,11 @@ class IntReader : public Reader {
   // Shows how many are still available since last call to
   // canProcessMoreInputNow().
   size_t StillAvailable;
-  // The stack of read cursors (used by peek).
-  IntStream::ReadCursor PeekPos;
-  utils::ValueStack<IntStream::Cursor> PeekPosStack;
+  IntStream::ReadCursor SavedPos;
+  utils::ValueStack<IntStream::Cursor> SavedPosStack;
+  std::vector<bool> TableRestoreFromSavedPos;
+  typedef std::map<decode::IntType, IntStream::ReadCursor> TableType;
+  TableType Table;
 };
 
 }  // end of namespace interp

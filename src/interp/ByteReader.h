@@ -46,9 +46,8 @@ class ByteReader : public Reader {
   bool stillMoreInputToProcessNow() OVERRIDE;
   bool atInputEof() OVERRIDE;
   bool atInputEob() OVERRIDE;
-  void pushPeekPos() OVERRIDE;
-  void popPeekPos() OVERRIDE;
-  size_t sizePeekPosStack() OVERRIDE;
+  bool pushPeekPos() OVERRIDE;
+  bool popPeekPos() OVERRIDE;
   decode::StreamType getStreamType() OVERRIDE;
   bool processedInputCorrectly() OVERRIDE;
   void readFillStart() OVERRIDE;
@@ -77,9 +76,10 @@ class ByteReader : public Reader {
   size_t FillPos;
   // The input cursor position if back filling.
   decode::ReadCursor FillCursor;
-  // The stack of read cursors (used by peek).
-  decode::BitReadCursor PeekPos;
-  utils::ValueStack<decode::BitReadCursor> PeekPosStack;
+  // The stack of saved read cursors.
+  decode::BitReadCursor SavedPos;
+  utils::ValueStack<decode::BitReadCursor> SavedPosStack;
+  std::vector<bool> TableRestoreFromSavedPos;
   // The map of read cursors associated with table indices.
   typedef std::map<decode::IntType, decode::BitReadCursor> TableType;
   TableType Table;

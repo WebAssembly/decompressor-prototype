@@ -36,7 +36,7 @@ ByteReader::ByteReader(std::shared_ptr<decode::Queue> StrmInput)
       ReadPos(StreamType::Byte, StrmInput),
       Input(std::make_shared<ByteReadStream>()),
       FillPos(0),
-      PeekPosStack(PeekPos) {
+      SavedPosStack(SavedPos) {
 }
 
 ByteReader::~ByteReader() {
@@ -84,17 +84,17 @@ bool ByteReader::atInputEof() {
   return ReadPos.atEof();
 }
 
-void ByteReader::pushPeekPos() {
-  PeekPosStack.push(ReadPos);
+bool ByteReader::pushPeekPos() {
+  SavedPosStack.push(ReadPos);
+  return true;
 }
 
-void ByteReader::popPeekPos() {
-  ReadPos = PeekPos;
-  PeekPosStack.pop();
-}
-
-size_t ByteReader::sizePeekPosStack() {
-  return PeekPosStack.size();
+bool ByteReader::popPeekPos() {
+  if (SavedPosStack.empty())
+    return false;
+  ReadPos = SavedPos;
+  SavedPosStack.pop();
+  return true;
 }
 
 decode::StreamType ByteReader::getStreamType() {
@@ -190,21 +190,34 @@ uint64_t ByteReader::readVaruint64() {
 }
 
 bool ByteReader::tablePush(IntType Value) {
-  // TODO(karlschimpf): Implement concept
+  TableType::iterator Iter = Table.find(Value);
+  if (Iter == Table.end()) {
+    Table[Value] = ReadPos;
+    TableRestoreFromSavedPos.push_back(false);
+  } else {
+    if (!pushPeekPos())
+      return false;
+    ReadPos = Iter->second;
+    TableRestoreFromSavedPos.push_back(true);
+  }
   return true;
 }
 
 bool ByteReader::tablePop() {
-  // TODO(karlschimpf): Implement concept
+  bool Restore = TableRestoreFromSavedPos.back();
+  TableRestoreFromSavedPos.pop_back();
+  if (Restore)
+    if (!popPeekPos())
+      return false;
   return true;
 }
 
 void ByteReader::describePeekPosStack(FILE* File) {
-  if (PeekPosStack.empty())
+  if (SavedPosStack.empty())
     return;
-  fprintf(File, "*** Peek Pos Stack ***\n");
+  fprintf(File, "*** Saved Pos Stack ***\n");
   fprintf(File, "**********************\n");
-  for (const auto& Pos : PeekPosStack.iterRange(1))
+  for (const auto& Pos : SavedPosStack.iterRange(1))
     fprintf(File, "@%" PRIxMAX "\n", uintmax_t(Pos.getCurAddress()));
   fprintf(File, "**********************\n");
 }

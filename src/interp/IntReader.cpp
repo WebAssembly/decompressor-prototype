@@ -35,7 +35,7 @@ IntReader::IntReader(std::shared_ptr<IntStream> Input)
       Input(Input),
       HeaderIndex(0),
       StillAvailable(0),
-      PeekPosStack(PeekPos) {
+      SavedPosStack(SavedPos) {
 }
 
 IntReader::~IntReader() {
@@ -75,17 +75,17 @@ bool IntReader::atInputEof() {
   return Pos.atEof();
 }
 
-void IntReader::pushPeekPos() {
-  PeekPosStack.push(PeekPos);
+bool IntReader::pushPeekPos() {
+  SavedPosStack.push(Pos);
+  return true;
 }
 
-void IntReader::popPeekPos() {
-  Pos = PeekPos;
-  PeekPosStack.pop();
-}
-
-size_t IntReader::sizePeekPosStack() {
-  return PeekPosStack.size();
+bool IntReader::popPeekPos() {
+  if (SavedPosStack.empty())
+    return false;
+  Pos = SavedPos;
+  SavedPosStack.pop();
+  return true;
 }
 
 StreamType IntReader::getStreamType() {
@@ -130,12 +130,35 @@ bool IntReader::readHeaderValue(IntTypeFormat Format, IntType& Value) {
   return true;
 }
 
+bool IntReader::tablePush(IntType Value) {
+  TableType::iterator Iter = Table.find(Value);
+  if (Iter == Table.end()) {
+    Table[Value] = Pos;
+    TableRestoreFromSavedPos.push_back(false);
+  } else {
+    if (!pushPeekPos())
+      return false;
+    Pos = Iter->second;
+    TableRestoreFromSavedPos.push_back(true);
+  }
+  return true;
+}
+
+bool IntReader::tablePop() {
+  bool Restore = TableRestoreFromSavedPos.back();
+  TableRestoreFromSavedPos.pop_back();
+  if (Restore)
+    if (!popPeekPos())
+      return false;
+  return true;
+}
+
 void IntReader::describePeekPosStack(FILE* File) {
-  if (PeekPosStack.empty())
+  if (SavedPosStack.empty())
     return;
-  fprintf(File, "*** Peek Pos Stack ***\n");
+  fprintf(File, "*** Saved Pos Stack ***\n");
   fprintf(File, "**********************\n");
-  for (const auto& Pos : PeekPosStack.iterRange(1))
+  for (const auto& Pos : SavedPosStack.iterRange(1))
     fprintf(File, "@%" PRIxMAX "\n", uintmax_t(Pos.getIndex()));
   fprintf(File, "**********************\n");
 }
