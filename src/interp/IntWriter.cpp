@@ -30,13 +30,12 @@ using namespace utils;
 
 namespace interp {
 
-// This class is used to implement the Table operator interface. It uses
-// a scratchpad for writing. This is done to simplify the write API. The
+// This class is used to implement the Table operator interface. It uses a
+// scratchpad for writing. This is done to simplify the write API. The
 // cursors/methods do not need to know if they are working on the scratchpad
 // instead of the output stream. This solution is inefficient. However,the
 // assumption is that if you are writing to such a stream, you probably are
 // running inside a compressor where the performance is not important.
-
 class IntWriter::TableHandler {
   TableHandler() = delete;
   TableHandler(const TableHandler&) = delete;
