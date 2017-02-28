@@ -71,9 +71,7 @@ class ByteWriter : public Writer {
   utils::ValueStack<decode::BitWriteCursor> BlockStartStack;
   void describeBlockStartStack(FILE* File);
   const char* getDefaultTraceName() const OVERRIDE;
-  // The map of write cursors associated with table indices.
-  typedef std::map<decode::IntType, decode::BitWriteCursor> TableType;
-  TableType Table;
+  // The stack of saved read cursors.
 };
 
 }  // end of namespace interp

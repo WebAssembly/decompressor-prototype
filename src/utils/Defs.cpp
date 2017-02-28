@@ -24,7 +24,7 @@
 namespace {
 
 // TODO(kschimpf): Define associations in a Defs.def file.
-const char* StreamTypeName[] = {"bit", "byte", "int", "ast"};
+const char* StreamTypeName[] = {"byte", "int", "Other"};
 
 const char* StreamKindName[] = {"in", "out"};
 
@@ -50,7 +50,10 @@ void fprint_IntType(FILE* File, IntType Value) {
 bool ExpectExitFail = false;
 
 const char* getName(StreamType Type) {
-  return StreamTypeName[int(Type)];
+  size_t Index = size_t(Type);
+  if (Index >= size(StreamTypeName))
+    Index = size_t(StreamType::Other);
+  return StreamTypeName[Index];
 }
 
 const char* getName(StreamKind Kind) {
