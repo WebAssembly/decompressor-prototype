@@ -31,15 +31,61 @@ using namespace utils;
 
 namespace interp {
 
+// Implemented separately so that details are not exposed to users of a
+// ByteReader.
+class ByteReader::TableHandler {
+  TableHandler() = delete;
+  TableHandler(const TableHandler&) = delete;
+  TableHandler& operator=(const TableHandler&) = delete;
+
+ public:
+  explicit TableHandler(ByteReader& Reader) : Reader(Reader) {}
+  ~TableHandler() {}
+
+  bool tablePush(IntType Value) {
+    TableType::iterator Iter = Table.find(Value);
+    if (Iter == Table.end()) {
+      Table[Value] = Reader.ReadPos;
+      RestoreStack.push_back(false);
+    } else {
+      if (!Reader.pushPeekPos())
+        return false;
+      Reader.ReadPos = Iter->second;
+      RestoreStack.push_back(true);
+    }
+    return true;
+  }
+
+  bool tablePop() {
+    if (RestoreStack.empty())
+      return false;
+    bool Restore = RestoreStack.back();
+    RestoreStack.pop_back();
+    if (Restore)
+      if (!Reader.popPeekPos())
+        return false;
+    return true;
+  }
+
+ private:
+  ByteReader& Reader;
+  std::vector<bool> RestoreStack;
+  // The map of read cursors associated with table indices.
+  typedef std::map<decode::IntType, decode::BitReadCursor> TableType;
+  TableType Table;
+};
+
 ByteReader::ByteReader(std::shared_ptr<decode::Queue> StrmInput)
     : Reader(true),
       ReadPos(StreamType::Byte, StrmInput),
       Input(std::make_shared<ByteReadStream>()),
       FillPos(0),
-      PeekPosStack(PeekPos) {
+      SavedPosStack(SavedPos),
+      TblHandler(nullptr) {
 }
 
 ByteReader::~ByteReader() {
+  delete TblHandler;
 }
 
 void ByteReader::setReadPos(const decode::BitReadCursor& StartPos) {
@@ -84,17 +130,17 @@ bool ByteReader::atInputEof() {
   return ReadPos.atEof();
 }
 
-void ByteReader::pushPeekPos() {
-  PeekPosStack.push(ReadPos);
+bool ByteReader::pushPeekPos() {
+  SavedPosStack.push(ReadPos);
+  return true;
 }
 
-void ByteReader::popPeekPos() {
-  ReadPos = PeekPos;
-  PeekPosStack.pop();
-}
-
-size_t ByteReader::sizePeekPosStack() {
-  return PeekPosStack.size();
+bool ByteReader::popPeekPos() {
+  if (SavedPosStack.empty())
+    return false;
+  ReadPos = SavedPos;
+  SavedPosStack.pop();
+  return true;
 }
 
 decode::StreamType ByteReader::getStreamType() {
@@ -190,21 +236,23 @@ uint64_t ByteReader::readVaruint64() {
 }
 
 bool ByteReader::tablePush(IntType Value) {
-  // TODO(karlschimpf): Implement concept
-  return true;
+  if (TblHandler == nullptr)
+    TblHandler = new TableHandler(*this);
+  return TblHandler->tablePush(Value);
 }
 
 bool ByteReader::tablePop() {
-  // TODO(karlschimpf): Implement concept
-  return true;
+  if (TblHandler == nullptr)
+    return false;
+  return TblHandler->tablePop();
 }
 
 void ByteReader::describePeekPosStack(FILE* File) {
-  if (PeekPosStack.empty())
+  if (SavedPosStack.empty())
     return;
-  fprintf(File, "*** Peek Pos Stack ***\n");
+  fprintf(File, "*** Saved Pos Stack ***\n");
   fprintf(File, "**********************\n");
-  for (const auto& Pos : PeekPosStack.iterRange(1))
+  for (const auto& Pos : SavedPosStack.iterRange(1))
     fprintf(File, "@%" PRIxMAX "\n", uintmax_t(Pos.getCurAddress()));
   fprintf(File, "**********************\n");
 }

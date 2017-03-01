@@ -33,7 +33,7 @@ class IntWriter : public Writer {
 
  public:
   IntWriter(std::shared_ptr<IntStream> Output);
-  ~IntWriter() OVERRIDE {}
+  ~IntWriter() OVERRIDE;
   void reset() OVERRIDE;
   decode::StreamType getStreamType() const OVERRIDE;
   bool write(decode::IntType Value) { return Pos.write(Value); }
@@ -45,11 +45,18 @@ class IntWriter : public Writer {
                         interp::IntTypeFormat Format) OVERRIDE;
   utils::TraceContextPtr getTraceContext() OVERRIDE;
   void describeState(FILE* File) OVERRIDE;
+  bool tablePush(decode::IntType Value) OVERRIDE;
+  bool tablePop() OVERRIDE;
+#if 0
   size_t getIndex() const { return Pos.getIndex(); }
+#endif
 
  private:
+  class TableHandler;
+
   std::shared_ptr<IntStream> Output;
   IntStream::WriteCursor Pos;
+  TableHandler* TblHandler;
 
   const char* getDefaultTraceName() const OVERRIDE;
 };

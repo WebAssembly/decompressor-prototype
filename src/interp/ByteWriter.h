@@ -64,6 +64,8 @@ class ByteWriter : public Writer {
   void describeState(FILE* File) OVERRIDE;
 
  private:
+  class TableHandler;
+
   decode::BitWriteCursor WritePos;
   std::shared_ptr<WriteStream> Stream;
   // The stack of block patch locations.
@@ -71,9 +73,7 @@ class ByteWriter : public Writer {
   utils::ValueStack<decode::BitWriteCursor> BlockStartStack;
   void describeBlockStartStack(FILE* File);
   const char* getDefaultTraceName() const OVERRIDE;
-  // The map of write cursors associated with table indices.
-  typedef std::map<decode::IntType, decode::BitWriteCursor> TableType;
-  TableType Table;
+  TableHandler* TblHandler;
 };
 
 }  // end of namespace interp

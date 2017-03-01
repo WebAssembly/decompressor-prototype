@@ -29,16 +29,59 @@ using namespace utils;
 
 namespace interp {
 
+class IntReader::TableHandler {
+  TableHandler() = delete;
+  TableHandler(const TableHandler&) = delete;
+  TableHandler& operator=(const TableHandler&) = delete;
+
+ public:
+  explicit TableHandler(IntReader& Reader) : Reader(Reader) {}
+  ~TableHandler() {}
+
+  bool tablePush(IntType Value) {
+    TableType::iterator Iter = Table.find(Value);
+    if (Iter == Table.end()) {
+      Table[Value] = Reader.Pos;
+      RestoreStack.push_back(false);
+    } else {
+      if (!Reader.pushPeekPos())
+        return false;
+      Reader.Pos = Iter->second;
+      RestoreStack.push_back(true);
+    }
+    return true;
+  }
+
+  bool tablePop() {
+    if (RestoreStack.empty())
+      return false;
+    bool Restore = RestoreStack.back();
+    RestoreStack.pop_back();
+    if (Restore)
+      if (!Reader.popPeekPos())
+        return false;
+    return true;
+  }
+
+ private:
+  IntReader& Reader;
+  std::vector<bool> RestoreStack;
+  typedef std::map<decode::IntType, IntStream::ReadCursor> TableType;
+  TableType Table;
+};
+
 IntReader::IntReader(std::shared_ptr<IntStream> Input)
     : Reader(true),
       Pos(Input),
       Input(Input),
       HeaderIndex(0),
       StillAvailable(0),
-      PeekPosStack(PeekPos) {
+      SavedPosStack(SavedPos),
+      TblHandler(nullptr) {
 }
 
 IntReader::~IntReader() {
+  delete TblHandler;
 }
 
 TraceContextPtr IntReader::getTraceContext() {
@@ -75,17 +118,17 @@ bool IntReader::atInputEof() {
   return Pos.atEof();
 }
 
-void IntReader::pushPeekPos() {
-  PeekPosStack.push(PeekPos);
+bool IntReader::pushPeekPos() {
+  SavedPosStack.push(Pos);
+  return true;
 }
 
-void IntReader::popPeekPos() {
-  Pos = PeekPos;
-  PeekPosStack.pop();
-}
-
-size_t IntReader::sizePeekPosStack() {
-  return PeekPosStack.size();
+bool IntReader::popPeekPos() {
+  if (SavedPosStack.empty())
+    return false;
+  Pos = SavedPos;
+  SavedPosStack.pop();
+  return true;
 }
 
 StreamType IntReader::getStreamType() {
@@ -130,12 +173,24 @@ bool IntReader::readHeaderValue(IntTypeFormat Format, IntType& Value) {
   return true;
 }
 
+bool IntReader::tablePush(IntType Value) {
+  if (TblHandler == nullptr)
+    TblHandler = new TableHandler(*this);
+  return TblHandler->tablePush(Value);
+}
+
+bool IntReader::tablePop() {
+  if (TblHandler == nullptr)
+    return false;
+  return TblHandler->tablePop();
+}
+
 void IntReader::describePeekPosStack(FILE* File) {
-  if (PeekPosStack.empty())
+  if (SavedPosStack.empty())
     return;
-  fprintf(File, "*** Peek Pos Stack ***\n");
+  fprintf(File, "*** Saved Pos Stack ***\n");
   fprintf(File, "**********************\n");
-  for (const auto& Pos : PeekPosStack.iterRange(1))
+  for (const auto& Pos : SavedPosStack.iterRange(1))
     fprintf(File, "@%" PRIxMAX "\n", uintmax_t(Pos.getIndex()));
   fprintf(File, "**********************\n");
 }
