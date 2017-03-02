@@ -47,9 +47,6 @@ class IntWriter : public Writer {
   void describeState(FILE* File) OVERRIDE;
   bool tablePush(decode::IntType Value) OVERRIDE;
   bool tablePop() OVERRIDE;
-#if 0
-  size_t getIndex() const { return Pos.getIndex(); }
-#endif
 
  private:
   class TableHandler;

@@ -365,9 +365,6 @@ bool InflateAst::writeAction(const filt::SymbolNode* Action) {
     case PredefinedSymbol::Binary_end:
       Values.push(OpBinaryEval);
       return buildUnary<BinaryEvalNode>();
-    case PredefinedSymbol::Instruction_begin:
-      AstMarkers.push(Asts.size());
-      return true;
     case PredefinedSymbol::Int_value_begin:
       ValueMarker = Values.size();
       return true;

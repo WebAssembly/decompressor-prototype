@@ -59,10 +59,9 @@ void errorDescribeNode(const char* Message, const Node* Nd) {
   Writer.write(Out, Nd);
 }
 
-static const char* PredefinedName[NumPredefinedSymbols]{
-    "$PredefinedSymbol::Unknown"
+static const char* PredefinedName[NumPredefinedSymbols]{"Unknown"
 #define X(tag, name) , name
-    PREDEFINED_SYMBOLS_TABLE
+                                                        PREDEFINED_SYMBOLS_TABLE
 #undef X
 };
 
@@ -452,6 +451,26 @@ const DefineNode* SymbolDefnNode::getDefineDefinition() {
   return DefineDefinition;
 }
 
+void SymbolDefnNode::setDefineDefinition(const DefineNode* Defn) {
+  if (DefineDefinition) {
+    errorDescribeNode("Old", DefineDefinition);
+    errorDescribeNode("New", Defn);
+    fatal("Multiple defines for symbol: " + getName());
+    return;
+  }
+  DefineDefinition = Defn;
+}
+
+void SymbolDefnNode::setLiteralDefinition(const LiteralDefNode* Defn) {
+  if (LiteralDefinition) {
+    errorDescribeNode("Old", LiteralDefinition);
+    errorDescribeNode("New", Defn);
+    fatal("Multiple defines for symbol: " + getName());
+    return;
+  }
+  LiteralDefinition = Defn;
+}
+
 const LiteralDefNode* SymbolDefnNode::getLiteralDefinition() {
   if (LiteralDefinition)
     return LiteralDefinition;
@@ -527,6 +546,7 @@ PredefinedSymbol SymbolNode::getPredefinedSymbol() const {
 
 SymbolTable::SymbolTable(std::shared_ptr<SymbolTable> EnclosingScope)
     : EnclosingScope(EnclosingScope) {
+  init();
 }
 
 SymbolTable::SymbolTable() {
@@ -584,6 +604,15 @@ SymbolDefnNode* SymbolTable::getSymbolDefn(const SymbolNode* Sym) {
     setCachedValue(Sym, Defn);
   }
   return Defn;
+}
+
+void SymbolTable::collectActionDefs(ActionDefSet& DefSet) {
+  SymbolTable* Scope = this;
+  while (Scope) {
+    for (const LiteralDefNode* Def : Scope->CallbackLiterals)
+      DefSet.insert(Def);
+    Scope = Scope->getEnclosingScope();
+  }
 }
 
 void SymbolTable::clear() {
@@ -669,7 +698,9 @@ AST_INTEGERNODE_TABLE
 void SymbolTable::install(FileNode* Root) {
   TRACE_METHOD("install");
   CachedValue.clear();
+  CallbackLiterals.clear();
   this->Root = Root;
+  installPredefined();
   installDefinitions(Root);
   std::vector<Node*> Parents;
   if (!Root->validateSubtree(Parents))
@@ -694,6 +725,16 @@ bool SymbolTable::specifiesAlgorithm() const {
   return *Root->getSourceHeader() == *Root->getTargetHeader();
 }
 
+void SymbolTable::installPredefined() {
+  for (uint32_t i = 0; i < NumPredefinedSymbols; ++i) {
+    SymbolNode* Sym = getPredefined(toPredefinedSymbol(i));
+    U32ConstNode* Const = getU32ConstDefinition(i, ValueFormat::Decimal);
+    const auto* Def = create<LiteralDefNode>(Sym, Const);
+    Sym->setLiteralDefinition(Def);
+    insertCallbackLiteral(Def);
+  }
+}
+
 void SymbolTable::installDefinitions(Node* Root) {
   TRACE_METHOD("installDefinitions");
   TRACE(node_ptr, nullptr, Root);
@@ -708,19 +749,15 @@ void SymbolTable::installDefinitions(Node* Root) {
         installDefinitions(Kid);
       return;
     case OpDefine: {
-      if (auto* DefineSymbol = dyn_cast<SymbolNode>(Root->getKid(0))) {
-        DefineSymbol->setDefineDefinition(cast<DefineNode>(Root));
-        return;
-      }
+      if (auto* DefineSymbol = dyn_cast<SymbolNode>(Root->getKid(0)))
+        return DefineSymbol->setDefineDefinition(cast<DefineNode>(Root));
       errorDescribeNode("Malformed define", Root);
       fatal("Malformed define s-expression found!");
       return;
     }
     case OpLiteralDef: {
-      if (auto* LiteralSymbol = dyn_cast<SymbolNode>(Root->getKid(0))) {
-        LiteralSymbol->setLiteralDefinition(cast<LiteralDefNode>(Root));
-        return;
-      }
+      if (auto* LiteralSymbol = dyn_cast<SymbolNode>(Root->getKid(0)))
+        return LiteralSymbol->setLiteralDefinition(cast<LiteralDefNode>(Root));
       errorDescribeNode("Malformed", Root);
       fatal("Malformed literal s-expression found!");
       return;
@@ -772,6 +809,7 @@ Node* SymbolTable::stripUsing(Node* Root,
       AST_NARYNODE_TABLE
 #undef X
       {
+        // TODO: Make strip functions return nullptr to remove!
         std::vector<Node*> Kids;
         for (int i = 0; i < Root->getNumKids(); ++i) {
           Node* Kid = stripKid(Root->getKid(i));
@@ -824,6 +862,14 @@ void SymbolTable::stripLiterals() {
       stripLiteralDefs(dyn_cast<FileNode>(stripLiteralUses(Root)))));
 }
 
+void SymbolTable::stripLiteralUses() {
+  install(dyn_cast<FileNode>(stripLiteralUses(Root)));
+}
+
+void SymbolTable::stripLiteralDefs() {
+  install(dyn_cast<FileNode>(stripLiteralDefs(Root)));
+}
+
 Node* SymbolTable::stripLiteralUses(Node* Root) {
   switch (Root->getType()) {
     default:
@@ -854,6 +900,8 @@ Node* SymbolTable::stripLiteralDefs(Node* Root) {
       return stripUsing(
           Root, [&](Node* Nd) -> Node* { return stripLiteralDefs(Nd); });
     case OpLiteralDef:
+      if (CallbackLiterals.count(cast<LiteralDefNode>(Root)))
+        return Root;
       break;
   }
   return create<VoidNode>();
@@ -955,6 +1003,20 @@ AST_UNARYNODE_TABLE
   tag##Node::~tag##Node() {}
 AST_UNARYNODE_TABLE
 #undef X
+
+bool CallbackNode::validateNode(NodeVectorType& Parents) {
+  assert(isa<SymbolNode>(getKid(0)));
+  const LiteralDefNode* Defn =
+      cast<SymbolNode>(getKid(0))->getLiteralDefinition();
+  if (Defn == nullptr) {
+    errorDescribeNode("Callback", this);
+    fputs("No corresponding literal value defined for callback\n",
+          getErrorFile());
+    return false;
+  }
+  getSymtab().insertCallbackLiteral(Defn);
+  return true;
+}
 
 IntegerNode::IntegerNode(SymbolTable& Symtab,
                          NodeType Type,
@@ -1425,6 +1487,7 @@ bool CaseNode::validateNode(NodeVectorType& Parents) {
     if (const auto* Key = dyn_cast<IntegerNode>(CaseExp)) {
       Value = Key->getValue();
     } else {
+      errorDescribeNode("Case", this);
       fprintf(error(), "Case value not found\n");
       return false;
     }

@@ -16,6 +16,10 @@
 
 // Converts textual algorithm into binary file form.
 
+#include <algorithm>
+#include <cctype>
+#include <cstdio>
+
 #if WASM_BOOT == 0
 #include "algorithms/casm0x0.h"
 #endif
@@ -73,13 +77,16 @@ class CodeGenerator {
   bool ErrorsFound;
   size_t NextIndex;
 
-  void puts(const char* Str) { Output->puts(Str); }
+  void puts(charstring Str) { Output->puts(Str); }
   void putc(char Ch) { Output->putc(Ch); }
+  void putSymbol(charstring Name, bool Capitalize = true);
+  char symbolize(char Ch, bool Capitalize);
   void generateArrayImplFile();
   void generateFunctionImplFile();
   void generateHeader();
   void generateEnterNamespaces();
   void generateExitNamespaces();
+  void generatePredefinedEnum();
   void generateAlgorithmHeader();
   size_t generateNode(const Node* Nd);
   size_t generateSymbol(const SymbolNode* Sym);
@@ -181,10 +188,149 @@ void CodeGenerator::generateExitNamespaces() {
   }
 }
 
-void CodeGenerator::generateAlgorithmHeader() {
-  puts("std::shared_ptr<filt::SymbolTable> ");
+void CodeGenerator::putSymbol(charstring Name, bool Capitalize) {
+  size_t Len = strlen(Name);
+  for (size_t i = 0; i < Len; ++i) {
+    char Ch = Name[i];
+    switch (Ch) {
+      case 'a':
+      case 'b':
+      case 'c':
+      case 'd':
+      case 'e':
+      case 'f':
+      case 'g':
+      case 'h':
+      case 'i':
+      case 'j':
+      case 'k':
+      case 'l':
+      case 'm':
+      case 'n':
+      case 'o':
+      case 'p':
+      case 'q':
+      case 'r':
+      case 's':
+      case 't':
+      case 'u':
+      case 'v':
+      case 'w':
+      case 'x':
+      case 'y':
+      case 'z':
+        putc(i > 0 ? Ch : ((Ch - 'a') + 'A'));
+        break;
+      case 'A':
+      case 'B':
+      case 'C':
+      case 'D':
+      case 'E':
+      case 'F':
+      case 'G':
+      case 'H':
+      case 'I':
+      case 'J':
+      case 'K':
+      case 'L':
+      case 'M':
+      case 'N':
+      case 'O':
+      case 'P':
+      case 'Q':
+      case 'R':
+      case 'S':
+      case 'T':
+      case 'U':
+      case 'V':
+      case 'W':
+      case 'X':
+      case 'Y':
+      case 'Z':
+        putc(Ch);
+        break;
+      case '_':
+        puts("__");
+        break;
+      case '.':
+        putc('_');
+        break;
+      default: {
+        constexpr size_t BufferSize = 32;
+        char Buffer[BufferSize];
+        snprintf(Buffer, BufferSize, "_x%X_", Ch);
+        puts(Buffer);
+        break;
+      }
+    }
+  }
+}
+
+namespace {
+
+IntType getActionDefValue(const LiteralDefNode* Nd) {
+  if (const IntegerNode* Num = dyn_cast<IntegerNode>(Nd->getKid(1)))
+    return Num->getValue();
+  return 0;
+}
+
+std::string getActionDefName(const LiteralDefNode* Nd) {
+  if (const SymbolNode* Sym = dyn_cast<SymbolNode>(Nd->getKid(0)))
+    return Sym->getName();
+  return std::string("???");
+}
+
+bool compareLtActionDefs(const LiteralDefNode* N1, const LiteralDefNode* N2) {
+  TextWriter Writer;
+  fprintf(stderr, "compare\n");
+  Writer.write(stderr, N1);
+  fprintf(stderr, "to\n");
+  Writer.write(stderr, N2);
+  IntType V1 = getActionDefValue(N1);
+  IntType V2 = getActionDefValue(N2);
+  fprintf(stderr, "V1 = %" PRIuMAX " , V2 = %" PRIuMAX "\n", uintmax_t(V1),
+          uintmax_t(V2));
+  if (V1 < V2)
+    return true;
+  if (V1 > V2)
+    return false;
+  return getActionDefName(N1) < getActionDefName(N2);
+}
+
+}  // end of anonymous namespace
+
+void CodeGenerator::generatePredefinedEnum() {
+  SymbolTable::ActionDefSet DefSet;
+  Symtab->collectActionDefs(DefSet);
+  std::vector<const LiteralDefNode*> Defs;
+  for (const LiteralDefNode* Def : DefSet)
+    Defs.push_back(Def);
+  std::sort(Defs.begin(), Defs.end(), compareLtActionDefs);
+  puts("enum class Predefined");
   puts(FunctionName);
-  puts("()");
+  puts(" : uint32_t {\n");
+  bool IsFirst = true;
+  for (const LiteralDefNode* Def : Defs) {
+    if (IsFirst)
+      IsFirst = false;
+    else
+      puts(",\n");
+    puts("  ");
+    putSymbol(getActionDefName(Def).c_str());
+    char Buffer[128];
+    sprintf(Buffer, " = %" PRIuMAX "", uintmax_t(getActionDefValue(Def)));
+    puts(Buffer);
+  }
+  puts(
+      "\n"
+      "};\n"
+      "\n");
+}
+
+void CodeGenerator::generateAlgorithmHeader() {
+  puts("std::shared_ptr<filt::SymbolTable> get");
+  puts(FunctionName);
+  puts("Symtab()");
 }
 
 size_t CodeGenerator::generateBadLocal(const Node* Nd) {
@@ -470,6 +616,7 @@ size_t CodeGenerator::generateNode(const Node* Nd) {
 void CodeGenerator::generateDeclFile() {
   generateHeader();
   generateEnterNamespaces();
+  generatePredefinedEnum();
   generateAlgorithmHeader();
   puts(";\n\n");
   generateExitNamespaces();
@@ -486,7 +633,44 @@ void CodeGenerator::generateArrayImplFile() {
     size_t Address = ReadPos->getCurAddress();
     if (Address > 0 && Address % BytesPerLine == 0)
       putc('\n');
-    sprintf(Buffer, " %u", Byte);
+    bool IsPrintable = std::isalnum(Byte);
+    switch (Byte) {
+      case ' ':
+      case '!':
+      case '@':
+      case '#':
+      case '$':
+      case '%':
+      case '^':
+      case '&':
+      case '*':
+      case '(':
+      case ')':
+      case '_':
+      case '-':
+      case '+':
+      case '=':
+      case '{':
+      case '[':
+      case '}':
+      case ']':
+      case '|':
+      case ':':
+      case ';':
+      case '<':
+      case ',':
+      case '>':
+      case '.':
+      case '?':
+      case '/':
+        IsPrintable = true;
+      default:
+        break;
+    }
+    if (IsPrintable)
+      sprintf(Buffer, " '%c'", Byte);
+    else
+      sprintf(Buffer, " %u", Byte);
     puts(Buffer);
     if (!ReadPos->atEof())
       putc(',');
@@ -590,6 +774,8 @@ int main(int Argc, charstring Argv[]) {
   bool StripAll = false;
   bool StripActions = false;
   bool StripLiterals = false;
+  bool StripLiteralUses = false;
+  bool StripLiteralDefs = false;
   bool ShowSavedCast = false;
   bool BitCompress = true;
   std::set<std::string> KeepActions;
@@ -703,7 +889,7 @@ int main(int Argc, charstring Argv[]) {
 
     ArgsParser::Optional<bool> StripActionsFlag(StripActions);
     Args.add(StripActionsFlag.setLongName("strip-actions")
-                 .setDescription("Remove callback actions from input."));
+                 .setDescription("Remove callback actions from input"));
 
     ArgsParser::RepeatableSet<std::string> KeepActionsFlag(KeepActions);
     Args.add(
@@ -715,7 +901,17 @@ int main(int Argc, charstring Argv[]) {
     Args.add(StripLiteralsFlag.setLongName("strip-literals")
                  .setDescription(
                      "Replace literal uses with their definition, then "
-                     "remove literal definitions from the input."));
+                     "remove unreferenced literal definitions from the input"));
+
+    ArgsParser::Optional<bool> StripLiteralUsesFlag(StripLiteralUses);
+    Args.add(StripLiteralUsesFlag.setLongName("strip-literal-uses")
+                 .setDescription("Replace literal uses with their defintion"));
+
+    ArgsParser::Optional<bool> StripLiteralDefsFlag(StripLiteralDefs);
+    Args.add(StripLiteralDefsFlag.setLongName("strip-literal-defs")
+                 .setDescription(
+                     "Remove unreferenced literal definitions from "
+                     "the input"));
 
     ArgsParser::Optional<bool> ShowSavedCastFlag(ShowSavedCast);
     Args.add(ShowSavedCastFlag.setLongName("cast")
@@ -773,6 +969,12 @@ int main(int Argc, charstring Argv[]) {
   if (StripActions) {
     InputSymtab->stripCallbacksExcept(KeepActions);
   }
+  // Note: Must run after StripActions to guarantee that literal defintions
+  // associated with stripped actions will also be removed.
+  if (StripLiteralUses)
+    InputSymtab->stripLiteralUses();
+  if (StripLiteralDefs)
+    InputSymtab->stripLiteralDefs();
   if (StripLiterals)
     InputSymtab->stripLiterals();
   if (TraceInputTree) {

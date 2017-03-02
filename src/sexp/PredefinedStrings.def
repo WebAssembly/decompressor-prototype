@@ -28,7 +28,6 @@ X(Block_exit, "block.exit") \
 X(Block_exit_readonly, "block.exit.readonly") \
 X(Block_exit_writeonly, "block.exit.writeonly") \
 X(File, "file") \
-X(Instruction_begin, "instruction.begin") \
 X(Int_value_begin, "int.value.begin") \
 X(Int_value_end, "int.value.end") \
 X(Nary_inst, "nary.inst") \

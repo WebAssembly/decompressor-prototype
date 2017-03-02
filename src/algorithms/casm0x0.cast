@@ -108,14 +108,14 @@
   (=> 'int.value.end')
 )
 
-(define 'kid.list' (params 1)
-  (loop
-    (seq                       # number of kids.
-      (param 0)
-      (=> 'instruction.begin')
-    )
-    (eval 'node'))             # kid
-)
+#(define 'kid.list' (params 1)
+#  (loop
+#    (seq                       # number of kids.
+#      (param 0)
+#      (=> 'instruction.begin')
+#    )
+#    (eval 'node'))             # kid
+#)
 
 (define 'nary.node' (params)
   (varuint32)

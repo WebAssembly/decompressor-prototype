@@ -130,6 +130,7 @@ SEXP_LIB_BOOT = $(LIBDIR_BOOT)/$(LIBPREFIX)sexp.a
 # This is the default file used by tests.
 
 TEST_DEFAULT_CAST = $(TEST_SRCS_DIR)/Wasm0xd.cast
+TEST_DEFAULT_CAST_OUT = $(TEST_SRCS_DIR)/Wasm0xd.cast-out
 TEST_DEFAULT_CASM = $(TEST_SRCS_DIR)/Wasm0xd.casm
 TEST_DEFAULT_CASM_M = $(TEST_SRCS_DIR)/Wasm0xd.casm-m
 
@@ -516,14 +517,14 @@ $(ALG_GEN_SRCS): $(ALG_GENDIR)/%.cast: $(ALG_SRCDIR)/%.cast
 $(ALG_GEN_H_SRCS): $(ALG_GENDIR)/%.h: $(ALG_GENDIR)/%.cast \
 		$(BUILD_EXECDIR_BOOT)/cast2casm
 	$(BUILD_EXECDIR_BOOT)/cast2casm -a $(ALG_GENDIR_ALG) \
-		$< -o $@ --header --strip-literals --function \
-		$(patsubst $(ALG_GENDIR)/%.cast, getAlg%Symtab, $<)
+		$< -o $@ --header --strip-literal-uses --strip-actions \
+		--function $(patsubst $(ALG_GENDIR)/%.cast, Alg%, $<)
 
 $(ALG_GEN_CPP_SRCS): $(ALG_GENDIR)/%.cpp: $(ALG_GENDIR)/%.cast \
 		$(BUILD_EXECDIR_BOOT)/cast2casm $(ALG_GENDIR_ALG)
 	$(BUILD_EXECDIR_BOOT)/cast2casm -a $(ALG_GENDIR_ALG) \
-		$< -o $@ --strip-literals --function \
-		$(patsubst $(ALG_GENDIR)/%.cast, getAlg%Symtab, $<) \
+		$< -o $@ --strip-literal-uses --strip-actions \
+		--function $(patsubst $(ALG_GENDIR)/%.cast, Alg%, $<) \
 		$(if $(call eq, "$(ALG_GENDIR)/casm0x0.cast", "$<") \
                       ,  , --array)
 
@@ -984,8 +985,8 @@ test-cast2casm: $(TEST_CASM_GEN_FILES) $(TEST_WASM_M_GEN_FILES)
 .PHONY: test-cast2cast
 
 test-casm2cast: $(BUILD_EXECDIR)/casm2cast $(TEST_CASM_DF_GEN_FILES) 
-	$< $(TEST_DEFAULT_CASM) | diff - $(TEST_DEFAULT_CAST)
-	$< $(TEST_DEFAULT_CASM_M) | diff - $(TEST_DEFAULT_CAST)
+	$< $(TEST_DEFAULT_CASM) | diff - $(TEST_DEFAULT_CAST_OUT)
+	$< $(TEST_DEFAULT_CASM_M) | diff - $(TEST_DEFAULT_CAST_OUT)
 	@echo "*** casm2cast tests passed ***"
 
 .PHONY: test-casm2cast
@@ -1002,7 +1003,7 @@ test-casm-cast: $(BUILD_EXECDIR)/cast2casm $(BUILD_EXECDIR)/casm2cast \
 .PHONY: test-casm-cast
 
 test-parser: $(TEST_EXECDIR)/TestParser
-	$< -w $(TEST_DEFAULT_CAST) | diff - $(TEST_DEFAULT_CAST)
+	$< -w $(TEST_DEFAULT_CAST) | diff - $(TEST_DEFAULT_CAST_OUT)
 	$< --expect-fail $(TEST_SRCS_DIR)/MismatchedParens.cast 2>&1 | \
 		diff - $(TEST_SRCS_DIR)/MismatchedParens.cast-out
 	$< -w $(TEST_SRCS_DIR)/ExprRedirects.cast | \
