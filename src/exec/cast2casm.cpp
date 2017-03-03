@@ -281,15 +281,8 @@ std::string getActionDefName(const LiteralDefNode* Nd) {
 }
 
 bool compareLtActionDefs(const LiteralDefNode* N1, const LiteralDefNode* N2) {
-  TextWriter Writer;
-  fprintf(stderr, "compare\n");
-  Writer.write(stderr, N1);
-  fprintf(stderr, "to\n");
-  Writer.write(stderr, N2);
   IntType V1 = getActionDefValue(N1);
   IntType V2 = getActionDefValue(N2);
-  fprintf(stderr, "V1 = %" PRIuMAX " , V2 = %" PRIuMAX "\n", uintmax_t(V1),
-          uintmax_t(V2));
   if (V1 < V2)
     return true;
   if (V1 > V2)
