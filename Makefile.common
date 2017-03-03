@@ -28,10 +28,14 @@ EXE :=
 CXX_BOOT := clang++
 EXE_BOOT :=
 
+ifndef GEN
+  GEN=0
+endif
+
 # Define if updating tests
-#ifndef UPDATE
+ifndef UPDATE
   UPDATE=0
-#endif
+endif
 
 # Define if release or debug build
 ifdef DEBUG
@@ -143,7 +147,8 @@ else
   BUILDDIR = $(BUILDBASEDIR)/release
 endif
 
-BUILDDIR_BOOT = build/boot$(CXX_SUBDIR)$(PAGE_BUILD_SUFFIX)
+#BUILDDIR_BOOT = build/boot$(CXX_SUBDIR)$(PAGE_BUILD_SUFFIX)
+BUILDDIR_BOOT = build/boot
 
 GENDIR = build/src
 
@@ -168,8 +173,10 @@ $(info Using RELEASE = $(RELEASE))
 $(info Using PAGE_SIZE = $(USE_PAGE_SIZE))
 $(info Using CXX_SUBDIR = $(CXX_SUBDIR))
 $(info Using WASM = $(WASM))
-
-$(info Using BUILDDIR = $(BUILDDIR))
-$(info Using BUILDDIR_BOOT = $(BUILDDIR_BOOT))
+ifeq ($(GEN), 1)
+  $(info Using BUILDDIR_BOOT = $(BUILDDIR_BOOT))
+else
+  $(info Using BUILDDIR = $(BUILDDIR))
+endif
 $(info -----------------------------------------------)
 

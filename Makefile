@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Generate boot sources: make GEN=1
+#
 # Build debug: make
 #            : make DEBUG=1
 # Build release: make RELEASE=1
-
-# Note: If using -jN, be sure to run "make gen" first.
 
 # helper eq comparison function.
 eq = $(and $(findstring $(1),$(2)),$(findstring $(2),$(1)))
@@ -24,7 +24,6 @@ eq = $(and $(findstring $(1),$(2)),$(findstring $(2),$(1)))
 include Makefile.common
 
 GENSRCS =
-GENSRCS_BOOT =
 
 ###### Utilities ######
 
@@ -441,15 +440,20 @@ endif
 
 ###### Default Rule ######
 
-ifeq ($(UPDATE), 0)
-  all: build-all
+ifeq ($(GEN), 1)
+  all: gen
 else
-  all: update-all
+  ifeq ($(UPDATE), 0)
+    all: build-all
+  else
+    all: update-all
+  endif
 endif
 
 .PHONY: all
 
-build-all: gen libs execs test-execs
+#build-all: gen libs execs test-execs
+build-all: $(EXECS) $(TEST_EXECS)
 
 ###### Build submodules ######
 
@@ -458,21 +462,15 @@ wabt-submodule:
 
 .PHONY: wabt-submodule
 
-###### Build boot executables ######
-
-boot: $(EXECS_BOOT)
-
-.PHONY: boot
-
 ###### Cleaning Rules #######
 
 clean: clean-wabt
-	rm -rf $(BUILDDIR) $(BUILDDIR_BOOT) $(GENDIR)
+	rm -rf $(BUILDDIR) 
 
 .PHONY: clean
 
 clean-all: clean-wabt
-	rm -rf $(BUILDBASEDIR) $(GENDIR)
+	rm -rf $(BUILDBASEDIR)
 
 .PHONY: clean-all
 
@@ -481,46 +479,56 @@ clean-wabt:
 
 .PHONY: clean-wabt
 
+clean-gen:
+	rm -rf $(BUILDDIR_BOOT) $(GENDIR)
+
 ###### Source Generation Rules #######
 
-gen: gen-parser gen-lexer boot
+#gen: gen-parser gen-lexer $(GENSRCS)
+ifeq ($(GEN), 1)
+  gen: $(GENSRCS)
+else
+  gen:
+	@echo "Command line not correct, run 'make GEN=1' instead"
+endif
 
 .PHONY: gen
 
-gen-lexer: $(PARSER_GENDIR)/Lexer.cpp gen-parser
+ifeq ($(GEN), 1)
+  gen-lexer: $(PARSER_GENDIR)/Lexer.cpp gen-parser
+else
+  gen-lexer:
+endif
 
 .PHONY: gen-lexer
 
-gen-parser: $(PARSER_GENDIR)/Parser.tab.cpp
+ifeq ($(GEN), 1)
+  gen-parser: $(PARSER_GENDIR)/Parser.tab.cpp
+else
+  gen-parser:
+endif
 
 .PHONY: gen-parser
 
-###### Compiliing binary generation Sources ######
-
-$(ALG_OBJS): | $(ALG_OBJDIR)
-
-$(ALG_OBJDIR):
-	mkdir -p $@
+###### Compiliing algorithm sources ######
 
 $(ALG_GENDIR):
 	mkdir -p $@
 
-$(ALG_LIB): $(ALG_OBJS)
-	ar -rs $@ $(ALG_OBJS)
-	ranlib $@
-
 $(ALG_GEN_SRCS): | $(ALG_GENDIR)
 
-$(ALG_GEN_SRCS): $(ALG_GENDIR)/%.cast: $(ALG_SRCDIR)/%.cast
+ifeq ($(GEN), 1)
+
+  $(ALG_GEN_SRCS): $(ALG_GENDIR)/%.cast: $(ALG_SRCDIR)/%.cast
 	cp $< $@
 
-$(ALG_GEN_H_SRCS): $(ALG_GENDIR)/%.h: $(ALG_GENDIR)/%.cast \
+  $(ALG_GEN_H_SRCS): $(ALG_GENDIR)/%.h: $(ALG_GENDIR)/%.cast \
 		$(BUILD_EXECDIR_BOOT)/cast2casm
 	$(BUILD_EXECDIR_BOOT)/cast2casm -a $(ALG_GENDIR_ALG) \
 		$< -o $@ --header --strip-literal-uses \
 		--function $(patsubst $(ALG_GENDIR)/%.cast, Alg%, $<)
 
-$(ALG_GEN_CPP_SRCS): $(ALG_GENDIR)/%.cpp: $(ALG_GENDIR)/%.cast \
+  $(ALG_GEN_CPP_SRCS): $(ALG_GENDIR)/%.cpp: $(ALG_GENDIR)/%.cast \
 		$(BUILD_EXECDIR_BOOT)/cast2casm $(ALG_GENDIR_ALG)
 	$(BUILD_EXECDIR_BOOT)/cast2casm -a $(ALG_GENDIR_ALG) \
 		$< -o $@ --strip-literal-uses \
@@ -528,337 +536,394 @@ $(ALG_GEN_CPP_SRCS): $(ALG_GENDIR)/%.cpp: $(ALG_GENDIR)/%.cast \
 		$(if $(call eq, "$(ALG_GENDIR)/casm0x0.cast", "$<") \
                       ,  , --array)
 
--include $(foreach dep,$(ALG_GEN_CPP_SRCS:.cpp=.d),$(ALG_OBJDIR)/$(dep))
+else
 
-$(ALG_OBJS): $(ALG_OBJDIR)/%.o: $(ALG_GENDIR)/%.cpp $(GENSRCS)
-	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
+  $(ALG_OBJS): | $(ALG_OBJDIR)
 
-$(BINARY_OBJS): | $(BINARY_OBJDIR)
-
-$(BINARY_OBJDIR):
+  $(ALG_OBJDIR):
 	mkdir -p $@
 
-$(BINARY_OBJS_BOOT): | $(BINARY_OBJDIR_BOOT)
+  -include $(foreach dep,$(ALG_GEN_CPP_SRCS:.cpp=.d),$(ALG_OBJDIR)/$(dep))
 
-$(BINARY_OBJDIR_BOOT):
-	mkdir -p $@
 
--include $(foreach dep,$(BINARY_SRCS:.cpp=.d),$(BINARY_OBJDIR)/$(dep))
-
-$(BINARY_OBJS): $(BINARY_OBJDIR)/%.o: $(BINARY_DIR)/%.cpp $(GENSRCS)
+  $(ALG_OBJS): $(ALG_OBJDIR)/%.o: $(ALG_GENDIR)/%.cpp
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
--include $(foreach dep,$(BINARY_SRCS:.cpp=.d),$(BINARY_OBJDIR_BOOT)/$(dep))
-
-$(BINARY_OBJS_BOOT): $(BINARY_OBJDIR_BOOT)/%.o: $(BINARY_DIR)/%.cpp $(GENSRCS_BOOT)
-	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
-
-$(BINARY_LIB): $(BINARY_OBJS)
-	ar -rs $@ $(BINARY_OBJS)
+  $(ALG_LIB): $(ALG_OBJS)
+	ar -rs $@ $(ALG_OBJS)
 	ranlib $@
 
-$(BINARY_LIB_BOOT): $(BINARY_OBJS_BOOT)
+endif
+
+###### Compiliing binary Sources ######
+
+ifeq ($(GEN), 1)
+
+  $(BINARY_OBJS_BOOT): | $(BINARY_OBJDIR_BOOT)
+
+  $(BINARY_OBJDIR_BOOT):
+	mkdir -p $@
+
+  -include $(foreach dep,$(BINARY_SRCS:.cpp=.d),$(BINARY_OBJDIR_BOOT)/$(dep))
+
+  $(BINARY_OBJS_BOOT): $(BINARY_OBJDIR_BOOT)/%.o: $(BINARY_DIR)/%.cpp $(GENSRCS_BOOT)
+	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
+
+  $(BINARY_LIB_BOOT): $(BINARY_OBJS_BOOT)
 	ar -rs $@ $(BINARY_OBJS_BOOT)
 	ranlib $@
 
-###### Compiliing top-level Sources ######
+else
 
-$(UTILS_OBJS): | $(UTILS_OBJDIR)
+  $(BINARY_OBJS): | $(BINARY_OBJDIR)
 
-$(UTILS_OBJDIR):
+  $(BINARY_OBJDIR):
 	mkdir -p $@
 
-$(UTILS_OBJS_BOOT): | $(UTILS_OBJDIR_BOOT)
 
-$(UTILS_OBJDIR_BOOT):
-	mkdir -p $@
+  -include $(foreach dep,$(BINARY_SRCS:.cpp=.d),$(BINARY_OBJDIR)/$(dep))
 
--include $(foreach dep,$(UTILS_SRCS:.cpp=.d),$(OBJDIR)/$(dep))
-
-$(UTILS_OBJS): $(OBJDIR)/%.o: $(SRCDIR)/%.cpp $(GENSRCS)
+  $(BINARY_OBJS): $(BINARY_OBJDIR)/%.o: $(BINARY_DIR)/%.cpp
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
--include $(foreach dep,$(UTILS_SRCS:.cpp=.d),$(OBJDIR_BOOT)/$(dep))
-
-$(UTILS_OBJS_BOOT): $(OBJDIR_BOOT)/%.o: $(SRCDIR)/%.cpp $(GENSRCS_BOOT)
-	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
-
-$(UTILS_LIB): $(UTILS_OBJS)
-	ar -rs $@ $(UTILS_OBJS)
+  $(BINARY_LIB): $(BINARY_OBJS)
+	ar -rs $@ $(BINARY_OBJS)
 	ranlib $@
 
-$(UTILS_LIB_BOOT): $(UTILS_OBJS_BOOT)
+endif
+
+###### Compiliing top-level Sources ######
+
+ifeq ($(GEN), 1)
+
+  $(UTILS_OBJDIR_BOOT):
+	mkdir -p $@
+
+  $(UTILS_OBJS_BOOT): | $(UTILS_OBJDIR_BOOT)
+
+  -include $(foreach dep,$(UTILS_SRCS:.cpp=.d),$(OBJDIR_BOOT)/$(dep))
+
+  $(UTILS_OBJS_BOOT): $(OBJDIR_BOOT)/%.o: $(SRCDIR)/%.cpp $(GENSRCS_BOOT)
+	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
+
+  $(UTILS_LIB_BOOT): $(UTILS_OBJS_BOOT)
 	ar -rs $@ $(UTILS_OBJS_BOOT)
 	ranlib $@
 
-###### Compiling s-expression interpeter sources ######
+else
 
-$(INTERP_OBJS): | $(INTERP_OBJDIR)
+  $(UTILS_OBJS): | $(UTILS_OBJDIR)
 
-$(INTERP_OBJDIR):
+  $(UTILS_OBJDIR):
 	mkdir -p $@
 
-$(INTERP_OBJS_BOOT): | $(INTERP_OBJDIR_BOOT)
+  -include $(foreach dep,$(UTILS_SRCS:.cpp=.d),$(OBJDIR)/$(dep))
 
-$(INTERP_OBJDIR_BOOT):
-	mkdir -p $@
-
--include $(foreach dep,$(INTERP_SRCS:.cpp=.d),$(INTERP_OBJDIR)/$(dep))
-
-$(INTERP_OBJS): $(INTERP_OBJDIR)/%.o: $(INTERP_SRCDIR)/%.cpp $(GENSRCS)
+  $(UTILS_OBJS): $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
--include $(foreach dep,$(INTERP_SRCS:.cpp=.d),$(INTERP_OBJDIR_BOOT)/$(dep))
-
-$(INTERP_OBJS_BOOT): $(INTERP_OBJDIR_BOOT)/%.o: $(INTERP_SRCDIR)/%.cpp $(GENSRCS_BOOT)
-	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
-
-$(INTERP_LIB): $(INTERP_OBJS)
-	ar -rs $@ $(INTERP_OBJS)
+  $(UTILS_LIB): $(UTILS_OBJS)
+	ar -rs $@ $(UTILS_OBJS)
 	ranlib $@
 
-$(INTERP_LIB_BOOT): $(INTERP_OBJS_BOOT)
+endif
+
+###### Compiling s-expression interpeter sources ######
+
+ifeq ($(GEN), 1)
+
+  $(INTERP_OBJS_BOOT): | $(INTERP_OBJDIR_BOOT)
+
+  $(INTERP_OBJDIR_BOOT):
+	mkdir -p $@
+
+  -include $(foreach dep,$(INTERP_SRCS:.cpp=.d),$(INTERP_OBJDIR_BOOT)/$(dep))
+
+  $(INTERP_OBJS_BOOT): $(INTERP_OBJDIR_BOOT)/%.o: $(INTERP_SRCDIR)/%.cpp $(GENSRCS_BOOT)
+	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
+
+  $(INTERP_LIB_BOOT): $(INTERP_OBJS_BOOT)
 	ar -rs $@ $(INTERP_OBJS_BOOT)
 	ranlib $@
 
-###### Compiling the integer compressor sources ######
+else
 
-$(INTCOMP_OBJS): | $(INTCOMP_OBJDIR)
+  $(INTERP_OBJS): | $(INTERP_OBJDIR)
 
-$(INTCOMP_OBJDIR):
+  $(INTERP_OBJDIR):
 	mkdir -p $@
 
--include $(foreach dep,$(INTCOMP_SRCS:.cpp=.d),$(INTCOMP_OBJDIR)/$(dep))
+  -include $(foreach dep,$(INTERP_SRCS:.cpp=.d),$(INTERP_OBJDIR)/$(dep))
 
-$(INTCOMP_OBJS): $(INTCOMP_OBJDIR)/%.o: $(INTCOMP_SRCDIR)/%.cpp $(GENSRCS)
+  $(INTERP_OBJS): $(INTERP_OBJDIR)/%.o: $(INTERP_SRCDIR)/%.cpp
+	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
+
+  $(INTERP_LIB): $(INTERP_OBJS)
+	ar -rs $@ $(INTERP_OBJS)
+	ranlib $@
+
+endif
+
+###### Compiling the integer compressor sources ######
+
+ifeq ($(GEN), 0)
+
+  $(INTCOMP_OBJS): | $(INTCOMP_OBJDIR)
+
+  $(INTCOMP_OBJDIR):
+	mkdir -p $@
+
+  -include $(foreach dep,$(INTCOMP_SRCS:.cpp=.d),$(INTCOMP_OBJDIR)/$(dep))
+
+  $(INTCOMP_OBJS): $(INTCOMP_OBJDIR)/%.o: $(INTCOMP_SRCDIR)/%.cpp
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
 
-$(INTCOMP_LIB): $(INTCOMP_OBJS)
+  $(INTCOMP_LIB): $(INTCOMP_OBJS)
 	ar -rs $@ $(INTCOMP_OBJS)
 	ranlib $@
 
+endif
+
 ###### Compiliing Sexp Sources ######
 
-$(SEXP_OBJS): | $(SEXP_OBJDIR)
+ifeq ($(GEN), 1)
 
-$(SEXP_OBJDIR):
+  $(SEXP_OBJS_BOOT): | $(SEXP_OBJDIR_BOOT)
+
+  $(SEXP_OBJDIR_BOOT):
 	mkdir -p $@
 
-$(SEXP_OBJS_BOOT): | $(SEXP_OBJDIR_BOOT)
+  -include $(foreach dep,$(SEXP_SRCS:.cpp=.d),$(SEXP_OBJDIR_BOOT)/$(dep))
 
-$(SEXP_OBJDIR_BOOT):
-	mkdir -p $@
-
--include $(foreach dep,$(SEXP_SRCS:.cpp=.d),$(SEXP_OBJDIR)/$(dep))
-
-$(SEXP_OBJS): $(SEXP_OBJDIR)/%.o: $(SEXP_SRCDIR)/%.cpp $(GENSRCS)
-	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
-
--include $(foreach dep,$(SEXP_SRCS:.cpp=.d),$(SEXP_OBJDIR_BOOT)/$(dep))
-
-$(SEXP_OBJS_BOOT): $(SEXP_OBJDIR_BOOT)/%.o: $(SEXP_SRCDIR)/%.cpp $(GENSRCS_BOOT)
+  $(SEXP_OBJS_BOOT): $(SEXP_OBJDIR_BOOT)/%.o: $(SEXP_SRCDIR)/%.cpp $(GENSRCS_BOOT)
 	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
 
-$(SEXP_LIB): $(SEXP_OBJS)
-	ar -rs $@ $(SEXP_OBJS)
-	ranlib $@
-
-$(SEXP_LIB_BOOT): $(SEXP_OBJS_BOOT)
+  $(SEXP_LIB_BOOT): $(SEXP_OBJS_BOOT)
 	ar -rs $@ $(SEXP_OBJS_BOOT)
 	ranlib $@
 
-###### Compiling stream sources ######
+else
 
-$(STRM_OBJS): | $(STRM_OBJDIR)
+  $(SEXP_OBJS): | $(SEXP_OBJDIR)
 
-$(STRM_OBJDIR):
+  $(SEXP_OBJDIR):
 	mkdir -p $@
 
-$(STRM_OBJS_BOOT): | $(STRM_OBJDIR_BOOT)
+  -include $(foreach dep,$(SEXP_SRCS:.cpp=.d),$(SEXP_OBJDIR)/$(dep))
 
-$(STRM_OBJDIR_BOOT):
-	mkdir -p $@
-
--include $(foreach dep,$(STRM_SRCS:.cpp=.d),$(STRM_OBJDIR)/$(dep))
-
-$(STRM_OBJS): $(STRM_OBJDIR)/%.o: $(STRM_SRCDIR)/%.cpp $(GENSRCS)
+  $(SEXP_OBJS): $(SEXP_OBJDIR)/%.o: $(SEXP_SRCDIR)/%.cpp
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
+  $(SEXP_LIB): $(SEXP_OBJS)
+	ar -rs $@ $(SEXP_OBJS)
+	ranlib $@
 
--include $(foreach dep,$(STRM_SRCS:.cpp=.d),$(STRM_OBJDIR_BOOT)/$(dep))
+endif
 
-$(STRM_OBJS_BOOT): $(STRM_OBJDIR_BOOT)/%.o: $(STRM_SRCDIR)/%.cpp $(GENSRCS_BOOT)
+###### Compiling stream sources ######
+
+ifeq ($(GEN), 1)
+
+  $(STRM_OBJS_BOOT): | $(STRM_OBJDIR_BOOT)
+
+  $(STRM_OBJDIR_BOOT):
+	mkdir -p $@
+
+  -include $(foreach dep,$(STRM_SRCS:.cpp=.d),$(STRM_OBJDIR_BOOT)/$(dep))
+
+  $(STRM_OBJS_BOOT): $(STRM_OBJDIR_BOOT)/%.o: $(STRM_SRCDIR)/%.cpp $(GENSRCS_BOOT)
 	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
 
-$(STRM_LIB): $(STRM_OBJS)
+  $(STRM_LIB_BOOT): $(STRM_OBJS_BOOT)
+	ar -rs $@ $(STRM_OBJS_BOOT)
+	ranlib $@
+
+else
+
+  $(STRM_OBJS): | $(STRM_OBJDIR)
+
+  $(STRM_OBJDIR):
+	mkdir -p $@
+
+  -include $(foreach dep,$(STRM_SRCS:.cpp=.d),$(STRM_OBJDIR)/$(dep))
+
+  $(STRM_OBJS): $(STRM_OBJDIR)/%.o: $(STRM_SRCDIR)/%.cpp
+	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
+
+  $(STRM_LIB): $(STRM_OBJS)
 	ar -rs $@ $(STRM_OBJS)
 	ranlib $@
 
-$(STRM_LIB_BOOT): $(STRM_OBJS_BOOT)
-	ar -rs $@ $(STRM_OBJS_BOOT)
-	ranlib $@
+endif
 
 ###### Compiling Filter Parser #######
 
 $(PARSER_GENDIR):
 	mkdir -p $@
 
-$(PARSER_GENDIR)/Lexer.lex: $(PARSER_DIR)/Lexer.lex $(PARSER_GENDIR)
+ifeq ($(GEN), 1)
+
+  $(PARSER_GENDIR)/Lexer.lex: $(PARSER_DIR)/Lexer.lex $(PARSER_GENDIR)
 	cp $< $@
 
--include $(PARSER_GENDIR)/Lexer.d
-
-$(PARSER_GENDIR)/Lexer.cpp: $(PARSER_GENDIR)/Lexer.lex
-	cd $(PARSER_GENDIR); lex -o Lexer.cpp Lexer.lex
-
-$(PARSER_GENDIR)/Parser.ypp: $(PARSER_DIR)/Parser.ypp $(PARSER_GENDIR)
+  $(PARSER_GENDIR)/Parser.ypp: $(PARSER_DIR)/Parser.ypp $(PARSER_GENDIR)
 	cp $< $@
 
--include $(PARSER_GENDIR)/Parser.tab.d
-
-$(PARSER_GENDIR)/Parser.tab.cpp: $(PARSER_GENDIR)/Parser.ypp
+  $(PARSER_GENDIR)/Parser.tab.cpp: $(PARSER_GENDIR)/Parser.ypp
 	cd $(PARSER_GENDIR); bison -d -r all Parser.ypp
 
-$(PARSER_GENDIR)/location.hh: $(PARSER_GENDIR)/Parser.tab.cpp
+  $(PARSER_GENDIR)/location.hh: $(PARSER_GENDIR)/Parser.tab.cpp
 	touch $@
 
-$(PARSER_GENDIR)/Parser.output: $(PARSER_GENDIR)/Parser.tab.cpp
+  $(PARSER_GENDIR)/Parser.output: $(PARSER_GENDIR)/Parser.tab.cpp
 	touch $@
 
-$(PARSER_GENDIR)/Parser.tab.hpp: $(PARSER_GENDIR)/Parser.tab.cpp
+  $(PARSER_GENDIR)/Parser.tab.hpp: $(PARSER_GENDIR)/Parser.tab.cpp
 	touch $@
 
-
-$(PARSER_GENDIR)/position.hh: $(PARSER_GENDIR)/Parser.tab.cpp
+  $(PARSER_GENDIR)/position.hh: $(PARSER_GENDIR)/Parser.tab.cpp
 	touch $@
 
-$(PARSER_GENDIR)/stack.hh: $(PARSER_GENDIR)/Parser.tab.cpp
+  $(PARSER_GENDIR)/stack.hh: $(PARSER_GENDIR)/Parser.tab.cpp
 	touch $@
 
-$(PARSER_OBJS): | $(PARSER_OBJDIR)
-
-$(PARSER_OBJDIR):
+  $(PARSER_OBJDIR_BOOT):
 	mkdir -p $@
 
-$(PARSER_OBJS_BOOT): | $(PARSER_OBJDIR_BOOT)
+  $(PARSER_OBJS_BOOT): | $(PARSER_OBJDIR_BOOT)
 
-$(PARSER_OBJDIR_BOOT):
-	mkdir -p $@
+  -include $(foreach dep,$(PARSER_SRCS:.cpp=.d),$(PARSER_OBJDIR_BOOT)/$(dep))
 
--include $(foreach dep,$(PARSER_SRCS:.cpp=.d),$(PARSER_OBJDIR)/$(dep))
-
-$(PARSER_STD_OBJS): $(PARSER_OBJDIR)/%.o: $(PARSER_DIR)/%.cpp $(GENSRCS)
-	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
-
--include $(foreach dep,$(PARSER_CPP_GENSRCS:.cpp=.d),$(PARSER_OBJDIR)/$(dep))
-
-$(PARSER_GEN_OBJS): $(PARSER_OBJDIR)/%.o: $(PARSER_GENDIR)/%.cpp \
-		$(GENSRCS)
-	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
-
--include $(foreach dep,$(PARSER_SRCS:.cpp=.d),$(PARSER_OBJDIR_BOOT)/$(dep))
-
-$(PARSER_STD_OBJS_BOOT): $(PARSER_OBJDIR_BOOT)/%.o: $(PARSER_DIR)/%.cpp \
+  $(PARSER_STD_OBJS_BOOT): $(PARSER_OBJDIR_BOOT)/%.o: $(PARSER_DIR)/%.cpp \
 		$(GENSRCS_BOOT)
 	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
 
--include $(foreach dep,$(PARSER_CPP_GENSRCS:.cpp=.d),$(PARSER_OBJDIR_BOOT)/$(dep))
+  -include $(foreach dep,$(PARSER_CPP_GENSRCS:.cpp=.d),$(PARSER_OBJDIR_BOOT)/$(dep))
 
-$(PARSER_GEN_OBJS_BOOT): $(PARSER_OBJDIR_BOOT)/%.o: $(PARSER_GENDIR)/%.cpp \
+  $(PARSER_GEN_OBJS_BOOT): $(PARSER_OBJDIR_BOOT)/%.o: $(PARSER_GENDIR)/%.cpp \
 		$(GENSRCS_BOOT)
 	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
 
-$(PARSER_LIB): $(PARSER_OBJS)
-	ar -rs $@ $(PARSER_OBJS)
-	ranlib $@
-
-$(PARSER_LIB_BOOT): $(PARSER_OBJS_BOOT)
+  $(PARSER_LIB_BOOT): $(PARSER_OBJS_BOOT)
 	ar -rs $@ $(PARSER_OBJS_BOOT)
 	ranlib $@
 
+else
+
+  $(PARSER_OBJDIR):
+	mkdir -p $@
+
+  $(PARSER_OBJS): | $(PARSER_OBJDIR)
+
+  -include $(PARSER_GENDIR)/Lexer.d
+
+  $(PARSER_GENDIR)/Lexer.cpp: $(PARSER_GENDIR)/Lexer.lex
+	cd $(PARSER_GENDIR); lex -o Lexer.cpp Lexer.lex
+
+  # -include $(PARSER_GENDIR)/Parser.tab.d
+
+  -include $(foreach dep,$(PARSER_SRCS:.cpp=.d),$(PARSER_OBJDIR)/$(dep))
+
+  $(PARSER_STD_OBJS): $(PARSER_OBJDIR)/%.o: $(PARSER_DIR)/%.cpp
+	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
+
+  -include $(foreach dep,$(PARSER_CPP_GENSRCS:.cpp=.d),$(PARSER_OBJDIR)/$(dep))
+
+  $(PARSER_GEN_OBJS): $(PARSER_OBJDIR)/%.o: $(PARSER_GENDIR)/%.cpp
+	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
+
+  $(PARSER_LIB): $(PARSER_OBJS)
+	ar -rs $@ $(PARSER_OBJS)
+	ranlib $@
+
+endif
+
 ###### Building libraries ######
 
-libs: $(LIBS) $(LIBS_BOOT)
+ifeq ($(GEN), 1)
 
-.PHONY: libs
-
-$(LIBDIR):
+  $(LIBDIR_BOOT):
 	mkdir -p $@
 
-$(LIBS): | $(LIBDIR)
+  $(LIBS_BOOT): | $(LIBDIR_BOOT)
 
-$(LIBDIR_BOOT):
+else
+
+  $(LIBDIR):
 	mkdir -p $@
 
-$(LIBS_BOOT): | $(LIBDIR_BOOT)
+  $(LIBS): | $(LIBDIR)
+
+endif
 
 ###### Compiling executables ######
 
-execs: $(LIBS_BOOT) $(EXECS_BOOT) $(LIBS) $(EXECS) $(EXECS_BOOT)
+ifeq ($(GEN), 1)
 
-.PHONY: execs
-
-$(EXEC_OBJDIR):
+  $(EXEC_OBJDIR_BOOT):
 	mkdir -p $@
 
-$(EXEC_OBJS): | $(EXEC_OBJDIR)
-
-$(EXEC_OBJDIR_BOOT):
+  $(BUILD_EXECDIR_BOOT):
 	mkdir -p $@
 
-$(EXEC_OBJS_BOOT): | $(EXEC_OBJDIR_BOOT)
+  $(EXEC_OBJS_BOOT): | $(EXEC_OBJDIR_BOOT)
 
--include $(foreach dep,$(EXEC_SRCS:.cpp=.d),$(EXEC_OBJDIR)/$(dep))
+  -include $(foreach dep,$(EXEC_SRCS:.cpp=.d),$(EXEC_OBJDIR_BOOT)/$(dep))
 
-$(EXEC_OBJS): $(EXEC_OBJDIR)/%.o: $(EXEC_DIR)/%.cpp $(GENSRCS)
-	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
-
--include $(foreach dep,$(EXEC_SRCS:.cpp=.d),$(EXEC_OBJDIR_BOOT)/$(dep))
-
-$(EXEC_OBJS_BOOT): $(EXEC_OBJDIR_BOOT)/%.o: $(EXEC_DIR)/%.cpp \
+  $(EXEC_OBJS_BOOT): $(EXEC_OBJDIR_BOOT)/%.o: $(EXEC_DIR)/%.cpp \
 		$(GENSRCS_BOOT)
 	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
 
-$(BUILD_EXECDIR):
+  $(EXECS_BOOT): | $(BUILD_EXECDIR_BOOT)
+
+  $(EXECS_BOOT): $(BUILD_EXECDIR_BOOT)/%$(EXE_BOOT): $(EXEC_OBJDIR_BOOT)/%.o $(LIBS_BOOT)
+	$(CPP_COMPILER_BOOT) $(CXXFLAGS_BOOT) $< $(LIBS_BOOT) -o $@
+
+else
+
+  $(EXEC_OBJDIR):
 	mkdir -p $@
 
-$(BUILD_EXECDIR_BOOT):
+  $(BUILD_EXECDIR):
 	mkdir -p $@
 
-$(EXECS): | $(BUILD_EXECDIR)
+  $(EXEC_OBJS): | $(EXEC_OBJDIR)
 
-$(EXECS): $(BUILD_EXECDIR)/%$(EXE): $(EXEC_OBJDIR)/%.o $(LIBS)
+  -include $(foreach dep,$(EXEC_SRCS:.cpp=.d),$(EXEC_OBJDIR)/$(dep))
+
+  $(EXEC_OBJS): $(EXEC_OBJDIR)/%.o: $(EXEC_DIR)/%.cpp
+	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
+
+  $(EXECS): | $(BUILD_EXECDIR)
+
+  $(EXECS): $(BUILD_EXECDIR)/%$(EXE): $(EXEC_OBJDIR)/%.o $(LIBS)
 	$(CPP_COMPILER) $(CXXFLAGS) $< $(LIBS) -o $@
 
-$(EXECS_BOOT): | $(BUILD_EXECDIR_BOOT)
-
-$(EXECS_BOOT): $(BUILD_EXECDIR_BOOT)/%$(EXE_BOOT): $(EXEC_OBJDIR_BOOT)/%.o $(LIBS_BOOT)
-	$(CPP_COMPILER_BOOT) $(CXXFLAGS_BOOT) $< $(LIBS_BOOT) -o $@
+endif
 
 ###### Compiling Test Executables #######
 
-test-execs: $(TEST_EXECS)
-
-.PHONY: test-execs
-
-$(TEST_OBJDIR):
+ifeq ($(GEN), 0)
+  $(TEST_OBJDIR):
 	mkdir -p $@
 
-$(TEST_OBJS): | $(TEST_OBJDIR)
+  $(TEST_OBJS): | $(TEST_OBJDIR)
 
--include $(foreach dep,$(TEST_SRCS:.cpp=.d),$(TEST_OBJDIR)/$(dep))
+  -include $(foreach dep,$(TEST_SRCS:.cpp=.d),$(TEST_OBJDIR)/$(dep))
 
-$(TEST_OBJS): $(TEST_OBJDIR)/%.o: $(TEST_DIR)/%.cpp $(GENSRCS)
+  $(TEST_OBJS): $(TEST_OBJDIR)/%.o: $(TEST_DIR)/%.cpp
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
-$(TEST_EXECDIR):
+  $(TEST_EXECDIR):
 	mkdir -p $@
 
-$(TEST_EXECS): | $(TEST_EXECDIR)
+  $(TEST_EXECS): | $(TEST_EXECDIR)
 
-$(TEST_EXECS): $(TEST_EXECDIR)/%$(EXE): $(TEST_OBJDIR)/%.o $(LIBS)
+  $(TEST_EXECS): $(TEST_EXECDIR)/%$(EXE): $(TEST_OBJDIR)/%.o $(LIBS)
 	$(CPP_COMPILER) $(CXXFLAGS) $< $(LIBS) -o $@
+
+endif
 
 ###### Testing ######
 
@@ -871,19 +936,22 @@ test: build-all test-parser test-raw-streams test-byte-queues \
 
 test-all:
 	@echo "*** testing release version ***"
-	$(MAKE) $(MAKE_PAGE_SIZE) DEBUG=0 RELEASE=1 BOOTSTRAP=0 test
+	#$(MAKE) $(MAKE_PAGE_SIZE) DEBUG=0 RELEASE=1 BOOTSTRAP=0 test
+	$(MAKE) $(MAKE_PAGE_SIZE) DEBUG=0 RELEASE=1 test
 	@echo "*** testing debug version ***"
-	$(MAKE) $(MAKE_PAGE_SIZE)  DEBUG=1 RELEASE=0 BOOTSTRAP=0 test
+	#$(MAKE) $(MAKE_PAGE_SIZE)  DEBUG=1 RELEASE=0 BOOTSTRAP=0 test
+	$(MAKE) $(MAKE_PAGE_SIZE)  DEBUG=1 RELEASE=0 test
 	@echo "*** all tests passed on both debug and release builds ***"
 
 .PHONY: test-all
 
 presubmit:
-	$(MAKE) $(MAKE_PAGE_SIZE) clean-all
+	$(MAKE) clean-all
+	$(MAKE) GEN=1
 	$(MAKE) test-all CXX=clang++ PAGE_SIZE=2
-	$(MAKE) $(MAKE_PAGE_SIZE) clean-all
+	$(MAKE) $(MAKE_PAGE_SIZE) clean
 	$(MAKE) $(MAKE_PAGE_SIZE) test-all CXX=g++
-	$(MAKE) $(MAKE_PAGE_SIZE) clean-all
+	$(MAKE) $(MAKE_PAGE_SIZE) clean
 	$(MAKE) $(MAKE_PAGE_SIZE) test-all CXX=clang++
 	$(MAKE) $(MAKE_PAGE_SIZE) clean-all
 	@echo "*** Presubmit tests passed ***"
@@ -1060,7 +1128,8 @@ $(UNITTEST_EXECDIR):
 
 -include $(foreach dep,$(UNITTEST_SRCS:.cpp=.d),$(UNITTEST_EXECDIR)/$(dep))
 
-$(UNITTEST_EXECS): $(UNITTEST_EXECDIR)/%$(EXE): $(UNITTEST_DIR)/%.cpp $(GENSRCS) $(LIBS)
+#$(UNITTEST_EXECS): $(UNITTEST_EXECDIR)/%$(EXE): $(UNITTEST_DIR)/%.cpp $(GENSRCS) $(LIBS)
+$(UNITTEST_EXECS): $(UNITTEST_EXECDIR)/%$(EXE): $(UNITTEST_DIR)/%.cpp $(LIBS)
 	$(CPP_COMPILER) $(CXXFLAGS) -I$(GTEST_INCLUDE) $< $(LIBS) \
 		$(GTEST_LIB) -lpthread -o $@
 
@@ -1078,7 +1147,8 @@ clean-unit-tests:
 
 ifneq ($(UPDATE), 0)
 
-update-all: wabt-submodule gen \
+#update-all: wabt-submodule gen
+update-all: wabt-submodule
 	$(TEST_WASM_SRC_FILES) \
 	$(TEST_CASM_M_SRC_FILES) \
 	$(TEST_CASM_CASM_FILES) \
