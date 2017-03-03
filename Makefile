@@ -767,6 +767,9 @@ ifeq ($(GEN), 1)
   $(PARSER_GENDIR)/Lexer.lex: $(PARSER_DIR)/Lexer.lex $(PARSER_GENDIR)
 	cp $< $@
 
+  $(PARSER_GENDIR)/Lexer.cpp: $(PARSER_GENDIR)/Lexer.lex
+	cd $(PARSER_GENDIR); lex -o Lexer.cpp Lexer.lex
+
   $(PARSER_GENDIR)/Parser.ypp: $(PARSER_DIR)/Parser.ypp $(PARSER_GENDIR)
 	cp $< $@
 
@@ -817,9 +820,6 @@ else
   $(PARSER_OBJS): | $(PARSER_OBJDIR)
 
   -include $(PARSER_GENDIR)/Lexer.d
-
-  $(PARSER_GENDIR)/Lexer.cpp: $(PARSER_GENDIR)/Lexer.lex
-	cd $(PARSER_GENDIR); lex -o Lexer.cpp Lexer.lex
 
   # -include $(PARSER_GENDIR)/Parser.tab.d
 
@@ -936,10 +936,8 @@ test: build-all test-parser test-raw-streams test-byte-queues \
 
 test-all:
 	@echo "*** testing release version ***"
-	#$(MAKE) $(MAKE_PAGE_SIZE) DEBUG=0 RELEASE=1 BOOTSTRAP=0 test
 	$(MAKE) $(MAKE_PAGE_SIZE) DEBUG=0 RELEASE=1 test
 	@echo "*** testing debug version ***"
-	#$(MAKE) $(MAKE_PAGE_SIZE)  DEBUG=1 RELEASE=0 BOOTSTRAP=0 test
 	$(MAKE) $(MAKE_PAGE_SIZE)  DEBUG=1 RELEASE=0 test
 	@echo "*** all tests passed on both debug and release builds ***"
 
