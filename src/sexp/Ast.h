@@ -129,7 +129,7 @@ static constexpr PredefinedSymbol MaxPredefinedSymbol =
     PredefinedSymbol(NumPredefinedSymbols - 1);
 
 PredefinedSymbol toPredefinedSymbol(uint32_t Value);
-const char* getName(PredefinedSymbol);
+charstring getName(PredefinedSymbol);
 
 // TODO(karlschimpf): Code no longer uses allocator. Remove from API.
 class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
@@ -137,6 +137,7 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   SymbolTable& operator=(const SymbolTable&) = delete;
 
  public:
+  typedef std::unordered_set<const LiteralDefNode*> ActionDefSet;
   // Use std::make_shared() to build.
   explicit SymbolTable();
   explicit SymbolTable(std::shared_ptr<SymbolTable> EnclosingScope);
@@ -157,6 +158,8 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   // symbol. Used to get local cached symbol definitions when interpreting
   // nodes with a symbol lookup, such as EvalNode.
   SymbolDefnNode* getSymbolDefn(const SymbolNode* Symbol);
+
+  void collectActionDefs(ActionDefSet& DefSet);
 
 // Gets integer node (as defined by the arguments) if known. Otherwise
 // returns newly created integer.
@@ -195,10 +198,17 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   Node* getCachedValue(const Node* Nd) { return CachedValue[Nd]; }
   void setCachedValue(const Node* Nd, Node* Value) { CachedValue[Nd] = Value; }
 
+  // Adds the given callback literal to the set of known callback literals.
+  void insertCallbackLiteral(const LiteralDefNode* Defn) {
+    CallbackLiterals.insert(Defn);
+  }
+
   // Strips all callback actions from the algorithm, except for the names
   // specified. Returns the updated tree.
   void stripCallbacksExcept(std::set<std::string>& KeepActions);
 
+  void stripLiteralUses();
+  void stripLiteralDefs();
   // Strips out literal definitions and replaces literal uses.
   void stripLiterals();
 
@@ -222,6 +232,7 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   FileNode* Root;
   Node* Error;
   int NextCreationIndex;
+  ActionDefSet CallbackLiterals;
   std::map<std::string, SymbolNode*> SymbolMap;
   std::map<IntegerValue, IntegerNode*> IntMap;
   std::map<PredefinedSymbol, SymbolNode*> PredefinedMap;
@@ -232,6 +243,7 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   void init();
   void deallocateNodes();
 
+  void installPredefined();
   void installDefinitions(Node* Root);
 
   Node* stripUsing(Node* Root, std::function<Node*(Node*)> stripKid);
@@ -577,11 +589,9 @@ class SymbolDefnNode FINAL : public CachedNode {
   void setSymbol(const SymbolNode* Nd) { Symbol = Nd; }
   const std::string& getName() const;
   const DefineNode* getDefineDefinition();
-  void setDefineDefinition(const DefineNode* Defn) { DefineDefinition = Defn; }
+  void setDefineDefinition(const DefineNode* Defn);
   const LiteralDefNode* getLiteralDefinition();
-  void setLiteralDefinition(const LiteralDefNode* Defn) {
-    LiteralDefinition = Defn;
-  }
+  void setLiteralDefinition(const LiteralDefNode* Defn);
 
   static bool implementsClass(NodeType Type) { return Type == OpSymbolDefn; }
 

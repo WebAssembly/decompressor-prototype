@@ -149,7 +149,7 @@
 #define AST_UNARYNODE_TABLE                                                    \
   X(Block,)                                                                    \
   X(BitwiseNegate,)                                                            \
-  X(Callback,)                                                                 \
+  X(Callback, CALLBACK_DECLS)                                                  \
   X(LastSymbolIs,)                                                             \
   X(LoopUnbounded,)                                                            \
   X(Not,)                                                                      \
@@ -158,6 +158,10 @@
   X(LiteralUse,)                                                               \
   X(Undefine,)                                                                 \
   X(UnknownSection,)                                                           \
+
+#define CALLBACK_DECLS                                                         \
+  public:                                                                      \
+    bool validateNode(NodeVectorType &Parents) OVERRIDE;                       \
 
 //#define X(tag, NODE_DECLS)
 #define AST_BINARYNODE_TABLE                                                   \
@@ -176,10 +180,11 @@
   X(Table,)                                                                    \
 
 #define CASE_DECLS                                                             \
-  decode::IntType getValue() const { return Value; }                           \
-  bool validateNode(NodeVectorType &Parents) OVERRIDE;                         \
- private:                                                                      \
-  decode::IntType Value;                                                       \
+  public:                                                                      \
+    decode::IntType getValue() const { return Value; }                         \
+    bool validateNode(NodeVectorType &Parents) OVERRIDE;                       \
+  private:                                                                     \
+    decode::IntType Value;                                                     \
 
 //#define X(tag, NODE_DECLS)
 #define AST_SELECTNODE_TABLE                                                   \
@@ -201,10 +206,11 @@
   X(IntLookup)                                                                 \
 
 #define DEFINE_DECLS                                                           \
-  bool isValidParam(decode::IntType Index);                                    \
-  const std::string getName() const;                                           \
-  size_t getNumLocals() const;                                                 \
-  Node* getBody() const;                                                       \
+  public:                                                                      \
+    bool isValidParam(decode::IntType Index);                                  \
+    const std::string getName() const;                                         \
+    size_t getNumLocals() const;                                               \
+    Node* getBody() const;                                                     \
 
 #define EVAL_DECLS                                                             \
  public:                                                                       \
@@ -217,8 +223,9 @@
   X(IfThenElse,)                                                               \
 
 #define FILE_DECLS                                                             \
-  const FileHeaderNode* getSourceHeader() const;                               \
-  const FileHeaderNode* getTargetHeader() const;                               \
+  public:                                                                      \
+    const FileHeaderNode* getSourceHeader() const;                             \
+    const FileHeaderNode* getTargetHeader() const;                             \
 
 //#define X(tag)
 #define AST_NODE_HAS_HIDDEN_SEQ                                                \

@@ -51,7 +51,7 @@ class RawStream : public std::enable_shared_from_this<RawStream> {
 
   bool putc(ByteType ch) { return write(&ch, 1); }
 
-  bool puts(const char* str) { return write((ByteType*)str, std::strlen(str)); }
+  bool puts(charstring str) { return write((ByteType*)str, std::strlen(str)); }
 
   virtual bool hasErrors() = 0;
 
