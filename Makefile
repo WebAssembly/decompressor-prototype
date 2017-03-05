@@ -103,7 +103,7 @@ PARSER_OBJS_BOOT=$(PARSER_STD_OBJS_BOOT) $(PARSER_GEN_OBJS_BOOT)
 PARSER_LIB = $(LIBDIR)/$(LIBPREFIX)parser.a
 PARSER_LIB_BOOT = $(LIBDIR_BOOT)/$(LIBPREFIX)parser.a
 
-###### Filter s-expressions ######
+###### s-expression representation  ######
 
 SEXP_SRCDIR = $(SRCDIR)/sexp
 SEXP_GENDIR = $(GENDIR)/sexp
@@ -111,10 +111,6 @@ SEXP_OBJDIR = $(OBJDIR)/sexp
 SEXP_OBJDIR_BOOT = $(OBJDIR_BOOT)/sexp
 SEXP_SRCS_BASE = \
 	Ast.cpp \
-	CasmReader.cpp \
-	CasmWriter.cpp \
-	FlattenAst.cpp \
-	InflateAst.cpp \
 	TextWriter.cpp
 
 SEXP_SRCS = $(SEXP_SRCS_BASE)
@@ -126,6 +122,27 @@ SEXP_OBJS_BOOT = $(patsubst %.cpp, $(SEXP_OBJDIR_BOOT)/%.o, $(SEXP_SRCS_BOOT))
 SEXP_LIB = $(LIBDIR)/$(LIBPREFIX)sexp.a
 SEXP_LIB_BOOT = $(LIBDIR_BOOT)/$(LIBPREFIX)sexp.a
 
+###### Casm algorithsm/file handling. ######
+
+CASM_SRCDIR = $(SRCDIR)/casm
+CASM_GENDIR = $(GENDIR)/casm
+CASM_OBJDIR = $(OBJDIR)/casm
+CASM_OBJDIR_BOOT = $(OBJDIR_BOOT)/casm
+CASM_SRCS = \
+	CasmReader.cpp \
+	CasmWriter.cpp \
+	FlattenAst.cpp \
+	InflateAst.cpp
+
+CASM_SRCS_BOOT = $(CASM_SRCS)
+
+CASM_OBJS = $(patsubst %.cpp, $(CASM_OBJDIR)/%.o, $(CASM_SRCS))
+CASM_OBJS_BOOT = $(patsubst %.cpp, $(CASM_OBJDIR_BOOT)/%.o, $(CASM_SRCS_BOOT))
+
+CASM_LIB = $(LIBDIR)/$(LIBPREFIX)casm.a
+CASM_LIB_BOOT = $(LIBDIR_BOOT)/$(LIBPREFIX)casm.a
+
+#######
 # This is the default file used by tests.
 
 TEST_DEFAULT_CAST = $(TEST_SRCS_DIR)/Wasm0xd.cast
@@ -405,13 +422,13 @@ TEST_CASM_DF_GEN_FILES = $(patsubst %.cast, $(TEST_0XD_GENDIR)/%.cast-out, \
 
 ###### General compilation definitions ######
 
-LIBS = $(BINARY_LIB) $(INTERP_LIB) $(SEXP_LIB) $(PARSER_LIB) \
-       $(STRM_LIB) $(INTCOMP_LIB) $(INTERP_LIB) $(BINARY_LIB) \
+LIBS = $(INTCOMP_LIB) $(BINARY_LIB) $(INTERP_LIB) $(SEXP_LIB) $(CASM_LIB) $(PARSER_LIB) \
+       $(STRM_LIB) $(INTERP_LIB) $(BINARY_LIB) \
        $(ALG_LIB) $(SEXP_LIB) $(INTERP_LIB) $(BINARY_LIB) $(ALG_LIB) \
-       $(STRM_LIB) $(UTILS_LIB) $(PARSER_LIB) 
+       $(CASM_LIB) $(STRM_LIB) $(UTILS_LIB) $(PARSER_LIB)
 
 LIBS_BOOT = $(BINARY_LIB_BOOT) $(INTERP_LIB_BOOT) \
-	$(SEXP_LIB_BOOT) $(PARSER_LIB_BOOT) \
+	$(SEXP_LIB_BOOT) $(CASM_LIB_BOOT) $(PARSER_LIB_BOOT) \
 	$(INTERP_LIB_BOOT) $(BINARY_LIB_BOOT) $(STRM_LIB_BOOT) $(UTILS_LIB_BOOT)
 
 ##### Track additional important variable definitions not in Makefile.common
@@ -441,16 +458,20 @@ endif
 ###### Default Rule ######
 
 ifeq ($(GEN), 1)
-  all: gen
+  default: gen
 else
   ifeq ($(UPDATE), 0)
-    all: build-all
+    default: build-all
   else
-    all: update-all
+    default: update-all
   endif
 endif
 
-.PHONY: all
+.PHONY: default
+
+all:
+	$(MAKE) GEN=1
+	$(MAKE) test
 
 #build-all: gen libs execs test-execs
 build-all: $(EXECS) $(TEST_EXECS)
@@ -717,6 +738,44 @@ else
 
   $(SEXP_LIB): $(SEXP_OBJS)
 	ar -rs $@ $(SEXP_OBJS)
+	ranlib $@
+
+endif
+
+
+###### Compiliing casm ources ######
+
+
+ifeq ($(GEN), 1)
+
+  $(CASM_OBJS_BOOT): | $(CASM_OBJDIR_BOOT)
+
+  $(CASM_OBJDIR_BOOT):
+	mkdir -p $@
+
+  -include $(foreach dep,$(CASM_SRCS:.cpp=.d),$(CASM_OBJDIR_BOOT)/$(dep))
+
+  $(CASM_OBJS_BOOT): $(CASM_OBJDIR_BOOT)/%.o: $(CASM_SRCDIR)/%.cpp $(GENSRCS_BOOT)
+	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
+
+  $(CASM_LIB_BOOT): $(CASM_OBJS_BOOT)
+	ar -rs $@ $(CASM_OBJS_BOOT)
+	ranlib $@
+
+else
+
+  $(CASM_OBJS): | $(CASM_OBJDIR)
+
+  $(CASM_OBJDIR):
+	mkdir -p $@
+
+  -include $(foreach dep,$(CASM_SRCS:.cpp=.d),$(CASM_OBJDIR)/$(dep))
+
+  $(CASM_OBJS): $(CASM_OBJDIR)/%.o: $(CASM_SRCDIR)/%.cpp
+	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
+
+  $(CASM_LIB): $(CASM_OBJS)
+	ar -rs $@ $(CASM_OBJS)
 	ranlib $@
 
 endif

@@ -16,7 +16,7 @@
 
 // Implement a class to write a CASM (binary compressed) algorithm file.
 
-#include "sexp/CasmWriter.h"
+#include "casm/CasmWriter.h"
 
 //#include "utils/Defs.h"
 
@@ -30,8 +30,8 @@
 #include "interp/Writer.h"
 #include "interp/TeeWriter.h"
 #include "sexp/Ast.h"
-#include "sexp/FlattenAst.h"
-#include "sexp/InflateAst.h"
+#include "casm/FlattenAst.h"
+#include "casm/InflateAst.h"
 
 namespace wasm {
 

@@ -24,8 +24,8 @@
 #include "algorithms/casm0x0.h"
 #endif
 #include "sexp/Ast.h"
-#include "sexp/CasmReader.h"
-#include "sexp/CasmWriter.h"
+#include "casm/CasmReader.h"
+#include "casm/CasmWriter.h"
 #include "sexp/TextWriter.h"
 #include "stream/FileWriter.h"
 #include "stream/ReadCursor.h"
@@ -720,7 +720,7 @@ void CodeGenerator::generateImplFile(bool UseArrayImpl) {
   generateHeader();
   if (UseArrayImpl)
     puts(
-        "#include \"sexp/CasmReader.h\"\n"
+        "#include \"casm/CasmReader.h\"\n"
         "#include \"stream/ArrayReader.h\"\n"
         "#include \"stream/ReadBackedQueue.h\"\n"
         "\n"
