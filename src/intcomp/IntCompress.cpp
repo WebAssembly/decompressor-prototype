@@ -28,7 +28,7 @@
 #include "interp/Interpreter.h"
 #include "interp/IntInterpreter.h"
 #include "interp/IntReader.h"
-#include "sexp/CasmWriter.h"
+#include "casm/CasmWriter.h"
 #include "sexp/TextWriter.h"
 #include "utils/ArgsParse.h"
 

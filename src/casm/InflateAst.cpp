@@ -17,7 +17,7 @@
 // IMplements a writer to convert a CASM stream into the corresponding
 // AST algorithm.
 
-#include "sexp/InflateAst.h"
+#include "casm/InflateAst.h"
 
 #include "binary/SectionSymbolTable.h"
 #include "sexp/Ast.h"

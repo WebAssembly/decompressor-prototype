@@ -17,7 +17,7 @@
 // Defines a converter of an Ast algorithm, to the corresponding
 // (integer) CASM stream.
 
-#include "sexp/FlattenAst.h"
+#include "casm/FlattenAst.h"
 
 #include <algorithm>
 

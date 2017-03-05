@@ -22,7 +22,7 @@
 #include "interp/ByteReader.h"
 #include "interp/ByteWriter.h"
 #include "interp/Interpreter.h"
-#include "sexp/CasmReader.h"
+#include "casm/CasmReader.h"
 #include "stream/FileReader.h"
 #include "stream/FileWriter.h"
 #include "stream/ReadBackedQueue.h"

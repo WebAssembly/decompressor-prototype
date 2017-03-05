@@ -16,7 +16,7 @@
 
 // Implement functions to read in a CASM (binary compressed) algorithm file.
 
-#include "sexp/CasmReader.h"
+#include "casm/CasmReader.h"
 
 #if WASM_BOOT == 0
 #include "algorithms/casm0x0.h"
@@ -25,7 +25,7 @@
 #include "interp/ByteReader.h"
 #include "interp/Interpreter.h"
 #include "sexp/Ast.h"
-#include "sexp/InflateAst.h"
+#include "casm/InflateAst.h"
 #include "sexp/TextWriter.h"
 #include "sexp-parser/Driver.h"
 #include "stream/FileReader.h"

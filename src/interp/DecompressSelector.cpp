@@ -34,7 +34,7 @@
 #include "interp/IntReader.h"
 #include "interp/IntWriter.h"
 #include "sexp/Ast.h"
-#include "sexp/InflateAst.h"
+#include "casm/InflateAst.h"
 #include "utils/Trace.h"
 
 namespace wasm {

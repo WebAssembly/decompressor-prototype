@@ -19,7 +19,7 @@
 #if WASM_BOOT == 0
 #include "algorithms/casm0x0.h"
 #endif
-#include "sexp/CasmReader.h"
+#include "casm/CasmReader.h"
 #include "utils/ArgsParse.h"
 
 using namespace wasm;
