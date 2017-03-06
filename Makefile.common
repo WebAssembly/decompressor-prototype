@@ -26,7 +26,6 @@
 CXX := clang++
 EXE :=
 CXX_BOOT := clang++
-EXE_BOOT :=
 
 ifndef GEN
   GEN=0

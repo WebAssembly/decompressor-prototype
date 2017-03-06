@@ -154,16 +154,46 @@ TEST_DEFAULT_CASM_M = $(TEST_SRCS_DIR)/Wasm0xd.casm-m
 
 ALG_SRCDIR = $(SRCDIR)/algorithms
 ALG_GENDIR = $(GENDIR)/algorithms
+
+#### Boot step 1
+
+ALG_SRCS_BOOT1 = casm0x0.cast
+
+ALG_GEN_CAST_SRCS_BOOT1 = $(patsubst %.cast, $(ALG_GENDIR)/%.cast, $(ALG_SRCS_BOOT1))
+
+ALG_GEN_CPP_SRCS_BOOT1 = $(patsubst %.cast, $(ALG_GENDIR)/%.cpp, $(ALG_SRCS_BOOT1))
+
+ALG_GEN_H_SRCS_BOOT1 = $(patsubst %.cast, $(ALG_GENDIR)/%.h, $(ALG_SRCS_BOOT1))
+
+ALG_GEN_SRCS_BOOT1 = $(ALG_GEN_CAST_SRCS_BOOT1) \
+	$(ALG_GEN_CPP_SRCS_BOOT1) $(ALG_GEN_H_SRCS_BOOT1)
+
+GENSRCS += $(ALG_GEN_SRCS_BOOT1)
+
+#### Boot step 2
+
+ALG_OBJDIR_BOOT = $(OBJDIR)/algorithms
+
+ALG_SRCS_BOOT2 = wasm0xd.cast
+
+ALG_GEN_CAST_SRCS_BOOT2 = $(patsubst %.cast, $(ALG_GENDIR)/%.cast, $(ALG_SRCS))
+
+ALG_GEN_CPP_SRCS_BOOT2 = $(patsubst %.cast, $(ALG_GENDIR)/%.cpp, $(ALG_SRCS_BOOT2))
+
+ALG_GEN_H_SRCS_BOOT2 = $(patsubst %.cast, $(ALG_GENDIR)/%.h, $(ALG_SRCS_BOOT2))
+
+GENSRCS += $(ALG_GEN_SRCS_BOOT2) \
+	$(ALG_GEN_CPP_SRCS_BOOT2) $(ALG_GEN_H_SRCS_BOOT2)
+
+ALG_OBJS_BOOT2 = $(patsubst %.cast, $(ALG_OBJDIR_BOOT)/%.o, $(ALG_SRCS_BOOT1))
+
+ALG_LIB_BOOT2 = $(LIBDIR_BOOT)/$(LIBPREFIX)alg-boot2.a
+
+#### Build step
+
 ALG_OBJDIR = $(OBJDIR)/algorithms
 
 ALG_SRCS = wasm0xd.cast casm0x0.cast
-
-ALG_GEN_SRCS = $(patsubst %.cast, $(ALG_GENDIR)/%.cast, $(ALG_SRCS))
-
-ALG_GEN_CPP_SRCS = $(patsubst %.cast, $(ALG_GENDIR)/%.cpp, $(ALG_SRCS))
-ALG_GEN_H_SRCS = $(patsubst %.cast, $(ALG_GENDIR)/%.h, $(ALG_SRCS))
-
-GENSRCS += $(ALG_GEN_CPP_SRCS) $(ALG_GEN_H_SRCS)
 
 ALG_OBJS = $(patsubst %.cast, $(ALG_OBJDIR)/%.o, $(ALG_SRCS))
 
@@ -263,30 +293,40 @@ INTCOMP_LIB = $(LIBDIR)/$(LIBPREFIX)intcomp.a
 
 ###### Executables ######
 
-EXEC_DIR = $(SRCDIR)/exec
-EXEC_OBJDIR = $(OBJDIR)/exec
 EXEC_OBJDIR_BOOT = $(OBJDIR_BOOT)/exec
-BUILD_EXECDIR = $(BUILDDIR)/bin
 BUILD_EXECDIR_BOOT = $(BUILDDIR_BOOT)/bin
 
-EXEC_SRCS_BASE = \
+#### Boot step 1
+
+EXEC_SRCS_BOOT1 = cast-parser.cpp
+
+EXEC_OBJS_BOOT1 = $(patsubst %.cpp, $(EXEC_OBJDIR_BOOT)/%.o, $(EXEC_SRCS_BOOT1))
+
+EXECS_BOOT1 = $(patsubst %.cpp, $(BUILD_EXECDIR_BOOT)/%$(EXE), $(EXEC_SRCS_BOOT1))
+
+#### Boot step 2
+
+EXEC_SRCS_BOOT2 = cast2casm.cpp
+
+EXEC_OBJS_BOOT2 = $(patsubst %.cpp, $(EXEC_OBJDIR_BOOT)/%.o, $(EXEC_SRCS_BOOT2))
+
+EXECS_BOOT2 = $(patsubst %.cpp, $(BUILD_EXECDIR_BOOT)/%$(EXE), $(EXEC_SRCS_BOOT2))
+
+##### Build step
+
+EXECDIR = $(SRCDIR)/exec
+EXEC_OBJDIR = $(OBJDIR)/exec
+BUILD_EXECDIR = $(BUILDDIR)/bin
+
+EXEC_SRCS = \
 	casm2cast.cpp \
+	cast2casm.cpp \
 	compress-int.cpp \
 	decompress.cpp
 
-EXEC_SRCS_BOOT = \
-	cast2casm.cpp
-
-EXEC_SRCS = $(EXEC_SRCS_BASE)  $(EXEC_SRCS_BOOT)
-
 EXEC_OBJS = $(patsubst %.cpp, $(EXEC_OBJDIR)/%.o, $(EXEC_SRCS))
 
-EXEC_OBJS_BOOT = $(patsubst %.cpp, $(EXEC_OBJDIR_BOOT)/%.o, $(EXEC_SRCS_BOOT))
-
 EXECS = $(patsubst %.cpp, $(BUILD_EXECDIR)/%$(EXE), $(EXEC_SRCS))
-
-
-EXECS_BOOT = $(patsubst %.cpp, $(BUILD_EXECDIR_BOOT)/%$(EXE_BOOT), $(EXEC_SRCS_BOOT))
 
 ###### Test executables and locations ######
 
@@ -427,9 +467,14 @@ LIBS = $(INTCOMP_LIB) $(BINARY_LIB) $(INTERP_LIB) $(SEXP_LIB) $(CASM_LIB) $(PARS
        $(ALG_LIB) $(SEXP_LIB) $(INTERP_LIB) $(BINARY_LIB) $(ALG_LIB) \
        $(CASM_LIB) $(STRM_LIB) $(UTILS_LIB) $(PARSER_LIB)
 
-LIBS_BOOT = $(BINARY_LIB_BOOT) $(INTERP_LIB_BOOT) \
+LIBS_BOOT1 = $(BINARY_LIB_BOOT) $(INTERP_LIB_BOOT) \
 	$(SEXP_LIB_BOOT) $(CASM_LIB_BOOT) $(PARSER_LIB_BOOT) \
 	$(INTERP_LIB_BOOT) $(BINARY_LIB_BOOT) $(STRM_LIB_BOOT) $(UTILS_LIB_BOOT)
+
+LIBS_BOOT2 = $(BINARY_LIB_BOOT) $(INTERP_LIB_BOOT) \
+	$(SEXP_LIB_BOOT) $(CASM_LIB_BOOT) $(PARSER_LIB_BOOT) \
+	$(INTERP_LIB_BOOT) $(ALG_LIB_BOOT2) $(BINARY_LIB_BOOT) \
+	$(STRM_LIB_BOOT) $(UTILS_LIB_BOOT) $(ALG_LIB_BOOT2)
 
 ##### Track additional important variable definitions not in Makefile.common
 
@@ -505,7 +550,6 @@ clean-gen:
 
 ###### Source Generation Rules #######
 
-#gen: gen-parser gen-lexer $(GENSRCS)
 ifeq ($(GEN), 1)
   gen: $(GENSRCS)
 else
@@ -536,36 +580,58 @@ endif
 $(ALG_GENDIR):
 	mkdir -p $@
 
-$(ALG_GEN_SRCS): | $(ALG_GENDIR)
+$(ALG_GEN_SRCS_BOOT1): | $(ALG_GENDIR)
+
+$(ALG_GEN_SRCS_BOOT2): | $(ALG_GENDIR)
+
+$(ALG_OBJS): | $(ALG_OBJDIR)
+
+$(ALG_OBJDIR):
+	mkdir -p $@
 
 ifeq ($(GEN), 1)
 
-  $(ALG_GEN_SRCS): $(ALG_GENDIR)/%.cast: $(ALG_SRCDIR)/%.cast
+  $(ALG_GEN_CAST_SRCS_BOOT1): $(ALG_GENDIR)/%.cast: $(ALG_SRCDIR)/%.cast
 	cp $< $@
 
-  $(ALG_GEN_H_SRCS): $(ALG_GENDIR)/%.h: $(ALG_GENDIR)/%.cast \
-		$(BUILD_EXECDIR_BOOT)/cast2casm
+  $(ALG_GEN_H_SRCS_BOOT1): $(ALG_GENDIR)/%.h: $(ALG_GENDIR)/%.cast \
+		$(EXECS_BOOT1) $(ALG_GENDIR_ALG)
+	$(BUILD_EXECDIR_BOOT)/cast-parser -a $(ALG_GENDIR_ALG) \
+		$< -o $@ --header --strip-literal-uses \
+		--function $(patsubst $(ALG_GENDIR)/%.cast, Alg%, $<)
+
+  $(ALG_GEN_CPP_SRCS_BOOT1): $(ALG_GENDIR)/%.cpp: $(ALG_GENDIR)/%.cast \
+		$(EXECS_BOOT1) $(ALG_GENDIR_ALG)
+	$(BUILD_EXECDIR_BOOT)/cast-parser -a $(ALG_GENDIR_ALG) \
+		$< -o $@ --strip-literal-uses \
+		--function $(patsubst $(ALG_GENDIR)/%.cast, Alg%, $<)
+
+
+  $(ALG_OBJS_BOOT2): $(ALG_OBJDIR)/%.o: $(ALG_GENDIR)/%.cpp
+	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
+
+  $(ALG_LIB_BOOT2): $(ALG_OBJS_BOOT2)
+	ar -rs $@ $(ALG_OBJS_BOOT2)
+	ranlib $@
+
+  $(ALG_GEN_CAST_SRCS_BOOT2): $(ALG_GENDIR)/%.cast: $(ALG_SRCDIR)/%.cast
+	cp $< $@
+
+  $(ALG_GEN_H_SRCS_BOOT2): $(ALG_GENDIR)/%.h: $(ALG_GENDIR)/%.cast \
+		$(EXECS_BOOT2) $(ALG_GENDIR_ALG)
 	$(BUILD_EXECDIR_BOOT)/cast2casm -a $(ALG_GENDIR_ALG) \
 		$< -o $@ --header --strip-literal-uses \
 		--function $(patsubst $(ALG_GENDIR)/%.cast, Alg%, $<)
 
-  $(ALG_GEN_CPP_SRCS): $(ALG_GENDIR)/%.cpp: $(ALG_GENDIR)/%.cast \
-		$(BUILD_EXECDIR_BOOT)/cast2casm $(ALG_GENDIR_ALG)
+  $(ALG_GEN_CPP_SRCS_BOOT2): $(ALG_GENDIR)/%.cpp: $(ALG_GENDIR)/%.cast \
+		$(EXECS_BOOT2) $(ALG_GENDIR_ALG)
 	$(BUILD_EXECDIR_BOOT)/cast2casm -a $(ALG_GENDIR_ALG) \
-		$< -o $@ --strip-literal-uses \
-		--function $(patsubst $(ALG_GENDIR)/%.cast, Alg%, $<) \
-		$(if $(call eq, "$(ALG_GENDIR)/casm0x0.cast", "$<") \
-                      ,  , --array)
+		$< -o $@ --strip-literal-uses --array \
+		--function $(patsubst $(ALG_GENDIR)/%.cast, Alg%, $<)
 
 else
 
-  $(ALG_OBJS): | $(ALG_OBJDIR)
-
-  $(ALG_OBJDIR):
-	mkdir -p $@
-
   -include $(foreach dep,$(ALG_GEN_CPP_SRCS:.cpp=.d),$(ALG_OBJDIR)/$(dep))
-
 
   $(ALG_OBJS): $(ALG_OBJDIR)/%.o: $(ALG_GENDIR)/%.cpp
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
@@ -742,9 +808,7 @@ else
 
 endif
 
-
 ###### Compiliing casm ources ######
-
 
 ifeq ($(GEN), 1)
 
@@ -880,8 +944,6 @@ else
 
   -include $(PARSER_GENDIR)/Lexer.d
 
-  # -include $(PARSER_GENDIR)/Parser.tab.d
-
   -include $(foreach dep,$(PARSER_SRCS:.cpp=.d),$(PARSER_OBJDIR)/$(dep))
 
   $(PARSER_STD_OBJS): $(PARSER_OBJDIR)/%.o: $(PARSER_DIR)/%.cpp
@@ -905,7 +967,9 @@ ifeq ($(GEN), 1)
   $(LIBDIR_BOOT):
 	mkdir -p $@
 
-  $(LIBS_BOOT): | $(LIBDIR_BOOT)
+  $(LIBS_BOOT1): | $(LIBDIR_BOOT)
+
+  $(LIBS_BOOT2): | $(LIBDIR_BOOT)
 
 else
 
@@ -926,18 +990,35 @@ ifeq ($(GEN), 1)
   $(BUILD_EXECDIR_BOOT):
 	mkdir -p $@
 
-  $(EXEC_OBJS_BOOT): | $(EXEC_OBJDIR_BOOT)
+  #### Boot step 1
 
-  -include $(foreach dep,$(EXEC_SRCS:.cpp=.d),$(EXEC_OBJDIR_BOOT)/$(dep))
+  $(EXEC_OBJS_BOOT1): | $(EXEC_OBJDIR_BOOT)
 
-  $(EXEC_OBJS_BOOT): $(EXEC_OBJDIR_BOOT)/%.o: $(EXEC_DIR)/%.cpp \
+  -include $(foreach dep,$(EXEC_SRCS_BOOT1:.cpp=.d),$(EXEC_OBJDIR_BOOT)/$(dep))
+
+  $(EXEC_OBJS_BOOT1): $(EXEC_OBJDIR_BOOT)/%.o: $(EXECDIR)/%.cpp \
 		$(GENSRCS_BOOT)
 	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
 
-  $(EXECS_BOOT): | $(BUILD_EXECDIR_BOOT)
+  $(EXECS_BOOT1): | $(BUILD_EXECDIR_BOOT)
 
-  $(EXECS_BOOT): $(BUILD_EXECDIR_BOOT)/%$(EXE_BOOT): $(EXEC_OBJDIR_BOOT)/%.o $(LIBS_BOOT)
-	$(CPP_COMPILER_BOOT) $(CXXFLAGS_BOOT) $< $(LIBS_BOOT) -o $@
+  $(EXECS_BOOT1): $(BUILD_EXECDIR_BOOT)/%$(EXE): $(EXEC_OBJDIR_BOOT)/%.o $(LIBS_BOOT1)
+	$(CPP_COMPILER_BOOT) $(CXXFLAGS_BOOT) $< $(LIBS_BOOT1) -o $@
+
+  #### Boot step 2
+
+  $(EXEC_OBJS_BOOT2): | $(EXEC_OBJDIR_BOOT)
+
+  -include $(foreach dep,$(EXEC_SRCS_BOOT2:.cpp=.d),$(EXEC_OBJDIR_BOOT)/$(dep))
+
+  $(EXEC_OBJS_BOOT2): $(EXEC_OBJDIR_BOOT)/%.o: $(EXECDIR)/%.cpp \
+		$(GENSRCS_BOOT) $(ALG_GEN_SRCS_BOOT1)
+	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
+
+  $(EXECS_BOOT2): | $(BUILD_EXECDIR_BOOT)
+
+  $(EXECS_BOOT2): $(BUILD_EXECDIR_BOOT)/%$(EXE): $(EXEC_OBJDIR_BOOT)/%.o $(LIBS_BOOT2)
+	$(CPP_COMPILER_BOOT) $(CXXFLAGS_BOOT) $< $(LIBS_BOOT2) -o $@
 
 else
 
@@ -951,7 +1032,7 @@ else
 
   -include $(foreach dep,$(EXEC_SRCS:.cpp=.d),$(EXEC_OBJDIR)/$(dep))
 
-  $(EXEC_OBJS): $(EXEC_OBJDIR)/%.o: $(EXEC_DIR)/%.cpp
+  $(EXEC_OBJS): $(EXEC_OBJDIR)/%.o: $(EXECDIR)/%.cpp
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
   $(EXECS): | $(BUILD_EXECDIR)
@@ -1010,7 +1091,6 @@ presubmit:
 	$(MAKE) $(MAKE_PAGE_SIZE) test-all CXX=g++
 	$(MAKE) $(MAKE_PAGE_SIZE) clean
 	$(MAKE) $(MAKE_PAGE_SIZE) test-all CXX=clang++
-	$(MAKE) $(MAKE_PAGE_SIZE) clean-all
 	@echo "*** Presubmit tests passed ***"
 
 .PHONY: presubmit
