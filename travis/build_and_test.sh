@@ -18,8 +18,8 @@ cd ${ROOT_DIR}
 
 # Build for Wasm Vanilla.
 make clean-all
-make -j8 PLATFORM=Travis GEN=1
-make -j8 PLATFORM=Travis WASM=1 WASM_VANILLA=1 RELEASE=1
+make PLATFORM=Travis GEN=1
+make PLATFORM=Travis WASM=1 WASM_VANILLA=1 RELEASE=1
 
 # Build for host.
 make -j8 PLATFORM=Travis presubmit
