@@ -787,8 +787,7 @@ int main(int Argc, charstring Argv[]) {
   {
     ArgsParser Args("Converts compression algorithm from text to binary");
 
-    ArgsParser::Optional<charstring>
-        AlgorithmFlag(AlgorithmFilename);
+    ArgsParser::Optional<charstring> AlgorithmFlag(AlgorithmFilename);
     Args.add(AlgorithmFlag.setShortName('a')
                  .setLongName("algorithm")
                  .setOptionName("ALGORITHM")
@@ -922,7 +921,6 @@ int main(int Argc, charstring Argv[]) {
 
 #endif
 
-
     switch (Args.parse(Argc, Argv)) {
       case ArgsParser::State::Good:
         break;
@@ -937,7 +935,6 @@ int main(int Argc, charstring Argv[]) {
       StripActions = true;
       StripLiterals = true;
     }
-
 
 #if WASM_CAST_PARSER == 0
     // Be sure to update implications!
@@ -954,9 +951,9 @@ int main(int Argc, charstring Argv[]) {
       fprintf(stderr, "Opition --array can't be used with option --header\n");
       return exit_status(EXIT_FAILURE);
     }
+#else
+    assert(AlgorithmFilename != nullptr);
 #endif
-
-    assert(!(WASM_BOOT && AlgorithmFilename == nullptr));
   }
 
   if (Verbose)

@@ -1,4 +1,4 @@
-# Copyright 2015 WebAssembly Community Group participants
+# Copyright 2016 WebAssembly Community Group participants
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This file defines the CAST algorithm for reading/writing CASM files.
+# Defines the CAST algorithm for reading/writing "Compressed binary
+# algorithm" ("CASM") files.
 
 (header (u32.const 0x6d736163) (u32.const 0x0))
 (void)
