@@ -298,7 +298,7 @@ class Node {
   // Following define (structural) compare.
   int compare(const Node* Nd) const;
   // Following only compares nodes, not kids.
-  virtual int compareNode(const Node* Nd) const;
+  virtual int nodeCompare(const Node* Nd) const;
   // Returns comparison value for nodes that don't define a complete
   // structural compare.
   int compareIncomparable(const Node* Nd) const;
@@ -389,7 +389,8 @@ class CachedNode : public NullaryNode {
 
  public:
   ~CachedNode() OVERRIDE;
-  int compareNode(const Node* Nd) const OVERRIDE;
+  int nodeCompare(const Node* Nd) const OVERRIDE;
+  bool mergable() const OVERRIDE;
 
   static bool implementsClass(NodeType Type);
 
@@ -404,7 +405,7 @@ class IntegerNode : public NullaryNode {
 
  public:
   ~IntegerNode() OVERRIDE;
-  int compareNode(const Node* Nd) const OVERRIDE;
+  int nodeCompare(const Node* Nd) const OVERRIDE;
   decode::ValueFormat getFormat() const { return Value.Format; }
   decode::IntType getValue() const { return Value.Value; }
   bool isDefaultValue() const { return Value.isDefault; }
@@ -487,7 +488,7 @@ class NaryNode : public Node {
 
  public:
   ~NaryNode() OVERRIDE;
-  int compareNode(const Node*) const OVERRIDE;
+  int nodeCompare(const Node*) const OVERRIDE;
   int getNumKids() const OVERRIDE FINAL;
   Node* getKid(int Index) const OVERRIDE FINAL;
   void setKid(int Index, Node* N) OVERRIDE FINAL;
@@ -566,7 +567,7 @@ class BinaryAcceptNode FINAL : public IntegerNode {
                    decode::IntType Value,
                    unsigned NumBits);
   ~BinaryAcceptNode() OVERRIDE;
-  int compareNode(const Node*) const OVERRIDE;
+  int nodeCompare(const Node*) const OVERRIDE;
   bool validateNode(NodeVectorType& Parents) OVERRIDE;
   unsigned getNumBits() const { return NumBits; }
 
@@ -610,7 +611,7 @@ class SymbolNode FINAL : public NullaryNode {
  public:
   SymbolNode(SymbolTable& Symtab, const std::string& Name);
   ~SymbolNode() OVERRIDE;
-  int compareNode(const Node* Nd) const OVERRIDE;
+  int nodeCompare(const Node* Nd) const OVERRIDE;
   const std::string& getName() const { return Name; }
   const DefineNode* getDefineDefinition() const {
     return getSymbolDefn()->getDefineDefinition();
