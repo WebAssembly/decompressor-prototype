@@ -195,14 +195,6 @@ ALG_OBJDIR = $(OBJDIR)/algorithms
 
 ALG_SRCS = wasm0xd.cast casm0x0.cast
 
-#ALG_GEN_SRCS = $(patsubst %.cast, $(ALG_GENDIR)/%.cast, $(ALG_SRCS))
-
-#ALG_GEN_CPP_SRCS = $(patsubst %.cast, $(ALG_GENDIR)/%.cpp, $(ALG_SRCS))
-
-#ALG_GEN_H_SRCS = $(patsubst %.cast, $(ALG_GENDIR)/%.h, $(ALG_SRCS))
-
-#GENSRCS += $(ALG_GEN_CPP_SRCS) $(ALG_GEN_H_SRCS)
-
 ALG_OBJS = $(patsubst %.cast, $(ALG_OBJDIR)/%.o, $(ALG_SRCS))
 
 ALG_LIB = $(LIBDIR)/$(LIBPREFIX)alg.a
@@ -301,25 +293,8 @@ INTCOMP_LIB = $(LIBDIR)/$(LIBPREFIX)intcomp.a
 
 ###### Executables ######
 
-EXECDIR = $(SRCDIR)/exec
-EXEC_OBJDIR = $(OBJDIR)/exec
 EXEC_OBJDIR_BOOT = $(OBJDIR_BOOT)/exec
-BUILD_EXECDIR = $(BUILDDIR)/bin
 BUILD_EXECDIR_BOOT = $(BUILDDIR_BOOT)/bin
-
-EXEC_SRCS = \
-	casm2cast.cpp \
-	cast2casm.cpp \
-	compress-int.cpp \
-	decompress.cpp
-
-#EXEC_SRCS = $(EXEC_SRCS_BASE)  $(EXEC_SRCS_BOOT1) $(EXEC_SRCS_BOOT2)
-
-EXEC_OBJS = $(patsubst %.cpp, $(EXEC_OBJDIR)/%.o, $(EXEC_SRCS))
-
-EXECS = $(patsubst %.cpp, $(BUILD_EXECDIR)/%$(EXE), $(EXEC_SRCS))
-
-$(info EXEC_OBJS = $(EXEC_OBJS))
 
 #### Boot step 1
 
@@ -337,12 +312,21 @@ EXEC_OBJS_BOOT2 = $(patsubst %.cpp, $(EXEC_OBJDIR_BOOT)/%.o, $(EXEC_SRCS_BOOT2))
 
 EXECS_BOOT2 = $(patsubst %.cpp, $(BUILD_EXECDIR_BOOT)/%$(EXE), $(EXEC_SRCS_BOOT2))
 
-$(info EXEC_SRCS_BOOT1 = $(EXEC_SRCS_BOOT1))
-$(info EXEC_OBJS_BOOT1 = $(EXEC_OBJS_BOOT1))
-$(info EXECS_BOOT1 = $(EXECS_BOOT1))
-$(info EXEC_SRCS_BOOT2 = $(EXEC_SRCS_BOOT2))
-$(info EXEC_OBJS_BOOT2 = $(EXEC_OBJS_BOOT2))
-$(info EXECS_BOOT2 = $(EXECS_BOOT2))
+##### Build step
+
+EXECDIR = $(SRCDIR)/exec
+EXEC_OBJDIR = $(OBJDIR)/exec
+BUILD_EXECDIR = $(BUILDDIR)/bin
+
+EXEC_SRCS = \
+	casm2cast.cpp \
+	cast2casm.cpp \
+	compress-int.cpp \
+	decompress.cpp
+
+EXEC_OBJS = $(patsubst %.cpp, $(EXEC_OBJDIR)/%.o, $(EXEC_SRCS))
+
+EXECS = $(patsubst %.cpp, $(BUILD_EXECDIR)/%$(EXE), $(EXEC_SRCS))
 
 ###### Test executables and locations ######
 
@@ -566,7 +550,6 @@ clean-gen:
 
 ###### Source Generation Rules #######
 
-#gen: gen-parser gen-lexer $(GENSRCS)
 ifeq ($(GEN), 1)
   gen: $(GENSRCS)
 else
@@ -827,9 +810,7 @@ else
 
 endif
 
-
 ###### Compiliing casm ources ######
-
 
 ifeq ($(GEN), 1)
 
@@ -965,8 +946,6 @@ else
 
   -include $(PARSER_GENDIR)/Lexer.d
 
-  # -include $(PARSER_GENDIR)/Parser.tab.d
-
   -include $(foreach dep,$(PARSER_SRCS:.cpp=.d),$(PARSER_OBJDIR)/$(dep))
 
   $(PARSER_STD_OBJS): $(PARSER_OBJDIR)/%.o: $(PARSER_DIR)/%.cpp
@@ -1019,8 +998,6 @@ ifeq ($(GEN), 1)
 
   -include $(foreach dep,$(EXEC_SRCS_BOOT1:.cpp=.d),$(EXEC_OBJDIR_BOOT)/$(dep))
 
-$(info EXEC_OBJDIR_BOOT = $(EXEC_OBJDIR_BOOT))
-
   $(EXEC_OBJS_BOOT1): $(EXEC_OBJDIR_BOOT)/%.o: $(EXECDIR)/%.cpp \
 		$(GENSRCS_BOOT)
 	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
@@ -1064,9 +1041,6 @@ else
 
   $(EXECS): $(BUILD_EXECDIR)/%$(EXE): $(EXEC_OBJDIR)/%.o $(LIBS)
 	$(CPP_COMPILER) $(CXXFLAGS) $< $(LIBS) -o $@
-
-$(info EXEC_DIR = $(EXECDIR))
-$(info EXECS = $(EXECS))
 
 endif
 
@@ -1119,7 +1093,6 @@ presubmit:
 	$(MAKE) $(MAKE_PAGE_SIZE) test-all CXX=g++
 	$(MAKE) $(MAKE_PAGE_SIZE) clean
 	$(MAKE) $(MAKE_PAGE_SIZE) test-all CXX=clang++
-	$(MAKE) $(MAKE_PAGE_SIZE) clean-all
 	@echo "*** Presubmit tests passed ***"
 
 .PHONY: presubmit
