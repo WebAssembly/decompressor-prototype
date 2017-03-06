@@ -320,6 +320,7 @@ expression
         |  "(" "table" table_args ")" {
             $$ = $3;
            }
+        | case { $$ = $1; }
         ;
 
 expression_redirect
@@ -539,6 +540,7 @@ switch_args
             $$->append($2);
           }
         | switch_args case {
+            // Additional cases.
             $$ = $1;
             $$->append($2);
           }

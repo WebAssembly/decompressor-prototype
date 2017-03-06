@@ -174,7 +174,7 @@ GENSRCS += $(ALG_GEN_SRCS_BOOT1)
 
 ALG_OBJDIR_BOOT = $(OBJDIR)/algorithms
 
-ALG_SRCS_BOOT2 = wasm0xd.cast
+ALG_SRCS_BOOT2 = wasm0xd.cast cism0x0.cast
 
 ALG_GEN_CAST_SRCS_BOOT2 = $(patsubst %.cast, $(ALG_GENDIR)/%.cast, $(ALG_SRCS))
 
@@ -193,7 +193,9 @@ ALG_LIB_BOOT2 = $(LIBDIR_BOOT)/$(LIBPREFIX)alg-boot2.a
 
 ALG_OBJDIR = $(OBJDIR)/algorithms
 
-ALG_SRCS = wasm0xd.cast casm0x0.cast
+ALG_SRCS = wasm0xd.cast casm0x0.cast cism0x0.cast
+
+ALG_GEN_SRCS = $(patsubst %.cast, $(ALG_GENDIR)/%.cast, $(ALG_SRCS))
 
 ALG_OBJS = $(patsubst %.cast, $(ALG_OBJDIR)/%.o, $(ALG_SRCS))
 
@@ -580,9 +582,12 @@ endif
 $(ALG_GENDIR):
 	mkdir -p $@
 
-$(ALG_GEN_SRCS_BOOT1): | $(ALG_GENDIR)
+$(ALG_GEN_SRCS): | $(ALG_GENDIR)
 
-$(ALG_GEN_SRCS_BOOT2): | $(ALG_GENDIR)
+$(ALG_GEN_SRCS): $(ALG_GENDIR)/%.cast: $(ALG_SRCDIR)/%.cast
+	cp $< $@
+
+$(info ALG_GEN_SRCS = $(ALG_GEN_SRCS))
 
 $(ALG_OBJS): | $(ALG_OBJDIR)
 
@@ -590,9 +595,6 @@ $(ALG_OBJDIR):
 	mkdir -p $@
 
 ifeq ($(GEN), 1)
-
-  $(ALG_GEN_CAST_SRCS_BOOT1): $(ALG_GENDIR)/%.cast: $(ALG_SRCDIR)/%.cast
-	cp $< $@
 
   $(ALG_GEN_H_SRCS_BOOT1): $(ALG_GENDIR)/%.h: $(ALG_GENDIR)/%.cast \
 		$(EXECS_BOOT1) $(ALG_GENDIR_ALG)
@@ -614,18 +616,15 @@ ifeq ($(GEN), 1)
 	ar -rs $@ $(ALG_OBJS_BOOT2)
 	ranlib $@
 
-  $(ALG_GEN_CAST_SRCS_BOOT2): $(ALG_GENDIR)/%.cast: $(ALG_SRCDIR)/%.cast
-	cp $< $@
-
   $(ALG_GEN_H_SRCS_BOOT2): $(ALG_GENDIR)/%.h: $(ALG_GENDIR)/%.cast \
 		$(EXECS_BOOT2) $(ALG_GENDIR_ALG)
-	$(BUILD_EXECDIR_BOOT)/cast2casm -a $(ALG_GENDIR_ALG) \
+	$(BUILD_EXECDIR_BOOT)/cast2casm \
 		$< -o $@ --header --strip-literal-uses \
 		--function $(patsubst $(ALG_GENDIR)/%.cast, Alg%, $<)
 
   $(ALG_GEN_CPP_SRCS_BOOT2): $(ALG_GENDIR)/%.cpp: $(ALG_GENDIR)/%.cast \
 		$(EXECS_BOOT2) $(ALG_GENDIR_ALG)
-	$(BUILD_EXECDIR_BOOT)/cast2casm -a $(ALG_GENDIR_ALG) \
+	$(BUILD_EXECDIR_BOOT)/cast2casm  \
 		$< -o $@ --strip-literal-uses --array \
 		--function $(patsubst $(ALG_GENDIR)/%.cast, Alg%, $<)
 

@@ -16,6 +16,7 @@
  */
 
 #include "algorithms/casm0x0.h"
+#include "algorithms/cism0x0.h"
 #include "algorithms/wasm0xd.h"
 #include "interp/Decompress.h"
 #include "interp/DecompressSelector.h"
@@ -234,6 +235,8 @@ int main(const int Argc, const char* Argv[]) {
         std::make_shared<DecompressSelector>(getAlgcasm0x0Symtab(), AlgState));
     Decompressor.addSelector(
         std::make_shared<DecompressSelector>(getAlgwasm0xdSymtab(), AlgState));
+    Decompressor.addSelector(
+        std::make_shared<DecompressSelector>(getAlgcism0x0Symtab(), AlgState));
     // Decompress.
     Writer->setMinimizeBlockSize(MinimizeBlockSize);
     if (InterpFlags.TraceProgress) {
