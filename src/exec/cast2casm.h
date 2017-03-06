@@ -773,7 +773,7 @@ int main(int Argc, charstring Argv[]) {
   bool TraceLexer = false;
   bool TraceParser = false;
   bool Verbose = false;
-  bool HeaderFile;
+  bool HeaderFile = false;
 
 #if WASM_CAST_PARSER == 0
   bool BitCompress = true;
