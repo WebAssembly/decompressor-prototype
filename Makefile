@@ -626,10 +626,8 @@ ifeq ($(GEN), 1)
   $(ALG_GEN_CPP_SRCS_BOOT2): $(ALG_GENDIR)/%.cpp: $(ALG_GENDIR)/%.cast \
 		$(EXECS_BOOT2) $(ALG_GENDIR_ALG)
 	$(BUILD_EXECDIR_BOOT)/cast2casm -a $(ALG_GENDIR_ALG) \
-		$< -o $@ --strip-literal-uses \
-		--function $(patsubst $(ALG_GENDIR)/%.cast, Alg%, $<) \
-		$(if $(call eq, "$(ALG_GENDIR)/casm0x0.cast", "$<") \
-                      ,  , --array)
+		$< -o $@ --strip-literal-uses --array \
+		--function $(patsubst $(ALG_GENDIR)/%.cast, Alg%, $<)
 
 else
 
