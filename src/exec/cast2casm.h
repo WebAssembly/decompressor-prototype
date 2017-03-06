@@ -14,16 +14,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Converts textual algorithm into binary file form.
+// Implements C++ implementations of algorithms. Used by cast-parser and
+// cast2casm. The former is to be able to generate boot files while the latter
+// is the full blown tool.
 
-#define WASM_CAST_PARSER 0
-#include "cast2casm.h"
-#if 0
 #include <algorithm>
 #include <cctype>
 #include <cstdio>
 
-#if WASM_BOOT == 0
+#if WASM_CAST_PARSER == 0
 #include "algorithms/casm0x0.h"
 #endif
 #include "sexp/Ast.h"
@@ -84,7 +83,9 @@ class CodeGenerator {
   void putc(char Ch) { Output->putc(Ch); }
   void putSymbol(charstring Name, bool Capitalize = true);
   char symbolize(char Ch, bool Capitalize);
+#if WASM_CAST_PARSER == 0
   void generateArrayImplFile();
+#endif
   void generateFunctionImplFile();
   void generateHeader();
   void generateEnterNamespaces();
@@ -618,6 +619,7 @@ void CodeGenerator::generateDeclFile() {
   generateExitNamespaces();
 }
 
+#if WASM_CAST_PARSER == 0
 void CodeGenerator::generateArrayImplFile() {
   char Buffer[256];
   constexpr size_t BytesPerLine = 15;
@@ -697,6 +699,7 @@ void CodeGenerator::generateArrayImplFile() {
       "  return Symtable;\n");
   generateFunctionFooter();
 }
+#endif
 
 void CodeGenerator::generateFunctionImplFile() {
   size_t Index = generateNode(Symtab->getInstalledRoot());
@@ -735,9 +738,11 @@ void CodeGenerator::generateImplFile(bool UseArrayImpl) {
       "\n"
       "namespace {\n"
       "\n");
+#if WASM_CAST_PARSER == 0
   if (UseArrayImpl)
     generateArrayImplFile();
   else
+#endif
     generateFunctionImplFile();
   generateExitNamespaces();
 }
@@ -752,37 +757,37 @@ using namespace wasm::filt;
 using namespace wasm::utils;
 
 int main(int Argc, charstring Argv[]) {
-  charstring InputFilename = "-";
-  charstring OutputFilename = "-";
   charstring AlgorithmFilename = nullptr;
-  bool MinimizeBlockSize = false;
-  bool Verbose = false;
-  bool TraceInputTree = false;
+  charstring FunctionName = nullptr;
+  charstring OutputFilename = "-";
+  charstring InputFilename = "-";
+  std::set<std::string> KeepActions;
+  bool ShowSavedCast = false;
+  bool StripActions = false;
+  bool StripAll = false;
+  bool StripLiterals = false;
+  bool StripLiteralDefs = false;
+  bool StripLiteralUses = false;
   bool TraceAlgorithm = false;
-  bool TraceFlatten = false;
+  bool TraceInputTree = false;
   bool TraceLexer = false;
   bool TraceParser = false;
+  bool Verbose = false;
+  bool HeaderFile;
+
+#if WASM_CAST_PARSER == 0
+  bool BitCompress = true;
+  bool MinimizeBlockSize = false;
+  bool TraceFlatten = false;
   bool TraceWrite = false;
   bool TraceTree = false;
-  charstring FunctionName = nullptr;
   bool UseArrayImpl = false;
-  bool HeaderFile;
-  bool StripAll = false;
-  bool StripActions = false;
-  bool StripLiterals = false;
-  bool StripLiteralUses = false;
-  bool StripLiteralDefs = false;
-  bool ShowSavedCast = false;
-  bool BitCompress = true;
-  std::set<std::string> KeepActions;
+#endif
+
   {
     ArgsParser Args("Converts compression algorithm from text to binary");
 
-#if WASM_BOOT
-    ArgsParser::Required<charstring>
-#else
     ArgsParser::Optional<charstring>
-#endif
         AlgorithmFlag(AlgorithmFilename);
     Args.add(AlgorithmFlag.setShortName('a')
                  .setLongName("algorithm")
@@ -797,6 +802,86 @@ int main(int Argc, charstring Argv[]) {
                  .setLongName("expect-fail")
                  .setDescription("Succeed on failure/fail on success"));
 
+    ArgsParser::Optional<charstring> FunctionNameFlag(FunctionName);
+    Args.add(FunctionNameFlag.setShortName('f')
+                 .setLongName("function")
+                 .setOptionName("NAME")
+                 .setDescription(
+                     "Generate c++ source code to implement a function "
+                     "'void NAME(std::shared_ptr<SymbolTable>) to install "
+                     "the INPUT cast algorithm"));
+
+    ArgsParser::Optional<bool> HeaderFileFlag(HeaderFile);
+    Args.add(HeaderFileFlag.setLongName("header").setDescription(
+        "Generate header version of c++ source instead "
+        "of implementatoin file (only applies when "
+        "'--function Name' is specified)"));
+
+    ArgsParser::Required<charstring> InputFlag(InputFilename);
+    Args.add(InputFlag.setOptionName("INPUT")
+                 .setDescription("Text file to convert to binary"));
+
+    ArgsParser::RepeatableSet<std::string> KeepActionsFlag(KeepActions);
+    Args.add(
+        KeepActionsFlag.setLongName("keep")
+            .setOptionName("ACTION")
+            .setDescription("Don't strip callbacks on ACTION from the input"));
+
+    ArgsParser::Optional<charstring> OutputFlag(OutputFilename);
+    Args.add(OutputFlag.setShortName('o')
+                 .setLongName("output")
+                 .setOptionName("OUTPUT")
+                 .setDescription("Generated binary file"));
+
+    ArgsParser::Optional<bool> ShowSavedCastFlag(ShowSavedCast);
+    Args.add(ShowSavedCastFlag.setLongName("cast")
+                 .setDescription("Show cast text being written"));
+
+    ArgsParser::Optional<bool> StripActionsFlag(StripActions);
+    Args.add(StripActionsFlag.setLongName("strip-actions")
+                 .setDescription("Remove callback actions from input"));
+
+    ArgsParser::Optional<bool> StripAllFlag(StripAll);
+    Args.add(StripAllFlag.setShortName('s').setLongName("strip").setDescription(
+        "Apply all strip actions to input"));
+
+    ArgsParser::Optional<bool> StripLiteralsFlag(StripLiterals);
+    Args.add(StripLiteralsFlag.setLongName("strip-literals")
+                 .setDescription(
+                     "Replace literal uses with their definition, then "
+                     "remove unreferenced literal definitions from the input"));
+
+    ArgsParser::Optional<bool> StripLiteralDefsFlag(StripLiteralDefs);
+    Args.add(StripLiteralDefsFlag.setLongName("strip-literal-defs")
+                 .setDescription(
+                     "Remove unreferenced literal definitions from "
+                     "the input"));
+
+    ArgsParser::Optional<bool> StripLiteralUsesFlag(StripLiteralUses);
+    Args.add(StripLiteralUsesFlag.setLongName("strip-literal-uses")
+                 .setDescription("Replace literal uses with their defintion"));
+
+    ArgsParser::Optional<bool> TraceInputTreeFlag(TraceInputTree);
+    Args.add(TraceInputTreeFlag.setLongName("verbose=input")
+                 .setDescription("Show generated AST from reading input"));
+
+    ArgsParser::Optional<bool> TraceLexerFlag(TraceLexer);
+    Args.add(
+        TraceLexerFlag.setLongName("verbose=lexer")
+            .setDescription("Show lexing of algorithm (defined by option -a)"));
+
+    ArgsParser::Optional<bool> TraceParserFlag(TraceParser);
+    Args.add(TraceParserFlag.setLongName("verbose=parser")
+                 .setDescription(
+                     "Show parsing of algorithm (defined by option -a)"));
+
+    ArgsParser::Toggle VerboseFlag(Verbose);
+    Args.add(
+        VerboseFlag.setShortName('v').setLongName("verbose").setDescription(
+            "Show progress and tree written to binary file"));
+
+#if WASM_CAST_PARSER == 0
+
     ArgsParser::Optional<bool> BitCompressFlag(BitCompress);
     Args.add(BitCompressFlag.setLongName("bit-compress")
                  .setDescription(
@@ -809,25 +894,6 @@ int main(int Argc, charstring Argv[]) {
                  .setDescription(
                      "Minimize size in binary file "
                      "(note: runs slower)"));
-
-    ArgsParser::Required<charstring> InputFlag(InputFilename);
-    Args.add(InputFlag.setOptionName("INPUT")
-                 .setDescription("Text file to convert to binary"));
-
-    ArgsParser::Optional<charstring> OutputFlag(OutputFilename);
-    Args.add(OutputFlag.setShortName('o')
-                 .setLongName("output")
-                 .setOptionName("OUTPUT")
-                 .setDescription("Generated binary file"));
-
-    ArgsParser::Toggle VerboseFlag(Verbose);
-    Args.add(
-        VerboseFlag.setShortName('v').setLongName("verbose").setDescription(
-            "Show progress and tree written to binary file"));
-
-    ArgsParser::Optional<bool> TraceInputTreeFlag(TraceInputTree);
-    Args.add(TraceInputTreeFlag.setLongName("verbose=input")
-                 .setDescription("Show generated AST from reading input"));
 
     ArgsParser::Optional<bool> TraceAlgorithmFlag(TraceAlgorithm);
     Args.add(
@@ -848,70 +914,14 @@ int main(int Argc, charstring Argv[]) {
                      "Show tree being written while writing "
                      "(implies --verbose=write)"));
 
-    ArgsParser::Optional<bool> TraceParserFlag(TraceParser);
-    Args.add(TraceParserFlag.setLongName("verbose=parser")
-                 .setDescription(
-                     "Show parsing of algorithm (defined by option -a)"));
-
-    ArgsParser::Optional<bool> TraceLexerFlag(TraceLexer);
-    Args.add(
-        TraceLexerFlag.setLongName("verbose=lexer")
-            .setDescription("Show lexing of algorithm (defined by option -a)"));
-
-    ArgsParser::Optional<charstring> FunctionNameFlag(FunctionName);
-    Args.add(FunctionNameFlag.setShortName('f')
-                 .setLongName("function")
-                 .setOptionName("NAME")
-                 .setDescription(
-                     "Generate c++ source code to implement a function "
-                     "'void NAME(std::shared_ptr<SymbolTable>) to install "
-                     "the INPUT cast algorithm"));
-
     ArgsParser::Optional<bool> UseArrayImplFlag(UseArrayImpl);
     Args.add(UseArrayImplFlag.setLongName("array").setDescription(
         "Internally implement function NAME() using an "
         "array implementation, rather than the default that "
         "uses direct code"));
 
-    ArgsParser::Optional<bool> HeaderFileFlag(HeaderFile);
-    Args.add(HeaderFileFlag.setLongName("header").setDescription(
-        "Generate header version of c++ source instead "
-        "of implementatoin file (only applies when "
-        "'--function Name' is specified)"));
+#endif
 
-    ArgsParser::Optional<bool> StripAllFlag(StripAll);
-    Args.add(StripAllFlag.setShortName('s').setLongName("strip").setDescription(
-        "Apply all strip actions to input"));
-
-    ArgsParser::Optional<bool> StripActionsFlag(StripActions);
-    Args.add(StripActionsFlag.setLongName("strip-actions")
-                 .setDescription("Remove callback actions from input"));
-
-    ArgsParser::RepeatableSet<std::string> KeepActionsFlag(KeepActions);
-    Args.add(
-        KeepActionsFlag.setLongName("keep")
-            .setOptionName("ACTION")
-            .setDescription("Don't strip callbacks on ACTION from the input"));
-
-    ArgsParser::Optional<bool> StripLiteralsFlag(StripLiterals);
-    Args.add(StripLiteralsFlag.setLongName("strip-literals")
-                 .setDescription(
-                     "Replace literal uses with their definition, then "
-                     "remove unreferenced literal definitions from the input"));
-
-    ArgsParser::Optional<bool> StripLiteralUsesFlag(StripLiteralUses);
-    Args.add(StripLiteralUsesFlag.setLongName("strip-literal-uses")
-                 .setDescription("Replace literal uses with their defintion"));
-
-    ArgsParser::Optional<bool> StripLiteralDefsFlag(StripLiteralDefs);
-    Args.add(StripLiteralDefsFlag.setLongName("strip-literal-defs")
-                 .setDescription(
-                     "Remove unreferenced literal definitions from "
-                     "the input"));
-
-    ArgsParser::Optional<bool> ShowSavedCastFlag(ShowSavedCast);
-    Args.add(ShowSavedCastFlag.setLongName("cast")
-                 .setDescription("Show cast text being written"));
 
     switch (Args.parse(Argc, Argv)) {
       case ArgsParser::State::Good:
@@ -923,15 +933,16 @@ int main(int Argc, charstring Argv[]) {
         return exit_status(EXIT_FAILURE);
     }
 
-    // Be sure to update implications!
-    if (TraceTree)
-      TraceWrite = true;
-
     if (StripAll) {
       StripActions = true;
       StripLiterals = true;
     }
 
+
+#if WASM_CAST_PARSER == 0
+    // Be sure to update implications!
+    if (TraceTree)
+      TraceWrite = true;
     // TODO(karlschimpf) Extend ArgsParser to be able to return option
     // name so that we don't have hard-coded dependency.
     if (UseArrayImpl && FunctionName == nullptr) {
@@ -943,6 +954,7 @@ int main(int Argc, charstring Argv[]) {
       fprintf(stderr, "Opition --array can't be used with option --header\n");
       return exit_status(EXIT_FAILURE);
     }
+#endif
 
     assert(!(WASM_BOOT && AlgorithmFilename == nullptr));
   }
@@ -995,7 +1007,7 @@ int main(int Argc, charstring Argv[]) {
       return exit_status(EXIT_FAILURE);
     }
     AlgSymtab = Reader.getReadSymtab();
-#if WASM_BOOT == 0
+#if WASM_CAST_PARSER == 0
   } else {
     AlgSymtab = getAlgcasm0x0Symtab();
 #endif
@@ -1020,15 +1032,18 @@ int main(int Argc, charstring Argv[]) {
   std::shared_ptr<Queue> OutputStream;
   std::shared_ptr<ReadCursor> OutputStartPos;
   if (FunctionName != nullptr) {
+#if WASM_CAST_PARSER == 0
     if (UseArrayImpl) {
       OutputStream = std::make_shared<Queue>();
       OutputStartPos =
           std::make_shared<ReadCursor>(StreamType::Byte, OutputStream);
     }
+#endif
   } else {
     OutputStream = std::make_shared<WriteBackedQueue>(Output);
   }
 
+#if WASM_CAST_PARSER == 0
   if (OutputStream) {
     // Generate binary stream
     CasmWriter Writer;
@@ -1043,6 +1058,7 @@ int main(int Argc, charstring Argv[]) {
       return exit_status(EXIT_FAILURE);
     }
   }
+#endif
 
   if (FunctionName == nullptr)
     return exit_status(EXIT_SUCCESS);
@@ -1056,8 +1072,12 @@ int main(int Argc, charstring Argv[]) {
   if (HeaderFile)
     Generator.generateDeclFile();
   else {
+#if WASM_CAST_PARSER == 0
     if (UseArrayImpl)
       Generator.setStartPos(OutputStartPos);
+#else
+    bool UseArrayImpl = false;
+#endif
     Generator.generateImplFile(UseArrayImpl);
   }
   if (Generator.foundErrors()) {
@@ -1066,4 +1086,3 @@ int main(int Argc, charstring Argv[]) {
   }
   return exit_status(EXIT_SUCCESS);
 }
-#endif
