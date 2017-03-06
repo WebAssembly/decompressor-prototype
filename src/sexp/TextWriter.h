@@ -76,6 +76,8 @@ class TextWriter {
     return *this;
   }
 
+  void writeName(NodeType Type);
+
   // Pretty prints s-expression installed in symbol table.
   void write(FILE* File, SymbolTable* Symtab);
   void write(FILE* File, std::shared_ptr<SymbolTable> Symtab) {
@@ -107,7 +109,7 @@ class TextWriter {
                        bool EmbedInParent = false);
   void writeNodeKidsAbbrev(const Node* Node, bool EmbeddedInParent);
 
-  void writeIndent();
+  void writeIndent(int Adjustment=0);
   void writeNewline();
   void maybeWriteNewline(bool Yes);
   void writeSpace();

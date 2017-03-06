@@ -142,6 +142,7 @@ struct IntValue {
 %type <wasm::filt::Node *> bool_expression
 %type <wasm::filt::Node *> case
 %type <wasm::filt::Node *> case_args
+%type <wasm::filt::Node *> case_list
 %type <wasm::filt::SwitchNode *> switch_args
 %type <wasm::filt::Node *> constant_expression
 %type <wasm::filt::Node *> control_flow
@@ -212,7 +213,7 @@ bool_expression
           }
         ;
 
-case    : "(" "case" case_args ")" { $$ = $3; }
+case    : "(" case_list ")" { $$ = $2; }
         ;
 
 case_args
@@ -226,6 +227,15 @@ case_args
             Driver.appendArgument($1, $2);
           }
         ;
+
+case_list
+       : "case" constant_expression case_list {
+           $$ = Driver.create<CaseNode>($2, $3);
+         }
+       | "case" case_args {
+           $$ = $2;
+         }
+       ;
 
 constant_expression
         : literal_expression {
