@@ -109,18 +109,77 @@
   (=> 'int.value.end')
 )
 
-#(define 'kid.list' (params 1)
-#  (loop
-#    (seq                       # number of kids.
-#      (param 0)
-#      (=> 'instruction.begin')
-#    )
-#    (eval 'node'))             # kid
-#)
-
 (define 'nary.node' (params)
   (varuint32)
   (=> 'nary.inst')
+)
+
+(define 'node' (params)
+  (switch (uint8)
+    (error)
+    (case 'accept'
+     case 'and'
+     case 'binary'
+     case 'bit'
+     case 'bitwise.and'
+     case 'bitwise.negate'
+     case 'bitwise.or'
+     case 'bitwise.xor'
+     case 'block'
+     case 'case'
+     case 'error'
+     case 'if.then'
+     case 'if.then.else'
+     case 'last.read'
+     case 'last.symbol.is'
+     case 'literal.define'
+     case 'literal.use'
+     case 'loop'
+     case 'loop.unbounded'
+     case 'not'
+     case 'opcode.binary'
+     case 'or'
+     case 'peek'
+     case 'read'
+     case 'rename'
+     case 'section'
+     case 'set'
+     case 'table'
+     case 'undefine'
+     case 'uint32'
+     case 'uint64'
+     case 'uint8'
+     case 'varint32'
+     case 'varint64'
+     case 'varuint32'
+     case 'varuint64'
+     case 'void'
+     case '=>'                  (=> 'postorder.inst'))
+
+    (case 'define'
+     case 'eval'
+     case 'file.header'
+     case 'map'
+     case 'opcode.bytes'
+     case 'sequence'
+     case 'switch'
+     case 'write'               (eval 'nary.node'))
+
+    (case 'param'
+     case 'params'
+     case 'local'
+     case 'locals'
+     case 'u32.const'           (eval 'int.value' (varuint32)))
+
+    (case 'i32.const'           (eval 'int.value' (varint32)))
+    (case 'i64.const'           (eval 'int.value' (varint64)))
+    (case 'u64.const'           (eval 'int.value' (varuint64)))
+    (case 'u8.const'            (eval 'int.value' (uint8)))
+
+    (case 'symbol'              (eval 'symbol.lookup'))
+
+    (case 'opcode.bits'         (eval 'opcode.binary'))
+  )
 )
 
 (define 'opcode.binary' (params)
@@ -130,69 +189,6 @@
   )
   (=> 'binary.end')
   (=> 'align')
-)
-
-(define 'node' (params)
-  (switch (uint8)
-    (error)
-    (case 'accept'              (=> 'postorder.inst'))
-    (case 'and'                 (=> 'postorder.inst'))
-    (case 'binary'              (=> 'postorder.inst'))
-    (case 'bit'                 (=> 'postorder.inst'))
-    (case 'bitwise.and'         (=> 'postorder.inst'))
-    (case 'bitwise.negate'      (=> 'postorder.inst'))
-    (case 'bitwise.or'          (=> 'postorder.inst'))
-    (case 'bitwise.xor'         (=> 'postorder.inst'))
-    (case 'block'               (=> 'postorder.inst'))
-    (case 'case'                (=> 'postorder.inst'))
-    (case 'define'              (eval 'nary.node'))
-    (case 'error'               (=> 'postorder.inst'))
-    (case 'eval'                (eval 'nary.node'))
-    (case 'file.header'         (eval 'nary.node'))
-    (case 'if.then'             (=> 'postorder.inst'))
-    (case 'if.then.else'        (=> 'postorder.inst'))
-    (case 'i32.const'           (eval 'int.value' (varint32)))
-    (case 'i64.const'           (eval 'int.value' (varint64)))
-    (case 'last.read'           (=> 'postorder.inst'))
-    (case 'last.symbol.is'      (=> 'postorder.inst'))
-    (case 'literal.define'      (=> 'postorder.inst'))
-    (case 'literal.use'         (=> 'postorder.inst'))
-    (case 'local'               (eval 'int.value' (varuint32)))
-    (case 'locals'              (eval 'int.value' (varuint32)))
-    (case 'loop'                (=> 'postorder.inst'))
-    (case 'loop.unbounded'      (=> 'postorder.inst'))
-    (case 'map'                 (eval 'nary.node'))
-    (case 'not'                 (=> 'postorder.inst'))
-    (case 'opcode.bytes'        (eval 'nary.node'))
-    (case 'opcode.binary'       (=> 'postorder.inst'))
-    (case 'opcode.bits'         (eval 'opcode.binary'))
-    (case 'or'                  (=> 'postorder.inst'))
-    (case 'param'               (eval 'int.value' (varuint32)))
-    (case 'params'              (eval 'int.value' (varuint32)))
-    (case 'peek'                (=> 'postorder.inst'))
-    (case 'read'                (=> 'postorder.inst'))
-    (case 'rename'              (=> 'postorder.inst'))
-    (case 'section'             (=> 'postorder.inst'))
-    (case 'sequence'            (eval 'nary.node'))
-    (case 'set'                 (=> 'postorder.inst'))
-    (case 'switch'              (eval 'nary.node'))
-    (case 'symbol'              (eval 'symbol.lookup'))
-    (case 'table'               (=> 'postorder.inst'))
-    (case 'undefine'            (=> 'postorder.inst'))
-    (case 'uint32'              (=> 'postorder.inst'))
-    (case 'uint64'              (=> 'postorder.inst'))
-    (case 'uint8'               (=> 'postorder.inst'))
-    (case 'u32.const'           (eval 'int.value' (varuint32)))
-    (case 'u64.const'           (eval 'int.value' (varuint64)))
-    (case 'u8.const'            (eval 'int.value' (uint8)))
-    (case 'varint32'            (=> 'postorder.inst'))
-    (case 'varint64'            (=> 'postorder.inst'))
-    (case 'varuint32'           (=> 'postorder.inst'))
-    (case 'varuint64'           (=> 'postorder.inst'))
-    (case 'void'                (=> 'postorder.inst'))
-    (case 'write'               (eval 'nary.node'))
-    (case '=>'                  (=> 'postorder.inst'))
-  )
 )
 
 (define 'section' (params)

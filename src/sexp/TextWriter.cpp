@@ -79,8 +79,7 @@ TextWriter::Parenthesize::Parenthesize(TextWriter* Writer,
     : Writer(Writer), AddNewline(AddNewline) {
   Writer->writeIndent();
   fputc('(', Writer->File);
-  fputs(UseNodeTypeNames ? getNodeTypeName(Type) : getNodeSexpName(Type),
-        Writer->File);
+  Writer->writeName(Type);
   Writer->LineEmpty = false;
   ++Writer->IndentCount;
 }
@@ -91,6 +90,10 @@ TextWriter::Parenthesize::~Parenthesize() {
   fputc(')', Writer->File);
   Writer->LineEmpty = false;
   Writer->maybeWriteNewline(AddNewline);
+}
+
+void TextWriter::writeName(NodeType Type) {
+  fputs(UseNodeTypeNames ? getNodeTypeName(Type) : getNodeSexpName(Type), File);
 }
 
 void TextWriter::write(FILE* File, SymbolTable* Symtab) {
@@ -120,10 +123,11 @@ void TextWriter::initialize(FILE* File) {
   LineEmpty = true;
 }
 
-void TextWriter::writeIndent() {
+void TextWriter::writeIndent(int Adjustment) {
   if (!LineEmpty)
     return;
-  for (size_t i = 0; i < IndentCount; ++i)
+  size_t Limit = IndentCount + Adjustment;
+  for (size_t i = 0; i < Limit; ++i)
     fputs(IndentString, File);
   LineEmpty = IndentCount == 0;
 }
@@ -141,10 +145,15 @@ void TextWriter::writeNodeKids(const Node* Nd, bool EmbeddedInParent) {
   int HasHiddenSeq = HasHiddenSeqSet.count(Type);
   bool ForceNewline = false;
   for (auto* Kid : *Nd) {
-    if (HasHiddenSeq && Kid == LastKid && isa<SequenceNode>(LastKid)) {
-      writeNewline();
-      writeNode(Kid, true, HasHiddenSeq);
-      return;
+    if (Kid == LastKid) {
+      bool IsEmbedded =
+          (HasHiddenSeq && isa<SequenceNode>(LastKid))
+          || (isa<CaseNode>(Nd) && isa<CaseNode>(Kid));
+      if (IsEmbedded) {
+        writeNewline();
+        writeNode(Kid, true, true);
+        return;
+      }
     }
     ++Count;
     if (ForceNewline) {
@@ -203,6 +212,11 @@ void TextWriter::writeNode(const Node* Nd,
   switch (Type) {
     default: {
       if (EmbedInParent) {
+        if (isa<CaseNode>(Nd)) {
+          writeIndent(-1);
+          writeSpace();
+          writeName(OpCase);
+        }
         writeNodeKids(Nd, true);
       } else {
         Parenthesize _(this, Type, AddNewline);
