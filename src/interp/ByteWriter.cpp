@@ -47,43 +47,53 @@ class ByteWriter::TableHandler {
   TableHandler& operator=(const TableHandler&) = delete;
 
  public:
-  explicit TableHandler(ByteWriter& Writer) : Writer(Writer) {}
-  ~TableHandler() {}
-
-  bool tablePush(IntType Value) {
-    if (Cached.count(Value)) {
-      BitWriteCursor TmpCursor(std::make_shared<Queue>());
-      CursorStack.push_back(Writer.WritePos);
-      Writer.WritePos = TmpCursor;
-      RestoreStack.push_back(true);
-      return true;
-    }
-    Cached.insert(Value);
-    RestoreStack.push_back(false);
-    return true;
-  }
-
-  bool tablePop() {
-    if (RestoreStack.empty())
-      return false;
-    bool Restore = RestoreStack.back();
-    RestoreStack.pop_back();
-    if (!Restore)
-      return true;
-    if (CursorStack.empty())
-      return false;
-    Writer.WritePos = CursorStack.back();
-    CursorStack.pop_back();
-    return true;
-  }
+  explicit TableHandler(ByteWriter& Writer);
+  ~TableHandler();
+  bool tablePush(IntType Value);
+  bool tablePop();
 
  private:
   ByteWriter& Writer;
+  BitWriteCursor ScratchCursor;
   std::unordered_set<IntType> Cached;
-  std::shared_ptr<Queue> ScratchQueue;
   std::vector<bool> RestoreStack;
   std::vector<BitWriteCursor> CursorStack;
 };
+
+ByteWriter::TableHandler::TableHandler(ByteWriter& Writer) : Writer(Writer) {
+  std::shared_ptr<Queue> Output = std::make_shared<Queue>();
+  BitWriteCursor Cursor(StreamType::Byte, Output);
+  ScratchCursor = Cursor;
+}
+
+ByteWriter::TableHandler::~TableHandler() {
+}
+
+bool ByteWriter::TableHandler::tablePush(IntType Value) {
+  if (Cached.count(Value)) {
+    CursorStack.push_back(Writer.WritePos);
+    Writer.WritePos = ScratchCursor;
+    RestoreStack.push_back(true);
+    return true;
+  }
+  Cached.insert(Value);
+  RestoreStack.push_back(false);
+  return true;
+}
+
+bool ByteWriter::TableHandler::tablePop() {
+  if (RestoreStack.empty())
+    return false;
+  bool Restore = RestoreStack.back();
+  RestoreStack.pop_back();
+  if (!Restore)
+    return true;
+  if (CursorStack.empty())
+    return false;
+  Writer.WritePos = CursorStack.back();
+  CursorStack.pop_back();
+  return true;
+}
 
 ByteWriter::ByteWriter(std::shared_ptr<decode::Queue> Output)
     : Writer(true),
