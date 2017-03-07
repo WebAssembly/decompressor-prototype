@@ -48,7 +48,7 @@ void SectionSymbolTable::addSymbol(SymbolNode* Sym) {
 }
 
 void SectionSymbolTable::clear() {
-  Symtab->clear();
+  Symtab->clearSymbols();
   SymbolLookup.clear();
   IndexLookup.clear();
 }

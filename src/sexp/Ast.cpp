@@ -562,7 +562,7 @@ void SymbolTable::init() {
 }
 
 SymbolTable::~SymbolTable() {
-  clear();
+  clearSymbols();
   deallocateNodes();
 }
 
@@ -615,7 +615,7 @@ void SymbolTable::collectActionDefs(ActionDefSet& DefSet) {
   }
 }
 
-void SymbolTable::clear() {
+void SymbolTable::clearSymbols() {
   SymbolMap.clear();
 }
 

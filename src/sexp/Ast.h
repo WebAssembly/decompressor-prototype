@@ -181,7 +181,7 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   // True if root specifies how to read an algorithm (i.e. the source and target
   // headers are the same).
   bool specifiesAlgorithm() const;
-  void clear();
+  void clearSymbols();
   int getNextCreationIndex() { return ++NextCreationIndex; }
 
   template <typename T>
