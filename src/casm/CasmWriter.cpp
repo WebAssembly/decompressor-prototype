@@ -18,11 +18,6 @@
 
 #include "casm/CasmWriter.h"
 
-//#include "utils/Defs.h"
-
-#if WASM_BOOT == 0
-#include "algorithms/casm0x0.h"
-#endif
 #include "interp/ByteWriter.h"
 #include "interp/Interpreter.h"
 #include "interp/IntReader.h"
@@ -94,14 +89,6 @@ const BitWriteCursor& CasmWriter::writeBinary(
     ErrorsFound = true;
   return StrmWriter->getPos();
 }
-
-#if WASM_BOOT == 0
-const BitWriteCursor& CasmWriter::writeBinary(
-    std::shared_ptr<filt::SymbolTable> Symtab,
-    std::shared_ptr<Queue> Output) {
-  return writeBinary(Symtab, Output, getAlgcasm0x0Symtab());
-}
-#endif
 
 }  // end of namespace filt
 

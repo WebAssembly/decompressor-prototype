@@ -50,13 +50,11 @@ class CasmReader {
   void readBinary(charstring Filename,
                   std::shared_ptr<filt::SymbolTable> AlgSymtab);
 
-#if WASM_BOOT == 0
   // The following two methods call the above methods using the algorithm
   // casm0x0.
   void readBinary(std::shared_ptr<Queue> Binary);
 
   void readBinary(charstring Filename);
-#endif
 
   bool hasErrors() const { return ErrorsFound; }
   CasmReader& setTraceRead(bool Value) {
