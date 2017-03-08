@@ -390,7 +390,6 @@ class CachedNode : public NullaryNode {
  public:
   ~CachedNode() OVERRIDE;
   int nodeCompare(const Node* Nd) const OVERRIDE;
-  bool mergable() const OVERRIDE;
 
   static bool implementsClass(NodeType Type);
 
