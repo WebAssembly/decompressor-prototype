@@ -232,7 +232,7 @@ INTERP_SRCDIR = $(SRCDIR)/interp
 INTERP_OBJDIR = $(OBJDIR)/interp
 INTERP_OBJDIR_BOOT = $(OBJDIR_BOOT)/interp
 
-INTERP_SRCS_BASE = \
+INTERP_SRCS_BOOT = \
 	AlgorithmSelector.cpp \
 	ByteReader.cpp \
 	ByteReadStream.cpp \
@@ -251,13 +251,13 @@ INTERP_SRCS_BASE = \
 	Writer.cpp \
 	WriteStream.cpp
 
-INTERP_SRCS = $(INTERP_SRCS_BASE) Decompress.cpp
+INTERP_SRCS = $(INTERP_SRCS_BOOT) Decompress.cpp
 
 INTERP_OBJS = $(patsubst %.cpp, $(INTERP_OBJDIR)/%.o, $(INTERP_SRCS))
-INTERP_OBJS_BOOT = $(patsubst %.cpp, $(INTERP_OBJDIR_BOOT)/%.o, $(INTERP_SRCS_BASE))
+INTERP_OBJS_BOOT = $(patsubst %.cpp, $(INTERP_OBJDIR)/%.o, $(INTERP_SRCS_BOOT))
 
 INTERP_LIB = $(LIBDIR)/$(LIBPREFIX)interp.a
-INTERP_LIB_BOOT = $(LIBDIR_BOOT)/$(LIBPREFIX)interp.a
+INTERP_LIB_BOOT = $(LIBDIR_BOOT)/$(LIBPREFIX)interp-boot.a
 
 ###### Integer Compressor ######
 
@@ -661,24 +661,6 @@ $(UTILS_LIB): $(UTILS_OBJS)
 
 ###### Compiling s-expression interpeter sources ######
 
-ifeq ($(GEN), 1)
-
-  $(INTERP_OBJS_BOOT): | $(INTERP_OBJDIR_BOOT)
-
-  $(INTERP_OBJDIR_BOOT):
-	mkdir -p $@
-
-  -include $(foreach dep,$(INTERP_SRCS:.cpp=.d),$(INTERP_OBJDIR_BOOT)/$(dep))
-
-  $(INTERP_OBJS_BOOT): $(INTERP_OBJDIR_BOOT)/%.o: $(INTERP_SRCDIR)/%.cpp $(GENSRCS_BOOT)
-	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
-
-  $(INTERP_LIB_BOOT): $(INTERP_OBJS_BOOT)
-	ar -rs $@ $(INTERP_OBJS_BOOT)
-	ranlib $@
-
-else
-
   $(INTERP_OBJS): | $(INTERP_OBJDIR)
 
   $(INTERP_OBJDIR):
@@ -688,6 +670,14 @@ else
 
   $(INTERP_OBJS): $(INTERP_OBJDIR)/%.o: $(INTERP_SRCDIR)/%.cpp
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
+
+ifeq ($(GEN), 1)
+
+  $(INTERP_LIB_BOOT): $(INTERP_OBJS_BOOT)
+	ar -rs $@ $(INTERP_OBJS_BOOT)
+	ranlib $@
+
+else
 
   $(INTERP_LIB): $(INTERP_OBJS)
 	ar -rs $@ $(INTERP_OBJS)
