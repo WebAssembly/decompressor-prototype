@@ -128,13 +128,15 @@ CASM_SRCDIR = $(SRCDIR)/casm
 CASM_GENDIR = $(GENDIR)/casm
 CASM_OBJDIR = $(OBJDIR)/casm
 CASM_OBJDIR_BOOT = $(OBJDIR_BOOT)/casm
-CASM_SRCS = \
+CASM_SRCS_BOOT = \
 	CasmReader.cpp \
 	CasmWriter.cpp \
 	FlattenAst.cpp \
 	InflateAst.cpp
 
-CASM_SRCS_BOOT = $(CASM_SRCS)
+CASM_SRCS = $(CASM_SRCS_BOOT) \
+	CasmReaderBinary.cpp \
+	CasmWriterBinary.cpp \
 
 CASM_OBJS = $(patsubst %.cpp, $(CASM_OBJDIR)/%.o, $(CASM_SRCS))
 CASM_OBJS_BOOT = $(patsubst %.cpp, $(CASM_OBJDIR_BOOT)/%.o, $(CASM_SRCS_BOOT))
@@ -176,14 +178,16 @@ ALG_OBJDIR_BOOT = $(OBJDIR)/algorithms
 
 ALG_SRCS_BOOT2 = wasm0xd.cast cism0x0.cast
 
-ALG_GEN_CAST_SRCS_BOOT2 = $(patsubst %.cast, $(ALG_GENDIR)/%.cast, $(ALG_SRCS))
+ALG_GEN_CAST_SRCS_BOOT2 = $(patsubst %.cast, $(ALG_GENDIR)/%.cast, $(ALG_SRCS_BOOT2))
 
 ALG_GEN_CPP_SRCS_BOOT2 = $(patsubst %.cast, $(ALG_GENDIR)/%.cpp, $(ALG_SRCS_BOOT2))
 
 ALG_GEN_H_SRCS_BOOT2 = $(patsubst %.cast, $(ALG_GENDIR)/%.h, $(ALG_SRCS_BOOT2))
 
-GENSRCS += $(ALG_GEN_SRCS_BOOT2) \
+ALG_GEN_SRCS_BOOT2 = $(ALG_GEN_CAST_SRCS_BOOT2) \
 	$(ALG_GEN_CPP_SRCS_BOOT2) $(ALG_GEN_H_SRCS_BOOT2)
+
+GENSRCS += $(ALG_GEN_SRCS_BOOT2) 
 
 ALG_OBJS_BOOT2 = $(patsubst %.cast, $(ALG_OBJDIR_BOOT)/%.o, $(ALG_SRCS_BOOT1))
 
@@ -193,7 +197,7 @@ ALG_LIB_BOOT2 = $(LIBDIR_BOOT)/$(LIBPREFIX)alg-boot2.a
 
 ALG_OBJDIR = $(OBJDIR)/algorithms
 
-ALG_SRCS = wasm0xd.cast casm0x0.cast cism0x0.cast
+ALG_SRCS = $(ALG_SRCS_BOOT1) $(ALG_SRCS_BOOT2)
 
 ALG_GEN_SRCS = $(patsubst %.cast, $(ALG_GENDIR)/%.cast, $(ALG_SRCS))
 
@@ -493,6 +497,7 @@ CXXFLAGS := $(TARGET_CXXFLAGS) $(PLATFORM_CXXFLAGS) \
 	    $(CXXFLAGS_BASE)
 
 CXXFLAGS_BOOT := $(PLATFORM_CXXFLAGS_DEFAULT) $(CXXFLAGS_BASE) -DWASM_BOOT=1
+#CXXFLAGS_BOOT := $(PLATFORM_CXXFLAGS_DEFAULT) $(CXXFLAGS_BASE)
 
 ifneq ($(RELEASE), 0)
   CXXFLAGS += -DNDEBUG
@@ -587,12 +592,12 @@ $(ALG_GEN_SRCS): | $(ALG_GENDIR)
 $(ALG_GEN_SRCS): $(ALG_GENDIR)/%.cast: $(ALG_SRCDIR)/%.cast
 	cp $< $@
 
-$(info ALG_GEN_SRCS = $(ALG_GEN_SRCS))
-
 $(ALG_OBJS): | $(ALG_OBJDIR)
 
 $(ALG_OBJDIR):
 	mkdir -p $@
+
+$(info EXECS_BOOT1 = $(EXECS_BOOT1))
 
 ifeq ($(GEN), 1)
 
@@ -611,6 +616,8 @@ ifeq ($(GEN), 1)
 
   $(ALG_OBJS_BOOT2): $(ALG_OBJDIR)/%.o: $(ALG_GENDIR)/%.cpp
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
+
+  $(ALG_GEN_SRCS_BOOT2): | $(ALG_GEN_SRCS_BOOT1)
 
   $(ALG_LIB_BOOT2): $(ALG_OBJS_BOOT2)
 	ar -rs $@ $(ALG_OBJS_BOOT2)
@@ -1264,7 +1271,6 @@ $(UNITTEST_EXECDIR):
 
 -include $(foreach dep,$(UNITTEST_SRCS:.cpp=.d),$(UNITTEST_EXECDIR)/$(dep))
 
-#$(UNITTEST_EXECS): $(UNITTEST_EXECDIR)/%$(EXE): $(UNITTEST_DIR)/%.cpp $(GENSRCS) $(LIBS)
 $(UNITTEST_EXECS): $(UNITTEST_EXECDIR)/%$(EXE): $(UNITTEST_DIR)/%.cpp $(LIBS)
 	$(CPP_COMPILER) $(CXXFLAGS) -I$(GTEST_INCLUDE) $< $(LIBS) \
 		$(GTEST_LIB) -lpthread -o $@

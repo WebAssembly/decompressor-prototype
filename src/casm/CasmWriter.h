@@ -54,11 +54,9 @@ class CasmWriter {
       std::shared_ptr<Queue> Output,
       std::shared_ptr<filt::SymbolTable> AlgSymtab);
 
-#if WASM_BOOT == 0
   // Same as above, but using default aglorithm casm0x0.
   const BitWriteCursor& writeBinary(std::shared_ptr<filt::SymbolTable> Symtab,
                                     std::shared_ptr<Queue> Output);
-#endif
 
   bool hasErrors() const { return ErrorsFound; }
 

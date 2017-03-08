@@ -25,9 +25,9 @@
 #if WASM_CAST_PARSER == 0
 #include "algorithms/casm0x0.h"
 #endif
-#include "sexp/Ast.h"
 #include "casm/CasmReader.h"
 #include "casm/CasmWriter.h"
+#include "sexp/Ast.h"
 #include "sexp/TextWriter.h"
 #include "stream/FileWriter.h"
 #include "stream/ReadCursor.h"
