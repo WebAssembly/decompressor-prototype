@@ -29,7 +29,6 @@ GENSRCS =
 
 UTILS_DIR = $(SRCDIR)/utils
 UTILS_OBJDIR = $(OBJDIR)/utils
-UTILS_OBJDIR_BOOT = $(OBJDIR_BOOT)/utils
 UTILS_SRCS = \
 	Allocator.cpp \
 	ArgsParse.cpp \
@@ -46,10 +45,7 @@ UTILS_SRCS = \
 	Trace.cpp
 
 UTILS_OBJS=$(patsubst %.cpp, $(UTILS_OBJDIR)/%.o, $(UTILS_SRCS))
-UTILS_OBJS_BOOT=$(patsubst %.cpp, $(UTILS_OBJDIR_BOOT)/%.o, $(UTILS_SRCS))
-
 UTILS_LIB = $(LIBDIR)/$(LIBPREFIX)utis.a
-UTILS_LIB_BOOT = $(LIBDIR_BOOT)/$(LIBPREFIX)utis.a
 
 ###### Binary generation objects and locations ######
 
@@ -142,7 +138,7 @@ CASM_OBJS = $(patsubst %.cpp, $(CASM_OBJDIR)/%.o, $(CASM_SRCS))
 CASM_OBJS_BOOT = $(patsubst %.cpp, $(CASM_OBJDIR_BOOT)/%.o, $(CASM_SRCS_BOOT))
 
 CASM_LIB = $(LIBDIR)/$(LIBPREFIX)casm.a
-CASM_LIB_BOOT = $(LIBDIR_BOOT)/$(LIBPREFIX)casm.a
+CASM_LIB_BOOT = $(LIBDIR_BOOT)/$(LIBPREFIX)casm-boot.a
 
 #######
 # This is the default file used by tests.
@@ -475,18 +471,18 @@ LIBS = $(INTCOMP_LIB) $(BINARY_LIB) $(INTERP_LIB) $(SEXP_LIB) $(CASM_LIB) $(PARS
 
 LIBS_BOOT1 = $(BINARY_LIB_BOOT) $(INTERP_LIB_BOOT) \
 	$(SEXP_LIB_BOOT) $(CASM_LIB_BOOT) $(PARSER_LIB_BOOT) \
-	$(INTERP_LIB_BOOT) $(BINARY_LIB_BOOT) $(STRM_LIB_BOOT) $(UTILS_LIB_BOOT)
+	$(INTERP_LIB_BOOT) $(BINARY_LIB_BOOT) $(STRM_LIB_BOOT) $(UTILS_LIB)
 
 LIBS_BOOT2 = $(BINARY_LIB_BOOT) $(INTERP_LIB_BOOT) \
 	$(SEXP_LIB_BOOT) $(CASM_LIB_BOOT) $(PARSER_LIB_BOOT) \
 	$(INTERP_LIB_BOOT) $(ALG_LIB_BOOT2) $(BINARY_LIB_BOOT) \
-	$(STRM_LIB_BOOT) $(UTILS_LIB_BOOT) $(ALG_LIB_BOOT2)
+	$(STRM_LIB_BOOT) $(UTILS_LIB) $(ALG_LIB_BOOT2)
 
 ##### Track additional important variable definitions not in Makefile.common
 
 CCACHE := `command -v ccache`
 CPP_COMPILER := CCACHE_CPP2=yes $(CCACHE) $(CXX)
-CPP_COMPILER_BOOT := CCACHE_CPP2=yes $(CCACHE) $(CXX_BOOT)
+CPP_COMPILER_BOOT := $(CPP_COMPILER)
 
 # Note: On WIN32 replace -fPIC with -D_GNU_SOURCE
 # Note: g++ on Travis doesn't support -std=gnu++11
@@ -496,7 +492,7 @@ CXXFLAGS_BASE := -Wall -Wextra -O2 -g -pedantic -MP -MD \
 CXXFLAGS := $(TARGET_CXXFLAGS) $(PLATFORM_CXXFLAGS) \
 	    $(CXXFLAGS_BASE)
 
-CXXFLAGS_BOOT := $(PLATFORM_CXXFLAGS_DEFAULT) $(CXXFLAGS_BASE)
+CXXFLAGS_BOOT := $(CXXFLAGS)
 
 ifneq ($(RELEASE), 0)
   CXXFLAGS += -DNDEBUG
@@ -686,39 +682,19 @@ endif
 
 ###### Compiliing top-level Sources ######
 
-ifeq ($(GEN), 1)
+$(UTILS_OBJS): | $(UTILS_OBJDIR)
 
-  $(UTILS_OBJDIR_BOOT):
+$(UTILS_OBJDIR):
 	mkdir -p $@
 
-  $(UTILS_OBJS_BOOT): | $(UTILS_OBJDIR_BOOT)
+-include $(foreach dep,$(UTILS_SRCS:.cpp=.d),$(OBJDIR)/$(dep))
 
-  -include $(foreach dep,$(UTILS_SRCS:.cpp=.d),$(OBJDIR_BOOT)/$(dep))
-
-  $(UTILS_OBJS_BOOT): $(OBJDIR_BOOT)/%.o: $(SRCDIR)/%.cpp $(GENSRCS_BOOT)
-	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
-
-  $(UTILS_LIB_BOOT): $(UTILS_OBJS_BOOT)
-	ar -rs $@ $(UTILS_OBJS_BOOT)
-	ranlib $@
-
-else
-
-  $(UTILS_OBJS): | $(UTILS_OBJDIR)
-
-  $(UTILS_OBJDIR):
-	mkdir -p $@
-
-  -include $(foreach dep,$(UTILS_SRCS:.cpp=.d),$(OBJDIR)/$(dep))
-
-  $(UTILS_OBJS): $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
+$(UTILS_OBJS): $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
-  $(UTILS_LIB): $(UTILS_OBJS)
+$(UTILS_LIB): $(UTILS_OBJS)
 	ar -rs $@ $(UTILS_OBJS)
 	ranlib $@
-
-endif
 
 ###### Compiling s-expression interpeter sources ######
 
@@ -967,23 +943,17 @@ endif
 
 ###### Building libraries ######
 
-ifeq ($(GEN), 1)
-
-  $(LIBDIR_BOOT):
+$(LIBDIR_BOOT):
 	mkdir -p $@
 
-  $(LIBS_BOOT1): | $(LIBDIR_BOOT)
+$(LIBS_BOOT1): | $(LIBDIR_BOOT)
 
-  $(LIBS_BOOT2): | $(LIBDIR_BOOT)
+$(LIBS_BOOT2): | $(LIBDIR_BOOT)
 
-else
-
-  $(LIBDIR):
+$(LIBDIR):
 	mkdir -p $@
 
-  $(LIBS): | $(LIBDIR)
-
-endif
+$(LIBS): | $(LIBDIR)
 
 ###### Compiling executables ######
 
