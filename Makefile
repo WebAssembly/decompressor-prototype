@@ -51,15 +51,11 @@ UTILS_LIB = $(LIBDIR)/$(LIBPREFIX)utis.a
 
 BINARY_DIR = $(SRCDIR)/binary
 BINARY_OBJDIR = $(OBJDIR)/binary
-BINARY_OBJDIR_BOOT = $(OBJDIR_BOOT)/binary
 BINARY_SRCS = \
 	SectionSymbolTable.cpp
 
 BINARY_OBJS=$(patsubst %.cpp, $(BINARY_OBJDIR)/%.o, $(BINARY_SRCS))
-BINARY_OBJS_BOOT=$(patsubst %.cpp, $(BINARY_OBJDIR_BOOT)/%.o, $(BINARY_SRCS))
-
 BINARY_LIB = $(LIBDIR)/$(LIBPREFIX)binary.a
-BINARY_LIB_BOOT = $(LIBDIR_BOOT)/$(LIBPREFIX)binary.a
 
 ###### Parse objects and locations ######
 
@@ -104,19 +100,14 @@ PARSER_LIB_BOOT = $(LIBDIR_BOOT)/$(LIBPREFIX)parser.a
 SEXP_SRCDIR = $(SRCDIR)/sexp
 SEXP_GENDIR = $(GENDIR)/sexp
 SEXP_OBJDIR = $(OBJDIR)/sexp
-SEXP_OBJDIR_BOOT = $(OBJDIR_BOOT)/sexp
-SEXP_SRCS_BASE = \
+SEXP_SRCS = \
 	Ast.cpp \
 	TextWriter.cpp
 
-SEXP_SRCS = $(SEXP_SRCS_BASE)
-SEXP_SRCS_BOOT = $(SEXP_SRCS_BASE)
-
 SEXP_OBJS = $(patsubst %.cpp, $(SEXP_OBJDIR)/%.o, $(SEXP_SRCS))
-SEXP_OBJS_BOOT = $(patsubst %.cpp, $(SEXP_OBJDIR_BOOT)/%.o, $(SEXP_SRCS_BOOT))
+SEXP_OBJS_BOOT = $(SEXP_OBJS)
 
 SEXP_LIB = $(LIBDIR)/$(LIBPREFIX)sexp.a
-SEXP_LIB_BOOT = $(LIBDIR_BOOT)/$(LIBPREFIX)sexp.a
 
 ###### Casm algorithsm/file handling. ######
 
@@ -207,7 +198,6 @@ ALG_GENDIR_ALG = $(ALG_GENDIR)/casm0x0.cast
 
 STRM_SRCDIR = $(SRCDIR)/stream
 STRM_OBJDIR = $(OBJDIR)/stream
-STRM_OBJDIR_BOOT = $(OBJDIR_BOOT)/stream
 
 STRM_SRCS = \
 	ArrayReader.cpp \
@@ -234,10 +224,7 @@ STRM_SRCS = \
 	WriteUtils.cpp
 
 STRM_OBJS = $(patsubst %.cpp, $(STRM_OBJDIR)/%.o, $(STRM_SRCS))
-STRM_OBJS_BOOT = $(patsubst %.cpp, $(STRM_OBJDIR_BOOT)/%.o, $(STRM_SRCS))
-
 STRM_LIB = $(LIBDIR)/$(LIBPREFIX)strm.a
-STRM_LIB_BOOT = $(LIBDIR_BOOT)/$(LIBPREFIX)strm.a
 
 ###### S-expression interpeter ######
 
@@ -245,7 +232,7 @@ INTERP_SRCDIR = $(SRCDIR)/interp
 INTERP_OBJDIR = $(OBJDIR)/interp
 INTERP_OBJDIR_BOOT = $(OBJDIR_BOOT)/interp
 
-INTERP_SRCS_BASE = \
+INTERP_SRCS_BOOT = \
 	AlgorithmSelector.cpp \
 	ByteReader.cpp \
 	ByteReadStream.cpp \
@@ -264,13 +251,13 @@ INTERP_SRCS_BASE = \
 	Writer.cpp \
 	WriteStream.cpp
 
-INTERP_SRCS = $(INTERP_SRCS_BASE) Decompress.cpp
+INTERP_SRCS = $(INTERP_SRCS_BOOT) Decompress.cpp
 
 INTERP_OBJS = $(patsubst %.cpp, $(INTERP_OBJDIR)/%.o, $(INTERP_SRCS))
-INTERP_OBJS_BOOT = $(patsubst %.cpp, $(INTERP_OBJDIR_BOOT)/%.o, $(INTERP_SRCS_BASE))
+INTERP_OBJS_BOOT = $(patsubst %.cpp, $(INTERP_OBJDIR)/%.o, $(INTERP_SRCS_BOOT))
 
 INTERP_LIB = $(LIBDIR)/$(LIBPREFIX)interp.a
-INTERP_LIB_BOOT = $(LIBDIR_BOOT)/$(LIBPREFIX)interp.a
+INTERP_LIB_BOOT = $(LIBDIR_BOOT)/$(LIBPREFIX)interp-boot.a
 
 ###### Integer Compressor ######
 
@@ -469,30 +456,26 @@ LIBS = $(INTCOMP_LIB) $(BINARY_LIB) $(INTERP_LIB) $(SEXP_LIB) $(CASM_LIB) $(PARS
        $(ALG_LIB) $(SEXP_LIB) $(INTERP_LIB) $(BINARY_LIB) $(ALG_LIB) \
        $(CASM_LIB) $(STRM_LIB) $(UTILS_LIB) $(PARSER_LIB)
 
-LIBS_BOOT1 = $(BINARY_LIB_BOOT) $(INTERP_LIB_BOOT) \
-	$(SEXP_LIB_BOOT) $(CASM_LIB_BOOT) $(PARSER_LIB_BOOT) \
-	$(INTERP_LIB_BOOT) $(BINARY_LIB_BOOT) $(STRM_LIB_BOOT) $(UTILS_LIB)
+LIBS_BOOT1 = $(BINARY_LIB) $(INTERP_LIB_BOOT) \
+	$(SEXP_LIB) $(CASM_LIB_BOOT) $(PARSER_LIB_BOOT) \
+	$(INTERP_LIB_BOOT) $(BINARY_LIB) $(STRM_LIB) $(UTILS_LIB)
 
-LIBS_BOOT2 = $(BINARY_LIB_BOOT) $(INTERP_LIB_BOOT) \
-	$(SEXP_LIB_BOOT) $(CASM_LIB_BOOT) $(PARSER_LIB_BOOT) \
-	$(INTERP_LIB_BOOT) $(ALG_LIB_BOOT2) $(BINARY_LIB_BOOT) \
-	$(STRM_LIB_BOOT) $(UTILS_LIB) $(ALG_LIB_BOOT2)
+LIBS_BOOT2 = $(BINARY_LIB) $(INTERP_LIB_BOOT) \
+	$(SEXP_LIB) $(CASM_LIB_BOOT) $(PARSER_LIB_BOOT) \
+	$(INTERP_LIB_BOOT) $(ALG_LIB_BOOT2) $(BINARY_LIB) \
+	$(STRM_LIB) $(UTILS_LIB) $(ALG_LIB_BOOT2)
 
 ##### Track additional important variable definitions not in Makefile.common
 
 CCACHE := `command -v ccache`
 CPP_COMPILER := CCACHE_CPP2=yes $(CCACHE) $(CXX)
-CPP_COMPILER_BOOT := $(CPP_COMPILER)
 
 # Note: On WIN32 replace -fPIC with -D_GNU_SOURCE
 # Note: g++ on Travis doesn't support -std=gnu++11
-CXXFLAGS_BASE := -Wall -Wextra -O2 -g -pedantic -MP -MD \
+CXXFLAGS := $(TARGET_CXXFLAGS) $(PLATFORM_CXXFLAGS) \
+            -Wall -Wextra -O2 -g -pedantic -MP -MD \
 	    -Werror -Wno-unused-parameter -fno-omit-frame-pointer -fPIC \
 	    -Isrc -I$(SRC_GENDIR)
-CXXFLAGS := $(TARGET_CXXFLAGS) $(PLATFORM_CXXFLAGS) \
-	    $(CXXFLAGS_BASE)
-
-CXXFLAGS_BOOT := $(CXXFLAGS)
 
 ifneq ($(RELEASE), 0)
   CXXFLAGS += -DNDEBUG
@@ -645,40 +628,20 @@ endif
 
 ###### Compiliing binary Sources ######
 
-ifeq ($(GEN), 1)
+$(BINARY_OBJS): | $(BINARY_OBJDIR)
 
-  $(BINARY_OBJS_BOOT): | $(BINARY_OBJDIR_BOOT)
-
-  $(BINARY_OBJDIR_BOOT):
-	mkdir -p $@
-
-  -include $(foreach dep,$(BINARY_SRCS:.cpp=.d),$(BINARY_OBJDIR_BOOT)/$(dep))
-
-  $(BINARY_OBJS_BOOT): $(BINARY_OBJDIR_BOOT)/%.o: $(BINARY_DIR)/%.cpp $(GENSRCS_BOOT)
-	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
-
-  $(BINARY_LIB_BOOT): $(BINARY_OBJS_BOOT)
-	ar -rs $@ $(BINARY_OBJS_BOOT)
-	ranlib $@
-
-else
-
-  $(BINARY_OBJS): | $(BINARY_OBJDIR)
-
-  $(BINARY_OBJDIR):
+$(BINARY_OBJDIR):
 	mkdir -p $@
 
 
-  -include $(foreach dep,$(BINARY_SRCS:.cpp=.d),$(BINARY_OBJDIR)/$(dep))
+-include $(foreach dep,$(BINARY_SRCS:.cpp=.d),$(BINARY_OBJDIR)/$(dep))
 
-  $(BINARY_OBJS): $(BINARY_OBJDIR)/%.o: $(BINARY_DIR)/%.cpp
+$(BINARY_OBJS): $(BINARY_OBJDIR)/%.o: $(BINARY_DIR)/%.cpp
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
-  $(BINARY_LIB): $(BINARY_OBJS)
+$(BINARY_LIB): $(BINARY_OBJS)
 	ar -rs $@ $(BINARY_OBJS)
 	ranlib $@
-
-endif
 
 ###### Compiliing top-level Sources ######
 
@@ -698,24 +661,6 @@ $(UTILS_LIB): $(UTILS_OBJS)
 
 ###### Compiling s-expression interpeter sources ######
 
-ifeq ($(GEN), 1)
-
-  $(INTERP_OBJS_BOOT): | $(INTERP_OBJDIR_BOOT)
-
-  $(INTERP_OBJDIR_BOOT):
-	mkdir -p $@
-
-  -include $(foreach dep,$(INTERP_SRCS:.cpp=.d),$(INTERP_OBJDIR_BOOT)/$(dep))
-
-  $(INTERP_OBJS_BOOT): $(INTERP_OBJDIR_BOOT)/%.o: $(INTERP_SRCDIR)/%.cpp $(GENSRCS_BOOT)
-	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
-
-  $(INTERP_LIB_BOOT): $(INTERP_OBJS_BOOT)
-	ar -rs $@ $(INTERP_OBJS_BOOT)
-	ranlib $@
-
-else
-
   $(INTERP_OBJS): | $(INTERP_OBJDIR)
 
   $(INTERP_OBJDIR):
@@ -725,6 +670,14 @@ else
 
   $(INTERP_OBJS): $(INTERP_OBJDIR)/%.o: $(INTERP_SRCDIR)/%.cpp
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
+
+ifeq ($(GEN), 1)
+
+  $(INTERP_LIB_BOOT): $(INTERP_OBJS_BOOT)
+	ar -rs $@ $(INTERP_OBJS_BOOT)
+	ranlib $@
+
+else
 
   $(INTERP_LIB): $(INTERP_OBJS)
 	ar -rs $@ $(INTERP_OBJS)
@@ -755,39 +708,19 @@ endif
 
 ###### Compiliing Sexp Sources ######
 
-ifeq ($(GEN), 1)
+$(SEXP_OBJS): | $(SEXP_OBJDIR)
 
-  $(SEXP_OBJS_BOOT): | $(SEXP_OBJDIR_BOOT)
-
-  $(SEXP_OBJDIR_BOOT):
+$(SEXP_OBJDIR):
 	mkdir -p $@
 
-  -include $(foreach dep,$(SEXP_SRCS:.cpp=.d),$(SEXP_OBJDIR_BOOT)/$(dep))
+-include $(foreach dep,$(SEXP_SRCS:.cpp=.d),$(SEXP_OBJDIR)/$(dep))
 
-  $(SEXP_OBJS_BOOT): $(SEXP_OBJDIR_BOOT)/%.o: $(SEXP_SRCDIR)/%.cpp $(GENSRCS_BOOT)
-	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
-
-  $(SEXP_LIB_BOOT): $(SEXP_OBJS_BOOT)
-	ar -rs $@ $(SEXP_OBJS_BOOT)
-	ranlib $@
-
-else
-
-  $(SEXP_OBJS): | $(SEXP_OBJDIR)
-
-  $(SEXP_OBJDIR):
-	mkdir -p $@
-
-  -include $(foreach dep,$(SEXP_SRCS:.cpp=.d),$(SEXP_OBJDIR)/$(dep))
-
-  $(SEXP_OBJS): $(SEXP_OBJDIR)/%.o: $(SEXP_SRCDIR)/%.cpp
+$(SEXP_OBJS): $(SEXP_OBJDIR)/%.o: $(SEXP_SRCDIR)/%.cpp
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
-  $(SEXP_LIB): $(SEXP_OBJS)
+$(SEXP_LIB): $(SEXP_OBJS)
 	ar -rs $@ $(SEXP_OBJS)
 	ranlib $@
-
-endif
 
 ###### Compiliing casm ources ######
 
@@ -801,7 +734,7 @@ ifeq ($(GEN), 1)
   -include $(foreach dep,$(CASM_SRCS:.cpp=.d),$(CASM_OBJDIR_BOOT)/$(dep))
 
   $(CASM_OBJS_BOOT): $(CASM_OBJDIR_BOOT)/%.o: $(CASM_SRCDIR)/%.cpp $(GENSRCS_BOOT)
-	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
+	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
   $(CASM_LIB_BOOT): $(CASM_OBJS_BOOT)
 	ar -rs $@ $(CASM_OBJS_BOOT)
@@ -827,39 +760,19 @@ endif
 
 ###### Compiling stream sources ######
 
-ifeq ($(GEN), 1)
+$(STRM_OBJS): | $(STRM_OBJDIR)
 
-  $(STRM_OBJS_BOOT): | $(STRM_OBJDIR_BOOT)
-
-  $(STRM_OBJDIR_BOOT):
+$(STRM_OBJDIR):
 	mkdir -p $@
 
-  -include $(foreach dep,$(STRM_SRCS:.cpp=.d),$(STRM_OBJDIR_BOOT)/$(dep))
+-include $(foreach dep,$(STRM_SRCS:.cpp=.d),$(STRM_OBJDIR)/$(dep))
 
-  $(STRM_OBJS_BOOT): $(STRM_OBJDIR_BOOT)/%.o: $(STRM_SRCDIR)/%.cpp $(GENSRCS_BOOT)
-	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
-
-  $(STRM_LIB_BOOT): $(STRM_OBJS_BOOT)
-	ar -rs $@ $(STRM_OBJS_BOOT)
-	ranlib $@
-
-else
-
-  $(STRM_OBJS): | $(STRM_OBJDIR)
-
-  $(STRM_OBJDIR):
-	mkdir -p $@
-
-  -include $(foreach dep,$(STRM_SRCS:.cpp=.d),$(STRM_OBJDIR)/$(dep))
-
-  $(STRM_OBJS): $(STRM_OBJDIR)/%.o: $(STRM_SRCDIR)/%.cpp
+$(STRM_OBJS): $(STRM_OBJDIR)/%.o: $(STRM_SRCDIR)/%.cpp
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
-  $(STRM_LIB): $(STRM_OBJS)
+$(STRM_LIB): $(STRM_OBJS)
 	ar -rs $@ $(STRM_OBJS)
 	ranlib $@
-
-endif
 
 ###### Compiling Filter Parser #######
 
@@ -904,13 +817,13 @@ ifeq ($(GEN), 1)
 
   $(PARSER_STD_OBJS_BOOT): $(PARSER_OBJDIR_BOOT)/%.o: $(PARSER_DIR)/%.cpp \
 		$(GENSRCS_BOOT)
-	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
+	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
   -include $(foreach dep,$(PARSER_CPP_GENSRCS:.cpp=.d),$(PARSER_OBJDIR_BOOT)/$(dep))
 
   $(PARSER_GEN_OBJS_BOOT): $(PARSER_OBJDIR_BOOT)/%.o: $(PARSER_GENDIR)/%.cpp \
 		$(GENSRCS_BOOT)
-	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
+	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
   $(PARSER_LIB_BOOT): $(PARSER_OBJS_BOOT)
 	ar -rs $@ $(PARSER_OBJS_BOOT)
@@ -973,12 +886,12 @@ ifeq ($(GEN), 1)
 
   $(EXEC_OBJS_BOOT1): $(EXEC_OBJDIR_BOOT)/%.o: $(EXECDIR)/%.cpp \
 		$(GENSRCS_BOOT)
-	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
+	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
   $(EXECS_BOOT1): | $(BUILD_EXECDIR_BOOT)
 
   $(EXECS_BOOT1): $(BUILD_EXECDIR_BOOT)/%$(EXE): $(EXEC_OBJDIR_BOOT)/%.o $(LIBS_BOOT1)
-	$(CPP_COMPILER_BOOT) $(CXXFLAGS_BOOT) $< $(LIBS_BOOT1) -o $@
+	$(CPP_COMPILER) $(CXXFLAGS) $< $(LIBS_BOOT1) -o $@
 
   #### Boot step 2
 
@@ -988,12 +901,12 @@ ifeq ($(GEN), 1)
 
   $(EXEC_OBJS_BOOT2): $(EXEC_OBJDIR_BOOT)/%.o: $(EXECDIR)/%.cpp \
 		$(GENSRCS_BOOT) $(ALG_GEN_SRCS_BOOT1)
-	$(CPP_COMPILER_BOOT) -c $(CXXFLAGS_BOOT) $< -o $@
+	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
   $(EXECS_BOOT2): | $(BUILD_EXECDIR_BOOT)
 
   $(EXECS_BOOT2): $(BUILD_EXECDIR_BOOT)/%$(EXE): $(EXEC_OBJDIR_BOOT)/%.o $(LIBS_BOOT2)
-	$(CPP_COMPILER_BOOT) $(CXXFLAGS_BOOT) $< $(LIBS_BOOT2) -o $@
+	$(CPP_COMPILER) $(CXXFLAGS) $< $(LIBS_BOOT2) -o $@
 
 else
 
