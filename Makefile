@@ -762,17 +762,12 @@ $(PARSER_LIB): $(PARSER_OBJS)
 
 ###### Building libraries ######
 
-$(LIBDIR_BOOT):
-	mkdir -p $@
-
-$(LIBS_BOOT1): | $(LIBDIR_BOOT)
-
-$(LIBS_BOOT2): | $(LIBDIR_BOOT)
+$(LIBS_BOOT1): | $(LIBDIR)
+$(LIBS_BOOT2): | $(LIBDIR)
+$(LIBS): | $(LIBDIR)
 
 $(LIBDIR):
 	mkdir -p $@
-
-$(LIBS): | $(LIBDIR)
 
 ###### Compiling executables ######
 
