@@ -261,40 +261,37 @@ INTCOMP_LIB = $(LIBDIR)/$(LIBPREFIX)intcomp.a
 
 ###### Executables ######
 
-EXEC_OBJDIR_BOOT = $(OBJDIR_BOOT)/exec
-BUILD_EXECDIR_BOOT = $(BUILDDIR_BOOT)/bin
+EXECDIR = $(SRCDIR)/exec
+EXEC_OBJDIR = $(OBJDIR)/exec
+BUILD_EXECDIR = $(BUILDDIR)/bin
+
+EXEC_OBJDIR_BOOT = $(EXEC_OBJDIR)
+BUILD_EXECDIR_BOOT = $(BUILD_EXECDIR)
 
 #### Boot step 1
 
 EXEC_SRCS_BOOT1 = cast-parser.cpp
-
-EXEC_OBJS_BOOT1 = $(patsubst %.cpp, $(EXEC_OBJDIR_BOOT)/%.o, $(EXEC_SRCS_BOOT1))
-
+EXEC_OBJS_BOOT1 = $(patsubst %.cpp, $(EXEC_OBJDIR)/%.o, $(EXEC_SRCS_BOOT1))
 EXECS_BOOT1 = $(patsubst %.cpp, $(BUILD_EXECDIR_BOOT)/%$(EXE), $(EXEC_SRCS_BOOT1))
 
 #### Boot step 2
 
 EXEC_SRCS_BOOT2 = cast2casm.cpp
-
-EXEC_OBJS_BOOT2 = $(patsubst %.cpp, $(EXEC_OBJDIR_BOOT)/%.o, $(EXEC_SRCS_BOOT2))
-
+EXEC_OBJS_BOOT2 = $(patsubst %.cpp, $(EXEC_OBJDIR)/%.o, $(EXEC_SRCS_BOOT2))
 EXECS_BOOT2 = $(patsubst %.cpp, $(BUILD_EXECDIR_BOOT)/%$(EXE), $(EXEC_SRCS_BOOT2))
 
-##### Build step
+##### Build result
 
-EXECDIR = $(SRCDIR)/exec
-EXEC_OBJDIR = $(OBJDIR)/exec
-BUILD_EXECDIR = $(BUILDDIR)/bin
-
-EXEC_SRCS = \
+EXEC_SRCS_REST = \
 	casm2cast.cpp \
-	cast2casm.cpp \
 	compress-int.cpp \
 	decompress.cpp
+EXEC_OBJS_REST = $(patsubst %.cpp, $(EXEC_OBJDIR)/%.o, $(EXEC_SRCS_REST))
+EXECS_REST = $(patsubst %.cpp, $(BUILD_EXECDIR)/%$(EXE), $(EXEC_SRCS_REST))
+EXECS = $(EXECS_BOOT1) $(EXECS_BOOT2) $(EXECS_REST)
 
+EXEC_SRCS = $(EXEC_SRCS_BOOT1) $(EXEC_SRCS_BOOT2) $(EXEC_SRCS_REST)
 EXEC_OBJS = $(patsubst %.cpp, $(EXEC_OBJDIR)/%.o, $(EXEC_SRCS))
-
-EXECS = $(patsubst %.cpp, $(BUILD_EXECDIR)/%$(EXE), $(EXEC_SRCS))
 
 ###### Test executables and locations ######
 
@@ -638,24 +635,20 @@ $(INTERP_LIB_C): $(INTERP_OBJS_C)
 
 ###### Compiling the integer compressor sources ######
 
-ifeq ($(GEN), 0)
+$(INTCOMP_OBJS): | $(INTCOMP_OBJDIR)
 
-  $(INTCOMP_OBJS): | $(INTCOMP_OBJDIR)
-
-  $(INTCOMP_OBJDIR):
+$(INTCOMP_OBJDIR):
 	mkdir -p $@
 
-  -include $(foreach dep,$(INTCOMP_SRCS:.cpp=.d),$(INTCOMP_OBJDIR)/$(dep))
+-include $(foreach dep,$(INTCOMP_SRCS:.cpp=.d),$(INTCOMP_OBJDIR)/$(dep))
 
-  $(INTCOMP_OBJS): $(INTCOMP_OBJDIR)/%.o: $(INTCOMP_SRCDIR)/%.cpp
+$(INTCOMP_OBJS): $(INTCOMP_OBJDIR)/%.o: $(INTCOMP_SRCDIR)/%.cpp
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
 
-  $(INTCOMP_LIB): $(INTCOMP_OBJS)
+$(INTCOMP_LIB): $(INTCOMP_OBJS)
 	ar -rs $@ $(INTCOMP_OBJS)
 	ranlib $@
-
-endif
 
 ###### Compiliing Sexp Sources ######
 
@@ -711,6 +704,7 @@ $(STRM_LIB): $(STRM_OBJS)
 	ranlib $@
 
 ###### Compiling Filter Parser #######
+
 ifeq ($(GEN), 1)
 
   $(PARSER_GENDIR)/Lexer.lex: $(PARSER_DIR)/Lexer.lex $(PARSER_GENDIR)
@@ -750,8 +744,6 @@ $(PARSER_OBJDIR):
 
 $(PARSER_OBJS): | $(PARSER_OBJDIR)
 
--include $(PARSER_GENDIR)/Lexer.d
-
 -include $(foreach dep,$(PARSER_SRCS:.cpp=.d),$(PARSER_OBJDIR)/$(dep))
 
 $(PARSER_STD_OBJS): $(PARSER_OBJDIR)/%.o: $(PARSER_DIR)/%.cpp \
@@ -784,65 +776,47 @@ $(LIBS): | $(LIBDIR)
 
 ###### Compiling executables ######
 
-ifeq ($(GEN), 1)
-
-  $(EXEC_OBJDIR_BOOT):
+$(EXEC_OBJDIR):
 	mkdir -p $@
 
-  $(BUILD_EXECDIR_BOOT):
+$(BUILD_EXECDIR):
 	mkdir -p $@
 
-  #### Boot step 1
+$(EXEC_OBJS): | $(EXEC_OBJDIR)
 
-  $(EXEC_OBJS_BOOT1): | $(EXEC_OBJDIR_BOOT)
+$(EXECS): | $(BUILD_EXECDIR)
 
-  -include $(foreach dep,$(EXEC_SRCS_BOOT1:.cpp=.d),$(EXEC_OBJDIR_BOOT)/$(dep))
+#### Boot step 1
 
-  $(EXEC_OBJS_BOOT1): $(EXEC_OBJDIR_BOOT)/%.o: $(EXECDIR)/%.cpp \
+-include $(foreach dep,$(EXEC_SRCS_BOOT1:.cpp=.d),$(EXEC_OBJDIR)/$(dep))
+
+$(EXEC_OBJS_BOOT1): $(EXEC_OBJDIR)/%.o: $(EXECDIR)/%.cpp \
 		$(GENSRCS_BOOT)
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
-  $(EXECS_BOOT1): | $(BUILD_EXECDIR_BOOT)
-
-  $(EXECS_BOOT1): $(BUILD_EXECDIR_BOOT)/%$(EXE): $(EXEC_OBJDIR_BOOT)/%.o $(LIBS_BOOT1)
+$(EXECS_BOOT1): $(BUILD_EXECDIR_BOOT)/%$(EXE): $(EXEC_OBJDIR)/%.o $(LIBS_BOOT1)
 	$(CPP_COMPILER) $(CXXFLAGS) $< $(LIBS_BOOT1) -o $@
 
-  #### Boot step 2
+#### Boot step 2
 
-  $(EXEC_OBJS_BOOT2): | $(EXEC_OBJDIR_BOOT)
+-include $(foreach dep,$(EXEC_SRCS_BOOT2:.cpp=.d),$(EXEC_OBJDIR)/$(dep))
 
-  -include $(foreach dep,$(EXEC_SRCS_BOOT2:.cpp=.d),$(EXEC_OBJDIR_BOOT)/$(dep))
-
-  $(EXEC_OBJS_BOOT2): $(EXEC_OBJDIR_BOOT)/%.o: $(EXECDIR)/%.cpp \
+$(EXEC_OBJS_BOOT2): $(EXEC_OBJDIR)/%.o: $(EXECDIR)/%.cpp \
 		$(GENSRCS_BOOT) $(ALG_GEN_SRCS_BOOT1)
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
-  $(EXECS_BOOT2): | $(BUILD_EXECDIR_BOOT)
-
-  $(EXECS_BOOT2): $(BUILD_EXECDIR_BOOT)/%$(EXE): $(EXEC_OBJDIR_BOOT)/%.o $(LIBS_BOOT2)
+$(EXECS_BOOT2): $(BUILD_EXECDIR_BOOT)/%$(EXE): $(EXEC_OBJDIR)/%.o $(LIBS_BOOT2)
 	$(CPP_COMPILER) $(CXXFLAGS) $< $(LIBS_BOOT2) -o $@
 
-else
+#### build rest.
 
-  $(EXEC_OBJDIR):
-	mkdir -p $@
+-include $(foreach dep,$(EXEC_SRCS:.cpp=.d),$(EXEC_OBJDIR)/$(dep))
 
-  $(BUILD_EXECDIR):
-	mkdir -p $@
-
-  $(EXEC_OBJS): | $(EXEC_OBJDIR)
-
-  -include $(foreach dep,$(EXEC_SRCS:.cpp=.d),$(EXEC_OBJDIR)/$(dep))
-
-  $(EXEC_OBJS): $(EXEC_OBJDIR)/%.o: $(EXECDIR)/%.cpp
+$(EXEC_OBJS_REST): $(EXEC_OBJDIR)/%.o: $(EXECDIR)/%.cpp
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
-  $(EXECS): | $(BUILD_EXECDIR)
-
-  $(EXECS): $(BUILD_EXECDIR)/%$(EXE): $(EXEC_OBJDIR)/%.o $(LIBS)
+$(EXECS_REST): $(BUILD_EXECDIR)/%$(EXE): $(EXEC_OBJDIR)/%.o $(LIBS)
 	$(CPP_COMPILER) $(CXXFLAGS) $< $(LIBS) -o $@
-
-endif
 
 ###### Compiling Test Executables #######
 
