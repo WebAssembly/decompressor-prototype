@@ -208,9 +208,8 @@ STRM_LIB = $(LIBDIR)/$(LIBPREFIX)strm.a
 
 INTERP_SRCDIR = $(SRCDIR)/interp
 INTERP_OBJDIR = $(OBJDIR)/interp
-INTERP_OBJDIR_BOOT = $(OBJDIR_BOOT)/interp
 
-INTERP_SRCS_BOOT = \
+INTERP_SRCS_BASE = \
 	AlgorithmSelector.cpp \
 	ByteReader.cpp \
 	ByteReadStream.cpp \
@@ -228,14 +227,16 @@ INTERP_SRCS_BOOT = \
 	TeeWriter.cpp \
 	Writer.cpp \
 	WriteStream.cpp
+INTERP_OBJS_BASE = $(patsubst %.cpp, $(INTERP_OBJDIR)/%.o, $(INTERP_SRCS_BASE))
+INTERP_LIB_BASE = $(LIBDIR)/$(LIBPREFIX)interp-base.a
 
-INTERP_SRCS = $(INTERP_SRCS_BOOT) Decompress.cpp
+INTERP_SRCS_C = Decompress.cpp
+INTERP_OBJS_C = $(patsubst %.cpp, $(INTERP_OBJDIR)/%.o, $(INTERP_SRCS_C))
+INTERP_LIB_C = $(LIBDIR)/$(LIBPREFIX)interp-c.a
 
+INTERP_SRCS = $(INTERP_SRCS_BASE) $(INTERP_SRCS_C)
 INTERP_OBJS = $(patsubst %.cpp, $(INTERP_OBJDIR)/%.o, $(INTERP_SRCS))
-INTERP_OBJS_BOOT = $(patsubst %.cpp, $(INTERP_OBJDIR)/%.o, $(INTERP_SRCS_BOOT))
-
-INTERP_LIB = $(LIBDIR)/$(LIBPREFIX)interp.a
-INTERP_LIB_BOOT = $(LIBDIR_BOOT)/$(LIBPREFIX)interp-boot.a
+INTERP_LIB = $(INTERP_LIB_C) $(INTERP_LIB_BASE)
 
 ###### Integer Compressor ######
 
@@ -434,13 +435,13 @@ LIBS = $(INTCOMP_LIB) $(BINARY_LIB) $(INTERP_LIB) $(SEXP_LIB) $(CASM_LIB) $(PARS
        $(ALG_LIB) $(SEXP_LIB) $(INTERP_LIB) $(BINARY_LIB) $(ALG_LIB) \
        $(CASM_LIB) $(STRM_LIB) $(UTILS_LIB) $(PARSER_LIB)
 
-LIBS_BOOT1 = $(BINARY_LIB) $(INTERP_LIB_BOOT) \
+LIBS_BOOT1 = $(BINARY_LIB) $(INTERP_LIB_BASE) \
 	$(SEXP_LIB) $(CASM_LIB_BASE) $(PARSER_LIB) \
-	$(INTERP_LIB_BOOT) $(BINARY_LIB) $(STRM_LIB) $(UTILS_LIB)
+	$(INTERP_LIB_BASE) $(BINARY_LIB) $(STRM_LIB) $(UTILS_LIB)
 
-LIBS_BOOT2 = $(BINARY_LIB) $(INTERP_LIB_BOOT) \
+LIBS_BOOT2 = $(BINARY_LIB) $(INTERP_LIB_BASE) \
 	$(SEXP_LIB) $(CASM_LIB_BASE) $(PARSER_LIB) \
-	$(INTERP_LIB_BOOT) $(ALG_LIB_BOOT2) $(BINARY_LIB) \
+	$(INTERP_LIB_BASE) $(ALG_LIB_BOOT2) $(BINARY_LIB) \
 	$(STRM_LIB) $(UTILS_LIB) $(ALG_LIB_BOOT2)
 
 ##### Track additional important variable definitions not in Makefile.common
@@ -617,29 +618,23 @@ $(UTILS_LIB): $(UTILS_OBJS)
 
 ###### Compiling s-expression interpeter sources ######
 
-  $(INTERP_OBJS): | $(INTERP_OBJDIR)
+$(INTERP_OBJS): | $(INTERP_OBJDIR)
 
-  $(INTERP_OBJDIR):
+$(INTERP_OBJDIR):
 	mkdir -p $@
 
-  -include $(foreach dep,$(INTERP_SRCS:.cpp=.d),$(INTERP_OBJDIR)/$(dep))
+-include $(foreach dep,$(INTERP_SRCS:.cpp=.d),$(INTERP_OBJDIR)/$(dep))
 
-  $(INTERP_OBJS): $(INTERP_OBJDIR)/%.o: $(INTERP_SRCDIR)/%.cpp
+$(INTERP_OBJS): $(INTERP_OBJDIR)/%.o: $(INTERP_SRCDIR)/%.cpp
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
-ifeq ($(GEN), 1)
-
-  $(INTERP_LIB_BOOT): $(INTERP_OBJS_BOOT)
-	ar -rs $@ $(INTERP_OBJS_BOOT)
+$(INTERP_LIB_BASE): $(INTERP_OBJS_BASE)
+	ar -rs $@ $(INTERP_OBJS_BASE)
 	ranlib $@
 
-else
-
-  $(INTERP_LIB): $(INTERP_OBJS)
-	ar -rs $@ $(INTERP_OBJS)
+$(INTERP_LIB_C): $(INTERP_OBJS_C)
+	ar -rs $@ $(INTERP_OBJS_C)
 	ranlib $@
-
-endif
 
 ###### Compiling the integer compressor sources ######
 
