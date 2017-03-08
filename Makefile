@@ -108,22 +108,25 @@ SEXP_LIB = $(LIBDIR)/$(LIBPREFIX)sexp.a
 CASM_SRCDIR = $(SRCDIR)/casm
 CASM_GENDIR = $(GENDIR)/casm
 CASM_OBJDIR = $(OBJDIR)/casm
-CASM_OBJDIR_BOOT = $(OBJDIR_BOOT)/casm
-CASM_SRCS_BOOT = \
+
+CASM_SRCS_BASE = \
 	CasmReader.cpp \
 	CasmWriter.cpp \
 	FlattenAst.cpp \
 	InflateAst.cpp
+CASM_OBJS_BASE = $(patsubst %.cpp, $(CASM_OBJDIR)/%.o, $(CASM_SRCS_BASE))
+CASM_LIB_BASE = $(LIBDIR)/$(LIBPREFIX)casm-base.a
 
-CASM_SRCS = $(CASM_SRCS_BOOT) \
+# These files are in a separate directory because they require the C++
+# source files for CASM.
+CASM_SRCS_BIN = \
 	CasmReaderBinary.cpp \
-	CasmWriterBinary.cpp \
+	CasmWriterBinary.cpp
+CASM_OBJS_BIN = $(patsubst %.cpp, $(CASM_OBJDIR)/%.o, $(CASM_SRCS_BIN))
+CASM_LIB_BIN = $(LIBDIR)/$(LIBPREFIX)casm-bin.a
 
-CASM_OBJS = $(patsubst %.cpp, $(CASM_OBJDIR)/%.o, $(CASM_SRCS))
-CASM_OBJS_BOOT = $(patsubst %.cpp, $(CASM_OBJDIR_BOOT)/%.o, $(CASM_SRCS_BOOT))
-
-CASM_LIB = $(LIBDIR)/$(LIBPREFIX)casm.a
-CASM_LIB_BOOT = $(LIBDIR_BOOT)/$(LIBPREFIX)casm-boot.a
+CASM_OBJS = $(CASM_OBJS_BASE) $(CASM_OBJS_BIN)
+CASM_LIB = $(CASM_LIB_BIN) $(CASM_LIB_BASE)
 
 #######
 # This is the default file used by tests.
@@ -451,11 +454,11 @@ LIBS = $(INTCOMP_LIB) $(BINARY_LIB) $(INTERP_LIB) $(SEXP_LIB) $(CASM_LIB) $(PARS
        $(CASM_LIB) $(STRM_LIB) $(UTILS_LIB) $(PARSER_LIB)
 
 LIBS_BOOT1 = $(BINARY_LIB) $(INTERP_LIB_BOOT) \
-	$(SEXP_LIB) $(CASM_LIB_BOOT) $(PARSER_LIB) \
+	$(SEXP_LIB) $(CASM_LIB_BASE) $(PARSER_LIB) \
 	$(INTERP_LIB_BOOT) $(BINARY_LIB) $(STRM_LIB) $(UTILS_LIB)
 
 LIBS_BOOT2 = $(BINARY_LIB) $(INTERP_LIB_BOOT) \
-	$(SEXP_LIB) $(CASM_LIB_BOOT) $(PARSER_LIB) \
+	$(SEXP_LIB) $(CASM_LIB_BASE) $(PARSER_LIB) \
 	$(INTERP_LIB_BOOT) $(ALG_LIB_BOOT2) $(BINARY_LIB) \
 	$(STRM_LIB) $(UTILS_LIB) $(ALG_LIB_BOOT2)
 
@@ -701,39 +704,24 @@ $(SEXP_LIB): $(SEXP_OBJS)
 
 ###### Compiliing casm ources ######
 
-ifeq ($(GEN), 1)
+$(CASM_OBJS): | $(CASM_OBJDIR)
 
-  $(CASM_OBJS_BOOT): | $(CASM_OBJDIR_BOOT)
-
-  $(CASM_OBJDIR_BOOT):
+$(CASM_OBJDIR):
 	mkdir -p $@
 
-  -include $(foreach dep,$(CASM_SRCS:.cpp=.d),$(CASM_OBJDIR_BOOT)/$(dep))
+-include $(foreach dep,$(CASM_SRCS:.cpp=.d),$(CASM_OBJDIR)/$(dep))
 
-  $(CASM_OBJS_BOOT): $(CASM_OBJDIR_BOOT)/%.o: $(CASM_SRCDIR)/%.cpp $(GENSRCS_BOOT)
+$(CASM_OBJS): $(CASM_OBJDIR)/%.o: $(CASM_SRCDIR)/%.cpp
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
-  $(CASM_LIB_BOOT): $(CASM_OBJS_BOOT)
-	ar -rs $@ $(CASM_OBJS_BOOT)
+
+$(CASM_LIB_BIN): $(CASM_OBJS_BIN)
+	ar -rs $@ $(CASM_OBJS_BIN)
 	ranlib $@
 
-else
-
-  $(CASM_OBJS): | $(CASM_OBJDIR)
-
-  $(CASM_OBJDIR):
-	mkdir -p $@
-
-  -include $(foreach dep,$(CASM_SRCS:.cpp=.d),$(CASM_OBJDIR)/$(dep))
-
-  $(CASM_OBJS): $(CASM_OBJDIR)/%.o: $(CASM_SRCDIR)/%.cpp
-	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
-
-  $(CASM_LIB): $(CASM_OBJS)
-	ar -rs $@ $(CASM_OBJS)
+$(CASM_LIB_BASE): $(CASM_OBJS_BASE)
+	ar -rs $@ $(CASM_OBJS_BASE)
 	ranlib $@
-
-endif
 
 ###### Compiling stream sources ######
 
