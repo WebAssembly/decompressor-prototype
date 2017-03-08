@@ -24,6 +24,7 @@ eq = $(and $(findstring $(1),$(2)),$(findstring $(2),$(1)))
 include Makefile.common
 
 GENSRCS =
+GENSRCS_BOOT =
 
 ###### Utilities ######
 
@@ -62,7 +63,8 @@ BINARY_LIB = $(LIBDIR)/$(LIBPREFIX)binary.a
 PARSER_DIR = $(SRCDIR)/sexp-parser
 PARSER_GENDIR = $(GENDIR)/sexp-parser
 PARSER_OBJDIR = $(OBJDIR)/sexp-parser
-PARSER_OBJDIR_BOOT = $(OBJDIR_BOOT)/sexp-parser
+#PARSER_OBJDIR_BOOT = $(OBJDIR_BOOT)/sexp-parser
+PARSER_OBJDIR_BOOT = $(PARSER_OBJDIR)
 PARSER_GENSRCS = \
 	location.hh \
 	Lexer.cpp \
@@ -88,12 +90,16 @@ PARSER_STD_OBJS=$(patsubst %.cpp, $(PARSER_OBJDIR)/%.o, $(PARSER_SRCS))
 PARSER_GEN_OBJS=$(patsubst %.cpp, $(PARSER_OBJDIR)/%.o, $(PARSER_CPP_GENSRCS))
 PARSER_OBJS=$(PARSER_STD_OBJS) $(PARSER_GEN_OBJS)
 
-PARSER_STD_OBJS_BOOT=$(patsubst %.cpp, $(PARSER_OBJDIR_BOOT)/%.o, $(PARSER_SRCS))
-PARSER_GEN_OBJS_BOOT=$(patsubst %.cpp, $(PARSER_OBJDIR_BOOT)/%.o, $(PARSER_CPP_GENSRCS))
-PARSER_OBJS_BOOT=$(PARSER_STD_OBJS_BOOT) $(PARSER_GEN_OBJS_BOOT)
+#PARSER_STD_OBJS_BOOT=$(patsubst %.cpp, $(PARSER_OBJDIR_BOOT)/%.o, $(PARSER_SRCS))
+#PARSER_GEN_OBJS_BOOT=$(patsubst %.cpp, $(PARSER_OBJDIR_BOOT)/%.o, $(PARSER_CPP_GENSRCS))
+#PARSER_OBJS_BOOT=$(PARSER_STD_OBJS_BOOT) $(PARSER_GEN_OBJS_BOOT)
+PARSER_STD_OBJS_BOOT=$(PARSER_STD_OBJS)
+PARSER_GEN_OBJS_BOOT=$(PARSER_GEN_OBJS)
+PARSER_OBJS_BOOT=$(PARSER_OBJS)
 
 PARSER_LIB = $(LIBDIR)/$(LIBPREFIX)parser.a
 PARSER_LIB_BOOT = $(LIBDIR_BOOT)/$(LIBPREFIX)parser.a
+PARSER_LIB_BOOT = $(PARSER_LIB)
 
 ###### s-expression representation  ######
 
@@ -539,26 +545,10 @@ ifeq ($(GEN), 1)
   gen: $(GENSRCS)
 else
   gen:
-	@echo "Command line not correct, run 'make GEN=1' instead"
+	make GEN=1
 endif
 
 .PHONY: gen
-
-ifeq ($(GEN), 1)
-  gen-lexer: $(PARSER_GENDIR)/Lexer.cpp gen-parser
-else
-  gen-lexer:
-endif
-
-.PHONY: gen-lexer
-
-ifeq ($(GEN), 1)
-  gen-parser: $(PARSER_GENDIR)/Parser.tab.cpp
-else
-  gen-parser:
-endif
-
-.PHONY: gen-parser
 
 ###### Compiliing algorithm sources ######
 
@@ -575,7 +565,6 @@ $(ALG_OBJS): | $(ALG_OBJDIR)
 $(ALG_OBJDIR):
 	mkdir -p $@
 
-$(info EXECS_BOOT1 = $(EXECS_BOOT1))
 
 ifeq ($(GEN), 1)
 
@@ -808,51 +797,30 @@ ifeq ($(GEN), 1)
   $(PARSER_GENDIR)/stack.hh: $(PARSER_GENDIR)/Parser.tab.cpp
 	touch $@
 
-  $(PARSER_OBJDIR_BOOT):
+endif
+
+$(PARSER_OBJDIR):
 	mkdir -p $@
 
-  $(PARSER_OBJS_BOOT): | $(PARSER_OBJDIR_BOOT)
+$(PARSER_OBJS): | $(PARSER_OBJDIR)
 
-  -include $(foreach dep,$(PARSER_SRCS:.cpp=.d),$(PARSER_OBJDIR_BOOT)/$(dep))
+-include $(PARSER_GENDIR)/Lexer.d
 
-  $(PARSER_STD_OBJS_BOOT): $(PARSER_OBJDIR_BOOT)/%.o: $(PARSER_DIR)/%.cpp \
-		$(GENSRCS_BOOT)
+-include $(foreach dep,$(PARSER_SRCS:.cpp=.d),$(PARSER_OBJDIR)/$(dep))
+
+$(PARSER_STD_OBJS): $(PARSER_OBJDIR)/%.o: $(PARSER_DIR)/%.cpp \
+	$(GENSRCS_BOOT)
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
-  -include $(foreach dep,$(PARSER_CPP_GENSRCS:.cpp=.d),$(PARSER_OBJDIR_BOOT)/$(dep))
+-include $(foreach dep,$(PARSER_CPP_GENSRCS:.cpp=.d),$(PARSER_OBJDIR)/$(dep))
 
-  $(PARSER_GEN_OBJS_BOOT): $(PARSER_OBJDIR_BOOT)/%.o: $(PARSER_GENDIR)/%.cpp \
-		$(GENSRCS_BOOT)
+$(PARSER_GEN_OBJS): $(PARSER_OBJDIR)/%.o: $(PARSER_GENDIR)/%.cpp \
+	$(GENSRCS_BOOT)
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
-  $(PARSER_LIB_BOOT): $(PARSER_OBJS_BOOT)
-	ar -rs $@ $(PARSER_OBJS_BOOT)
-	ranlib $@
-
-else
-
-  $(PARSER_OBJDIR):
-	mkdir -p $@
-
-  $(PARSER_OBJS): | $(PARSER_OBJDIR)
-
-  -include $(PARSER_GENDIR)/Lexer.d
-
-  -include $(foreach dep,$(PARSER_SRCS:.cpp=.d),$(PARSER_OBJDIR)/$(dep))
-
-  $(PARSER_STD_OBJS): $(PARSER_OBJDIR)/%.o: $(PARSER_DIR)/%.cpp
-	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
-
-  -include $(foreach dep,$(PARSER_CPP_GENSRCS:.cpp=.d),$(PARSER_OBJDIR)/$(dep))
-
-  $(PARSER_GEN_OBJS): $(PARSER_OBJDIR)/%.o: $(PARSER_GENDIR)/%.cpp
-	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
-
-  $(PARSER_LIB): $(PARSER_OBJS)
+$(PARSER_LIB): $(PARSER_OBJS)
 	ar -rs $@ $(PARSER_OBJS)
 	ranlib $@
-
-endif
 
 ###### Building libraries ######
 
