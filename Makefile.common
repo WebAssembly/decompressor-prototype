@@ -25,7 +25,7 @@
 
 CXX := clang++
 EXE :=
-CXX_BOOT := clang++
+CXX_BOOT := $(CXX)
 
 ifndef GEN
   GEN=0
