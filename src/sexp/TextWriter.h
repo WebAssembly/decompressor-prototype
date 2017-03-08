@@ -109,7 +109,7 @@ class TextWriter {
                        bool EmbedInParent = false);
   void writeNodeKidsAbbrev(const Node* Node, bool EmbeddedInParent);
 
-  void writeIndent(int Adjustment=0);
+  void writeIndent(int Adjustment = 0);
   void writeNewline();
   void maybeWriteNewline(bool Yes);
   void writeSpace();

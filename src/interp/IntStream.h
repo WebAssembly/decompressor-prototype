@@ -72,6 +72,7 @@ class IntStream : public std::enable_shared_from_this<IntStream> {
     Cursor& operator=(const Cursor& C);
     ~Cursor();
     size_t getIndex() const { return Index; }
+    StreamPtr getStream() const { return Stream; }
     size_t streamSize() const { return Stream->size(); }
     bool atEof() const;
     bool atEob() const;

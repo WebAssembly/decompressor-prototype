@@ -19,6 +19,7 @@
 #include "interp/IntWriter.h"
 
 #include <unordered_set>
+#include <vector>
 
 #include "sexp/Ast.h"
 
@@ -42,43 +43,71 @@ class IntWriter::TableHandler {
   TableHandler& operator=(const TableHandler&) = delete;
 
  public:
-  explicit TableHandler(IntWriter& Writer) : Writer(Writer) {}
-  ~TableHandler() {}
-
-  bool tablePush(decode::IntType Value) {
-    if (Cached.count(Value)) {
-      auto Output = std::make_shared<IntStream>();
-      IntStream::WriteCursor TmpCursor(Output);
-      CursorStack.push_back(Writer.Pos);
-      Writer.Pos = TmpCursor;
-      RestoreStack.push_back(true);
-      return true;
-    }
-    Cached.insert(Value);
-    RestoreStack.push_back(false);
-    return true;
-  }
-
-  bool tablePop() {
-    if (RestoreStack.empty())
-      return false;
-    bool Restore = RestoreStack.back();
-    RestoreStack.pop_back();
-    if (!Restore)
-      return true;
-    if (CursorStack.empty())
-      return false;
-    Writer.Pos = CursorStack.back();
-    CursorStack.pop_back();
-    return true;
-  }
+  explicit TableHandler(IntWriter& Writer);
+  ~TableHandler();
+  bool tablePush(decode::IntType Value);
+  bool tablePop();
 
  private:
   IntWriter& Writer;
+  std::vector<IntStream::StreamPtr> FreeStreams;
   std::unordered_set<IntType> Cached;
   std::vector<bool> RestoreStack;
   std::vector<IntStream::WriteCursor> CursorStack;
+  IntStream::StreamPtr allocStream();
+  void freeStream(IntStream::StreamPtr Strm);
+  static constexpr size_t MaxFreeStreams = 5;
 };
+
+IntWriter::TableHandler::TableHandler(IntWriter& Writer)
+    : Writer(Writer), FreeStreams(MaxFreeStreams) {
+}
+
+IntWriter::TableHandler::~TableHandler() {
+}
+
+IntStream::StreamPtr IntWriter::TableHandler::allocStream() {
+  if (FreeStreams.empty())
+    return std::make_shared<IntStream>();
+  IntStream::StreamPtr Ptr = FreeStreams.back();
+  FreeStreams.pop_back();
+  return Ptr;
+}
+
+void IntWriter::TableHandler::freeStream(IntStream::StreamPtr Strm) {
+  if (FreeStreams.size() >= MaxFreeStreams)
+    // Let the destructor of Strm return the memory.
+    return;
+  FreeStreams.push_back(Strm);
+}
+
+bool IntWriter::TableHandler::tablePush(decode::IntType Value) {
+  if (Cached.count(Value)) {
+    IntStream::WriteCursor TmpCursor(allocStream());
+    CursorStack.push_back(Writer.Pos);
+    Writer.Pos = TmpCursor;
+    RestoreStack.push_back(true);
+    return true;
+  }
+  Cached.insert(Value);
+  RestoreStack.push_back(false);
+  return true;
+}
+
+bool IntWriter::TableHandler::tablePop() {
+  if (RestoreStack.empty())
+    return false;
+  bool Restore = RestoreStack.back();
+  RestoreStack.pop_back();
+  if (!Restore)
+    return true;
+  if (CursorStack.empty())
+    return false;
+  freeStream(Writer.Pos.getStream());
+  Writer.Pos = CursorStack.back();
+  CursorStack.pop_back();
+  return true;
+}
 
 IntWriter::IntWriter(std::shared_ptr<IntStream> Output)
     : Writer(true), Output(Output), Pos(Output), TblHandler(nullptr) {

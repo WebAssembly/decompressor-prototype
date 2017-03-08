@@ -184,10 +184,10 @@ Node::~Node() {
 int Node::compare(const Node* Nd) const {
   if (this == Nd)
     return 0;
-  int Diff = compareNode(Nd);
+  int Diff = nodeCompare(Nd);
   if (Diff != 0)
     return Diff;
-  // Structurally compare subtrees. Note; we assume that if compareNode()==0,
+  // Structurally compare subtrees. Note; we assume that if nodeCompare()==0,
   // the node must have the same number of children.
   std::vector<const Node*> Frontier;
   Frontier.push_back(this);
@@ -204,7 +204,7 @@ int Node::compare(const Node* Nd) const {
       const Node* Kid2 = Nd2->getKid(i);
       if (Kid1 == Kid2)
         continue;
-      Diff = Kid1->compareNode(Kid2);
+      Diff = Kid1->nodeCompare(Kid2);
       if (Diff != 0)
         return Diff;
       Frontier.push_back(Kid1);
@@ -214,7 +214,7 @@ int Node::compare(const Node* Nd) const {
   return 0;
 }
 
-int Node::compareNode(const Node* Nd) const {
+int Node::nodeCompare(const Node* Nd) const {
   return int(Type) - int(Nd->Type);
 }
 
@@ -377,8 +377,8 @@ CachedNode::CachedNode(SymbolTable& Symtab, NodeType Type)
 CachedNode::~CachedNode() {
 }
 
-int CachedNode::compareNode(const Node* Nd) const {
-  int Diff = NullaryNode::compareNode(Nd);
+int CachedNode::nodeCompare(const Node* Nd) const {
+  int Diff = NullaryNode::nodeCompare(Nd);
   if (Diff != 0)
     return Diff;
   return compareIncomparable(Nd);
@@ -504,8 +504,8 @@ void SymbolNode::init() {
   PredefinedValueIsCached = false;
 }
 
-int SymbolNode::compareNode(const Node* Nd) const {
-  int Diff = NullaryNode::compareNode(Nd);
+int SymbolNode::nodeCompare(const Node* Nd) const {
+  int Diff = NullaryNode::nodeCompare(Nd);
   if (Diff != 0)
     return Diff;
   assert(isa<SymbolNode>(Nd));
@@ -562,7 +562,7 @@ void SymbolTable::init() {
 }
 
 SymbolTable::~SymbolTable() {
-  clear();
+  clearSymbols();
   deallocateNodes();
 }
 
@@ -615,7 +615,7 @@ void SymbolTable::collectActionDefs(ActionDefSet& DefSet) {
   }
 }
 
-void SymbolTable::clear() {
+void SymbolTable::clearSymbols() {
   SymbolMap.clear();
 }
 
@@ -1029,8 +1029,8 @@ IntegerNode::IntegerNode(SymbolTable& Symtab,
 IntegerNode::~IntegerNode() {
 }
 
-int IntegerNode::compareNode(const Node* Nd) const {
-  int Diff = NullaryNode::compareNode(Nd);
+int IntegerNode::nodeCompare(const Node* Nd) const {
+  int Diff = NullaryNode::nodeCompare(Nd);
   if (Diff != 0)
     return Diff;
   assert(isa<IntegerNode>(Nd));
@@ -1123,8 +1123,8 @@ template BinaryAcceptNode* SymbolTable::create<BinaryAcceptNode>();
 BinaryAcceptNode::~BinaryAcceptNode() {
 }
 
-int BinaryAcceptNode::compareNode(const Node* Nd) const {
-  int Diff = IntegerNode::compareNode(Nd);
+int BinaryAcceptNode::nodeCompare(const Node* Nd) const {
+  int Diff = IntegerNode::nodeCompare(Nd);
   if (Diff != 0)
     return Diff;
   assert(isa<BinaryAcceptNode>(Nd));
@@ -1344,8 +1344,8 @@ NaryNode::NaryNode(SymbolTable& Symtab, NodeType Type) : Node(Symtab, Type) {
 NaryNode::~NaryNode() {
 }
 
-int NaryNode::compareNode(const Node* Nd) const {
-  int Diff = Node::compareNode(Nd);
+int NaryNode::nodeCompare(const Node* Nd) const {
+  int Diff = Node::nodeCompare(Nd);
   if (Diff != 0)
     return Diff;
   return getNumKids() - Nd->getNumKids();
