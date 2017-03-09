@@ -72,22 +72,19 @@ PARSER_GENSRCS = \
 	position.hh \
 	stack.hh
 
-PARSER_SRCS = \
+PARSER_SRCS_REST = \
 	Driver.cpp
 
-PARSER_CPP_GENSRCS = \
-	Lexer.cpp \
-	Parser.tab.cpp
-
+PARSER_CPP_GENSRCS = $(filter %.cpp, $(PARSER_GENSRCS))
 PARSER_GEN_SRCS = $(patsubst %, $(PARSER_GENDIR)/%, $(PARSER_GENSRCS))
 
 GENSRCS += $(PARSER_GEN_SRCS)
 GENSRCS_BOOT += $(PARSER_GEN_SRCS)
 
-PARSER_STD_OBJS=$(patsubst %.cpp, $(PARSER_OBJDIR)/%.o, $(PARSER_SRCS))
+PARSER_REST_OBJS=$(patsubst %.cpp, $(PARSER_OBJDIR)/%.o, $(PARSER_SRCS_REST))
 PARSER_GEN_OBJS=$(patsubst %.cpp, $(PARSER_OBJDIR)/%.o, $(PARSER_CPP_GENSRCS))
-PARSER_OBJS=$(PARSER_STD_OBJS) $(PARSER_GEN_OBJS)
 
+PARSER_OBJS=$(PARSER_REST_OBJS) $(PARSER_GEN_OBJS)
 PARSER_LIB = $(LIBDIR)/$(LIBPREFIX)parser.a
 
 ###### s-expression representation  ######
@@ -744,16 +741,12 @@ $(PARSER_OBJDIR):
 
 $(PARSER_OBJS): | $(PARSER_OBJDIR)
 
--include $(foreach dep,$(PARSER_SRCS:.cpp=.d),$(PARSER_OBJDIR)/$(dep))
+-include $(foreach dep,$(PARSER_OBJS:.o=.d), $(dep))
 
-$(PARSER_STD_OBJS): $(PARSER_OBJDIR)/%.o: $(PARSER_DIR)/%.cpp \
-	$(GENSRCS_BOOT)
+$(PARSER_REST_OBJS): $(PARSER_OBJDIR)/%.o: $(PARSER_DIR)/%.cpp $(PARSER_GEN_SRCS)
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
--include $(foreach dep,$(PARSER_CPP_GENSRCS:.cpp=.d),$(PARSER_OBJDIR)/$(dep))
-
-$(PARSER_GEN_OBJS): $(PARSER_OBJDIR)/%.o: $(PARSER_GENDIR)/%.cpp \
-	$(GENSRCS_BOOT)
+$(PARSER_GEN_OBJS): $(PARSER_OBJDIR)/%.o: $(PARSER_GENDIR)/%.cpp $(PARSER_GEN_SRCS)
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
 $(PARSER_LIB): $(PARSER_OBJS)
