@@ -31,6 +31,10 @@ ifndef GEN
   GEN=0
 endif
 
+ifndef GENSRCS
+  GENSRCS=0
+endif
+
 # Define if updating tests
 ifndef UPDATE
   UPDATE=0
@@ -159,12 +163,13 @@ OBJDIR = $(BUILDDIR)/obj
 OBJDIR_BOOT = $(BUILDDIR_BOOT)/obj
 
 LIBDIR = $(BUILDDIR)/lib
-LIBDIR_BOOT = $(BUILDDIR_BOOT)/lib
 LIBPREFIX = wasm-decomp-
 
 MAKE_RELEASE = DEBUG=$(DEBUG) RELEASE=$(RELEASE)
 
 $(info -----------------------------------------------)
+$(info Using GEN = $(GEN))
+$(info Using GENSRCS = $(GENSRCS))
 $(info Using PLATFORM = $(PLATFORM))
 $(info Using CXX = $(CXX))
 $(info Using CXX_BOOT = $(CXX_BOOT))
