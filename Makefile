@@ -851,7 +851,7 @@ $(PARSER_OBJDIR):
 
 $(PARSER_OBJS): | $(PARSER_OBJDIR)
 
-ifeq ($(GEN), 1)
+ifneq ($(GEN), 0)
 
   $(PARSER_GENDIR)/Lexer.lex: $(PARSER_DIR)/Lexer.lex $(PARSER_GENDIR)
 	cp $< $@
