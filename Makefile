@@ -23,7 +23,7 @@ eq = $(and $(findstring $(1),$(2)),$(findstring $(2),$(1)))
 
 include Makefile.common
 
-###### Sources generated during "make GEN=1" #####
+###### Sources generated during "make gen" #####
 #
 # Define explicit build rule dependencies, based on the following
 # sequence of steps:
@@ -41,7 +41,7 @@ GENERATED_BOOT2_OBJS =
 GENERATED_BOOT2_LIBS =
 GENERATED_BOOT2_EXECS =
 GENERATED_BOOT2_SOURCES =
-# Everything else to do after boot (i.e. GEN=1) is complete.
+# Everything else to do after boot (i.e. make gen) is complete.
 GENERATED_REST_OBJS =
 GENERATED_REST_LIBS =
 GENERATED_REST_EXECS =
@@ -992,7 +992,7 @@ test-all:
 
 presubmit:
 	$(MAKE) clean-all
-	$(MAKE) GEN=1
+	$(MAKE) gen
 	$(MAKE) test-all CXX=clang++ PAGE_SIZE=2
 	$(MAKE) $(MAKE_PAGE_SIZE) clean
 	$(MAKE) $(MAKE_PAGE_SIZE) test-all CXX=g++
