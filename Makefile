@@ -29,7 +29,8 @@ include Makefile.common
 # sequence of steps:
 
 # Generated source that needs to be built before compiling any code.
-GENERATED_INIT_SOURCES =
+GENERATED_COPY_SOURCES =
+GENERATED_PARSE_SOURCES =
 # The first set of boot executables.
 GENERATED_BOOT1_OBJS =
 GENERATED_BOOT1_LIBS =
@@ -88,6 +89,10 @@ GENERATED_BOOT1_LIBS += $(BINARY_LIB)
 PARSER_DIR = $(SRCDIR)/sexp-parser
 PARSER_GENDIR = $(GENDIR)/sexp-parser
 PARSER_OBJDIR = $(OBJDIR)/sexp-parser
+PARSER_SRCS =\
+	Parser.ypp \
+	Lexer.lex
+
 PARSER_GENSRCS = \
 	location.hh \
 	Lexer.cpp \
@@ -101,6 +106,7 @@ PARSER_SRCS_REST = \
 	Driver.cpp
 
 PARSER_CPP_GENSRCS = $(filter %.cpp, $(PARSER_GENSRCS))
+PARSER_COPY_SRCS = $(patsubst %, $(PARSER_GENDIR)/%, $(PARSER_SRCS))
 PARSER_GEN_SRCS = $(patsubst %, $(PARSER_GENDIR)/%, $(PARSER_GENSRCS))
 
 PARSER_REST_OBJS=$(patsubst %.cpp, $(PARSER_OBJDIR)/%.o, $(PARSER_SRCS_REST))
@@ -109,7 +115,8 @@ PARSER_GEN_OBJS=$(patsubst %.cpp, $(PARSER_OBJDIR)/%.o, $(PARSER_CPP_GENSRCS))
 PARSER_OBJS=$(PARSER_REST_OBJS) $(PARSER_GEN_OBJS)
 PARSER_LIB = $(LIBDIR)/$(LIBPREFIX)parser.a
 
-GENERATED_INIT_SOURCES += $(PARSER_GEN_SRCS)
+GENERATED_COPY_SOURCES += $(PARSER_COPY_SRCS)
+GENERATED_PARSE_SOURCES += $(PARSER_GEN_SRCS)
 GENERATED_BOOT1_OBJS += $(PARSER_OBJS)
 GENERATED_BOOT1_LIBS += $(PARSER_LIB)
 
@@ -184,7 +191,7 @@ ALG_OBJS_BOOT1 = $(patsubst %.cpp, %.o, $(ALG_GEN_CPP_SRCS_BOOT1))
 
 ALG_GENDIR_ALG = $(ALG_GENDIR)/casm0x0.cast
 
-GENERATED_INIT_SOURCES += $(ALG_GEN_CAST_SRCS_BOOT1)
+GENERATED_COPY_SOURCES += $(ALG_GEN_CAST_SRCS_BOOT1)
 GENERATED_BOOT1_SOURCES += $(ALG_GEN_SRCS_BOOT1)
 
 #### Boot step 2
@@ -198,7 +205,7 @@ ALG_OBJS_BOOT2 = $(patsubst %.cast, $(ALG_OBJDIR)/%.o, $(ALG_SRCS_BOOT1))
 
 ALG_LIB_BOOT2 = $(LIBDIR)/$(LIBPREFIX)alg-boot2.a
 
-GENERATED_INIT_SOURCES += $(ALG_GEN_CAST_SRCS_BOOT2)
+GENERATED_COPY_SOURCES += $(ALG_GEN_CAST_SRCS_BOOT2)
 GENERATED_BOOT2_OBJS += $(ALG_OBJS_BOOT1)
 GENERATED_BOOT2_LIBS += $(ALG_LIB_BOOT2)
 GENERATED_BOOT2_SOURCES +=  $(ALG_GEN_SRCS_BOOT2)
@@ -527,7 +534,7 @@ endif
 
 ###### Combine all generated sources.
 
-GENERATED = $(GENERATED_INIT)\
+GENERATED = $(GENERATED_COPY_SOURCES)\
 	 $(GENERATED_BOOT1_SOURCES) \
 	$(GENERATED_BOOT2_SOURCES)
 
@@ -549,7 +556,6 @@ all:
 	$(MAKE) GEN=1
 	$(MAKE) test
 
-#build-all: gen libs execs test-execs
 build-all: $(EXECS) $(TEST_EXECS)
 
 ###### Build submodules ######
@@ -584,13 +590,22 @@ clean-gen:
 ifeq ($(GEN), 1)
   gen: $(GENERATED)
 else
-  gen:
-	make GEN=1
+  gen: gen-genvars
+	@echo "*** Completed GEN step of build"
+
+  gen-genvars: genvars
+	$(MAKE) GEN=1
+
+  .PHONE: gen-genvars
+
 endif
 
 .PHONY: gen
 
-$(GENERATEED_BOOT1_OBJS): | $(GENERATED_INIT_SOURCES)
+
+$(GENERATED_PARSE_SOURCES): | $(GENERATED_COPY_SOURCES)
+
+$(GENERATEED_BOOT1_OBJS): | $(GENERATED_PARSE_SOURCES)
 
 $(GENERATED_BOOT1_LIBS): | $(GENERATED_BOOT1_OBJS)
 
@@ -599,7 +614,6 @@ $(GENERATED_BOOT1_EXECS): | $(GENERATED_BOOT1_LIBS)
 $(GENERATED_BOOT1_SOURCES): | $(GENERATED_BOOT1_EXECS)
 
 $(GENERATED_BOOT2_OBJS): | $(GENERATED_BOOT1_SOURCES)
-
 
 $(GENERATED_BOOT2_LIBS): | $(GENERATED_BOOT2_OBJS)
 
@@ -613,8 +627,17 @@ $(GENERATED_REST_LIBS): | $(GENERATED_REST_OBJS)
 
 $(GENERATED_REST_EXECS): | $(GENERATED_REST_LIBS)
 
-genvars:
-	@echo "INIT_SOURCES: $(GENERATED_INIT_SOURCES)"
+ifeq ($(GEN), 0)
+  genvars:
+	$(MAKE) GEN=1 genvars
+else
+  genvars:
+	@echo "----------------------------------"
+	@echo "Generartion build dependencies:"
+	@echo ""
+	@echo "COPY_SOURCES: $(GENERATED_COPY_SOURCES)"
+	@echo ""
+	@echo "PARSE_SOURCES: $(GENERATED_PARSE_SOURCES)"
 	@echo ""
 	@echo "BOOT1_OBJS: $(GENERATED_BOOT1_OBJS)"
 	@echo ""
@@ -638,6 +661,8 @@ genvars:
 	@echo ""
 	@echo "REST_EXECS: $(GENERATED_REST_EXECS)"
 	@echo ""
+	@echo "----------------------------------"
+endif
 
 ###### Compiliing algorithm sources ######
 
@@ -733,11 +758,6 @@ $(INTERP_OBJS): | $(INTERP_OBJDIR)
 
 $(INTERP_OBJDIR):
 	mkdir -p $@
-
-# ???
-$(INTERP_OBJS_BASE): $(GENERATED_INIT)
-
-$(INTERP_OBJS_C): $(GENERATED_BOOT1)
 
 -include $(foreach dep,$(INTERP_SRCS:.cpp=.d),$(INTERP_OBJDIR)/$(dep))
 
@@ -900,7 +920,7 @@ $(EXECS): | $(BUILD_EXECDIR)
 
 -include $(foreach dep,$(EXEC_SRCS_BOOT1:.cpp=.d),$(EXEC_OBJDIR)/$(dep))
 
-$(EXEC_OBJS_BOOT1): $(EXEC_OBJDIR)/%.o: $(EXECDIR)/%.cpp $(GENERATED_INIT)
+$(EXEC_OBJS_BOOT1): $(EXEC_OBJDIR)/%.o: $(EXECDIR)/%.cpp
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
 $(EXECS_BOOT1): $(BUILD_EXECDIR_BOOT)/%$(EXE): $(EXEC_OBJDIR)/%.o \
