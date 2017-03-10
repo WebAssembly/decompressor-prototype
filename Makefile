@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Generate boot sources: make GEN=1
+# Generate boot sources: make gen
 #
 # Build debug: make
 #            : make DEBUG=1
-# Build release: make RELEASE=1
+# Build release: makParsere RELEASE=1
 
 # helper eq comparison function.
 eq = $(and $(findstring $(1),$(2)),$(findstring $(2),$(1)))
@@ -93,14 +93,20 @@ PARSER_SRCS =\
 	Parser.ypp \
 	Lexer.lex
 
-PARSER_GENSRCS = \
+PARSER_LEX_GENSRCS = Lexer.cpp
+
+PARSER_PARSE_CPP_GENSRCS = \
+	Parser.tab.cpp
+
+PARSER_PARSE_OTHER_GENSRCS = \
 	location.hh \
-	Lexer.cpp \
 	Parser.output \
-	Parser.tab.cpp \
 	Parser.tab.hpp \
 	position.hh \
 	stack.hh
+
+PARSER_PARSE_GENSRCS = $(PARSER_PARSE_CPP_GENSRCS) $(PARSER_PARSE_OTHER_GENSRCS)
+PARSER_GENSRCS = $(PARSER_LEX_GENSRCS) $(PARSER_PARSE_GENSRCS)
 
 PARSER_SRCS_REST = \
 	Driver.cpp
@@ -540,20 +546,17 @@ GENERATED = $(GENERATED_COPY_SOURCES)\
 
 ###### Default Rule ######
 
-ifeq ($(GEN), 1)
-  default: gen
+ifeq ($(UPDATE), 0)
+  default: build-all
 else
-  ifeq ($(UPDATE), 0)
-    default: build-all
-  else
-    default: update-all
-  endif
+  default: update-all
 endif
 
 .PHONY: default
 
 all:
-	$(MAKE) GEN=1
+	$(MAKE) gen
+	$(MAKE) build-all
 	$(MAKE) test
 
 build-all: $(EXECS) $(TEST_EXECS)
@@ -587,14 +590,13 @@ clean-gen:
 
 ###### Source Generation Rules #######
 
-ifeq ($(GEN), 1)
-  gen:
-	make gen-copy-sources
-	make gen-parse-sources
-else
-  gen:
-	$(MAKE) GEN=1 gen
-endif
+gen:
+	$(MAKE) GENSRCS=1 gen-copy-sources
+	$(MAKE) GENSRCS=1 gen-parse-sources
+	$(MAKE) gen-boot1-execs
+	$(MAKE) GENSRCS=1 gen-boot1-sources
+	$(MAKE) gen-boot2-execs
+	$(MAKE) GENSRCS=1 gen-boot2-sources
 
 .PHONY: gen
 
@@ -602,35 +604,37 @@ gen-copy-sources: $(GENERATED_COPY_SOURCES)
 
 gen-parse-sources: $(GENERATED_PARSE_SOURCES)
 
-$(GENERATED_PARSE_SOURCES): $(GENERATED_COPY_SOURCES)
+gen-boot1-execs: $(GENERATED_BOOT1_EXECS)
 
-$(GENERATEED_BOOT1_OBJS): $(GENERATED_PARSE_SOURCES)
+gen-boot1-sources: $(GENERATED_BOOT1_SOURCES)
+
+gen-boot2-objs: $(GENERATED_BOOT2_OBJS)
+
+gen-boot2-libs: $(GENERATED_BOOT2_LIBS)
+
+gen-boot2-execs: $(GENERATED_BOOT2_EXECS)
+
+gen-boot2-sources: $(GENERATED_BOOT2_SOURCES)
+
+$(GENERATED_BOOT1_OBJS): | $(GENERATED_PARSE_SOURCES)
 
 $(GENERATED_BOOT1_LIBS): | $(GENERATED_BOOT1_OBJS)
 
 $(GENERATED_BOOT1_EXECS): | $(GENERATED_BOOT1_LIBS)
 
-$(GENERATED_BOOT1_SOURCES): | $(GENERATED_BOOT1_EXECS)
-
-$(GENERATED_BOOT2_OBJS): | $(GENERATED_BOOT1_SOURCES)
+$(GENERATED_BOOT2_OBJS): | $(GENERATED_BOOT1_EXECS)
 
 $(GENERATED_BOOT2_LIBS): | $(GENERATED_BOOT2_OBJS)
 
-$(GENERATED_BOOT2_EXEC): | $(GENERATED_BOOT2_LIBS)
+$(GENERATED_BOOT2_EXECS): | $(GENERATED_BOOT2_LIBS)
 
-$(GENERATED_BOOT2_SOURCES): | $(GENERATED_BOOT2_EXECS)
-
-$(GENERATED_REST_OBJS): | $(GENERATED_BOOT2_SOURCE)
+$(GENERATED_REST_OBJS): | $(GENERATED_BOOT2_EXECS)
 
 $(GENERATED_REST_LIBS): | $(GENERATED_REST_OBJS)
 
 $(GENERATED_REST_EXECS): | $(GENERATED_REST_LIBS)
 
-ifeq ($(GEN), 0)
-  genvars:
-	$(MAKE) GEN=1 genvars
-else
-  genvars:
+genvars:
 	@echo "----------------------------------"
 	@echo "Generartion build dependencies:"
 	@echo ""
@@ -661,7 +665,6 @@ else
 	@echo "REST_EXECS: $(GENERATED_REST_EXECS)"
 	@echo ""
 	@echo "----------------------------------"
-endif
 
 ###### Compiliing algorithm sources ######
 
@@ -673,8 +676,10 @@ $(ALG_OBJDIR):
 
 $(ALG_GEN_SRCS): | $(ALG_GENDIR)
 
+ifeq ($(GENSRCS), 1)
 $(ALG_GEN_SRCS): $(ALG_GENDIR)/%.cast: $(ALG_SRCDIR)/%.cast
 	cp $< $@
+endif
 
 $(ALG_OBJS): | $(ALG_OBJDIR)
 
@@ -691,7 +696,7 @@ $(ALG_LIB): $(ALG_OBJS)
 	ar -rs $@ $(ALG_OBJS)
 	ranlib $@
 
-ifeq ($(GEN), 1)
+ifeq ($(GENSRCS), 1)
 
   $(ALG_GEN_H_SRCS_BOOT1): $(ALG_GENDIR)/%.h: $(ALG_GENDIR)/%.cast
 	echo $(EXECS_BOOT1)
@@ -850,7 +855,7 @@ $(PARSER_OBJDIR):
 
 $(PARSER_OBJS): | $(PARSER_OBJDIR)
 
-ifneq ($(GEN), 0)
+ifeq ($(GENSRCS), 1)
 
   $(PARSER_GENDIR)/Lexer.lex: $(PARSER_DIR)/Lexer.lex $(PARSER_GENDIR)
 	cp $< $@
@@ -863,7 +868,7 @@ ifneq ($(GEN), 0)
 
   $(PARSER_GENDIR)/Parser.tab.cpp: $(PARSER_GENDIR)/Parser.ypp $(PARSER_GENDIR)
 	cd $(PARSER_GENDIR); bison -d -r all Parser.ypp
-	cd $(PARSER_GENDIR); touch $(PARSER_GENSRCS)
+	#cd $(PARSER_GENDIR); touch $(PARSER_PARSE_OTHER_GENSRCS)
 
   $(PARSER_GENDIR)/location.hh: $(PARSER_GENDIR)/Parser.tab.cpp $(PARSER_GENDIR)
 	touch $@
@@ -949,26 +954,23 @@ $(EXECS_REST): $(BUILD_EXECDIR)/%$(EXE): $(EXEC_OBJDIR)/%.o $(LIBS)
 
 ###### Compiling Test Executables #######
 
-ifeq ($(GEN), 0)
-  $(TEST_OBJDIR):
+$(TEST_OBJDIR):
 	mkdir -p $@
 
-  $(TEST_OBJS): | $(TEST_OBJDIR)
+$(TEST_OBJS): | $(TEST_OBJDIR)
 
-  -include $(foreach dep,$(TEST_SRCS:.cpp=.d),$(TEST_OBJDIR)/$(dep))
+-include $(foreach dep,$(TEST_SRCS:.cpp=.d),$(TEST_OBJDIR)/$(dep))
 
-  $(TEST_OBJS): $(TEST_OBJDIR)/%.o: $(TEST_DIR)/%.cpp
+$(TEST_OBJS): $(TEST_OBJDIR)/%.o: $(TEST_DIR)/%.cpp
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
-  $(TEST_EXECDIR):
+$(TEST_EXECDIR):
 	mkdir -p $@
 
-  $(TEST_EXECS): | $(TEST_EXECDIR)
+$(TEST_EXECS): | $(TEST_EXECDIR)
 
-  $(TEST_EXECS): $(TEST_EXECDIR)/%$(EXE): $(TEST_OBJDIR)/%.o $(LIBS)
+$(TEST_EXECS): $(TEST_EXECDIR)/%$(EXE): $(TEST_OBJDIR)/%.o $(LIBS)
 	$(CPP_COMPILER) $(CXXFLAGS) $< $(LIBS) -o $@
-
-endif
 
 ###### Testing ######
 
@@ -1188,8 +1190,7 @@ clean-unit-tests:
 
 ifneq ($(UPDATE), 0)
 
-#update-all: wabt-submodule gen
-update-all: wabt-submodule
+update-all: wabt-submodule build-all
 	$(TEST_WASM_SRC_FILES) \
 	$(TEST_CASM_M_SRC_FILES) \
 	$(TEST_CASM_CASM_FILES) \
