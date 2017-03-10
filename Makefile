@@ -588,20 +588,19 @@ clean-gen:
 ###### Source Generation Rules #######
 
 ifeq ($(GEN), 1)
-  gen: $(GENERATED)
+  gen:
+	make gen-copy-sources
+	make gen-parse-sources
 else
-  gen: gen-genvars
-	@echo "*** Completed GEN step of build"
-
-  gen-genvars: genvars
-	$(MAKE) GEN=1
-
-  .PHONE: gen-genvars
-
+  gen:
+	$(MAKE) GEN=1 gen
 endif
 
 .PHONY: gen
 
+gen-copy-sources: $(GENERATED_COPY_SOURCES)
+
+gen-parse-sources: $(GENERATED_PARSE_SOURCES)
 
 $(GENERATED_PARSE_SOURCES): $(GENERATED_COPY_SOURCES)
 
@@ -864,6 +863,7 @@ ifneq ($(GEN), 0)
 
   $(PARSER_GENDIR)/Parser.tab.cpp: $(PARSER_GENDIR)/Parser.ypp $(PARSER_GENDIR)
 	cd $(PARSER_GENDIR); bison -d -r all Parser.ypp
+	cd $(PARSER_GENDIR); touch $(PARSER_GENSRCS)
 
   $(PARSER_GENDIR)/location.hh: $(PARSER_GENDIR)/Parser.tab.cpp $(PARSER_GENDIR)
 	touch $@
