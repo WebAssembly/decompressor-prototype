@@ -605,7 +605,7 @@ endif
 
 $(GENERATED_PARSE_SOURCES): $(GENERATED_COPY_SOURCES)
 
-$(GENERATEED_BOOT1_OBJS): | $(GENERATED_PARSE_SOURCES)
+$(GENERATEED_BOOT1_OBJS): $(GENERATED_PARSE_SOURCES)
 
 $(GENERATED_BOOT1_LIBS): | $(GENERATED_BOOT1_OBJS)
 
@@ -669,6 +669,9 @@ endif
 $(ALG_GENDIR):
 	mkdir -p $@
 
+$(ALG_OBJDIR):
+	mkdir -p $@
+
 $(ALG_GEN_SRCS): | $(ALG_GENDIR)
 
 $(ALG_GEN_SRCS): $(ALG_GENDIR)/%.cast: $(ALG_SRCDIR)/%.cast
@@ -681,19 +684,15 @@ $(ALG_OBJS): | $(ALG_OBJDIR)
 $(ALG_OBJS): $(ALG_OBJDIR)/%.o: $(ALG_GENDIR)/%.cpp
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
-$(ALG_OBJDIR):
-	mkdir -p $@
+$(ALG_LIB_BOOT2): $(ALG_OBJS_BOOT2)
+	ar -rs $@ $(ALG_OBJS_BOOT2)
+	ranlib $@
 
 $(ALG_LIB): $(ALG_OBJS)
 	ar -rs $@ $(ALG_OBJS)
 	ranlib $@
 
-$(ALG_LIB_BOOT2): $(ALG_OBJS_BOOT2)
-	ar -rs $@ $(ALG_OBJS_BOOT2)
-	ranlib $@
-
 ifeq ($(GEN), 1)
-
 
   $(ALG_GEN_H_SRCS_BOOT1): $(ALG_GENDIR)/%.h: $(ALG_GENDIR)/%.cast
 	echo $(EXECS_BOOT1)
