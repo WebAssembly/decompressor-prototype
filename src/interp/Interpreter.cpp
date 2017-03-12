@@ -1524,6 +1524,8 @@ void Interpreter::algorithmResume() {
           }
           case State::Step2: {
             Frame.CallState = State::Exit;
+            if (!Output->writeHeaderClose())
+              return fail("Unable to write header");
             SymbolNode* File = Symtab->getPredefined(PredefinedSymbol::File);
             if (File == nullptr)
               throwMessage("Can't find sexpression to process file");

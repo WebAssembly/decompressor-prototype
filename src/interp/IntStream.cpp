@@ -65,7 +65,7 @@ void IntStream::Cursor::TraceContext::describe(FILE* File) {
 IntStream::Cursor::Cursor() : Index(0) {
 }
 
-IntStream::Cursor::Cursor(StreamPtr Stream) : Index(0), Stream(Stream) {
+IntStream::Cursor::Cursor(Ptr Stream) : Index(0), Stream(Stream) {
   assert(Stream);
   EnclosingBlocks.push_back(Stream->TopBlock);
 }
@@ -97,7 +97,7 @@ FILE* IntStream::Cursor::describe(FILE* File,
   if (IncludeDetail)
     fputs("IntStream::Cursor<", File);
   fprintf(File, "@%" PRIxMAX "", uintmax_t(Index));
-  if (Index == 0 && EnclosingBlocks.size() <= 1) {
+  if (!Stream->getIsHeaderOpen()) {
     for (auto Pair : Stream->getHeader())
       fprintf(File, "{%" PRIxMAX ":%s}", uintmax_t(Pair.first),
               getName(Pair.second));
@@ -137,7 +137,7 @@ IntStream::BlockPtr IntStream::Cursor::closeBlock() {
 IntStream::WriteCursor::WriteCursor() : Cursor() {
 }
 
-IntStream::WriteCursor::WriteCursor(StreamPtr Stream) : Cursor(Stream) {
+IntStream::WriteCursor::WriteCursor(Ptr Stream) : Cursor(Stream) {
 }
 
 IntStream::WriteCursor::WriteCursor(const Cursor& C) : Cursor(C) {
@@ -188,7 +188,7 @@ bool IntStream::WriteCursor::closeBlock() {
 IntStream::ReadCursor::ReadCursor() : Cursor() {
 }
 
-IntStream::ReadCursor::ReadCursor(StreamPtr Stream)
+IntStream::ReadCursor::ReadCursor(Ptr Stream)
     : Cursor(Stream),
       NextBlock(Stream->getBlocksBegin()),
       EndBlocks(Stream->getBlocksEnd()) {
@@ -239,6 +239,7 @@ IntStream::~IntStream() {
 
 void IntStream::reset() {
   Header.clear();
+  IsHeaderClosed = false;
   Values.clear();
   TopBlock = std::make_shared<Block>();
   isFrozenFlag = false;

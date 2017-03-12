@@ -50,12 +50,12 @@ class IntWriter::TableHandler {
 
  private:
   IntWriter& Writer;
-  std::vector<IntStream::StreamPtr> FreeStreams;
+  std::vector<IntStream::Ptr> FreeStreams;
   std::unordered_set<IntType> Cached;
   std::vector<bool> RestoreStack;
   std::vector<IntStream::WriteCursor> CursorStack;
-  IntStream::StreamPtr allocStream();
-  void freeStream(IntStream::StreamPtr Strm);
+  IntStream::Ptr allocStream();
+  void freeStream(IntStream::Ptr Strm);
   static constexpr size_t MaxFreeStreams = 5;
 };
 
@@ -66,15 +66,18 @@ IntWriter::TableHandler::TableHandler(IntWriter& Writer)
 IntWriter::TableHandler::~TableHandler() {
 }
 
-IntStream::StreamPtr IntWriter::TableHandler::allocStream() {
-  if (FreeStreams.empty())
-    return std::make_shared<IntStream>();
-  IntStream::StreamPtr Ptr = FreeStreams.back();
+IntStream::Ptr IntWriter::TableHandler::allocStream() {
+  if (FreeStreams.empty()) {
+    IntStream::Ptr Strm = std::make_shared<IntStream>();
+    Strm->closeHeader();
+    return Strm;
+  }
+  IntStream::Ptr Ptr = FreeStreams.back();
   FreeStreams.pop_back();
   return Ptr;
 }
 
-void IntWriter::TableHandler::freeStream(IntStream::StreamPtr Strm) {
+void IntWriter::TableHandler::freeStream(IntStream::Ptr Strm) {
   if (FreeStreams.size() >= MaxFreeStreams)
     // Let the destructor of Strm return the memory.
     return;
@@ -153,6 +156,11 @@ bool IntWriter::writeFreezeEof() {
 
 bool IntWriter::writeHeaderValue(IntType Value, IntTypeFormat Format) {
   Output->appendHeader(Value, Format);
+  return true;
+}
+
+bool IntWriter::writeHeaderClose() {
+  Output->closeHeader();
   return true;
 }
 

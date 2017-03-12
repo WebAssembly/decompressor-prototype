@@ -41,7 +41,7 @@ class IntStream : public std::enable_shared_from_this<IntStream> {
   typedef std::shared_ptr<Block> BlockPtr;
   typedef std::vector<BlockPtr> BlockVector;
   typedef BlockVector::iterator BlockIterator;
-  typedef std::shared_ptr<IntStream> StreamPtr;
+  typedef std::shared_ptr<IntStream> Ptr;
   class Block : public std::enable_shared_from_this<Block> {
     Block(const Block&) = delete;
     Block& operator=(const Block&) = delete;
@@ -67,12 +67,12 @@ class IntStream : public std::enable_shared_from_this<IntStream> {
     class TraceContext;
 
     Cursor();
-    explicit Cursor(StreamPtr Stream);
+    explicit Cursor(Ptr Stream);
     explicit Cursor(const Cursor& C);
     Cursor& operator=(const Cursor& C);
     ~Cursor();
     size_t getIndex() const { return Index; }
-    StreamPtr getStream() const { return Stream; }
+    Ptr getStream() const { return Stream; }
     size_t streamSize() const { return Stream->size(); }
     bool atEof() const;
     bool atEob() const;
@@ -87,14 +87,14 @@ class IntStream : public std::enable_shared_from_this<IntStream> {
    protected:
     size_t Index;
     BlockVector EnclosingBlocks;
-    StreamPtr Stream;
+    Ptr Stream;
     BlockPtr closeBlock();
   };
 
   class WriteCursor : public Cursor {
    public:
     WriteCursor();
-    explicit WriteCursor(StreamPtr Stream);
+    explicit WriteCursor(Ptr Stream);
     explicit WriteCursor(const Cursor& C);
     ~WriteCursor();
     WriteCursor& operator=(const WriteCursor& C) {
@@ -110,7 +110,7 @@ class IntStream : public std::enable_shared_from_this<IntStream> {
   class ReadCursor : public Cursor {
    public:
     ReadCursor();
-    explicit ReadCursor(StreamPtr Stream);
+    explicit ReadCursor(Ptr Stream);
     explicit ReadCursor(const ReadCursor& C);
     ~ReadCursor();
     ReadCursor& operator=(const ReadCursor& C) {
@@ -147,9 +147,13 @@ class IntStream : public std::enable_shared_from_this<IntStream> {
 
   const HeaderVector& getHeader() { return Header; }
   void appendHeader(decode::IntType Value, interp::IntTypeFormat Format);
+  void closeHeader() { IsHeaderClosed = true;}
+  bool getIsHeaderOpen() const { return !IsHeaderClosed; }
+  bool getIsHeaderClosed() const { return IsHeaderClosed; }
 
  private:
   HeaderVector Header;
+  bool IsHeaderClosed;
   IntVector Values;
   BlockPtr TopBlock;
   bool isFrozenFlag;
