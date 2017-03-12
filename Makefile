@@ -355,6 +355,7 @@ GENERATED_BOOT2_EXECS += $(EXECS_BOOT2)
 ##### Build result
 
 EXEC_SRCS_REST = \
+	cast2casm.cpp \
 	casm2cast.cpp \
 	compress-int.cpp \
 	decompress.cpp
