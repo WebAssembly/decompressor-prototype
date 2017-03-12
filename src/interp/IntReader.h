@@ -67,7 +67,7 @@ class IntReader : public Reader {
   class TableHandler;
 
   IntStream::ReadCursor Pos;
-  IntStream::StreamPtr Input;
+  IntStream::Ptr Input;
   size_t HeaderIndex;
   // Shows how many are still available since last call to
   // canProcessMoreInputNow().

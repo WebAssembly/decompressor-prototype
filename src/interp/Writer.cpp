@@ -183,6 +183,10 @@ bool Writer::writeHeaderValue(IntType Value, IntTypeFormat Format) {
   return writeTypedValue(Value, Format);
 }
 
+bool Writer::writeHeaderClose() {
+  return true;
+}
+
 bool Writer::tablePush(IntType Value) {
   return true;
 }

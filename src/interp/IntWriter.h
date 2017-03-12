@@ -43,6 +43,7 @@ class IntWriter : public Writer {
   bool writeFreezeEof() OVERRIDE;
   bool writeHeaderValue(decode::IntType Value,
                         interp::IntTypeFormat Format) OVERRIDE;
+  bool writeHeaderClose() OVERRIDE;
   utils::TraceContextPtr getTraceContext() OVERRIDE;
   void describeState(FILE* File) OVERRIDE;
   bool tablePush(decode::IntType Value) OVERRIDE;
