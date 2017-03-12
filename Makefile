@@ -164,6 +164,7 @@ CASM_SRCS_BIN = \
 CASM_OBJS_BIN = $(patsubst %.cpp, $(CASM_OBJDIR)/%.o, $(CASM_SRCS_BIN))
 CASM_LIB_BIN = $(LIBDIR)/$(LIBPREFIX)casm-bin.a
 
+CASM_SRCS = $(CASM_SRCS_BASE) $(CASM_SRCS_BIN)
 CASM_OBJS = $(CASM_OBJS_BASE) $(CASM_OBJS_BIN)
 CASM_LIB = $(CASM_LIB_BIN) $(CASM_LIB_BASE)
 
@@ -335,7 +336,7 @@ BUILD_EXECDIR_BOOT = $(BUILD_EXECDIR)
 
 #### Boot step 1
 
-EXEC_SRCS_BOOT1 = cast-parser.cpp
+EXEC_SRCS_BOOT1 = cast2casm-boot1.cpp
 EXEC_OBJS_BOOT1 = $(patsubst %.cpp, $(EXEC_OBJDIR)/%.o, $(EXEC_SRCS_BOOT1))
 EXECS_BOOT1 = $(patsubst %.cpp, $(BUILD_EXECDIR_BOOT)/%$(EXE), $(EXEC_SRCS_BOOT1))
 
@@ -344,7 +345,7 @@ GENERATED_BOOT1_EXECS += $(EXECS_BOOT1)
 
 #### Boot step 2
 
-EXEC_SRCS_BOOT2 = cast2casm.cpp
+EXEC_SRCS_BOOT2 = cast2casm-boot2.cpp
 EXEC_OBJS_BOOT2 = $(patsubst %.cpp, $(EXEC_OBJDIR)/%.o, $(EXEC_SRCS_BOOT2))
 EXECS_BOOT2 = $(patsubst %.cpp, $(BUILD_EXECDIR_BOOT)/%$(EXE), $(EXEC_SRCS_BOOT2))
 
@@ -354,6 +355,7 @@ GENERATED_BOOT2_EXECS += $(EXECS_BOOT2)
 ##### Build result
 
 EXEC_SRCS_REST = \
+	cast2casm.cpp \
 	casm2cast.cpp \
 	compress-int.cpp \
 	decompress.cpp
@@ -541,7 +543,7 @@ endif
 ###### Combine all generated sources.
 
 GENERATED = $(GENERATED_COPY_SOURCES)\
-	 $(GENERATED_BOOT1_SOURCES) \
+	$(GENERATED_BOOT1_SOURCES) \
 	$(GENERATED_BOOT2_SOURCES)
 
 ###### Default Rule ######
@@ -559,7 +561,7 @@ all:
 	$(MAKE) build-all
 	$(MAKE) test
 
-build-all: $(EXECS) $(TEST_EXECS)
+build-all: $(LIBS) $(EXECS) $(TEST_EXECS)
 
 ###### Build submodules ######
 
@@ -616,23 +618,19 @@ gen-boot2-execs: $(GENERATED_BOOT2_EXECS)
 
 gen-boot2-sources: $(GENERATED_BOOT2_SOURCES)
 
-$(GENERATED_BOOT1_OBJS): | $(GENERATED_PARSE_SOURCES)
+$(GENERATED_BOOT1_LIBS): $(GENERATED_BOOT1_OBJS)
 
-$(GENERATED_BOOT1_LIBS): | $(GENERATED_BOOT1_OBJS)
+$(GENERATED_BOOT1_EXECS): $(GENERATED_BOOT1_LIBS)
 
-$(GENERATED_BOOT1_EXECS): | $(GENERATED_BOOT1_LIBS)
+$(GENERATED_BOOT2_OBJS): $(GENERATED_BOOT1_EXECS)
 
-$(GENERATED_BOOT2_OBJS): | $(GENERATED_BOOT1_EXECS)
+$(GENERATED_BOOT2_LIBS): $(GENERATED_BOOT2_OBJS)
 
-$(GENERATED_BOOT2_LIBS): | $(GENERATED_BOOT2_OBJS)
+$(GENERATED_BOOT2_EXECS): $(GENERATED_BOOT2_LIBS)
 
-$(GENERATED_BOOT2_EXECS): | $(GENERATED_BOOT2_LIBS)
+$(GENERATED_REST_LIBS): $(GENERATED_REST_OBJS)
 
-$(GENERATED_REST_OBJS): | $(GENERATED_BOOT2_EXECS)
-
-$(GENERATED_REST_LIBS): | $(GENERATED_REST_OBJS)
-
-$(GENERATED_REST_EXECS): | $(GENERATED_REST_LIBS)
+$(GENERATED_REST_EXECS): $(GENERATED_REST_LIBS)
 
 genvars:
 	@echo "----------------------------------"
@@ -699,24 +697,23 @@ $(ALG_LIB): $(ALG_OBJS)
 ifeq ($(GENSRCS), 1)
 
   $(ALG_GEN_H_SRCS_BOOT1): $(ALG_GENDIR)/%.h: $(ALG_GENDIR)/%.cast
-	echo $(EXECS_BOOT1)
-	$(BUILD_EXECDIR_BOOT)/cast-parser -a $(ALG_GENDIR_ALG) \
+	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1 -a $(ALG_GENDIR_ALG) \
 		$< -o $@ --header --strip-literal-uses \
 		--function $(patsubst $(ALG_GENDIR)/%.cast, Alg%, $<)
 
   $(ALG_GEN_CPP_SRCS_BOOT1): $(ALG_GENDIR)/%.cpp: $(ALG_GENDIR)/%.cast
-	$(BUILD_EXECDIR_BOOT)/cast-parser -a $(ALG_GENDIR_ALG) \
+	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1 -a $(ALG_GENDIR_ALG) \
 		$< -o $@ --strip-literal-uses \
 		--function $(patsubst $(ALG_GENDIR)/%.cast, Alg%, $<)
 
 
   $(ALG_GEN_H_SRCS_BOOT2): $(ALG_GENDIR)/%.h: $(ALG_GENDIR)/%.cast
-	$(BUILD_EXECDIR_BOOT)/cast2casm \
+	$(BUILD_EXECDIR_BOOT)/cast2casm-boot2 \
 		$< -o $@ --header --strip-literal-uses \
 		--function $(patsubst $(ALG_GENDIR)/%.cast, Alg%, $<)
 
   $(ALG_GEN_CPP_SRCS_BOOT2): $(ALG_GENDIR)/%.cpp: $(ALG_GENDIR)/%.cast
-	$(BUILD_EXECDIR_BOOT)/cast2casm  \
+	$(BUILD_EXECDIR_BOOT)/cast2casm-boot2  \
 		$< -o $@ --strip-literal-uses --array \
 		--function $(patsubst $(ALG_GENDIR)/%.cast, Alg%, $<)
 
@@ -868,7 +865,6 @@ ifeq ($(GENSRCS), 1)
 
   $(PARSER_GENDIR)/Parser.tab.cpp: $(PARSER_GENDIR)/Parser.ypp $(PARSER_GENDIR)
 	cd $(PARSER_GENDIR); bison -d -r all Parser.ypp
-	#cd $(PARSER_GENDIR); touch $(PARSER_PARSE_OTHER_GENSRCS)
 
   $(PARSER_GENDIR)/location.hh: $(PARSER_GENDIR)/Parser.tab.cpp $(PARSER_GENDIR)
 	touch $@

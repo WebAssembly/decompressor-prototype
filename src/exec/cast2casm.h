@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Implements C++ implementations of algorithms. Used by cast-parser and
+// Implements C++ implementations of algorithms. Used by cast2casm-boot{1,2} and
 // cast2casm. The former is to be able to generate boot files while the latter
 // is the full blown tool.
 
