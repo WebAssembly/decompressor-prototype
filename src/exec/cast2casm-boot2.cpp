@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Converts textual algorithm into binary file form.
+// Converts textual algorithm into binary file form
 
 #define WASM_CAST_PARSER 0
 #include "cast2casm.h"
