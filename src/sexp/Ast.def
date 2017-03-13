@@ -155,13 +155,24 @@
   X(Not,)                                                                      \
   X(Peek,)                                                                     \
   X(Read,)                                                                     \
-  X(LiteralUse,)                                                               \
+  X(LiteralUse, LITERALUSE_DECLS)                                              \
   X(Undefine,)                                                                 \
   X(UnknownSection,)                                                           \
 
 #define CALLBACK_DECLS                                                         \
   public:                                                                      \
     bool validateNode(NodeVectorType &Parents) OVERRIDE;                       \
+    const IntegerNode* getValue() const;                                       \
+
+#define LITERALUSE_DECLS                                                       \
+  public:                                                                      \
+    const LiteralDefNode* getDef() const;                                      \
+    const IntegerNode* getValue() const;                                       \
+    bool validateNode(NodeVectorType &Parents) OVERRIDE;                       \
+    bool getIsAction() const { return IsAction; }                              \
+  private:                                                                     \
+    mutable bool IsAction = false;                                             \
+    friend class CallbackNode;                                                 \
 
 //#define X(tag, NODE_DECLS)
 #define AST_BINARYNODE_TABLE                                                   \

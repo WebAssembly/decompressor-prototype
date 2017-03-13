@@ -305,7 +305,7 @@ expression
         | bool_expression { $$ = $1; }
         | control_flow { $$ = $1; }
         | "(" "map" map_args ")" { $$ = $3; }
-        | "(" "=>" symbol ")" {
+        | "(" "=>" constant_expression ")" {
             $$ = Driver.create<CallbackNode>($3);
           }
         | "(" "param" INTEGER ")" {

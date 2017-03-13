@@ -559,6 +559,7 @@ void SymbolTable::init() {
   Error = create<ErrorNode>();
   BlockEnterCallback = nullptr;
   BlockExitCallback = nullptr;
+  AllowInconsistentActions = false;
 }
 
 SymbolTable::~SymbolTable() {
@@ -604,6 +605,14 @@ SymbolDefnNode* SymbolTable::getSymbolDefn(const SymbolNode* Sym) {
     setCachedValue(Sym, Defn);
   }
   return Defn;
+}
+
+void SymbolTable::insertCallbackLiteral(const LiteralDefNode* Defn) {
+  CallbackLiterals.insert(Defn);
+}
+
+void SymbolTable::insertCallbackValue(const IntegerNode* IntNd) {
+  CallbackValues.insert(IntNd);
 }
 
 void SymbolTable::collectActionDefs(ActionDefSet& DefSet) {
@@ -695,6 +704,50 @@ SymbolNode* SymbolTable::getPredefined(PredefinedSymbol Sym) {
 AST_INTEGERNODE_TABLE
 #undef X
 
+bool SymbolTable::areActionsConsistent() {
+  bool IsValid = true;  // Until proven otherwise.
+  // TODO(karlschimpf) Turn this back on when callback representation is fixed.
+  // Verify enumeration of literal actions is valid.
+#if 0
+  fprintf(stderr, "******************\n");
+  fprintf(stderr, "Symbolic actions:\n");
+  TextWriter Writer;
+  for (const LiteralDefNode* Def : CallbackLiterals) {
+    Writer.write(stderr, Def);
+  }
+  fprintf(stderr, "Hard coded actions:\n");
+  for (const IntegerNode* Val : CallbackValues) {
+    Writer.write(stderr, Val);
+  }
+  fprintf(stderr, "******************\n");
+#endif
+  std::map<IntType, const Node*> DefMap;
+  // First install hard coded (ignoring duplicates).
+  for (const IntegerNode* IntNd : CallbackValues)
+    DefMap[IntNd->getValue()] = IntNd;
+  // Now see if conflicting definitions.
+  for (const LiteralDefNode* Def : CallbackLiterals) {
+    const IntegerNode* IntNd = dyn_cast<IntegerNode>(Def->getKid(1));
+    if (IntNd == nullptr) {
+      errorDescribeNode("Unable to extract action value", Def);
+      IsValid = false;
+    }
+    IntType Value = IntNd->getValue();
+    if (DefMap.count(Value) == 0) {
+      DefMap[Value] = Def;
+      continue;
+    }
+    FILE* Out = IntNd->getErrorFile();
+    fprintf(Out, "Conflicting action values:\n");
+    TextWriter Writer;
+    Writer.write(Out, DefMap[Value]);
+    fprintf(Out, "and\n");
+    Writer.write(Out, Def);
+    IsValid = false;
+  }
+  return IsValid;
+}
+
 void SymbolTable::install(FileNode* Root) {
   TRACE_METHOD("install");
   CachedValue.clear();
@@ -704,38 +757,8 @@ void SymbolTable::install(FileNode* Root) {
   installDefinitions(Root);
   std::vector<Node*> Parents;
   bool IsValid = Root->validateSubtree(Parents);
-#if 0
-  // TODO(karlschimpf) Turn this back on when callback representation is fixed.
-  // Verify enumeration of literal actions is valid.
-  fprintf(stderr, "******************\n");
-  fprintf(stderr, "Actions:\n");
-  TextWriter Writer;
-  for (const LiteralDefNode* Def : CallbackLiterals) {
-    Writer.write(stderr, Def);
-  }
-  fprintf(stderr, "******************\n");
-  std::map<IntType, const LiteralDefNode*> DefMap;
-  for (const LiteralDefNode* Def : CallbackLiterals) {
-    const IntegerNode* IntNd = dyn_cast<IntegerNode>(Def->getKid(1));
-    if (IntNd == nullptr) {
-      errorDescribeNode("Unable to extract action value", Def);
-      IsValid = false;
-    }
-    IntType Value = IntNd->getValue();
-    if (DefMap.count(Value)) {
-      FILE* Out = IntNd->getErrorFile();
-      fprintf(Out, "Conflicting action values:\n");
-      TextWriter Writer;
-      Writer.write(Out, DefMap[Value]);
-      fprintf(Out, "and\n");
-      Writer.write(Out, Def);
-#if 0
-      IsValue = false;
-#endif
-    }
-    DefMap[Value] = Def;
-  }
-#endif
+  if (!AllowInconsistentActions && IsValid)
+    IsValid = areActionsConsistent();
   if (!IsValid)
     fatal("Unable to install algorthms, validation failed!");
 }
@@ -910,6 +933,8 @@ Node* SymbolTable::stripLiteralUses(Node* Root) {
           Root, [&](Node* Nd) -> Node* { return stripLiteralUses(Nd); });
     case OpLiteralUse: {
       const auto* Use = cast<LiteralUseNode>(Root);
+      if (Use->getIsAction())
+        return Root;
       const auto* Sym = dyn_cast<SymbolNode>(Use->getKid(0));
       if (Sym == nullptr)
         break;
@@ -1037,18 +1062,61 @@ AST_UNARYNODE_TABLE
 AST_UNARYNODE_TABLE
 #undef X
 
+const LiteralDefNode* LiteralUseNode::getDef() const {
+  return cast<SymbolNode>(getKid(0))->getLiteralDefinition();
+}
+
+bool LiteralUseNode::validateNode(NodeVectorType& Parents) {
+#if 0
+  errorDescribeNode("Literal use", this);
+#endif
+  if (getDef() != nullptr) {
+#if 0
+    errorDescribeNode("Def", getDef());
+#endif
+    return true;
+  }
+  fprintf(getErrorFile(), "No corresponding literal definition found\n");
+  return false;
+}
+
+const IntegerNode* LiteralUseNode::getValue() const {
+  const LiteralDefNode* Def = getDef();
+  assert(Def != nullptr);
+  const IntegerNode* IntNd = dyn_cast<IntegerNode>(Def->getKid(1));
+  assert(IntNd != nullptr);
+  return IntNd;
+}
+
 bool CallbackNode::validateNode(NodeVectorType& Parents) {
-  assert(isa<SymbolNode>(getKid(0)));
-  const LiteralDefNode* Defn =
-      cast<SymbolNode>(getKid(0))->getLiteralDefinition();
-  if (Defn == nullptr) {
+  const Node* Action = getKid(0);
+  if (const auto *IntNd = dyn_cast<IntegerNode>(Action)) {
+    getSymtab().insertCallbackValue(IntNd);
+    return true;
+  }
+  const LiteralUseNode* Use = dyn_cast<LiteralUseNode>(Action);
+  if (Use == nullptr) {
+    errorDescribeNode("Malformed callback", this);
+    return false;
+  }
+  Use->IsAction = true;
+  const LiteralDefNode* Def = Use->getDef();
+  if (Def == nullptr) {
     errorDescribeNode("Callback", this);
     fputs("No corresponding literal value defined for callback\n",
           getErrorFile());
     return false;
   }
-  getSymtab().insertCallbackLiteral(Defn);
+  getSymtab().insertCallbackLiteral(Def);
   return true;
+}
+
+const IntegerNode* CallbackNode::getValue() const {
+  const Node* Val = getKid(0);
+  const auto* Use = dyn_cast<LiteralUseNode>(Val);
+  if (Use != nullptr)
+    return Use->getValue();
+  return dyn_cast<IntegerNode>(Val);
 }
 
 IntegerNode::IntegerNode(SymbolTable& Symtab,

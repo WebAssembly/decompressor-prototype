@@ -154,6 +154,7 @@ bool Reader::readHeaderValue(IntTypeFormat Format, IntType& Value) {
   }
 }
 
+#if 0
 bool Reader::readAction(const SymbolNode* Action) {
   switch (Action->getPredefinedSymbol()) {
     case PredefinedSymbol::Block_enter:
@@ -168,6 +169,22 @@ bool Reader::readAction(const SymbolNode* Action) {
       return DefaultReadAction;
   }
 }
+#else
+bool Reader::readAction(IntType Action) {
+  switch (Action) {
+    case IntType(PredefinedSymbol::Block_enter):
+    case IntType(PredefinedSymbol::Block_enter_readonly):
+      return readBlockEnter();
+    case IntType(PredefinedSymbol::Block_exit):
+    case IntType(PredefinedSymbol::Block_exit_readonly):
+      return readBlockExit();
+    case IntType(PredefinedSymbol::Align):
+      return alignToByte();
+    default:
+      return DefaultReadAction;
+  }
+}
+#endif
 
 bool Reader::tablePush(IntType Value) {
   return true;

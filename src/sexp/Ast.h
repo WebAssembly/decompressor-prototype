@@ -137,6 +137,7 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   SymbolTable& operator=(const SymbolTable&) = delete;
 
  public:
+  typedef std::unordered_set<const IntegerNode*> ActionValueSet;
   typedef std::unordered_set<const LiteralDefNode*> ActionDefSet;
   // Use std::make_shared() to build.
   explicit SymbolTable();
@@ -199,9 +200,9 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   void setCachedValue(const Node* Nd, Node* Value) { CachedValue[Nd] = Value; }
 
   // Adds the given callback literal to the set of known callback literals.
-  void insertCallbackLiteral(const LiteralDefNode* Defn) {
-    CallbackLiterals.insert(Defn);
-  }
+  void insertCallbackLiteral(const LiteralDefNode* Defn);
+  void insertCallbackValue(const IntegerNode* IntNd);
+
 
   // Strips all callback actions from the algorithm, except for the names
   // specified. Returns the updated tree.
@@ -232,6 +233,7 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   FileNode* Root;
   Node* Error;
   int NextCreationIndex;
+  ActionValueSet CallbackValues;
   ActionDefSet CallbackLiterals;
   std::map<std::string, SymbolNode*> SymbolMap;
   std::map<IntegerValue, IntegerNode*> IntMap;
@@ -239,6 +241,7 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   CallbackNode* BlockEnterCallback;
   CallbackNode* BlockExitCallback;
   CachedValueMap CachedValue;
+  bool AllowInconsistentActions;
 
   void init();
   void deallocateNodes();
@@ -246,6 +249,7 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   void installPredefined();
   void installDefinitions(Node* Root);
 
+  bool areActionsConsistent();
   Node* stripUsing(Node* Root, std::function<Node*(Node*)> stripKid);
   Node* stripCallbacksExcept(std::set<std::string>& KeepActions, Node* Root);
   Node* stripLiteralUses(Node* Root);

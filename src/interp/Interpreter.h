@@ -108,6 +108,7 @@ class Interpreter {
 
   // Throw exception (with message) for error.
   void throwMessage(const std::string& Message);
+  void throwMessage(const std::string& Message, decode::IntType Value);
   void throwCantRead();
   void throwCantWrite();
   void throwCantFreezeEof();
@@ -118,6 +119,8 @@ class Interpreter {
 
   // After catching (and cleaning up state), rethrow caught exception error.
   void rethrow();
+
+  bool canCatchThrow();
 
   // Finds state to apply catch, or fail if no catch is defined.
   void catchOrElseFail();

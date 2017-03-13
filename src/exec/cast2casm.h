@@ -971,9 +971,8 @@ int main(int Argc, charstring Argv[]) {
     }
     InputSymtab = Reader.getReadSymtab();
   }
-  if (StripActions) {
+  if (StripActions)
     InputSymtab->stripCallbacksExcept(KeepActions);
-  }
   // Note: Must run after StripActions to guarantee that literal defintions
   // associated with stripped actions will also be removed.
   if (StripLiteralUses)
