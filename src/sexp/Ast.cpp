@@ -703,7 +703,40 @@ void SymbolTable::install(FileNode* Root) {
   installPredefined();
   installDefinitions(Root);
   std::vector<Node*> Parents;
-  if (!Root->validateSubtree(Parents))
+  bool IsValid = Root->validateSubtree(Parents);
+#if 0
+  // TODO(karlschimpf) Turn this back on when callback representation is fixed.
+  // Verify enumeration of literal actions is valid.
+  fprintf(stderr, "******************\n");
+  fprintf(stderr, "Actions:\n");
+  TextWriter Writer;
+  for (const LiteralDefNode* Def : CallbackLiterals) {
+    Writer.write(stderr, Def);
+  }
+  fprintf(stderr, "******************\n");
+  std::map<IntType, const LiteralDefNode*> DefMap;
+  for (const LiteralDefNode* Def : CallbackLiterals) {
+    const IntegerNode* IntNd = dyn_cast<IntegerNode>(Def->getKid(1));
+    if (IntNd == nullptr) {
+      errorDescribeNode("Unable to extract action value", Def);
+      IsValid = false;
+    }
+    IntType Value = IntNd->getValue();
+    if (DefMap.count(Value)) {
+      FILE* Out = IntNd->getErrorFile();
+      fprintf(Out, "Conflicting action values:\n");
+      TextWriter Writer;
+      Writer.write(Out, DefMap[Value]);
+      fprintf(Out, "and\n");
+      Writer.write(Out, Def);
+#if 0
+      IsValue = false;
+#endif
+    }
+    DefMap[Value] = Def;
+  }
+#endif
+  if (!IsValid)
     fatal("Unable to install algorthms, validation failed!");
 }
 

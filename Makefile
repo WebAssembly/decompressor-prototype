@@ -708,12 +708,12 @@ ifeq ($(GENSRCS), 1)
 
   $(ALG_GEN_H_SRCS_BOOT2): $(ALG_GENDIR)/%.h: $(ALG_GENDIR)/%.cast
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot2 \
-		$< -o $@ --header --strip-literal-uses \
+		$< -o $@ --header --strip-literal-uses --strip-actions \
 		--function $(patsubst $(ALG_GENDIR)/%.cast, Alg%, $<)
 
   $(ALG_GEN_CPP_SRCS_BOOT2): $(ALG_GENDIR)/%.cpp: $(ALG_GENDIR)/%.cast
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot2  \
-		$< -o $@ --strip-literal-uses --array \
+		$< -o $@ --strip-literal-uses --array --strip-actions \
 		--function $(patsubst $(ALG_GENDIR)/%.cast, Alg%, $<)
 
 endif
