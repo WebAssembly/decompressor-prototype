@@ -39,21 +39,13 @@ AbbreviationCodegen::AbbreviationCodegen(CountNode::RootPtr Root,
       Assignments(Assignments) {
 }
 
-Node* AbbreviationCodegen::generateCasmFileHeader() {
+Node* AbbreviationCodegen::generateFileHeader(uint32_t MagicNumber,
+                                              uint32_t VersionNumber) {
   auto* Header = Symtab->create<FileHeaderNode>();
   Header->append(Symtab->getU32ConstDefinition(
-      CasmBinaryMagic, decode::ValueFormat::Hexidecimal));
+      MagicNumber, decode::ValueFormat::Hexidecimal));
   Header->append(Symtab->getU32ConstDefinition(
-      CasmBinaryVersion, decode::ValueFormat::Hexidecimal));
-  return Header;
-}
-
-Node* AbbreviationCodegen::generateWasmFileHeader() {
-  auto* Header = Symtab->create<FileHeaderNode>();
-  Header->append(Symtab->getU32ConstDefinition(
-      WasmBinaryMagic, decode::ValueFormat::Hexidecimal));
-  Header->append(Symtab->getU32ConstDefinition(
-      WasmBinaryVersionD, decode::ValueFormat::Hexidecimal));
+      VersionNumber, decode::ValueFormat::Hexidecimal));
   return Header;
 }
 
@@ -203,7 +195,8 @@ Node* AbbreviationCodegen::generateIntLitActionWrite(IntCountNode* Nd) {
 std::shared_ptr<SymbolTable> AbbreviationCodegen::getCodeSymtab(bool ToRead) {
   this->ToRead = ToRead;
   Symtab = std::make_shared<SymbolTable>();
-  generateFile(generateCasmFileHeader(), generateWasmFileHeader());
+  generateFile(generateFileHeader(CasmBinaryMagic, CasmBinaryVersion),
+               generateFileHeader(WasmBinaryMagic, WasmBinaryVersionD));
   return Symtab;
 }
 

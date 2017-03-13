@@ -47,8 +47,7 @@ class AbbreviationCodegen {
   interp::IntTypeFormat AbbrevFormat;
   CountNode::PtrSet& Assignments;
   bool ToRead;
-  filt::Node* generateCasmFileHeader();
-  filt::Node* generateWasmFileHeader();
+  filt::Node* generateFileHeader(uint32_t MagicNumber, uint32_t VersionNumber);
   void generateFile(filt::Node* SourceHeader, filt::Node* TargetHeader);
   filt::Node* generateFileBody();
   filt::Node* generateFileFcn();

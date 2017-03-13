@@ -85,11 +85,17 @@ constexpr T const_maximum(T V, Args... args) {
   return const_max(V, const_maximum(args...));
 }
 
+// Algoirthm codes for parsing/writing WASM modules.
 static constexpr uint32_t WasmBinaryMagic = 0x6d736100;
 static constexpr uint32_t WasmBinaryVersionD = 0x0d;
 
+// Algorithm codes for parsing/writing algorithms
 static constexpr uint32_t CasmBinaryMagic = 0x6d736163;
 static constexpr uint32_t CasmBinaryVersion = 0x0;
+
+// Algorithm codes for parsing/writing opcode-based integer sequences.
+static constexpr uint32_t CismBinaryMagic = 0x6d736963;
+static constexpr uint32_t CismBinaryVersion = 0x0;
 
 enum class Ordering : int {
   LessThan = -1,
