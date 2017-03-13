@@ -168,7 +168,6 @@ LIBPREFIX = wasm-decomp-
 MAKE_RELEASE = DEBUG=$(DEBUG) RELEASE=$(RELEASE)
 
 $(info -----------------------------------------------)
-$(info Using GEN = $(GEN))
 $(info Using GENSRCS = $(GENSRCS))
 $(info Using PLATFORM = $(PLATFORM))
 $(info Using CXX = $(CXX))
@@ -177,10 +176,6 @@ $(info Using RELEASE = $(RELEASE))
 $(info Using PAGE_SIZE = $(USE_PAGE_SIZE))
 $(info Using CXX_SUBDIR = $(CXX_SUBDIR))
 $(info Using WASM = $(WASM))
-ifeq ($(GEN), 1)
-  $(info Using BUILDDIR_BOOT = $(BUILDDIR_BOOT))
-else
-  $(info Using BUILDDIR = $(BUILDDIR))
-endif
+$(info Using BUILDDIR = $(BUILDDIR))
 $(info -----------------------------------------------)
 

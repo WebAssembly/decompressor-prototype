@@ -105,8 +105,7 @@ PARSER_PARSE_OTHER_GENSRCS = \
 	position.hh \
 	stack.hh
 
-PARSER_PARSE_GENSRCS = $(PARSER_PARSE_CPP_GENSRCS) $(PARSER_PARSE_OTHER_GENSRCS)
-PARSER_GENSRCS = $(PARSER_LEX_GENSRCS) $(PARSER_PARSE_GENSRCS)
+PARSER_GENSRCS = $(PARSER_LEX_GENSRCS) $(PARSER_PARSE_CPP_GENSRCS)
 
 PARSER_SRCS_REST = \
 	Driver.cpp
@@ -865,21 +864,6 @@ ifeq ($(GENSRCS), 1)
 
   $(PARSER_GENDIR)/Parser.tab.cpp: $(PARSER_GENDIR)/Parser.ypp $(PARSER_GENDIR)
 	cd $(PARSER_GENDIR); bison -d -r all Parser.ypp
-
-  $(PARSER_GENDIR)/location.hh: $(PARSER_GENDIR)/Parser.tab.cpp $(PARSER_GENDIR)
-	touch $@
-
-  $(PARSER_GENDIR)/Parser.output: $(PARSER_GENDIR)/Parser.tab.cpp $(PARSER_GENDIR)
-	touch $@
-
-  $(PARSER_GENDIR)/Parser.tab.hpp: $(PARSER_GENDIR)/Parser.tab.cpp $(PARSER_GENDIR)
-	touch $@
-
-  $(PARSER_GENDIR)/position.hh: $(PARSER_GENDIR)/Parser.tab.cpp $(PARSER_GENDIR)
-	touch $@
-
-  $(PARSER_GENDIR)/stack.hh: $(PARSER_GENDIR)/Parser.tab.cpp $(PARSER_GENDIR)
-	touch $@
 
 endif
 
