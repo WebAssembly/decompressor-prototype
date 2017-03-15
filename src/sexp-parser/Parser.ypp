@@ -78,6 +78,7 @@ struct IntValue {
 
 // Keywords
 %token ACCEPT        "accept"
+%token ACTION        "action"
 %token AND           "and"
 %token BASE          "base"
 %token BINARY        "binary"
@@ -292,7 +293,7 @@ declaration
             $$ = Driver.create<LiteralActionDefNode>($5, $6);
           }
         | "(" "literal" "." "action" "." "base" literal_expression ")" {
-            $$ = $7;
+            $$ = Driver.create<LiteralActionBaseNode>($7);
           }
         ;
 

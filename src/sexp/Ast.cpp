@@ -63,13 +63,16 @@ void errorDescribeContext(NodeVectorType& Parents,
     Writer.writeAbbrev(Out, Parents[i - 1]);
 }
 
-void errorDescribeNode(const char* Message, const Node* Nd) {
+void errorDescribeNode(const char* Message, const Node* Nd, bool Abbrev=true) {
   TextWriter Writer;
   Writer.setUseNodeTypeNames(true);
   FILE* Out = Nd->getErrorFile();
   if (Message)
     fprintf(Out, "%s:\n", Message);
-  Writer.writeAbbrev(Out, Nd);
+  if (Abbrev)
+    Writer.writeAbbrev(Out, Nd);
+  else
+    Writer.write(Out, Nd);
 }
 
 void errorDescribeNodeContext(const char* Message,
@@ -598,6 +601,7 @@ SymbolTable::SymbolTable() {
 void SymbolTable::init() {
   Root = nullptr;
   NextCreationIndex = 0;
+  ActionBase = 0;
   Error = create<ErrorNode>();
   BlockEnterCallback = nullptr;
   BlockExitCallback = nullptr;
@@ -773,7 +777,7 @@ bool SymbolTable::areActionsConsistent() {
   // Create values for undefined actions.
   bool IsValid = true;              // Until proven otherwise.
   constexpr IntType EnumGap = 100;  // gap for future expansion
-  IntType NextEnumValue = NumPredefinedSymbols + EnumGap;
+  IntType NextEnumValue = ActionBase ? ActionBase : NumPredefinedSymbols + EnumGap;
   for (const LiteralActionDefNode* Def : CallbackLiterals) {
     const IntegerNode* IntNd = dyn_cast<IntegerNode>(Def->getKid(1));
     if (IntNd == nullptr) {
@@ -803,7 +807,7 @@ bool SymbolTable::areActionsConsistent() {
   }
   // Now see if conflicting definitions.
   for (const LiteralActionDefNode* Def : CallbackLiterals) {
-    const IntegerNode* IntNd = dyn_cast<IntegerNode>(Def->getKid(1));
+    const auto* IntNd = dyn_cast<IntegerNode>(Def->getKid(1));
     if (IntNd == nullptr) {
       errorDescribeNode("Unable to extract action value", Def);
       IsValid = false;
@@ -830,6 +834,7 @@ void SymbolTable::install(FileNode* Root) {
   UndefinedCallbacks.clear();
   CallbackValues.clear();
   CallbackLiterals.clear();
+  ActionBase = 0;
   this->Root = Root;
   installPredefined();
   installDefinitions(Root);
@@ -894,6 +899,20 @@ void SymbolTable::installDefinitions(Node* Root) {
         return LiteralSymbol->setLiteralDefinition(cast<LiteralDefNode>(Root));
       errorDescribeNode("Malformed", Root);
       fatal("Malformed literal s-expression found!");
+      return;
+    }
+    case OpLiteralActionBase: {
+      const auto* IntNd = cast<IntegerNode>(Root->getKid(0));
+      if (IntNd == nullptr)
+        errorDescribeNode("Unable to extract literal action base", Root);
+      IntType Base = IntNd->getValue();
+      if (ActionBase != 0) {
+        fprintf(Root->getErrorFile(), "Literal action base was: %" PRIuMAX "\n",
+                uintmax_t(ActionBase));
+        errorDescribeNode("Redefining to", Root);
+        fatal("Duplicate literal action bases defined!");
+      }
+      ActionBase = Base;
       return;
     }
     case OpLiteralActionDef: {
