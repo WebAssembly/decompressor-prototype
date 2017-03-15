@@ -14,9 +14,20 @@
 
 # Generate boot sources: make gen
 #
-# Build debug: make
-#            : make DEBUG=1
-# Build release: makParsere RELEASE=1
+# Build: make FLAGS
+#
+# FLAGS is defined as follows:
+#     missing : (default) build debug.
+#     DEBUG=1 : build debug
+#     RELEASE=1 : build release
+#
+# To test: make FLAGS test
+#
+# To generate sourcess, build, and test: make FLAGS all
+#
+# To get rid of objects/libraries: make FLAGS clean
+#
+# To get rid of generated sources also: make clean-all
 
 # helper eq comparison function.
 eq = $(and $(findstring $(1),$(2)),$(findstring $(2),$(1)))
@@ -511,7 +522,7 @@ LIBS = $(INTCOMP_LIB) $(BINARY_LIB) $(INTERP_LIB) $(SEXP_LIB) $(CASM_LIB) $(PARS
        $(CASM_LIB) $(STRM_LIB) $(UTILS_LIB) $(PARSER_LIB)
 
 LIBS_BOOT1 = $(BINARY_LIB) $(INTERP_LIB_BASE) \
-	$(SEXP_LIB) $(CASM_LIB_BASE) $(PARSER_LIB) \
+	$(SEXP_LIB) $(PARSER_LIB) \
 	$(INTERP_LIB_BASE) $(BINARY_LIB) $(STRM_LIB) $(UTILS_LIB)
 
 LIBS_BOOT2 = $(BINARY_LIB) $(INTERP_LIB_BASE) \
@@ -695,23 +706,27 @@ $(ALG_LIB): $(ALG_OBJS)
 
 ifeq ($(GENSRCS), 1)
 
-  $(ALG_GEN_H_SRCS_BOOT1): $(ALG_GENDIR)/%.h: $(ALG_GENDIR)/%.cast
+  $(ALG_GEN_H_SRCS_BOOT1): $(ALG_GENDIR)/%.h: $(ALG_GENDIR)/%.cast \
+	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1 -a $(ALG_GENDIR_ALG) \
 		$< -o $@ --header --strip-literal-uses \
 		--function $(patsubst $(ALG_GENDIR)/%.cast, Alg%, $<)
 
-  $(ALG_GEN_CPP_SRCS_BOOT1): $(ALG_GENDIR)/%.cpp: $(ALG_GENDIR)/%.cast
+  $(ALG_GEN_CPP_SRCS_BOOT1): $(ALG_GENDIR)/%.cpp: $(ALG_GENDIR)/%.cast \
+	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1 -a $(ALG_GENDIR_ALG) \
 		$< -o $@ --strip-literal-uses \
 		--function $(patsubst $(ALG_GENDIR)/%.cast, Alg%, $<)
 
 
-  $(ALG_GEN_H_SRCS_BOOT2): $(ALG_GENDIR)/%.h: $(ALG_GENDIR)/%.cast
+  $(ALG_GEN_H_SRCS_BOOT2): $(ALG_GENDIR)/%.h: $(ALG_GENDIR)/%.cast \
+	$(BUILD_EXECDIR_BOOT)/cast2casm-boot2
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot2 \
 		$< -o $@ --header --strip-literal-uses --strip-actions \
 		--function $(patsubst $(ALG_GENDIR)/%.cast, Alg%, $<)
 
-  $(ALG_GEN_CPP_SRCS_BOOT2): $(ALG_GENDIR)/%.cpp: $(ALG_GENDIR)/%.cast
+  $(ALG_GEN_CPP_SRCS_BOOT2): $(ALG_GENDIR)/%.cpp: $(ALG_GENDIR)/%.cast \
+	$(BUILD_EXECDIR_BOOT)/cast2casm-boot2
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot2  \
 		$< -o $@ --strip-literal-uses --array --strip-actions \
 		--function $(patsubst $(ALG_GENDIR)/%.cast, Alg%, $<)

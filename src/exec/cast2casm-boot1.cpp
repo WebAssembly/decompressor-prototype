@@ -19,5 +19,5 @@
 // concepts are repeated in cast2casm, but allow simplier smaller models
 // because it can take advantage of the boot step.
 
-#define WASM_CAST_PARSER 1
+#define WASM_CAST_BOOT 1
 #include "cast2casm.h"
