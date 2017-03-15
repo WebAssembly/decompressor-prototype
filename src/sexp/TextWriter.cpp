@@ -199,51 +199,38 @@ void TextWriter::writeNode(const Node* Nd,
     return;
   }
   NodeType Type = Nd->getType();
-  if (const auto* Int = dyn_cast<IntegerNode>(Nd)) {
-    Parenthesize _(this, Type, AddNewline);
-    if (!Int->isDefaultValue()) {
-      fputc(' ', File);
-      writeInt(File, Int->getValue(), Int->getFormat());
-      if (const auto* Accept = dyn_cast<BinaryAcceptNode>(Int)) {
-        fputc(':', File);
-        fprintf(File, "%u", Accept->getNumBits());
-      }
-    }
-    LineEmpty = false;
-    return;
-  }
+  if (isa<IntegerNode>(Nd))
+    return writeIntegerNode(cast<IntegerNode>(Nd), AddNewline);
   switch (Type) {
     default: {
-      if (EmbedInParent && !UseNodeTypeNames) {
-        if (isa<CaseNode>(Nd)) {
-          writeIndent(-1);
-          writeSpace();
-          writeName(OpCase);
-        }
-        writeNodeKids(Nd, true);
-      } else {
-        Parenthesize _(this, Type, AddNewline);
-        // TODO(kschimpf) Make newline dependent on multi line for kids.
-        writeNodeKids(Nd, false);
+      if (!(EmbedInParent && !UseNodeTypeNames))
+        break;
+      if (isa<CaseNode>(Nd)) {
+        writeIndent(-1);
+        writeSpace();
+        writeName(OpCase);
       }
+      writeNodeKids(Nd, true);
       return;
     }
     case OpFile: {
-      if (UseNodeTypeNames) {
-        Parenthesize _(this, Type, AddNewline);
-        writeNodeKids(Nd, false);
-      } else {
-        // Treat like hidden node. That is, visually just a list of
-        // s-expressions.
-        for (auto* Kid : *Nd)
-          writeNode(Kid, true);
-      }
+      if (UseNodeTypeNames)
+        break;
+      // Treat like hidden node. That is, visually just a list of
+      // s-expressions.
+      for (auto* Kid : *Nd)
+        writeNode(Kid, true);
       return;
     }
     case OpLiteralUse:
+    case OpLiteralActionUse:
+      if (UseNodeTypeNames)
+        break;
       writeNode(Nd->getKid(0), AddNewline, EmbedInParent);
-      break;
+      return;
     case OpSection:
+      if (UseNodeTypeNames)
+        break;
       for (auto* Kid : *Nd)
         writeNode(Kid, true, false);
       return;
@@ -254,6 +241,7 @@ void TextWriter::writeNode(const Node* Nd,
       return;
     }
     case OpSymbol: {
+#if 0
       Indent _(this, AddNewline);
       const auto* Sym = cast<SymbolNode>(Nd);
       fputc('\'', File);
@@ -301,8 +289,14 @@ void TextWriter::writeNode(const Node* Nd,
       fputc('\'', File);
       LineEmpty = false;
       return;
+#else
+      return writeSymbolNode(cast<SymbolNode>(Nd), AddNewline);
+#endif
     }
   }
+  // Default case.
+  Parenthesize _(this, Type, AddNewline);
+  writeNodeKids(Nd, false);
 }
 
 void TextWriter::writeNodeKidsAbbrev(const Node* Nd, bool EmbeddedInParent) {
@@ -359,18 +353,14 @@ void TextWriter::writeNodeAbbrev(const Node* Nd,
     maybeWriteNewline(AddNewline);
     return;
   }
-  if (isa<IntegerNode>(Nd)) {
-    writeNode(Nd, AddNewline, EmbedInParent);
-    return;
-  }
-  switch (NodeType Type = Nd->getType()) {
+  if (isa<IntegerNode>(Nd))
+    return writeIntegerNode(cast<IntegerNode>(Nd), AddNewline);
+  NodeType Type = Nd->getType();
+  switch (Type) {
     default: {
-      if (EmbedInParent) {
-        fprintf(File, " ...");
-      } else {
-        Parenthesize _(this, Type, AddNewline);
-        writeNodeKidsAbbrev(Nd, false);
-      }
+      if (!EmbedInParent)
+        break;
+      fprintf(File, " ...");
       return;
     }
     case OpSection:
@@ -380,13 +370,82 @@ void TextWriter::writeNodeAbbrev(const Node* Nd,
       return;
     }
     case OpSymbol:
+      return writeSymbolNode(cast<SymbolNode>(Nd), AddNewline);
     case OpSymbolDefn:
       writeNode(Nd, AddNewline, EmbedInParent);
       return;
     case OpLiteralUse:
+    case OpLiteralActionUse:
+      if (UseNodeTypeNames)
+        break;
       writeNodeAbbrev(Nd->getKid(0), AddNewline, EmbedInParent);
       break;
   }
+  Parenthesize _(this, Type, AddNewline);
+  writeNodeKidsAbbrev(Nd, false);
+}
+
+void TextWriter::writeSymbolNode(const SymbolNode* Sym, bool AddNewline) {
+  Indent _(this, AddNewline);
+  fputc('\'', File);
+  for (uint8_t V : Sym->getName()) {
+    switch (V) {
+      case '\\':
+        fputc('\\', File);
+        fputc('\\', File);
+        continue;
+      case '\f':
+        fputc('\\', File);
+        fputc('f', File);
+        continue;
+      case '\n':
+        fputc('\\', File);
+        fputc('n', File);
+        continue;
+      case '\r':
+        fputc('\\', File);
+        fputc('r', File);
+        continue;
+      case '\t':
+        fputc('\\', File);
+        fputc('t', File);
+        continue;
+      case '\v':
+        fputc('\\', File);
+        fputc('v', File);
+        continue;
+    }
+    if (isprint(V)) {
+      fputc(V, File);
+      continue;
+    }
+    fputc('\\', File);
+    uint8_t BitsPerOctal = 3;
+    uint8_t Shift = 2 * BitsPerOctal;
+    for (int Count = 3; Count > 0; --Count) {
+      uint8_t Digit = V >> Shift;
+      fputc('0' + Digit, File);
+      V &= ((1 << Shift) - 1);
+      Shift -= BitsPerOctal;
+    }
+  }
+  fputc('\'', File);
+  LineEmpty = false;
+  return;
+}
+
+void TextWriter::writeIntegerNode(const IntegerNode* Int, bool AddNewline) {
+  Parenthesize _(this, Int->getType(), AddNewline);
+  if (!Int->isDefaultValue()) {
+    fputc(' ', File);
+    writeInt(File, Int->getValue(), Int->getFormat());
+    if (const auto* Accept = dyn_cast<BinaryAcceptNode>(Int)) {
+      fputc(':', File);
+      fprintf(File, "%u", Accept->getNumBits());
+    }
+  }
+  LineEmpty = false;
+  return;
 }
 
 void TextWriter::writeNewline() {

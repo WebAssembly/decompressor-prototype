@@ -133,6 +133,10 @@ Node* AbbreviationCodegen::generateAction(CountNode::Ptr Nd) {
   return Symtab->create<ErrorNode>();
 }
 
+Node* AbbreviationCodegen::generateUseAction(SymbolNode* Sym) {
+  return Symtab->create<LiteralActionUseNode>(Sym);
+}
+
 Node* AbbreviationCodegen::generateBlockAction(BlockCountNode* Blk) {
   PredefinedSymbol Sym;
   if (Blk->isEnter()) {
@@ -142,7 +146,8 @@ Node* AbbreviationCodegen::generateBlockAction(BlockCountNode* Blk) {
     Sym = ToRead ? PredefinedSymbol::Block_exit
                  : PredefinedSymbol::Block_exit_writeonly;
   }
-  return Symtab->create<CallbackNode>(Symtab->getPredefined(Sym));
+  return Symtab->create<CallbackNode>(
+      generateUseAction(Symtab->getPredefined(Sym)));
 }
 
 Node* AbbreviationCodegen::generateDefaultAction(DefaultCountNode* Default) {
@@ -163,7 +168,7 @@ Node* AbbreviationCodegen::generateDefaultSingleAction() {
 
 Node* AbbreviationCodegen::generateAlignAction() {
   return Symtab->create<CallbackNode>(
-      Symtab->getPredefined(PredefinedSymbol::Align));
+      generateUseAction(Symtab->getPredefined(PredefinedSymbol::Align)));
 }
 
 Node* AbbreviationCodegen::generateIntType(IntType Value) {

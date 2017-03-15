@@ -31,6 +31,8 @@ namespace wasm {
 namespace filt {
 
 class Node;
+class IntegerNode;
+class SymbolNode;
 class SymbolTable;
 
 class TextWriter {
@@ -112,6 +114,9 @@ class TextWriter {
                        bool AddNewline,
                        bool EmbedInParent = false);
   void writeNodeKidsAbbrev(const Node* Node, bool EmbeddedInParent);
+
+  void writeSymbolNode(const SymbolNode* Sym, bool AddNewline);
+  void writeIntegerNode(const IntegerNode* Int, bool AddNewline);
 
   void writeIndent(int Adjustment = 0);
   void writeNewline();

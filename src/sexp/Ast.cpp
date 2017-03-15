@@ -51,12 +51,35 @@ namespace filt {
 
 namespace {
 
+void errorDescribeContext(NodeVectorType& Parents,
+                          const char* Context = "Context") {
+  if (Parents.empty())
+    return;
+  TextWriter Writer;
+  Writer.setUseNodeTypeNames(true);
+  FILE* Out = Parents[0]->getErrorFile();
+  fprintf(Out, "%s:\n", Context);
+  for (size_t i = Parents.size() - 1; i > 0; --i)
+    Writer.writeAbbrev(Out, Parents[i - 1]);
+#if 1
+  Writer.write(Out, Parents[0]);
+#endif
+}
+
 void errorDescribeNode(const char* Message, const Node* Nd) {
   TextWriter Writer;
+  Writer.setUseNodeTypeNames(true);
   FILE* Out = Nd->getErrorFile();
   if (Message)
     fprintf(Out, "%s:\n", Message);
-  Writer.write(Out, Nd);
+  Writer.writeAbbrev(Out, Nd);
+}
+
+void errorDescribeNodeContext(const char* Message,
+                              const Node* Nd,
+                              NodeVectorType& Parents) {
+  errorDescribeNode(Message, Nd);
+  errorDescribeContext(Parents);
 }
 
 static const char* PredefinedName[NumPredefinedSymbols]{"Unknown"
@@ -1168,7 +1191,7 @@ bool CallbackNode::validateNode(NodeVectorType& Parents) {
   }
   const auto* Use = dyn_cast<LiteralActionUseNode>(Action);
   if (Use == nullptr) {
-    errorDescribeNode("Malformed callback", this);
+    errorDescribeNodeContext("Malformed callback", this, Parents);
     return false;
   }
   return true;
