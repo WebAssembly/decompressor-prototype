@@ -381,7 +381,7 @@ void CodeGenerator::generatePredefinedNameFcn() {
       "    if (PredefinedNames[i].Value == Value) \n"
       "      return PredefinedNames[i].Name;\n"
       "  }\n"
-      "  return getName(PredefinedSymbol::Unknown);"
+      "  return getName(PredefinedSymbol::Unknown);\n"
       "}\n"
       "\n");
 }
