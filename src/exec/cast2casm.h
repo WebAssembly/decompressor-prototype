@@ -46,6 +46,9 @@ namespace {
 static charstring LocalName = "Local_";
 static charstring FuncName = "Func_";
 
+constexpr size_t WorkBufferSize = 128;
+typedef char BufferType[WorkBufferSize];
+
 class CodeGenerator {
   CodeGenerator() = delete;
   CodeGenerator(const CodeGenerator&) = delete;
@@ -76,6 +79,7 @@ class CodeGenerator {
   std::shared_ptr<SymbolTable> Symtab;
   std::shared_ptr<ReadCursor> ReadPos;
   std::vector<charstring>& Namespaces;
+  std::vector<const LiteralActionDefNode*> ActionDefs;
   charstring FunctionName;
   bool ErrorsFound;
   size_t NextIndex;
@@ -91,7 +95,10 @@ class CodeGenerator {
   void generateHeader();
   void generateEnterNamespaces();
   void generateExitNamespaces();
+  void collectActionDefs();
   void generatePredefinedEnum();
+  void generatePredefinedEnumNames();
+  void generatePredefinedNameFcn();
   void generateAlgorithmHeader();
   size_t generateNode(const Node* Nd);
   size_t generateSymbol(const SymbolNode* Sym);
@@ -120,7 +127,7 @@ class CodeGenerator {
 };
 
 void CodeGenerator::generateInt(IntType Value) {
-  char Buffer[40];
+  BufferType Buffer;
   sprintf(Buffer, "%" PRIuMAX "", uintmax_t(Value));
   puts(Buffer);
 }
@@ -261,9 +268,8 @@ void CodeGenerator::putSymbol(charstring Name, bool Capitalize) {
         putc('_');
         break;
       default: {
-        constexpr size_t BufferSize = 32;
-        char Buffer[BufferSize];
-        snprintf(Buffer, BufferSize, "_x%X_", Ch);
+        BufferType Buffer;
+        sprintf(Buffer, "_x%X_", Ch);
         puts(Buffer);
         break;
       }
@@ -298,31 +304,85 @@ bool compareLtActionDefs(const LiteralActionDefNode* N1,
 
 }  // end of anonymous namespace
 
-void CodeGenerator::generatePredefinedEnum() {
+void CodeGenerator::collectActionDefs() {
+  if (!ActionDefs.empty())
+    return;
   SymbolTable::ActionDefSet DefSet;
   Symtab->collectActionDefs(DefSet);
-  std::vector<const LiteralActionDefNode*> Defs;
   for (const LiteralActionDefNode* Def : DefSet)
-    Defs.push_back(Def);
-  std::sort(Defs.begin(), Defs.end(), compareLtActionDefs);
+    ActionDefs.push_back(Def);
+  std::sort(ActionDefs.begin(), ActionDefs.end(), compareLtActionDefs);
+}
+
+void CodeGenerator::generatePredefinedEnum() {
+  collectActionDefs();
   puts("enum class Predefined");
   puts(FunctionName);
   puts(" : uint32_t {\n");
   bool IsFirst = true;
-  for (const LiteralActionDefNode* Def : Defs) {
+  for (const LiteralActionDefNode* Def : ActionDefs) {
     if (IsFirst)
       IsFirst = false;
     else
       puts(",\n");
     puts("  ");
     putSymbol(getActionDefName(Def).c_str());
-    char Buffer[128];
+    BufferType Buffer;
     sprintf(Buffer, " = %" PRIuMAX "", uintmax_t(getActionDefValue(Def)));
     puts(Buffer);
   }
   puts(
       "\n"
       "};\n"
+      "\n"
+      "charstring getName(Predefined");
+  puts(FunctionName);
+  puts(
+      " Value);\n"
+      "\n");
+}
+
+void CodeGenerator::generatePredefinedEnumNames() {
+  collectActionDefs();
+  puts(
+      "struct {\n"
+      "  Predefined");
+  puts(FunctionName);
+  puts(
+      " Value;\n"
+      "  charstring Name;\n"
+      "} PredefinedNames[] {\n");
+  bool IsFirst = true;
+  for (const LiteralActionDefNode* Def : ActionDefs) {
+    if (IsFirst)
+      IsFirst = false;
+    else
+      puts(",\n");
+    puts("  {Predefined");
+    puts(FunctionName);
+    puts("::");
+    putSymbol(getActionDefName(Def).c_str());
+    puts(", \"");
+    puts(getActionDefName(Def).c_str());
+    puts("\"}");
+  }
+  puts(
+      "\n"
+      "};\n"
+      "\n");
+}
+
+void CodeGenerator::generatePredefinedNameFcn() {
+  puts("charstring getName(Predefined");
+  puts(FunctionName);
+  puts(
+      " Value) {\n"
+      "  for (size_t i = 0; i < size(PredefinedNames); ++i) {\n"
+      "    if (PredefinedNames[i].Value == Value) \n"
+      "      return PredefinedNames[i].Name;\n"
+      "  }\n"
+      "  return getName(PredefinedSymbol::Unknown);\n"
+      "}\n"
       "\n");
 }
 
@@ -627,7 +687,7 @@ void CodeGenerator::generateDeclFile() {
 
 #if WASM_CAST_BOOT > 1
 void CodeGenerator::generateArrayImplFile() {
-  char Buffer[256];
+  BufferType Buffer;
   constexpr size_t BytesPerLine = 15;
   puts("static const uint8_t ");
   generateArrayName();
@@ -739,17 +799,22 @@ void CodeGenerator::generateImplFile(bool UseArrayImpl) {
         "#include <cassert>\n"
         "\n");
   generateEnterNamespaces();
+  // Note: We don't know the include path for the enum, so just repeat
+  // generating it.
+  generatePredefinedEnum();
   puts(
       "using namespace wasm::filt;\n"
       "\n"
       "namespace {\n"
       "\n");
+  generatePredefinedEnumNames();
 #if WASM_CAST_BOOT > 1
   if (UseArrayImpl)
     generateArrayImplFile();
   else
 #endif
     generateFunctionImplFile();
+  generatePredefinedNameFcn();
   generateExitNamespaces();
 }
 
