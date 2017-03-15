@@ -235,6 +235,10 @@ bool InflateAst::applyOp(IntType Op) {
       return buildNullary<LastReadNode>();
     case OpLastSymbolIs:
       return buildUnary<LastSymbolIsNode>();
+    case OpLiteralActionDef:
+      return buildBinary<LiteralActionDefNode>();
+    case OpLiteralActionUse:
+      return buildUnary<LiteralActionUseNode>();
     case OpLiteralDef:
       return buildBinary<LiteralDefNode>();
     case OpLiteralUse:
@@ -319,7 +323,7 @@ bool InflateAst::applyOp(IntType Op) {
   return failWriteActionMalformed();
 }
 
-bool InflateAst::writeAction(const filt::SymbolNode* Action) {
+bool InflateAst::writeAction(IntType Action) {
 #if 0
   TRACE_BLOCK({
       constexpr size_t WindowSize = 10;
@@ -342,13 +346,12 @@ bool InflateAst::writeAction(const filt::SymbolNode* Action) {
       fputs("**************\n", Out);
     });
 #endif
-  PredefinedSymbol Name = Action->getPredefinedSymbol();
-  switch (Name) {
-    case PredefinedSymbol::Binary_begin:
+  switch (Action) {
+    case IntType(PredefinedSymbol::Binary_begin):
       // TODO(karlschimpf): Can we remove AstMarkers?
       AstMarkers.push(Asts.size());
       return true;
-    case PredefinedSymbol::Binary_bit:
+    case IntType(PredefinedSymbol::Binary_bit):
       switch (ValuesTop) {
         case 0:
           Values.push(OpBinaryAccept);
@@ -362,13 +365,13 @@ bool InflateAst::writeAction(const filt::SymbolNode* Action) {
           return failWriteActionMalformed();
       }
       WASM_RETURN_UNREACHABLE(false);
-    case PredefinedSymbol::Binary_end:
+    case IntType(PredefinedSymbol::Binary_end):
       Values.push(OpBinaryEval);
       return buildUnary<BinaryEvalNode>();
-    case PredefinedSymbol::Int_value_begin:
+    case IntType(PredefinedSymbol::Int_value_begin):
       ValueMarker = Values.size();
       return true;
-    case PredefinedSymbol::Int_value_end: {
+    case IntType(PredefinedSymbol::Int_value_end): {
       bool IsDefault;
       ValueFormat Format = ValueFormat::Decimal;
       IntType Value = 0;
@@ -433,12 +436,12 @@ bool InflateAst::writeAction(const filt::SymbolNode* Action) {
       Asts.push(Nd);
       return true;
     }
-    case PredefinedSymbol::Symbol_name_begin:
+    case IntType(PredefinedSymbol::Symbol_name_begin):
       if (Values.empty())
         return failWriteActionMalformed();
       SymbolNameSize = Values.popValue();
       return true;
-    case PredefinedSymbol::Symbol_name_end: {
+    case IntType(PredefinedSymbol::Symbol_name_end): {
       if (Values.size() < SymbolNameSize)
         return failWriteActionMalformed();
       // TODO(karlschimpf) Can we build the string faster than this.
@@ -452,15 +455,15 @@ bool InflateAst::writeAction(const filt::SymbolNode* Action) {
       SectionSymtab->addSymbol(Name);
       return true;
     }
-    case PredefinedSymbol::Symbol_lookup:
+    case IntType(PredefinedSymbol::Symbol_lookup):
       if (Values.size() < 2)
         return failWriteActionMalformed();
       return applyOp(Values[Values.size() - 2]);
-    case PredefinedSymbol::Postorder_inst:
+    case IntType(PredefinedSymbol::Postorder_inst):
       if (Values.size() < 1)
         return failWriteActionMalformed();
       return applyOp(ValuesTop);
-    case PredefinedSymbol::Nary_inst:
+    case IntType(PredefinedSymbol::Nary_inst):
       if (Values.size() < 2)
         return failWriteActionMalformed();
       TRACE(size_t, "nary node size", Values.size());

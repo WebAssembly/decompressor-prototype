@@ -62,7 +62,7 @@ class Writer {
   virtual bool writeHeaderValue(decode::IntType Value,
                                 interp::IntTypeFormat Format);
   virtual bool writeHeaderClose();
-  virtual bool writeAction(const filt::SymbolNode* Action);
+  virtual bool writeAction(decode::IntType Action);
   virtual bool tablePush(decode::IntType Value);
   virtual bool tablePop();
 

@@ -488,19 +488,20 @@ void Interpreter::fail(const std::string& Message) {
   throwMessage(Message);
 }
 
+bool Interpreter::canCatchThrow() {
+  if (!IsFatalFailure) {
+    for (auto CallFrame : FrameStack.riterRange()) {
+      if (CallFrame.CallMethod == Catch)
+        return true;
+    }
+  }
+  return false;
+}
+
 void Interpreter::throwMessage(const std::string& Message) {
   TRACE_MESSAGE(Message);
   RethrowMessage = Message;
-  bool CanBeCaught = false;
-  if (!IsFatalFailure) {
-    for (auto CallFrame : FrameStack.riterRange()) {
-      if (CallFrame.CallMethod == Catch) {
-        CanBeCaught = true;
-        break;
-      }
-    }
-  }
-  if (!CanBeCaught) {
+  if (!canCatchThrow()) {
     // Fail not throw, show context.
     TextWriter Writer;
     for (const auto& F : FrameStack.riterRange(1)) {
@@ -510,7 +511,23 @@ void Interpreter::throwMessage(const std::string& Message) {
     fprintf(stderr, "Error: (method %s) %s\n", getName(Frame.CallMethod),
             Message.c_str());
   }
-  Interpreter::catchOrElseFail();
+  catchOrElseFail();
+}
+
+void Interpreter::throwMessage(const std::string& Message, IntType Value) {
+  TRACE_MESSAGE(Message);
+  RethrowMessage = Message;
+  if (!canCatchThrow()) {
+    // Fail not throw, show context.
+    TextWriter Writer;
+    for (const auto& F : FrameStack.riterRange(1)) {
+      fprintf(stderr, "In: ");
+      Writer.writeAbbrev(stderr, F.Nd);
+    }
+    fprintf(stderr, "Error: (method %s) %s%" PRIiMAX "\n",
+            getName(Frame.CallMethod), Message.c_str(), uintmax_t(Value));
+  }
+  catchOrElseFail();
 }
 
 void Interpreter::failBadState() {
@@ -654,6 +671,7 @@ void Interpreter::algorithmResume() {
           case OpBinarySelect:
           case OpParams:
           case OpLastSymbolIs:
+          case OpLiteralActionDef:
           case OpLiteralDef:
           case OpFile:
           case OpLocals:
@@ -809,10 +827,10 @@ void Interpreter::algorithmResume() {
             }
             break;
           case OpCallback: {  // Method::Eval
-            SymbolNode* Action = dyn_cast<SymbolNode>(Frame.Nd->getKid(0));
+            IntType Action =
+                cast<CallbackNode>(Frame.Nd)->getValue()->getValue();
             if (!Input->readAction(Action) || !Output->writeAction(Action))
-              return throwMessage("Unable to apply action: " +
-                                  Action->getName());
+              return throwMessage("Unable to apply action: ", Action);
             popAndReturn(LastReadValue);
             break;
           }
@@ -1240,6 +1258,33 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
+          case OpLiteralActionUse:  // Method::Eval
+            switch (Frame.CallState) {
+              case State::Enter: {
+                Frame.CallState = State::Exit;
+                auto* Sym = dyn_cast<SymbolNode>(Frame.Nd->getKid(0));
+                assert(Sym);
+                // Note: To handle local algorithm overrides (when processing
+                // code in an enclosing scope) we need to get the definition
+                // from the current algorithm, not the algorithm the symbol was
+                // defined in.
+                const LiteralActionDefNode* Defn =
+                    Symtab->getSymbolDefn(Sym)->getLiteralActionDefinition();
+                if (Defn == nullptr) {
+                  fprintf(stderr, "Eval can't find literal action: %s\n",
+                          Sym->getName().c_str());
+                  return throwMessage("Unable to evaluate literal action");
+                }
+                call(Method::Eval, Frame.CallModifier, Defn);
+                break;
+              }
+              case State::Exit:
+                popAndReturn();
+                break;
+              default:
+                return failBadState();
+            }
+            break;
           case OpLiteralUse:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter: {
@@ -1353,8 +1398,7 @@ void Interpreter::algorithmResume() {
       case Method::EvalBlock:
         switch (Frame.CallState) {
           case State::Enter: {
-            SymbolNode* EnterBlock =
-                Symtab->getPredefined(PredefinedSymbol::Block_enter);
+            IntType EnterBlock = IntType(PredefinedSymbol::Block_enter);
             if (!Input->readAction(EnterBlock) ||
                 !Output->writeAction(EnterBlock))
               return fatal("Unable to enter block");
@@ -1363,8 +1407,7 @@ void Interpreter::algorithmResume() {
             break;
           }
           case State::Exit: {
-            SymbolNode* ExitBlock =
-                Symtab->getPredefined(PredefinedSymbol::Block_exit);
+            IntType ExitBlock = IntType(PredefinedSymbol::Block_exit);
             if (!Input->readAction(ExitBlock) ||
                 !Output->writeAction(ExitBlock))
               return fatal("unable to close block");

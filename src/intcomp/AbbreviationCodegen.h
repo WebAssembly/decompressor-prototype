@@ -47,8 +47,7 @@ class AbbreviationCodegen {
   interp::IntTypeFormat AbbrevFormat;
   CountNode::PtrSet& Assignments;
   bool ToRead;
-  filt::Node* generateCasmFileHeader();
-  filt::Node* generateWasmFileHeader();
+  filt::Node* generateFileHeader(uint32_t MagicNumber, uint32_t VersionNumber);
   void generateFile(filt::Node* SourceHeader, filt::Node* TargetHeader);
   filt::Node* generateFileBody();
   filt::Node* generateFileFcn();
@@ -56,6 +55,7 @@ class AbbreviationCodegen {
   filt::Node* generateSwitchStatement();
   filt::Node* generateCase(size_t AbbrevIndex, CountNode::Ptr Nd);
   filt::Node* generateAction(CountNode::Ptr Nd);
+  filt::Node* generateUseAction(filt::SymbolNode* Sym);
   filt::Node* generateBlockAction(BlockCountNode* Blk);
   filt::Node* generateDefaultAction(DefaultCountNode* Default);
   filt::Node* generateDefaultMultipleAction();

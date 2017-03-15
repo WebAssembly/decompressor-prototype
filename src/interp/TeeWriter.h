@@ -82,7 +82,7 @@ class TeeWriter : public Writer {
                        interp::IntTypeFormat Format) OVERRIDE;
   bool writeHeaderValue(decode::IntType Value,
                         interp::IntTypeFormat Format) OVERRIDE;
-  bool writeAction(const filt::SymbolNode* Action) OVERRIDE;
+  bool writeAction(decode::IntType Action) OVERRIDE;
 
   void setMinimizeBlockSize(bool NewValue) OVERRIDE;
   void describeState(FILE* File) OVERRIDE;

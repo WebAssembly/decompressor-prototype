@@ -31,6 +31,8 @@ namespace wasm {
 namespace filt {
 
 class Node;
+class IntegerNode;
+class SymbolNode;
 class SymbolTable;
 
 class TextWriter {
@@ -63,8 +65,11 @@ class TextWriter {
  public:
   // When true use getNodeTypeName() instead of getNodeSexpName() for node
   // names.
-  static bool UseNodeTypeNames;
+  static bool DefaultUseNodeTypeNames;
   TextWriter();
+
+  bool getUseNodeTypeNames() const { return UseNodeTypeNames; }
+  void setUseNodeTypeNames(bool NewValue) { UseNodeTypeNames = NewValue; }
 
   TextWriter& operator++() {
     ++IndentCount;
@@ -94,6 +99,7 @@ class TextWriter {
   FILE* File;
   size_t IndentCount;
   bool LineEmpty;
+  bool UseNodeTypeNames;
   std::vector<int> KidCountSameLine;
   std::vector<int> MaxKidCountSameLine;
   std::unordered_set<int> HasHiddenSeqSet;
@@ -108,6 +114,9 @@ class TextWriter {
                        bool AddNewline,
                        bool EmbedInParent = false);
   void writeNodeKidsAbbrev(const Node* Node, bool EmbeddedInParent);
+
+  void writeSymbolNode(const SymbolNode* Sym, bool AddNewline);
+  void writeIntegerNode(const IntegerNode* Int, bool AddNewline);
 
   void writeIndent(int Adjustment = 0);
   void writeNewline();

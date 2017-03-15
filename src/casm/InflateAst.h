@@ -63,7 +63,7 @@ class InflateAst : public interp::Writer {
                        interp::IntTypeFormat Format) OVERRIDE;
   bool writeHeaderValue(decode::IntType Value,
                         interp::IntTypeFormat Format) OVERRIDE;
-  bool writeAction(const filt::SymbolNode* Action) OVERRIDE;
+  bool writeAction(decode::IntType Action) OVERRIDE;
 
  private:
   std::shared_ptr<SymbolTable> Symtab;

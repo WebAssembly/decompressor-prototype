@@ -39,21 +39,13 @@ AbbreviationCodegen::AbbreviationCodegen(CountNode::RootPtr Root,
       Assignments(Assignments) {
 }
 
-Node* AbbreviationCodegen::generateCasmFileHeader() {
+Node* AbbreviationCodegen::generateFileHeader(uint32_t MagicNumber,
+                                              uint32_t VersionNumber) {
   auto* Header = Symtab->create<FileHeaderNode>();
   Header->append(Symtab->getU32ConstDefinition(
-      CasmBinaryMagic, decode::ValueFormat::Hexidecimal));
+      MagicNumber, decode::ValueFormat::Hexidecimal));
   Header->append(Symtab->getU32ConstDefinition(
-      CasmBinaryVersion, decode::ValueFormat::Hexidecimal));
-  return Header;
-}
-
-Node* AbbreviationCodegen::generateWasmFileHeader() {
-  auto* Header = Symtab->create<FileHeaderNode>();
-  Header->append(Symtab->getU32ConstDefinition(
-      WasmBinaryMagic, decode::ValueFormat::Hexidecimal));
-  Header->append(Symtab->getU32ConstDefinition(
-      WasmBinaryVersionD, decode::ValueFormat::Hexidecimal));
+      VersionNumber, decode::ValueFormat::Hexidecimal));
   return Header;
 }
 
@@ -141,6 +133,10 @@ Node* AbbreviationCodegen::generateAction(CountNode::Ptr Nd) {
   return Symtab->create<ErrorNode>();
 }
 
+Node* AbbreviationCodegen::generateUseAction(SymbolNode* Sym) {
+  return Symtab->create<LiteralActionUseNode>(Sym);
+}
+
 Node* AbbreviationCodegen::generateBlockAction(BlockCountNode* Blk) {
   PredefinedSymbol Sym;
   if (Blk->isEnter()) {
@@ -150,7 +146,8 @@ Node* AbbreviationCodegen::generateBlockAction(BlockCountNode* Blk) {
     Sym = ToRead ? PredefinedSymbol::Block_exit
                  : PredefinedSymbol::Block_exit_writeonly;
   }
-  return Symtab->create<CallbackNode>(Symtab->getPredefined(Sym));
+  return Symtab->create<CallbackNode>(
+      generateUseAction(Symtab->getPredefined(Sym)));
 }
 
 Node* AbbreviationCodegen::generateDefaultAction(DefaultCountNode* Default) {
@@ -171,7 +168,7 @@ Node* AbbreviationCodegen::generateDefaultSingleAction() {
 
 Node* AbbreviationCodegen::generateAlignAction() {
   return Symtab->create<CallbackNode>(
-      Symtab->getPredefined(PredefinedSymbol::Align));
+      generateUseAction(Symtab->getPredefined(PredefinedSymbol::Align)));
 }
 
 Node* AbbreviationCodegen::generateIntType(IntType Value) {
@@ -203,7 +200,8 @@ Node* AbbreviationCodegen::generateIntLitActionWrite(IntCountNode* Nd) {
 std::shared_ptr<SymbolTable> AbbreviationCodegen::getCodeSymtab(bool ToRead) {
   this->ToRead = ToRead;
   Symtab = std::make_shared<SymbolTable>();
-  generateFile(generateCasmFileHeader(), generateWasmFileHeader());
+  generateFile(generateFileHeader(CasmBinaryMagic, CasmBinaryVersion),
+               generateFileHeader(WasmBinaryMagic, WasmBinaryVersionD));
   return Symtab;
 }
 

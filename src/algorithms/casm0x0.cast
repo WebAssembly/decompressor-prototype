@@ -85,10 +85,12 @@
 (literal 'section'        (u8.const 0x63))
 (literal 'undefine'       (u8.const 0x64))
 (literal 'literal.define' (u8.const 0x65))
-(literal 'rename'         (u8.const 0x68))
-(literal 'locals'         (u8.const 0x69))
-(literal 'params'         (u8.const 0x70))
-(literal 'literal.use'    (u8.const 0x71))
+(literal 'literal.use'    (u8.const 0x66))
+(literal 'rename'         (u8.const 0x67))
+(literal 'locals'         (u8.const 0x68))
+(literal 'params'         (u8.const 0x69))
+(literal 'literal.action.define' (u8.const 0x6a))
+(literal 'literal.action.use'     (u8.const 0x6b))
 
 (define 'file' (params)
   (eval 'header')
@@ -132,6 +134,8 @@
      case 'if.then.else'
      case 'last.read'
      case 'last.symbol.is'
+     case 'literal.action.define'
+     case 'literal.action.use'
      case 'literal.define'
      case 'literal.use'
      case 'loop'

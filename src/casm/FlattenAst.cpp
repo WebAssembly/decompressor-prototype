@@ -183,6 +183,8 @@ void FlattenAst::flattenNode(const Node* Nd) {
     case OpIfThenElse:
     case OpLastRead:
     case OpLastSymbolIs:
+    case OpLiteralActionDef:
+    case OpLiteralActionUse:
     case OpLiteralDef:
     case OpLiteralUse:
     case OpLoop:
@@ -250,7 +252,7 @@ void FlattenAst::flattenNode(const Node* Nd) {
       break;
     }
     case OpSection: {
-      Writer->writeAction(Symtab->getPredefined(PredefinedSymbol::Block_enter));
+      Writer->writeAction(IntType(PredefinedSymbol::Block_enter));
       const auto* Section = cast<SectionNode>(Nd);
       SectionSymtab->installSection(Section);
       const SectionSymbolTable::IndexLookupType& Vector =
@@ -267,7 +269,7 @@ void FlattenAst::flattenNode(const Node* Nd) {
       for (int i = 0, len = Nd->getNumKids(); i < len; ++i)
         flattenNode(Nd->getKid(i));
       Writer->writeUint8(Opcode);
-      Writer->writeAction(Symtab->getPredefined(PredefinedSymbol::Block_exit));
+      Writer->writeAction(IntType(PredefinedSymbol::Block_exit));
       SectionSymtab->clear();
       break;
     }
