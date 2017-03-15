@@ -19,6 +19,7 @@
 
 #include "casm/InflateAst.h"
 
+#include "algorithms/casm0x0.h"
 #include "binary/SectionSymbolTable.h"
 #include "sexp/Ast.h"
 #include "sexp/TextWriter.h"
@@ -368,10 +369,10 @@ bool InflateAst::writeAction(IntType Action) {
     case IntType(PredefinedSymbol::Binary_end):
       Values.push(OpBinaryEval);
       return buildUnary<BinaryEvalNode>();
-    case IntType(PredefinedSymbol::Int_value_begin):
+    case IntType(PredefinedAlgcasm0x0::Int_value_begin):
       ValueMarker = Values.size();
       return true;
-    case IntType(PredefinedSymbol::Int_value_end): {
+    case IntType(PredefinedAlgcasm0x0::Int_value_end): {
       bool IsDefault;
       ValueFormat Format = ValueFormat::Decimal;
       IntType Value = 0;
@@ -436,12 +437,12 @@ bool InflateAst::writeAction(IntType Action) {
       Asts.push(Nd);
       return true;
     }
-    case IntType(PredefinedSymbol::Symbol_name_begin):
+    case IntType(PredefinedAlgcasm0x0::Symbol_name_begin):
       if (Values.empty())
         return failWriteActionMalformed();
       SymbolNameSize = Values.popValue();
       return true;
-    case IntType(PredefinedSymbol::Symbol_name_end): {
+    case IntType(PredefinedAlgcasm0x0::Symbol_name_end): {
       if (Values.size() < SymbolNameSize)
         return failWriteActionMalformed();
       // TODO(karlschimpf) Can we build the string faster than this.
@@ -455,15 +456,15 @@ bool InflateAst::writeAction(IntType Action) {
       SectionSymtab->addSymbol(Name);
       return true;
     }
-    case IntType(PredefinedSymbol::Symbol_lookup):
+    case IntType(PredefinedAlgcasm0x0::Symbol_lookup):
       if (Values.size() < 2)
         return failWriteActionMalformed();
       return applyOp(Values[Values.size() - 2]);
-    case IntType(PredefinedSymbol::Postorder_inst):
+    case IntType(PredefinedAlgcasm0x0::Postorder_inst):
       if (Values.size() < 1)
         return failWriteActionMalformed();
       return applyOp(ValuesTop);
-    case IntType(PredefinedSymbol::Nary_inst):
+    case IntType(PredefinedAlgcasm0x0::Nary_inst):
       if (Values.size() < 2)
         return failWriteActionMalformed();
       TRACE(size_t, "nary node size", Values.size());
