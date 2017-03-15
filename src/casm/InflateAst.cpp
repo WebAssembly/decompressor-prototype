@@ -323,12 +323,7 @@ bool InflateAst::applyOp(IntType Op) {
   return failWriteActionMalformed();
 }
 
-#if 0
-bool InflateAst::writeAction(const filt::SymbolNode* Action)
-#else
-bool InflateAst::writeAction(IntType Action)
-#endif
-{
+bool InflateAst::writeAction(IntType Action) {
 #if 0
   TRACE_BLOCK({
       constexpr size_t WindowSize = 10;
@@ -351,13 +346,7 @@ bool InflateAst::writeAction(IntType Action)
       fputs("**************\n", Out);
     });
 #endif
-#if 0
-  PredefinedSymbol Name = Action->getPredefinedSymbol();
-  switch (IntType(Name))
-#else
-  switch (Action)
-#endif
-  {
+  switch (Action) {
     case IntType(PredefinedSymbol::Binary_begin):
       // TODO(karlschimpf): Can we remove AstMarkers?
       AstMarkers.push(Asts.size());

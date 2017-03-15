@@ -147,7 +147,7 @@ class IntStream : public std::enable_shared_from_this<IntStream> {
 
   const HeaderVector& getHeader() { return Header; }
   void appendHeader(decode::IntType Value, interp::IntTypeFormat Format);
-  void closeHeader() { IsHeaderClosed = true;}
+  void closeHeader() { IsHeaderClosed = true; }
   bool getIsHeaderOpen() const { return !IsHeaderClosed; }
   bool getIsHeaderClosed() const { return IsHeaderClosed; }
 

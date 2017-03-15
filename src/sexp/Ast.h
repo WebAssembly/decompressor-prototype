@@ -67,8 +67,7 @@ static constexpr size_t NumNodeTypes = 0
     ;
 
 static constexpr size_t MaxNodeType = const_maximum(
-#define X(tag, opcode, sexp_name, text_num_args, text_max_args) \
-  size_t(opcode),
+#define X(tag, opcode, sexp_name, text_num_args, text_max_args) size_t(opcode),
     AST_OPCODE_TABLE
 #undef X
         std::numeric_limits<size_t>::min());
@@ -525,81 +524,6 @@ class IntLookupNode FINAL : public CachedNode {
  private:
   LookupMap Lookup;
 };
-
-#if 0
-class LiteralDefBase : public BinaryNode {
-  LiteralDefBase() = delete;
-  LiteralDefBase(const LiteralDefBase&) = delete;
-  LiteralDefBase& operator=(const LiteralDefBase&) = delete;
- public:
-  ~LiteralDefBase() OVERRIDE;
-
-  static bool implementsClass(NodeType Type) {
-    return true
-#define X(tag, NODE_DECLS) || Type == Op##tag
-        AST_LITERALDEF_TABLE
-#undef X
-        ;
-  }
-
- protected:
-  LiteralDefBase(SymbolTable& Symtab, NodeType Type, Node* Kid1, Node* Kid2);
-};
-#endif
-
-#if 0
-class LiteralUseBase : public UnaryNode {
-  LiteralUseBase() = delete;
-  LiteralUseBase(const LiteralUseBase&) = delete;
-  LiteralUseBase& operator=(const LiteralUseBase&) = delete;
-
- public:
-  ~LiteralUseBase();
-
-  static bool implementsClass(NodeType Type) {
-    return true
-#define X(tag, NODE_DECLS) || Type == Op##tag
-    AST_LITERALUSE_TABLE
-#undef X
-        ;
-  }
-
- protected:
-  LiteralUseBase(SymbolTable& Symtab, NodeType Type, Node* Kid);
-};
-#endif
-
-#if 0
-#define X(tag, NODE_DECLS)                                                 \
-  class tag##Node FINAL : public LiteralUseBase {                          \
-    tag##Node() = delete;                                                  \
-    tag##Node(const tag##Node&) = delete;                                  \
-    tag##Node& operator=(const tag##Node&) = delete;                       \
-  public:                                                                  \
-    tag##Node(SymbolTable&  Sym, Node* Kid);                               \
-    ~tag##Node() OVERRIDE;                                                 \
-    static bool implementsClass(NodeType Type) { return Op##tag == Type; } \
-    NODE_DECLS                                                             \
-  };
-AST_LITERALUSE_TABLE
-#undef X
-#endif
-
-#if 0
-#define X(tag, NODE_DECLS)                                                 \
-  class tag##Node FINAL : public LiteralDefBase {                          \
-    tag##Node() = delete;                                                  \
-    tag##Node(const tag##Node&) = delete;                                  \
-    tag##Node& operator=(const tag##Node&) = delete;                       \
-  public:                                                                  \
-    tag##Node(SymbolTable&  Sym, Node* Kid);                               \
-    ~tag##Node() OVERRIDE;                                                 \
-    static bool implementsClass(NodeType Type) { return Op##tag == Type; } \
-    NODE_DECLS                                                             \
-  };
-AST_LITERALDEF_TABLE
-#undef X
-#endif
 
 #define X(tag, NODE_DECLS)                                                 \
   class tag##Node FINAL : public NullaryNode {                             \

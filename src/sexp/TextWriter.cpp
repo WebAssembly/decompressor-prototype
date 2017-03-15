@@ -41,8 +41,11 @@ constexpr const char* IndentString = "  ";
 
 bool TextWriter::DefaultUseNodeTypeNames = false;
 
-TextWriter::TextWriter() : File(nullptr), IndentCount(0), LineEmpty(true),
-                           UseNodeTypeNames(DefaultUseNodeTypeNames) {
+TextWriter::TextWriter()
+    : File(nullptr),
+      IndentCount(0),
+      LineEmpty(true),
+      UseNodeTypeNames(DefaultUseNodeTypeNames) {
   // Build fast lookup for number of arguments to write on same line.
   for (size_t i = 0; i < MaxNodeType; ++i) {
     KidCountSameLine.push_back(0);
@@ -230,7 +233,8 @@ void TextWriter::writeNode(const Node* Nd,
         Parenthesize _(this, Type, AddNewline);
         writeNodeKids(Nd, false);
       } else {
-        // Treat like hidden node. That is, visually just a list of s-expressions.
+        // Treat like hidden node. That is, visually just a list of
+        // s-expressions.
         for (auto* Kid : *Nd)
           writeNode(Kid, true);
       }

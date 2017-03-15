@@ -59,11 +59,7 @@ class Reader : public std::enable_shared_from_this<Reader> {
   virtual bool popPeekPos() = 0;
   virtual decode::StreamType getStreamType() = 0;
   virtual bool processedInputCorrectly() = 0;
-#if 0
-  virtual bool readAction(const filt::SymbolNode* Action);
-#else
   virtual bool readAction(decode::IntType Action);
-#endif
   virtual void readFillStart() = 0;
   virtual void readFillMoreInput() = 0;
   // Hard coded reads.

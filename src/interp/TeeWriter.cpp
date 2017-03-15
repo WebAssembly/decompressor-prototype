@@ -180,12 +180,7 @@ bool TeeWriter::writeHeaderValue(decode::IntType Value,
   return true;
 }
 
-#if 0
-bool TeeWriter::writeAction(const filt::SymbolNode* Action)
-#else
-bool TeeWriter::writeAction(IntType Action)
-#endif
-{
+bool TeeWriter::writeAction(IntType Action) {
   for (Node& Nd : Writers) {
     if (!Nd.getWriter()->writeAction(Action))
       return false;

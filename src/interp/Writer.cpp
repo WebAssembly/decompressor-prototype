@@ -164,22 +164,6 @@ bool Writer::writeBlockExit() {
   return true;
 }
 
-#if 0
-bool Writer::writeAction(const SymbolNode* Action) {
-  switch (Action->getPredefinedSymbol()) {
-    case PredefinedSymbol::Block_enter:
-    case PredefinedSymbol::Block_enter_writeonly:
-      return writeBlockEnter();
-    case PredefinedSymbol::Block_exit:
-    case PredefinedSymbol::Block_exit_writeonly:
-      return writeBlockExit();
-    case PredefinedSymbol::Align:
-      return alignToByte();
-    default:
-      return DefaultWriteAction;
-  }
-}
-#else
 bool Writer::writeAction(IntType Action) {
   switch (Action) {
     case IntType(PredefinedSymbol::Block_enter):
@@ -194,7 +178,6 @@ bool Writer::writeAction(IntType Action) {
       return DefaultWriteAction;
   }
 }
-#endif
 
 bool Writer::writeHeaderValue(IntType Value, IntTypeFormat Format) {
   return writeTypedValue(Value, Format);

@@ -252,11 +252,7 @@ void FlattenAst::flattenNode(const Node* Nd) {
       break;
     }
     case OpSection: {
-#if 0
-      Writer->writeAction(Symtab->getPredefined(PredefinedSymbol::Block_enter));
-#else
       Writer->writeAction(IntType(PredefinedSymbol::Block_enter));
-#endif
       const auto* Section = cast<SectionNode>(Nd);
       SectionSymtab->installSection(Section);
       const SectionSymbolTable::IndexLookupType& Vector =
@@ -273,11 +269,7 @@ void FlattenAst::flattenNode(const Node* Nd) {
       for (int i = 0, len = Nd->getNumKids(); i < len; ++i)
         flattenNode(Nd->getKid(i));
       Writer->writeUint8(Opcode);
-#if 0
-      Writer->writeAction(Symtab->getPredefined(PredefinedSymbol::Block_exit));
-#else
       Writer->writeAction(IntType(PredefinedSymbol::Block_exit));
-#endif
       SectionSymtab->clear();
       break;
     }

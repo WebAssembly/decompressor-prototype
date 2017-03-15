@@ -524,8 +524,8 @@ void Interpreter::throwMessage(const std::string& Message, IntType Value) {
       fprintf(stderr, "In: ");
       Writer.writeAbbrev(stderr, F.Nd);
     }
-    fprintf(stderr, "Error: (method %s) %s%" PRIiMAX "\n", getName(Frame.CallMethod),
-            Message.c_str(), uintmax_t(Value));
+    fprintf(stderr, "Error: (method %s) %s%" PRIiMAX "\n",
+            getName(Frame.CallMethod), Message.c_str(), uintmax_t(Value));
   }
   catchOrElseFail();
 }
@@ -827,16 +827,10 @@ void Interpreter::algorithmResume() {
             }
             break;
           case OpCallback: {  // Method::Eval
-#if 0
-            SymbolNode* Action = dyn_cast<SymbolNode>(Frame.Nd->getKid(0));
-            if (!Input->readAction(Action) || !Output->writeAction(Action))
-              return throwMessage("Unable to apply action: " +
-                                  Action->getName());
-#else
-            IntType Action = cast<CallbackNode>(Frame.Nd)->getValue()->getValue();
+            IntType Action =
+                cast<CallbackNode>(Frame.Nd)->getValue()->getValue();
             if (!Input->readAction(Action) || !Output->writeAction(Action))
               return throwMessage("Unable to apply action: ", Action);
-#endif
             popAndReturn(LastReadValue);
             break;
           }
@@ -1404,12 +1398,7 @@ void Interpreter::algorithmResume() {
       case Method::EvalBlock:
         switch (Frame.CallState) {
           case State::Enter: {
-#if 0
-            SymbolNode* EnterBlock =
-                Symtab->getPredefined(PredefinedSymbol::Block_enter);
-#else
             IntType EnterBlock = IntType(PredefinedSymbol::Block_enter);
-#endif
             if (!Input->readAction(EnterBlock) ||
                 !Output->writeAction(EnterBlock))
               return fatal("Unable to enter block");
@@ -1418,12 +1407,7 @@ void Interpreter::algorithmResume() {
             break;
           }
           case State::Exit: {
-#if 0
-            SymbolNode* ExitBlock =
-                Symtab->getPredefined(PredefinedSymbol::Block_exit);
-#else
             IntType ExitBlock = IntType(PredefinedSymbol::Block_exit);
-#endif
             if (!Input->readAction(ExitBlock) ||
                 !Output->writeAction(ExitBlock))
               return fatal("unable to close block");

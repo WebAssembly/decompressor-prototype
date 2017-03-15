@@ -130,12 +130,7 @@ void IntInterpreter::structuralResume() {
             IntStream::BlockPtr Blk = IntInput->getNextBlock();
             TRACE_BLOCK(
                 { TRACE(hex_size_t, "block.open", Blk->getBeginIndex()); });
-#if 0
-            SymbolNode* EnterBlock =
-                Symtab->getPredefined(PredefinedSymbol::Block_enter);
-#else
             IntType EnterBlock = IntType(PredefinedSymbol::Block_enter);
-#endif
             if (!Input->readAction(EnterBlock) ||
                 !Output->writeAction(EnterBlock))
               return fatal("Unable to enter block");
@@ -148,12 +143,7 @@ void IntInterpreter::structuralResume() {
             // At the end of a nested block.
             TRACE_BLOCK(
                 { TRACE(hex_size_t, "block.close", LocalValues.back()); });
-#if 0
-            SymbolNode* ExitBlock =
-                Symtab->getPredefined(PredefinedSymbol::Block_exit);
-#else
             IntType ExitBlock = IntType(PredefinedSymbol::Block_exit);
-#endif
             if (!Input->readAction(ExitBlock) ||
                 !Output->writeAction(ExitBlock))
               return fatal("unable to close block");

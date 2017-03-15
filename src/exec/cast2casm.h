@@ -284,7 +284,8 @@ std::string getActionDefName(const LiteralActionDefNode* Nd) {
   return std::string("???");
 }
 
-bool compareLtActionDefs(const LiteralActionDefNode* N1, const LiteralActionDefNode* N2) {
+bool compareLtActionDefs(const LiteralActionDefNode* N1,
+                         const LiteralActionDefNode* N2) {
   IntType V1 = getActionDefValue(N1);
   IntType V2 = getActionDefValue(N2);
   if (V1 < V2)
