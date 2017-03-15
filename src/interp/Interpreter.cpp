@@ -671,6 +671,7 @@ void Interpreter::algorithmResume() {
           case OpBinarySelect:
           case OpParams:
           case OpLastSymbolIs:
+          case OpLiteralActionDef:
           case OpLiteralDef:
           case OpFile:
           case OpLocals:
@@ -1256,6 +1257,33 @@ void Interpreter::algorithmResume() {
                 DispatchedMethod = Method::Eval;
                 call(Method::EvalParam, Frame.CallModifier, Frame.Nd);
                 break;
+              case State::Exit:
+                popAndReturn();
+                break;
+              default:
+                return failBadState();
+            }
+            break;
+          case OpLiteralActionUse:  // Method::Eval
+            switch (Frame.CallState) {
+              case State::Enter: {
+                Frame.CallState = State::Exit;
+                auto* Sym = dyn_cast<SymbolNode>(Frame.Nd->getKid(0));
+                assert(Sym);
+                // Note: To handle local algorithm overrides (when processing
+                // code in an enclosing scope) we need to get the definition
+                // from the current algorithm, not the algorithm the symbol was
+                // defined in.
+                const LiteralActionDefNode* Defn =
+                    Symtab->getSymbolDefn(Sym)->getLiteralActionDefinition();
+                if (Defn == nullptr) {
+                  fprintf(stderr, "Eval can't find literal action: %s\n",
+                          Sym->getName().c_str());
+                  return throwMessage("Unable to evaluate literal action");
+                }
+                call(Method::Eval, Frame.CallModifier, Defn);
+                break;
+              }
               case State::Exit:
                 popAndReturn();
                 break;

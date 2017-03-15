@@ -45,6 +45,7 @@ class FileHeaderNode;
 class FileNode;
 class IntegerNode;
 class LiteralDefNode;
+class LiteralActionDefNode;
 class Node;
 class SymbolDefnNode;
 class SymbolNode;
@@ -60,13 +61,13 @@ typedef std::vector<Node*> NodeVectorType;
 typedef std::vector<const Node*> ConstNodeVectorType;
 
 static constexpr size_t NumNodeTypes = 0
-#define X(tag, opcode, sexp_name, type_name, text_num_args, text_max_args) +1
+#define X(tag, opcode, sexp_name, text_num_args, text_max_args) +1
     AST_OPCODE_TABLE
 #undef X
     ;
 
 static constexpr size_t MaxNodeType = const_maximum(
-#define X(tag, opcode, sexp_name, type_name, text_num_args, text_max_args) \
+#define X(tag, opcode, sexp_name, text_num_args, text_max_args) \
   size_t(opcode),
     AST_OPCODE_TABLE
 #undef X
@@ -74,8 +75,8 @@ static constexpr size_t MaxNodeType = const_maximum(
 
 struct AstTraitsType {
   const NodeType Type;
-  const char* SexpName;
   const char* TypeName;
+  const char* SexpName;
   const int NumTextArgs;
   const int AdditionalTextArgs;
 };
@@ -137,8 +138,9 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   SymbolTable& operator=(const SymbolTable&) = delete;
 
  public:
+  typedef std::unordered_set<const SymbolNode*> SymbolSet;
   typedef std::unordered_set<const IntegerNode*> ActionValueSet;
-  typedef std::unordered_set<const LiteralDefNode*> ActionDefSet;
+  typedef std::unordered_set<const LiteralActionDefNode*> ActionDefSet;
   // Use std::make_shared() to build.
   explicit SymbolTable();
   explicit SymbolTable(std::shared_ptr<SymbolTable> EnclosingScope);
@@ -200,9 +202,11 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   void setCachedValue(const Node* Nd, Node* Value) { CachedValue[Nd] = Value; }
 
   // Adds the given callback literal to the set of known callback literals.
-  void insertCallbackLiteral(const LiteralDefNode* Defn);
+  void insertCallbackLiteral(const LiteralActionDefNode* Defn);
   void insertCallbackValue(const IntegerNode* IntNd);
-
+  void insertUndefinedCallback(const SymbolNode* Sym) {
+    UndefinedCallbacks.insert(Sym);
+  }
 
   // Strips all callback actions from the algorithm, except for the names
   // specified. Returns the updated tree.
@@ -233,6 +237,7 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   FileNode* Root;
   Node* Error;
   int NextCreationIndex;
+  SymbolSet UndefinedCallbacks;
   ActionValueSet CallbackValues;
   ActionDefSet CallbackLiterals;
   std::map<std::string, SymbolNode*> SymbolMap;
@@ -521,6 +526,81 @@ class IntLookupNode FINAL : public CachedNode {
   LookupMap Lookup;
 };
 
+#if 0
+class LiteralDefBase : public BinaryNode {
+  LiteralDefBase() = delete;
+  LiteralDefBase(const LiteralDefBase&) = delete;
+  LiteralDefBase& operator=(const LiteralDefBase&) = delete;
+ public:
+  ~LiteralDefBase() OVERRIDE;
+
+  static bool implementsClass(NodeType Type) {
+    return true
+#define X(tag, NODE_DECLS) || Type == Op##tag
+        AST_LITERALDEF_TABLE
+#undef X
+        ;
+  }
+
+ protected:
+  LiteralDefBase(SymbolTable& Symtab, NodeType Type, Node* Kid1, Node* Kid2);
+};
+#endif
+
+#if 0
+class LiteralUseBase : public UnaryNode {
+  LiteralUseBase() = delete;
+  LiteralUseBase(const LiteralUseBase&) = delete;
+  LiteralUseBase& operator=(const LiteralUseBase&) = delete;
+
+ public:
+  ~LiteralUseBase();
+
+  static bool implementsClass(NodeType Type) {
+    return true
+#define X(tag, NODE_DECLS) || Type == Op##tag
+    AST_LITERALUSE_TABLE
+#undef X
+        ;
+  }
+
+ protected:
+  LiteralUseBase(SymbolTable& Symtab, NodeType Type, Node* Kid);
+};
+#endif
+
+#if 0
+#define X(tag, NODE_DECLS)                                                 \
+  class tag##Node FINAL : public LiteralUseBase {                          \
+    tag##Node() = delete;                                                  \
+    tag##Node(const tag##Node&) = delete;                                  \
+    tag##Node& operator=(const tag##Node&) = delete;                       \
+  public:                                                                  \
+    tag##Node(SymbolTable&  Sym, Node* Kid);                               \
+    ~tag##Node() OVERRIDE;                                                 \
+    static bool implementsClass(NodeType Type) { return Op##tag == Type; } \
+    NODE_DECLS                                                             \
+  };
+AST_LITERALUSE_TABLE
+#undef X
+#endif
+
+#if 0
+#define X(tag, NODE_DECLS)                                                 \
+  class tag##Node FINAL : public LiteralDefBase {                          \
+    tag##Node() = delete;                                                  \
+    tag##Node(const tag##Node&) = delete;                                  \
+    tag##Node& operator=(const tag##Node&) = delete;                       \
+  public:                                                                  \
+    tag##Node(SymbolTable&  Sym, Node* Kid);                               \
+    ~tag##Node() OVERRIDE;                                                 \
+    static bool implementsClass(NodeType Type) { return Op##tag == Type; } \
+    NODE_DECLS                                                             \
+  };
+AST_LITERALDEF_TABLE
+#undef X
+#endif
+
 #define X(tag, NODE_DECLS)                                                 \
   class tag##Node FINAL : public NullaryNode {                             \
     tag##Node() = delete;                                                  \
@@ -592,17 +672,20 @@ class SymbolDefnNode FINAL : public CachedNode {
   const SymbolNode* getSymbol() const { return Symbol; }
   void setSymbol(const SymbolNode* Nd) { Symbol = Nd; }
   const std::string& getName() const;
-  const DefineNode* getDefineDefinition();
+  const DefineNode* getDefineDefinition() const;
   void setDefineDefinition(const DefineNode* Defn);
-  const LiteralDefNode* getLiteralDefinition();
+  const LiteralDefNode* getLiteralDefinition() const;
   void setLiteralDefinition(const LiteralDefNode* Defn);
+  const LiteralActionDefNode* getLiteralActionDefinition() const;
+  void setLiteralActionDefinition(const LiteralActionDefNode* Defn);
 
   static bool implementsClass(NodeType Type) { return Type == OpSymbolDefn; }
 
  private:
   const SymbolNode* Symbol;
-  const DefineNode* DefineDefinition;
-  const LiteralDefNode* LiteralDefinition;
+  mutable const DefineNode* DefineDefinition;
+  mutable const LiteralDefNode* LiteralDefinition;
+  mutable const LiteralActionDefNode* LiteralActionDefinition;
 };
 
 class SymbolNode FINAL : public NullaryNode {
@@ -628,7 +711,14 @@ class SymbolNode FINAL : public NullaryNode {
   void setLiteralDefinition(const LiteralDefNode* Defn) {
     getSymbolDefn()->setLiteralDefinition(Defn);
   }
-  PredefinedSymbol getPredefinedSymbol() const;
+  const LiteralActionDefNode* getLiteralActionDefinition() const {
+    return getSymbolDefn()->getLiteralActionDefinition();
+  }
+  void setLiteralActionDefinition(const LiteralActionDefNode* Defn) {
+    getSymbolDefn()->setLiteralActionDefinition(Defn);
+  }
+  PredefinedSymbol getPredefinedSymbol() const { return PredefinedValue; }
+  bool isPredefinedSymbol() const { return PredefinedValueIsCached; }
 
   static bool implementsClass(NodeType Type) { return Type == OpSymbol; }
 

@@ -272,19 +272,19 @@ void CodeGenerator::putSymbol(charstring Name, bool Capitalize) {
 
 namespace {
 
-IntType getActionDefValue(const LiteralDefNode* Nd) {
+IntType getActionDefValue(const LiteralActionDefNode* Nd) {
   if (const IntegerNode* Num = dyn_cast<IntegerNode>(Nd->getKid(1)))
     return Num->getValue();
   return 0;
 }
 
-std::string getActionDefName(const LiteralDefNode* Nd) {
+std::string getActionDefName(const LiteralActionDefNode* Nd) {
   if (const SymbolNode* Sym = dyn_cast<SymbolNode>(Nd->getKid(0)))
     return Sym->getName();
   return std::string("???");
 }
 
-bool compareLtActionDefs(const LiteralDefNode* N1, const LiteralDefNode* N2) {
+bool compareLtActionDefs(const LiteralActionDefNode* N1, const LiteralActionDefNode* N2) {
   IntType V1 = getActionDefValue(N1);
   IntType V2 = getActionDefValue(N2);
   if (V1 < V2)
@@ -299,15 +299,15 @@ bool compareLtActionDefs(const LiteralDefNode* N1, const LiteralDefNode* N2) {
 void CodeGenerator::generatePredefinedEnum() {
   SymbolTable::ActionDefSet DefSet;
   Symtab->collectActionDefs(DefSet);
-  std::vector<const LiteralDefNode*> Defs;
-  for (const LiteralDefNode* Def : DefSet)
+  std::vector<const LiteralActionDefNode*> Defs;
+  for (const LiteralActionDefNode* Def : DefSet)
     Defs.push_back(Def);
   std::sort(Defs.begin(), Defs.end(), compareLtActionDefs);
   puts("enum class Predefined");
   puts(FunctionName);
   puts(" : uint32_t {\n");
   bool IsFirst = true;
-  for (const LiteralDefNode* Def : Defs) {
+  for (const LiteralActionDefNode* Def : Defs) {
     if (IsFirst)
       IsFirst = false;
     else
@@ -540,6 +540,10 @@ size_t CodeGenerator::generateNode(const Node* Nd) {
       return generateNullaryNode("LastReadNode", Nd);
     case OpLastSymbolIs:
       return generateUnaryNode("LastSymbolIsNode", Nd);
+    case OpLiteralActionDef:
+      return generateBinaryNode("LiteralActionDefNode", Nd);
+    case OpLiteralActionUse:
+      return generateUnaryNode("LiteralActionUseNode", Nd);
     case OpLiteralDef:
       return generateBinaryNode("LiteralDefNode", Nd);
     case OpLiteralUse:

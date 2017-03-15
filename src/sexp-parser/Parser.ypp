@@ -145,6 +145,7 @@ struct IntValue {
 %type <wasm::filt::Node *> case_list
 %type <wasm::filt::SwitchNode *> switch_args
 %type <wasm::filt::Node *> constant_expression
+%type <wasm::filt::Node *> constant_use_expression
 %type <wasm::filt::Node *> control_flow
 %type <wasm::filt::Node *> declaration
 %type <wasm::filt::Node *> define_args
@@ -246,6 +247,15 @@ constant_expression
           }
         ;
 
+constant_use_expression
+        : literal_expression {
+            $$ = $1;
+          }
+        | symbol {
+            $$ = Driver.create<LiteralActionUseNode>($1);
+          }
+        ;
+
 control_flow
         : "(" "block" block_args ")"  { $$ = $3; }
         | "(" "set" local_var expression ")" {
@@ -277,6 +287,9 @@ declaration
         | "(" "literal" symbol literal_expression ")" {
             $$ = Driver.create<LiteralDefNode>($3, $4);
           }
+        | "(" "literal" "." "action" symbol literal_expression ")" {
+            $$ = Driver.create<LiteralActionDefNode>($5, $6);
+          }
         ;
 
 define_args
@@ -305,7 +318,7 @@ expression
         | bool_expression { $$ = $1; }
         | control_flow { $$ = $1; }
         | "(" "map" map_args ")" { $$ = $3; }
-        | "(" "=>" constant_expression ")" {
+        | "(" "=>" constant_use_expression ")" {
             $$ = Driver.create<CallbackNode>($3);
           }
         | "(" "param" INTEGER ")" {

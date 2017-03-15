@@ -53,7 +53,7 @@ int main(int Argc, char* Argv[]) {
     else if (Argv[i] == std::string("--expect-fail"))
       ExpectExitFail = true;
     else if (Argv[i] == std::string("-t"))
-      TextWriter::UseNodeTypeNames = true;
+      TextWriter::DefaultUseNodeTypeNames = true;
     else if (Argv[i] == std::string("-w"))
       PrintAst = true;
     else if (Argv[i] == std::string("-h") || Argv[i] == std::string("--help")) {

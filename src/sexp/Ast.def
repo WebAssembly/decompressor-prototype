@@ -18,12 +18,11 @@
 #ifndef DECOMPRESSOR_SRC_AST_DEF
 #define DECOMPRESSOR_SRC_AST_DEF
 
-//#define X(tag, opcode, sexp_name, type_name, text_num_args, text_max_args)
+//#define X(tag, opcode, sexp_name, text_num_args, text_max_args)
 // where:
 //   tag: enumeration name.
 //   opcode: opcode value (also enum value).
 //   sexp_name: print name in s-expressions.
-//   type_name: type name (use sexp_name if nullptr).
 //   text_num_args: Minimum number of arguments to print on same line in
 //                  TextWriter.
 //   text_max_args: Number of additional arguments (above text_num_args)
@@ -32,82 +31,84 @@
   /* enum name, opcode */                                                      \
                                                                                \
   /* Control flow operators */                                                 \
-  X(Block,             0x01, "block",            nullptr,           1, 0)      \
-  X(Case,              0x02, "case",             nullptr,           2, 0)      \
-  X(Error,             0x03, "error",            nullptr,           0, 0)      \
-  X(Eval,              0x04, "eval",             nullptr,           1, 1)      \
-  X(Loop,              0x07, "loop",             nullptr,           1, 1)      \
-  X(LoopUnbounded,     0x08, "loop.unbounded",   nullptr,           0, 1)      \
-  X(Switch,            0x09, "switch",           nullptr,           1, 0)      \
-  X(Sequence,          0x0a, "seq",              nullptr,           0, 0)      \
-  X(IfThen,            0x0b, "if",               "IfThen",          1, 0)      \
-  X(IfThenElse,        0x0c, "if",               "IfThenElse",      1, 0)      \
+  X(Block,             0x01, "block",            1, 0)                         \
+  X(Case,              0x02, "case",             2, 0)                         \
+  X(Error,             0x03, "error",            0, 0)                         \
+  X(Eval,              0x04, "eval",             1, 1)                         \
+  X(Loop,              0x07, "loop",             1, 1)                         \
+  X(LoopUnbounded,     0x08, "loop.unbounded",   0, 1)                         \
+  X(Switch,            0x09, "switch",           1, 0)                         \
+  X(Sequence,          0x0a, "seq",              0, 0)                         \
+  X(IfThen,            0x0b, "if",               1, 0)                         \
+  X(IfThenElse,        0x0c, "if",               1, 0)                         \
                                                                                \
   /* Constants */                                                              \
-  X(Void,              0x10, "void",             nullptr,           0, 0)      \
-  X(Symbol,            0x11, "symbol",           nullptr,           0, 0)      \
-  X(I32Const,          0x12, "i32.const",        nullptr,           1, 0)      \
-  X(I64Const,          0x13, "i64.const",        nullptr,           1, 0)      \
-  X(U8Const,           0x14, "u8.const",         nullptr,           1, 0)      \
-  X(U32Const,          0x15, "u32.const",        nullptr,           1, 0)      \
-  X(U64Const,          0x16, "u64.const",        nullptr,           1, 0)      \
+  X(Void,              0x10, "void",             0, 0)                         \
+  X(Symbol,            0x11, "symbol",           0, 0)                         \
+  X(I32Const,          0x12, "i32.const",        1, 0)                         \
+  X(I64Const,          0x13, "i64.const",        1, 0)                         \
+  X(U8Const,           0x14, "u8.const",         1, 0)                         \
+  X(U32Const,          0x15, "u32.const",        1, 0)                         \
+  X(U64Const,          0x16, "u64.const",        1, 0)                         \
                                                                                \
   /* Formatting */                                                             \
-  X(Uint32,            0x20, "uint32",           nullptr,           0, 0)      \
-  X(Uint64,            0x21, "uint64",           nullptr,           0, 0)      \
-  X(Uint8,             0x22, "uint8",            nullptr,           0, 0)      \
-  X(Varint32,          0x23, "varint32",         nullptr,           0, 0)      \
-  X(Varint64,          0x24, "varint64",         nullptr,           0, 0)      \
-  X(Varuint32,         0x25, "varuint32",        nullptr,           0, 0)      \
-  X(Varuint64,         0x26, "varuint64",        nullptr,           0, 0)      \
-  X(Opcode,            0x27, "opcode",           "opcode.bytes",    0, 0)      \
-  X(BinaryAccept,      0x28, "accept",           nullptr,           0, 0)      \
-  X(BinarySelect,      0x29, "binary",           nullptr,           0, 0)      \
-  X(BinaryEval,        0x2a, "opcode",           "opcode.binary",   1, 0)      \
-  X(Bit,               0x2b, "bit",              nullptr,           0, 0 )     \
+  X(Uint32,            0x20, "uint32",           0, 0)                         \
+  X(Uint64,            0x21, "uint64",           0, 0)                         \
+  X(Uint8,             0x22, "uint8",            0, 0)                         \
+  X(Varint32,          0x23, "varint32",         0, 0)                         \
+  X(Varint64,          0x24, "varint64",         0, 0)                         \
+  X(Varuint32,         0x25, "varuint32",        0, 0)                         \
+  X(Varuint64,         0x26, "varuint64",        0, 0)                         \
+  X(Opcode,            0x27, "opcode",           0, 0)                         \
+  X(BinaryAccept,      0x28, "accept",           0, 0)                         \
+  X(BinarySelect,      0x29, "binary",           0, 0)                         \
+  X(BinaryEval,        0x2a, "opcode",           1, 0)                         \
+  X(Bit,               0x2b, "bit",              0, 0 )                        \
   /* Not an ast node, just for bit compression */                              \
-  X(BinaryEvalBits,    0x2c, "opcode"    ,       "opcode.bits",    0, 0)       \
+  X(BinaryEvalBits,    0x2c, "opcode"    ,       0, 0)                         \
                                                                                \
   /* Boolean Expressions */                                                    \
-  X(And,               0x30, "and",              nullptr,           2, 0)      \
-  X(Or,                0x31, "or",               nullptr,           2, 0)      \
-  X(Not,               0x32, "not",              nullptr,           1, 0)      \
-  X(BitwiseAnd,        0x34, "bitwise.and",      nullptr,           2, 0)      \
-  X(BitwiseOr,         0x35, "bitwise.or",       nullptr,           2, 0)      \
-  X(BitwiseXor,        0x36, "bitwise.xor",      nullptr,           2, 0)      \
-  X(BitwiseNegate,     0x37, "bitwise.negate",   nullptr,           1, 0)      \
-  X(LastSymbolIs,      0x38, "last.symbol.is",   nullptr,           1, 0)      \
+  X(And,               0x30, "and",              2, 0)                         \
+  X(Or,                0x31, "or",               2, 0)                         \
+  X(Not,               0x32, "not",              1, 0)                         \
+  X(BitwiseAnd,        0x34, "bitwise.and",      2, 0)                         \
+  X(BitwiseOr,         0x35, "bitwise.or",       2, 0)                         \
+  X(BitwiseXor,        0x36, "bitwise.xor",      2, 0)                         \
+  X(BitwiseNegate,     0x37, "bitwise.negate",   1, 0)                         \
+  X(LastSymbolIs,      0x38, "last.symbol.is",   1, 0)                         \
                                                                                \
   /* I/O operations  */                                                        \
-  X(Peek,              0x40, "peek",             nullptr,           1, 0)      \
-  X(Read,              0x41, "read",             nullptr,           1, 0)      \
-  X(LastRead,          0x42, "read",             "lastRead",        0, 0)      \
-  X(Write,             0x43, "write",            nullptr,           1, 1)      \
-  X(Table,             0x44, "table",            nullptr,           1, 1)      \
+  X(Peek,              0x40, "peek",             1, 0)                         \
+  X(Read,              0x41, "read",             1, 0)                         \
+  X(LastRead,          0x42, "read",             0, 0)                         \
+  X(Write,             0x43, "write",            1, 1)                         \
+  X(Table,             0x44, "table",            1, 1)                         \
                                                                                \
   /* Other */                                                                  \
-  X(Param,             0x51, "param",            nullptr,           1, 0)      \
-  X(Local,             0x53, "local",            nullptr,           1, 0)      \
-  X(Set,               0x54, "set",              nullptr,           2, 0)      \
-  X(Map,               0x55, "map",              nullptr,           1, 0)      \
-  X(Callback,          0x56, "=>",               nullptr,           1, 0)      \
+  X(Param,             0x51, "param",            1, 0)                         \
+  X(Local,             0x53, "local",            1, 0)                         \
+  X(Set,               0x54, "set",              2, 0)                         \
+  X(Map,               0x55, "map",              1, 0)                         \
+  X(Callback,          0x56, "=>",               1, 0)                         \
                                                                                \
   /* Declarations */                                                           \
-  X(Define,            0x60, "define",           nullptr,           2, 1)      \
-  X(File,              0x62, "file",             nullptr,           2, 0)      \
-  X(FileHeader,        0x77, "header",           nullptr,           0, 3)      \
-  X(Section,           0x63, "section",          nullptr,           1, 0)      \
-  X(Undefine,          0x64, "undefine",         nullptr,           1, 0)      \
-  X(LiteralDef,        0x65, "literal",          nullptr,           2, 0)      \
-  X(Rename,            0x68, "rename",           nullptr,           2, 0)      \
-  X(Locals,            0x69, "locals",           nullptr,           1, 0)      \
-  X(Params,            0x70, "params",           nullptr,           1, 0)      \
-  X(LiteralUse,        0x71, "literal_use",      nullptr,           1, 0)      \
+  X(Define,            0x60, "define",           2, 1)                         \
+  X(File,              0x62, "file",             2, 0)                         \
+  X(FileHeader,        0x77, "header",           0, 3)                         \
+  X(Section,           0x63, "section",          1, 0)                         \
+  X(Undefine,          0x64, "undefine",         1, 0)                         \
+  X(LiteralDef,        0x65, "literal",          2, 0)                         \
+  X(Rename,            0x68, "rename",           2, 0)                         \
+  X(Locals,            0x69, "locals",           1, 0)                         \
+  X(Params,            0x70, "params",           1, 0)                         \
+  X(LiteralUse,        0x71, "literal.use",      1, 0)                         \
+  X(LiteralActionDef,  0x72, "literal.action",   2, 0)                         \
+  X(LiteralActionUse,  0x73, "literal.use.action", 11, 0)                      \
                                                                                \
   /* Internal (not opcodes in compressed file) */                              \
-  X(UnknownSection,    0xFF, "unknown.section", nullptr,           1, 0)       \
-  X(SymbolDefn,        0x100, "symbol.defn",    nullptr,           0, 0)       \
-  X(IntLookup,         0x101, "int.lookup",     nullptr,           0, 0)       \
+  X(UnknownSection,    0xFF, "unknown.section",  1, 0)                         \
+  X(SymbolDefn,        0x100, "symbol.defn",     0, 0)                         \
+  X(IntLookup,         0x101, "int.lookup",      0, 0)                         \
 
 //#define X(tag, NODE_DECLS)
 #define AST_NULLARYNODE_TABLE                                                  \
@@ -151,11 +152,12 @@
   X(BitwiseNegate,)                                                            \
   X(Callback, CALLBACK_DECLS)                                                  \
   X(LastSymbolIs,)                                                             \
+  X(LiteralActionUse, LITERALACTIONUSE_DECLS)                                  \
+  X(LiteralUse, LITERALUSE_DECLS)                                              \
   X(LoopUnbounded,)                                                            \
   X(Not,)                                                                      \
   X(Peek,)                                                                     \
   X(Read,)                                                                     \
-  X(LiteralUse, LITERALUSE_DECLS)                                              \
   X(Undefine,)                                                                 \
   X(UnknownSection,)                                                           \
 
@@ -165,14 +167,15 @@
     const IntegerNode* getValue() const;                                       \
 
 #define LITERALUSE_DECLS                                                       \
-  public:                                                                      \
-    const LiteralDefNode* getDef() const;                                      \
-    const IntegerNode* getValue() const;                                       \
-    bool validateNode(NodeVectorType &Parents) OVERRIDE;                       \
-    bool getIsAction() const { return IsAction; }                              \
-  private:                                                                     \
-    mutable bool IsAction = false;                                             \
-    friend class CallbackNode;                                                 \
+  const LiteralDefNode* getDef() const;                                        \
+  const IntegerNode* getIntNode() const;                                       \
+  bool validateNode(NodeVectorType &Parents) OVERRIDE;                         \
+
+
+#define LITERALACTIONUSE_DECLS                                                 \
+  const LiteralActionDefNode* getDef() const;                                  \
+  const IntegerNode* getIntNode() const;                                       \
+  bool validateNode(NodeVectorType &Parents) OVERRIDE;                         \
 
 //#define X(tag, NODE_DECLS)
 #define AST_BINARYNODE_TABLE                                                   \
@@ -183,6 +186,7 @@
   X(BitwiseXor,)                                                               \
   X(Case, CASE_DECLS)                                                          \
   X(IfThen,)                                                                   \
+  X(LiteralActionDef,)                                                         \
   X(LiteralDef,)                                                               \
   X(Loop,)                                                                     \
   X(Or,)                                                                       \

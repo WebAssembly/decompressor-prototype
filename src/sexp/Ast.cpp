@@ -105,8 +105,8 @@ const char* getName(PredefinedSymbol Sym) {
 }
 
 AstTraitsType AstTraits[NumNodeTypes] = {
-#define X(tag, opcode, sexp_name, type_name, text_num_args, text_max_args) \
-  { Op##tag, sexp_name, type_name, text_num_args, text_max_args }          \
+#define X(tag, opcode, sexp_name, text_num_args, text_max_args) \
+  { Op##tag, #tag, sexp_name, text_num_args, text_max_args }     \
   ,
     AST_OPCODE_TABLE
 #undef X
@@ -139,8 +139,7 @@ const char* getNodeTypeName(NodeType Type) {
   if (Mapping.empty()) {
     for (size_t i = 0; i < NumNodeTypes; ++i) {
       AstTraitsType& Traits = AstTraits[i];
-      if (Traits.TypeName)
-        Mapping[int(Traits.Type)] = Traits.TypeName;
+      Mapping[int(Traits.Type)] = Traits.TypeName;
     }
   }
   const char* Name = Mapping[static_cast<int>(Type)];
@@ -419,7 +418,8 @@ SymbolDefnNode::SymbolDefnNode(SymbolTable& Symtab)
     : CachedNode(Symtab, OpSymbolDefn),
       Symbol(nullptr),
       DefineDefinition(nullptr),
-      LiteralDefinition(nullptr) {
+      LiteralDefinition(nullptr),
+      LiteralActionDefinition(nullptr) {
 }
 
 SymbolDefnNode::~SymbolDefnNode() {
@@ -432,7 +432,7 @@ const std::string& SymbolDefnNode::getName() const {
   return Unknown;
 }
 
-const DefineNode* SymbolDefnNode::getDefineDefinition() {
+const DefineNode* SymbolDefnNode::getDefineDefinition() const {
   if (DefineDefinition)
     return DefineDefinition;
   // Not defined locally, find enclosing definition.
@@ -471,7 +471,7 @@ void SymbolDefnNode::setLiteralDefinition(const LiteralDefNode* Defn) {
   LiteralDefinition = Defn;
 }
 
-const LiteralDefNode* SymbolDefnNode::getLiteralDefinition() {
+const LiteralDefNode* SymbolDefnNode::getLiteralDefinition() const {
   if (LiteralDefinition)
     return LiteralDefinition;
   // Not defined locally, find enclosing definition.
@@ -489,6 +489,36 @@ const LiteralDefNode* SymbolDefnNode::getLiteralDefinition() {
     LiteralDefinition =
         const_cast<LiteralDefNode*>(Sym->getLiteralDefinition());
   return LiteralDefinition;
+}
+
+void SymbolDefnNode::setLiteralActionDefinition(const LiteralActionDefNode* Defn) {
+  if (LiteralActionDefinition) {
+    errorDescribeNode("Old", LiteralActionDefinition);
+    errorDescribeNode("New", Defn);
+    fatal("Multiple action defines for symbol: " + getName());
+    return;
+  }
+  LiteralActionDefinition = Defn;
+}
+
+const LiteralActionDefNode* SymbolDefnNode::getLiteralActionDefinition() const {
+  if (LiteralActionDefinition)
+    return LiteralActionDefinition;
+  // Not defined locally, find enclosing definition.
+  if (Symbol == nullptr)
+    return nullptr;
+  SymbolTable* Scope = &Symtab;
+  if (Scope == nullptr)
+    return nullptr;
+  Scope = Scope->getEnclosingScope();
+  if (Scope == nullptr)
+    return nullptr;
+  const std::string& Name = Symbol->getName();
+  SymbolNode* Sym = Scope->getSymbol(Name);
+  if (Sym != nullptr)
+    LiteralActionDefinition =
+        const_cast<LiteralActionDefNode*>(Sym->getLiteralActionDefinition());
+  return LiteralActionDefinition;
 }
 
 SymbolNode::SymbolNode(SymbolTable& Symtab, const std::string& Name)
@@ -524,13 +554,16 @@ SymbolDefnNode* SymbolNode::getSymbolDefn() const {
 }
 
 void SymbolNode::setPredefinedSymbol(PredefinedSymbol NewValue) {
-  if (PredefinedValue != PredefinedSymbol::Unknown)
+  if (PredefinedValueIsCached)
     fatal(std::string("Can't define \"") + filt::getName(PredefinedValue) +
           " and " + filt::getName(NewValue));
   PredefinedValue = NewValue;
+  PredefinedValueIsCached = true;
 }
 
+#if 0
 PredefinedSymbol SymbolNode::getPredefinedSymbol() const {
+  return PredefinedValue;
   if (PredefinedValueIsCached)
     return PredefinedValue;
   const char* SymName = Name.c_str();
@@ -540,9 +573,9 @@ PredefinedSymbol SymbolNode::getPredefinedSymbol() const {
       break;
     }
   }
-  PredefinedValueIsCached = true;
   return PredefinedValue;
 }
+#endif
 
 SymbolTable::SymbolTable(std::shared_ptr<SymbolTable> EnclosingScope)
     : EnclosingScope(EnclosingScope) {
@@ -607,7 +640,7 @@ SymbolDefnNode* SymbolTable::getSymbolDefn(const SymbolNode* Sym) {
   return Defn;
 }
 
-void SymbolTable::insertCallbackLiteral(const LiteralDefNode* Defn) {
+void SymbolTable::insertCallbackLiteral(const LiteralActionDefNode* Defn) {
   CallbackLiterals.insert(Defn);
 }
 
@@ -618,7 +651,7 @@ void SymbolTable::insertCallbackValue(const IntegerNode* IntNd) {
 void SymbolTable::collectActionDefs(ActionDefSet& DefSet) {
   SymbolTable* Scope = this;
   while (Scope) {
-    for (const LiteralDefNode* Def : Scope->CallbackLiterals)
+    for (const LiteralActionDefNode* Def : Scope->CallbackLiterals)
       DefSet.insert(Def);
     Scope = Scope->getEnclosingScope();
   }
@@ -705,34 +738,75 @@ AST_INTEGERNODE_TABLE
 #undef X
 
 bool SymbolTable::areActionsConsistent() {
-  bool IsValid = true;  // Until proven otherwise.
   // TODO(karlschimpf) Turn this back on when callback representation is fixed.
   // Verify enumeration of literal actions is valid.
-#if 0
+#if 1
   fprintf(stderr, "******************\n");
   fprintf(stderr, "Symbolic actions:\n");
   TextWriter Writer;
-  for (const LiteralDefNode* Def : CallbackLiterals) {
+  for (const LiteralActionDefNode* Def : CallbackLiterals) {
     Writer.write(stderr, Def);
   }
   fprintf(stderr, "Hard coded actions:\n");
   for (const IntegerNode* Val : CallbackValues) {
     Writer.write(stderr, Val);
   }
+  fprintf(stderr, "Undefined actions:\n");
+  for (const SymbolNode* Sym : UndefinedCallbacks) {
+    Writer.write(stderr, Sym);
+  }
   fprintf(stderr, "******************\n");
 #endif
   std::map<IntType, const Node*> DefMap;
   // First install hard coded (ignoring duplicates).
-  for (const IntegerNode* IntNd : CallbackValues)
+  for (const IntegerNode* IntNd : CallbackValues) {
+#if 1
+    fprintf(stderr, "DefMap[%" PRIuMAX "]\n", IntNd->getValue());
+    Writer.write(stderr, IntNd);
+#endif
     DefMap[IntNd->getValue()] = IntNd;
-  // Now see if conflicting definitions.
-  for (const LiteralDefNode* Def : CallbackLiterals) {
+  }
+  // Create values for undefined actions.
+  bool IsValid = true;  // Until proven otherwise.
+  constexpr IntType EnumGap = 100;  // gap for future expansion
+  IntType NextEnumValue = NumPredefinedSymbols + EnumGap;
+  for (const LiteralActionDefNode* Def : CallbackLiterals) {
     const IntegerNode* IntNd = dyn_cast<IntegerNode>(Def->getKid(1));
     if (IntNd == nullptr) {
       errorDescribeNode("Unable to extract action value", Def);
       IsValid = false;
     }
     IntType Value = IntNd->getValue();
+    if (Value >= NextEnumValue)
+      NextEnumValue = Value + 1;
+  }
+  for (const SymbolNode* Sym : UndefinedCallbacks ) {
+    SymbolDefnNode* SymDef = getSymbolDefn(Sym);
+    const LiteralActionDefNode* LitDef = SymDef->getLiteralActionDefinition();
+    if (LitDef != nullptr) {
+      errorDescribeNode("Malformed undefined action", LitDef);
+      IsValid = false;
+      continue;
+    }
+    CallbackLiterals.insert(
+        create<LiteralActionDefNode>(SymDef,
+                                     getU64ConstDefinition(NextEnumValue++,
+                                                           ValueFormat::Decimal)));
+  }
+  // Now see if conflicting definitions.
+  for (const LiteralActionDefNode* Def : CallbackLiterals) {
+#if 0
+    Writer.write(stderr, Def);
+#endif
+    const IntegerNode* IntNd = dyn_cast<IntegerNode>(Def->getKid(1));
+    if (IntNd == nullptr) {
+      errorDescribeNode("Unable to extract action value", Def);
+      IsValid = false;
+    }
+    IntType Value = IntNd->getValue();
+#if 0
+    fprintf(stderr, "DefMap[%" PRIuMAX "]\n", Value);
+#endif
     if (DefMap.count(Value) == 0) {
       DefMap[Value] = Def;
       continue;
@@ -750,7 +824,16 @@ bool SymbolTable::areActionsConsistent() {
 
 void SymbolTable::install(FileNode* Root) {
   TRACE_METHOD("install");
+#if 1
+  TextWriter Writer;
+  Writer.setUseNodeTypeNames(true);
+  fprintf(stderr, "*** Install ***\n");
+  Writer.write(stderr, Root);
+  fprintf(stderr, "***************\n");
+#endif
   CachedValue.clear();
+  UndefinedCallbacks.clear();
+  CallbackValues.clear();
   CallbackLiterals.clear();
   this->Root = Root;
   installPredefined();
@@ -785,8 +868,8 @@ void SymbolTable::installPredefined() {
   for (uint32_t i = 0; i < NumPredefinedSymbols; ++i) {
     SymbolNode* Sym = getPredefined(toPredefinedSymbol(i));
     U32ConstNode* Const = getU32ConstDefinition(i, ValueFormat::Decimal);
-    const auto* Def = create<LiteralDefNode>(Sym, Const);
-    Sym->setLiteralDefinition(Def);
+    const auto* Def = create<LiteralActionDefNode>(Sym, Const);
+    Sym->setLiteralActionDefinition(Def);
     insertCallbackLiteral(Def);
   }
 }
@@ -851,6 +934,9 @@ void SymbolTable::describe(FILE* Out) {
 }
 
 void SymbolTable::stripCallbacksExcept(std::set<std::string>& KeepActions) {
+#if 1
+  fprintf(stderr, "Strip callbacks\n");
+#endif
   install(dyn_cast<FileNode>(stripCallbacksExcept(KeepActions, Root)));
 }
 
@@ -880,7 +966,7 @@ Node* SymbolTable::stripUsing(Node* Root,
         }
         if (Kids.empty())
           break;
-        if (Kids.size() == 1)
+        if (Kids.size() == 1 && Root->getType() == OpSequence)
           return Kids[0];
         NaryNode* Nd = dyn_cast<NaryNode>(Root);
         if (Nd == nullptr)
@@ -902,11 +988,25 @@ Node* SymbolTable::stripCallbacksExcept(std::set<std::string>& KeepActions,
         return stripCallbacksExcept(KeepActions, Nd);
       });
     case OpCallback: {
-      auto* Sym = dyn_cast<SymbolNode>(Root->getKid(0));
-      if (Sym == nullptr)
-        return Root;
-      if (KeepActions.count(Sym->getName()))
-        return Root;
+#if 1
+      errorDescribeNode("Callback", Root);
+#endif
+      Node* Action = Root->getKid(0);
+      switch (Action->getType()) {
+        default:
+          return Root;
+        case OpLiteralActionUse: {
+          auto* Sym = dyn_cast<SymbolNode>(Action->getKid(0));
+          if (Sym == nullptr)
+            return Root;
+          if (Sym->isPredefinedSymbol() || KeepActions.count(Sym->getName()))
+            return Root;
+          break;
+        }
+      }
+#if 1
+      fprintf(stderr, "remove\n");
+#endif
       break;
     }
   }
@@ -914,15 +1014,24 @@ Node* SymbolTable::stripCallbacksExcept(std::set<std::string>& KeepActions,
 }
 
 void SymbolTable::stripLiterals() {
+#if 1
+  fprintf(stderr, "strip Literals\n");
+#endif
   install(dyn_cast<FileNode>(
       stripLiteralDefs(dyn_cast<FileNode>(stripLiteralUses(Root)))));
 }
 
 void SymbolTable::stripLiteralUses() {
+#if 1
+  fprintf(stderr, "strip Literal usess\n");
+#endif
   install(dyn_cast<FileNode>(stripLiteralUses(Root)));
 }
 
 void SymbolTable::stripLiteralDefs() {
+#if 1
+  fprintf(stderr, "strip Literal defs\n");
+#endif
   install(dyn_cast<FileNode>(stripLiteralDefs(Root)));
 }
 
@@ -931,10 +1040,10 @@ Node* SymbolTable::stripLiteralUses(Node* Root) {
     default:
       return stripUsing(
           Root, [&](Node* Nd) -> Node* { return stripLiteralUses(Nd); });
+    case OpLiteralActionUse:
+      return Root;
     case OpLiteralUse: {
       const auto* Use = cast<LiteralUseNode>(Root);
-      if (Use->getIsAction())
-        return Root;
       const auto* Sym = dyn_cast<SymbolNode>(Use->getKid(0));
       if (Sym == nullptr)
         break;
@@ -957,8 +1066,8 @@ Node* SymbolTable::stripLiteralDefs(Node* Root) {
     default:
       return stripUsing(
           Root, [&](Node* Nd) -> Node* { return stripLiteralDefs(Nd); });
-    case OpLiteralDef:
-      if (CallbackLiterals.count(cast<LiteralDefNode>(Root)))
+    case OpLiteralActionDef:
+      if (CallbackLiterals.count(cast<LiteralActionDefNode>(Root)))
         return Root;
       break;
   }
@@ -1066,22 +1175,40 @@ const LiteralDefNode* LiteralUseNode::getDef() const {
   return cast<SymbolNode>(getKid(0))->getLiteralDefinition();
 }
 
+const LiteralActionDefNode* LiteralActionUseNode::getDef() const {
+  return cast<SymbolNode>(getKid(0))->getLiteralActionDefinition();
+}
+
 bool LiteralUseNode::validateNode(NodeVectorType& Parents) {
-#if 0
-  errorDescribeNode("Literal use", this);
-#endif
-  if (getDef() != nullptr) {
-#if 0
-    errorDescribeNode("Def", getDef());
-#endif
+  if (getDef())
     return true;
-  }
   fprintf(getErrorFile(), "No corresponding literal definition found\n");
   return false;
 }
 
-const IntegerNode* LiteralUseNode::getValue() const {
+
+bool LiteralActionUseNode::validateNode(NodeVectorType& Parents) {
+  if (const LiteralActionDefNode* Def = getDef()) {
+    getSymtab().insertCallbackLiteral(Def);
+    return true;
+  }
+  const Node* SymNd = getKid(0);
+  assert(isa<SymbolNode>(SymNd));
+  getSymtab().insertUndefinedCallback(cast<SymbolNode>(SymNd));
+  return true;
+}
+
+const IntegerNode* LiteralUseNode::getIntNode() const {
   const LiteralDefNode* Def = getDef();
+  assert(Def != nullptr);
+  const IntegerNode* IntNd = dyn_cast<IntegerNode>(Def->getKid(1));
+  assert(IntNd != nullptr);
+  return IntNd;
+}
+
+
+const IntegerNode* LiteralActionUseNode::getIntNode() const {
+  const LiteralActionDefNode* Def = getDef();
   assert(Def != nullptr);
   const IntegerNode* IntNd = dyn_cast<IntegerNode>(Def->getKid(1));
   assert(IntNd != nullptr);
@@ -1094,12 +1221,19 @@ bool CallbackNode::validateNode(NodeVectorType& Parents) {
     getSymtab().insertCallbackValue(IntNd);
     return true;
   }
-  const LiteralUseNode* Use = dyn_cast<LiteralUseNode>(Action);
+  const auto* Use = dyn_cast<LiteralActionUseNode>(Action);
   if (Use == nullptr) {
+#if 1
+    fprintf(stderr, "Callback type = %s\n", getNodeTypeName(Action->getType()));
+    fprintf(stderr, "Context:\n");
+    TextWriter Writer;
+    for (const Node* Par : Parents)
+      Writer.writeAbbrev(stderr, Par);
+#endif
     errorDescribeNode("Malformed callback", this);
     return false;
   }
-  Use->IsAction = true;
+#if 0
   const LiteralDefNode* Def = Use->getDef();
   if (Def == nullptr) {
     errorDescribeNode("Callback", this);
@@ -1108,15 +1242,17 @@ bool CallbackNode::validateNode(NodeVectorType& Parents) {
     return false;
   }
   getSymtab().insertCallbackLiteral(Def);
+#endif
   return true;
 }
 
 const IntegerNode* CallbackNode::getValue() const {
   const Node* Val = getKid(0);
-  const auto* Use = dyn_cast<LiteralUseNode>(Val);
-  if (Use != nullptr)
-    return Use->getValue();
-  return dyn_cast<IntegerNode>(Val);
+  if (const auto* IntNd = dyn_cast<IntegerNode>(Val))
+    return IntNd;
+  if (const auto* Use = dyn_cast<LiteralActionUseNode>(Val))
+    return Use->getIntNode();
+  return nullptr;
 }
 
 IntegerNode::IntegerNode(SymbolTable& Symtab,

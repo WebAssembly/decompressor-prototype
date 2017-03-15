@@ -39,9 +39,10 @@ constexpr const char* IndentString = "  ";
 
 }  // end of anonyous namespace
 
-bool TextWriter::UseNodeTypeNames = false;
+bool TextWriter::DefaultUseNodeTypeNames = false;
 
-TextWriter::TextWriter() : File(nullptr), IndentCount(0), LineEmpty(true) {
+TextWriter::TextWriter() : File(nullptr), IndentCount(0), LineEmpty(true),
+                           UseNodeTypeNames(DefaultUseNodeTypeNames) {
   // Build fast lookup for number of arguments to write on same line.
   for (size_t i = 0; i < MaxNodeType; ++i) {
     KidCountSameLine.push_back(0);
@@ -145,7 +146,7 @@ void TextWriter::writeNodeKids(const Node* Nd, bool EmbeddedInParent) {
   int HasHiddenSeq = HasHiddenSeqSet.count(Type);
   bool ForceNewline = false;
   for (auto* Kid : *Nd) {
-    if (Kid == LastKid) {
+    if (Kid == LastKid && !UseNodeTypeNames) {
       bool IsEmbedded = (HasHiddenSeq && isa<SequenceNode>(LastKid)) ||
                         (isa<CaseNode>(Nd) && isa<CaseNode>(Kid));
       if (IsEmbedded) {
@@ -210,7 +211,7 @@ void TextWriter::writeNode(const Node* Nd,
   }
   switch (Type) {
     default: {
-      if (EmbedInParent) {
+      if (EmbedInParent && !UseNodeTypeNames) {
         if (isa<CaseNode>(Nd)) {
           writeIndent(-1);
           writeSpace();
@@ -225,9 +226,14 @@ void TextWriter::writeNode(const Node* Nd,
       return;
     }
     case OpFile: {
-      // Treat like hidden node. That is, visually just a list of s-expressions.
-      for (auto* Kid : *Nd)
-        writeNode(Kid, true);
+      if (UseNodeTypeNames) {
+        Parenthesize _(this, Type, AddNewline);
+        writeNodeKids(Nd, false);
+      } else {
+        // Treat like hidden node. That is, visually just a list of s-expressions.
+        for (auto* Kid : *Nd)
+          writeNode(Kid, true);
+      }
       return;
     }
     case OpLiteralUse:
@@ -236,12 +242,12 @@ void TextWriter::writeNode(const Node* Nd,
     case OpSection:
       for (auto* Kid : *Nd)
         writeNode(Kid, true, false);
-      break;
+      return;
     case OpSymbolDefn: {
       Parenthesize _(this, Type, AddNewline);
       writeSpace();
       writeNode(cast<SymbolDefnNode>(Nd)->getSymbol(), false);
-      break;
+      return;
     }
     case OpSymbol: {
       Indent _(this, AddNewline);
