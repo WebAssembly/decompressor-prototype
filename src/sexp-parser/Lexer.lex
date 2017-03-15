@@ -212,6 +212,7 @@ letter	[a-zA-Z]
 "."               return Parser::make_DOT(Driver.getLoc());
 "accept"          return Parser::make_ACCEPT(Driver.getLoc());
 "and"             return Parser::make_AND(Driver.getLoc());
+"base"            return Parser::make_BASE(Driver.getLoc());
 "binary"          return Parser::make_BINARY(Driver.getLoc());
 "bit"             return Parser::make_BIT(Driver.getLoc());
 "block"           return Parser::make_BLOCK(Driver.getLoc());

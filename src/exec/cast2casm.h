@@ -602,6 +602,8 @@ size_t CodeGenerator::generateNode(const Node* Nd) {
       return generateNullaryNode("LastReadNode", Nd);
     case OpLastSymbolIs:
       return generateUnaryNode("LastSymbolIsNode", Nd);
+    case OpLiteralActionBase:
+      return generateUnaryNode("LLiteralActionBaseNode", Nd);
     case OpLiteralActionDef:
       return generateBinaryNode("LiteralActionDefNode", Nd);
     case OpLiteralActionUse:
