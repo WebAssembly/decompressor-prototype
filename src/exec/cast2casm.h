@@ -22,13 +22,14 @@
 #include <cctype>
 #include <cstdio>
 
-#if WASM_CAST_PARSER == 0
+#if WASM_CAST_BOOT > 1
 #include "algorithms/casm0x0.h"
-#endif
 #include "casm/CasmReader.h"
 #include "casm/CasmWriter.h"
+#endif
 #include "sexp/Ast.h"
 #include "sexp/TextWriter.h"
+#include "sexp-parser/Driver.h"
 #include "stream/FileWriter.h"
 #include "stream/ReadCursor.h"
 #include "stream/WriteBackedQueue.h"
@@ -83,7 +84,7 @@ class CodeGenerator {
   void putc(char Ch) { Output->putc(Ch); }
   void putSymbol(charstring Name, bool Capitalize = true);
   char symbolize(char Ch, bool Capitalize);
-#if WASM_CAST_PARSER == 0
+#if WASM_CAST_BOOT > 1
   void generateArrayImplFile();
 #endif
   void generateFunctionImplFile();
@@ -624,7 +625,7 @@ void CodeGenerator::generateDeclFile() {
   generateExitNamespaces();
 }
 
-#if WASM_CAST_PARSER == 0
+#if WASM_CAST_BOOT > 1
 void CodeGenerator::generateArrayImplFile() {
   char Buffer[256];
   constexpr size_t BytesPerLine = 15;
@@ -743,13 +744,35 @@ void CodeGenerator::generateImplFile(bool UseArrayImpl) {
       "\n"
       "namespace {\n"
       "\n");
-#if WASM_CAST_PARSER == 0
+#if WASM_CAST_BOOT > 1
   if (UseArrayImpl)
     generateArrayImplFile();
   else
 #endif
     generateFunctionImplFile();
   generateExitNamespaces();
+}
+
+std::shared_ptr<SymbolTable> readCasmFile(const char* Filename,
+                                          bool TraceLexer,
+                                          bool TraceParser) {
+  bool HasErrors = false;
+  std::shared_ptr<SymbolTable> Symtab;
+#if WASM_CAST_BOOT == 1
+  Symtab = std::make_shared<SymbolTable>();
+  Driver Parser(Symtab);
+  Parser.setTraceLexing(TraceLexer);
+  Parser.setTraceParsing(TraceParser);
+  HasErrors = !Parser.parse(Filename);
+#else
+  CasmReader Reader;
+  Reader.setTraceRead(TraceParser).setTraceLexer(TraceLexer).readText(Filename);
+  Symtab = Reader.getReadSymtab();
+  HasErrors = Reader.hasErrors();
+#endif
+  if (HasErrors)
+    Symtab.reset();
+  return Symtab;
 }
 
 }  // end of anonymous namespace
@@ -780,7 +803,7 @@ int main(int Argc, charstring Argv[]) {
   bool Verbose = false;
   bool HeaderFile = false;
 
-#if WASM_CAST_PARSER == 0
+#if WASM_CAST_BOOT > 1
   bool BitCompress = true;
   bool MinimizeBlockSize = false;
   bool TraceFlatten = false;
@@ -884,7 +907,7 @@ int main(int Argc, charstring Argv[]) {
         VerboseFlag.setShortName('v').setLongName("verbose").setDescription(
             "Show progress and tree written to binary file"));
 
-#if WASM_CAST_PARSER == 0
+#if WASM_CAST_BOOT > 1
 
     ArgsParser::Optional<bool> BitCompressFlag(BitCompress);
     Args.add(BitCompressFlag.setLongName("bit-compress")
@@ -941,7 +964,7 @@ int main(int Argc, charstring Argv[]) {
       StripLiterals = true;
     }
 
-#if WASM_CAST_PARSER == 0
+#if WASM_CAST_BOOT > 1
     // Be sure to update implications!
     if (TraceTree)
       TraceWrite = true;
@@ -963,18 +986,11 @@ int main(int Argc, charstring Argv[]) {
 
   if (Verbose)
     fprintf(stderr, "Reading input: %s\n", InputFilename);
-  std::shared_ptr<SymbolTable> InputSymtab;
-  {
-    CasmReader Reader;
-    Reader.setTraceRead(TraceParser)
-        .setTraceLexer(TraceLexer)
-        // .setTraceTree(Verbose)
-        .readText(InputFilename);
-    if (Reader.hasErrors()) {
-      fprintf(stderr, "Unable to parse: %s\n", InputFilename);
-      return exit_status(EXIT_FAILURE);
-    }
-    InputSymtab = Reader.getReadSymtab();
+  std::shared_ptr<SymbolTable> InputSymtab =
+      readCasmFile(InputFilename, TraceLexer, TraceParser);
+  if (!InputSymtab) {
+    fprintf(stderr, "Unable to parse: %s\n", InputFilename);
+    return exit_status(EXIT_FAILURE);
   }
   if (StripActions)
     InputSymtab->stripCallbacksExcept(KeepActions);
@@ -998,17 +1014,12 @@ int main(int Argc, charstring Argv[]) {
   }
   std::shared_ptr<SymbolTable> AlgSymtab;
   if (AlgorithmFilename) {
-    CasmReader Reader;
-    Reader.setTraceRead(TraceParser)
-        .setTraceLexer(TraceLexer)
-        .setTraceTree(Verbose)
-        .readText(AlgorithmFilename);
-    if (Reader.hasErrors()) {
+    AlgSymtab = readCasmFile(AlgorithmFilename, TraceLexer, TraceParser);
+    if (!AlgSymtab) {
       fprintf(stderr, "Problems reading file: %s\n", InputFilename);
       return exit_status(EXIT_FAILURE);
     }
-    AlgSymtab = Reader.getReadSymtab();
-#if WASM_CAST_PARSER == 0
+#if WASM_CAST_BOOT > 1
   } else {
     AlgSymtab = getAlgcasm0x0Symtab();
 #endif
@@ -1033,7 +1044,7 @@ int main(int Argc, charstring Argv[]) {
   std::shared_ptr<Queue> OutputStream;
   std::shared_ptr<ReadCursor> OutputStartPos;
   if (FunctionName != nullptr) {
-#if WASM_CAST_PARSER == 0
+#if WASM_CAST_BOOT > 1
     if (UseArrayImpl) {
       OutputStream = std::make_shared<Queue>();
       OutputStartPos =
@@ -1044,7 +1055,7 @@ int main(int Argc, charstring Argv[]) {
     OutputStream = std::make_shared<WriteBackedQueue>(Output);
   }
 
-#if WASM_CAST_PARSER == 0
+#if WASM_CAST_BOOT > 1
   if (OutputStream) {
     // Generate binary stream
     CasmWriter Writer;
@@ -1073,7 +1084,7 @@ int main(int Argc, charstring Argv[]) {
   if (HeaderFile)
     Generator.generateDeclFile();
   else {
-#if WASM_CAST_PARSER == 0
+#if WASM_CAST_BOOT > 1
     if (UseArrayImpl)
       Generator.setStartPos(OutputStartPos);
 #else

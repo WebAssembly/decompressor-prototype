@@ -16,5 +16,5 @@
 
 // Converts textual algorithm into binary file form
 
-#define WASM_CAST_PARSER 0
+#define WASM_CAST_BOOT 2
 #include "cast2casm.h"
