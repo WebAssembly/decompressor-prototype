@@ -61,9 +61,6 @@ void errorDescribeContext(NodeVectorType& Parents,
   fprintf(Out, "%s:\n", Context);
   for (size_t i = Parents.size() - 1; i > 0; --i)
     Writer.writeAbbrev(Out, Parents[i - 1]);
-#if 1
-  Writer.write(Out, Parents[0]);
-#endif
 }
 
 void errorDescribeNode(const char* Message, const Node* Nd) {
@@ -111,6 +108,10 @@ bool extractIntTypeFormat(const Node* Nd, IntTypeFormat& Format) {
     default:
       return false;
   }
+}
+
+bool compareSymbolNodesLt(const SymbolNode* S1, const SymbolNode* S2) {
+  return S1->getName() < S2->getName();
 }
 
 }  // end of anonymous namespace
@@ -783,7 +784,10 @@ bool SymbolTable::areActionsConsistent() {
     if (Value >= NextEnumValue)
       NextEnumValue = Value + 1;
   }
-  for (const SymbolNode* Sym : UndefinedCallbacks) {
+  std::vector<const SymbolNode*> SortedSyms(UndefinedCallbacks.begin(),
+                                            UndefinedCallbacks.end());
+  std::sort(SortedSyms.begin(), SortedSyms.end(), compareSymbolNodesLt);
+  for (const SymbolNode* Sym : SortedSyms) {
     SymbolDefnNode* SymDef = getSymbolDefn(Sym);
     const LiteralActionDefNode* LitDef = SymDef->getLiteralActionDefinition();
     if (LitDef != nullptr) {
@@ -791,8 +795,11 @@ bool SymbolTable::areActionsConsistent() {
       IsValid = false;
       continue;
     }
-    CallbackLiterals.insert(create<LiteralActionDefNode>(
-        SymDef, getU64ConstDefinition(NextEnumValue++, ValueFormat::Decimal)));
+    Node* SymNd = const_cast<SymbolNode*>(Sym);
+    auto* Def = create<LiteralActionDefNode>(
+        SymNd, getU64ConstDefinition(NextEnumValue++, ValueFormat::Decimal));
+    installDefinitions(Def);
+    CallbackLiterals.insert(Def);
   }
   // Now see if conflicting definitions.
   for (const LiteralActionDefNode* Def : CallbackLiterals) {
@@ -885,6 +892,14 @@ void SymbolTable::installDefinitions(Node* Root) {
     case OpLiteralDef: {
       if (auto* LiteralSymbol = dyn_cast<SymbolNode>(Root->getKid(0)))
         return LiteralSymbol->setLiteralDefinition(cast<LiteralDefNode>(Root));
+      errorDescribeNode("Malformed", Root);
+      fatal("Malformed literal s-expression found!");
+      return;
+    }
+    case OpLiteralActionDef: {
+      if (auto* LiteralSymbol = dyn_cast<SymbolNode>(Root->getKid(0)))
+        return LiteralSymbol->setLiteralActionDefinition(
+            cast<LiteralActionDefNode>(Root));
       errorDescribeNode("Malformed", Root);
       fatal("Malformed literal s-expression found!");
       return;

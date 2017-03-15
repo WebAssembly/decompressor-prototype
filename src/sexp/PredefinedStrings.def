@@ -27,12 +27,4 @@ X(Block_enter_writeonly, "block.enter.writeonly") \
 X(Block_exit, "block.exit") \
 X(Block_exit_readonly, "block.exit.readonly") \
 X(Block_exit_writeonly, "block.exit.writeonly") \
-X(File, "file") \
-X(Int_value_begin, "int.value.begin") \
-X(Int_value_end, "int.value.end") \
-X(Nary_inst, "nary.inst") \
-X(Postorder_inst, "postorder.inst") \
-X(Symbol_lookup, "symbol.lookup") \
-X(Symbol_name, "symbol_name") \
-X(Symbol_name_begin, "symbol_name.begin") \
-X(Symbol_name_end, "symbol_name.end")
+X(File, "file")

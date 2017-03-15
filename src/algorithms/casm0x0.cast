@@ -213,19 +213,19 @@
   (=> 'symbol.lookup')
 )
 
-(define 'symbol_name' (params)
+(define 'symbol.name' (params)
   (loop
     (seq
       (varuint32)
-      (=> 'symbol_name.begin'))
+      (=> 'symbol.name.begin'))
     (uint8)
   )
-  (=> 'symbol_name.end')
+  (=> 'symbol.name.end')
 )
 
 (define 'symbol.table' (params)
   (loop
     (varuint32)
-    (eval 'symbol_name')
+    (eval 'symbol.name')
   )
 )
