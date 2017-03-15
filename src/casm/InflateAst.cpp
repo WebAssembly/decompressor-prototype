@@ -236,6 +236,8 @@ bool InflateAst::applyOp(IntType Op) {
       return buildNullary<LastReadNode>();
     case OpLastSymbolIs:
       return buildUnary<LastSymbolIsNode>();
+    case OpLiteralActionBase:
+      return buildUnary<LiteralActionBaseNode>();
     case OpLiteralActionDef:
       return buildBinary<LiteralActionDefNode>();
     case OpLiteralActionUse:

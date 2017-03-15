@@ -183,6 +183,7 @@ void FlattenAst::flattenNode(const Node* Nd) {
     case OpIfThenElse:
     case OpLastRead:
     case OpLastSymbolIs:
+    case OpLiteralActionBase:
     case OpLiteralActionDef:
     case OpLiteralActionUse:
     case OpLiteralDef:

@@ -236,6 +236,7 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   FileNode* Root;
   Node* Error;
   int NextCreationIndex;
+  decode::IntType ActionBase;
   SymbolSet UndefinedCallbacks;
   ActionValueSet CallbackValues;
   ActionDefSet CallbackLiterals;

@@ -671,6 +671,7 @@ void Interpreter::algorithmResume() {
           case OpBinarySelect:
           case OpParams:
           case OpLastSymbolIs:
+          case OpLiteralActionBase:
           case OpLiteralActionDef:
           case OpLiteralDef:
           case OpFile:
