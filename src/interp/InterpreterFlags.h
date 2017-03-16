@@ -23,8 +23,16 @@ namespace wasm {
 
 namespace interp {
 
+enum class MacroDirective {
+  // Read once, duplicate (expand) when writing.
+  Expand,
+  // Read all, write once.
+  Contract
+};
+
 struct InterpreterFlags {
   InterpreterFlags();
+  MacroDirective MacroContext;
   bool TraceProgress;
   bool TraceIntermediateStreams;
   bool TraceAppliedAlgorithms;
