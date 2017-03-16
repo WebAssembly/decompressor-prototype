@@ -56,7 +56,6 @@ void errorDescribeContext(NodeVectorType& Parents,
   if (Parents.empty())
     return;
   TextWriter Writer;
-  Writer.setUseNodeTypeNames(true);
   FILE* Out = Parents[0]->getErrorFile();
   fprintf(Out, "%s:\n", Context);
   for (size_t i = Parents.size() - 1; i > 0; --i)
@@ -67,7 +66,6 @@ void errorDescribeNode(const char* Message,
                        const Node* Nd,
                        bool Abbrev = true) {
   TextWriter Writer;
-  Writer.setUseNodeTypeNames(true);
   FILE* Out = Nd->getErrorFile();
   if (Message)
     fprintf(Out, "%s:\n", Message);
@@ -953,8 +951,9 @@ TraceClass& SymbolTable::getTrace() {
   return *getTracePtr();
 }
 
-void SymbolTable::describe(FILE* Out) {
+void SymbolTable::describe(FILE* Out, bool ShowInternalStructure) {
   TextWriter Writer;
+  Writer.setShowInternalStructure(ShowInternalStructure);
   Writer.write(Out, getInstalledRoot());
 }
 

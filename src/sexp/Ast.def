@@ -95,7 +95,7 @@
   X(Define,            0x60, "define",           2, 1)                         \
   X(File,              0x62, "file",             2, 0)                         \
   X(FileHeader,        0x77, "header",           0, 3)                         \
-  X(Section,           0x63, "section",          1, 0)                         \
+  X(Section,           0x63, "section",          0, 0)                         \
   X(Undefine,          0x64, "undefine",         1, 0)                         \
   X(LiteralDef,        0x65, "literal",          2, 0)                         \
   X(LiteralUse,        0x66, "literal.use",      1, 0)                         \

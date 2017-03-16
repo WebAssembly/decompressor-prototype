@@ -226,7 +226,7 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
 
   // For debugging.
   utils::TraceClass& getTrace();
-  void describe(FILE* Out);
+  void describe(FILE* Out, bool ShowInternalStructure=false);
 
  private:
   typedef std::map<const Node*, Node*> CachedValueMap;
