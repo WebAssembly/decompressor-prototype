@@ -104,7 +104,8 @@ struct {
 }  // end of anonymous namespace
 
 InterpreterFlags::InterpreterFlags()
-    : TraceProgress(false),
+    : MacroContext(MacroDirective::Expand),
+      TraceProgress(false),
       TraceIntermediateStreams(false),
       TraceAppliedAlgorithms(false) {
 }
@@ -1079,22 +1080,34 @@ void Interpreter::algorithmResume() {
                 call(Method::Eval, Frame.CallModifier, Frame.Nd->getKid(0));
                 break;
               case State::Step2:
-                if (hasReadMode())
-                  if (!Input->tablePush(Frame.ReturnValue))
-                    return throwCantRead();
-                if (hasWriteMode())
-                  if (!Output->tablePush(Frame.ReturnValue))
-                    return throwCantWrite();
+                switch (Flags.MacroContext) {
+                  case MacroDirective::Expand:
+                    if (hasReadMode())
+                      if (!Input->tablePush(Frame.ReturnValue))
+                        return throwCantRead();
+                    break;
+                  case MacroDirective::Contract:
+                    if (hasWriteMode())
+                      if (!Output->tablePush(Frame.ReturnValue))
+                        return throwCantWrite();
+                    break;
+                }
                 Frame.CallState = State::Step3;
                 call(Method::Eval, Frame.CallModifier, Frame.Nd->getKid(1));
                 break;
               case State::Exit:
-                if (hasReadMode())
-                  if (!Input->tablePop())
-                    return throwCantRead();
-                if (hasWriteMode())
-                  if (!Output->tablePop())
-                    return throwCantWrite();
+                switch (Flags.MacroContext) {
+                  case MacroDirective::Expand:
+                    if (hasReadMode())
+                      if (!Input->tablePop())
+                        return throwCantRead();
+                    break;
+                  case MacroDirective::Contract:
+                    if (hasWriteMode())
+                      if (!Output->tablePop())
+                        return throwCantWrite();
+                    break;
+                }
                 popAndReturn(LastReadValue);
                 break;
               default:
