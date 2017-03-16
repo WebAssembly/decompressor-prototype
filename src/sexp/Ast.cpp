@@ -63,7 +63,9 @@ void errorDescribeContext(NodeVectorType& Parents,
     Writer.writeAbbrev(Out, Parents[i - 1]);
 }
 
-void errorDescribeNode(const char* Message, const Node* Nd, bool Abbrev=true) {
+void errorDescribeNode(const char* Message,
+                       const Node* Nd,
+                       bool Abbrev = true) {
   TextWriter Writer;
   Writer.setUseNodeTypeNames(true);
   FILE* Out = Nd->getErrorFile();
@@ -777,7 +779,8 @@ bool SymbolTable::areActionsConsistent() {
   // Create values for undefined actions.
   bool IsValid = true;              // Until proven otherwise.
   constexpr IntType EnumGap = 100;  // gap for future expansion
-  IntType NextEnumValue = ActionBase ? ActionBase : NumPredefinedSymbols + EnumGap;
+  IntType NextEnumValue =
+      ActionBase ? ActionBase : NumPredefinedSymbols + EnumGap;
   for (const LiteralActionDefNode* Def : CallbackLiterals) {
     const IntegerNode* IntNd = dyn_cast<IntegerNode>(Def->getKid(1));
     if (IntNd == nullptr) {
