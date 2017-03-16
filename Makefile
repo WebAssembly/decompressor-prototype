@@ -602,11 +602,11 @@ clean-gen:
 
 gen:
 	$(MAKE) GENSRCS=1 gen-copy-sources
-	$(MAKE) GENSRCS=1 gen-parse-sources
+	$(MAKE) GENSRCS=2 gen-parse-sources
 	$(MAKE) gen-boot1-execs
-	$(MAKE) GENSRCS=1 gen-boot1-sources
+	$(MAKE) GENSRCS=3 gen-boot1-sources
 	$(MAKE) gen-boot2-execs
-	$(MAKE) GENSRCS=1 gen-boot2-sources
+	$(MAKE) GENSRCS=4 gen-boot2-sources
 
 .PHONY: gen
 
@@ -683,7 +683,7 @@ $(ALG_OBJDIR):
 $(ALG_GEN_SRCS): | $(ALG_GENDIR)
 
 ifeq ($(GENSRCS), 1)
-$(ALG_GEN_SRCS): $(ALG_GENDIR)/%.cast: $(ALG_SRCDIR)/%.cast
+  $(ALG_GEN_SRCS): $(ALG_GENDIR)/%.cast: $(ALG_SRCDIR)/%.cast
 	cp $< $@
 endif
 
@@ -702,7 +702,7 @@ $(ALG_LIB): $(ALG_OBJS)
 	ar -rs $@ $(ALG_OBJS)
 	ranlib $@
 
-ifeq ($(GENSRCS), 1)
+ifeq ($(GENSRCS), 3)
 
   $(ALG_GEN_H_SRCS_BOOT1): $(ALG_GENDIR)/%.h: $(ALG_GENDIR)/%.cast \
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1
@@ -716,6 +716,9 @@ ifeq ($(GENSRCS), 1)
 		$< -o $@ --strip-literal-uses \
 		--function $(patsubst $(ALG_GENDIR)/%.cast, Alg%, $<)
 
+endif
+
+ifeq ($(GENSRCS), 4)
 
   $(ALG_GEN_H_SRCS_BOOT2): $(ALG_GENDIR)/%.h: $(ALG_GENDIR)/%.cast \
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot2
@@ -869,11 +872,15 @@ ifeq ($(GENSRCS), 1)
   $(PARSER_GENDIR)/Lexer.lex: $(PARSER_DIR)/Lexer.lex $(PARSER_GENDIR)
 	cp $< $@
 
-  $(PARSER_GENDIR)/Lexer.cpp: $(PARSER_GENDIR)/Lexer.lex
-	cd $(PARSER_GENDIR); lex -o Lexer.cpp Lexer.lex
-
   $(PARSER_GENDIR)/Parser.ypp: $(PARSER_DIR)/Parser.ypp $(PARSER_GENDIR)
 	cp $< $@
+
+endif
+
+ifeq ($(GENSRCS), 2)
+
+  $(PARSER_GENDIR)/Lexer.cpp: $(PARSER_GENDIR)/Lexer.lex
+	cd $(PARSER_GENDIR); lex -o Lexer.cpp Lexer.lex
 
   $(PARSER_GENDIR)/Parser.tab.cpp: $(PARSER_GENDIR)/Parser.ypp $(PARSER_GENDIR)
 	cd $(PARSER_GENDIR); bison -d -r all Parser.ypp

@@ -18,6 +18,8 @@
 (header (u32.const 0x6d736163) (u32.const 0x0))
 (void)
 
+(literal.action.base (u32.const 101))
+
 # Control flow operators
 (literal 'block'          (u8.const 0x01))
 (literal 'case'           (u8.const 0x02))
@@ -89,8 +91,9 @@
 (literal 'rename'         (u8.const 0x67))
 (literal 'locals'         (u8.const 0x68))
 (literal 'params'         (u8.const 0x69))
-(literal 'literal.action.define' (u8.const 0x6a))
+(literal 'literal.action.define'  (u8.const 0x6a))
 (literal 'literal.action.use'     (u8.const 0x6b))
+(literal 'literal.action.base'    (u8.const 0x6c))
 
 (define 'file' (params)
   (eval 'header')
@@ -134,6 +137,7 @@
      case 'if.then.else'
      case 'last.read'
      case 'last.symbol.is'
+     case 'literal.action.base'
      case 'literal.action.define'
      case 'literal.action.use'
      case 'literal.define'
