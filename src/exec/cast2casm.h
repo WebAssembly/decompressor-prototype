@@ -857,7 +857,8 @@ int main(int Argc, charstring Argv[]) {
   charstring OutputFilename = "-";
   charstring InputFilename = "-";
   std::set<std::string> KeepActions;
-  bool ShowSavedCast = false;
+  bool DisplayParsedInput = false;
+  bool ShowInternalStructure = false;
   bool StripActions = false;
   bool StripAll = false;
   bool StripLiterals = false;
@@ -927,9 +928,17 @@ int main(int Argc, charstring Argv[]) {
                  .setOptionName("OUTPUT")
                  .setDescription("Generated binary file"));
 
-    ArgsParser::Optional<bool> ShowSavedCastFlag(ShowSavedCast);
-    Args.add(ShowSavedCastFlag.setLongName("cast")
-                 .setDescription("Show cast text being written"));
+    ArgsParser::Toggle DisplayParsedInputFlag(DisplayParsedInput);
+    Args.add(DisplayParsedInputFlag.setShortName('d')
+                 .setLongName("display")
+                 .setDescription("Only display parsed cast text"));
+
+    ArgsParser::Toggle ShowInternalStructureFlag(ShowInternalStructure);
+    Args.add(ShowInternalStructureFlag.setShortName('i')
+                 .setLongName("internal")
+                 .setDescription(
+                     "Show internal structure when displaying "
+                     "parsed text"));
 
     ArgsParser::Optional<bool> StripActionsFlag(StripActions);
     Args.add(StripActionsFlag.setLongName("strip-actions")
@@ -1097,8 +1106,10 @@ int main(int Argc, charstring Argv[]) {
     Writer.write(stderr, AlgSymtab.get());
   }
 
-  if (ShowSavedCast)
-    InputSymtab->describe(stderr);
+  if (DisplayParsedInput) {
+    InputSymtab->describe(stderr, ShowInternalStructure);
+    return exit_status(EXIT_SUCCESS);
+  }
 
   if (Verbose && strcmp(OutputFilename, "-") != 0)
     fprintf(stderr, "Opening file: %s\n", OutputFilename);

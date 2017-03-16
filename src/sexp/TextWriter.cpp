@@ -39,13 +39,13 @@ constexpr const char* IndentString = "  ";
 
 }  // end of anonyous namespace
 
-bool TextWriter::DefaultUseNodeTypeNames = false;
+bool TextWriter::DefaultShowInternalStructure = false;
 
 TextWriter::TextWriter()
     : File(nullptr),
       IndentCount(0),
       LineEmpty(true),
-      UseNodeTypeNames(DefaultUseNodeTypeNames) {
+      ShowInternalStructure(DefaultShowInternalStructure) {
   // Build fast lookup for number of arguments to write on same line.
   for (size_t i = 0; i < MaxNodeType; ++i) {
     KidCountSameLine.push_back(0);
@@ -96,8 +96,16 @@ TextWriter::Parenthesize::~Parenthesize() {
   Writer->maybeWriteNewline(AddNewline);
 }
 
+charstring TextWriter::getNodeName(NodeType Type) const {
+  return ShowInternalStructure ? getNodeTypeName(Type) : getNodeSexpName(Type);
+}
+
+charstring TextWriter::getNodeName(const Node* Nd) const {
+  return getNodeName(Nd->getType());
+}
+
 void TextWriter::writeName(NodeType Type) {
-  fputs(UseNodeTypeNames ? getNodeTypeName(Type) : getNodeSexpName(Type), File);
+  fputs(getNodeName(Type), File);
 }
 
 void TextWriter::write(FILE* File, SymbolTable* Symtab) {
@@ -149,7 +157,7 @@ void TextWriter::writeNodeKids(const Node* Nd, bool EmbeddedInParent) {
   int HasHiddenSeq = HasHiddenSeqSet.count(Type);
   bool ForceNewline = false;
   for (auto* Kid : *Nd) {
-    if (Kid == LastKid && !UseNodeTypeNames) {
+    if (Kid == LastKid && !ShowInternalStructure) {
       bool IsEmbedded = (HasHiddenSeq && isa<SequenceNode>(LastKid)) ||
                         (isa<CaseNode>(Nd) && isa<CaseNode>(Kid));
       if (IsEmbedded) {
@@ -203,7 +211,7 @@ void TextWriter::writeNode(const Node* Nd,
     return writeIntegerNode(cast<IntegerNode>(Nd), AddNewline);
   switch (Type) {
     default: {
-      if (!(EmbedInParent && !UseNodeTypeNames))
+      if (!(EmbedInParent && !ShowInternalStructure))
         break;
       if (isa<CaseNode>(Nd)) {
         writeIndent(-1);
@@ -214,7 +222,7 @@ void TextWriter::writeNode(const Node* Nd,
       return;
     }
     case OpFile: {
-      if (UseNodeTypeNames)
+      if (ShowInternalStructure)
         break;
       // Treat like hidden node. That is, visually just a list of
       // s-expressions.
@@ -224,12 +232,12 @@ void TextWriter::writeNode(const Node* Nd,
     }
     case OpLiteralUse:
     case OpLiteralActionUse:
-      if (UseNodeTypeNames)
+      if (ShowInternalStructure)
         break;
       writeNode(Nd->getKid(0), AddNewline, EmbedInParent);
       return;
     case OpSection:
-      if (UseNodeTypeNames)
+      if (ShowInternalStructure)
         break;
       for (auto* Kid : *Nd)
         writeNode(Kid, true, false);
@@ -241,57 +249,7 @@ void TextWriter::writeNode(const Node* Nd,
       return;
     }
     case OpSymbol: {
-#if 0
-      Indent _(this, AddNewline);
-      const auto* Sym = cast<SymbolNode>(Nd);
-      fputc('\'', File);
-      for (uint8_t V : Sym->getName()) {
-        switch (V) {
-          case '\\':
-            fputc('\\', File);
-            fputc('\\', File);
-            continue;
-          case '\f':
-            fputc('\\', File);
-            fputc('f', File);
-            continue;
-          case '\n':
-            fputc('\\', File);
-            fputc('n', File);
-            continue;
-          case '\r':
-            fputc('\\', File);
-            fputc('r', File);
-            continue;
-          case '\t':
-            fputc('\\', File);
-            fputc('t', File);
-            continue;
-          case '\v':
-            fputc('\\', File);
-            fputc('v', File);
-            continue;
-        }
-        if (isprint(V)) {
-          fputc(V, File);
-          continue;
-        }
-        fputc('\\', File);
-        uint8_t BitsPerOctal = 3;
-        uint8_t Shift = 2 * BitsPerOctal;
-        for (int Count = 3; Count > 0; --Count) {
-          uint8_t Digit = V >> Shift;
-          fputc('0' + Digit, File);
-          V &= ((1 << Shift) - 1);
-          Shift -= BitsPerOctal;
-        }
-      }
-      fputc('\'', File);
-      LineEmpty = false;
-      return;
-#else
       return writeSymbolNode(cast<SymbolNode>(Nd), AddNewline);
-#endif
     }
   }
   // Default case.
@@ -366,7 +324,7 @@ void TextWriter::writeNodeAbbrev(const Node* Nd,
     case OpSection:
     case OpFile: {
       // Treat like hidden node. That is, visually just a list of s-expressions.
-      fprintf(File, "(%s ...)\n", Nd->getNodeName());
+      fprintf(File, "(%s ...)\n", getNodeName(Nd));
       return;
     }
     case OpSymbol:
@@ -376,7 +334,7 @@ void TextWriter::writeNodeAbbrev(const Node* Nd,
       return;
     case OpLiteralUse:
     case OpLiteralActionUse:
-      if (UseNodeTypeNames)
+      if (ShowInternalStructure)
         break;
       writeNodeAbbrev(Nd->getKid(0), AddNewline, EmbedInParent);
       break;
@@ -385,10 +343,9 @@ void TextWriter::writeNodeAbbrev(const Node* Nd,
   writeNodeKidsAbbrev(Nd, false);
 }
 
-void TextWriter::writeSymbolNode(const SymbolNode* Sym, bool AddNewline) {
-  Indent _(this, AddNewline);
+void TextWriter::writeSymbolName(std::string Name) {
   fputc('\'', File);
-  for (uint8_t V : Sym->getName()) {
+  for (char V : Name) {
     switch (V) {
       case '\\':
         fputc('\\', File);
@@ -430,7 +387,18 @@ void TextWriter::writeSymbolNode(const SymbolNode* Sym, bool AddNewline) {
     }
   }
   fputc('\'', File);
-  LineEmpty = false;
+}
+
+void TextWriter::writeSymbolNode(const SymbolNode* Sym, bool AddNewline) {
+  if (ShowInternalStructure) {
+    Parenthesize _(this, Sym->getType(), AddNewline);
+    writeSpace();
+    writeSymbolName(Sym->getName());
+  } else {
+    Indent _(this, AddNewline);
+    writeSymbolName(Sym->getName());
+    LineEmpty = false;
+  }
   return;
 }
 

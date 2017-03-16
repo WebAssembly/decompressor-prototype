@@ -600,6 +600,9 @@ clean-gen:
 
 ###### Source Generation Rules #######
 
+# TODO(karlschimpf): Don't know why, but bison/lex files need to be generated
+# twice before dependencies don't cause a rebuild.
+
 gen:
 	$(MAKE) GENSRCS=1 gen-copy-sources
 	$(MAKE) GENSRCS=2 gen-parse-sources
@@ -607,6 +610,7 @@ gen:
 	$(MAKE) GENSRCS=3 gen-boot1-sources
 	$(MAKE) gen-boot2-execs
 	$(MAKE) GENSRCS=4 gen-boot2-sources
+	@echo "** Gen step succeeded **"
 
 .PHONY: gen
 
@@ -879,11 +883,12 @@ endif
 
 ifeq ($(GENSRCS), 2)
 
-  $(PARSER_GENDIR)/Lexer.cpp: $(PARSER_GENDIR)/Lexer.lex
+  $(PARSER_GENDIR)/Lexer.cpp: $(PARSER_GENDIR)/Lexer.lex $(PARSER_GENDIR)
 	cd $(PARSER_GENDIR); lex -o Lexer.cpp Lexer.lex
 
   $(PARSER_GENDIR)/Parser.tab.cpp: $(PARSER_GENDIR)/Parser.ypp $(PARSER_GENDIR)
 	cd $(PARSER_GENDIR); bison -d -r all Parser.ypp
+	cd $(PARSER_GENDIR); touch $(PARSER_PARSE_OTHER_GENSRCS)
 
 endif
 

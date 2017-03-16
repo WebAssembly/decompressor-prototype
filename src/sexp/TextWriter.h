@@ -65,11 +65,13 @@ class TextWriter {
  public:
   // When true use getNodeTypeName() instead of getNodeSexpName() for node
   // names.
-  static bool DefaultUseNodeTypeNames;
+  static bool DefaultShowInternalStructure;
   TextWriter();
 
-  bool getUseNodeTypeNames() const { return UseNodeTypeNames; }
-  void setUseNodeTypeNames(bool NewValue) { UseNodeTypeNames = NewValue; }
+  bool getShowInternalStructure() const { return ShowInternalStructure; }
+  void setShowInternalStructure(bool NewValue) {
+    ShowInternalStructure = NewValue;
+  }
 
   TextWriter& operator++() {
     ++IndentCount;
@@ -99,13 +101,16 @@ class TextWriter {
   FILE* File;
   size_t IndentCount;
   bool LineEmpty;
-  bool UseNodeTypeNames;
+  bool ShowInternalStructure;
   std::vector<int> KidCountSameLine;
   std::vector<int> MaxKidCountSameLine;
   std::unordered_set<int> HasHiddenSeqSet;
   std::unordered_set<int> NeverSameLine;
 
   void initialize(FILE* File);
+
+  charstring getNodeName(NodeType Type) const;
+  charstring getNodeName(const Node* Nd) const;
 
   void writeNode(const Node* Node, bool AddNewline, bool EmbedInParent = false);
   void writeNodeKids(const Node* Node, bool EmbeddedInParent);
@@ -116,6 +121,7 @@ class TextWriter {
   void writeNodeKidsAbbrev(const Node* Node, bool EmbeddedInParent);
 
   void writeSymbolNode(const SymbolNode* Sym, bool AddNewline);
+  void writeSymbolName(std::string Name);
   void writeIntegerNode(const IntegerNode* Int, bool AddNewline);
 
   void writeIndent(int Adjustment = 0);
