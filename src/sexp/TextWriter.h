@@ -69,7 +69,9 @@ class TextWriter {
   TextWriter();
 
   bool getShowInternalStructure() const { return ShowInternalStructure; }
-  void setShowInternalStructure(bool NewValue) { ShowInternalStructure = NewValue; }
+  void setShowInternalStructure(bool NewValue) {
+    ShowInternalStructure = NewValue;
+  }
 
   TextWriter& operator++() {
     ++IndentCount;

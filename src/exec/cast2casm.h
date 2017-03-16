@@ -929,13 +929,16 @@ int main(int Argc, charstring Argv[]) {
                  .setDescription("Generated binary file"));
 
     ArgsParser::Toggle DisplayParsedInputFlag(DisplayParsedInput);
-    Args.add(DisplayParsedInputFlag.setShortName('d').setLongName("display")
+    Args.add(DisplayParsedInputFlag.setShortName('d')
+                 .setLongName("display")
                  .setDescription("Only display parsed cast text"));
 
     ArgsParser::Toggle ShowInternalStructureFlag(ShowInternalStructure);
-    Args.add(ShowInternalStructureFlag.setShortName('i').setLongName("internal")
-             .setDescription("Show internal structure when displaying "
-                             "parsed text"));
+    Args.add(ShowInternalStructureFlag.setShortName('i')
+                 .setLongName("internal")
+                 .setDescription(
+                     "Show internal structure when displaying "
+                     "parsed text"));
 
     ArgsParser::Optional<bool> StripActionsFlag(StripActions);
     Args.add(StripActionsFlag.setLongName("strip-actions")

@@ -390,7 +390,7 @@ void TextWriter::writeSymbolName(std::string Name) {
 }
 
 void TextWriter::writeSymbolNode(const SymbolNode* Sym, bool AddNewline) {
-  if (ShowInternalStructure)  {
+  if (ShowInternalStructure) {
     Parenthesize _(this, Sym->getType(), AddNewline);
     writeSpace();
     writeSymbolName(Sym->getName());
