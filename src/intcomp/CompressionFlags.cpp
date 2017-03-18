@@ -48,6 +48,7 @@ CompressionFlags::CompressionFlags()
       TrimOverriddenPatterns(false),
       BitCompressOpcodes(false),
       ReassignAbbreviations(true),
+      UseCismModel(false),
       DefaultFormat(IntTypeFormat::Varint64),
       LoopSizeFormat(IntTypeFormat::Varuint64),
       TraceHuffmanAssignments(false),

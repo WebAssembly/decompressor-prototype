@@ -245,8 +245,8 @@ std::shared_ptr<SymbolTable> IntCompressor::generateCode(
     bool Trace) {
   TRACE_METHOD("generateCode");
   AbbreviationCodegen Codegen(Root, EncodingRoot, MyFlags.AbbrevFormat,
-                              Assignments);
-  std::shared_ptr<SymbolTable> Symtab = Codegen.getCodeSymtab(ToRead);
+                              Assignments, ToRead);
+  std::shared_ptr<SymbolTable> Symtab = Codegen.getCodeSymtab();
   if (Trace) {
     TextWriter Writer;
     Writer.write(stderr, Symtab->getInstalledRoot());

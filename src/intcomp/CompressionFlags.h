@@ -58,6 +58,7 @@ struct CompressionFlags {
   bool TrimOverriddenPatterns;
   bool BitCompressOpcodes;
   bool ReassignAbbreviations;
+  bool UseCismModel;
   interp::IntTypeFormat DefaultFormat;
   interp::IntTypeFormat LoopSizeFormat;
 
