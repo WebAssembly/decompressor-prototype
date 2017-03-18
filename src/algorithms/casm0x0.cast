@@ -208,10 +208,6 @@
   )
 )
 
-(define 'stream.node' (params)
-  (error)
-)
-
 (define 'symbol.lookup' (params)
   (varuint32)
   (=> 'symbol.lookup')

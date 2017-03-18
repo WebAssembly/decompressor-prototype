@@ -1078,10 +1078,17 @@ int main(int Argc, charstring Argv[]) {
     InputSymtab->stripLiteralDefs();
   if (StripLiterals)
     InputSymtab->stripLiterals();
+
   if (TraceInputTree) {
     TextWriter Writer;
     Writer.write(stderr, InputSymtab.get());
   }
+
+  if (DisplayParsedInput) {
+    InputSymtab->describe(stderr, ShowInternalStructure);
+    return exit_status(EXIT_SUCCESS);
+  }
+
   if (Verbose) {
     if (AlgorithmFilename)
       fprintf(stderr, "Reading algorithms file: %s\n", AlgorithmFilename);
@@ -1104,11 +1111,6 @@ int main(int Argc, charstring Argv[]) {
   if (TraceAlgorithm) {
     TextWriter Writer;
     Writer.write(stderr, AlgSymtab.get());
-  }
-
-  if (DisplayParsedInput) {
-    InputSymtab->describe(stderr, ShowInternalStructure);
-    return exit_status(EXIT_SUCCESS);
   }
 
   if (Verbose && strcmp(OutputFilename, "-") != 0)
