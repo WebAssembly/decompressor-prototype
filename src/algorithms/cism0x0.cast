@@ -18,14 +18,14 @@
 (header (u32.const 0x6d736163) (u32.const 0x0))
 (header (u32.const 0x6d736963) (u32.const 0x0))
 
-#(literal.action.base (u32.const 5001))
+(literal.action.base (u32.const 5001))
 
 (define 'file' (params) (locals 1)
   (loop.unbounded
     (set (local 0) (eval 'categorize' (eval 'opcode')))
     (switch (local 0)
       (table (local 0)
-        (case (u32.const 32868)
+        (case (u32.const 32772)
           (loop (read (varuint64)) (varuint64))
         )
       )
