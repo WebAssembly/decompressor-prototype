@@ -1,0 +1,233 @@
+# Copyright 2016 WebAssembly Community Group participants
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Defines the CAST algorithm for reading/writing "Compressed binary
+# algorithm" ("CASM") files.
+
+(header (u32.const 0x6d736163) (u32.const 0x0))
+(void)
+
+(literal.action.base (u32.const 101))
+
+# Control flow operators
+(literal 'block'          (u8.const 0x01))
+(literal 'case'           (u8.const 0x02))
+(literal 'error'          (u8.const 0x03))
+(literal 'eval'           (u8.const 0x04))
+(literal 'loop'           (u8.const 0x07))
+(literal 'loop.unbounded' (u8.const 0x08))
+(literal 'switch'         (u8.const 0x09))
+(literal 'sequence'       (u8.const 0x0a))
+(literal 'if.then'        (u8.const 0x0b))
+(literal 'if.then.else'   (u8.const 0x0c))
+
+# Constants
+(literal 'void'           (u8.const 0x10))
+(literal 'symbol'         (u8.const 0x11))
+(literal 'i32.const'      (u8.const 0x12))
+(literal 'i64.const'      (u8.const 0x13))
+(literal 'u8.const'       (u8.const 0x14))
+(literal 'u32.const'      (u8.const 0x15))
+(literal 'u64.const'      (u8.const 0x16))
+
+# Formatting
+(literal 'uint32'         (u8.const 0x20))
+(literal 'uint64'         (u8.const 0x21))
+(literal 'uint8'          (u8.const 0x22))
+(literal 'varint32'       (u8.const 0x23))
+(literal 'varint64'       (u8.const 0x24))
+(literal 'varuint32'      (u8.const 0x25))
+(literal 'varuint64'      (u8.const 0x26))
+(literal 'opcode.bytes'   (u8.const 0x27))
+(literal 'accept'         (u8.const 0x28))
+(literal 'binary'         (u8.const 0x29))
+(literal 'opcode.binary'  (u8.const 0x2a))
+(literal 'bit'            (u8.const 0x2b))
+(literal 'opcode.bits'    (u8.const 0x2c))
+
+# Boolean expressions
+(literal 'and'            (u8.const 0x30))
+(literal 'or'             (u8.const 0x31))
+(literal 'not'            (u8.const 0x32))
+(literal 'bitwise.and'    (u8.const 0x34))
+(literal 'bitwise.or'     (u8.const 0x35))
+(literal 'bitwise.xor'    (u8.const 0x36))
+(literal 'bitwise.negate' (u8.const 0x37))
+(literal 'last.symbol.is' (u8.const 0x38))
+
+# I/O operations
+(literal 'peek'           (u8.const 0x40))
+(literal 'read'           (u8.const 0x41))
+(literal 'last.read'      (u8.const 0x42))
+(literal 'write'          (u8.const 0x43))
+(literal 'table'          (u8.const 0x44))
+
+# Other
+(literal 'param'          (u8.const 0x51))
+(literal 'local'          (u8.const 0x53))
+(literal 'set'            (u8.const 0x54))
+(literal 'map'            (u8.const 0x55))
+(literal '=>'             (u8.const 0x56))
+
+# declarations
+(literal 'define'         (u8.const 0x60))
+#(literal 'file'           (u8.const 0x62))
+(literal 'file.header'    (u8.const 0x77))
+(literal 'section'        (u8.const 0x63))
+(literal 'undefine'       (u8.const 0x64))
+(literal 'literal.define' (u8.const 0x65))
+(literal 'literal.use'    (u8.const 0x66))
+(literal 'rename'         (u8.const 0x67))
+(literal 'locals'         (u8.const 0x68))
+(literal 'params'         (u8.const 0x69))
+(literal 'literal.action.define'  (u8.const 0x6a))
+(literal 'literal.action.use'     (u8.const 0x6b))
+(literal 'literal.action.base'    (u8.const 0x6c))
+
+(define 'file' (params)
+  (eval 'header')
+  (eval 'section')
+)
+
+(define 'header' (params)
+  (loop (varuint32)
+    (eval 'node')
+  )
+)
+
+(define 'int.value' (params 1)
+  (=> 'int.value.begin')
+  (if (uint8)                   # 0 or (decode::ValueFormat+1)
+    (param 0)                   # integer value.
+  )
+  (=> 'int.value.end')
+)
+
+(define 'nary.node' (params)
+  (varuint32)
+  (=> 'nary.inst')
+)
+
+(define 'node' (params)
+  (switch (uint8)
+    (error)
+    (#case 'accept'
+    #case 'and'
+    #case 'binary'
+    case 'bit'
+    #case 'bitwise.and'
+    #case 'bitwise.negate'
+    #case 'bitwise.or'
+    #case 'bitwise.xor'
+     case 'block'
+     case 'case'
+     case 'error'
+     case 'if.then'
+     #case 'if.then.else'
+     #case 'last.read'
+     #case 'last.symbol.is'
+     case 'literal.action.base'
+     #case 'literal.action.define'
+     case 'literal.action.use'
+     case 'literal.define'
+     case 'literal.use'
+     case 'loop'
+     case 'loop.unbounded'
+     #case 'not'
+     #case 'opcode.binary'
+     #case 'or'
+     #case 'peek'
+     #case 'read'
+     #case 'rename'
+     case 'section'
+     #case 'set'
+     #case 'table'
+     #case 'undefine'
+     #case 'uint32'
+     #case 'uint64'
+     case 'uint8'
+     case 'varint32'
+     case 'varint64'
+     case 'varuint32'
+     case 'varuint64'
+     case 'void'
+     case '=>'
+                                (=> 'postorder.inst'))
+
+    (case 'define'
+     case 'eval'
+     #case 'file.header'
+     #case 'map'
+     #case 'opcode.bytes'
+     case 'sequence'
+     case 'switch'
+     #case 'write'
+                                (eval 'nary.node'))
+
+    (case 'param'
+     case 'params'
+     #case 'local'
+     #case 'locals'
+     case 'u32.const'
+                                (eval 'int.value' (varuint32)))
+    #(case 'i32.const'           (eval 'int.value' (varint32)))
+    #(case 'i64.const'           (eval 'int.value' (varint64)))
+    #(case 'u64.const'           (eval 'int.value' (varuint64)))
+    (case 'u8.const'            (eval 'int.value' (uint8)))
+
+    (case 'symbol'              (eval 'symbol.lookup'))
+
+    #(case 'opcode.bits'         (eval 'opcode.binary'))
+  )
+)
+
+#(define 'opcode.binary' (params)
+#  (loop (seq (varuint32) (=> 'binary.begin'))
+#    (bit)
+#    (=> 'binary.bit')
+#  )
+#  (=> 'binary.end')
+#  (=> 'align')
+#)
+
+(define 'section' (params)
+  (block
+    (eval 'symbol.table')
+    (loop.unbounded
+      (eval 'node')
+    )
+  )
+)
+
+(define 'symbol.lookup' (params)
+  (varuint32)
+  (=> 'symbol.lookup')
+)
+
+(define 'symbol.name' (params)
+  (loop
+    (seq
+      (varuint32)
+      (=> 'symbol.name.begin'))
+    (uint8)
+  )
+  (=> 'symbol.name.end')
+)
+
+(define 'symbol.table' (params)
+  (loop
+    (varuint32)
+    (eval 'symbol.name')
+  )
+)
