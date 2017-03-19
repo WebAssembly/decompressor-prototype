@@ -646,6 +646,8 @@ size_t CodeGenerator::generateNode(const Node* Nd) {
       return generateSymbol(cast<SymbolNode>(Nd));
     case OpSwitch:
       return generateNaryNode("SwitchNode", Nd);
+    case OpTable:
+      return generateNaryNode("TableNode", Nd);
     case OpUint8:
       return generateNullaryNode("Uint8Node", Nd);
     case OpUint32:
@@ -1061,7 +1063,7 @@ int main(int Argc, charstring Argv[]) {
     // TODO(karlschimpf) Extend ArgsParser to be able to return option
     // name so that we don't have hard-coded dependency.
     if (UseArrayImpl && AlgName == nullptr) {
-      fprintf(stderr, "Option --array can't be used without option -f\n");
+      fprintf(stderr, "Option --array can't be used without option --name\n");
       return exit_status(EXIT_FAILURE);
     }
 
