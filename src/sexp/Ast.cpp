@@ -1029,8 +1029,8 @@ Node* SymbolTable::stripCallbacksExcept(std::set<std::string>& KeepActions,
 }
 
 void SymbolTable::stripLiterals() {
-  install(dyn_cast<FileNode>(
-      stripLiteralDefs(dyn_cast<FileNode>(stripLiteralUses(Root)))));
+  stripLiteralUses();
+  stripLiteralDefs();
 }
 
 void SymbolTable::stripLiteralUses() {
@@ -1038,7 +1038,9 @@ void SymbolTable::stripLiteralUses() {
 }
 
 void SymbolTable::stripLiteralDefs() {
-  install(dyn_cast<FileNode>(stripLiteralDefs(Root)));
+  SymbolSet DefSyms;
+  collectLiteralUseSymbols(DefSyms);
+  install(dyn_cast<FileNode>(stripLiteralDefs(Root, DefSyms)));
 }
 
 Node* SymbolTable::stripLiteralUses(Node* Root) {
@@ -1067,11 +1069,33 @@ Node* SymbolTable::stripLiteralUses(Node* Root) {
   return create<VoidNode>();
 }
 
-Node* SymbolTable::stripLiteralDefs(Node* Root) {
+void SymbolTable::collectLiteralUseSymbols(SymbolSet& Symbols) {
+  ConstNodeVectorType ToVisit;
+  ToVisit.push_back(Root);
+  while (!ToVisit.empty()) {
+    const Node* Nd = ToVisit.back();
+    ToVisit.pop_back();
+    for (const Node* Kid : *Nd)
+      ToVisit.push_back(Kid);
+    const auto* Use = dyn_cast<LiteralUseNode>(Nd);
+    if (Use == nullptr)
+      continue;
+    const Node* Sym = Use->getKid(0);
+    assert(isa<SymbolNode>(Sym));
+    Symbols.insert(cast<SymbolNode>(Sym));
+  }
+}
+
+Node* SymbolTable::stripLiteralDefs(Node* Root, SymbolSet& DefSyms) {
   switch (Root->getType()) {
     default:
-      return stripUsing(
-          Root, [&](Node* Nd) -> Node* { return stripLiteralDefs(Nd); });
+      return stripUsing(Root, [&](Node* Nd) -> Node* {
+        return stripLiteralDefs(Nd, DefSyms);
+      });
+    case OpLiteralDef:
+      if (DefSyms.count(dyn_cast<SymbolNode>(Root->getKid(0))))
+        return Root;
+      break;
     case OpLiteralActionDef:
       if (CallbackLiterals.count(cast<LiteralActionDefNode>(Root)))
         return Root;

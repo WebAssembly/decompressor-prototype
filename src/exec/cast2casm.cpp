@@ -16,5 +16,10 @@
 
 // Converts textual algorithm into binary file form.
 
+#include "algorithms/casm0x0.h"
+#include "casm/CasmReader.h"
+#include "casm/CasmWriter.h"
+
 #define WASM_CAST_BOOT 3
+#define WASM_CASM_GET_SYMTAB getAlgcasm0x0Symtab
 #include "cast2casm.h"

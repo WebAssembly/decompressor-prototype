@@ -32,11 +32,13 @@ namespace intcomp {
 AbbreviationCodegen::AbbreviationCodegen(CountNode::RootPtr Root,
                                          HuffmanEncoder::NodePtr EncodingRoot,
                                          IntTypeFormat AbbrevFormat,
-                                         CountNode::PtrSet& Assignments)
+                                         CountNode::PtrSet& Assignments,
+                                         bool ToRead)
     : Root(Root),
       EncodingRoot(EncodingRoot),
       AbbrevFormat(AbbrevFormat),
-      Assignments(Assignments) {
+      Assignments(Assignments),
+      ToRead(ToRead) {
 }
 
 Node* AbbreviationCodegen::generateFileHeader(uint32_t MagicNumber,
@@ -197,8 +199,7 @@ Node* AbbreviationCodegen::generateIntLitActionWrite(IntCountNode* Nd) {
   return Symtab->create<VoidNode>();
 }
 
-std::shared_ptr<SymbolTable> AbbreviationCodegen::getCodeSymtab(bool ToRead) {
-  this->ToRead = ToRead;
+std::shared_ptr<SymbolTable> AbbreviationCodegen::getCodeSymtab() {
   Symtab = std::make_shared<SymbolTable>();
   generateFile(generateFileHeader(CasmBinaryMagic, CasmBinaryVersion),
                generateFileHeader(WasmBinaryMagic, WasmBinaryVersionD));

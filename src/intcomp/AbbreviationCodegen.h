@@ -35,10 +35,11 @@ class AbbreviationCodegen {
   AbbreviationCodegen(CountNode::RootPtr Root,
                       utils::HuffmanEncoder::NodePtr EncodingRoot,
                       interp::IntTypeFormat AbbrevFormat,
-                      CountNode::PtrSet& Assignments);
+                      CountNode::PtrSet& Assignments,
+                      bool ToRead);
   ~AbbreviationCodegen();
 
-  std::shared_ptr<filt::SymbolTable> getCodeSymtab(bool ToRead);
+  std::shared_ptr<filt::SymbolTable> getCodeSymtab();
 
  private:
   std::shared_ptr<filt::SymbolTable> Symtab;
@@ -47,6 +48,7 @@ class AbbreviationCodegen {
   interp::IntTypeFormat AbbrevFormat;
   CountNode::PtrSet& Assignments;
   bool ToRead;
+
   filt::Node* generateFileHeader(uint32_t MagicNumber, uint32_t VersionNumber);
   void generateFile(filt::Node* SourceHeader, filt::Node* TargetHeader);
   filt::Node* generateFileBody();

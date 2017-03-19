@@ -337,7 +337,7 @@ void TextWriter::writeNodeAbbrev(const Node* Nd,
       if (ShowInternalStructure)
         break;
       writeNodeAbbrev(Nd->getKid(0), AddNewline, EmbedInParent);
-      break;
+      return;
   }
   Parenthesize _(this, Type, AddNewline);
   writeNodeKidsAbbrev(Nd, false);

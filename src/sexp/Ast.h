@@ -258,7 +258,8 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   Node* stripUsing(Node* Root, std::function<Node*(Node*)> stripKid);
   Node* stripCallbacksExcept(std::set<std::string>& KeepActions, Node* Root);
   Node* stripLiteralUses(Node* Root);
-  Node* stripLiteralDefs(Node* Root);
+  void collectLiteralUseSymbols(SymbolSet& Symbols);
+  Node* stripLiteralDefs(Node* Root, SymbolSet& DefSyms);
 };
 
 class Node {

@@ -22,11 +22,6 @@
 #include <cctype>
 #include <cstdio>
 
-#if WASM_CAST_BOOT > 1
-#include "algorithms/casm0x0.h"
-#include "casm/CasmReader.h"
-#include "casm/CasmWriter.h"
-#endif
 #include "sexp/Ast.h"
 #include "sexp/TextWriter.h"
 #include "sexp-parser/Driver.h"
@@ -43,8 +38,11 @@ using namespace utils;
 
 namespace {
 
-static charstring LocalName = "Local_";
-static charstring FuncName = "Func_";
+charstring LocalName = "Local_";
+charstring FuncName = "Func_";
+
+bool GenerateEnum = false;
+bool GenerateFunction = false;
 
 constexpr size_t WorkBufferSize = 128;
 typedef char BufferType[WorkBufferSize];
@@ -59,12 +57,12 @@ class CodeGenerator {
                 std::shared_ptr<RawStream> Output,
                 std::shared_ptr<SymbolTable> Symtab,
                 std::vector<charstring>& Namespaces,
-                charstring FunctionName)
+                charstring AlgName)
       : Filename(Filename),
         Output(Output),
         Symtab(Symtab),
         Namespaces(Namespaces),
-        FunctionName(FunctionName),
+        AlgName(AlgName),
         ErrorsFound(false),
         NextIndex(1) {}
   ~CodeGenerator() {}
@@ -80,7 +78,7 @@ class CodeGenerator {
   std::shared_ptr<ReadCursor> ReadPos;
   std::vector<charstring>& Namespaces;
   std::vector<const LiteralActionDefNode*> ActionDefs;
-  charstring FunctionName;
+  charstring AlgName;
   bool ErrorsFound;
   size_t NextIndex;
 
@@ -121,7 +119,7 @@ class CodeGenerator {
   void generateReturnCreate(charstring NodeType);
   size_t generateBadLocal(const Node* Nd);
   void generateArrayName() {
-    puts(FunctionName);
+    puts(AlgName);
     puts("Array");
   }
 };
@@ -317,7 +315,7 @@ void CodeGenerator::collectActionDefs() {
 void CodeGenerator::generatePredefinedEnum() {
   collectActionDefs();
   puts("enum class Predefined");
-  puts(FunctionName);
+  puts(AlgName);
   puts(" : uint32_t {\n");
   bool IsFirst = true;
   for (const LiteralActionDefNode* Def : ActionDefs) {
@@ -336,7 +334,7 @@ void CodeGenerator::generatePredefinedEnum() {
       "};\n"
       "\n"
       "charstring getName(Predefined");
-  puts(FunctionName);
+  puts(AlgName);
   puts(
       " Value);\n"
       "\n");
@@ -347,7 +345,7 @@ void CodeGenerator::generatePredefinedEnumNames() {
   puts(
       "struct {\n"
       "  Predefined");
-  puts(FunctionName);
+  puts(AlgName);
   puts(
       " Value;\n"
       "  charstring Name;\n"
@@ -359,7 +357,7 @@ void CodeGenerator::generatePredefinedEnumNames() {
     else
       puts(",\n");
     puts("  {Predefined");
-    puts(FunctionName);
+    puts(AlgName);
     puts("::");
     putSymbol(getActionDefName(Def).c_str());
     puts(", \"");
@@ -374,7 +372,7 @@ void CodeGenerator::generatePredefinedEnumNames() {
 
 void CodeGenerator::generatePredefinedNameFcn() {
   puts("charstring getName(Predefined");
-  puts(FunctionName);
+  puts(AlgName);
   puts(
       " Value) {\n"
       "  for (size_t i = 0; i < size(PredefinedNames); ++i) {\n"
@@ -388,7 +386,7 @@ void CodeGenerator::generatePredefinedNameFcn() {
 
 void CodeGenerator::generateAlgorithmHeader() {
   puts("std::shared_ptr<filt::SymbolTable> get");
-  puts(FunctionName);
+  puts(AlgName);
   puts("Symtab()");
 }
 
@@ -681,9 +679,12 @@ size_t CodeGenerator::generateNode(const Node* Nd) {
 void CodeGenerator::generateDeclFile() {
   generateHeader();
   generateEnterNamespaces();
-  generatePredefinedEnum();
-  generateAlgorithmHeader();
-  puts(";\n\n");
+  if (GenerateEnum)
+    generatePredefinedEnum();
+  if (GenerateFunction) {
+    generateAlgorithmHeader();
+    puts(";\n\n");
+  }
   generateExitNamespaces();
 }
 
@@ -803,20 +804,25 @@ void CodeGenerator::generateImplFile(bool UseArrayImpl) {
   generateEnterNamespaces();
   // Note: We don't know the include path for the enum, so just repeat
   // generating it.
-  generatePredefinedEnum();
-  puts(
-      "using namespace wasm::filt;\n"
-      "\n"
-      "namespace {\n"
-      "\n");
-  generatePredefinedEnumNames();
+  if (GenerateEnum) {
+    generatePredefinedEnum();
+    puts(
+        "using namespace wasm::filt;\n"
+        "\n"
+        "namespace {\n"
+        "\n");
+    generatePredefinedEnumNames();
+  }
+  if (GenerateFunction) {
 #if WASM_CAST_BOOT > 1
-  if (UseArrayImpl)
-    generateArrayImplFile();
-  else
+    if (UseArrayImpl)
+      generateArrayImplFile();
+    else
 #endif
-    generateFunctionImplFile();
-  generatePredefinedNameFcn();
+      generateFunctionImplFile();
+  }
+  if (GenerateEnum)
+    generatePredefinedNameFcn();
   generateExitNamespaces();
 }
 
@@ -853,7 +859,7 @@ using namespace wasm::utils;
 
 int main(int Argc, charstring Argv[]) {
   charstring AlgorithmFilename = nullptr;
-  charstring FunctionName = nullptr;
+  charstring AlgName = nullptr;
   charstring OutputFilename = "-";
   charstring InputFilename = "-";
   std::set<std::string> KeepActions;
@@ -893,18 +899,26 @@ int main(int Argc, charstring Argv[]) {
 
     ArgsParser::Optional<bool> ExpectFailFlag(ExpectExitFail);
     Args.add(ExpectFailFlag.setDefault(false)
-
                  .setLongName("expect-fail")
                  .setDescription("Succeed on failure/fail on success"));
 
-    ArgsParser::Optional<charstring> FunctionNameFlag(FunctionName);
-    Args.add(FunctionNameFlag.setShortName('f')
-                 .setLongName("function")
+    ArgsParser::Optional<bool> GenerateEnumFlag(GenerateEnum);
+    Args.add(GenerateEnumFlag.setLongName("enum").setDescription(
+        "Generate C++ source code implementing an enum for actions"));
+
+    ArgsParser::Optional<bool> GenerateFunctionFlag(GenerateFunction);
+    Args.add(GenerateFunctionFlag.setLongName("function")
+                 .setDescription(
+                     "Generate C++ source code implementing algorithm creation "
+                     "function"));
+
+    ArgsParser::Optional<charstring> AlgNameFlag(AlgName);
+    Args.add(AlgNameFlag.setShortName('f')
+                 .setLongName("name")
                  .setOptionName("NAME")
                  .setDescription(
-                     "Generate c++ source code to implement a function "
-                     "'void NAME(std::shared_ptr<SymbolTable>) to install "
-                     "the INPUT cast algorithm"));
+                     "The name prefix used to generate the name of C++ "
+                     "generated enum and/or function"));
 
     ArgsParser::Optional<bool> HeaderFileFlag(HeaderFile);
     Args.add(HeaderFileFlag.setLongName("header").setDescription(
@@ -1046,7 +1060,7 @@ int main(int Argc, charstring Argv[]) {
       TraceWrite = true;
     // TODO(karlschimpf) Extend ArgsParser to be able to return option
     // name so that we don't have hard-coded dependency.
-    if (UseArrayImpl && FunctionName == nullptr) {
+    if (UseArrayImpl && AlgName == nullptr) {
       fprintf(stderr, "Option --array can't be used without option -f\n");
       return exit_status(EXIT_FAILURE);
     }
@@ -1078,10 +1092,17 @@ int main(int Argc, charstring Argv[]) {
     InputSymtab->stripLiteralDefs();
   if (StripLiterals)
     InputSymtab->stripLiterals();
+
   if (TraceInputTree) {
     TextWriter Writer;
     Writer.write(stderr, InputSymtab.get());
   }
+
+  if (DisplayParsedInput) {
+    InputSymtab->describe(stderr, ShowInternalStructure);
+    return exit_status(EXIT_SUCCESS);
+  }
+
   if (Verbose) {
     if (AlgorithmFilename)
       fprintf(stderr, "Reading algorithms file: %s\n", AlgorithmFilename);
@@ -1097,18 +1118,13 @@ int main(int Argc, charstring Argv[]) {
     }
 #if WASM_CAST_BOOT > 1
   } else {
-    AlgSymtab = getAlgcasm0x0Symtab();
+    AlgSymtab = WASM_CASM_GET_SYMTAB();
 #endif
   }
 
   if (TraceAlgorithm) {
     TextWriter Writer;
     Writer.write(stderr, AlgSymtab.get());
-  }
-
-  if (DisplayParsedInput) {
-    InputSymtab->describe(stderr, ShowInternalStructure);
-    return exit_status(EXIT_SUCCESS);
   }
 
   if (Verbose && strcmp(OutputFilename, "-") != 0)
@@ -1121,7 +1137,7 @@ int main(int Argc, charstring Argv[]) {
 
   std::shared_ptr<Queue> OutputStream;
   std::shared_ptr<ReadCursor> OutputStartPos;
-  if (FunctionName != nullptr) {
+  if (AlgName != nullptr) {
 #if WASM_CAST_BOOT > 1
     if (UseArrayImpl) {
       OutputStream = std::make_shared<Queue>();
@@ -1150,7 +1166,7 @@ int main(int Argc, charstring Argv[]) {
   }
 #endif
 
-  if (FunctionName == nullptr)
+  if (AlgName == nullptr)
     return exit_status(EXIT_SUCCESS);
 
   // Generate C++ code.
@@ -1158,7 +1174,7 @@ int main(int Argc, charstring Argv[]) {
   Namespaces.push_back("wasm");
   Namespaces.push_back("decode");
   CodeGenerator Generator(InputFilename, Output, InputSymtab, Namespaces,
-                          FunctionName);
+                          AlgName);
   if (HeaderFile)
     Generator.generateDeclFile();
   else {
