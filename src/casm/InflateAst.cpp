@@ -19,6 +19,7 @@
 
 #include "casm/InflateAst.h"
 
+// TODO(karlschimpf): Remove boot dependency
 #include "algorithms/casm0x0.h"
 #include "binary/SectionSymbolTable.h"
 #include "sexp/Ast.h"

@@ -1089,8 +1089,9 @@ void SymbolTable::collectLiteralUseSymbols(SymbolSet& Symbols) {
 Node* SymbolTable::stripLiteralDefs(Node* Root, SymbolSet& DefSyms) {
   switch (Root->getType()) {
     default:
-      return stripUsing(
-          Root, [&](Node* Nd) -> Node* { return stripLiteralDefs(Nd, DefSyms); });
+      return stripUsing(Root, [&](Node* Nd) -> Node* {
+        return stripLiteralDefs(Nd, DefSyms);
+      });
     case OpLiteralDef:
       if (DefSyms.count(dyn_cast<SymbolNode>(Root->getKid(0))))
         return Root;
