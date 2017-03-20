@@ -27,6 +27,8 @@
 #include "utils/Casting.h"
 #include "utils/Trace.h"
 
+#define DEBUG_FILE 0
+
 namespace wasm {
 
 using namespace decode;
@@ -107,6 +109,22 @@ bool InflateAst::buildTernary() {
   Node* Arg2 = Asts.popValue();
   Node* Arg1 = Asts.popValue();
   Asts.push(Symtab->create<T>(Arg1, Arg2, Arg3));
+  TRACE(node_ptr, "Tree", AstsTop);
+  return true;
+}
+
+bool InflateAst::buildFileNode() {
+  Values.pop();
+  Node* Arg3 = Asts.popValue();
+  Node* Arg2 = Asts.popValue();
+  Node* Arg1 = Asts.popValue();
+  FileNode* File = Symtab->create<FileNode>();
+  File->append(Arg1);
+  File->append(Arg2);
+  // TODO: Read the write header once saved!
+  File->append(Symtab->create<VoidNode>());
+  File->append(Arg3);
+  Asts.push(File);
   TRACE(node_ptr, "Tree", AstsTop);
   return true;
 }
@@ -225,8 +243,6 @@ bool InflateAst::applyOp(IntType Op) {
       return buildNullary<ErrorNode>();
     case OpEval:
       return buildNary<EvalNode>();
-    case OpFile:
-      return buildTernary<FileNode>();
     case OpFileHeader:
       return buildNary<FileHeaderNode>();
     case OpIfThen:
@@ -272,7 +288,7 @@ bool InflateAst::applyOp(IntType Op) {
       if (!buildNary<SectionNode>())
         return false;
       Values.push(OpFile);
-      if (!buildTernary<FileNode>())
+      if (!buildFileNode())
         return false;
       FileNode* File = getGeneratedFile();
       if (File == nullptr)
@@ -328,27 +344,28 @@ bool InflateAst::applyOp(IntType Op) {
 }
 
 bool InflateAst::writeAction(IntType Action) {
-#if 0
+#if DEBUG_FILE
   TRACE_BLOCK({
-      constexpr size_t WindowSize = 10;
-      FILE* Out = getTrace().getFile();
-      fputs("*** Values ***\n", Out);
-      size_t StartIndex = Values.size() > WindowSize
-          ? Values.size() - WindowSize : 1;
-      if (StartIndex > 1)
-        fprintf(Out, "...[%" PRIuMAX "]\n", uintmax_t(Values.size() - (StartIndex - 1)));
-     for (IntType Val : Values.iterRange(StartIndex))
-        fprintf(Out, "%" PRIuMAX "\n", uintmax_t(Val));
-      fputs("*** Asts   ***\n", Out);
-      TextWriter Writer;
-      StartIndex = Asts.size() > WindowSize
-          ? Asts.size() - WindowSize : 1;
-      if (StartIndex > 1)
-        fprintf(Out, "...[%" PRIuMAX "]\n", uintmax_t(Asts.size() - (StartIndex - 1)));
-      for (const Node* Nd : Asts.iterRange(StartIndex))
-        Writer.writeAbbrev(Out, Nd);
-      fputs("**************\n", Out);
-    });
+    constexpr size_t WindowSize = 10;
+    FILE* Out = getTrace().getFile();
+    fputs("*** Values ***\n", Out);
+    size_t StartIndex =
+        Values.size() > WindowSize ? Values.size() - WindowSize : 1;
+    if (StartIndex > 1)
+      fprintf(Out, "...[%" PRIuMAX "]\n",
+              uintmax_t(Values.size() - (StartIndex - 1)));
+    for (IntType Val : Values.iterRange(StartIndex))
+      fprintf(Out, "%" PRIuMAX "\n", uintmax_t(Val));
+    fputs("*** Asts   ***\n", Out);
+    TextWriter Writer;
+    StartIndex = Asts.size() > WindowSize ? Asts.size() - WindowSize : 1;
+    if (StartIndex > 1)
+      fprintf(Out, "...[%" PRIuMAX "]\n",
+              uintmax_t(Asts.size() - (StartIndex - 1)));
+    for (const Node* Nd : Asts.iterRange(StartIndex))
+      Writer.writeAbbrev(Out, Nd);
+    fputs("**************\n", Out);
+  });
 #endif
   switch (Action) {
     case IntType(PredefinedSymbol::Binary_begin):

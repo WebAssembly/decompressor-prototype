@@ -107,7 +107,7 @@ void IntCompressor::writeDataOutput(const BitWriteCursor& StartPos,
                        MyFlags.MyInterpFlags, Symtab);
   if (MyFlags.TraceWritingDataOutput)
     MyReader.getTrace().setTraceProgress(true);
-  MyReader.useFileHeader(Symtab->getTargetHeader());
+  MyReader.useFileHeader(Symtab->getReadHeader());
   MyReader.algorithmStart();
   MyReader.algorithmReadBackFilled();
   bool Successful = MyReader.isFinished() && MyReader.isSuccessful();
@@ -244,8 +244,7 @@ std::shared_ptr<SymbolTable> IntCompressor::generateCode(
     bool ToRead,
     bool Trace) {
   TRACE_METHOD("generateCode");
-  AbbreviationCodegen Codegen(Root, EncodingRoot, MyFlags.AbbrevFormat,
-                              Assignments, ToRead);
+  AbbreviationCodegen Codegen(MyFlags, Root, EncodingRoot, Assignments, ToRead);
   std::shared_ptr<SymbolTable> Symtab = Codegen.getCodeSymtab();
   if (Trace) {
     TextWriter Writer;

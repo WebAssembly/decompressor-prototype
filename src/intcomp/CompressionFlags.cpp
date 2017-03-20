@@ -44,7 +44,7 @@ CompressionFlags::CompressionFlags()
       SmallValueCountCutoff(2),
       AbbrevFormat(IntTypeFormat::Varuint64),
       MinimizeCodeSize(true),
-      UseHuffmanEncoding(false),
+      UseHuffmanEncoding(true),
       TrimOverriddenPatterns(false),
       BitCompressOpcodes(false),
       ReassignAbbreviations(true),

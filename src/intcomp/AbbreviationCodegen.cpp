@@ -29,14 +29,14 @@ using namespace utils;
 
 namespace intcomp {
 
-AbbreviationCodegen::AbbreviationCodegen(CountNode::RootPtr Root,
+AbbreviationCodegen::AbbreviationCodegen(const CompressionFlags& Flags,
+                                         CountNode::RootPtr Root,
                                          HuffmanEncoder::NodePtr EncodingRoot,
-                                         IntTypeFormat AbbrevFormat,
                                          CountNode::PtrSet& Assignments,
                                          bool ToRead)
-    : Root(Root),
+    : Flags(Flags),
+      Root(Root),
       EncodingRoot(EncodingRoot),
-      AbbrevFormat(AbbrevFormat),
       Assignments(Assignments),
       ToRead(ToRead) {
 }
@@ -52,8 +52,11 @@ Node* AbbreviationCodegen::generateFileHeader(uint32_t MagicNumber,
 }
 
 void AbbreviationCodegen::generateFile(Node* SourceHeader, Node* TargetHeader) {
-  auto* File =
-      Symtab->create<FileNode>(SourceHeader, TargetHeader, generateFileBody());
+  auto* File = Symtab->create<FileNode>();
+  File->append(SourceHeader);
+  File->append(TargetHeader);
+  File->append(Symtab->create<VoidNode>());
+  File->append(generateFileBody());
   Symtab->install(File);
 }
 
@@ -78,7 +81,7 @@ Node* AbbreviationCodegen::generateAbbreviationRead() {
   auto* Format = EncodingRoot
                      ? Symtab->create<BinaryEvalNode>(
                            generateHuffmanEncoding(EncodingRoot))
-                     : generateAbbrevFormat(AbbrevFormat);
+                     : generateAbbrevFormat(Flags.AbbrevFormat);
   if (ToRead) {
     Format = Symtab->create<ReadNode>(Format);
   }
@@ -202,7 +205,9 @@ Node* AbbreviationCodegen::generateIntLitActionWrite(IntCountNode* Nd) {
 std::shared_ptr<SymbolTable> AbbreviationCodegen::getCodeSymtab() {
   Symtab = std::make_shared<SymbolTable>();
   generateFile(generateFileHeader(CasmBinaryMagic, CasmBinaryVersion),
-               generateFileHeader(WasmBinaryMagic, WasmBinaryVersionD));
+               Flags.UseCismModel
+                   ? generateFileHeader(CismBinaryMagic, CismBinaryVersion)
+                   : generateFileHeader(WasmBinaryMagic, WasmBinaryVersionD));
   return Symtab;
 }
 

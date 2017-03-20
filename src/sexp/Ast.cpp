@@ -29,6 +29,8 @@
 
 #include "sexp/Ast-templates.h"
 
+#define DEBUG_FILE 0
+
 namespace wasm {
 
 using namespace decode;
@@ -751,7 +753,7 @@ AST_INTEGERNODE_TABLE
 #undef X
 
 bool SymbolTable::areActionsConsistent() {
-#if 0
+#if DEBUG_FILE
   // Debugging information.
   fprintf(stderr, "******************\n");
   fprintf(stderr, "Symbolic actions:\n");
@@ -853,16 +855,23 @@ const FileHeaderNode* SymbolTable::getSourceHeader() const {
   return Root->getSourceHeader();
 }
 
-const FileHeaderNode* SymbolTable::getTargetHeader() const {
+const FileHeaderNode* SymbolTable::getReadHeader() const {
   if (Root == nullptr)
     return nullptr;
-  return Root->getTargetHeader();
+  return Root->getReadHeader();
+}
+
+const FileHeaderNode* SymbolTable::getWriteHeader() const {
+  if (Root == nullptr)
+    return nullptr;
+  return Root->getWriteHeader();
 }
 
 bool SymbolTable::specifiesAlgorithm() const {
   if (Root == nullptr)
     return false;
-  return *Root->getSourceHeader() == *Root->getTargetHeader();
+  return *Root->getSourceHeader() == *Root->getReadHeader() &&
+         *Root->getReadHeader() == *Root->getWriteHeader();
 }
 
 void SymbolTable::installPredefined() {
@@ -963,7 +972,7 @@ void SymbolTable::stripCallbacksExcept(std::set<std::string>& KeepActions) {
 
 Node* SymbolTable::stripUsing(Node* Root,
                               std::function<Node*(Node*)> stripKid) {
-  switch (Root->getType()) {
+  switch (NodeType Op = Root->getType()) {
     default:
       for (int i = 0; i < Root->getNumKids(); ++i)
         Root->setKid(i, stripKid(Root->getKid(i)));
@@ -972,6 +981,10 @@ Node* SymbolTable::stripUsing(Node* Root,
       AST_NARYNODE_TABLE
 #undef X
       {
+        // Note: NEVER remove void's in a file node (They represent
+        // header information).
+        if (Op == OpFile)
+          return Root;
         // TODO: Make strip functions return nullptr to remove!
         std::vector<Node*> Kids;
         for (int i = 0; i < Root->getNumKids(); ++i) {
@@ -1673,11 +1686,16 @@ const FileHeaderNode* FileNode::getSourceHeader() const {
   return dyn_cast<FileHeaderNode>(getKid(0));
 }
 
-const FileHeaderNode* FileNode::getTargetHeader() const {
+const FileHeaderNode* FileNode::getReadHeader() const {
   const FileHeaderNode* Header = dyn_cast<FileHeaderNode>(getKid(1));
   if (Header == nullptr)
     Header = dyn_cast<FileHeaderNode>(getKid(0));
   return Header;
+}
+
+const FileHeaderNode* FileNode::getWriteHeader() const {
+  // TODO: Fix this.
+  return getReadHeader();
 }
 
 SelectBaseNode::~SelectBaseNode() {

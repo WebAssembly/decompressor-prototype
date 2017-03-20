@@ -601,7 +601,7 @@ std::shared_ptr<SymbolTable> Interpreter::getDefaultAlgorithm(
     const Node* Header) {
   for (std::shared_ptr<AlgorithmSelector>& Sel : Selectors) {
     std::shared_ptr<SymbolTable> Symtab = Sel->getSymtab();
-    const Node* Target = Symtab->getTargetHeader();
+    const Node* Target = Symtab->getReadHeader();
     if (Header == Target)
       // In same algorithm, ignore.
       continue;
@@ -1484,7 +1484,7 @@ void Interpreter::algorithmResume() {
             }
             Frame.CallState = State::Step2;
             call(Method::Eval, MethodModifier::ReadOnly,
-                 Selectors[LoopCounter]->getSymtab()->getTargetHeader());
+                 Selectors[LoopCounter]->getSymtab()->getReadHeader());
             break;
           case State::Step2:
             assert(CatchStack.size() == 1);
@@ -1571,8 +1571,10 @@ void Interpreter::algorithmResume() {
               assert(Frame.Nd);
               assert(isa<FileNode>(Frame.Nd));
             }
+            // TODO: Separate out read and write headers, since they may
+            // be different.
             const Node* Header =
-                HeaderOverride ? HeaderOverride : Symtab->getTargetHeader();
+                HeaderOverride ? HeaderOverride : Symtab->getReadHeader();
             if (!isa<FileHeaderNode>(Header))
               return fail("Can't find matching header definition");
             Frame.CallState = State::Step2;
