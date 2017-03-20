@@ -52,8 +52,10 @@ Node* AbbreviationCodegen::generateFileHeader(uint32_t MagicNumber,
 }
 
 void AbbreviationCodegen::generateFile(Node* SourceHeader, Node* TargetHeader) {
-  auto* File =
-      Symtab->create<FileNode>(SourceHeader, TargetHeader, generateFileBody());
+  auto* File = Symtab->create<FileNode>();
+  File->append(SourceHeader);
+  File->append(TargetHeader);
+  File->append(generateFileBody());
   Symtab->install(File);
 }
 
@@ -203,8 +205,8 @@ std::shared_ptr<SymbolTable> AbbreviationCodegen::getCodeSymtab() {
   Symtab = std::make_shared<SymbolTable>();
   generateFile(generateFileHeader(CasmBinaryMagic, CasmBinaryVersion),
                Flags.UseCismModel
-               ? generateFileHeader(CismBinaryMagic, CismBinaryVersion)
-               : generateFileHeader(WasmBinaryMagic, WasmBinaryVersionD));
+                   ? generateFileHeader(CismBinaryMagic, CismBinaryVersion)
+                   : generateFileHeader(WasmBinaryMagic, WasmBinaryVersionD));
   return Symtab;
 }
 

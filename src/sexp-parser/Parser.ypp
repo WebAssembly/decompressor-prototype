@@ -377,7 +377,11 @@ eval_args
 
 file
          : file_header_read file_header_write section {
-            $$ = Driver.create<FileNode>($1, $2, $3);
+           //$$ = Driver.create<FileNode>($1, $2, $3);
+           $$ = Driver.create<FileNode>();
+           $$->append($1);
+           $$->append($2);
+           $$->append($3);
             Driver.setParsedAst($$);
           }
         ;

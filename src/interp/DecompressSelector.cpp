@@ -121,13 +121,8 @@ bool DecompressSelector::resetAlgorithm(Interpreter* R) {
     return false;
   }
   std::shared_ptr<SymbolTable> Algorithm = State->Inflator->getSymtab();
-#if 0
-  Algorithm->setEnclosingScope(
-      State->MyInterpreter->getDefaultAlgorithm(Root->getTargetHeader()));
-#else
   Algorithm->setEnclosingScope(
       State->MyInterpreter->getDefaultAlgorithm(Root->getReadHeader()));
-#endif
   Algorithm->install(Root);
   State->AlgQueue.push(Algorithm);
   State->Inflator.reset();

@@ -225,6 +225,7 @@ void FlattenAst::flattenNode(const Node* Nd) {
       flattenNode(Nd->getKid(2));
       break;
     }
+
     case OpFileHeader: {
       if (WrotePrimaryHeader) {
         // Must be secondary header. write out as ordinary nary node.
@@ -276,6 +277,7 @@ void FlattenAst::flattenNode(const Node* Nd) {
     }
     case OpDefine:
     case OpEval:
+
     case OpOpcode:
     case OpMap:
     case OpSwitch:

@@ -212,6 +212,7 @@
 #define AST_NARYNODE_TABLE                                                     \
   X(Define, DEFINE_DECLS)                                                      \
   X(Eval, EVAL_DECLS)                                                          \
+  X(File, FILE_DECLS)                                                          \
   X(FileHeader,)                                                               \
   X(Section,)                                                                  \
   X(Sequence,)                                                                 \
@@ -236,7 +237,6 @@
 
 //#define X(tag, NODE_DECLS)
 #define AST_TERNARYNODE_TABLE                                                  \
-  X(File, FILE_DECLS)                                                          \
   X(IfThenElse,)                                                               \
 
 #define FILE_DECLS                                                             \

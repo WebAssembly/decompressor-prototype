@@ -32,7 +32,7 @@ class AbbreviationCodegen {
   AbbreviationCodegen& operator=(const AbbreviationCodegen&) = delete;
 
  public:
-  AbbreviationCodegen(const CompressionFlags &Flags,
+  AbbreviationCodegen(const CompressionFlags& Flags,
                       CountNode::RootPtr Root,
                       utils::HuffmanEncoder::NodePtr EncodingRoot,
                       CountNode::PtrSet& Assignments,

@@ -29,6 +29,8 @@
 
 #include "sexp/Ast-templates.h"
 
+#define DEBUG_FILE 0
+
 namespace wasm {
 
 using namespace decode;
@@ -751,7 +753,7 @@ AST_INTEGERNODE_TABLE
 #undef X
 
 bool SymbolTable::areActionsConsistent() {
-#if 0
+#if DEBUG_FILE
   // Debugging information.
   fprintf(stderr, "******************\n");
   fprintf(stderr, "Symbolic actions:\n");
@@ -853,13 +855,6 @@ const FileHeaderNode* SymbolTable::getSourceHeader() const {
   return Root->getSourceHeader();
 }
 
-#if 0
-const FileHeaderNode* SymbolTable::getTargetHeader() const {
-  if (Root == nullptr)
-    return nullptr;
-  return Root->getTargetHeader();
-}
-#else
 const FileHeaderNode* SymbolTable::getReadHeader() const {
   if (Root == nullptr)
     return nullptr;
@@ -871,17 +866,12 @@ const FileHeaderNode* SymbolTable::getWriteHeader() const {
     return nullptr;
   return Root->getWriteHeader();
 }
-#endif
 
 bool SymbolTable::specifiesAlgorithm() const {
   if (Root == nullptr)
     return false;
-#if 0
-  return *Root->getSourceHeader() == *Root->getTargetHeader();
-#else
-  return *Root->getSourceHeader() == *Root->getReadHeader()
-      && *Root->getReadHeader() == *Root->getWriteHeader();
-#endif
+  return *Root->getSourceHeader() == *Root->getReadHeader() &&
+         *Root->getReadHeader() == *Root->getWriteHeader();
 }
 
 void SymbolTable::installPredefined() {
@@ -1692,14 +1682,6 @@ const FileHeaderNode* FileNode::getSourceHeader() const {
   return dyn_cast<FileHeaderNode>(getKid(0));
 }
 
-#if 0
-const FileHeaderNode* FileNode::getTargetHeader() const {
-  const FileHeaderNode* Header = dyn_cast<FileHeaderNode>(getKid(1));
-  if (Header == nullptr)
-    Header = dyn_cast<FileHeaderNode>(getKid(0));
-  return Header;
-}
-#else
 const FileHeaderNode* FileNode::getReadHeader() const {
   const FileHeaderNode* Header = dyn_cast<FileHeaderNode>(getKid(1));
   if (Header == nullptr)
@@ -1711,7 +1693,6 @@ const FileHeaderNode* FileNode::getWriteHeader() const {
   // TODO: Fix this.
   return getReadHeader();
 }
-#endif
 
 SelectBaseNode::~SelectBaseNode() {
 }

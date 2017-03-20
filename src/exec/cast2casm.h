@@ -585,7 +585,7 @@ size_t CodeGenerator::generateNode(const Node* Nd) {
     case OpEval:
       return generateNaryNode("EvalNode", Nd);
     case OpFile:
-      return generateTernaryNode("FileNode", Nd);
+      return generateNaryNode("FileNode", Nd);
     case OpFileHeader:
       return generateNaryNode("FileHeaderNode", Nd);
     case OpIfThen:
@@ -690,6 +690,9 @@ void CodeGenerator::generateDeclFile() {
 
 #if WASM_CAST_BOOT > 1
 void CodeGenerator::generateArrayImplFile() {
+  puts(
+      "namespace {\n"
+      "\n");
   BufferType Buffer;
   constexpr size_t BytesPerLine = 15;
   puts("static const uint8_t ");
@@ -771,6 +774,9 @@ void CodeGenerator::generateArrayImplFile() {
 #endif
 
 void CodeGenerator::generateFunctionImplFile() {
+  puts(
+      "namespace {\n"
+      "\n");
   size_t Index = generateNode(Symtab->getInstalledRoot());
   puts(
       "}  // end of anonymous namespace\n"
@@ -802,16 +808,21 @@ void CodeGenerator::generateImplFile(bool UseArrayImpl) {
         "#include <cassert>\n"
         "\n");
   generateEnterNamespaces();
+  puts(
+      "using namespace wasm::filt;\n"
+      "\n");
   // Note: We don't know the include path for the enum, so just repeat
   // generating it.
   if (GenerateEnum) {
     generatePredefinedEnum();
     puts(
-        "using namespace wasm::filt;\n"
-        "\n"
         "namespace {\n"
         "\n");
     generatePredefinedEnumNames();
+    puts(
+        "} // end of anonymous namespace\n"
+        "\n");
+    generatePredefinedNameFcn();
   }
   if (GenerateFunction) {
 #if WASM_CAST_BOOT > 1
@@ -821,8 +832,6 @@ void CodeGenerator::generateImplFile(bool UseArrayImpl) {
 #endif
       generateFunctionImplFile();
   }
-  if (GenerateEnum)
-    generatePredefinedNameFcn();
   generateExitNamespaces();
 }
 
