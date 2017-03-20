@@ -55,6 +55,7 @@ void AbbreviationCodegen::generateFile(Node* SourceHeader, Node* TargetHeader) {
   auto* File = Symtab->create<FileNode>();
   File->append(SourceHeader);
   File->append(TargetHeader);
+  File->append(Symtab->create<VoidNode>());
   File->append(generateFileBody());
   Symtab->install(File);
 }

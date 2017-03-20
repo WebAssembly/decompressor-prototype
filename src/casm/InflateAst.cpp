@@ -121,6 +121,8 @@ bool InflateAst::buildFileNode() {
   FileNode* File = Symtab->create<FileNode>();
   File->append(Arg1);
   File->append(Arg2);
+  // TODO: Read the write header once saved!
+  File->append(Symtab->create<VoidNode>());
   File->append(Arg3);
   Asts.push(File);
   TRACE(node_ptr, "Tree", AstsTop);

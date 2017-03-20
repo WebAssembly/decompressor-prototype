@@ -218,10 +218,11 @@
   X(Sequence,)                                                                 \
   X(Write,)                                                                    \
 
-//#define X(tag)
-#define AST_CACHEDNODE_TABLE                                                   \
-  X(SymbolDefn)                                                                \
-  X(IntLookup)                                                                 \
+#define FILE_DECLS                                                             \
+  public:                                                                      \
+    const FileHeaderNode* getSourceHeader() const;                             \
+    const FileHeaderNode* getReadHeader() const;                               \
+    const FileHeaderNode* getWriteHeader() const;                              \
 
 #define DEFINE_DECLS                                                           \
   public:                                                                      \
@@ -239,11 +240,10 @@
 #define AST_TERNARYNODE_TABLE                                                  \
   X(IfThenElse,)                                                               \
 
-#define FILE_DECLS                                                             \
-  public:                                                                      \
-    const FileHeaderNode* getSourceHeader() const;                             \
-    const FileHeaderNode* getReadHeader() const;                               \
-    const FileHeaderNode* getWriteHeader() const;                              \
+//#define X(tag)
+#define AST_CACHEDNODE_TABLE                                                   \
+  X(SymbolDefn)                                                                \
+  X(IntLookup)                                                                 \
 
 //#define X(tag)
 #define AST_NODE_HAS_HIDDEN_SEQ                                                \

@@ -214,7 +214,7 @@ void FlattenAst::flattenNode(const Node* Nd) {
       break;
     }
     case OpFile: {
-      assert(Nd->getNumKids() == 3);
+      assert(Nd->getNumKids() == 4);
       // Write primary heder.
       flattenNode(Nd->getKid(0));
       // Before secondary header, write out tree size so that reader knows
@@ -222,7 +222,8 @@ void FlattenAst::flattenNode(const Node* Nd) {
       TRACE(size_t, "TreeSize", Nd->getKid(1)->getTreeSize());
       Writer->write(Nd->getKid(1)->getTreeSize());
       flattenNode(Nd->getKid(1));
-      flattenNode(Nd->getKid(2));
+      // TODO: Save kid(2): the write header.
+      flattenNode(Nd->getKid(3));
       break;
     }
 

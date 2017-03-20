@@ -972,7 +972,7 @@ void SymbolTable::stripCallbacksExcept(std::set<std::string>& KeepActions) {
 
 Node* SymbolTable::stripUsing(Node* Root,
                               std::function<Node*(Node*)> stripKid) {
-  switch (Root->getType()) {
+  switch (NodeType Op = Root->getType()) {
     default:
       for (int i = 0; i < Root->getNumKids(); ++i)
         Root->setKid(i, stripKid(Root->getKid(i)));
@@ -981,6 +981,10 @@ Node* SymbolTable::stripUsing(Node* Root,
       AST_NARYNODE_TABLE
 #undef X
       {
+        // Note: NEVER remove void's in a file node (They represent
+        // header information).
+        if (Op == OpFile)
+          return Root;
         // TODO: Make strip functions return nullptr to remove!
         std::vector<Node*> Kids;
         for (int i = 0; i < Root->getNumKids(); ++i) {
