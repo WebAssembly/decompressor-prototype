@@ -29,14 +29,14 @@ using namespace utils;
 
 namespace intcomp {
 
-AbbreviationCodegen::AbbreviationCodegen(CountNode::RootPtr Root,
+AbbreviationCodegen::AbbreviationCodegen(const CompressionFlags& Flags,
+                                         CountNode::RootPtr Root,
                                          HuffmanEncoder::NodePtr EncodingRoot,
-                                         IntTypeFormat AbbrevFormat,
                                          CountNode::PtrSet& Assignments,
                                          bool ToRead)
-    : Root(Root),
+    : Flags(Flags),
+      Root(Root),
       EncodingRoot(EncodingRoot),
-      AbbrevFormat(AbbrevFormat),
       Assignments(Assignments),
       ToRead(ToRead) {
 }
@@ -78,7 +78,7 @@ Node* AbbreviationCodegen::generateAbbreviationRead() {
   auto* Format = EncodingRoot
                      ? Symtab->create<BinaryEvalNode>(
                            generateHuffmanEncoding(EncodingRoot))
-                     : generateAbbrevFormat(AbbrevFormat);
+                     : generateAbbrevFormat(Flags.AbbrevFormat);
   if (ToRead) {
     Format = Symtab->create<ReadNode>(Format);
   }
