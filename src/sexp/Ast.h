@@ -179,7 +179,13 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   const FileNode* getInstalledRoot() const { return Root; }
   Node* getError() const { return Error; }
   const FileHeaderNode* getSourceHeader() const;
+#if 0
   const FileHeaderNode* getTargetHeader() const;
+#else
+  const FileHeaderNode* getReadHeader() const;
+  const FileHeaderNode* getWriteHeader() const;
+#endif
+
   // True if root specifies how to read an algorithm (i.e. the source and target
   // headers are the same).
   bool specifiesAlgorithm() const;

@@ -202,7 +202,9 @@ Node* AbbreviationCodegen::generateIntLitActionWrite(IntCountNode* Nd) {
 std::shared_ptr<SymbolTable> AbbreviationCodegen::getCodeSymtab() {
   Symtab = std::make_shared<SymbolTable>();
   generateFile(generateFileHeader(CasmBinaryMagic, CasmBinaryVersion),
-               generateFileHeader(WasmBinaryMagic, WasmBinaryVersionD));
+               Flags.UseCismModel
+               ? generateFileHeader(CismBinaryMagic, CismBinaryVersion)
+               : generateFileHeader(WasmBinaryMagic, WasmBinaryVersionD));
   return Symtab;
 }
 

@@ -853,16 +853,35 @@ const FileHeaderNode* SymbolTable::getSourceHeader() const {
   return Root->getSourceHeader();
 }
 
+#if 0
 const FileHeaderNode* SymbolTable::getTargetHeader() const {
   if (Root == nullptr)
     return nullptr;
   return Root->getTargetHeader();
 }
+#else
+const FileHeaderNode* SymbolTable::getReadHeader() const {
+  if (Root == nullptr)
+    return nullptr;
+  return Root->getReadHeader();
+}
+
+const FileHeaderNode* SymbolTable::getWriteHeader() const {
+  if (Root == nullptr)
+    return nullptr;
+  return Root->getWriteHeader();
+}
+#endif
 
 bool SymbolTable::specifiesAlgorithm() const {
   if (Root == nullptr)
     return false;
+#if 0
   return *Root->getSourceHeader() == *Root->getTargetHeader();
+#else
+  return *Root->getSourceHeader() == *Root->getReadHeader()
+      && *Root->getReadHeader() == *Root->getWriteHeader();
+#endif
 }
 
 void SymbolTable::installPredefined() {
@@ -1673,12 +1692,26 @@ const FileHeaderNode* FileNode::getSourceHeader() const {
   return dyn_cast<FileHeaderNode>(getKid(0));
 }
 
+#if 0
 const FileHeaderNode* FileNode::getTargetHeader() const {
   const FileHeaderNode* Header = dyn_cast<FileHeaderNode>(getKid(1));
   if (Header == nullptr)
     Header = dyn_cast<FileHeaderNode>(getKid(0));
   return Header;
 }
+#else
+const FileHeaderNode* FileNode::getReadHeader() const {
+  const FileHeaderNode* Header = dyn_cast<FileHeaderNode>(getKid(1));
+  if (Header == nullptr)
+    Header = dyn_cast<FileHeaderNode>(getKid(0));
+  return Header;
+}
+
+const FileHeaderNode* FileNode::getWriteHeader() const {
+  // TODO: Fix this.
+  return getReadHeader();
+}
+#endif
 
 SelectBaseNode::~SelectBaseNode() {
 }

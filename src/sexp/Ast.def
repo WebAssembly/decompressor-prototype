@@ -242,7 +242,8 @@
 #define FILE_DECLS                                                             \
   public:                                                                      \
     const FileHeaderNode* getSourceHeader() const;                             \
-    const FileHeaderNode* getTargetHeader() const;                             \
+    const FileHeaderNode* getReadHeader() const;                               \
+    const FileHeaderNode* getWriteHeader() const;                              \
 
 //#define X(tag)
 #define AST_NODE_HAS_HIDDEN_SEQ                                                \

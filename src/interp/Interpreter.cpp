@@ -601,7 +601,11 @@ std::shared_ptr<SymbolTable> Interpreter::getDefaultAlgorithm(
     const Node* Header) {
   for (std::shared_ptr<AlgorithmSelector>& Sel : Selectors) {
     std::shared_ptr<SymbolTable> Symtab = Sel->getSymtab();
+#if 0
     const Node* Target = Symtab->getTargetHeader();
+#else
+    const Node* Target = Symtab->getReadHeader();
+#endif
     if (Header == Target)
       // In same algorithm, ignore.
       continue;
@@ -1483,8 +1487,13 @@ void Interpreter::algorithmResume() {
               return throwMessage("Unable to find algorithm to apply!");
             }
             Frame.CallState = State::Step2;
+#if 0
             call(Method::Eval, MethodModifier::ReadOnly,
                  Selectors[LoopCounter]->getSymtab()->getTargetHeader());
+#else
+            call(Method::Eval, MethodModifier::ReadOnly,
+                 Selectors[LoopCounter]->getSymtab()->getReadHeader());
+#endif
             break;
           case State::Step2:
             assert(CatchStack.size() == 1);
@@ -1571,8 +1580,15 @@ void Interpreter::algorithmResume() {
               assert(Frame.Nd);
               assert(isa<FileNode>(Frame.Nd));
             }
+            // TODO: Separate out read and write headers, since they may
+            // be different.
+#if 0
             const Node* Header =
                 HeaderOverride ? HeaderOverride : Symtab->getTargetHeader();
+#else
+            const Node* Header =
+                HeaderOverride ? HeaderOverride : Symtab->getReadHeader();
+#endif
             if (!isa<FileHeaderNode>(Header))
               return fail("Can't find matching header definition");
             Frame.CallState = State::Step2;

@@ -71,6 +71,12 @@ int main(int Argc, const char* Argv[]) {
         "Toggles usage Huffman encoding for pattern abbreviations instead"
         "of a simple weighted ordering)"));
 
+    ArgsParser::Toggle UseCismModelFlag(MyCompressionFlags.UseCismModel);
+    Args.add(UseCismModelFlag.setLongName("cism")
+             .setDescription(
+                 "Generate compressed algorithm using Cism algorithm "
+                 "(experimental - not working yet)"));
+
     ArgsParser::Optional<bool> TraceHuffmanAssignmentsFlag(
         MyCompressionFlags.TraceHuffmanAssignments);
     Args.add(TraceHuffmanAssignmentsFlag.setDefault(true)
