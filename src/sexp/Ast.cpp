@@ -952,6 +952,7 @@ void SymbolTable::installDefinitions(Node* Root) {
       }
       errorDescribeNode("Can't undefine", Root);
       fatal("Malformed undefine s-expression found!");
+      return;
     }
   }
 }
@@ -1683,19 +1684,82 @@ bool EvalNode::validateNode(NodeVectorType& Parents) {
 }
 
 const FileHeaderNode* FileNode::getSourceHeader() const {
-  return dyn_cast<FileHeaderNode>(getKid(0));
+  for (SymbolTable* Sym = &getSymtab(); Sym != nullptr;
+       Sym = Sym->getEnclosingScope()) {
+    const FileNode* File = Sym->getInstalledRoot();
+    if (File->getNumKids() <= 1)
+      continue;
+    const Node* Nd = File->getKid(0);
+    if (isa<FileHeaderNode>(Nd))
+      return cast<FileHeaderNode>(Nd);
+  }
+  assert(false && "Can't find source header for file");
+  return nullptr;
 }
 
 const FileHeaderNode* FileNode::getReadHeader() const {
+#if 0
+  for (SymbolTable* Sym = &getSymtab(); Sym != nullptr;
+       Sym = Sym->getEnclosingScope()) {
+    const FileNode* File = Sym->getInstalledRoot();
+    if (File->getNumKids() <= 2)
+      continue;
+    const Node* Nd = File->getKid(1);
+    if (isa<FileHeaderNode>(Nd))
+      return cast<FileHeaderNode>(Nd);
+  }
+  return getSourceHeader();
+#else
   const FileHeaderNode* Header = dyn_cast<FileHeaderNode>(getKid(1));
   if (Header == nullptr)
     Header = dyn_cast<FileHeaderNode>(getKid(0));
   return Header;
+#endif
 }
 
 const FileHeaderNode* FileNode::getWriteHeader() const {
   // TODO: Fix this.
   return getReadHeader();
+}
+
+const SectionNode* FileNode::getDeclarations() const {
+  const Node* Nd = getLastKid();
+  assert(isa<SectionNode>(Nd));
+  return cast<SectionNode>(Nd);
+}
+
+bool FileNode::validateNode(NodeVectorType &Parents) {
+  if (!Parents.empty()) {
+    fprintf(error(), "File nodes can only appear as a top-level s-expression\n");
+    errorDescribeNode("Bad file node", this);
+    errorDescribeContext(Parents);
+    return false;
+  }
+  int NumKids = getNumKids();
+  if (NumKids < 1 || NumKids > 4) {
+    FILE* Out = error();
+    fprintf(Out, "File has wrong number of kids: %d\n", NumKids);
+    fprintf(Out, "Expected range: 1 <= NumKids <= 4\n");
+    return false;
+  }
+  for (int i = 0; i < NumKids - 1; ++i) {
+    const Node *Nd = getKid(i);
+    switch (Nd->getType()) {
+      case OpFileHeader:
+      case OpVoid:
+        break;
+      default:
+        fprintf(error(), "File argument not header s-expression\n");
+        errorDescribeNode("Found", Nd);
+        return false;
+    }
+  }
+  if (!isa<SectionNode>(getLastKid())) {
+    fprintf(error(), "Headers of file must be followed by declarations\n");
+    errorDescribeNode("Found", getLastKid());
+    return false;
+  }
+  return true;
 }
 
 SelectBaseNode::~SelectBaseNode() {

@@ -51,6 +51,7 @@ class SymbolDefnNode;
 class SymbolNode;
 class SymbolTable;
 class CallbackNode;
+class SectionNode;
 
 #define X(tag, format, defval, mergable, NODE_DECLS) class tag##Node;
 AST_INTEGERNODE_TABLE
@@ -292,7 +293,7 @@ class Node {
 
   virtual ~Node();
 
-  SymbolTable& getSymtab() { return Symtab; }
+  SymbolTable& getSymtab() const { return Symtab; }
   NodeType getRtClassId() const { return Type; }
   NodeType getType() const { return Type; }
   const char* getName() const;

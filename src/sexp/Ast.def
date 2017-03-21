@@ -223,6 +223,8 @@
     const FileHeaderNode* getSourceHeader() const;                             \
     const FileHeaderNode* getReadHeader() const;                               \
     const FileHeaderNode* getWriteHeader() const;                              \
+    const SectionNode* getDeclarations() const;                                \
+    bool validateNode(NodeVectorType &Parents) OVERRIDE;                       \
 
 #define DEFINE_DECLS                                                           \
   public:                                                                      \
