@@ -222,9 +222,9 @@
 
 #define FILE_DECLS                                                             \
   public:                                                                      \
-    const FileHeaderNode* getSourceHeader() const;                             \
-    const FileHeaderNode* getReadHeader() const;                               \
-    const FileHeaderNode* getWriteHeader() const;                              \
+    const FileHeaderNode* getSourceHeader(bool UseEnclosing=true) const;       \
+    const FileHeaderNode* getReadHeader(bool UseEnclosing=true) const;         \
+    const FileHeaderNode* getWriteHeader(bool UseEnclosing=true) const;        \
     const SectionNode* getDeclarations() const;                                \
     bool validateNode(NodeVectorType &Parents) OVERRIDE;                       \
 
