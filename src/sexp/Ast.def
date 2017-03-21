@@ -199,9 +199,11 @@
 #define CASE_DECLS                                                             \
   public:                                                                      \
     decode::IntType getValue() const { return Value; }                         \
+    const Node* getCaseBody() const { return CaseBody; }                       \
     bool validateNode(NodeVectorType &Parents) OVERRIDE;                       \
   private:                                                                     \
     decode::IntType Value;                                                     \
+    const Node* CaseBody;                                                      \
 
 //#define X(tag, NODE_DECLS)
 #define AST_SELECTNODE_TABLE                                                   \

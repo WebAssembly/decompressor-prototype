@@ -1804,23 +1804,26 @@ bool SelectBaseNode::addCase(const CaseNode* Case) {
 bool CaseNode::validateNode(NodeVectorType& Parents) {
   TRACE_METHOD("validateNode");
   TRACE(node_ptr, nullptr, this);
+  // Install quick lookup to CaseBody.
+  CaseBody = getKid(1);
+  while (isa<CaseNode>(CaseBody))
+    CaseBody = CaseBody->getKid(1);
 
-  {  // Cache value.
-    Value = 0;
-    const auto* CaseExp = getKid(0);
-    if (const auto* LitUse = dyn_cast<LiteralUseNode>(CaseExp)) {
-      SymbolNode* Sym = dyn_cast<SymbolNode>(LitUse->getKid(0));
-      if (const auto* LitDef = Sym->getLiteralDefinition()) {
-        CaseExp = LitDef->getKid(1);
-      }
+  // Cache value.
+  Value = 0;
+  const auto* CaseExp = getKid(0);
+  if (const auto* LitUse = dyn_cast<LiteralUseNode>(CaseExp)) {
+    SymbolNode* Sym = dyn_cast<SymbolNode>(LitUse->getKid(0));
+    if (const auto* LitDef = Sym->getLiteralDefinition()) {
+      CaseExp = LitDef->getKid(1);
     }
-    if (const auto* Key = dyn_cast<IntegerNode>(CaseExp)) {
-      Value = Key->getValue();
-    } else {
-      errorDescribeNode("Case", this);
-      fprintf(error(), "Case value not found\n");
-      return false;
-    }
+  }
+  if (const auto* Key = dyn_cast<IntegerNode>(CaseExp)) {
+    Value = Key->getValue();
+  } else {
+    errorDescribeNode("Case", this);
+    fprintf(error(), "Case value not found\n");
+    return false;
   }
 
   // Install case on enclosing selector.

@@ -1220,10 +1220,12 @@ void Interpreter::algorithmResume() {
             break;
           case OpCase:  // Method::Eval
             switch (Frame.CallState) {
-              case State::Enter:
+              case State::Enter: {
                 Frame.CallState = State::Exit;
-                call(Method::Eval, Frame.CallModifier, Frame.Nd->getKid(1));
+                call(Method::Eval, Frame.CallModifier,
+                     cast<CaseNode>(Frame.Nd)->getCaseBody());
                 break;
+              }
               case State::Exit:
                 popAndReturn();
                 break;
