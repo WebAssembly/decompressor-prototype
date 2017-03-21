@@ -88,6 +88,7 @@ struct IntValue {
 %token CASE          "case"
 %token CLOSEPAREN    ")"
 %token COLON         ":"
+%token DECLARATIONS  "declarations"
 %token DEFINE        "define"
 %token DOT           "."
 %token DOUBLE_ARROW  "=>"
@@ -376,13 +377,31 @@ eval_args
 
 file
          : file_header file_header_optional file_header_optional section {
-           $$ = Driver.create<FileNode>();
-           $$->append($1);
-           $$->append($2);
-           $$->append($3);
-           $$->append($4);
-            Driver.setParsedAst($$);
-          }
+             $$ = Driver.create<FileNode>();
+             $$->append($1);
+             $$->append($2);
+             $$->append($3);
+             $$->append($4);
+             Driver.setParsedAst($$);
+           }
+         | file_header file_header_optional section {
+             $$ = Driver.create<FileNode>();
+             $$->append($1);
+             $$->append($2);
+             $$->append($3);
+             Driver.setParsedAst($$);
+           }
+         | file_header section {
+             $$ = Driver.create<FileNode>();
+             $$->append($1);
+             $$->append($2);
+             Driver.setParsedAst($$);
+           }
+         | section {
+             $$ = Driver.create<FileNode>();
+             $$->append($1);
+             Driver.setParsedAst($$);
+           }
         ;
 
 file_header
@@ -540,7 +559,7 @@ params_decl
         ;
 
 section
-        : %empty {
+        : "(" "declarations" ")"  {
             $$ = Driver.create<SectionNode>();
           }
           | section declaration { // defines etc.

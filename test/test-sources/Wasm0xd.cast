@@ -19,6 +19,8 @@
 (header (u32.const 0x6d736100) (u32.const 0xd))
 (void)
 
+(declarations)
+
 #### WASM opcodes.
 
 (literal 'inst.unreachable'         (u8.const 0x00))

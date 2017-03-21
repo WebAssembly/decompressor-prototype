@@ -19,6 +19,8 @@
 (header (u32.const 0x6d736963) (u32.const 0x0))
 (void)
 
+(declarations)
+
 (literal.action.base (u32.const 5001))
 
 (define 'file' (params) (locals 1)

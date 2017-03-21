@@ -2,6 +2,8 @@
 (void)
 (void)
 
+(declarations)
+
 (define 'file' (params)
   (switch
     (opcode
