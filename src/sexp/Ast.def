@@ -199,9 +199,11 @@
 #define CASE_DECLS                                                             \
   public:                                                                      \
     decode::IntType getValue() const { return Value; }                         \
+    const Node* getCaseBody() const { return CaseBody; }                       \
     bool validateNode(NodeVectorType &Parents) OVERRIDE;                       \
   private:                                                                     \
     decode::IntType Value;                                                     \
+    const Node* CaseBody;                                                      \
 
 //#define X(tag, NODE_DECLS)
 #define AST_SELECTNODE_TABLE                                                   \
@@ -220,9 +222,11 @@
 
 #define FILE_DECLS                                                             \
   public:                                                                      \
-    const FileHeaderNode* getSourceHeader() const;                             \
-    const FileHeaderNode* getReadHeader() const;                               \
-    const FileHeaderNode* getWriteHeader() const;                              \
+    const FileHeaderNode* getSourceHeader(bool UseEnclosing=true) const;       \
+    const FileHeaderNode* getReadHeader(bool UseEnclosing=true) const;         \
+    const FileHeaderNode* getWriteHeader(bool UseEnclosing=true) const;        \
+    const SectionNode* getDeclarations() const;                                \
+    bool validateNode(NodeVectorType &Parents) OVERRIDE;                       \
 
 #define DEFINE_DECLS                                                           \
   public:                                                                      \

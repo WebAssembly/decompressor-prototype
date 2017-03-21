@@ -952,6 +952,7 @@ void SymbolTable::installDefinitions(Node* Root) {
       }
       errorDescribeNode("Can't undefine", Root);
       fatal("Malformed undefine s-expression found!");
+      return;
     }
   }
 }
@@ -1682,20 +1683,106 @@ bool EvalNode::validateNode(NodeVectorType& Parents) {
   return true;
 }
 
-const FileHeaderNode* FileNode::getSourceHeader() const {
-  return dyn_cast<FileHeaderNode>(getKid(0));
+const FileHeaderNode* FileNode::getSourceHeader(bool UseEnclosing) const {
+  if (UseEnclosing) {
+    for (SymbolTable* Sym = &getSymtab(); Sym != nullptr;
+         Sym = Sym->getEnclosingScope()) {
+      const FileNode* File = Sym->getInstalledRoot();
+      if (File->getNumKids() <= 1)
+        continue;
+      const Node* Nd = File->getKid(0);
+      if (isa<FileHeaderNode>(Nd))
+        return cast<FileHeaderNode>(Nd);
+    }
+  }
+  if (getNumKids() >= 2) {
+    const Node* Nd = getKid(0);
+    if (isa<FileHeaderNode>(Nd))
+      return cast<FileHeaderNode>(Nd);
+  }
+  assert(false && "Can't find source header for file");
+  return nullptr;
 }
 
-const FileHeaderNode* FileNode::getReadHeader() const {
-  const FileHeaderNode* Header = dyn_cast<FileHeaderNode>(getKid(1));
-  if (Header == nullptr)
-    Header = dyn_cast<FileHeaderNode>(getKid(0));
-  return Header;
+const FileHeaderNode* FileNode::getReadHeader(bool UseEnclosing) const {
+  if (UseEnclosing) {
+    for (SymbolTable* Sym = &getSymtab(); Sym != nullptr;
+         Sym = Sym->getEnclosingScope()) {
+      const FileNode* File = Sym->getInstalledRoot();
+      if (File->getNumKids() <= 2)
+        continue;
+      const Node* Nd = File->getKid(1);
+      if (isa<FileHeaderNode>(Nd))
+        return cast<FileHeaderNode>(Nd);
+    }
+  }
+  if (getNumKids() >= 3) {
+    const FileHeaderNode* Header = dyn_cast<FileHeaderNode>(getKid(1));
+    if (Header != nullptr)
+      return Header;
+  }
+  return getSourceHeader(UseEnclosing);
 }
 
-const FileHeaderNode* FileNode::getWriteHeader() const {
-  // TODO: Fix this.
-  return getReadHeader();
+const FileHeaderNode* FileNode::getWriteHeader(bool UseEnclosing) const {
+  if (UseEnclosing) {
+    for (SymbolTable* Sym = &getSymtab(); Sym != nullptr;
+         Sym = Sym->getEnclosingScope()) {
+      const FileNode* File = Sym->getInstalledRoot();
+      if (File->getNumKids() <= 3)
+        continue;
+      const Node* Nd = File->getKid(2);
+      if (isa<FileHeaderNode>(Nd))
+        return cast<FileHeaderNode>(Nd);
+    }
+  }
+  if (getNumKids() >= 3) {
+    const FileHeaderNode* Header = dyn_cast<FileHeaderNode>(getKid(2));
+    if (Header != nullptr)
+      return Header;
+  }
+  return getReadHeader(UseEnclosing);
+}
+
+const SectionNode* FileNode::getDeclarations() const {
+  const Node* Nd = getLastKid();
+  assert(isa<SectionNode>(Nd));
+  return cast<SectionNode>(Nd);
+}
+
+bool FileNode::validateNode(NodeVectorType& Parents) {
+  if (!Parents.empty()) {
+    fprintf(error(),
+            "File nodes can only appear as a top-level s-expression\n");
+    errorDescribeNode("Bad file node", this);
+    errorDescribeContext(Parents);
+    return false;
+  }
+  int NumKids = getNumKids();
+  if (NumKids < 1 || NumKids > 4) {
+    FILE* Out = error();
+    fprintf(Out, "File has wrong number of kids: %d\n", NumKids);
+    fprintf(Out, "Expected range: 1 <= NumKids <= 4\n");
+    return false;
+  }
+  for (int i = 0; i < NumKids - 1; ++i) {
+    const Node* Nd = getKid(i);
+    switch (Nd->getType()) {
+      case OpFileHeader:
+      case OpVoid:
+        break;
+      default:
+        fprintf(error(), "File argument not header s-expression\n");
+        errorDescribeNode("Found", Nd);
+        return false;
+    }
+  }
+  if (!isa<SectionNode>(getLastKid())) {
+    fprintf(error(), "Headers of file must be followed by declarations\n");
+    errorDescribeNode("Found", getLastKid());
+    return false;
+  }
+  return true;
 }
 
 SelectBaseNode::~SelectBaseNode() {
@@ -1740,23 +1827,26 @@ bool SelectBaseNode::addCase(const CaseNode* Case) {
 bool CaseNode::validateNode(NodeVectorType& Parents) {
   TRACE_METHOD("validateNode");
   TRACE(node_ptr, nullptr, this);
+  // Install quick lookup to CaseBody.
+  CaseBody = getKid(1);
+  while (isa<CaseNode>(CaseBody))
+    CaseBody = CaseBody->getKid(1);
 
-  {  // Cache value.
-    Value = 0;
-    const auto* CaseExp = getKid(0);
-    if (const auto* LitUse = dyn_cast<LiteralUseNode>(CaseExp)) {
-      SymbolNode* Sym = dyn_cast<SymbolNode>(LitUse->getKid(0));
-      if (const auto* LitDef = Sym->getLiteralDefinition()) {
-        CaseExp = LitDef->getKid(1);
-      }
+  // Cache value.
+  Value = 0;
+  const auto* CaseExp = getKid(0);
+  if (const auto* LitUse = dyn_cast<LiteralUseNode>(CaseExp)) {
+    SymbolNode* Sym = dyn_cast<SymbolNode>(LitUse->getKid(0));
+    if (const auto* LitDef = Sym->getLiteralDefinition()) {
+      CaseExp = LitDef->getKid(1);
     }
-    if (const auto* Key = dyn_cast<IntegerNode>(CaseExp)) {
-      Value = Key->getValue();
-    } else {
-      errorDescribeNode("Case", this);
-      fprintf(error(), "Case value not found\n");
-      return false;
-    }
+  }
+  if (const auto* Key = dyn_cast<IntegerNode>(CaseExp)) {
+    Value = Key->getValue();
+  } else {
+    errorDescribeNode("Case", this);
+    fprintf(error(), "Case value not found\n");
+    return false;
   }
 
   // Install case on enclosing selector.
