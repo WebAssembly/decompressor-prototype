@@ -1728,9 +1728,10 @@ const SectionNode* FileNode::getDeclarations() const {
   return cast<SectionNode>(Nd);
 }
 
-bool FileNode::validateNode(NodeVectorType &Parents) {
+bool FileNode::validateNode(NodeVectorType& Parents) {
   if (!Parents.empty()) {
-    fprintf(error(), "File nodes can only appear as a top-level s-expression\n");
+    fprintf(error(),
+            "File nodes can only appear as a top-level s-expression\n");
     errorDescribeNode("Bad file node", this);
     errorDescribeContext(Parents);
     return false;
@@ -1743,7 +1744,7 @@ bool FileNode::validateNode(NodeVectorType &Parents) {
     return false;
   }
   for (int i = 0; i < NumKids - 1; ++i) {
-    const Node *Nd = getKid(i);
+    const Node* Nd = getKid(i);
     switch (Nd->getType()) {
       case OpFileHeader:
       case OpVoid:
