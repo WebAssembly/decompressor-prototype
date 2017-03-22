@@ -16,8 +16,8 @@
 # algorithm" ("CASM") files.
 
 (header (u32.const 0x6d736163) (u32.const 0x0))
-(void)
-(void)
+
+(declarations)
 
 (literal.action.base (u32.const 101))
 

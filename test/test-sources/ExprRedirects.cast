@@ -19,6 +19,8 @@
 (void)
 (void)
 
+(declarations)
+
 (define 'code' (params)
    (read)
    (peek (uint8))

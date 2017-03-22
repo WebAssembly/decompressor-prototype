@@ -2,4 +2,6 @@
 (void)
 (void)
 
+(declarations)
+
 (define 'foo' (params) (void)))
