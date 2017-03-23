@@ -43,10 +43,7 @@ class InflateAst : public interp::Writer {
  public:
   explicit InflateAst();
   ~InflateAst() OVERRIDE;
-  bool write(decode::IntType Value) {
-    Values.push(Value);
-    return true;
-  }
+  bool write(decode::IntType Value);
   void setInstallDuringInflation(bool NewValue) {
     InstallDuringInflation = NewValue;
   }
@@ -95,7 +92,6 @@ class InflateAst : public interp::Writer {
   bool buildTernary();
   template <class T>
   bool buildNary();
-  bool buildFileNode();
   bool failBuild(const char* Method, std::string Message);
   bool failWriteActionMalformed();
   bool failWriteHeaderMalformed();

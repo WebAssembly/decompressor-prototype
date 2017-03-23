@@ -214,19 +214,30 @@ void FlattenAst::flattenNode(const Node* Nd) {
       break;
     }
     case OpFile: {
-      assert(Nd->getNumKids() == 4);
-      // Write primary heder.
+      int NumKids = Nd->getNumKids();
+      if (NumKids <= 1)
+        return reportError("No source header defined for algorithm");
+      // Write primary header. Note: Only the constants are written out (See
+      // case OpFileHeader). The reader will automatically build the
+      // corresponding AST while reading the constants.
       flattenNode(Nd->getKid(0));
-      // Before secondary header, write out tree size so that reader knows
-      // how many nodes to read.
-      TRACE(size_t, "TreeSize", Nd->getKid(1)->getTreeSize());
-      Writer->write(Nd->getKid(1)->getTreeSize());
-      flattenNode(Nd->getKid(1));
-      // TODO: Save kid(2): the write header.
-      flattenNode(Nd->getKid(3));
+
+      // Write out other headers. However, first write out the total number
+      // of nodes in the ast's, so that the header nodes will be read and
+      // built by the inflator.
+      size_t NumHeaderNodes = 0;
+      for (int i = 1; i < NumKids - 1; ++i)
+        NumHeaderNodes += Nd->getKid(i)->getTreeSize();
+      TRACE(size_t, "HeaderSize", NumHeaderNodes);
+      Writer->write(NumHeaderNodes);
+
+      // Now flatten remaining kids.
+      for (int i = 1; i < NumKids; ++i)
+        flattenNode(Nd->getKid(i));
+      Writer->write(Opcode);
+      Writer->write(NumKids);
       break;
     }
-
     case OpFileHeader: {
       if (WrotePrimaryHeader) {
         // Must be secondary header. write out as ordinary nary node.
@@ -272,6 +283,7 @@ void FlattenAst::flattenNode(const Node* Nd) {
       for (int i = 0, len = Nd->getNumKids(); i < len; ++i)
         flattenNode(Nd->getKid(i));
       Writer->writeUint8(Opcode);
+      Writer->write(Nd->getNumKids());
       Writer->writeAction(IntType(PredefinedSymbol::Block_exit));
       SectionSymtab->clear();
       break;
