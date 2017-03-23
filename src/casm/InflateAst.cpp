@@ -113,22 +113,6 @@ bool InflateAst::buildTernary() {
   return true;
 }
 
-bool InflateAst::buildFileNode() {
-  Values.pop();
-  Node* Arg3 = Asts.popValue();
-  Node* Arg2 = Asts.popValue();
-  Node* Arg1 = Asts.popValue();
-  FileNode* File = Symtab->create<FileNode>();
-  File->append(Arg1);
-  File->append(Arg2);
-  // TODO: Read the write header once saved!
-  File->append(Symtab->create<VoidNode>());
-  File->append(Arg3);
-  Asts.push(File);
-  TRACE(node_ptr, "Tree", AstsTop);
-  return true;
-}
-
 template <class T>
 bool InflateAst::buildNary() {
   return appendArgs(Symtab->create<T>());
@@ -153,6 +137,12 @@ StreamType InflateAst::getStreamType() const {
 
 const char* InflateAst::getDefaultTraceName() const {
   return "InflateAst";
+}
+
+bool InflateAst::write(decode::IntType Value) {
+  TRACE(IntType, "writeValue", Value);
+  Values.push(Value);
+  return true;
 }
 
 bool InflateAst::writeUint8(uint8_t Value) {
@@ -279,18 +269,10 @@ bool InflateAst::applyOp(IntType Op) {
       return buildUnary<ReadNode>();
     case OpRename:
       return buildBinary<RenameNode>();
-    case OpSection: {
-      // Note: Bottom element is for file.
-      TRACE(size_t, "Tree stack size", Asts.size());
-      if (Asts.size() < 2)
-        return failWriteActionMalformed();
-      Values.push(Asts.size() - 2);
-      if (!buildNary<SectionNode>())
-        return false;
-      Values.push(OpFile);
-      if (!buildFileNode())
-        return false;
-      FileNode* File = getGeneratedFile();
+    case OpSection:
+      return buildNary<SectionNode>();
+    case OpFile: {
+      FileNode* File = buildNary<FileNode>() ? getGeneratedFile() : nullptr;
       if (File == nullptr)
         return failBuild("InflateAst", "Did not generate a file node");
       if (InstallDuringInflation)

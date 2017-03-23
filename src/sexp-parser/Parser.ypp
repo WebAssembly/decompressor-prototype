@@ -158,7 +158,7 @@ struct IntValue {
 %type <wasm::filt::Node *> file
 %type <wasm::filt::Node *> file_header
 %type <wasm::filt::Node *> file_header_args
-%type <wasm::filt::Node *> file_header_optional
+/*%type <wasm::filt::Node *> file_header_optional*/
 %type <wasm::filt::Node *> fixed_format_directive
 %type <wasm::filt::Node *> format_binary
 %type <wasm::filt::Node *> format_directive
@@ -376,7 +376,7 @@ eval_args
         ;
 
 file
-         : file_header file_header_optional file_header_optional section {
+         : file_header file_header file_header section {
              $$ = Driver.create<FileNode>();
              $$->append($1);
              $$->append($2);
@@ -384,7 +384,7 @@ file
              $$->append($4);
              Driver.setParsedAst($$);
            }
-         | file_header file_header_optional section {
+         | file_header file_header section {
              $$ = Driver.create<FileNode>();
              $$->append($1);
              $$->append($2);
@@ -408,6 +408,9 @@ file_header
         : "(" "header" file_header_args ")" {
             $$ = $3;
           }
+        | "(" "void" ")" {
+            $$ = Driver.create<VoidNode>();
+          }
         ;
 
 file_header_args
@@ -419,7 +422,7 @@ file_header_args
             $$->append($2);
           }
         ;
-
+/*
 file_header_optional
         : file_header {
             $$ = $1;
@@ -428,6 +431,7 @@ file_header_optional
             $$ = Driver.create<VoidNode>();
           }
         ;
+*/
 
 fixed_format_directive
         : "(" "void" ")" {
