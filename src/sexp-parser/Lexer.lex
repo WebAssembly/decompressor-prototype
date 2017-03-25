@@ -213,7 +213,6 @@ letter	[a-zA-Z]
 "accept"          return Parser::make_ACCEPT(Driver.getLoc());
 "action"          return Parser::make_ACTION(Driver.getLoc());
 "and"             return Parser::make_AND(Driver.getLoc());
-"base"            return Parser::make_BASE(Driver.getLoc());
 "binary"          return Parser::make_BINARY(Driver.getLoc());
 "bit"             return Parser::make_BIT(Driver.getLoc());
 "block"           return Parser::make_BLOCK(Driver.getLoc());
@@ -221,6 +220,7 @@ letter	[a-zA-Z]
 "case"            return Parser::make_CASE(Driver.getLoc());
 "declarations"    return Parser::make_DECLARATIONS(Driver.getLoc());
 "define"          return Parser::make_DEFINE(Driver.getLoc());
+"enum"            return Parser::make_ENUM(Driver.getLoc());
 "error"           return Parser::make_ERROR(Driver.getLoc());
 "eval"            return Parser::make_EVAL(Driver.getLoc());
 "header"          return Parser::make_HEADER(Driver.getLoc());

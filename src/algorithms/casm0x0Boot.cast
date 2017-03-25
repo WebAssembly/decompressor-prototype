@@ -19,7 +19,14 @@
 
 (declarations)
 
-(literal.action.base (u32.const 101))
+(literal.action.enum (u32.const 101)
+                     'int.value.begin'
+                     'int.value.end'
+                     'nary.inst'
+                     'postorder.inst'
+                     'symbol.lookup'
+                     'symbol.name.begin'
+                     'symbol.name.end')
 
 # Control flow operators
 (literal 'block'          (u8.const 0x01))
@@ -94,7 +101,7 @@
 (literal 'params'         (u8.const 0x69))
 (literal 'literal.action.define'  (u8.const 0x6a))
 (literal 'literal.action.use'     (u8.const 0x6b))
-(literal 'literal.action.base'    (u8.const 0x6c))
+(literal 'literal.action.enum'    (u8.const 0x6c))
 
 (define 'file' (params)
   (eval 'header')
@@ -130,7 +137,6 @@
      case 'case'
      case 'error'
      case 'if.then'
-     case 'literal.action.base'
      case 'literal.action.use'
      case 'literal.define'
      case 'literal.use'
@@ -147,6 +153,7 @@
     (case 'define'
      case 'eval'
      case 'file'
+     case 'literal.action.enum'
      case 'section'
      case 'sequence'
      case 'switch'              (eval 'nary.node'))

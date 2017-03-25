@@ -923,15 +923,31 @@ void SymbolTable::installDefinitions(Node* Root) {
         fatal("Duplicate literal action bases defined!");
       }
       ActionBase = Base;
+      for (int i = 1, NumKids = Root->getNumKids(); i < NumKids; ++i) {
+        auto* Sym = dyn_cast<SymbolNode>(Root->getKid(i));
+        if (Sym == nullptr) {
+          errorDescribeNode("Symbol expected", Root->getKid(1));
+          errorDescribeNode("In", Root);
+          return fatal("Unable to install algorithm");
+        }
+        Node* Value = getU64ConstDefinition(Base, IntNd->getFormat());
+        Node* Lit = create<LiteralActionDefNode>(Sym, Value);
+        installDefinitions(Lit);
+        ++Base;
+      }
       return;
     }
     case OpLiteralActionDef: {
-      if (auto* LiteralSymbol = dyn_cast<SymbolNode>(Root->getKid(0)))
+      if (auto* LiteralSymbol = dyn_cast<SymbolNode>(Root->getKid(0))) {
+        if (LiteralSymbol->isPredefinedSymbol()) {
+          errorDescribeNode("In", Root);
+          return fatal("Can't redefine predefined symbol");
+        }
         return LiteralSymbol->setLiteralActionDefinition(
             cast<LiteralActionDefNode>(Root));
+      }
       errorDescribeNode("Malformed", Root);
-      fatal("Malformed literal s-expression found!");
-      return;
+      return fatal("Malformed literal s-expression found!");
     }
     case OpRename: {
       if (auto* OldSymbol = dyn_cast<SymbolNode>(Root->getKid(0))) {
