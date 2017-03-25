@@ -16,7 +16,8 @@
 # algorithm" ("CASM") files.
 
 (header (u32.const 0x6d736163) (u32.const 0x0))
-(void)
+
+(declarations)
 
 (literal.action.base (u32.const 101))
 
@@ -82,7 +83,7 @@
 
 # declarations
 (literal 'define'         (u8.const 0x60))
-#(literal 'file'           (u8.const 0x62))
+(literal 'file'           (u8.const 0x62))
 (literal 'file.header'    (u8.const 0x77))
 (literal 'section'        (u8.const 0x63))
 (literal 'undefine'       (u8.const 0x64))
@@ -98,6 +99,8 @@
 (define 'file' (params)
   (eval 'header')
   (eval 'section')
+  # Parse top-level file node.
+  (eval 'node')
 )
 
 (define 'header' (params)
@@ -150,7 +153,6 @@
      case 'peek'
      case 'read'
      case 'rename'
-     case 'section'
      case 'set'
      case 'table'
      case 'undefine'
@@ -166,9 +168,11 @@
 
     (case 'define'
      case 'eval'
+     case 'file'
      case 'file.header'
      case 'map'
      case 'opcode.bytes'
+     case 'section'
      case 'sequence'
      case 'switch'
      case 'write'               (eval 'nary.node'))

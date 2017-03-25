@@ -51,6 +51,7 @@ class SymbolDefnNode;
 class SymbolNode;
 class SymbolTable;
 class CallbackNode;
+class SectionNode;
 
 #define X(tag, format, defval, mergable, NODE_DECLS) class tag##Node;
 AST_INTEGERNODE_TABLE
@@ -179,7 +180,9 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   const FileNode* getInstalledRoot() const { return Root; }
   Node* getError() const { return Error; }
   const FileHeaderNode* getSourceHeader() const;
-  const FileHeaderNode* getTargetHeader() const;
+  const FileHeaderNode* getReadHeader() const;
+  const FileHeaderNode* getWriteHeader() const;
+
   // True if root specifies how to read an algorithm (i.e. the source and target
   // headers are the same).
   bool specifiesAlgorithm() const;
@@ -290,7 +293,7 @@ class Node {
 
   virtual ~Node();
 
-  SymbolTable& getSymtab() { return Symtab; }
+  SymbolTable& getSymtab() const { return Symtab; }
   NodeType getRtClassId() const { return Type; }
   NodeType getType() const { return Type; }
   const char* getName() const;

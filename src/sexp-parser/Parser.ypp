@@ -88,6 +88,7 @@ struct IntValue {
 %token CASE          "case"
 %token CLOSEPAREN    ")"
 %token COLON         ":"
+%token DECLARATIONS  "declarations"
 %token DEFINE        "define"
 %token DOT           "."
 %token DOUBLE_ARROW  "=>"
@@ -157,7 +158,7 @@ struct IntValue {
 %type <wasm::filt::Node *> file
 %type <wasm::filt::Node *> file_header
 %type <wasm::filt::Node *> file_header_args
-%type <wasm::filt::Node *> file_header_write
+/*%type <wasm::filt::Node *> file_header_optional*/
 %type <wasm::filt::Node *> fixed_format_directive
 %type <wasm::filt::Node *> format_binary
 %type <wasm::filt::Node *> format_directive
@@ -168,7 +169,6 @@ struct IntValue {
 %type <wasm::filt::MapNode *> map_args
 %type <wasm::filt::OpcodeNode *> opcode_args
 %type <wasm::filt::Node *> params_decl
-%type <wasm::filt::Node *> file_header_read
 %type <wasm::filt::Node *> section
 %type <wasm::filt::Node *> sequence_args
 %type <wasm::filt::Node *> symbol
@@ -376,15 +376,40 @@ eval_args
         ;
 
 file
-         : file_header_read file_header_write section {
-            $$ = Driver.create<FileNode>($1, $2, $3);
-            Driver.setParsedAst($$);
-          }
+         : file_header file_header file_header section {
+             $$ = Driver.create<FileNode>();
+             $$->append($1);
+             $$->append($2);
+             $$->append($3);
+             $$->append($4);
+             Driver.setParsedAst($$);
+           }
+         | file_header file_header section {
+             $$ = Driver.create<FileNode>();
+             $$->append($1);
+             $$->append($2);
+             $$->append($3);
+             Driver.setParsedAst($$);
+           }
+         | file_header section {
+             $$ = Driver.create<FileNode>();
+             $$->append($1);
+             $$->append($2);
+             Driver.setParsedAst($$);
+           }
+         | section {
+             $$ = Driver.create<FileNode>();
+             $$->append($1);
+             Driver.setParsedAst($$);
+           }
         ;
 
 file_header
         : "(" "header" file_header_args ")" {
             $$ = $3;
+          }
+        | "(" "void" ")" {
+            $$ = Driver.create<VoidNode>();
           }
         ;
 
@@ -397,12 +422,8 @@ file_header_args
             $$->append($2);
           }
         ;
-
-file_header_read
-        : file_header { $$ = $1; }
-        ;
-
-file_header_write
+/*
+file_header_optional
         : file_header {
             $$ = $1;
           }
@@ -410,6 +431,7 @@ file_header_write
             $$ = Driver.create<VoidNode>();
           }
         ;
+*/
 
 fixed_format_directive
         : "(" "void" ")" {
@@ -541,7 +563,7 @@ params_decl
         ;
 
 section
-        : %empty {
+        : "(" "declarations" ")"  {
             $$ = Driver.create<SectionNode>();
           }
           | section declaration { // defines etc.

@@ -95,7 +95,7 @@
   X(Define,            0x60, "define",           2, 1)                         \
   X(File,              0x62, "file",             2, 0)                         \
   X(FileHeader,        0x77, "header",           0, 3)                         \
-  X(Section,           0x63, "section",          0, 0)                         \
+  X(Section,           0x63, "declarations",     0, 0)                         \
   X(Undefine,          0x64, "undefine",         1, 0)                         \
   X(LiteralDef,        0x65, "literal",          2, 0)                         \
   X(LiteralUse,        0x66, "literal.use",      1, 0)                         \
@@ -199,9 +199,11 @@
 #define CASE_DECLS                                                             \
   public:                                                                      \
     decode::IntType getValue() const { return Value; }                         \
+    const Node* getCaseBody() const { return CaseBody; }                       \
     bool validateNode(NodeVectorType &Parents) OVERRIDE;                       \
   private:                                                                     \
     decode::IntType Value;                                                     \
+    const Node* CaseBody;                                                      \
 
 //#define X(tag, NODE_DECLS)
 #define AST_SELECTNODE_TABLE                                                   \
@@ -212,15 +214,19 @@
 #define AST_NARYNODE_TABLE                                                     \
   X(Define, DEFINE_DECLS)                                                      \
   X(Eval, EVAL_DECLS)                                                          \
+  X(File, FILE_DECLS)                                                          \
   X(FileHeader,)                                                               \
   X(Section,)                                                                  \
   X(Sequence,)                                                                 \
   X(Write,)                                                                    \
 
-//#define X(tag)
-#define AST_CACHEDNODE_TABLE                                                   \
-  X(SymbolDefn)                                                                \
-  X(IntLookup)                                                                 \
+#define FILE_DECLS                                                             \
+  public:                                                                      \
+    const FileHeaderNode* getSourceHeader(bool UseEnclosing=true) const;       \
+    const FileHeaderNode* getReadHeader(bool UseEnclosing=true) const;         \
+    const FileHeaderNode* getWriteHeader(bool UseEnclosing=true) const;        \
+    const SectionNode* getDeclarations() const;                                \
+    bool validateNode(NodeVectorType &Parents) OVERRIDE;                       \
 
 #define DEFINE_DECLS                                                           \
   public:                                                                      \
@@ -236,13 +242,12 @@
 
 //#define X(tag, NODE_DECLS)
 #define AST_TERNARYNODE_TABLE                                                  \
-  X(File, FILE_DECLS)                                                          \
   X(IfThenElse,)                                                               \
 
-#define FILE_DECLS                                                             \
-  public:                                                                      \
-    const FileHeaderNode* getSourceHeader() const;                             \
-    const FileHeaderNode* getTargetHeader() const;                             \
+//#define X(tag)
+#define AST_CACHEDNODE_TABLE                                                   \
+  X(SymbolDefn)                                                                \
+  X(IntLookup)                                                                 \
 
 //#define X(tag)
 #define AST_NODE_HAS_HIDDEN_SEQ                                                \

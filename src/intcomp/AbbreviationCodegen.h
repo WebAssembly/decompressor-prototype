@@ -32,9 +32,9 @@ class AbbreviationCodegen {
   AbbreviationCodegen& operator=(const AbbreviationCodegen&) = delete;
 
  public:
-  AbbreviationCodegen(CountNode::RootPtr Root,
+  AbbreviationCodegen(const CompressionFlags& Flags,
+                      CountNode::RootPtr Root,
                       utils::HuffmanEncoder::NodePtr EncodingRoot,
-                      interp::IntTypeFormat AbbrevFormat,
                       CountNode::PtrSet& Assignments,
                       bool ToRead);
   ~AbbreviationCodegen();
@@ -42,10 +42,10 @@ class AbbreviationCodegen {
   std::shared_ptr<filt::SymbolTable> getCodeSymtab();
 
  private:
+  const CompressionFlags& Flags;
   std::shared_ptr<filt::SymbolTable> Symtab;
   CountNode::RootPtr Root;
   utils::HuffmanEncoder::NodePtr EncodingRoot;
-  interp::IntTypeFormat AbbrevFormat;
   CountNode::PtrSet& Assignments;
   bool ToRead;
 

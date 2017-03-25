@@ -18,6 +18,8 @@
 (header (u32.const 0x6d736163) (u32.const 0x0))
 (header (u32.const 0x6d736100) (u32.const 0xd))
 
+(declarations)
+
 (literal.action.base (u32.const 1001))
 
 #### WASM opcodes.

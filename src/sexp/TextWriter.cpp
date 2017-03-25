@@ -239,6 +239,7 @@ void TextWriter::writeNode(const Node* Nd,
     case OpSection:
       if (ShowInternalStructure)
         break;
+      { Parenthesize _(this, Type, true); }
       for (auto* Kid : *Nd)
         writeNode(Kid, true, false);
       return;
