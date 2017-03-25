@@ -80,7 +80,6 @@ struct IntValue {
 %token ACCEPT        "accept"
 %token ACTION        "action"
 %token AND           "and"
-%token BASE          "base"
 %token BINARY        "binary"
 %token BIT           "bit"
 %token BITWISE       "bitwise"
@@ -92,6 +91,7 @@ struct IntValue {
 %token DEFINE        "define"
 %token DOT           "."
 %token DOUBLE_ARROW  "=>"
+%token ENUM          "enum"
 %token ERROR         "error"
 %token EVAL          "eval"
 %token HEADER        "header"
@@ -162,6 +162,7 @@ struct IntValue {
 %type <wasm::filt::Node *> fixed_format_directive
 %type <wasm::filt::Node *> format_binary
 %type <wasm::filt::Node *> format_directive
+%type <wasm::filt::Node *> literal_action_args
 %type <wasm::filt::Node *> literal_expression
 %type <wasm::filt::Node *> locals_decl
 %type <wasm::filt::Node *> local_var
@@ -292,8 +293,8 @@ declaration
         | "(" "literal" "." "action" symbol literal_expression ")" {
             $$ = Driver.create<LiteralActionDefNode>($5, $6);
           }
-        | "(" "literal" "." "action" "." "base" literal_expression ")" {
-            $$ = Driver.create<LiteralActionBaseNode>($7);
+        | "(" "literal" "." "action" "." "enum" literal_action_args ")" {
+            $$ = $7;
           }
         ;
 
@@ -486,6 +487,18 @@ format_binary
           }
         | "(" "binary" format_binary format_binary ")" {
             $$ = Driver.create<BinarySelectNode>($3, $4);
+          }
+        ;
+
+literal_action_args
+        : literal_expression symbol {
+            $$ = Driver.create<LiteralActionBaseNode>();
+            $$->append($1);
+            $$->append($2);
+           }
+        | literal_action_args symbol {
+            $$ = $1;
+            $$->append($2);
           }
         ;
 

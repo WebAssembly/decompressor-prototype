@@ -20,8 +20,6 @@
 
 (declarations)
 
-(literal.action.base (u32.const 5001))
-
 (define 'file' (params) (locals 1)
   (loop.unbounded
     (set (local 0) (eval 'categorize' (eval 'opcode')))
