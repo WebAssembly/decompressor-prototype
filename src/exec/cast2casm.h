@@ -40,6 +40,7 @@ namespace {
 
 charstring LocalName = "Local_";
 charstring FuncName = "Func_";
+charstring BootAlgorithm = "Algcasm0x0";
 
 bool GenerateEnum = false;
 bool GenerateFunction = false;
@@ -98,6 +99,7 @@ class CodeGenerator {
   void generatePredefinedEnumNames();
   void generatePredefinedNameFcn();
   void generateAlgorithmHeader();
+  void generateAlgorithmHeader(charstring AlgName);
   size_t generateNode(const Node* Nd);
   size_t generateSymbol(const SymbolNode* Sym);
   size_t generateIntegerNode(charstring NodeType, const IntegerNode* Nd);
@@ -385,6 +387,10 @@ void CodeGenerator::generatePredefinedNameFcn() {
 }
 
 void CodeGenerator::generateAlgorithmHeader() {
+  generateAlgorithmHeader(AlgName);
+}
+
+void CodeGenerator::generateAlgorithmHeader(charstring AlgName) {
   puts("std::shared_ptr<filt::SymbolTable> get");
   puts(AlgName);
   puts("Symtab()");
@@ -752,6 +758,10 @@ void CodeGenerator::generateArrayImplFile() {
       "\n"
       "}  // end of anonymous namespace\n"
       "\n");
+  generateAlgorithmHeader(BootAlgorithm);
+  puts(
+      ";\n"
+      "\n");
   generateAlgorithmHeader();
   puts(
       " {\n"
@@ -767,7 +777,10 @@ void CodeGenerator::generateArrayImplFile() {
       "));\n"
       "  auto Input = std::make_shared<ReadBackedQueue>(ArrayInput);\n"
       "  CasmReader Reader;\n"
-      "  Reader.readBinary(Input);\n"
+      "  Reader.readBinary(Input, get");
+  puts(BootAlgorithm);
+  puts(
+      "Symtab());\n"
       "  assert(!Reader.hasErrors());\n"
       "  Symtable = Reader.getReadSymtab();\n"
       "  return Symtable;\n");
@@ -930,6 +943,14 @@ int main(int Argc, charstring Argv[]) {
                  .setDescription(
                      "The name prefix used to generate the name of C++ "
                      "generated enum and/or function"));
+
+    ArgsParser::Optional<charstring> BootAlgorithmFlag(BootAlgorithm);
+    Args.add(BootAlgorithmFlag.setShortName('b')
+                 .setLongName("boot")
+                 .setOptionName("NAME")
+                 .setDescription(
+                     "The name of the algorithm to use to read the array "
+                     "implementation of the algorithm"));
 
     ArgsParser::Optional<bool> HeaderFileFlag(HeaderFile);
     Args.add(HeaderFileFlag.setLongName("header").setDescription(

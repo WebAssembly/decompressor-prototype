@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Defines the CAST algorithm for reading/writing "Compressed binary
+# Defines the boot CAST algorithm for reading/writing "Compressed binary
 # algorithm" ("CASM") files.
 
 (header (u32.const 0x6d736163) (u32.const 0x0))
-(void)
+
+(declarations)
 
 (literal.action.base (u32.const 101))
 
@@ -82,7 +83,7 @@
 
 # declarations
 (literal 'define'         (u8.const 0x60))
-#(literal 'file'           (u8.const 0x62))
+(literal 'file'           (u8.const 0x62))
 (literal 'file.header'    (u8.const 0x77))
 (literal 'section'        (u8.const 0x63))
 (literal 'undefine'       (u8.const 0x64))
@@ -98,6 +99,8 @@
 (define 'file' (params)
   (eval 'header')
   (eval 'section')
+  # Parse top-level file node.
+  (eval 'node')
 )
 
 (define 'header' (params)
@@ -122,84 +125,41 @@
 (define 'node' (params)
   (switch (uint8)
     (error)
-    (#case 'accept'
-    #case 'and'
-    #case 'binary'
-    case 'bit'
-    #case 'bitwise.and'
-    #case 'bitwise.negate'
-    #case 'bitwise.or'
-    #case 'bitwise.xor'
+    (case 'bit'
      case 'block'
      case 'case'
      case 'error'
      case 'if.then'
-     #case 'if.then.else'
-     #case 'last.read'
-     #case 'last.symbol.is'
      case 'literal.action.base'
-     #case 'literal.action.define'
      case 'literal.action.use'
      case 'literal.define'
      case 'literal.use'
      case 'loop'
      case 'loop.unbounded'
-     #case 'not'
-     #case 'opcode.binary'
-     #case 'or'
-     #case 'peek'
-     #case 'read'
-     #case 'rename'
-     case 'section'
-     #case 'set'
-     #case 'table'
-     #case 'undefine'
-     #case 'uint32'
-     #case 'uint64'
      case 'uint8'
      case 'varint32'
      case 'varint64'
      case 'varuint32'
      case 'varuint64'
      case 'void'
-     case '=>'
-                                (=> 'postorder.inst'))
+     case '=>'                  (=> 'postorder.inst'))
 
     (case 'define'
      case 'eval'
-     #case 'file.header'
-     #case 'map'
-     #case 'opcode.bytes'
+     case 'file'
+     case 'section'
      case 'sequence'
-     case 'switch'
-     #case 'write'
-                                (eval 'nary.node'))
+     case 'switch'              (eval 'nary.node'))
 
     (case 'param'
      case 'params'
-     #case 'local'
-     #case 'locals'
      case 'u32.const'
                                 (eval 'int.value' (varuint32)))
-    #(case 'i32.const'           (eval 'int.value' (varint32)))
-    #(case 'i64.const'           (eval 'int.value' (varint64)))
-    #(case 'u64.const'           (eval 'int.value' (varuint64)))
     (case 'u8.const'            (eval 'int.value' (uint8)))
 
     (case 'symbol'              (eval 'symbol.lookup'))
-
-    #(case 'opcode.bits'         (eval 'opcode.binary'))
   )
 )
-
-#(define 'opcode.binary' (params)
-#  (loop (seq (varuint32) (=> 'binary.begin'))
-#    (bit)
-#    (=> 'binary.bit')
-#  )
-#  (=> 'binary.end')
-#  (=> 'align')
-#)
 
 (define 'section' (params)
   (block
