@@ -43,8 +43,11 @@ charstring FuncName = "Func_";
 
 bool GenerateEnum = false;
 bool GenerateFunction = false;
+
+#if WASM_CAST_BOOT == 2
 bool Bootstrap = false;
 charstring BootstrapAlg = "Algcasm0x0Boot";
+#endif
 
 constexpr size_t WorkBufferSize = 128;
 typedef char BufferType[WorkBufferSize];
@@ -759,12 +762,15 @@ void CodeGenerator::generateArrayImplFile() {
       "\n"
       "}  // end of anonymous namespace\n"
       "\n");
+
+#if WASM_CAST_BOOT == 2
   if (Bootstrap) {
     generateAlgorithmHeader(BootstrapAlg);
     puts(
         ";\n"
         "\n");
   }
+#endif
   generateAlgorithmHeader();
   puts(
       " {\n"
@@ -781,11 +787,13 @@ void CodeGenerator::generateArrayImplFile() {
       "  auto Input = std::make_shared<ReadBackedQueue>(ArrayInput);\n"
       "  CasmReader Reader;\n"
       "  Reader.readBinary(Input");
+#if WASM_CAST_BOOT == 2
   if (Bootstrap) {
     puts(", get");
     puts(BootstrapAlg);
     puts("Symtab()");
   }
+#endif
   puts(
       ");\n"
       "  assert(!Reader.hasErrors());\n"
@@ -951,10 +959,12 @@ int main(int Argc, charstring Argv[]) {
                      "The name prefix used to generate the name of C++ "
                      "generated enum and/or function"));
 
+#if WASM_CAST_BOOT == 2
     ArgsParser::Toggle BootstrapFlag(Bootstrap);
     Args.add(BootstrapFlag.setShortName('b').setLongName("boot").setDescription(
         "When true, the array implementation will be read "
         "using bootstrap algorithm getAlgcasm0x0BootSymtab()"));
+#endif
 
     ArgsParser::Optional<bool> HeaderFileFlag(HeaderFile);
     Args.add(HeaderFileFlag.setLongName("header").setDescription(
