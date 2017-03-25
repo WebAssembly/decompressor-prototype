@@ -737,23 +737,17 @@ ifeq ($(GENSRCS), 3)
 		$< -o $@ --header --enum \
 		--name $(call alg_name, $<)
 
-#		--name $(patsubst $(ALG_GENDIR)/%.cast, Alg%, $<)
-
   $(ALG_BOOT1_H_SRCS): $(ALG_GENDIR)/%.h: $(ALG_GENDIR)/%.cast \
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1 -a $(ALG_GENDIR_ALG) \
 		$< -o $@ --header --strip-literals --function \
 		--name $(call alg_name, $<)
 
-#		--name $(patsubst $(ALG_GENDIR)/%.cast, Alg%, $<)
-
   $(ALG_BOOT1_CPP_SRCS): $(ALG_GENDIR)/%.cpp: $(ALG_GENDIR)/%.cast \
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1 -a $(ALG_GENDIR_ALG) \
 		$< -o $@ --strip-literals --enum --function \
 		--name $(call alg_name, $<)
-
-#		--name $(patsubst $(ALG_GENDIR)/%.cast, Alg%, $<)
 
 endif
 
