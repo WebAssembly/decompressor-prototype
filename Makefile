@@ -766,7 +766,7 @@ ifeq ($(GENSRCS), 4)
 		$< -o $@ --strip-literal-uses --array --strip-actions \
 		-a $(ALG_GENDIR_ALG) --enum --function \
 		--name $(call alg_name, $<) \
-		--boot $(if $(findstring casm0x0, $<), Algcasm0x0Boot, Algcasm0x0)
+		$(if $(findstring casm0x0, $<), --boot)
 
 endif
 

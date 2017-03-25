@@ -40,10 +40,11 @@ namespace {
 
 charstring LocalName = "Local_";
 charstring FuncName = "Func_";
-charstring BootAlgorithm = "Algcasm0x0";
 
 bool GenerateEnum = false;
 bool GenerateFunction = false;
+bool Bootstrap = false;
+charstring BootstrapAlg = "Algcasm0x0Boot";
 
 constexpr size_t WorkBufferSize = 128;
 typedef char BufferType[WorkBufferSize];
@@ -758,10 +759,12 @@ void CodeGenerator::generateArrayImplFile() {
       "\n"
       "}  // end of anonymous namespace\n"
       "\n");
-  generateAlgorithmHeader(BootAlgorithm);
-  puts(
-      ";\n"
-      "\n");
+  if (Bootstrap) {
+    generateAlgorithmHeader(BootstrapAlg);
+    puts(
+        ";\n"
+        "\n");
+  }
   generateAlgorithmHeader();
   puts(
       " {\n"
@@ -777,10 +780,14 @@ void CodeGenerator::generateArrayImplFile() {
       "));\n"
       "  auto Input = std::make_shared<ReadBackedQueue>(ArrayInput);\n"
       "  CasmReader Reader;\n"
-      "  Reader.readBinary(Input, get");
-  puts(BootAlgorithm);
+      "  Reader.readBinary(Input");
+  if (Bootstrap) {
+    puts(", get");
+    puts(BootstrapAlg);
+    puts("Symtab()");
+  }
   puts(
-      "Symtab());\n"
+      ");\n"
       "  assert(!Reader.hasErrors());\n"
       "  Symtable = Reader.getReadSymtab();\n"
       "  return Symtable;\n");
@@ -944,13 +951,10 @@ int main(int Argc, charstring Argv[]) {
                      "The name prefix used to generate the name of C++ "
                      "generated enum and/or function"));
 
-    ArgsParser::Optional<charstring> BootAlgorithmFlag(BootAlgorithm);
-    Args.add(BootAlgorithmFlag.setShortName('b')
-                 .setLongName("boot")
-                 .setOptionName("NAME")
-                 .setDescription(
-                     "The name of the algorithm to use to read the array "
-                     "implementation of the algorithm"));
+    ArgsParser::Toggle BootstrapFlag(Bootstrap);
+    Args.add(BootstrapFlag.setShortName('b').setLongName("boot").setDescription(
+        "When true, the array implementation will be read "
+        "using bootstrap algorithm getAlgcasm0x0BootSymtab()"));
 
     ArgsParser::Optional<bool> HeaderFileFlag(HeaderFile);
     Args.add(HeaderFileFlag.setLongName("header").setDescription(
