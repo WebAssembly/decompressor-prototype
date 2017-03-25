@@ -29,9 +29,6 @@
 #
 # To get rid of generated sources also: make clean-all
 
-# helper eq comparison function.
-eq = $(and $(findstring $(1),$(2)),$(findstring $(2),$(1)))
-
 include Makefile.common
 
 ###### Sources generated during "make gen" #####
@@ -163,6 +160,7 @@ CASM_SRCS_BASE = \
 	CasmWriter.cpp \
 	FlattenAst.cpp \
 	InflateAst.cpp
+
 CASM_OBJS_BASE = $(patsubst %.cpp, $(CASM_OBJDIR)/%.o, $(CASM_SRCS_BASE))
 CASM_LIB_BASE = $(LIBDIR)/$(LIBPREFIX)casm-base.a
 
@@ -178,8 +176,11 @@ CASM_SRCS = $(CASM_SRCS_BASE) $(CASM_SRCS_BIN)
 CASM_OBJS = $(CASM_OBJS_BASE) $(CASM_OBJS_BIN)
 CASM_LIB = $(CASM_LIB_BIN) $(CASM_LIB_BASE)
 
-GENERATED_BOOT2_OBJS += $(CASM_OBJS_BIN)
-GENERATED_BOOT2_LIBS += $(CASM_LIBS_BIN)
+GENERATED_BOOT2_OBJS += $(CASM_OBJS_BASE)
+GENERATED_BOOT2_LIBS += $(CASM_LIBS_BASE)
+
+GENERATED_REST_OBJS += $(CASM_OBJS_BIN)
+GENERATED_REST_LIBS += $(CASM_LIBS_BIN)
 
 #######
 # This is the default file used by tests.
@@ -195,48 +196,66 @@ ALG_SRCDIR = $(SRCDIR)/algorithms
 ALG_GENDIR = $(GENDIR)/algorithms
 ALG_OBJDIR = $(OBJDIR)/algorithms
 
+# helper function for extracing algorithm name from filename
+alg_name = $(patsubst $(ALG_GENDIR)/%.cast, Alg%, $(1))
+
+ALG_CAST = casm0x0.cast
+ALG_GENDIR_ALG = $(ALG_GENDIR)/casm0x0.cast
+ALG_CAST_SRCS  += $(ALG_GENDIR_ALG)
+
 #### Boot step 1
 
-ALG_SRCS_BOOT1 = casm0x0.cast
-ALG_GEN_CAST_SRCS_BOOT1 = $(patsubst %.cast, $(ALG_GENDIR)/%.cast, $(ALG_SRCS_BOOT1))
-ALG_GEN_CPP_SRCS_BOOT1 = $(patsubst %.cast, $(ALG_GENDIR)/%.cpp, $(ALG_SRCS_BOOT1))
-ALG_GEN_H_SRCS_BOOT1 = $(patsubst %.cast, $(ALG_GENDIR)/%.h, $(ALG_SRCS_BOOT1))
-ALG_GEN_ENUM_H_SRCS_BOOT1 = $(patsubst %.cast, $(ALG_GENDIR)/%-enum.h, $(ALG_SRCS_BOOT1))
-ALG_GEN_SRCS_BOOT1 = $(ALG_GEN_CPP_SRCS_BOOT1) \
-			$(ALG_GEN_H_SRCS_BOOT1) \
-			$(ALG_GEN_ENUM_H_SRCS_BOOT1)
+ALG_CAST_BOOT = casm0x0Boot.cast
 
-ALG_OBJS_BOOT1 = $(patsubst %.cpp, %.o, $(ALG_GEN_CPP_SRCS_BOOT1))
+ALG_CAST_BOOT1 = $(ALG_CAST_BOOT) $(ALG_CAST)
 
-ALG_GENDIR_ALG = $(ALG_GENDIR)/casm0x0.cast
+ALG_BOOT1_CAST_SRCS = $(patsubst %.cast, $(ALG_GENDIR)/%.cast, $(ALG_CAST_BOOT))
+ALG_BOOT1_H_SRCS = $(patsubst %.cast, %.h, $(ALG_BOOT1_CAST_SRCS))
+ALG_BOOT1_CPP_SRCS = $(patsubst %.cast, %.cpp, $(ALG_BOOT1_CAST_SRCS))
+ALG_BOOT1_ENUM_H_SRCS = $(patsubst %.cast, $(ALG_GENDIR)/%-enum.h, $(ALG_CAST))
+ALG_BOOT1_SRCS = $(ALG_BOOT1_H_SRCS) \
+			$(ALG_BOOT1_CPP_SRCS) \
+			$(ALG_BOOT1_ENUM_H_SRCS)
 
-GENERATED_COPY_SOURCES += $(ALG_GEN_CAST_SRCS_BOOT1)
-GENERATED_BOOT1_SOURCES += $(ALG_GEN_SRCS_BOOT1)
+ALG_CAST_SRCS += $(ALG_BOOT1_CAST_SRCS)
+
+GENERATED_COPY_SOURCES += $(ALG_BOOT1_CAST_SRCS)
+GENERATED_BOOT1_SOURCES += $(ALG_BOOT1_SRCS)
 
 #### Boot step 2
 
-ALG_SRCS_BOOT2 = wasm0xd.cast cism0x0.cast casm0x0.cast
-ALG_GEN_CAST_SRCS_BOOT2 = $(patsubst %.cast, $(ALG_GENDIR)/%.cast, $(ALG_SRCS_BOOT2))
-ALG_GEN_CPP_SRCS_BOOT2 = $(patsubst %.cast, $(ALG_GENDIR)/%.cpp, $(ALG_SRCS_BOOT2))
-ALG_GEN_H_SRCS_BOOT2 = $(patsubst %.cast, $(ALG_GENDIR)/%.h, $(ALG_SRCS_BOOT2))
-ALG_GEN_SRCS_BOOT2 = $(ALG_GEN_CPP_SRCS_BOOT2) $(ALG_GEN_H_SRCS_BOOT2)
-ALG_OBJS_BOOT2 = $(patsubst %.cast, $(ALG_OBJDIR)/%.o, $(ALG_SRCS_BOOT1))
+ALG_CAST_BOOT2 = $(ALG_CAST) wasm0xd.cast cism0x0.cast
+ALG_BOOT2_CAST_SRCS = $(patsubst %.cast, $(ALG_GENDIR)/%.cast, $(ALG_CAST_BOOT2))
+ALG_BOOT2_H_SRCS = $(patsubst %.cast, %.h, $(ALG_BOOT2_CAST_SRCS))
+ALG_BOOT2_CPP_SRCS = $(patsubst %.cast, %.cpp, $(ALG_BOOT2_CAST_SRCS))
+ALG_BOOT2_SRCS = $(ALG_BOOT2_H_SRCS) $(ALG_BOOT2_CPP_SRCS)
 
-ALG_LIB_BOOT2 = $(LIBDIR)/$(LIBPREFIX)alg-boot2.a
+ALG_CAST_SRCS += $(ALG_BOOT2_CAST_SRCS)
 
-GENERATED_COPY_SOURCES += $(ALG_GEN_CAST_SRCS_BOOT2)
-GENERATED_BOOT2_OBJS += $(ALG_OBJS_BOOT1)
-GENERATED_BOOT2_LIBS += $(ALG_LIB_BOOT2)
-GENERATED_BOOT2_SOURCES +=  $(ALG_GEN_SRCS_BOOT2)
+ALG_BOOT2_OBJS = $(patsubst $(ALG_GENDIR)/%.cpp, \
+				$(ALG_OBJDIR)/%.o, \
+				$(ALG_BOOT1_CPP_SRCS))
+ALG_BOOT2_LIB = $(LIBDIR)/$(LIBPREFIX)alg-boot2.a
+
+GENERATED_BOOT2_SOURCES = $(ALG_BOOT2_SRCS)
+GENERATED_BOOT2_LIBS += $(ALG_BOOT2_LIB)
 
 #### Build step
 
 ALG_SRCS = $(ALG_SRCS_BOOT1) $(ALG_SRCS_BOOT2)
 ALG_GEN_SRCS = $(patsubst %.cast, $(ALG_GENDIR)/%.cast, $(ALG_SRCS))
-ALG_OBJS = $(patsubst %.cast, $(ALG_OBJDIR)/%.o, $(ALG_SRCS))
+ALG_REST_OBJS = $(patsubst $(ALG_GENDIR)/%.cpp, \
+				$(ALG_OBJDIR)/%.o, \
+				$(ALG_BOOT2_CPP_SRCS))
 ALG_LIB = $(LIBDIR)/$(LIBPREFIX)alg.a
 
-GENERATED_REST_OBJS += $(ALG_OBJS_BOOT2)
+ALG_OBJS = $(ALG_BOOT2_OBJS) $(ALG_REST_OBJS)
+
+$(info ALG_OBJS = $(ALG_OBJS))
+
+GENERATED_COPY_SOURCES += $(ALG_CAST_SRCS)
+
+GENERATED_REST_OBJS += $(ALG_BOOT2_OBJS)
 GENERATED_REST_LIBS += $(ALG_LIB)
 
 ###### Stream handlers ######
@@ -297,6 +316,7 @@ INTERP_SRCS_BASE = \
 	TeeWriter.cpp \
 	Writer.cpp \
 	WriteStream.cpp
+
 INTERP_OBJS_BASE = $(patsubst %.cpp, $(INTERP_OBJDIR)/%.o, $(INTERP_SRCS_BASE))
 INTERP_LIB_BASE = $(LIBDIR)/$(LIBPREFIX)interp-base.a
 
@@ -516,25 +536,21 @@ TEST_WASM_M_GEN_FILES = $(patsubst %.cast, $(TEST_0XD_GENDIR)/%.casm-m, \
 TEST_CASM_DF_GEN_FILES = $(patsubst %.cast, $(TEST_0XD_GENDIR)/%.cast-out, \
 	 	  	$(TEST_CASM_SRCS))
 
-###### General compilation definitions ######
-
-LIBS = $(INTCOMP_LIB) $(BINARY_LIB) $(INTERP_LIB) $(SEXP_LIB) $(CASM_LIB) $(PARSER_LIB) \
-       $(STRM_LIB) $(INTERP_LIB) $(BINARY_LIB) \
-       $(ALG_LIB) $(SEXP_LIB) $(INTERP_LIB) $(BINARY_LIB) $(ALG_LIB) \
-       $(CASM_LIB) $(STRM_LIB) $(UTILS_LIB) $(PARSER_LIB)
+###### Libraries for each compilation step ######
 
 LIBS_BOOT1 = $(BINARY_LIB) \
 	$(SEXP_LIB) $(PARSER_LIB) \
 	$(BINARY_LIB) $(STRM_LIB) $(UTILS_LIB)
 
-#LIBS_BOOT1 = $(BINARY_LIB) $(INTERP_LIB_BASE) \
-#	$(SEXP_LIB) $(PARSER_LIB) \
-#	$(INTERP_LIB_BASE) $(BINARY_LIB) $(STRM_LIB) $(UTILS_LIB)
-
 LIBS_BOOT2 = $(BINARY_LIB) $(INTERP_LIB_BASE) \
 	$(SEXP_LIB) $(CASM_LIB_BASE) $(PARSER_LIB) \
-	$(INTERP_LIB_BASE) $(ALG_LIB_BOOT2) $(BINARY_LIB) \
-	$(STRM_LIB) $(UTILS_LIB) $(ALG_LIB_BOOT2)
+	$(INTERP_LIB_BASE) $(ALG_BOOT2_LIB) $(BINARY_LIB) \
+	$(STRM_LIB) $(UTILS_LIB) $(ALG_BOOT2_LIB)
+
+LIBS = $(INTCOMP_LIB) $(BINARY_LIB) $(INTERP_LIB) $(SEXP_LIB) $(CASM_LIB) $(PARSER_LIB) \
+       $(STRM_LIB) $(INTERP_LIB) $(BINARY_LIB) \
+       $(ALG_LIB) $(SEXP_LIB) $(INTERP_LIB) $(BINARY_LIB) $(ALG_LIB) \
+       $(CASM_LIB) $(STRM_LIB) $(UTILS_LIB) $(PARSER_LIB)
 
 ##### Track additional important variable definitions not in Makefile.common
 
@@ -692,10 +708,10 @@ $(ALG_GENDIR):
 $(ALG_OBJDIR):
 	mkdir -p $@
 
-$(ALG_GEN_SRCS): | $(ALG_GENDIR)
+$(ALG_CAST_SRCS): | $(ALG_GENDIR)
 
 ifeq ($(GENSRCS), 1)
-  $(ALG_GEN_SRCS): $(ALG_GENDIR)/%.cast: $(ALG_SRCDIR)/%.cast
+  $(ALG_CAST_SRCS): $(ALG_GENDIR)/%.cast: $(ALG_SRCDIR)/%.cast
 	cp $< $@
 endif
 
@@ -706,8 +722,8 @@ $(ALG_OBJS): | $(ALG_OBJDIR)
 $(ALG_OBJS): $(ALG_OBJDIR)/%.o: $(ALG_GENDIR)/%.cpp
 	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
 
-$(ALG_LIB_BOOT2): $(ALG_OBJS_BOOT2)
-	ar -rs $@ $(ALG_OBJS_BOOT2)
+$(ALG_BOOT2_LIB): $(ALG_BOOT2_OBJS)
+	ar -rs $@ $(ALG_BOOT2_OBJS)
 	ranlib $@
 
 $(ALG_LIB): $(ALG_OBJS)
@@ -715,41 +731,42 @@ $(ALG_LIB): $(ALG_OBJS)
 	ranlib $@
 
 ifeq ($(GENSRCS), 3)
-  $(ALG_GEN_ENUM_H_SRCS_BOOT1): $(ALG_GENDIR)/%-enum.h: $(ALG_GENDIR)/%.cast \
+  $(ALG_BOOT1_ENUM_H_SRCS): $(ALG_GENDIR)/%-enum.h: $(ALG_GENDIR)/%.cast \
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1 -a $(ALG_GENDIR_ALG) \
 		$< -o $@ --header --enum \
-		--name $(patsubst $(ALG_GENDIR)/%.cast, Alg%, $<)
+		--name $(call alg_name, $<)
 
-  $(ALG_GEN_H_SRCS_BOOT1): $(ALG_GENDIR)/%.h: $(ALG_GENDIR)/%.cast \
+  $(ALG_BOOT1_H_SRCS): $(ALG_GENDIR)/%.h: $(ALG_GENDIR)/%.cast \
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1 -a $(ALG_GENDIR_ALG) \
 		$< -o $@ --header --strip-literals --function \
-		--name $(patsubst $(ALG_GENDIR)/%.cast, Alg%, $<)
+		--name $(call alg_name, $<)
 
-  $(ALG_GEN_CPP_SRCS_BOOT1): $(ALG_GENDIR)/%.cpp: $(ALG_GENDIR)/%.cast \
+  $(ALG_BOOT1_CPP_SRCS): $(ALG_GENDIR)/%.cpp: $(ALG_GENDIR)/%.cast \
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1 -a $(ALG_GENDIR_ALG) \
 		$< -o $@ --strip-literals --enum --function \
-		--name $(patsubst $(ALG_GENDIR)/%.cast, Alg%, $<)
+		--name $(call alg_name, $<)
 
 endif
 
 ifeq ($(GENSRCS), 4)
 
-  $(ALG_GEN_H_SRCS_BOOT2): $(ALG_GENDIR)/%.h: $(ALG_GENDIR)/%.cast \
+  $(ALG_BOOT2_H_SRCS): $(ALG_GENDIR)/%.h: $(ALG_GENDIR)/%.cast \
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot2
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot2 \
 		$< -o $@ --header --strip-literal-uses --strip-actions \
-		--enum --function \
-		--name $(patsubst $(ALG_GENDIR)/%.cast, Alg%, $<)
+		-a $(ALG_GENDIR_ALG) --enum --function \
+		--name $(call alg_name, $<)
 
-  $(ALG_GEN_CPP_SRCS_BOOT2): $(ALG_GENDIR)/%.cpp: $(ALG_GENDIR)/%.cast \
+  $(ALG_BOOT2_CPP_SRCS): $(ALG_GENDIR)/%.cpp: $(ALG_GENDIR)/%.cast \
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot2
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot2  \
 		$< -o $@ --strip-literal-uses --array --strip-actions \
-		--enum --function \
-		--name $(patsubst $(ALG_GENDIR)/%.cast, Alg%, $<)
+		-a $(ALG_GENDIR_ALG) --enum --function \
+		--name $(call alg_name, $<) \
+		$(if $(findstring casm0x0, $<), --boot)
 
 endif
 

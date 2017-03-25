@@ -44,6 +44,11 @@ charstring FuncName = "Func_";
 bool GenerateEnum = false;
 bool GenerateFunction = false;
 
+#if WASM_CAST_BOOT == 2
+bool Bootstrap = false;
+charstring BootstrapAlg = "Algcasm0x0Boot";
+#endif
+
 constexpr size_t WorkBufferSize = 128;
 typedef char BufferType[WorkBufferSize];
 
@@ -98,6 +103,7 @@ class CodeGenerator {
   void generatePredefinedEnumNames();
   void generatePredefinedNameFcn();
   void generateAlgorithmHeader();
+  void generateAlgorithmHeader(charstring AlgName);
   size_t generateNode(const Node* Nd);
   size_t generateSymbol(const SymbolNode* Sym);
   size_t generateIntegerNode(charstring NodeType, const IntegerNode* Nd);
@@ -385,6 +391,10 @@ void CodeGenerator::generatePredefinedNameFcn() {
 }
 
 void CodeGenerator::generateAlgorithmHeader() {
+  generateAlgorithmHeader(AlgName);
+}
+
+void CodeGenerator::generateAlgorithmHeader(charstring AlgName) {
   puts("std::shared_ptr<filt::SymbolTable> get");
   puts(AlgName);
   puts("Symtab()");
@@ -646,6 +656,8 @@ size_t CodeGenerator::generateNode(const Node* Nd) {
       return generateSymbol(cast<SymbolNode>(Nd));
     case OpSwitch:
       return generateNaryNode("SwitchNode", Nd);
+    case OpTable:
+      return generateNaryNode("TableNode", Nd);
     case OpUint8:
       return generateNullaryNode("Uint8Node", Nd);
     case OpUint32:
@@ -750,6 +762,15 @@ void CodeGenerator::generateArrayImplFile() {
       "\n"
       "}  // end of anonymous namespace\n"
       "\n");
+
+#if WASM_CAST_BOOT == 2
+  if (Bootstrap) {
+    generateAlgorithmHeader(BootstrapAlg);
+    puts(
+        ";\n"
+        "\n");
+  }
+#endif
   generateAlgorithmHeader();
   puts(
       " {\n"
@@ -765,7 +786,16 @@ void CodeGenerator::generateArrayImplFile() {
       "));\n"
       "  auto Input = std::make_shared<ReadBackedQueue>(ArrayInput);\n"
       "  CasmReader Reader;\n"
-      "  Reader.readBinary(Input);\n"
+      "  Reader.readBinary(Input");
+#if WASM_CAST_BOOT == 2
+  if (Bootstrap) {
+    puts(", get");
+    puts(BootstrapAlg);
+    puts("Symtab()");
+  }
+#endif
+  puts(
+      ");\n"
       "  assert(!Reader.hasErrors());\n"
       "  Symtable = Reader.getReadSymtab();\n"
       "  return Symtable;\n");
@@ -929,6 +959,13 @@ int main(int Argc, charstring Argv[]) {
                      "The name prefix used to generate the name of C++ "
                      "generated enum and/or function"));
 
+#if WASM_CAST_BOOT == 2
+    ArgsParser::Toggle BootstrapFlag(Bootstrap);
+    Args.add(BootstrapFlag.setShortName('b').setLongName("boot").setDescription(
+        "When true, the array implementation will be read "
+        "using bootstrap algorithm getAlgcasm0x0BootSymtab()"));
+#endif
+
     ArgsParser::Optional<bool> HeaderFileFlag(HeaderFile);
     Args.add(HeaderFileFlag.setLongName("header").setDescription(
         "Generate header version of c++ source instead "
@@ -1070,7 +1107,7 @@ int main(int Argc, charstring Argv[]) {
     // TODO(karlschimpf) Extend ArgsParser to be able to return option
     // name so that we don't have hard-coded dependency.
     if (UseArrayImpl && AlgName == nullptr) {
-      fprintf(stderr, "Option --array can't be used without option -f\n");
+      fprintf(stderr, "Option --array can't be used without option --name\n");
       return exit_status(EXIT_FAILURE);
     }
 

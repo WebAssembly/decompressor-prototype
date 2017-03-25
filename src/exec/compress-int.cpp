@@ -227,7 +227,7 @@ int main(int Argc, const char* Argv[]) {
     ArgsParser::Optional<bool> TraceIntCountsCollectionFlag(
         MyCompressionFlags.TraceIntCountsCollection);
     Args.add(TraceIntCountsCollectionFlag.setLongName(
-                                             "verbose=int-counts-collection")
+                                              "verbose=int-counts-collection")
                  .setDescription("Show how int counts were selected"));
 
     ArgsParser::Optional<bool> TraceSequenceCountsFlag(
@@ -241,7 +241,7 @@ int main(int Argc, const char* Argv[]) {
         MyCompressionFlags.TraceSequenceCountsCollection);
     Args.add(
         TraceSequenceCountsCollectionFlag.setLongName(
-                                             "verbose=seq-counts-collection")
+                                              "verbose=seq-counts-collection")
             .setDescription(
                 "Show how frequency of integer sequences were "
                 "selected"));
@@ -298,7 +298,7 @@ int main(int Argc, const char* Argv[]) {
         MyCompressionFlags.TraceAbbrevSelectionProgress);
     Args.add(
         TraceAbbrevSelectionProgressFlag.setLongName(
-                                            "verbose=select-abbrevs-progress")
+                                             "verbose=select-abbrevs-progress")
             .setOptionName("INTEGER")
             .setDescription(
                 "For every INTEGER values generated in the output integer "
@@ -309,7 +309,7 @@ int main(int Argc, const char* Argv[]) {
     ArgsParser::Optional<bool> TraceAbbrevSelectionSelectFlag(
         MyCompressionFlags.TraceAbbrevSelectionSelect);
     Args.add(TraceAbbrevSelectionSelectFlag.setLongName(
-                                               "verbose=select-abbrevs-select")
+                                                "verbose=select-abbrevs-select")
                  .setDescription(
                      "Show selected pattern sequences, as they apply. "
                      "Only appiles when --verbose=select-abbrevs is "
@@ -319,7 +319,7 @@ int main(int Argc, const char* Argv[]) {
         MyCompressionFlags.TraceAbbrevSelectionCreate);
     Args.add(
         TraceAbbrevSelectionCreateFlag.setLongName(
-                                          "verbose=select-abbrevs-create")
+                                           "verbose=select-abbrevs-create")
             .setDescription(
                 "Show each created pattern sequence that is tried (not just "
                 "the selected ones). Only applies when "
@@ -328,7 +328,7 @@ int main(int Argc, const char* Argv[]) {
     ArgsParser::Optional<bool> TraceAbbrevSelectionDetailFlag(
         MyCompressionFlags.TraceAbbrevSelectionDetail);
     Args.add(TraceAbbrevSelectionDetailFlag.setLongName(
-                                               "verbose=select-abbrev-details")
+                                                "verbose=select-abbrev-details")
                  .setDescription(
                      "Show additional detail (besides creating and selecting) "
                      "when creating the applied pattern sequence. Only applies "
