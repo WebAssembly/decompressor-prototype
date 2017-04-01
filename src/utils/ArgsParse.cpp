@@ -53,12 +53,24 @@ int compareNameCh(charstring Name, char Ch) {
   return compareNames(Name, Buffer);
 }
 
+charstring StateName[]{"Bad", "Usage", "Good"};
+
+charstring ArgKindName[]{"Optional", "Required"};
+
 }  // end of anonymous namespace
 
 namespace utils {
 
 const size_t ArgsParser::TabWidth = 8;
 const size_t ArgsParser::MaxLine = 79;  // allow for trailing space character.
+
+charstring ArgsParser::getName(State S) {
+  return StateName[size_t(S)];
+}
+
+charstring ArgsParser::getName(ArgKind K) {
+  return ArgKindName[size_t(K)];
+}
 
 FILE* ArgsParser::error() {
   Status = State::Bad;
@@ -183,12 +195,20 @@ void ArgsParser::printDescription(FILE* Out,
   printDescriptionContinue(Out, TabSize, Indent, Description);
 }
 
+void ArgsParser::Arg::setOptionFound() {
+  OptionFound = true;
+}
+
+void ArgsParser::Arg::setPlacementFound(size_t& CurPlacement) {
+  ++CurPlacement;
+}
+
 bool ArgsParser::Arg::validOptionValue(ArgsParser* Parser,
                                        charstring OptionValue) {
   if (OptionValue != nullptr)
     return true;
   FILE* Out = Parser->error();
-  fprintf(Out, "Malformed specification: No option valule specified!\n");
+  fprintf(Out, "Malformed specification: No option value specified!\n");
   describe(Out, TabWidth);
   return false;
 }
@@ -211,8 +231,11 @@ void ArgsParser::Arg::describe(FILE* Out, size_t TabSize) const {
     describeOptionName(Out, TabSize, Indent);
     HasName = true;
   }
-  if (!HasName)
+  if (!HasName) {
     describeOptionName(Out, TabSize, Indent);
+  }
+  if (IsRepeatable)
+    writeCharstring(Out, TabSize, Indent, " ...");
   TabSize += TabWidth;
   printDescription(Out, TabSize, Indent,
                    Description == nullptr ? "" : Description);
@@ -245,8 +268,7 @@ int ArgsParser::Arg::compare(const Arg& A) const {
   return 0;
 }
 
-ArgsParser::OptionalArg::OptionalArg(charstring Description)
-    : Arg(ArgKind::Optional, Description) {
+ArgsParser::OptionalArg::OptionalArg() : Arg(ArgKind::Optional) {
 }
 
 int ArgsParser::OptionalArg::compare(const Arg& A) const {
@@ -294,11 +316,14 @@ ArgsParser::ArgsParser(charstring Description)
     : ExecName(nullptr),
       Description(Description),
       Help(false),
-      HelpFlag(Help, "Describe how to use"),
+      HelpFlag(Help),
       CurArg(0),
       Status(State::Good),
       TraceProgress(false) {
-  HelpFlag.setDefault(false).setShortName('h').setLongName("help");
+  HelpFlag.setDefault(false)
+      .setShortName('h')
+      .setLongName("help")
+      .setDescription("Describe how to use");
   add(HelpFlag);
 }
 
@@ -313,6 +338,9 @@ ArgsParser& ArgsParser::add(Arg& A) {
       Status = State::Bad;
     }
   }
+  if (auto* R = dyn_cast<RequiredArg>(&A))
+    RequiredArgs.push_back(R);
+
   bool IsPlacement = true;  // until proven otherwise.
   if (A.getShortName() != 0) {
     ShortArgs.push_back(&A);
@@ -332,8 +360,6 @@ ArgsParser& ArgsParser::add(Arg& A) {
       Status = State::Bad;
     }
   }
-  if (auto* R = dyn_cast<RequiredArg>(&A))
-    RequiredArgs.push_back(R);
   return *this;
 }
 
@@ -417,7 +443,7 @@ void ArgsParser::parseNextArg() {
   if (MatchingOption == nullptr)
     MatchingOption = parseNextLong(Argument, Leftover);
   if (MatchingOption) {
-    MatchingOption->setOptionFound(true);
+    MatchingOption->setOptionFound();
     bool MaybeUseNextArg = false;
     if (Leftover == nullptr && CurArg < Argc) {
       MaybeUseNextArg = true;
@@ -434,8 +460,9 @@ void ArgsParser::parseNextArg() {
     return;
   }
   if (CurPlacement < PlacementArgs.size()) {
-    Arg* Placement = PlacementArgs[CurPlacement++];
-    Placement->setOptionFound(true);
+    Arg* Placement = PlacementArgs[CurPlacement];
+    Placement->setPlacementFound(CurPlacement);
+    Placement->setOptionFound();
     if (TraceProgress) {
       fprintf(stderr, "Matched:\n");
       Placement->describe(stderr, TabWidth);
@@ -472,6 +499,8 @@ ArgsParser::State ArgsParser::parse(int Argc, charstring Argv[]) {
         Status = State::Bad;
       }
   }
+  if (TraceProgress)
+    fprintf(stderr, "Status = %s\n", getName(Status));
   return Status;
 }
 

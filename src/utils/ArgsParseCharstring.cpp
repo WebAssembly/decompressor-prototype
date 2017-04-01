@@ -56,8 +56,8 @@ bool ArgsParser::Required<charstring>::select(ArgsParser* Parser,
 }
 
 template <>
-bool ArgsParser::RepeatableVector<charstring>::select(ArgsParser* Parser,
-                                                      charstring Add) {
+bool ArgsParser::OptionalVector<charstring>::select(ArgsParser* Parser,
+                                                    charstring Add) {
   if (!validOptionValue(Parser, Add))
     return false;
   Values.push_back(Add);
@@ -65,11 +65,50 @@ bool ArgsParser::RepeatableVector<charstring>::select(ArgsParser* Parser,
 }
 
 template <>
-void ArgsParser::RepeatableVector<charstring>::describeDefault(
+void ArgsParser::OptionalVector<charstring>::describeDefault(
     FILE* Out,
     size_t TabSize,
     size_t& Indent) const {
-  printDescriptionContinue(Out, TabSize, Indent, " (can be repeated)");
+}
+
+template <>
+void ArgsParser::RequiredVector<charstring>::setOptionFound() {
+  // Note: Later call to select() will add matched placement.
+  if (Values.size() + 1 >= MinSize)
+    RequiredArg::setOptionFound();
+}
+
+template <>
+void ArgsParser::RequiredVector<charstring>::setPlacementFound(size_t&) {
+}
+
+template <>
+void ArgsParser::RequiredVector<charstring>::describeDefault(
+    FILE* Out,
+    size_t TabSize,
+    size_t& Indent) const {
+  switch (MinSize) {
+    case 0:
+      break;
+    case 1:
+      printDescriptionContinue(Out, TabSize, Indent,
+                               " (must appear at least once)");
+      break;
+    default:
+      printDescriptionContinue(Out, TabSize, Indent, " (must appear at least ");
+      writeSize_t(Out, TabSize, Indent, MinSize);
+      printDescriptionContinue(Out, TabSize, Indent, " times)");
+      break;
+  }
+}
+
+template <>
+bool ArgsParser::RequiredVector<charstring>::select(ArgsParser* Parser,
+                                                    charstring Add) {
+  if (!validOptionValue(Parser, Add))
+    return false;
+  Values.push_back(Add);
+  return true;
 }
 
 }  // end of namespace utils

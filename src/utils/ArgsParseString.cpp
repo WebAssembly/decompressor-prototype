@@ -23,8 +23,8 @@ namespace wasm {
 namespace utils {
 
 template <>
-bool ArgsParser::RepeatableSet<std::string>::select(ArgsParser* Parser,
-                                                    charstring Add) {
+bool ArgsParser::OptionalSet<std::string>::select(ArgsParser* Parser,
+                                                  charstring Add) {
   if (!validOptionValue(Parser, Add))
     return false;
   Values.insert(Add);
@@ -32,11 +32,10 @@ bool ArgsParser::RepeatableSet<std::string>::select(ArgsParser* Parser,
 }
 
 template <>
-void ArgsParser::RepeatableSet<std::string>::describeDefault(
+void ArgsParser::OptionalSet<std::string>::describeDefault(
     FILE* Out,
     size_t TabSize,
     size_t& Indent) const {
-  printDescriptionContinue(Out, TabSize, Indent, " (can be repeated)");
 }
 
 }  // end of namespace utils

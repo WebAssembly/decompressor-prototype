@@ -865,20 +865,24 @@ void CodeGenerator::generateImplFile(bool UseArrayImpl) {
   generateExitNamespaces();
 }
 
-std::shared_ptr<SymbolTable> readCasmFile(const char* Filename,
-                                          bool TraceLexer,
-                                          bool TraceParser) {
+std::shared_ptr<SymbolTable> readCasmFile(
+    const char* Filename,
+    bool TraceLexer,
+    bool TraceParser,
+    std::shared_ptr<SymbolTable> EnclosingScope) {
   bool HasErrors = false;
   std::shared_ptr<SymbolTable> Symtab;
 #if WASM_CAST_BOOT == 1
-  Symtab = std::make_shared<SymbolTable>();
+  Symtab = std::make_shared<SymbolTable>(EnclosingScope);
   Driver Parser(Symtab);
   Parser.setTraceLexing(TraceLexer);
   Parser.setTraceParsing(TraceParser);
   HasErrors = !Parser.parse(Filename);
 #else
   CasmReader Reader;
-  Reader.setTraceRead(TraceParser).setTraceLexer(TraceLexer).readText(Filename);
+  Reader.setTraceRead(TraceParser)
+      .setTraceLexer(TraceLexer)
+      .readText(Filename, EnclosingScope);
   Symtab = Reader.getReadSymtab();
   HasErrors = Reader.hasErrors();
 #endif
@@ -897,10 +901,10 @@ using namespace wasm::filt;
 using namespace wasm::utils;
 
 int main(int Argc, charstring Argv[]) {
-  charstring AlgorithmFilename = nullptr;
-  charstring AlgName = nullptr;
+  std::vector<charstring> AlgorithmFilenames;
+  std::vector<charstring> InputFilenames;
   charstring OutputFilename = "-";
-  charstring InputFilename = "-";
+  charstring AlgName = nullptr;
   std::set<std::string> KeepActions;
   bool DisplayParsedInput = false;
   bool ShowInternalStructure = false;
@@ -928,13 +932,24 @@ int main(int Argc, charstring Argv[]) {
   {
     ArgsParser Args("Converts compression algorithm from text to binary");
 
-    ArgsParser::Optional<charstring> AlgorithmFlag(AlgorithmFilename);
-    Args.add(AlgorithmFlag.setShortName('a')
+    ArgsParser::OptionalVector<charstring> AlgorithmFilenamesFlag(
+        AlgorithmFilenames);
+    Args.add(AlgorithmFilenamesFlag.setShortName('a')
                  .setLongName("algorithm")
                  .setOptionName("ALGORITHM")
                  .setDescription(
-                     "Use algorithm in ALGORITHM file "
-                     "to parse text file"));
+#if WASM_CAST_BOOT == 1
+                     "use the aglorithm defined by ALGORITHM(s) to generate "
+                     "the cast binary file. If repeated, each file defines "
+                     "the enclosing scope for the next ALGORITHM file"
+#else
+                     "Instead of using the default casm algorithm to generate "
+                     "the casm binary file, use the aglorithm defined by "
+                     "ALGORITHM(s). If repeated, each file defines the "
+                     "enclosing "
+                     "scope for the next ALGORITHM file"
+#endif
+                     ));
 
     ArgsParser::Optional<bool> ExpectFailFlag(ExpectExitFail);
     Args.add(ExpectFailFlag.setDefault(false)
@@ -972,11 +987,14 @@ int main(int Argc, charstring Argv[]) {
         "of implementatoin file (only applies when "
         "'--function Name' is specified)"));
 
-    ArgsParser::Required<charstring> InputFlag(InputFilename);
-    Args.add(InputFlag.setOptionName("INPUT")
-                 .setDescription("Text file to convert to binary"));
+    ArgsParser::RequiredVector<charstring> InputFilenamesFlag(InputFilenames);
+    Args.add(InputFilenamesFlag.setOptionName("INPUT").setDescription(
+        "Text file(s) to convert to binary. If repeated, the "
+        "last file is the algorithm converted to binary. "
+        "Previous files define enclosing scopes for the "
+        "converted algorithm"));
 
-    ArgsParser::RepeatableSet<std::string> KeepActionsFlag(KeepActions);
+    ArgsParser::OptionalSet<std::string> KeepActionsFlag(KeepActions);
     Args.add(
         KeepActionsFlag.setLongName("keep")
             .setOptionName("ACTION")
@@ -1100,8 +1118,8 @@ int main(int Argc, charstring Argv[]) {
       StripLiterals = true;
     }
 
+// Be sure to update implications!
 #if WASM_CAST_BOOT > 1
-    // Be sure to update implications!
     if (TraceTree)
       TraceWrite = true;
     // TODO(karlschimpf) Extend ArgsParser to be able to return option
@@ -1116,17 +1134,24 @@ int main(int Argc, charstring Argv[]) {
       return exit_status(EXIT_FAILURE);
     }
 #else
-    assert(AlgorithmFilename != nullptr);
+    if (AlgorithmFilenames.empty()) {
+      fprintf(stderr, "No algorithm files specified, can't continue\n");
+      return exit_status(EXIT_FAILURE);
+    }
 #endif
   }
 
-  if (Verbose)
-    fprintf(stderr, "Reading input: %s\n", InputFilename);
-  std::shared_ptr<SymbolTable> InputSymtab =
-      readCasmFile(InputFilename, TraceLexer, TraceParser);
-  if (!InputSymtab) {
-    fprintf(stderr, "Unable to parse: %s\n", InputFilename);
-    return exit_status(EXIT_FAILURE);
+  std::shared_ptr<SymbolTable> InputSymtab;
+  charstring InputFilename = "-";
+  for (charstring Filename : InputFilenames) {
+    InputFilename = "-";
+    if (Verbose)
+      fprintf(stderr, "Reading input: %s\n", InputFilename);
+    InputSymtab = readCasmFile(Filename, TraceLexer, TraceParser, InputSymtab);
+    if (!InputSymtab) {
+      fprintf(stderr, "Unable to parse: %s\n", InputFilename);
+      return exit_status(EXIT_FAILURE);
+    }
   }
   if (StripActions)
     InputSymtab->stripCallbacksExcept(KeepActions);
@@ -1149,24 +1174,22 @@ int main(int Argc, charstring Argv[]) {
     return exit_status(EXIT_SUCCESS);
   }
 
-  if (Verbose) {
-    if (AlgorithmFilename)
-      fprintf(stderr, "Reading algorithms file: %s\n", AlgorithmFilename);
-    else
-      fprintf(stderr, "Using prebuilt casm algorithm\n");
-  }
   std::shared_ptr<SymbolTable> AlgSymtab;
-  if (AlgorithmFilename) {
-    AlgSymtab = readCasmFile(AlgorithmFilename, TraceLexer, TraceParser);
+  for (charstring Filename : AlgorithmFilenames) {
+    if (Verbose)
+      fprintf(stderr, "Reading algorithm file: %s\n", Filename);
+    AlgSymtab = readCasmFile(Filename, TraceLexer, TraceParser, AlgSymtab);
     if (!AlgSymtab) {
-      fprintf(stderr, "Problems reading file: %s\n", InputFilename);
+      fprintf(stderr, "Problems reading file: %s\n", Filename);
       return exit_status(EXIT_FAILURE);
     }
-#if WASM_CAST_BOOT > 1
-  } else {
-    AlgSymtab = WASM_CASM_GET_SYMTAB();
-#endif
   }
+#if WASM_CAST_BOOT > 1
+  if (AlgorithmFilenames.empty()) {
+    fprintf(stderr, "Using prebuilt casm algorithm\n");
+    AlgSymtab = WASM_CASM_GET_SYMTAB();
+  }
+#endif
 
   if (TraceAlgorithm) {
     TextWriter Writer;
