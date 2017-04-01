@@ -998,14 +998,22 @@ Node* SymbolTable::stripUsing(Node* Root,
       AST_NARYNODE_TABLE
 #undef X
       {
-        // Note: NEVER remove void's in a file node (They represent
-        // header information).
-        if (Op == OpFile)
-          return Root;
         // TODO: Make strip functions return nullptr to remove!
         std::vector<Node*> Kids;
-        for (int i = 0; i < Root->getNumKids(); ++i) {
-          Node* Kid = stripKid(Root->getKid(i));
+        int index = 0;
+        int limit = Root->getNumKids();
+        if (Op == OpFile) {
+          // Note: NEVER remove void's in a file node (They represent
+          // header information).
+          for (; index < limit; ++index) {
+            Node* Kid = Root->getKid(index);
+            if (isa<SectionNode>(Kid))
+              break;
+            Kids.push_back(Kid);
+          }
+        }
+        for (; index < limit; ++index) {
+          Node* Kid = stripKid(Root->getKid(index));
           if (!isa<VoidNode>(Kid))
             Kids.push_back(Kid);
         }
