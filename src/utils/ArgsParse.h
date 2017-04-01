@@ -38,6 +38,9 @@ class ArgsParser {
   enum class State { Bad, Usage, Good };
   enum class ArgKind { Optional, Required };
 
+  static charstring getName(State S);
+  static charstring getName(ArgKind K);
+
   class Arg {
     Arg() = delete;
     Arg(const Arg&) = delete;
@@ -67,7 +70,8 @@ class ArgsParser {
       return *this;
     }
     bool getOptionFound() const { return OptionFound; }
-    void setOptionFound(bool Value) { OptionFound = Value; }
+    virtual void setOptionFound();
+    virtual void setPlacementFound(size_t& CurPlacement);
     bool validOptionValue(ArgsParser* Parser, charstring OptionValue);
     size_t getAddIndex() const { return AddIndex; }
     void setAddIndex(size_t Value) { AddIndex = Value; }
@@ -77,14 +81,15 @@ class ArgsParser {
     virtual ~Arg() {}
 
    protected:
-    explicit Arg(ArgKind Kind, charstring Description)
+    explicit Arg(ArgKind Kind)
         : Kind(Kind),
           ShortName(0),
           LongName(nullptr),
-          Description(Description),
+          Description(nullptr),
           OptionName(nullptr),
           OptionFound(false),
-          AddIndex(0) {}
+          AddIndex(0),
+          IsRepeatable(false) {}
     ArgKind Kind;
     char ShortName;
     charstring LongName;
@@ -92,6 +97,7 @@ class ArgsParser {
     mutable charstring OptionName;
     bool OptionFound;
     size_t AddIndex;
+    bool IsRepeatable;
 
     virtual void describeDefault(FILE* Out,
                                  size_t TabSize,
@@ -152,7 +158,6 @@ class ArgsParser {
   class RequiredArg;
 
   class OptionalArg : public Arg {
-    OptionalArg() = delete;
     OptionalArg(const OptionalArg&) = delete;
     OptionalArg& operator=(const OptionalArg&) = delete;
 
@@ -164,7 +169,7 @@ class ArgsParser {
     ~OptionalArg() OVERRIDE {}
 
    protected:
-    explicit OptionalArg(charstring Description);
+    OptionalArg();
   };
 
   template <class T>
@@ -174,8 +179,8 @@ class ArgsParser {
     Optional& operator=(const Optional&) = delete;
 
    public:
-    explicit Optional(T& Value, charstring Description = nullptr)
-        : OptionalArg(Description), Value(Value), DefaultValue(Value) {}
+    explicit Optional(T& Value)
+        : OptionalArg(), Value(Value), DefaultValue(Value) {}
     Optional& setDefault(T NewDefault) {
       Value = DefaultValue = NewDefault;
       return *this;
@@ -198,8 +203,7 @@ class ArgsParser {
     Toggle& operator=(const Toggle&) = delete;
 
    public:
-    explicit Toggle(bool& Value, charstring Description = nullptr)
-        : Optional<bool>(Value, Description) {}
+    explicit Toggle(bool& Value) : Optional<bool>(Value) {}
     bool select(ArgsParser* Parser, charstring OptionValue) OVERRIDE;
     void describeDefault(FILE* Out,
                          size_t TabSize,
@@ -230,15 +234,16 @@ class ArgsParser {
   };
 
   template <class T>
-  class RepeatableSet : public OptionalArg {
-    RepeatableSet() = delete;
-    RepeatableSet(const RepeatableSet&) = delete;
-    RepeatableSet& operator=(const RepeatableSet&) = delete;
+  class OptionalSet : public OptionalArg {
+    OptionalSet() = delete;
+    OptionalSet(const OptionalSet&) = delete;
+    OptionalSet& operator=(const OptionalSet&) = delete;
 
    public:
     typedef std::set<T> set_type;
-    explicit RepeatableSet(set_type& Values, charstring Description = nullptr)
-        : OptionalArg(Description), Values(Values) {}
+    explicit OptionalSet(set_type& Values) : OptionalArg(), Values(Values) {
+      IsRepeatable = true;
+    }
 
     bool select(ArgsParser* Parser, charstring Add) OVERRIDE;
     void describeDefault(FILE* Out,
@@ -250,16 +255,17 @@ class ArgsParser {
   };
 
   template <class T>
-  class RepeatableVector : public OptionalArg {
-    RepeatableVector() = delete;
-    RepeatableVector(const RepeatableVector&) = delete;
-    RepeatableVector& operator=(const RepeatableVector&) = delete;
+  class OptionalVector : public OptionalArg {
+    OptionalVector() = delete;
+    OptionalVector(const OptionalVector&) = delete;
+    OptionalVector& operator=(const OptionalVector&) = delete;
 
    public:
     typedef std::vector<T> vector_type;
-    explicit RepeatableVector(vector_type& Values,
-                              charstring Description = nullptr)
-        : OptionalArg(Description), Values(Values) {}
+    explicit OptionalVector(vector_type& Values)
+        : OptionalArg(), Values(Values) {
+      IsRepeatable = true;
+    }
 
     bool select(ArgsParser* Parser, charstring Add) OVERRIDE;
     void describeDefault(FILE* Out,
@@ -271,7 +277,6 @@ class ArgsParser {
   };
 
   class RequiredArg : public Arg {
-    RequiredArg() = delete;
     RequiredArg(const RequiredArg&) = delete;
     RequiredArg& operator=(const RequiredArg&) = delete;
 
@@ -282,7 +287,7 @@ class ArgsParser {
     ~RequiredArg() OVERRIDE {}
 
    protected:
-    RequiredArg(charstring Description) : Arg(ArgKind::Required, Description) {
+    RequiredArg() : Arg(ArgKind::Required) {
       // Force a default name.
       OptionName = "ARG";
     }
@@ -295,14 +300,39 @@ class ArgsParser {
     Required& operator=(const Required&) = delete;
 
    public:
-    explicit Required(T& Value, charstring Description = nullptr)
-        : RequiredArg(Description), Value(Value) {}
+    explicit Required(T& Value) : RequiredArg(), Value(Value) {}
     bool select(ArgsParser* Parser, charstring OptionValue) OVERRIDE;
 
     ~Required() OVERRIDE {}
 
    private:
     T& Value;
+  };
+
+  template <class T>
+  class RequiredVector : public RequiredArg {
+    RequiredVector() = delete;
+    RequiredVector(const RequiredVector&) = delete;
+    RequiredVector& operator=(const RequiredVector&) = delete;
+
+   public:
+    typedef std::vector<T> vector_type;
+    explicit RequiredVector(vector_type& Values, size_t MinSize = 1)
+        : RequiredArg(), Values(Values), MinSize(MinSize) {
+      IsRepeatable = true;
+      assert(MinSize > 0);
+    }
+
+    void setOptionFound() OVERRIDE;
+    void setPlacementFound(size_t& CurPlacement) OVERRIDE;
+    bool select(ArgsParser* Parser, charstring Add) OVERRIDE;
+    void describeDefault(FILE* Out,
+                         size_t TabSize,
+                         size_t& Indent) const OVERRIDE;
+
+   protected:
+    vector_type& Values;
+    size_t MinSize;
   };
 
   explicit ArgsParser(const char* Description = nullptr);

@@ -51,7 +51,13 @@ void CasmReader::foundErrors() {
 }
 
 void CasmReader::readText(charstring Filename) {
-  Symtab = std::make_shared<SymbolTable>();
+  std::shared_ptr<SymbolTable> NoEnclosingScope;
+  readText(Filename, NoEnclosingScope);
+}
+
+void CasmReader::readText(charstring Filename,
+                          std::shared_ptr<SymbolTable> EnclosingScope) {
+  Symtab = std::make_shared<SymbolTable>(EnclosingScope);
   Driver Parser(Symtab);
   if (TraceRead)
     Parser.setTraceParsing(true);

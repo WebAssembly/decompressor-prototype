@@ -43,6 +43,8 @@ class CasmReader {
   ~CasmReader();
 
   void readText(charstring Filename);
+  void readText(charstring Filename,
+                std::shared_ptr<filt::SymbolTable> EnclosingScope);
 
   void readBinary(std::shared_ptr<Queue> Binary,
                   std::shared_ptr<filt::SymbolTable> AlgSymtab);

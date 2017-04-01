@@ -115,7 +115,7 @@ int main(const int Argc, const char* Argv[]) {
     Args.add(InputFilenameFlag.setOptionName("INPUT")
                  .setDescription("INPUT is the File to decompress"));
 
-    ArgsParser::RepeatableVector<charstring> AlgorithmsFlag(Algorithms);
+    ArgsParser::OptionalVector<charstring> AlgorithmsFlag(Algorithms);
     Args.add(AlgorithmsFlag.setShortName('a')
                  .setLongName("algorithm")
                  .setOptionName("FILE")
