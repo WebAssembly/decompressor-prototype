@@ -537,6 +537,10 @@ TEST_CASM_NOACT_FILES = $(patsubst %.cast, \
 				$(TEST_SRCS_DIR)/%.cast-noacts, \
 				$(TEST_CASM_SRCS))
 
+TEST_CASM_NOSYMACT_FILES = $(patsubst %.cast, \
+				$(TEST_SRCS_DIR)/%.cast-nosymacts, \
+				$(TEST_CASM_SRCS))
+
 TEST_CASM_GEN_FILES = $(patsubst %.cast, $(TEST_0XD_GENDIR)/%.casm, \
 	 	  	$(TEST_CASM_SRCS))
 
@@ -556,6 +560,11 @@ TEST_CASM_NOLIT_GEN_FILES = $(patsubst %.cast, \
 
 TEST_CASM_NOACT_GEN_FILES = $(patsubst %.cast, \
 				$(TEST_0XD_GENDIR)/%.cast-noacts, \
+				$(TEST_CASM_SRCS))
+
+
+TEST_CASM_NOSYMACT_GEN_FILES = $(patsubst %.cast, \
+				$(TEST_0XD_GENDIR)/%.cast-nosymacts, \
 				$(TEST_CASM_SRCS))
 
 ###### Libraries for each compilation step ######
@@ -1114,26 +1123,34 @@ $(TEST_CASM_OUT_GEN_FILES): $(TEST_0XD_GENDIR)/%.cast-out: $(TEST_SRCS_DIR)/%.ca
 
 .PHONY: $(TEST_CASM_OUT_GEN_FILES)
 
-$(TEST_CASM_LITUSE_GEN_FILES): $(TEST_0XD_GENDIR)/%.cast-nolituse: $(TEST_SRCS_DIR)/%.cast \
-		$(BUILD_EXECDIR)/cast2casm
+$(TEST_CASM_LITUSE_GEN_FILES): $(TEST_0XD_GENDIR)/%.cast-nolituse: \
+		$(TEST_SRCS_DIR)/%.cast $(BUILD_EXECDIR)/cast2casm
 	$(BUILD_EXECDIR)/cast2casm $< --strip-literal-uses --display=stripped \
 		| cmp - $(patsubst %.cast, %.cast-nolituse, $<)
 
 .PHONY: $(TEST_CASM_LITUSE_GEN_FILES)
 
-$(TEST_CASM_NOLIT_GEN_FILES): $(TEST_0XD_GENDIR)/%.cast-nolits: $(TEST_SRCS_DIR)/%.cast \
-		$(BUILD_EXECDIR)/cast2casm
+$(TEST_CASM_NOLIT_GEN_FILES): $(TEST_0XD_GENDIR)/%.cast-nolits: \
+		$(TEST_SRCS_DIR)/%.cast $(BUILD_EXECDIR)/cast2casm
 	$(BUILD_EXECDIR)/cast2casm $< --strip-literals --display=stripped \
 		| cmp - $(patsubst %.cast, %.cast-nolits, $<)
 
 .PHONY: $(TEST_CASM_NOLIT_GEN_FILES)
 
-$(TEST_CASM_NOACT_GEN_FILES): $(TEST_0XD_GENDIR)/%.cast-noacts: $(TEST_SRCS_DIR)/%.cast \
-		$(BUILD_EXECDIR)/cast2casm
+$(TEST_CASM_NOACT_GEN_FILES): $(TEST_0XD_GENDIR)/%.cast-noacts: \
+		 $(TEST_SRCS_DIR)/%.cast $(BUILD_EXECDIR)/cast2casm
 	$(BUILD_EXECDIR)/cast2casm $< --strip-actions --display=stripped \
 		| cmp - $(patsubst %.cast, %.cast-noacts, $<)
 
 .PHONY: $(TEST_CASM_NOACT_GEN_FILES)
+
+$(TEST_CASM_NOSYMACT_GEN_FILES): $(TEST_0XD_GENDIR)/%.cast-nosymacts: \
+		$(TEST_SRCS_DIR)/%.cast $(BUILD_EXECDIR)/cast2casm
+	$(BUILD_EXECDIR)/cast2casm $< --strip-symbolic-actions \
+		--display=stripped \
+		| cmp - $(patsubst %.cast, %.cast-nosymacts, $<)
+
+.PHONY: $(TEST_CASM_NOSYMACT_GEN_FILES)
 
 # Note: Currently only tests that code executes (without errors).
 $(TEST_WASM_COMP_FILES): $(TEST_0XD_GENDIR)/%.wasm-comp: $(TEST_0XD_SRCDIR)/%.wasm \
@@ -1182,7 +1199,8 @@ $(TEST_WASM_CAPI_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm-capi: \
 test-cast2casm: $(TEST_CASM_GEN_FILES) $(TEST_WASM_M_GEN_FILES) \
 		$(TEST_CASM_LITUSE_GEN_FILES) \
 		$(TEST_CASM_NOLIT_GEN_FILES) \
-		$(TEST_CASM_NOACT_GEN_FILES) 
+		$(TEST_CASM_NOACT_GEN_FILES) \
+		$(TEST_CASM_NOSYMACT_GEN_FILES) 
 	@echo "*** cast2casm tests passed ***"
 
 .PHONY: test-cast2cast
@@ -1305,24 +1323,29 @@ $(TEST_CASM_CASM_M_FILES): $(TEST_SRCS_DIR)/%.casm-m: $(TEST_SRCS_DIR)/%.cast \
 		$(BUILD_EXECDIR)/cast2casm
 	rm -rf $@; $(BUILD_EXECDIR)/cast2casm -m $< -o $@
 
-$(TEST_CASM_CAST_OUT_FILES): $(TEST_SRCS_DIR)/%.cast-out: $(TEST_SRCS_DIR)/%.casm \
-		$(BUILD_EXECDIR)/casm2cast
+$(TEST_CASM_CAST_OUT_FILES): $(TEST_SRCS_DIR)/%.cast-out: \
+		$(TEST_SRCS_DIR)/%.casm $(BUILD_EXECDIR)/casm2cast
 	rm -rf $@; $(BUILD_EXECDIR)/casm2cast $< -o $@
 
-$(TEST_CASM_LITUSE_FILES): $(TEST_SRCS_DIR)/%.cast-nolituse: $(TEST_SRCS_DIR)/%.cast \
-		$(BUILD_EXECDIR)/casm2cast
+$(TEST_CASM_LITUSE_FILES): $(TEST_SRCS_DIR)/%.cast-nolituse: \
+		$(TEST_SRCS_DIR)/%.cast $(BUILD_EXECDIR)/casm2cast
 	rm -rf $@; $(BUILD_EXECDIR)/cast2casm $< --strip-literal-uses \
 		--display=stripped > $@
 
-$(TEST_CASM_NOLIT_FILES): $(TEST_SRCS_DIR)/%.cast-nolits: $(TEST_SRCS_DIR)/%.cast \
-		$(BUILD_EXECDIR)/casm2cast
+$(TEST_CASM_NOLIT_FILES): $(TEST_SRCS_DIR)/%.cast-nolits: \
+		$(TEST_SRCS_DIR)/%.cast $(BUILD_EXECDIR)/casm2cast
 	rm -rf $@; $(BUILD_EXECDIR)/cast2casm $< --strip-literals \
 		--display=stripped > $@
-
 
 $(TEST_CASM_NOACT_FILES): $(TEST_SRCS_DIR)/%.cast-noacts: $(TEST_SRCS_DIR)/%.cast \
 		$(BUILD_EXECDIR)/casm2cast
 	rm -rf $@; $(BUILD_EXECDIR)/cast2casm $< --strip-actions \
+		--display=stripped > $@
+
+
+$(TEST_CASM_NOSYMACT_FILES): $(TEST_SRCS_DIR)/%.cast-nosymacts: \
+		$(TEST_SRCS_DIR)/%.cast $(BUILD_EXECDIR)/casm2cast
+	rm -rf $@; $(BUILD_EXECDIR)/cast2casm $< --strip-symbolic-actions \
 		--display=stripped > $@
 
 endif

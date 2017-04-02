@@ -1094,6 +1094,26 @@ Node* SymbolTable::stripCallbacksExcept(std::set<std::string>& KeepActions,
       }
       break;
     }
+    case OpLiteralActionDef:
+      if (const auto* Sym = dyn_cast<SymbolNode>(Root->getKid(0))) {
+        if (KeepActions.count(Sym->getName()))
+          return Root;
+      }
+      break;
+    case OpLiteralActionBase: {
+      bool CanRemove = true;
+      for (int i = 1; i < Root->getNumKids(); ++i) {
+        if (const auto* Sym = dyn_cast<SymbolNode>(Root->getKid(i))) {
+          if (KeepActions.count(Sym->getName())) {
+            CanRemove = false;
+            break;
+          }
+        }
+      }
+      if (!CanRemove)
+        return Root;
+      break;
+    }
   }
   return create<VoidNode>();
 }
