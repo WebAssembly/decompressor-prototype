@@ -729,42 +729,50 @@ $(ALG_LIB): $(ALG_OBJS)
 	ranlib $@
 
 ifeq ($(GENSRCS), 3)
+
+  # TODO(karlschimpf) Strip symbolic actions to save space. Note: This
+  # requires a separate implementation file for enumerations.
+
   $(ALG_BOOT1_ENUM_H_SRCS): $(ALG_GENDIR)/%-enum.h: $(ALG_GENDIR)/%.cast \
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1 -a $(ALG_GENDIR_ALG) \
 		$< -o $@ --header --enum \
-		--name $(call alg_name, $<)
+		--name $(call alg_name, $<) 
 
   $(ALG_BOOT1_H_SRCS): $(ALG_GENDIR)/%.h: $(ALG_GENDIR)/%.cast \
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1 -a $(ALG_GENDIR_ALG) \
 		$< -o $@ --header --strip-literals --function \
-		--name $(call alg_name, $<)
+		--name $(call alg_name, $<) 
 
   $(ALG_BOOT1_CPP_SRCS): $(ALG_GENDIR)/%.cpp: $(ALG_GENDIR)/%.cast \
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1 -a $(ALG_GENDIR_ALG) \
 		$< -o $@ --strip-literals --enum --function \
-		--name $(call alg_name, $<)
+		--name $(call alg_name, $<) 
 
 endif
 
 ifeq ($(GENSRCS), 4)
 
+  # TODO(karlschimpf) Strip symbolic actions to save space. Note: This
+  # requires a separate implementation file for enumerations.
+
   $(ALG_BOOT2_H_SRCS): $(ALG_GENDIR)/%.h: $(ALG_GENDIR)/%.cast \
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot2
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot2 \
-		$< -o $@ --header --strip-literal-uses --strip-actions \
+		$< -o $@ --header --strip-literal-uses \
 		-a $(ALG_GENDIR_ALG) --enum --function \
-		--name $(call alg_name, $<)
+		--name $(call alg_name, $<) \
+		$(if $(findstring casm0x0, $<), , --strip-actions)
 
   $(ALG_BOOT2_CPP_SRCS): $(ALG_GENDIR)/%.cpp: $(ALG_GENDIR)/%.cast \
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot2
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot2  \
-		$< -o $@ --strip-literal-uses --array --strip-actions \
+		$< -o $@ --strip-literal-uses --array \
 		-a $(ALG_GENDIR_ALG) --enum --function \
 		--name $(call alg_name, $<) \
-		$(if $(findstring casm0x0, $<), --boot)
+		$(if $(findstring casm0x0, $<), --boot, --strip-actions)
 
 endif
 

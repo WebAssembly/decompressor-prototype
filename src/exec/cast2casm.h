@@ -1135,10 +1135,12 @@ int main(int Argc, charstring Argv[]) {
     if (InputFilenames.empty())
       InputFilenames.push_back("-");
 
+#if WASM_CAST_BOOT < 3
     if (AlgorithmFilenames.empty() && !DisplayParsedInput) {
       fprintf(stderr, "No algorithm files specified, can't continue\n");
       return exit_status(EXIT_FAILURE);
     }
+#endif
 
 #if WASM_CAST_BOOT > 1
     if (TraceTree)
