@@ -607,7 +607,6 @@ void SymbolTable::init() {
   Error = create<ErrorNode>();
   BlockEnterCallback = nullptr;
   BlockExitCallback = nullptr;
-  AllowInconsistentActions = false;
 }
 
 SymbolTable::~SymbolTable() {
@@ -814,16 +813,25 @@ bool SymbolTable::areActionsConsistent() {
     if (IntNd == nullptr) {
       errorDescribeNode("Unable to extract action value", Def);
       IsValid = false;
+      continue;
     }
     IntType Value = IntNd->getValue();
     if (DefMap.count(Value) == 0) {
       DefMap[Value] = Def;
       continue;
     }
+    const Node* IntDef = DefMap[Value];
+    // Before complaining about conflicting action values, ignore predefined
+    // symbols. We do this because we always define them so that the predefined
+    // actions will always work.
+    if (const auto* Sym = dyn_cast<SymbolNode>(Def->getKid(0))) {
+      if (Sym->isPredefinedSymbol())
+        continue;
+    }
     FILE* Out = IntNd->getErrorFile();
     fprintf(Out, "Conflicting action values:\n");
     TextWriter Writer;
-    Writer.write(Out, DefMap[Value]);
+    Writer.write(Out, IntDef);
     fprintf(Out, "and\n");
     Writer.write(Out, Def);
     IsValid = false;
@@ -843,7 +851,7 @@ void SymbolTable::install(FileNode* Root) {
   installDefinitions(Root);
   std::vector<Node*> Parents;
   bool IsValid = Root->validateSubtree(Parents);
-  if (!AllowInconsistentActions && IsValid)
+  if (IsValid)
     IsValid = areActionsConsistent();
   if (!IsValid)
     fatal("Unable to install algorthms, validation failed!");
@@ -987,6 +995,28 @@ void SymbolTable::stripCallbacksExcept(std::set<std::string>& KeepActions) {
   install(dyn_cast<FileNode>(stripCallbacksExcept(KeepActions, Root)));
 }
 
+void SymbolTable::stripSymbolicCallbacks() {
+  Root = dyn_cast<FileNode>(stripSymbolicCallbackUses(Root));
+  if (Root != nullptr)
+    Root = dyn_cast<FileNode>(stripSymbolicCallbackDefs(Root));
+  install(Root);
+}
+
+void SymbolTable::stripLiterals() {
+  stripLiteralUses();
+  stripLiteralDefs();
+}
+
+void SymbolTable::stripLiteralUses() {
+  install(dyn_cast<FileNode>(stripLiteralUses(Root)));
+}
+
+void SymbolTable::stripLiteralDefs() {
+  SymbolSet DefSyms;
+  collectLiteralUseSymbols(DefSyms);
+  install(dyn_cast<FileNode>(stripLiteralDefs(Root, DefSyms)));
+}
+
 Node* SymbolTable::stripUsing(Node* Root,
                               std::function<Node*(Node*)> stripKid) {
   switch (NodeType Op = Root->getType()) {
@@ -1066,19 +1096,42 @@ Node* SymbolTable::stripCallbacksExcept(std::set<std::string>& KeepActions,
   return create<VoidNode>();
 }
 
-void SymbolTable::stripLiterals() {
-  stripLiteralUses();
-  stripLiteralDefs();
+Node* SymbolTable::stripSymbolicCallbackUses(Node* Root) {
+  switch (Root->getType()) {
+    default:
+      return stripUsing(Root, [&](Node* Nd) -> Node* {
+        return stripSymbolicCallbackUses(Nd);
+      });
+    case OpLiteralActionUse: {
+      const auto* Sym = dyn_cast<SymbolNode>(Root->getKid(0));
+      if (Sym == nullptr)
+        return Root;
+      const auto* Def = Sym->getLiteralActionDefinition();
+      if (Def == nullptr)
+        break;
+      return Def->getKid(1);
+    }
+  }
+  // If reached, this is a symbolic action use without a def, so remove.
+  TextWriter Writer;
+  FILE* Out = error();
+  fprintf(Out, "No action definition for: ");
+  Writer.write(Out, Root);
+  return create<VoidNode>();
 }
 
-void SymbolTable::stripLiteralUses() {
-  install(dyn_cast<FileNode>(stripLiteralUses(Root)));
-}
-
-void SymbolTable::stripLiteralDefs() {
-  SymbolSet DefSyms;
-  collectLiteralUseSymbols(DefSyms);
-  install(dyn_cast<FileNode>(stripLiteralDefs(Root, DefSyms)));
+Node* SymbolTable::stripSymbolicCallbackDefs(Node* Root) {
+  switch (Root->getType()) {
+    default:
+      return stripUsing(Root, [&](Node* Nd) -> Node* {
+        return stripSymbolicCallbackDefs(Nd);
+      });
+    case OpLiteralActionDef:
+      break;
+    case OpLiteralActionBase:
+      break;
+  }
+  return create<VoidNode>();
 }
 
 Node* SymbolTable::stripLiteralUses(Node* Root) {

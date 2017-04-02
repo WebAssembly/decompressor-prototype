@@ -910,6 +910,7 @@ int main(int Argc, charstring Argv[]) {
   bool DisplayStrippedInput = false;
   bool ShowInternalStructure = false;
   bool StripActions = false;
+  bool StripSymbolicActions = false;
   bool StripAll = false;
   bool StripLiterals = false;
   bool StripLiteralDefs = false;
@@ -1024,27 +1025,33 @@ int main(int Argc, charstring Argv[]) {
                      "Show internal structure when displaying "
                      "parsed text"));
 
-    ArgsParser::Optional<bool> StripActionsFlag(StripActions);
+    ArgsParser::Toggle StripActionsFlag(StripActions);
     Args.add(StripActionsFlag.setLongName("strip-actions")
                  .setDescription("Remove callback actions from input"));
 
-    ArgsParser::Optional<bool> StripAllFlag(StripAll);
+    ArgsParser::Toggle StripSymbolicActionsFlag(StripSymbolicActions);
+    Args.add(StripSymbolicActionsFlag.setLongName("strip-symbolic-actions")
+                 .setDescription(
+                     "Substitute action enumerated value for all "
+                     "action symbolic names"));
+
+    ArgsParser::Toggle StripAllFlag(StripAll);
     Args.add(StripAllFlag.setShortName('s').setLongName("strip").setDescription(
         "Apply all strip actions to input"));
 
-    ArgsParser::Optional<bool> StripLiteralsFlag(StripLiterals);
+    ArgsParser::Toggle StripLiteralsFlag(StripLiterals);
     Args.add(StripLiteralsFlag.setLongName("strip-literals")
                  .setDescription(
                      "Replace literal uses with their definition, then "
                      "remove unreferenced literal definitions from the input"));
 
-    ArgsParser::Optional<bool> StripLiteralDefsFlag(StripLiteralDefs);
+    ArgsParser::Toggle StripLiteralDefsFlag(StripLiteralDefs);
     Args.add(StripLiteralDefsFlag.setLongName("strip-literal-defs")
                  .setDescription(
                      "Remove unreferenced literal definitions from "
                      "the input"));
 
-    ArgsParser::Optional<bool> StripLiteralUsesFlag(StripLiteralUses);
+    ArgsParser::Toggle StripLiteralUsesFlag(StripLiteralUses);
     Args.add(StripLiteralUsesFlag.setLongName("strip-literal-uses")
                  .setDescription("Replace literal uses with their defintion"));
 
@@ -1053,7 +1060,7 @@ int main(int Argc, charstring Argv[]) {
         TraceLexerFlag.setLongName("verbose=lexer")
             .setDescription("Show lexing of algorithm (defined by option -a)"));
 
-    ArgsParser::Optional<bool> TraceParserFlag(TraceParser);
+    ArgsParser::Toggle TraceParserFlag(TraceParser);
     Args.add(TraceParserFlag.setLongName("verbose=parser")
                  .setDescription(
                      "Show parsing of algorithm (defined by option -a)"));
@@ -1115,14 +1122,15 @@ int main(int Argc, charstring Argv[]) {
         return exit_status(EXIT_FAILURE);
     }
 
-    if (StripAll) {
-      StripActions = true;
-      StripLiterals = true;
-    }
-
     // Be sure to update implications!
     if (DisplayStrippedInput)
       DisplayParsedInput = true;
+
+    if (StripAll) {
+      StripActions = true;
+      StripSymbolicActions = false;
+      StripLiterals = true;
+    }
 
     if (InputFilenames.empty())
       InputFilenames.push_back("-");
@@ -1176,9 +1184,14 @@ int main(int Argc, charstring Argv[]) {
       LastDisplayedInput = true;
     }
   }
-
-  // Note: Must run after StripActions to guarantee that literal defintions
-  // associated with stripped actions will also be removed.
+  if (StripSymbolicActions) {
+    InputSymtab->stripSymbolicCallbacks();
+    LastDisplayedInput = false;
+    if (DisplayStrippedInput) {
+      fprintf(stderr, "Algorithm after stripping symbolic actions:\n");
+      InputSymtab->describe(stderr, ShowInternalStructure);
+    }
+  }
   if (StripLiteralUses) {
     InputSymtab->stripLiteralUses();
     LastDisplayedInput = false;

@@ -214,6 +214,8 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   // specified. Returns the updated tree.
   void stripCallbacksExcept(std::set<std::string>& KeepActions);
 
+  void stripSymbolicCallbacks();
+
   void stripLiteralUses();
   void stripLiteralDefs();
   // Strips out literal definitions and replaces literal uses.
@@ -249,7 +251,6 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   CallbackNode* BlockEnterCallback;
   CallbackNode* BlockExitCallback;
   CachedValueMap CachedValue;
-  bool AllowInconsistentActions;
 
   void init();
   void deallocateNodes();
@@ -260,6 +261,8 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   bool areActionsConsistent();
   Node* stripUsing(Node* Root, std::function<Node*(Node*)> stripKid);
   Node* stripCallbacksExcept(std::set<std::string>& KeepActions, Node* Root);
+  Node* stripSymbolicCallbackUses(Node* Root);
+  Node* stripSymbolicCallbackDefs(Node* Root);
   Node* stripLiteralUses(Node* Root);
   void collectLiteralUseSymbols(SymbolSet& Symbols);
   Node* stripLiteralDefs(Node* Root, SymbolSet& DefSyms);
