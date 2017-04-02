@@ -1,0 +1,18 @@
+(header (u32.const 0x6d736163) (u32.const 0x0))
+(void)
+(void)
+(declarations)
+(define 'code' (params)
+  (read)
+  (peek (uint8))
+  (read (uint8))
+  (write (uint8) (i32.const 8))
+  (peek
+    (uint8)
+    (uint8)
+  )
+  (read
+    (uint8)
+    (uint8)
+  )
+)
