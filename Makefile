@@ -529,6 +529,10 @@ TEST_CASM_LITUSE_FILES = $(patsubst %.cast, \
 				$(TEST_SRCS_DIR)/%.cast-nolituse, \
 				$(TEST_CASM_SRCS))
 
+TEST_CASM_NOLIT_FILES = $(patsubst %.cast, \
+				$(TEST_SRCS_DIR)/%.cast-nolits, \
+				$(TEST_CASM_SRCS))
+
 TEST_CASM_GEN_FILES = $(patsubst %.cast, $(TEST_0XD_GENDIR)/%.casm, \
 	 	  	$(TEST_CASM_SRCS))
 
@@ -540,6 +544,10 @@ TEST_CASM_OUT_GEN_FILES = $(patsubst %.cast, $(TEST_0XD_GENDIR)/%.cast-out, \
 
 TEST_CASM_LITUSE_GEN_FILES = $(patsubst %.cast, \
 				$(TEST_0XD_GENDIR)/%.cast-nolituse, \
+				$(TEST_CASM_SRCS))
+
+TEST_CASM_NOLIT_GEN_FILES = $(patsubst %.cast, \
+				$(TEST_0XD_GENDIR)/%.cast-nolits, \
 				$(TEST_CASM_SRCS))
 
 ###### Libraries for each compilation step ######
@@ -1103,6 +1111,15 @@ $(TEST_CASM_LITUSE_GEN_FILES): $(TEST_0XD_GENDIR)/%.cast-nolituse: $(TEST_SRCS_D
 	$(BUILD_EXECDIR)/cast2casm $< --strip-literal-uses --display=stripped \
 		| cmp - $(patsubst %.cast, %.cast-nolituse, $<)
 
+.PHONY: $(TEST_CASM_LITUSE_GEN_FILES)
+
+$(TEST_CASM_NOLIT_GEN_FILES): $(TEST_0XD_GENDIR)/%.cast-nolits: $(TEST_SRCS_DIR)/%.cast \
+		$(BUILD_EXECDIR)/cast2casm
+	$(BUILD_EXECDIR)/cast2casm $< --strip-literals --display=stripped \
+		| cmp - $(patsubst %.cast, %.cast-nolits, $<)
+
+.PHONY: $(TEST_CASM_NOLIT_GEN_FILES)
+
 # Note: Currently only tests that code executes (without errors).
 $(TEST_WASM_COMP_FILES): $(TEST_0XD_GENDIR)/%.wasm-comp: $(TEST_0XD_SRCDIR)/%.wasm \
 		$(BUILD_EXECDIR)/compress-int $(BUILD_EXECDIR)/decompress
@@ -1147,13 +1164,14 @@ $(TEST_WASM_CAPI_GEN_FILES): $(TEST_0XD_GENDIR)/%.wasm-capi: \
 
 .PHOHY: $(TEST_WASM_WPD_GEN_FILES)
 
-test-cast2casm: $(TEST_CASM_GEN_FILES) $(TEST_WASM_M_GEN_FILES)
+test-cast2casm: $(TEST_CASM_GEN_FILES) $(TEST_WASM_M_GEN_FILES) \
+		$(TEST_CASM_LITUSE_GEN_FILES) \
+		$(TEST_CASM_NOLIT_GEN_FILES)
 	@echo "*** cast2casm tests passed ***"
 
 .PHONY: test-cast2cast
 
-test-casm2cast: $(BUILD_EXECDIR)/casm2cast $(TEST_CASM_OUT_GEN_FILES) \
-		$(TEST_CASM_LITUSE_GEN_FILES)
+test-casm2cast: $(BUILD_EXECDIR)/casm2cast $(TEST_CASM_OUT_GEN_FILES)
 	$< $(TEST_DEFAULT_CASM) | diff - $(TEST_DEFAULT_CAST_OUT)
 	$< $(TEST_DEFAULT_CASM_M) | diff - $(TEST_DEFAULT_CAST_OUT)
 	@echo "*** casm2cast tests passed ***"
@@ -1278,6 +1296,11 @@ $(TEST_CASM_CAST_OUT_FILES): $(TEST_SRCS_DIR)/%.cast-out: $(TEST_SRCS_DIR)/%.cas
 $(TEST_CASM_LITUSE_FILES): $(TEST_SRCS_DIR)/%.cast-nolituse: $(TEST_SRCS_DIR)/%.cast \
 		$(BUILD_EXECDIR)/casm2cast
 	rm -rf $@; $(BUILD_EXECDIR)/cast2casm $< --strip-literal-uses \
+		--display=stripped > $@
+
+$(TEST_CASM_NOLIT_FILES): $(TEST_SRCS_DIR)/%.cast-nolits: $(TEST_SRCS_DIR)/%.cast \
+		$(BUILD_EXECDIR)/casm2cast
+	rm -rf $@; $(BUILD_EXECDIR)/cast2casm $< --strip-literals \
 		--display=stripped > $@
 
 endif

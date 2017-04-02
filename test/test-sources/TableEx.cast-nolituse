@@ -1,0 +1,11 @@
+(header (u32.const 0x6d736163) (u32.const 0x0))
+(void)
+(void)
+(declarations)
+(define 'file' (params)
+  (loop.unbounded
+    (table (uint8)
+      (loop (uint8) (varuint64))
+    )
+  )
+)
