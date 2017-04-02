@@ -525,14 +525,22 @@ TEST_CASM_CASM_M_FILES = $(patsubst %.cast, $(TEST_SRCS_DIR)/%.casm-m, \
 TEST_CASM_CAST_OUT_FILES = $(patsubst %.cast, $(TEST_SRCS_DIR)/%.cast-out, \
 			  $(TEST_CASM_SRCS))
 
+TEST_CASM_LITUSE_FILES = $(patsubst %.cast, \
+				$(TEST_SRCS_DIR)/%.cast-nolituse, \
+				$(TEST_CASM_SRCS))
+
 TEST_CASM_GEN_FILES = $(patsubst %.cast, $(TEST_0XD_GENDIR)/%.casm, \
 	 	  	$(TEST_CASM_SRCS))
 
 TEST_WASM_M_GEN_FILES = $(patsubst %.cast, $(TEST_0XD_GENDIR)/%.casm-m, \
 	 	  	$(TEST_CASM_SRCS))
 
-TEST_CASM_DF_GEN_FILES = $(patsubst %.cast, $(TEST_0XD_GENDIR)/%.cast-out, \
+TEST_CASM_OUT_GEN_FILES = $(patsubst %.cast, $(TEST_0XD_GENDIR)/%.cast-out, \
 	 	  	$(TEST_CASM_SRCS))
+
+TEST_CASM_LITUSE_GEN_FILES = $(patsubst %.cast, \
+				$(TEST_0XD_GENDIR)/%.cast-nolituse, \
+				$(TEST_CASM_SRCS))
 
 ###### Libraries for each compilation step ######
 
@@ -1080,7 +1088,7 @@ $(TEST_WASM_M_GEN_FILES): $(TEST_0XD_GENDIR)/%.casm-m: $(TEST_SRCS_DIR)/%.cast \
 
 .PHONY: $(TEST_WASM_M_GEN_FILES)
 
-$(TEST_CASM_DF_GEN_FILES): $(TEST_0XD_GENDIR)/%.cast-out: $(TEST_SRCS_DIR)/%.casm \
+$(TEST_CASM_OUT_GEN_FILES): $(TEST_0XD_GENDIR)/%.cast-out: $(TEST_SRCS_DIR)/%.casm \
 		$(TEST_SRCS_DIR)/%.casm $(BUILD_EXECDIR)/casm2cast
 	$(BUILD_EXECDIR)/casm2cast $< | \
 		cmp - $(patsubst %.casm, %.cast-out, $<)
@@ -1088,7 +1096,12 @@ $(TEST_CASM_DF_GEN_FILES): $(TEST_0XD_GENDIR)/%.cast-out: $(TEST_SRCS_DIR)/%.cas
 		$(patsubst %.casm, %.casm-m, $<) | \
 		cmp - $(patsubst %.casm, %.cast-out, $<)
 
-.PHONY: $(TEST_CASM_DF_GEN_FILES)
+.PHONY: $(TEST_CASM_OUT_GEN_FILES)
+
+$(TEST_CASM_LITUSE_GEN_FILES): $(TEST_0XD_GENDIR)/%.cast-nolituse: $(TEST_SRCS_DIR)/%.cast \
+		$(BUILD_EXECDIR)/cast2casm
+	$(BUILD_EXECDIR)/cast2casm $< --strip-literal-uses --display=stripped \
+		| cmp - $(patsubst %.cast, %.cast-nolituse, $<)
 
 # Note: Currently only tests that code executes (without errors).
 $(TEST_WASM_COMP_FILES): $(TEST_0XD_GENDIR)/%.wasm-comp: $(TEST_0XD_SRCDIR)/%.wasm \
@@ -1139,7 +1152,8 @@ test-cast2casm: $(TEST_CASM_GEN_FILES) $(TEST_WASM_M_GEN_FILES)
 
 .PHONY: test-cast2cast
 
-test-casm2cast: $(BUILD_EXECDIR)/casm2cast $(TEST_CASM_DF_GEN_FILES) 
+test-casm2cast: $(BUILD_EXECDIR)/casm2cast $(TEST_CASM_OUT_GEN_FILES) \
+		$(TEST_CASM_LITUSE_GEN_FILES)
 	$< $(TEST_DEFAULT_CASM) | diff - $(TEST_DEFAULT_CAST_OUT)
 	$< $(TEST_DEFAULT_CASM_M) | diff - $(TEST_DEFAULT_CAST_OUT)
 	@echo "*** casm2cast tests passed ***"
@@ -1238,7 +1252,8 @@ update-all: wabt-submodule build-all
 	$(TEST_CASM_M_SRC_FILES) \
 	$(TEST_CASM_CASM_FILES) \
 	$(TEST_CASM_CASM_M_FILES) \
-	$(TEST_CASM_CAST_OUT_FILES)
+	$(TEST_CASM_CAST_OUT_FILES) \
+	$(TEST_CASM_LITUSE_FILES)
 
 $(TEST_WASM_SRC_FILES): $(TEST_0XD_SRCDIR)/%.wasm: $(WABT_WAST_DIR)/%.wast \
 		wabt-submodule
@@ -1259,6 +1274,11 @@ $(TEST_CASM_CASM_M_FILES): $(TEST_SRCS_DIR)/%.casm-m: $(TEST_SRCS_DIR)/%.cast \
 $(TEST_CASM_CAST_OUT_FILES): $(TEST_SRCS_DIR)/%.cast-out: $(TEST_SRCS_DIR)/%.casm \
 		$(BUILD_EXECDIR)/casm2cast
 	rm -rf $@; $(BUILD_EXECDIR)/casm2cast $< -o $@
+
+$(TEST_CASM_LITUSE_FILES): $(TEST_SRCS_DIR)/%.cast-nolituse: $(TEST_SRCS_DIR)/%.cast \
+		$(BUILD_EXECDIR)/casm2cast
+	rm -rf $@; $(BUILD_EXECDIR)/cast2casm $< --strip-literal-uses \
+		--display=stripped > $@
 
 endif
 

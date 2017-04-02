@@ -1123,8 +1123,6 @@ int main(int Argc, charstring Argv[]) {
     }
 
     // Be sure to update implications!
-    if (DisplayStrippedInput)
-      DisplayParsedInput = true;
 
     if (StripAll) {
       StripActions = true;
@@ -1175,55 +1173,25 @@ int main(int Argc, charstring Argv[]) {
   if (DisplayParsedInput) {
     fprintf(stderr, "Parsed input:\n");
     InputSymtab->describe(stderr, ShowInternalStructure);
+    if (!DisplayStrippedInput)
+      return exit_status(EXIT_SUCCESS);
   }
-  bool LastDisplayedInput = true;
-  if (StripActions) {
+  if (StripActions)
     InputSymtab->stripCallbacksExcept(KeepActions);
-    LastDisplayedInput = false;
-    if (DisplayStrippedInput) {
-      fprintf(stderr, "Algorithm before stripping actions:\n");
-      InputSymtab->describe(stderr, ShowInternalStructure);
-      LastDisplayedInput = true;
-    }
-  }
-  if (StripSymbolicActions) {
-    InputSymtab->stripSymbolicCallbacks();
-    LastDisplayedInput = false;
-    if (DisplayStrippedInput) {
-      fprintf(stderr, "Algorithm after stripping symbolic actions:\n");
-      InputSymtab->describe(stderr, ShowInternalStructure);
-    }
-  }
-  if (StripLiteralUses) {
-    InputSymtab->stripLiteralUses();
-    LastDisplayedInput = false;
-    if (DisplayStrippedInput) {
-      fprintf(stderr, "Algorithm after stripping literal uses:\n");
-      InputSymtab->describe(stderr, ShowInternalStructure);
-      LastDisplayedInput = true;
-    }
-  }
-  if (StripLiteralDefs) {
-    InputSymtab->stripLiteralDefs();
-    LastDisplayedInput = false;
-    if (DisplayStrippedInput) {
-      fprintf(stderr, "Algorithm after stripping literal defines:\n");
-      InputSymtab->describe(stderr, ShowInternalStructure);
-      LastDisplayedInput = true;
-    }
-  }
-  if (StripLiterals) {
-    InputSymtab->stripLiterals();
-    LastDisplayedInput = false;
-    if (DisplayStrippedInput) {
-      fprintf(stderr, "Algorithm after stripping literals:\n");
-      InputSymtab->describe(stderr, ShowInternalStructure);
-      LastDisplayedInput = true;
-    }
-  }
 
-  if (DisplayParsedInput && !LastDisplayedInput) {
-    InputSymtab->describe(stderr, ShowInternalStructure);
+  if (StripSymbolicActions)
+    InputSymtab->stripSymbolicCallbacks();
+  if (StripLiteralUses)
+    InputSymtab->stripLiteralUses();
+
+  if (StripLiteralDefs)
+    InputSymtab->stripLiteralDefs();
+
+  if (StripLiterals)
+    InputSymtab->stripLiterals();
+
+  if (DisplayStrippedInput) {
+    InputSymtab->describe(stdout, ShowInternalStructure);
     return exit_status(EXIT_SUCCESS);
   }
 
