@@ -1033,8 +1033,9 @@ Node* SymbolTable::stripUsing(Node* Root,
         int index = 0;
         int limit = Root->getNumKids();
         if (Op == OpFile) {
-          // Note: NEVER remove void's in a file node (They represent
-          // header information).
+          // Note: Never remove void's in a file node (They represent
+          // header information). Only process once declarations (i.e.
+          // a section node) are reached.
           for (; index < limit; ++index) {
             Node* Kid = Root->getKid(index);
             if (isa<SectionNode>(Kid))
@@ -1042,6 +1043,7 @@ Node* SymbolTable::stripUsing(Node* Root,
             Kids.push_back(Kid);
           }
         }
+        // Simplify kids, removing "void" operations from the nary node.
         for (; index < limit; ++index) {
           Node* Kid = stripKid(Root->getKid(index));
           if (!isa<VoidNode>(Kid))
