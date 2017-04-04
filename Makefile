@@ -820,14 +820,16 @@ ifeq ($(GENSRCS), 3)
 		$(ALG_GENDIR)/%-lits.cast $(BUILD_EXECDIR_BOOT)/cast2casm-boot1
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1 \
 		-a $(patsubst %Boot.cast, %-lits.cast, $<) -a $< \
-		$< -o $@ --header --strip-literals --function \
+		$(patsubst %Boot.cast, %-lits.cast, $<) $< -o $@ \
+		--header --strip-literals --function \
 		--name $(call alg_name, $<)
 
   $(ALG_BOOT1_BASE_CPP_SRCS): $(ALG_GENDIR)/%Boot.cpp: $(ALG_GENDIR)/%Boot.cast \
 		$(ALG_GENDIR)/%-lits.cast $(BUILD_EXECDIR_BOOT)/cast2casm-boot1
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1 \
 		-a $(patsubst %Boot.cast, %-lits.cast, $<) -a $< \
-		$< -o $@ --strip-literals --strip-symbolic-actions --function \
+		$(patsubst %Boot.cast, %-lits.cast, $<) $< -o $@ \
+		--strip-literals --strip-symbolic-actions --function \
 		--name $(call alg_name, $<)
 
 endif
