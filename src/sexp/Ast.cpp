@@ -951,8 +951,9 @@ void SymbolTable::installDefinitions(Node* Root) {
           errorDescribeNode("In", Root);
           return fatal("Can't redefine predefined symbol");
         }
-        return LiteralSymbol->setLiteralActionDefinition(
-            cast<LiteralActionDefNode>(Root));
+        const auto* Def = cast<LiteralActionDefNode>(Root);
+        insertCallbackLiteral(Def);
+        return LiteralSymbol->setLiteralActionDefinition(Def);
       }
       errorDescribeNode("Malformed", Root);
       return fatal("Malformed literal s-expression found!");

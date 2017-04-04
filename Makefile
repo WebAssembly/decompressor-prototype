@@ -213,10 +213,10 @@ ALG_BOOT1_CAST_LIT_SRCS = $(patsubst %.cast, $(ALG_GENDIR)/%-lits.cast, \
 				$(ALG_CAST))
 ALG_BOOT1_H_SRCS = $(patsubst %.cast, %.h, $(ALG_BOOT1_CAST_SRCS))
 ALG_BOOT1_CPP_SRCS = $(patsubst %.cast, %.cpp, $(ALG_BOOT1_CAST_SRCS))
-ALG_BOOT1_ENUM_H_SRCS = $(patsubst %.cast, $(ALG_GENDIR)/%-enum.h, $(ALG_CAST))
-ALG_BOOT1_SRCS = $(ALG_BOOT1_H_SRCS) \
-			$(ALG_BOOT1_CPP_SRCS) \
-			$(ALG_BOOT1_ENUM_H_SRCS)
+ALG_BOOT1_LIT_H_SRCS = $(patsubst %.cast, $(ALG_GENDIR)/%-lits.h, $(ALG_CAST))
+ALG_BOOT1_LIT_CPP_SRCS = $(patsubst %.cast, $(ALG_GENDIR)/%-lits.cpp, $(ALG_CAST))
+ALG_BOOT1_SRCS = $(ALG_BOOT1_H_SRCS) $(ALG_BOOT1_LIT_CPP_SRCS) \
+			$(ALG_BOOT1_CPP_SRCS) $(ALG_BOOT1_LIT_H_SRCS)
 
 ALG_CAST_SRCS += $(ALG_BOOT1_CAST_SRCS)
 ALG_CAST_LIT_SRCS += $(ALG_BOOT1_CAST_LIT_SRCS)
@@ -795,22 +795,34 @@ ifeq ($(GENSRCS), 3)
   # TODO(karlschimpf) Strip symbolic actions to save space. Note: This
   # requires a separate implementation file for enumerations.
 
-  $(ALG_BOOT1_ENUM_H_SRCS): $(ALG_GENDIR)/%-enum.h: $(ALG_GENDIR)/%.cast \
-	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1
-	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1 -a $(ALG_GENDIR_ALG) \
-		$< -o $@ --header --enum \
-		--name $(call alg_name, $<)
+  $(ALG_BOOT1_LIT_H_SRCS): $(ALG_GENDIR)/%.h: $(ALG_GENDIR)/%.cast \
+		$(BUILD_EXECDIR_BOOT)/cast2casm-boot1
+	@echo "CASE 1 $< $@"
+	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1 \
+		-a $< $< -o $@ --header --enum \
+		--name $(call alg_name, $(patsubst %-lits.cast, %.cast, $<))
 
-  $(ALG_BOOT1_H_SRCS): $(ALG_GENDIR)/%.h: $(ALG_GENDIR)/%.cast \
-	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1
-	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1 -a $(ALG_GENDIR_ALG) \
+  $(ALG_BOOT1_LIT_CPP_SRCS): $(ALG_GENDIR)/%.cpp: $(ALG_GENDIR)/%.cast \
+		$(BUILD_EXECDIR_BOOT)/cast2casm-boot1
+	@echo "CASE 4 $< $@"
+	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1 \
+		-a $< $< -o $@ --enum \
+		--name $(call alg_name, $(patsubst %-lits.cast, %.cast, $<))
+
+  $(ALG_BOOT1_H_SRCS): $(ALG_GENDIR)/%Boot.h: $(ALG_GENDIR)/%Boot.cast \
+		$(ALG_GENDIR)/%-lits.cast $(BUILD_EXECDIR_BOOT)/cast2casm-boot1
+	@echo "CASE 2 $< $@"
+	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1 \
+		-a $(patsubst %Boot.cast, %-lits.cast, $<) -a $< \
 		$< -o $@ --header --strip-literals --function \
 		--name $(call alg_name, $<)
 
-  $(ALG_BOOT1_CPP_SRCS): $(ALG_GENDIR)/%.cpp: $(ALG_GENDIR)/%.cast \
-	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1
-	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1 -a $(ALG_GENDIR_ALG) \
-		$< -o $@ --strip-literals --enum --function \
+  $(ALG_BOOT1_CPP_SRCS): $(ALG_GENDIR)/%Boot.cpp: $(ALG_GENDIR)/%Boot.cast \
+		$(ALG_GENDIR)/%-lits.cast $(BUILD_EXECDIR_BOOT)/cast2casm-boot1
+	@echo "CASE 3 $< $@"
+	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1 \
+		-a $(patsubst %Boot.cast, %-lits.cast, $<) -a $< \
+		$< -o $@ --strip-literals --function \
 		--name $(call alg_name, $<)
 
 endif
