@@ -201,7 +201,6 @@ alg_name = $(patsubst $(ALG_GENDIR)/%.cast, Alg%, $(1))
 
 ALG_CAST = casm0x0.cast
 ALG_GENDIR_ALG = $(ALG_GENDIR)/casm0x0.cast
-ALG_CAST_SRCS  += $(ALG_GENDIR_ALG)
 
 #### Boot step 1
 
@@ -210,6 +209,8 @@ ALG_CAST_BOOT = casm0x0Boot.cast
 ALG_CAST_BOOT1 = $(ALG_CAST_BOOT) $(ALG_CAST)
 
 ALG_BOOT1_CAST_SRCS = $(patsubst %.cast, $(ALG_GENDIR)/%.cast, $(ALG_CAST_BOOT))
+ALG_BOOT1_CAST_LIT_SRCS = $(patsubst %.cast, $(ALG_GENDIR)/%-lits.cast, \
+				$(ALG_CAST))
 ALG_BOOT1_H_SRCS = $(patsubst %.cast, %.h, $(ALG_BOOT1_CAST_SRCS))
 ALG_BOOT1_CPP_SRCS = $(patsubst %.cast, %.cpp, $(ALG_BOOT1_CAST_SRCS))
 ALG_BOOT1_ENUM_H_SRCS = $(patsubst %.cast, $(ALG_GENDIR)/%-enum.h, $(ALG_CAST))
@@ -218,19 +219,25 @@ ALG_BOOT1_SRCS = $(ALG_BOOT1_H_SRCS) \
 			$(ALG_BOOT1_ENUM_H_SRCS)
 
 ALG_CAST_SRCS += $(ALG_BOOT1_CAST_SRCS)
+ALG_CAST_LIT_SRCS += $(ALG_BOOT1_CAST_LIT_SRCS)
 
 GENERATED_COPY_SOURCES += $(ALG_BOOT1_CAST_SRCS)
 GENERATED_BOOT1_SOURCES += $(ALG_BOOT1_SRCS)
 
 #### Boot step 2
 
-ALG_CAST_BOOT2 = $(ALG_CAST) wasm0xd.cast cism0x0.cast
+ALG_CAST_BOOT2_BASE = wasm0xd.cast cism0x0.cast
+ALG_CAST_BOOT2 = $(ALG_CAST) $(ALG_CAST_BOOT2_BASE)
+ALG_BOOT2_CAST_BASE_SRCS = $(patsubst %.cast, $(ALG_GENDIR)/%.cast, $(ALG_CAST_BOOT2_BASE))
 ALG_BOOT2_CAST_SRCS = $(patsubst %.cast, $(ALG_GENDIR)/%.cast, $(ALG_CAST_BOOT2))
+ALG_BOOT2_CAST_LIT_SRCS = $(patsubst %.cast, $(ALG_GENDIR)/%-lits.cast, \
+				$(ALG_CAST_BOOT2_BASE))
 ALG_BOOT2_H_SRCS = $(patsubst %.cast, %.h, $(ALG_BOOT2_CAST_SRCS))
 ALG_BOOT2_CPP_SRCS = $(patsubst %.cast, %.cpp, $(ALG_BOOT2_CAST_SRCS))
 ALG_BOOT2_SRCS = $(ALG_BOOT2_H_SRCS) $(ALG_BOOT2_CPP_SRCS)
 
 ALG_CAST_SRCS += $(ALG_BOOT2_CAST_SRCS)
+ALG_CAST_LIT_SRCS += $(ALG_BOOT2_CAST_LIT_SRCS)
 
 ALG_BOOT2_OBJS = $(patsubst $(ALG_GENDIR)/%.cpp, \
 				$(ALG_OBJDIR)/%.o, \
@@ -757,9 +764,14 @@ $(ALG_OBJDIR):
 	mkdir -p $@
 
 $(ALG_CAST_SRCS): | $(ALG_GENDIR)
+$(ALG_CAST_LIT_SRCS): | $(ALG_GENDIR)
 
 ifeq ($(GENSRCS), 1)
-  $(ALG_CAST_SRCS): $(ALG_GENDIR)/%.cast: $(ALG_SRCDIR)/%.cast
+  $(ALG_CAST_SRCS): $(ALG_GENDIR)/%.cast: $(ALG_SRCDIR)/%.cast \
+			$(ALG_CAST_LIT_SRCS)
+	cp $< $@
+
+  $(ALG_CAST_LIT_SRCS): $(ALG_GENDIR)/%.cast: $(ALG_SRCDIR)/%.cast
 	cp $< $@
 endif
 
