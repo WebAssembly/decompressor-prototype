@@ -907,14 +907,15 @@ int main(int Argc, charstring Argv[]) {
   charstring AlgName = nullptr;
   std::set<std::string> KeepActions;
   bool DisplayParsedInput = false;
+  bool DisplayStrippedInput = false;
   bool ShowInternalStructure = false;
   bool StripActions = false;
+  bool StripSymbolicActions = false;
   bool StripAll = false;
   bool StripLiterals = false;
   bool StripLiteralDefs = false;
   bool StripLiteralUses = false;
   bool TraceAlgorithm = false;
-  bool TraceInputTree = false;
   bool TraceLexer = false;
   bool TraceParser = false;
   bool Verbose = false;
@@ -1009,7 +1010,13 @@ int main(int Argc, charstring Argv[]) {
     ArgsParser::Toggle DisplayParsedInputFlag(DisplayParsedInput);
     Args.add(DisplayParsedInputFlag.setShortName('d')
                  .setLongName("display")
-                 .setDescription("Only display parsed cast text"));
+                 .setDescription("Display parsed cast text"));
+
+    ArgsParser::Toggle DisplayStrippedInputFlag(DisplayStrippedInput);
+    Args.add(DisplayStrippedInputFlag.setLongName("display=stripped")
+                 .setDescription(
+                     "Display parsed cast text after each strip "
+                     "operation"));
 
     ArgsParser::Toggle ShowInternalStructureFlag(ShowInternalStructure);
     Args.add(ShowInternalStructureFlag.setShortName('i')
@@ -1018,40 +1025,42 @@ int main(int Argc, charstring Argv[]) {
                      "Show internal structure when displaying "
                      "parsed text"));
 
-    ArgsParser::Optional<bool> StripActionsFlag(StripActions);
+    ArgsParser::Toggle StripActionsFlag(StripActions);
     Args.add(StripActionsFlag.setLongName("strip-actions")
                  .setDescription("Remove callback actions from input"));
 
-    ArgsParser::Optional<bool> StripAllFlag(StripAll);
+    ArgsParser::Toggle StripSymbolicActionsFlag(StripSymbolicActions);
+    Args.add(StripSymbolicActionsFlag.setLongName("strip-symbolic-actions")
+                 .setDescription(
+                     "Substitute action enumerated value for all "
+                     "action symbolic names"));
+
+    ArgsParser::Toggle StripAllFlag(StripAll);
     Args.add(StripAllFlag.setShortName('s').setLongName("strip").setDescription(
         "Apply all strip actions to input"));
 
-    ArgsParser::Optional<bool> StripLiteralsFlag(StripLiterals);
+    ArgsParser::Toggle StripLiteralsFlag(StripLiterals);
     Args.add(StripLiteralsFlag.setLongName("strip-literals")
                  .setDescription(
                      "Replace literal uses with their definition, then "
                      "remove unreferenced literal definitions from the input"));
 
-    ArgsParser::Optional<bool> StripLiteralDefsFlag(StripLiteralDefs);
+    ArgsParser::Toggle StripLiteralDefsFlag(StripLiteralDefs);
     Args.add(StripLiteralDefsFlag.setLongName("strip-literal-defs")
                  .setDescription(
                      "Remove unreferenced literal definitions from "
                      "the input"));
 
-    ArgsParser::Optional<bool> StripLiteralUsesFlag(StripLiteralUses);
+    ArgsParser::Toggle StripLiteralUsesFlag(StripLiteralUses);
     Args.add(StripLiteralUsesFlag.setLongName("strip-literal-uses")
                  .setDescription("Replace literal uses with their defintion"));
-
-    ArgsParser::Optional<bool> TraceInputTreeFlag(TraceInputTree);
-    Args.add(TraceInputTreeFlag.setLongName("verbose=input")
-                 .setDescription("Show generated AST from reading input"));
 
     ArgsParser::Optional<bool> TraceLexerFlag(TraceLexer);
     Args.add(
         TraceLexerFlag.setLongName("verbose=lexer")
             .setDescription("Show lexing of algorithm (defined by option -a)"));
 
-    ArgsParser::Optional<bool> TraceParserFlag(TraceParser);
+    ArgsParser::Toggle TraceParserFlag(TraceParser);
     Args.add(TraceParserFlag.setLongName("verbose=parser")
                  .setDescription(
                      "Show parsing of algorithm (defined by option -a)"));
@@ -1113,12 +1122,24 @@ int main(int Argc, charstring Argv[]) {
         return exit_status(EXIT_FAILURE);
     }
 
+    // Be sure to update implications!
+
     if (StripAll) {
       StripActions = true;
+      StripSymbolicActions = false;
       StripLiterals = true;
     }
 
-// Be sure to update implications!
+    if (InputFilenames.empty())
+      InputFilenames.push_back("-");
+
+#if WASM_CAST_BOOT < 3
+    if (AlgorithmFilenames.empty() && !DisplayParsedInput) {
+      fprintf(stderr, "No algorithm files specified, can't continue\n");
+      return exit_status(EXIT_FAILURE);
+    }
+#endif
+
 #if WASM_CAST_BOOT > 1
     if (TraceTree)
       TraceWrite = true;
@@ -1133,18 +1154,13 @@ int main(int Argc, charstring Argv[]) {
       fprintf(stderr, "Opition --array can't be used with option --header\n");
       return exit_status(EXIT_FAILURE);
     }
-#else
-    if (AlgorithmFilenames.empty()) {
-      fprintf(stderr, "No algorithm files specified, can't continue\n");
-      return exit_status(EXIT_FAILURE);
-    }
 #endif
   }
 
   std::shared_ptr<SymbolTable> InputSymtab;
   charstring InputFilename = "-";
   for (charstring Filename : InputFilenames) {
-    InputFilename = "-";
+    InputFilename = Filename;
     if (Verbose)
       fprintf(stderr, "Reading input: %s\n", InputFilename);
     InputSymtab = readCasmFile(Filename, TraceLexer, TraceParser, InputSymtab);
@@ -1153,24 +1169,29 @@ int main(int Argc, charstring Argv[]) {
       return exit_status(EXIT_FAILURE);
     }
   }
+
+  if (DisplayParsedInput) {
+    fprintf(stderr, "Parsed input:\n");
+    InputSymtab->describe(stderr, ShowInternalStructure);
+    if (!DisplayStrippedInput)
+      return exit_status(EXIT_SUCCESS);
+  }
   if (StripActions)
     InputSymtab->stripCallbacksExcept(KeepActions);
-  // Note: Must run after StripActions to guarantee that literal defintions
-  // associated with stripped actions will also be removed.
+
+  if (StripSymbolicActions)
+    InputSymtab->stripSymbolicCallbacks();
   if (StripLiteralUses)
     InputSymtab->stripLiteralUses();
+
   if (StripLiteralDefs)
     InputSymtab->stripLiteralDefs();
+
   if (StripLiterals)
     InputSymtab->stripLiterals();
 
-  if (TraceInputTree) {
-    TextWriter Writer;
-    Writer.write(stderr, InputSymtab.get());
-  }
-
-  if (DisplayParsedInput) {
-    InputSymtab->describe(stderr, ShowInternalStructure);
+  if (DisplayStrippedInput) {
+    InputSymtab->describe(stdout, ShowInternalStructure);
     return exit_status(EXIT_SUCCESS);
   }
 

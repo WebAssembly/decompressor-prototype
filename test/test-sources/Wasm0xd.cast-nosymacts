@@ -2,303 +2,6 @@
 (header (u32.const 0x6d736100) (u32.const 0xd))
 (void)
 (declarations)
-(literal.action.enum (u32.const 1001)
-  'br_table.begin'
-  'br_table.count'
-  'br_table.default'
-  'br_table.end'
-  'br_table.target'
-  'br_target.begin'
-  'br_target.end'
-  'code.section.begin'
-  'code.section.count'
-  'code.section.end'
-  'data.section.begin'
-  'data.section.count'
-  'data.section.end'
-  'data.segment.begin'
-  'data.segment.data'
-  'data.segment.end'
-  'data.segment.memory_index'
-  'data.segment.size'
-  'element.section.begin'
-  'element.section.count'
-  'element.section.end'
-  'element.segment.begin'
-  'element.segment.elem'
-  'element.segment.end'
-  'element.segment.index'
-  'element.segment.num_elem'
-  'element.segment.offset'
-  'export.entry.index'
-  'export.entry.name'
-  'export.section.begin'
-  'export.section.count'
-  'export.section.end'
-  'external.kind.begin'
-  'external.kind.end'
-  'file.begin'
-  'file.end'
-  'function.body.begin'
-  'function.body.code.begin'
-  'function.body.code.end'
-  'function.body.end'
-  'function.body.local_count'
-  'function.names.begin'
-  'function.names.end'
-  'function.names.fcn_name'
-  'function.names.local_count'
-  'function.names.local_name'
-  'function.section.begin'
-  'function.section.count'
-  'function.section.end'
-  'function.section.type'
-  'function.type.begin'
-  'function.type.end'
-  'function.type.form'
-  'global.section.begin'
-  'global.section.count'
-  'global.section.end'
-  'global.section.variable.init'
-  'global.section.variable.type'
-  'global.type.begin'
-  'global.type.end'
-  'import.entry.begin'
-  'import.entry.end'
-  'import.entry.field'
-  'import.entry.function'
-  'import.entry.global'
-  'import.entry.memory'
-  'import.entry.module'
-  'import.entry.table'
-  'import.section.begin'
-  'import.section.count'
-  'import.section.end'
-  'init_expr.begin'
-  'init_expr.end'
-  'init_expr.opcode'
-  'inst.block'
-  'inst.br'
-  'inst.br_if'
-  'inst.br_table'
-  'inst.call'
-  'inst.call_indirect'
-  'inst.current_memory'
-  'inst.drop'
-  'inst.else'
-  'inst.end'
-  'inst.f32.abs'
-  'inst.f32.add'
-  'inst.f32.ceil'
-  'inst.f32.const'
-  'inst.f32.convert_s/i32'
-  'inst.f32.convert_s/i64'
-  'inst.f32.convert_u/i32'
-  'inst.f32.convert_u/i64'
-  'inst.f32.copysign'
-  'inst.f32.demote/f64'
-  'inst.f32.div'
-  'inst.f32.eq'
-  'inst.f32.floor'
-  'inst.f32.ge'
-  'inst.f32.gt'
-  'inst.f32.le'
-  'inst.f32.load'
-  'inst.f32.lt'
-  'inst.f32.max'
-  'inst.f32.min'
-  'inst.f32.mul'
-  'inst.f32.ne'
-  'inst.f32.nearest'
-  'inst.f32.neg'
-  'inst.f32.reinterpret/i32'
-  'inst.f32.sqrt'
-  'inst.f32.store'
-  'inst.f32.sub'
-  'inst.f32.trunc'
-  'inst.f64.abs'
-  'inst.f64.add'
-  'inst.f64.ceil'
-  'inst.f64.const'
-  'inst.f64.convert_s/i32'
-  'inst.f64.convert_s/i64'
-  'inst.f64.convert_u/i32'
-  'inst.f64.convert_u/i64'
-  'inst.f64.copysign'
-  'inst.f64.div'
-  'inst.f64.eq'
-  'inst.f64.floor'
-  'inst.f64.ge'
-  'inst.f64.gt'
-  'inst.f64.le'
-  'inst.f64.load'
-  'inst.f64.lt'
-  'inst.f64.max'
-  'inst.f64.min'
-  'inst.f64.mul'
-  'inst.f64.ne'
-  'inst.f64.nearest'
-  'inst.f64.neg'
-  'inst.f64.promote/f32'
-  'inst.f64.reinterpret/i64'
-  'inst.f64.sqrt'
-  'inst.f64.store'
-  'inst.f64.sub'
-  'inst.f64.trunc'
-  'inst.get_global'
-  'inst.get_local'
-  'inst.grow_memory'
-  'inst.if'
-  'inst.i32.add'
-  'inst.i32.and'
-  'inst.i32.clz'
-  'inst.i32.const'
-  'inst.i32.ctx'
-  'inst.i32.div_s'
-  'inst.i32.div_u'
-  'inst.i32.eq'
-  'inst.i32.eqz'
-  'inst.i32.ge_s'
-  'inst.i32.ge_u'
-  'inst.i32.gt_s'
-  'inst.i32.gt_u'
-  'inst.i32.le_s'
-  'inst.i32.le_u'
-  'inst.i32.load'
-  'inst.i32.load16_s'
-  'inst.i32.load16_u'
-  'inst.i32.load8_s'
-  'inst.i32.load8_u'
-  'inst.i32.lt_s'
-  'inst.i32.lt_u'
-  'inst.i32.mul'
-  'inst.i32.ne'
-  'inst.i32.or'
-  'inst.i32.popcnt'
-  'inst.i32.reinterpret/f32'
-  'inst.i32.rem_s'
-  'inst.i32.rem_u'
-  'inst.i32.rotl'
-  'inst.i32.rotr'
-  'inst.i32.shl'
-  'inst.i32.shr_s'
-  'inst.i32.shr_u'
-  'inst.i32.store'
-  'inst.i32.store16'
-  'inst.i32.store8'
-  'inst.i32.sub'
-  'inst.i32.trunc_s/f32'
-  'inst.i32.trunc_s/f64'
-  'inst.i32.trunc_u/f32'
-  'inst.i32.trunc_u/f64'
-  'inst.i32.wrap/i64'
-  'inst.i32.xor'
-  'inst.i64.add'
-  'inst.i64.and'
-  'inst.i64.clz'
-  'inst.i64.const'
-  'inst.i64.ctx'
-  'inst.i64.div_s'
-  'inst.i64.div_u'
-  'inst.i64.eq'
-  'inst.i64.eqz'
-  'inst.i64.extend_s/i32'
-  'inst.i64.extend_u/i32'
-  'inst.i64.ge_s'
-  'inst.i64.ge_u'
-  'inst.i64.gt_s'
-  'inst.i64.gt_u'
-  'inst.i64.le_s'
-  'inst.i64.le_u'
-  'inst.i64.load'
-  'inst.i64.load16_s'
-  'inst.i64.load16_u'
-  'inst.i64.load32_s'
-  'inst.i64.load32_u'
-  'inst.i64.load8_s'
-  'inst.i64.load8_u'
-  'inst.i64.lt_s'
-  'inst.i64.lt_u'
-  'inst.i64.mul'
-  'inst.i64.ne'
-  'inst.i64.or'
-  'inst.i64.popcnt'
-  'inst.i64.reinterpret/f64'
-  'inst.i64.rem_s'
-  'inst.i64.rem_u'
-  'inst.i64.rotl'
-  'inst.i64.rotr'
-  'inst.i64.store'
-  'inst.i64.store8'
-  'inst.i64.store16'
-  'inst.i64.store32'
-  'inst.i64.shl'
-  'inst.i64.shr_s'
-  'inst.i64.shr_u'
-  'inst.i64.sub'
-  'inst.i64.trunc_s/f32'
-  'inst.i64.trunc_s/f64'
-  'inst.i64.trunc_u/f32'
-  'inst.i64.trunc_u/f64'
-  'inst.i64.xor'
-  'inst.loop'
-  'inst.nop'
-  'inst.return'
-  'inst.select'
-  'inst.set_global'
-  'inst.set_local'
-  'inst.tee_local'
-  'inst.unreachable'
-  'instruction.begin'
-  'instruction.end'
-  'instruction.opcode'
-  'local.entry.begin'
-  'local.entry.count'
-  'local.entry.end'
-  'memory.immediate.begin'
-  'memory.immediate.end'
-  'memory.section.begin'
-  'memory.section.count'
-  'memory.section.end'
-  'memory.section.entry'
-  'memory.type.begin'
-  'memory.type.end'
-  'name.section.begin'
-  'name.section.count'
-  'name.section.end'
-  'resizable.limits.begin'
-  'resizable.limits.end'
-  'resizable.limits.flags'
-  'resizable.limits.initial'
-  'resizable.limits.maximum'
-  'section.begin'
-  'section.code'
-  'section.end'
-  'skip.section.begin'
-  'skip.section.end'
-  'start.section.begin'
-  'start.section.end'
-  'symbol.name.begin'
-  'symbol.name.end'
-  'symbol.name.length'
-  'table.section.begin'
-  'table.section.count'
-  'table.section.end'
-  'table.section.type'
-  'table.type.begin'
-  'table.type.end'
-  'type.num.params'
-  'type.num.returns'
-  'type.param'
-  'type.return'
-  'type.section.begin'
-  'type.section.count'
-  'type.section.end'
-  'type.value.begin'
-  'type.value.end'
-  'unknown.section.begin'
-  'unknown.section.end'
-)
 (literal 'inst.unreachable' (u8.const 0x0))
 (literal 'inst.nop' (u8.const 0x1))
 (literal 'inst.block' (u8.const 0x2))
@@ -612,657 +315,657 @@
 (literal 'unknown.section.end' (u32.const 132))
 (literal 'instruction.begin' (u32.const 133))
 (define 'br_table' (params)
-  (=> 'br_table.begin')
+  (=> (u64.const 1001))
   (loop
     (seq
       (varuint32)
-      (=> 'br_table.count')
+      (=> (u64.const 1002))
     )
     (varuint32)
-    (=> 'br_table.target')
+    (=> (u64.const 1005))
   )
   (varuint32)
-  (=> 'br_table.default')
-  (=> 'br_table.end')
+  (=> (u64.const 1003))
+  (=> (u64.const 1004))
 )
 (define 'br_target' (params)
-  (=> 'br_target.begin')
+  (=> (u64.const 1006))
   (varuint32)
-  (=> 'br_target.end')
+  (=> (u64.const 1007))
 )
 (define 'code.section' (params)
-  (=> 'code.section.begin')
+  (=> (u64.const 1008))
   (loop
     (seq
       (varuint32)
-      (=> 'code.section.count')
+      (=> (u64.const 1009))
     )
     (eval 'function.body')
   )
-  (=> 'code.section.end')
+  (=> (u64.const 1010))
 )
 (define 'data.section' (params)
-  (=> 'data.section.begin')
+  (=> (u64.const 1011))
   (loop
     (seq
       (varuint32)
-      (=> 'data.section.count')
+      (=> (u64.const 1012))
     )
     (eval 'data.segment')
   )
-  (=> 'data.section.end')
+  (=> (u64.const 1013))
 )
 (define 'data.segment' (params)
-  (=> 'data.segment.begin')
+  (=> (u64.const 1014))
   (varuint32)
-  (=> 'data.segment.memory_index')
+  (=> (u64.const 1017))
   (eval 'init_expr')
   (loop
     (seq
       (varuint32)
-      (=> 'data.segment.size')
+      (=> (u64.const 1018))
     )
     (uint8)
-    (=> 'data.segment.data')
+    (=> (u64.const 1015))
   )
-  (=> 'data.segment.end')
+  (=> (u64.const 1016))
 )
 (define 'element.section' (params)
-  (=> 'element.section.begin')
+  (=> (u64.const 1019))
   (loop
     (seq
       (varuint32)
-      (=> 'element.section.count')
+      (=> (u64.const 1020))
     )
     (eval 'element.segment')
   )
-  (=> 'element.section.end')
+  (=> (u64.const 1021))
 )
 (define 'element.segment' (params)
-  (=> 'element.segment.begin')
+  (=> (u64.const 1022))
   (varuint32)
-  (=> 'element.segment.index')
+  (=> (u64.const 1025))
   (eval 'init_expr')
-  (=> 'element.segment.offset')
+  (=> (u64.const 1027))
   (loop
     (seq
       (varuint32)
-      (=> 'element.segment.num_elem')
+      (=> (u64.const 1026))
     )
     (varuint32)
-    (=> 'element.segment.elem')
+    (=> (u64.const 1023))
   )
-  (=> 'element.segment.end')
+  (=> (u64.const 1024))
 )
 (define 'export.section' (params)
-  (=> 'export.section.begin')
+  (=> (u64.const 1030))
   (loop
     (seq
       (varuint32)
-      (=> 'export.section.count')
+      (=> (u64.const 1031))
     )
     (eval 'export.entry')
   )
-  (=> 'export.section.end')
+  (=> (u64.const 1032))
 )
 (define 'export.entry' (params)
   (eval 'symbol.name')
-  (=> 'export.entry.name')
+  (=> (u64.const 1029))
   (eval 'external.kind')
   (varuint32)
-  (=> 'export.entry.index')
+  (=> (u64.const 1028))
 )
 (define 'external.kind' (params)
-  (=> 'external.kind.begin')
+  (=> (u64.const 1033))
   (uint8)
-  (=> 'external.kind.end')
+  (=> (u64.const 1034))
 )
 (define 'file' (params)
-  (=> 'file.begin')
+  (=> (u64.const 1035))
   (loop.unbounded (eval 'section'))
-  (=> 'file.end')
+  (=> (u64.const 1036))
 )
 (define 'function.section' (params)
-  (=> 'function.section.begin')
+  (=> (u64.const 1047))
   (loop
     (seq
       (varuint32)
-      (=> 'function.section.count')
+      (=> (u64.const 1048))
     )
     (varuint32)
-    (=> 'function.section.type')
+    (=> (u64.const 1050))
   )
-  (=> 'function.section.end')
+  (=> (u64.const 1049))
 )
 (define 'function.names' (params)
-  (=> 'function.names.begin')
+  (=> (u64.const 1042))
   (eval 'symbol.name')
-  (=> 'function.names.fcn_name')
+  (=> (u64.const 1044))
   (loop
     (seq
       (varuint32)
-      (=> 'function.names.local_count')
+      (=> (u64.const 1045))
     )
     (eval 'symbol.name')
-    (=> 'function.names.local_name')
+    (=> (u64.const 1046))
   )
-  (=> 'function.names.end')
+  (=> (u64.const 1043))
 )
 (define 'function.type' (params)
-  (=> 'function.type.begin')
+  (=> (u64.const 1051))
   (varint32)
-  (=> 'function.type.form')
+  (=> (u64.const 1053))
   (loop
     (seq
       (varuint32)
-      (=> 'type.num.params')
+      (=> (u64.const 1285))
     )
     (eval 'type.value')
-    (=> 'type.param')
+    (=> (u64.const 1287))
   )
   (loop
     (seq
       (varuint32)
-      (=> 'type.num.returns')
+      (=> (u64.const 1286))
     )
     (eval 'type.value')
-    (=> 'type.return')
+    (=> (u64.const 1288))
   )
-  (=> 'function.type.end')
+  (=> (u64.const 1052))
 )
 (define 'function.body' (params)
-  (=> 'function.body.begin')
+  (=> (u64.const 1037))
   (block
     (loop
       (seq
         (varuint32)
-        (=> 'function.body.local_count')
+        (=> (u64.const 1041))
       )
       (eval 'local.entry')
     )
-    (=> 'function.body.code.begin')
+    (=> (u64.const 1038))
     (loop.unbounded
       (eval 'instruction.opcode')
       (eval 'instruction')
     )
-    (=> 'function.body.code.end')
+    (=> (u64.const 1039))
   )
-  (=> 'function.body.end')
+  (=> (u64.const 1040))
 )
 (define 'global.section' (params)
-  (=> 'global.section.begin')
+  (=> (u64.const 1054))
   (loop
     (seq
       (varuint32)
-      (=> 'global.section.count')
+      (=> (u64.const 1055))
     )
     (eval 'global.type')
-    (=> 'global.section.variable.type')
+    (=> (u64.const 1058))
     (eval 'init_expr')
-    (=> 'global.section.variable.init')
+    (=> (u64.const 1057))
   )
-  (=> 'global.section.end')
+  (=> (u64.const 1056))
 )
 (define 'global.type' (params)
-  (=> 'global.type.begin')
+  (=> (u64.const 1059))
   (eval 'type.value')
   (uint8)
-  (=> 'global.type.end')
+  (=> (u64.const 1060))
 )
 (define 'import.section' (params)
-  (=> 'import.section.begin')
+  (=> (u64.const 1069))
   (loop
     (seq
       (varuint32)
-      (=> 'import.section.count')
+      (=> (u64.const 1070))
     )
     (eval 'import.entry')
   )
-  (=> 'import.section.end')
+  (=> (u64.const 1071))
 )
 (define 'import.entry' (params)
-  (=> 'import.entry.begin')
+  (=> (u64.const 1061))
   (eval 'symbol.name')
-  (=> 'import.entry.module')
+  (=> (u64.const 1067))
   (eval 'symbol.name')
-  (=> 'import.entry.field')
+  (=> (u64.const 1063))
   (switch (eval 'external.kind')
     (error)
     (case 'external.kind.function'
       (varuint32)
-      (=> 'import.entry.function')
+      (=> (u64.const 1064))
     )
     (case 'external.kind.table'
       (eval 'table.type')
-      (=> 'import.entry.table')
+      (=> (u64.const 1068))
     )
     (case 'external.kind.memory'
       (eval 'memory.type')
-      (=> 'import.entry.memory')
+      (=> (u64.const 1066))
     )
     (case 'external.kind.global'
       (eval 'global.type')
-      (=> 'import.entry.global')
+      (=> (u64.const 1065))
     )
   )
-  (=> 'import.entry.end')
+  (=> (u64.const 1062))
 )
 (define 'init_expr' (params)
   (locals 1)
-  (=> 'init_expr.begin')
+  (=> (u64.const 1072))
   (set (local 0) (u32.const 1))
   (eval 'instruction.opcode')
   (switch
     (seq
       (read)
-      (=> 'init_expr.opcode')
+      (=> (u64.const 1074))
     )
     (error)
     (case 'inst.i32.const'
       (varint32)
-      (=> 'inst.i32.const')
+      (=> (u64.const 1150))
     )
     (case 'inst.i64.const'
       (varint64)
-      (=> 'inst.i64.const')
+      (=> (u64.const 1194))
     )
     (case 'inst.f32.const'
       (uint32)
-      (=> 'inst.f32.const')
+      (=> (u64.const 1088))
     )
     (case 'inst.f64.const'
       (uint64)
-      (=> 'inst.f64.const')
+      (=> (u64.const 1117))
     )
     (case 'inst.get_global'
       (varuint32)
-      (=> 'inst.get_global')
+      (=> (u64.const 1143))
     )
     (case 'inst.end'
-      (=> 'inst.end')
+      (=> (u64.const 1084))
       (set (local 0) (u32.const 0))
     )
   )
   (if (local 0)
     (switch (eval 'instruction.opcode')
       (error)
-      (case 'inst.end' (=> 'inst.end'))
+      (case 'inst.end' (=> (u64.const 1084)))
     )
   )
-  (=> 'init_expr.end')
+  (=> (u64.const 1073))
 )
 (define 'instruction' (params)
-  (=> 'instruction.begin')
+  (=> (u64.const 1247))
   (switch
     (seq
       (read)
-      (=> 'instruction.opcode')
+      (=> (u64.const 1249))
     )
     (error)
-    (case 'inst.unreachable' (=> 'inst.unreachable'))
-    (case 'inst.nop' (=> 'inst.nop'))
+    (case 'inst.unreachable' (=> (u64.const 1246)))
+    (case 'inst.nop' (=> (u64.const 1240)))
     (case 'inst.block'
       (eval 'type.value')
-      (=> 'inst.block')
+      (=> (u64.const 1075))
     )
     (case 'inst.loop'
       (eval 'type.value')
-      (=> 'inst.loop')
+      (=> (u64.const 1239))
     )
     (case 'inst.if'
       (eval 'type.value')
-      (=> 'inst.if')
+      (=> (u64.const 1146))
     )
-    (case 'inst.else' (=> 'inst.else'))
-    (case 'inst.end' (=> 'inst.end'))
+    (case 'inst.else' (=> (u64.const 1083)))
+    (case 'inst.end' (=> (u64.const 1084)))
     (case 'inst.br'
       (eval 'br_target')
-      (=> 'inst.br')
+      (=> (u64.const 1076))
     )
     (case 'inst.br_if'
       (eval 'br_target')
-      (=> 'inst.br_if')
+      (=> (u64.const 1077))
     )
     (case 'inst.br_table'
       (eval 'br_table')
-      (=> 'inst.br_table')
+      (=> (u64.const 1078))
     )
-    (case 'inst.return' (=> 'inst.return'))
+    (case 'inst.return' (=> (u64.const 1241)))
     (case 'inst.call'
       (varuint32)
-      (=> 'inst.call')
+      (=> (u64.const 1079))
     )
     (case 'inst.call_indirect'
       (varuint32)
       (varuint32)
-      (=> 'inst.call_indirect')
+      (=> (u64.const 1080))
     )
-    (case 'inst.drop' (=> 'inst.drop'))
-    (case 'inst.select' (=> 'inst.select'))
+    (case 'inst.drop' (=> (u64.const 1082)))
+    (case 'inst.select' (=> (u64.const 1242)))
     (case 'inst.get_local'
       (varuint32)
-      (=> 'inst.get_local')
+      (=> (u64.const 1144))
     )
     (case 'inst.set_local'
       (varuint32)
-      (=> 'inst.set_local')
+      (=> (u64.const 1244))
     )
     (case 'inst.tee_local'
       (varuint32)
-      (=> 'inst.tee_local')
+      (=> (u64.const 1245))
     )
     (case 'inst.get_global'
       (varuint32)
-      (=> 'inst.get_global')
+      (=> (u64.const 1143))
     )
     (case 'inst.set_global'
       (varuint32)
-      (=> 'inst.set_global')
+      (=> (u64.const 1243))
     )
     (case 'inst.i32.load'
       (eval 'memory.immediate')
-      (=> 'inst.i32.load')
+      (=> (u64.const 1162))
     )
     (case 'inst.i64.load'
       (eval 'memory.immediate')
-      (=> 'inst.i64.load')
+      (=> (u64.const 1208))
     )
     (case 'inst.f32.load'
       (eval 'memory.immediate')
-      (=> 'inst.f32.load')
+      (=> (u64.const 1101))
     )
     (case 'inst.f64.load'
       (eval 'memory.immediate')
-      (=> 'inst.f64.load')
+      (=> (u64.const 1129))
     )
     (case 'inst.i32.load8_s'
       (eval 'memory.immediate')
-      (=> 'inst.i32.load8_s')
+      (=> (u64.const 1165))
     )
     (case 'inst.i32.load8_u'
       (eval 'memory.immediate')
-      (=> 'inst.i32.load8_u')
+      (=> (u64.const 1166))
     )
     (case 'inst.i32.load16_s'
       (eval 'memory.immediate')
-      (=> 'inst.i32.load16_s')
+      (=> (u64.const 1163))
     )
     (case 'inst.i32.load16_u'
       (eval 'memory.immediate')
-      (=> 'inst.i32.load16_u')
+      (=> (u64.const 1164))
     )
     (case 'inst.i64.load8_s'
       (eval 'memory.immediate')
-      (=> 'inst.i64.load8_s')
+      (=> (u64.const 1213))
     )
     (case 'inst.i64.load8_u'
       (eval 'memory.immediate')
-      (=> 'inst.i64.load8_u')
+      (=> (u64.const 1214))
     )
     (case 'inst.i64.load16_s'
       (eval 'memory.immediate')
-      (=> 'inst.i64.load16_s')
+      (=> (u64.const 1209))
     )
     (case 'inst.i64.load16_u'
       (eval 'memory.immediate')
-      (=> 'inst.i64.load16_u')
+      (=> (u64.const 1210))
     )
     (case 'inst.i64.load32_s'
       (eval 'memory.immediate')
-      (=> 'inst.i64.load32_s')
+      (=> (u64.const 1211))
     )
     (case 'inst.i64.load32_u'
       (eval 'memory.immediate')
-      (=> 'inst.i64.load32_u')
+      (=> (u64.const 1212))
     )
     (case 'inst.i32.store'
       (eval 'memory.immediate')
-      (=> 'inst.i32.store')
+      (=> (u64.const 1181))
     )
     (case 'inst.i64.store'
       (eval 'memory.immediate')
-      (=> 'inst.i64.store')
+      (=> (u64.const 1226))
     )
     (case 'inst.f32.store'
       (eval 'memory.immediate')
-      (=> 'inst.f32.store')
+      (=> (u64.const 1111))
     )
     (case 'inst.f64.store'
       (eval 'memory.immediate')
-      (=> 'inst.f64.store')
+      (=> (u64.const 1140))
     )
     (case 'inst.i32.store8'
       (eval 'memory.immediate')
-      (=> 'inst.i32.store8')
+      (=> (u64.const 1183))
     )
     (case 'inst.i32.store16'
       (eval 'memory.immediate')
-      (=> 'inst.i32.store16')
+      (=> (u64.const 1182))
     )
     (case 'inst.i64.store8'
       (eval 'memory.immediate')
-      (=> 'inst.i64.store8')
+      (=> (u64.const 1227))
     )
     (case 'inst.i64.store16'
       (eval 'memory.immediate')
-      (=> 'inst.i64.store16')
+      (=> (u64.const 1228))
     )
     (case 'inst.i64.store32'
       (eval 'memory.immediate')
-      (=> 'inst.i64.store32')
+      (=> (u64.const 1229))
     )
     (case 'inst.current_memory'
       (varuint32)
-      (=> 'inst.current_memory')
+      (=> (u64.const 1081))
     )
     (case 'inst.grow_memory'
       (varuint32)
-      (=> 'inst.grow_memory')
+      (=> (u64.const 1145))
     )
     (case 'inst.i32.const'
       (varint32)
-      (=> 'inst.i32.const')
+      (=> (u64.const 1150))
     )
     (case 'inst.i64.const'
       (varint64)
-      (=> 'inst.i64.const')
+      (=> (u64.const 1194))
     )
     (case 'inst.f32.const'
       (uint32)
-      (=> 'inst.f32.const')
+      (=> (u64.const 1088))
     )
     (case 'inst.f64.const'
       (uint64)
-      (=> 'inst.f64.const')
+      (=> (u64.const 1117))
     )
-    (case 'inst.i32.eqz' (=> 'inst.i32.eqz'))
-    (case 'inst.i32.eq' (=> 'inst.i32.eq'))
-    (case 'inst.i32.ne' (=> 'inst.i32.ne'))
-    (case 'inst.i32.lt_s' (=> 'inst.i32.lt_s'))
-    (case 'inst.i32.lt_u' (=> 'inst.i32.lt_u'))
-    (case 'inst.i32.gt_s' (=> 'inst.i32.gt_s'))
-    (case 'inst.i32.gt_u' (=> 'inst.i32.gt_u'))
-    (case 'inst.i32.le_s' (=> 'inst.i32.le_s'))
-    (case 'inst.i32.le_u' (=> 'inst.i32.le_u'))
-    (case 'inst.i32.ge_s' (=> 'inst.i32.ge_s'))
-    (case 'inst.i32.ge_u' (=> 'inst.i32.ge_u'))
-    (case 'inst.i64.eqz' (=> 'inst.i64.eqz'))
-    (case 'inst.i64.eq' (=> 'inst.i64.eq'))
-    (case 'inst.i64.ne' (=> 'inst.i64.ne'))
-    (case 'inst.i64.lt_s' (=> 'inst.i64.lt_s'))
-    (case 'inst.i64.lt_u' (=> 'inst.i64.lt_u'))
-    (case 'inst.i64.gt_s' (=> 'inst.i64.gt_s'))
-    (case 'inst.i64.gt_u' (=> 'inst.i64.gt_u'))
-    (case 'inst.i64.le_s' (=> 'inst.i64.le_s'))
-    (case 'inst.i64.le_u' (=> 'inst.i64.le_u'))
-    (case 'inst.i64.ge_s' (=> 'inst.i64.ge_s'))
-    (case 'inst.i64.ge_u' (=> 'inst.i64.ge_u'))
-    (case 'inst.f32.eq' (=> 'inst.f32.eq'))
-    (case 'inst.f32.ne' (=> 'inst.f32.ne'))
-    (case 'inst.f32.lt' (=> 'inst.f32.lt'))
-    (case 'inst.f32.gt' (=> 'inst.f32.gt'))
-    (case 'inst.f32.le' (=> 'inst.f32.le'))
-    (case 'inst.f32.ge' (=> 'inst.f32.ge'))
-    (case 'inst.f64.eq' (=> 'inst.f64.eq'))
-    (case 'inst.f64.ne' (=> 'inst.f64.ne'))
-    (case 'inst.f64.lt' (=> 'inst.f64.lt'))
-    (case 'inst.f64.gt' (=> 'inst.f64.gt'))
-    (case 'inst.f64.le' (=> 'inst.f64.le'))
-    (case 'inst.f64.ge' (=> 'inst.f64.ge'))
-    (case 'inst.i32.clz' (=> 'inst.i32.clz'))
-    (case 'inst.i32.ctx' (=> 'inst.i32.ctx'))
-    (case 'inst.i32.popcnt' (=> 'inst.i32.popcnt'))
-    (case 'inst.i32.add' (=> 'inst.i32.add'))
-    (case 'inst.i32.sub' (=> 'inst.i32.sub'))
-    (case 'inst.i32.mul' (=> 'inst.i32.mul'))
-    (case 'inst.i32.div_s' (=> 'inst.i32.div_s'))
-    (case 'inst.i32.div_u' (=> 'inst.i32.div_u'))
-    (case 'inst.i32.rem_s' (=> 'inst.i32.rem_s'))
-    (case 'inst.i32.rem_u' (=> 'inst.i32.rem_u'))
-    (case 'inst.i32.and' (=> 'inst.i32.and'))
-    (case 'inst.i32.or' (=> 'inst.i32.or'))
-    (case 'inst.i32.xor' (=> 'inst.i32.xor'))
-    (case 'inst.i32.shl' (=> 'inst.i32.shl'))
-    (case 'inst.i32.shr_s' (=> 'inst.i32.shr_s'))
-    (case 'inst.i32.shr_u' (=> 'inst.i32.shr_u'))
-    (case 'inst.i32.rotl' (=> 'inst.i32.rotl'))
-    (case 'inst.i32.rotr' (=> 'inst.i32.rotr'))
-    (case 'inst.i64.clz' (=> 'inst.i64.clz'))
-    (case 'inst.i64.ctx' (=> 'inst.i64.ctx'))
-    (case 'inst.i64.popcnt' (=> 'inst.i64.popcnt'))
-    (case 'inst.i64.add' (=> 'inst.i64.add'))
-    (case 'inst.i64.sub' (=> 'inst.i64.sub'))
-    (case 'inst.i64.mul' (=> 'inst.i64.mul'))
-    (case 'inst.i64.div_s' (=> 'inst.i64.div_s'))
-    (case 'inst.i64.div_u' (=> 'inst.i64.div_u'))
-    (case 'inst.i64.rem_s' (=> 'inst.i64.rem_s'))
-    (case 'inst.i64.rem_u' (=> 'inst.i64.rem_u'))
-    (case 'inst.i64.and' (=> 'inst.i64.and'))
-    (case 'inst.i64.or' (=> 'inst.i64.or'))
-    (case 'inst.i64.xor' (=> 'inst.i64.xor'))
-    (case 'inst.i64.shl' (=> 'inst.i64.shl'))
-    (case 'inst.i64.shr_s' (=> 'inst.i64.shr_s'))
-    (case 'inst.i64.shr_u' (=> 'inst.i64.shr_u'))
-    (case 'inst.i64.rotl' (=> 'inst.i64.rotl'))
-    (case 'inst.i64.rotr' (=> 'inst.i64.rotr'))
-    (case 'inst.f32.abs' (=> 'inst.f32.abs'))
-    (case 'inst.f32.neg' (=> 'inst.f32.neg'))
-    (case 'inst.f32.ceil' (=> 'inst.f32.ceil'))
-    (case 'inst.f32.floor' (=> 'inst.f32.floor'))
-    (case 'inst.f32.trunc' (=> 'inst.f32.trunc'))
-    (case 'inst.f32.nearest' (=> 'inst.f32.nearest'))
-    (case 'inst.f32.sqrt' (=> 'inst.f32.sqrt'))
-    (case 'inst.f32.add' (=> 'inst.f32.add'))
-    (case 'inst.f32.sub' (=> 'inst.f32.sub'))
-    (case 'inst.f32.mul' (=> 'inst.f32.mul'))
-    (case 'inst.f32.div' (=> 'inst.f32.div'))
-    (case 'inst.f32.min' (=> 'inst.f32.min'))
-    (case 'inst.f32.max' (=> 'inst.f32.max'))
-    (case 'inst.f32.copysign' (=> 'inst.f32.copysign'))
-    (case 'inst.f64.abs' (=> 'inst.f64.abs'))
-    (case 'inst.f64.neg' (=> 'inst.f64.neg'))
-    (case 'inst.f64.ceil' (=> 'inst.f64.ceil'))
-    (case 'inst.f64.floor' (=> 'inst.f64.floor'))
-    (case 'inst.f64.trunc' (=> 'inst.f64.trunc'))
-    (case 'inst.f64.nearest' (=> 'inst.f64.nearest'))
-    (case 'inst.f64.sqrt' (=> 'inst.f64.sqrt'))
-    (case 'inst.f64.add' (=> 'inst.f64.add'))
-    (case 'inst.f64.sub' (=> 'inst.f64.sub'))
-    (case 'inst.f64.mul' (=> 'inst.f64.mul'))
-    (case 'inst.f64.div' (=> 'inst.f64.div'))
-    (case 'inst.f64.min' (=> 'inst.f64.min'))
-    (case 'inst.f64.max' (=> 'inst.f64.max'))
-    (case 'inst.f64.copysign' (=> 'inst.f64.copysign'))
-    (case 'inst.i32.wrap/i64' (=> 'inst.i32.wrap/i64'))
-    (case 'inst.i32.trunc_s/f32' (=> 'inst.i32.trunc_s/f32'))
-    (case 'inst.i32.trunc_u/f32' (=> 'inst.i32.trunc_u/f32'))
-    (case 'inst.i32.trunc_s/f64' (=> 'inst.i32.trunc_s/f64'))
-    (case 'inst.i32.trunc_u/f64' (=> 'inst.i32.trunc_u/f64'))
-    (case 'inst.i64.extend_s/i32' (=> 'inst.i64.extend_s/i32'))
-    (case 'inst.i64.extend_u/i32' (=> 'inst.i64.extend_u/i32'))
-    (case 'inst.i64.trunc_s/f32' (=> 'inst.i64.trunc_s/f32'))
-    (case 'inst.i64.trunc_u/f32' (=> 'inst.i64.trunc_u/f32'))
-    (case 'inst.i64.trunc_s/f64' (=> 'inst.i64.trunc_s/f64'))
-    (case 'inst.i64.trunc_u/f64' (=> 'inst.i64.trunc_u/f64'))
-    (case 'inst.f32.convert_s/i32' (=> 'inst.f32.convert_s/i32'))
-    (case 'inst.f32.convert_u/i32' (=> 'inst.f32.convert_u/i32'))
-    (case 'inst.f32.convert_s/i64' (=> 'inst.f32.convert_s/i64'))
-    (case 'inst.f32.convert_u/i64' (=> 'inst.f32.convert_u/i64'))
-    (case 'inst.f32.demote/f64' (=> 'inst.f32.demote/f64'))
-    (case 'inst.f64.convert_s/i32' (=> 'inst.f64.convert_s/i32'))
-    (case 'inst.f64.convert_u/i32' (=> 'inst.f64.convert_u/i32'))
-    (case 'inst.f64.convert_s/i64' (=> 'inst.f64.convert_s/i64'))
-    (case 'inst.f64.convert_u/i64' (=> 'inst.f64.convert_u/i64'))
-    (case 'inst.f64.promote/f32' (=> 'inst.f64.promote/f32'))
-    (case 'inst.i32.reinterpret/f32' (=> 'inst.i32.reinterpret/f32'))
-    (case 'inst.i64.reinterpret/f64' (=> 'inst.i64.reinterpret/f64'))
-    (case 'inst.f32.reinterpret/i32' (=> 'inst.f32.reinterpret/i32'))
-    (case 'inst.f64.reinterpret/i64' (=> 'inst.f64.reinterpret/i64'))
+    (case 'inst.i32.eqz' (=> (u64.const 1155)))
+    (case 'inst.i32.eq' (=> (u64.const 1154)))
+    (case 'inst.i32.ne' (=> (u64.const 1170)))
+    (case 'inst.i32.lt_s' (=> (u64.const 1167)))
+    (case 'inst.i32.lt_u' (=> (u64.const 1168)))
+    (case 'inst.i32.gt_s' (=> (u64.const 1158)))
+    (case 'inst.i32.gt_u' (=> (u64.const 1159)))
+    (case 'inst.i32.le_s' (=> (u64.const 1160)))
+    (case 'inst.i32.le_u' (=> (u64.const 1161)))
+    (case 'inst.i32.ge_s' (=> (u64.const 1156)))
+    (case 'inst.i32.ge_u' (=> (u64.const 1157)))
+    (case 'inst.i64.eqz' (=> (u64.const 1199)))
+    (case 'inst.i64.eq' (=> (u64.const 1198)))
+    (case 'inst.i64.ne' (=> (u64.const 1218)))
+    (case 'inst.i64.lt_s' (=> (u64.const 1215)))
+    (case 'inst.i64.lt_u' (=> (u64.const 1216)))
+    (case 'inst.i64.gt_s' (=> (u64.const 1204)))
+    (case 'inst.i64.gt_u' (=> (u64.const 1205)))
+    (case 'inst.i64.le_s' (=> (u64.const 1206)))
+    (case 'inst.i64.le_u' (=> (u64.const 1207)))
+    (case 'inst.i64.ge_s' (=> (u64.const 1202)))
+    (case 'inst.i64.ge_u' (=> (u64.const 1203)))
+    (case 'inst.f32.eq' (=> (u64.const 1096)))
+    (case 'inst.f32.ne' (=> (u64.const 1106)))
+    (case 'inst.f32.lt' (=> (u64.const 1102)))
+    (case 'inst.f32.gt' (=> (u64.const 1099)))
+    (case 'inst.f32.le' (=> (u64.const 1100)))
+    (case 'inst.f32.ge' (=> (u64.const 1098)))
+    (case 'inst.f64.eq' (=> (u64.const 1124)))
+    (case 'inst.f64.ne' (=> (u64.const 1134)))
+    (case 'inst.f64.lt' (=> (u64.const 1130)))
+    (case 'inst.f64.gt' (=> (u64.const 1127)))
+    (case 'inst.f64.le' (=> (u64.const 1128)))
+    (case 'inst.f64.ge' (=> (u64.const 1126)))
+    (case 'inst.i32.clz' (=> (u64.const 1149)))
+    (case 'inst.i32.ctx' (=> (u64.const 1151)))
+    (case 'inst.i32.popcnt' (=> (u64.const 1172)))
+    (case 'inst.i32.add' (=> (u64.const 1147)))
+    (case 'inst.i32.sub' (=> (u64.const 1184)))
+    (case 'inst.i32.mul' (=> (u64.const 1169)))
+    (case 'inst.i32.div_s' (=> (u64.const 1152)))
+    (case 'inst.i32.div_u' (=> (u64.const 1153)))
+    (case 'inst.i32.rem_s' (=> (u64.const 1174)))
+    (case 'inst.i32.rem_u' (=> (u64.const 1175)))
+    (case 'inst.i32.and' (=> (u64.const 1148)))
+    (case 'inst.i32.or' (=> (u64.const 1171)))
+    (case 'inst.i32.xor' (=> (u64.const 1190)))
+    (case 'inst.i32.shl' (=> (u64.const 1178)))
+    (case 'inst.i32.shr_s' (=> (u64.const 1179)))
+    (case 'inst.i32.shr_u' (=> (u64.const 1180)))
+    (case 'inst.i32.rotl' (=> (u64.const 1176)))
+    (case 'inst.i32.rotr' (=> (u64.const 1177)))
+    (case 'inst.i64.clz' (=> (u64.const 1193)))
+    (case 'inst.i64.ctx' (=> (u64.const 1195)))
+    (case 'inst.i64.popcnt' (=> (u64.const 1220)))
+    (case 'inst.i64.add' (=> (u64.const 1191)))
+    (case 'inst.i64.sub' (=> (u64.const 1233)))
+    (case 'inst.i64.mul' (=> (u64.const 1217)))
+    (case 'inst.i64.div_s' (=> (u64.const 1196)))
+    (case 'inst.i64.div_u' (=> (u64.const 1197)))
+    (case 'inst.i64.rem_s' (=> (u64.const 1222)))
+    (case 'inst.i64.rem_u' (=> (u64.const 1223)))
+    (case 'inst.i64.and' (=> (u64.const 1192)))
+    (case 'inst.i64.or' (=> (u64.const 1219)))
+    (case 'inst.i64.xor' (=> (u64.const 1238)))
+    (case 'inst.i64.shl' (=> (u64.const 1230)))
+    (case 'inst.i64.shr_s' (=> (u64.const 1231)))
+    (case 'inst.i64.shr_u' (=> (u64.const 1232)))
+    (case 'inst.i64.rotl' (=> (u64.const 1224)))
+    (case 'inst.i64.rotr' (=> (u64.const 1225)))
+    (case 'inst.f32.abs' (=> (u64.const 1085)))
+    (case 'inst.f32.neg' (=> (u64.const 1108)))
+    (case 'inst.f32.ceil' (=> (u64.const 1087)))
+    (case 'inst.f32.floor' (=> (u64.const 1097)))
+    (case 'inst.f32.trunc' (=> (u64.const 1113)))
+    (case 'inst.f32.nearest' (=> (u64.const 1107)))
+    (case 'inst.f32.sqrt' (=> (u64.const 1110)))
+    (case 'inst.f32.add' (=> (u64.const 1086)))
+    (case 'inst.f32.sub' (=> (u64.const 1112)))
+    (case 'inst.f32.mul' (=> (u64.const 1105)))
+    (case 'inst.f32.div' (=> (u64.const 1095)))
+    (case 'inst.f32.min' (=> (u64.const 1104)))
+    (case 'inst.f32.max' (=> (u64.const 1103)))
+    (case 'inst.f32.copysign' (=> (u64.const 1093)))
+    (case 'inst.f64.abs' (=> (u64.const 1114)))
+    (case 'inst.f64.neg' (=> (u64.const 1136)))
+    (case 'inst.f64.ceil' (=> (u64.const 1116)))
+    (case 'inst.f64.floor' (=> (u64.const 1125)))
+    (case 'inst.f64.trunc' (=> (u64.const 1142)))
+    (case 'inst.f64.nearest' (=> (u64.const 1135)))
+    (case 'inst.f64.sqrt' (=> (u64.const 1139)))
+    (case 'inst.f64.add' (=> (u64.const 1115)))
+    (case 'inst.f64.sub' (=> (u64.const 1141)))
+    (case 'inst.f64.mul' (=> (u64.const 1133)))
+    (case 'inst.f64.div' (=> (u64.const 1123)))
+    (case 'inst.f64.min' (=> (u64.const 1132)))
+    (case 'inst.f64.max' (=> (u64.const 1131)))
+    (case 'inst.f64.copysign' (=> (u64.const 1122)))
+    (case 'inst.i32.wrap/i64' (=> (u64.const 1189)))
+    (case 'inst.i32.trunc_s/f32' (=> (u64.const 1185)))
+    (case 'inst.i32.trunc_u/f32' (=> (u64.const 1187)))
+    (case 'inst.i32.trunc_s/f64' (=> (u64.const 1186)))
+    (case 'inst.i32.trunc_u/f64' (=> (u64.const 1188)))
+    (case 'inst.i64.extend_s/i32' (=> (u64.const 1200)))
+    (case 'inst.i64.extend_u/i32' (=> (u64.const 1201)))
+    (case 'inst.i64.trunc_s/f32' (=> (u64.const 1234)))
+    (case 'inst.i64.trunc_u/f32' (=> (u64.const 1236)))
+    (case 'inst.i64.trunc_s/f64' (=> (u64.const 1235)))
+    (case 'inst.i64.trunc_u/f64' (=> (u64.const 1237)))
+    (case 'inst.f32.convert_s/i32' (=> (u64.const 1089)))
+    (case 'inst.f32.convert_u/i32' (=> (u64.const 1091)))
+    (case 'inst.f32.convert_s/i64' (=> (u64.const 1090)))
+    (case 'inst.f32.convert_u/i64' (=> (u64.const 1092)))
+    (case 'inst.f32.demote/f64' (=> (u64.const 1094)))
+    (case 'inst.f64.convert_s/i32' (=> (u64.const 1118)))
+    (case 'inst.f64.convert_u/i32' (=> (u64.const 1120)))
+    (case 'inst.f64.convert_s/i64' (=> (u64.const 1119)))
+    (case 'inst.f64.convert_u/i64' (=> (u64.const 1121)))
+    (case 'inst.f64.promote/f32' (=> (u64.const 1137)))
+    (case 'inst.i32.reinterpret/f32' (=> (u64.const 1173)))
+    (case 'inst.i64.reinterpret/f64' (=> (u64.const 1221)))
+    (case 'inst.f32.reinterpret/i32' (=> (u64.const 1109)))
+    (case 'inst.f64.reinterpret/i64' (=> (u64.const 1138)))
   )
-  (=> 'instruction.end')
+  (=> (u64.const 1248))
 )
 (define 'instruction.opcode' (params) (uint8))
 (define 'local.entry' (params)
-  (=> 'local.entry.begin')
+  (=> (u64.const 1250))
   (varuint32)
-  (=> 'local.entry.count')
+  (=> (u64.const 1251))
   (eval 'type.value')
-  (=> 'local.entry.end')
+  (=> (u64.const 1252))
 )
 (define 'memory.section' (params)
-  (=> 'memory.section.begin')
+  (=> (u64.const 1255))
   (loop
     (seq
       (varuint32)
-      (=> 'memory.section.count')
+      (=> (u64.const 1256))
     )
     (eval 'memory.type')
-    (=> 'memory.section.entry')
+    (=> (u64.const 1258))
   )
-  (=> 'memory.section.end')
+  (=> (u64.const 1257))
 )
 (define 'memory.immediate' (params)
-  (=> 'memory.immediate.begin')
+  (=> (u64.const 1253))
   (varuint32)
   (varuint32)
-  (=> 'memory.immediate.end')
+  (=> (u64.const 1254))
 )
 (define 'name.section' (params)
-  (=> 'name.section.begin')
+  (=> (u64.const 1261))
   (loop
     (seq
       (varuint32)
-      (=> 'name.section.count')
+      (=> (u64.const 1262))
     )
     (eval 'function.names')
   )
-  (=> 'name.section.end')
+  (=> (u64.const 1263))
 )
 (define 'memory.type' (params)
-  (=> 'memory.type.begin')
+  (=> (u64.const 1259))
   (eval 'resizable.limits')
-  (=> 'memory.type.end')
+  (=> (u64.const 1260))
 )
 (define 'resizable.limits' (params)
   (locals 1)
-  (=> 'resizable.limits.begin')
+  (=> (u64.const 1264))
   (set (local 0) (varuint32))
-  (=> 'resizable.limits.flags')
+  (=> (u64.const 1266))
   (varuint32)
-  (=> 'resizable.limits.initial')
+  (=> (u64.const 1267))
   (if (bitwise.and (local 0) (u32.const 0x1))
     (seq
       (varuint32)
-      (=> 'resizable.limits.maximum')
+      (=> (u64.const 1268))
     )
   )
-  (=> 'resizable.limits.end')
+  (=> (u64.const 1265))
 )
 (define 'section' (params)
   (locals 1)
-  (=> 'section.begin')
+  (=> (u64.const 1269))
   (set (local 0) (varuint32))
-  (=> 'section.code')
+  (=> (u64.const 1270))
   (block
     (switch (local 0)
       (error)
@@ -1280,68 +983,68 @@
       (case 'data.section' (eval 'data.section'))
     )
   )
-  (=> 'section.end')
+  (=> (u64.const 1271))
 )
 (define 'skip.section' (params)
-  (=> 'skip.section.begin')
+  (=> (u64.const 1272))
   (loop.unbounded (uint8))
-  (=> 'skip.section.end')
+  (=> (u64.const 1273))
 )
 (define 'start.section' (params)
-  (=> 'start.section.begin')
+  (=> (u64.const 1274))
   (varuint32)
-  (=> 'start.section.end')
+  (=> (u64.const 1275))
 )
 (define 'symbol.name' (params)
-  (=> 'symbol.name.begin')
+  (=> (u64.const 1276))
   (loop
     (seq
       (varuint32)
-      (=> 'symbol.name.length')
+      (=> (u64.const 1278))
     )
     (uint8)
   )
-  (=> 'symbol.name.end')
+  (=> (u64.const 1277))
 )
 (define 'table.section' (params)
-  (=> 'table.section.begin')
+  (=> (u64.const 1279))
   (loop
     (seq
       (varuint32)
-      (=> 'table.section.count')
+      (=> (u64.const 1280))
     )
     (eval 'table.type')
-    (=> 'table.section.type')
+    (=> (u64.const 1282))
   )
-  (=> 'table.section.end')
+  (=> (u64.const 1281))
 )
 (define 'table.type' (params)
-  (=> 'table.type.begin')
+  (=> (u64.const 1283))
   (eval 'type.value')
   (eval 'resizable.limits')
-  (=> 'table.type.end')
+  (=> (u64.const 1284))
 )
 (define 'type.section' (params)
-  (=> 'type.section.begin')
+  (=> (u64.const 1289))
   (loop
     (seq
       (varuint32)
-      (=> 'type.section.count')
+      (=> (u64.const 1290))
     )
     (eval 'function.type')
   )
-  (=> 'type.section.end')
+  (=> (u64.const 1291))
 )
 (define 'type.value' (params)
-  (=> 'type.value.begin')
+  (=> (u64.const 1292))
   (varint32)
-  (=> 'type.value.end')
+  (=> (u64.const 1293))
 )
 (define 'unknown.section' (params)
-  (=> 'unknown.section.begin')
+  (=> (u64.const 1294))
   (eval 'symbol.name')
   (eval 'unknown_body')
-  (=> 'unknown.section.end')
+  (=> (u64.const 1295))
 )
 (define 'unknown_body' (params)
   (if (last.symbol.is 'name')
