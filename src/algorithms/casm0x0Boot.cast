@@ -163,7 +163,7 @@
      case 'u32.const'
                                 (eval 'int.value' (varuint32)))
     (case 'u8.const'            (eval 'int.value' (uint8)))
-
+    (case 'u64.const'           (eval 'int.value' (varuint64)))
     (case 'symbol'              (eval 'symbol.lookup'))
   )
 )

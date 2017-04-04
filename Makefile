@@ -827,7 +827,7 @@ ifeq ($(GENSRCS), 3)
 		$(ALG_GENDIR)/%-lits.cast $(BUILD_EXECDIR_BOOT)/cast2casm-boot1
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1 \
 		-a $(patsubst %Boot.cast, %-lits.cast, $<) -a $< \
-		$< -o $@ --strip-literals --function \
+		$< -o $@ --strip-literals --strip-symbolic-actions --function \
 		--name $(call alg_name, $<)
 
 endif
@@ -869,7 +869,9 @@ ifeq ($(GENSRCS), 4)
 		--strip-literal-uses --array \
 		$(ALG_GENDIR_ALG) --function \
 		--name $(call alg_name, $<) \
-		$(if $(findstring casm0x0, $<), --boot, --strip-actions)
+		$(if $(findstring casm0x0, $<), \
+			--boot --strip-symbolic-actions, \
+			--strip-actions)
 
 endif
 

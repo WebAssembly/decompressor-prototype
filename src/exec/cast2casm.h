@@ -1176,19 +1176,31 @@ int main(int Argc, charstring Argv[]) {
     if (!DisplayStrippedInput)
       return exit_status(EXIT_SUCCESS);
   }
-  if (StripActions)
+
+  if (StripActions) {
+    fprintf(stderr, "Stripping callbacks ...\n");
     InputSymtab->stripCallbacksExcept(KeepActions);
+  }
 
-  if (StripSymbolicActions)
+  if (StripSymbolicActions) {
+    fprintf(stderr, "Stripping symbolic actions ...\n");
     InputSymtab->stripSymbolicCallbacks();
-  if (StripLiteralUses)
+  }
+
+  if (StripLiteralUses) {
+    fprintf(stderr, "Stripping literal uses ...\n");
     InputSymtab->stripLiteralUses();
+  }
 
-  if (StripLiteralDefs)
+  if (StripLiteralDefs) {
+    fprintf(stderr, "Stripping literal definitions ...\n");
     InputSymtab->stripLiteralDefs();
+  }
 
-  if (StripLiterals)
+  if (StripLiterals) {
+    fprintf(stderr, "Stripping literal constants ...\n");
     InputSymtab->stripLiterals();
+  }
 
   if (DisplayStrippedInput) {
     InputSymtab->describe(stdout, ShowInternalStructure);

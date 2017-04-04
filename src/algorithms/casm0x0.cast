@@ -19,89 +19,89 @@
 
 (declarations)
 
-(literal.action.enum (u32.const 101)
-                     'int.value.begin'
-                     'int.value.end'
-                     'nary.inst'
-                     'postorder.inst'
-                     'symbol.lookup'
-                     'symbol.name.begin'
-                     'symbol.name.end')
-
-# Control flow operators
-(literal 'block'          (u8.const 0x01))
-(literal 'case'           (u8.const 0x02))
-(literal 'error'          (u8.const 0x03))
-(literal 'eval'           (u8.const 0x04))
-(literal 'loop'           (u8.const 0x07))
-(literal 'loop.unbounded' (u8.const 0x08))
-(literal 'switch'         (u8.const 0x09))
-(literal 'sequence'       (u8.const 0x0a))
-(literal 'if.then'        (u8.const 0x0b))
-(literal 'if.then.else'   (u8.const 0x0c))
-
-# Constants
-(literal 'void'           (u8.const 0x10))
-(literal 'symbol'         (u8.const 0x11))
-(literal 'i32.const'      (u8.const 0x12))
-(literal 'i64.const'      (u8.const 0x13))
-(literal 'u8.const'       (u8.const 0x14))
-(literal 'u32.const'      (u8.const 0x15))
-(literal 'u64.const'      (u8.const 0x16))
-
-# Formatting
-(literal 'uint32'         (u8.const 0x20))
-(literal 'uint64'         (u8.const 0x21))
-(literal 'uint8'          (u8.const 0x22))
-(literal 'varint32'       (u8.const 0x23))
-(literal 'varint64'       (u8.const 0x24))
-(literal 'varuint32'      (u8.const 0x25))
-(literal 'varuint64'      (u8.const 0x26))
-(literal 'opcode.bytes'   (u8.const 0x27))
-(literal 'accept'         (u8.const 0x28))
-(literal 'binary'         (u8.const 0x29))
-(literal 'opcode.binary'  (u8.const 0x2a))
-(literal 'bit'            (u8.const 0x2b))
-(literal 'opcode.bits'    (u8.const 0x2c))
-
-# Boolean expressions
-(literal 'and'            (u8.const 0x30))
-(literal 'or'             (u8.const 0x31))
-(literal 'not'            (u8.const 0x32))
-(literal 'bitwise.and'    (u8.const 0x34))
-(literal 'bitwise.or'     (u8.const 0x35))
-(literal 'bitwise.xor'    (u8.const 0x36))
-(literal 'bitwise.negate' (u8.const 0x37))
-(literal 'last.symbol.is' (u8.const 0x38))
-
-# I/O operations
-(literal 'peek'           (u8.const 0x40))
-(literal 'read'           (u8.const 0x41))
-(literal 'last.read'      (u8.const 0x42))
-(literal 'write'          (u8.const 0x43))
-(literal 'table'          (u8.const 0x44))
-
-# Other
-(literal 'param'          (u8.const 0x51))
-(literal 'local'          (u8.const 0x53))
-(literal 'set'            (u8.const 0x54))
-(literal 'map'            (u8.const 0x55))
-(literal '=>'             (u8.const 0x56))
-
-# declarations
-(literal 'define'         (u8.const 0x60))
-(literal 'file'           (u8.const 0x62))
-(literal 'file.header'    (u8.const 0x77))
-(literal 'section'        (u8.const 0x63))
-(literal 'undefine'       (u8.const 0x64))
-(literal 'literal.define' (u8.const 0x65))
-(literal 'literal.use'    (u8.const 0x66))
-(literal 'rename'         (u8.const 0x67))
-(literal 'locals'         (u8.const 0x68))
-(literal 'params'         (u8.const 0x69))
-(literal 'literal.action.define'  (u8.const 0x6a))
-(literal 'literal.action.use'     (u8.const 0x6b))
-(literal 'literal.action.enum'    (u8.const 0x6c))
+#(literal.action.enum (u32.const 101)
+#                     'int.value.begin'
+#                     'int.value.end'
+#                     'nary.inst'
+#                     'postorder.inst'
+#                     'symbol.lookup'
+#                     'symbol.name.begin'
+#                     'symbol.name.end')
+#
+## Control flow operators
+#(literal 'block'          (u8.const 0x01))
+#(literal 'case'           (u8.const 0x02))
+#(literal 'error'          (u8.const 0x03))
+#(literal 'eval'           (u8.const 0x04))
+#(literal 'loop'           (u8.const 0x07))
+#(literal 'loop.unbounded' (u8.const 0x08))
+#(literal 'switch'         (u8.const 0x09))
+#(literal 'sequence'       (u8.const 0x0a))
+#(literal 'if.then'        (u8.const 0x0b))
+#(literal 'if.then.else'   (u8.const 0x0c))
+#
+## Constants
+#(literal 'void'           (u8.const 0x10))
+#(literal 'symbol'         (u8.const 0x11))
+#(literal 'i32.const'      (u8.const 0x12))
+#(literal 'i64.const'      (u8.const 0x13))
+#(literal 'u8.const'       (u8.const 0x14))
+#(literal 'u32.const'      (u8.const 0x15))
+#(literal 'u64.const'      (u8.const 0x16))
+#
+## Formatting
+#(literal 'uint32'         (u8.const 0x20))
+#(literal 'uint64'         (u8.const 0x21))
+#(literal 'uint8'          (u8.const 0x22))
+#(literal 'varint32'       (u8.const 0x23))
+#(literal 'varint64'       (u8.const 0x24))
+#(literal 'varuint32'      (u8.const 0x25))
+#(literal 'varuint64'      (u8.const 0x26))
+#(literal 'opcode.bytes'   (u8.const 0x27))
+#(literal 'accept'         (u8.const 0x28))
+#(literal 'binary'         (u8.const 0x29))
+#(literal 'opcode.binary'  (u8.const 0x2a))
+#(literal 'bit'            (u8.const 0x2b))
+#(literal 'opcode.bits'    (u8.const 0x2c))
+#
+## Boolean expressions
+#(literal 'and'            (u8.const 0x30))
+#(literal 'or'             (u8.const 0x31))
+#(literal 'not'            (u8.const 0x32))
+#(literal 'bitwise.and'    (u8.const 0x34))
+#(literal 'bitwise.or'     (u8.const 0x35))
+#(literal 'bitwise.xor'    (u8.const 0x36))
+#(literal 'bitwise.negate' (u8.const 0x37))
+#(literal 'last.symbol.is' (u8.const 0x38))
+#
+## I/O operations
+#(literal 'peek'           (u8.const 0x40))
+#(literal 'read'           (u8.const 0x41))
+#(literal 'last.read'      (u8.const 0x42))
+#(literal 'write'          (u8.const 0x43))
+#(literal 'table'          (u8.const 0x44))
+#
+## Other
+#(literal 'param'          (u8.const 0x51))
+#(literal 'local'          (u8.const 0x53))
+#(literal 'set'            (u8.const 0x54))
+#(literal 'map'            (u8.const 0x55))
+#(literal '=>'             (u8.const 0x56))
+#
+## declarations
+#(literal 'define'         (u8.const 0x60))
+#(literal 'file'           (u8.const 0x62))
+#(literal 'file.header'    (u8.const 0x77))
+#(literal 'section'        (u8.const 0x63))
+#(literal 'undefine'       (u8.const 0x64))
+#(literal 'literal.define' (u8.const 0x65))
+#(literal 'literal.use'    (u8.const 0x66))
+#(literal 'rename'         (u8.const 0x67))
+#(literal 'locals'         (u8.const 0x68))
+#(literal 'params'         (u8.const 0x69))
+#(literal 'literal.action.define'  (u8.const 0x6a))
+#(literal 'literal.action.use'     (u8.const 0x6b))
+#(literal 'literal.action.enum'    (u8.const 0x6c))
 
 (define 'file' (params)
   (eval 'header')
