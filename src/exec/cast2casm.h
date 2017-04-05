@@ -1008,8 +1008,7 @@ int main(int Argc, charstring Argv[]) {
                  .setDescription("Generated binary file"));
 
     ArgsParser::Toggle DisplayParsedInputFlag(DisplayParsedInput);
-    Args.add(DisplayParsedInputFlag
-                 .setLongName("display=input")
+    Args.add(DisplayParsedInputFlag.setLongName("display=input")
                  .setDescription("Display parsed cast text"));
 
     ArgsParser::Toggle DisplayStrippedInputFlag(DisplayStrippedInput);

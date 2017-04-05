@@ -472,8 +472,10 @@ const DefineNode* SymbolDefnNode::getDefineDefinition() const {
   if (Symbol == nullptr)
     return nullptr;
   const std::string& Name = Symbol->getName();
-  for (SymbolTable* Scope = &Symtab; Scope != nullptr; Scope = Scope->getEnclosingScope()) {
-    SymbolDefnNode* SymDef = Scope->getSymbolDefn(Scope->getSymbolDefinition(Name));
+  for (SymbolTable* Scope = &Symtab; Scope != nullptr;
+       Scope = Scope->getEnclosingScope()) {
+    SymbolDefnNode* SymDef =
+        Scope->getSymbolDefn(Scope->getSymbolDefinition(Name));
     if (SymDef == nullptr)
       continue;
     if (SymDef->DefineDefinition)
@@ -509,8 +511,10 @@ const LiteralDefNode* SymbolDefnNode::getLiteralDefinition() const {
   if (Symbol == nullptr)
     return nullptr;
   const std::string& Name = Symbol->getName();
-  for (SymbolTable* Scope = &Symtab; Scope != nullptr; Scope = Scope->getEnclosingScope()) {
-    SymbolDefnNode* SymDef = Scope->getSymbolDefn(Scope->getSymbolDefinition(Name));
+  for (SymbolTable* Scope = &Symtab; Scope != nullptr;
+       Scope = Scope->getEnclosingScope()) {
+    SymbolDefnNode* SymDef =
+        Scope->getSymbolDefn(Scope->getSymbolDefinition(Name));
     if (SymDef == nullptr)
       continue;
     if (SymDef->LiteralDefinition)
@@ -551,8 +555,10 @@ const LiteralActionDefNode* SymbolDefnNode::getLiteralActionDefinition() const {
   return LiteralActionDefinition;
 #else
   const std::string& Name = Symbol->getName();
-  for (SymbolTable* Scope = &Symtab; Scope != nullptr; Scope = Scope->getEnclosingScope()) {
-    SymbolDefnNode* SymDef = Scope->getSymbolDefn(Scope->getSymbolDefinition(Name));
+  for (SymbolTable* Scope = &Symtab; Scope != nullptr;
+       Scope = Scope->getEnclosingScope()) {
+    SymbolDefnNode* SymDef =
+        Scope->getSymbolDefn(Scope->getSymbolDefinition(Name));
     if (SymDef == nullptr)
       continue;
     if (SymDef->LiteralActionDefinition)
