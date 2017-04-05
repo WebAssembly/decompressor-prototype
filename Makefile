@@ -858,23 +858,24 @@ ifeq ($(GENSRCS), 4)
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot2
 	@echo "case h $< $@"
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot2 \
-		$(patsubst %.cast, %-lits.cast, $<) $< -o $@ \
-		--header --strip-literal-uses \
-		$(ALG_GENDIR_ALG) --function \
-		--name $(call alg_name, $<) \
-		$(if $(findstring casm0x0, $<), , --strip-actions)
+		$(patsubst %.cast, %-lits.cast, $<) \
+		$(if $(findstring casm0x0, $<), \
+			$(patsubst %.cast, %Boot.cast, $<), \
+			--strip-actions) \
+		$< -o $@ --header --strip-literal-uses $(ALG_GENDIR_ALG) \
+		--function --name $(call alg_name, $<)
 
   $(ALG_BOOT2_BASE_CPP_SRCS): $(ALG_GENDIR)/%.cpp: $(ALG_GENDIR)/%.cast \
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot2
 	@echo "case cpp $< $@"
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot2  \
-		$(patsubst %.cast, %-lits.cast, $<) $< -o $@ \
-		--strip-literal-uses --array \
-		$(ALG_GENDIR_ALG) --function \
-		--name $(call alg_name, $<) \
+		$(patsubst %.cast, %-lits.cast, $<) \
 		$(if $(findstring casm0x0, $<), \
+			$(patsubst %.cast, %Boot.cast, $<) \
 			--boot --strip-symbolic-actions, \
-			--strip-actions)
+			--strip-actions) \
+		$< -o $@ --strip-literal-uses --array \
+		$(ALG_GENDIR_ALG) --function --name $(call alg_name, $<)
 
 endif
 
