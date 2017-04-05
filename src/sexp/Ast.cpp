@@ -540,20 +540,6 @@ const LiteralActionDefNode* SymbolDefnNode::getLiteralActionDefinition() const {
   // Not defined locally, find enclosing definition.
   if (Symbol == nullptr)
     return nullptr;
-#if 0
-  SymbolTable* Scope = &Symtab;
-  if (Scope == nullptr)
-    return nullptr;
-  Scope = Scope->getEnclosingScope();
-  if (Scope == nullptr)
-    return nullptr;
-  const std::string& Name = Symbol->getName();
-  SymbolNode* Sym = Scope->getSymbol(Name);
-  if (Sym != nullptr)
-    LiteralActionDefinition =
-        const_cast<LiteralActionDefNode*>(Sym->getLiteralActionDefinition());
-  return LiteralActionDefinition;
-#else
   const std::string& Name = Symbol->getName();
   for (SymbolTable* Scope = &Symtab; Scope != nullptr;
        Scope = Scope->getEnclosingScope()) {
@@ -565,7 +551,6 @@ const LiteralActionDefNode* SymbolDefnNode::getLiteralActionDefinition() const {
       return LiteralActionDefinition = SymDef->LiteralActionDefinition;
   }
   return nullptr;
-#endif
 }
 
 SymbolNode::SymbolNode(SymbolTable& Symtab, const std::string& Name)
