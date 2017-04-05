@@ -54,14 +54,18 @@ namespace filt {
 namespace {
 
 void errorDescribeContext(NodeVectorType& Parents,
-                          const char* Context = "Context") {
+                          const char* Context = "Context",
+                          bool Abbrev = true) {
   if (Parents.empty())
     return;
   TextWriter Writer;
   FILE* Out = Parents[0]->getErrorFile();
   fprintf(Out, "%s:\n", Context);
   for (size_t i = Parents.size() - 1; i > 0; --i)
-    Writer.writeAbbrev(Out, Parents[i - 1]);
+    if (Abbrev)
+      Writer.writeAbbrev(Out, Parents[i - 1]);
+    else
+      Writer.write(Out, Parents[i - 1]);
 }
 
 void errorDescribeNode(const char* Message,
@@ -467,17 +471,17 @@ const DefineNode* SymbolDefnNode::getDefineDefinition() const {
   // Not defined locally, find enclosing definition.
   if (Symbol == nullptr)
     return nullptr;
-  SymbolTable* Scope = &Symtab;
-  if (Scope == nullptr)
-    return nullptr;
-  Scope = Scope->getEnclosingScope();
-  if (Scope == nullptr)
-    return nullptr;
   const std::string& Name = Symbol->getName();
-  SymbolNode* Sym = Scope->getSymbol(Name);
-  if (Sym != nullptr)
-    DefineDefinition = const_cast<DefineNode*>(Sym->getDefineDefinition());
-  return DefineDefinition;
+  for (SymbolTable* Scope = &Symtab; Scope != nullptr;
+       Scope = Scope->getEnclosingScope()) {
+    SymbolDefnNode* SymDef =
+        Scope->getSymbolDefn(Scope->getSymbolDefinition(Name));
+    if (SymDef == nullptr)
+      continue;
+    if (SymDef->DefineDefinition)
+      return DefineDefinition = SymDef->DefineDefinition;
+  }
+  return nullptr;
 }
 
 void SymbolDefnNode::setDefineDefinition(const DefineNode* Defn) {
@@ -506,18 +510,17 @@ const LiteralDefNode* SymbolDefnNode::getLiteralDefinition() const {
   // Not defined locally, find enclosing definition.
   if (Symbol == nullptr)
     return nullptr;
-  SymbolTable* Scope = &Symtab;
-  if (Scope == nullptr)
-    return nullptr;
-  Scope = Scope->getEnclosingScope();
-  if (Scope == nullptr)
-    return nullptr;
   const std::string& Name = Symbol->getName();
-  SymbolNode* Sym = Scope->getSymbol(Name);
-  if (Sym != nullptr)
-    LiteralDefinition =
-        const_cast<LiteralDefNode*>(Sym->getLiteralDefinition());
-  return LiteralDefinition;
+  for (SymbolTable* Scope = &Symtab; Scope != nullptr;
+       Scope = Scope->getEnclosingScope()) {
+    SymbolDefnNode* SymDef =
+        Scope->getSymbolDefn(Scope->getSymbolDefinition(Name));
+    if (SymDef == nullptr)
+      continue;
+    if (SymDef->LiteralDefinition)
+      return LiteralDefinition = SymDef->LiteralDefinition;
+  }
+  return nullptr;
 }
 
 void SymbolDefnNode::setLiteralActionDefinition(
@@ -537,18 +540,17 @@ const LiteralActionDefNode* SymbolDefnNode::getLiteralActionDefinition() const {
   // Not defined locally, find enclosing definition.
   if (Symbol == nullptr)
     return nullptr;
-  SymbolTable* Scope = &Symtab;
-  if (Scope == nullptr)
-    return nullptr;
-  Scope = Scope->getEnclosingScope();
-  if (Scope == nullptr)
-    return nullptr;
   const std::string& Name = Symbol->getName();
-  SymbolNode* Sym = Scope->getSymbol(Name);
-  if (Sym != nullptr)
-    LiteralActionDefinition =
-        const_cast<LiteralActionDefNode*>(Sym->getLiteralActionDefinition());
-  return LiteralActionDefinition;
+  for (SymbolTable* Scope = &Symtab; Scope != nullptr;
+       Scope = Scope->getEnclosingScope()) {
+    SymbolDefnNode* SymDef =
+        Scope->getSymbolDefn(Scope->getSymbolDefinition(Name));
+    if (SymDef == nullptr)
+      continue;
+    if (SymDef->LiteralActionDefinition)
+      return LiteralActionDefinition = SymDef->LiteralActionDefinition;
+  }
+  return nullptr;
 }
 
 SymbolNode::SymbolNode(SymbolTable& Symtab, const std::string& Name)
@@ -951,8 +953,9 @@ void SymbolTable::installDefinitions(Node* Root) {
           errorDescribeNode("In", Root);
           return fatal("Can't redefine predefined symbol");
         }
-        return LiteralSymbol->setLiteralActionDefinition(
-            cast<LiteralActionDefNode>(Root));
+        const auto* Def = cast<LiteralActionDefNode>(Root);
+        insertCallbackLiteral(Def);
+        return LiteralSymbol->setLiteralActionDefinition(Def);
       }
       errorDescribeNode("Malformed", Root);
       return fatal("Malformed literal s-expression found!");
@@ -988,7 +991,7 @@ TraceClass& SymbolTable::getTrace() {
 void SymbolTable::describe(FILE* Out, bool ShowInternalStructure) {
   TextWriter Writer;
   Writer.setShowInternalStructure(ShowInternalStructure);
-  Writer.write(Out, getInstalledRoot());
+  Writer.write(Out, this);
 }
 
 void SymbolTable::stripCallbacksExcept(std::set<std::string>& KeepActions) {
@@ -1944,6 +1947,7 @@ bool CaseNode::validateNode(NodeVectorType& Parents) {
     Value = Key->getValue();
   } else {
     errorDescribeNode("Case", this);
+    errorDescribeNode("Case key", CaseExp);
     fprintf(error(), "Case value not found\n");
     return false;
   }

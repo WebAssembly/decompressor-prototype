@@ -1,0 +1,514 @@
+# Copyright 2017 WebAssembly Community Group participants
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Defines symbolic literals used by the WASM algorithm as enclosing scope.
+
+(header (u32.const 0x6d736163) (u32.const 0x0))
+(header (u32.const 0x6d736100) (u32.const 0xd))
+
+(declarations)
+
+(literal.action.enum (u32.const 1001)
+                     'br_table.begin'
+                     'br_table.count'
+                     'br_table.default'
+                     'br_table.end'
+                     'br_table.target'
+                     'br_target.begin'
+                     'br_target.end'
+                     'code.section.begin'
+                     'code.section.count'
+                     'code.section.end'
+                     'data.section.begin'
+                     'data.section.count'
+                     'data.section.end'
+                     'data.segment.begin'
+                     'data.segment.data'
+                     'data.segment.end'
+                     'data.segment.memory_index'
+                     'data.segment.size'
+                     'element.section.begin'
+                     'element.section.count'
+                     'element.section.end'
+                     'element.segment.begin'
+                     'element.segment.elem'
+                     'element.segment.end'
+                     'element.segment.index'
+                     'element.segment.num_elem'
+                     'element.segment.offset'
+                     'export.entry.index'
+                     'export.entry.name'
+                     'export.section.begin'
+                     'export.section.count'
+                     'export.section.end'
+                     'external.kind.begin'
+                     'external.kind.end'
+                     'file.begin'
+                     'file.end'
+                     'function.body.begin'
+                     'function.body.code.begin'
+                     'function.body.code.end'
+                     'function.body.end'
+                     'function.body.local_count'
+                     'function.names.begin'
+                     'function.names.end'
+                     'function.names.fcn_name'
+                     'function.names.local_count'
+                     'function.names.local_name'
+                     'function.section.begin'
+                     'function.section.count'
+                     'function.section.end'
+                     'function.section.type'
+                     'function.type.begin'
+                     'function.type.end'
+                     'function.type.form'
+                     'global.section.begin'
+                     'global.section.count'
+                     'global.section.end'
+                     'global.section.variable.init'
+                     'global.section.variable.type'
+                     'global.type.begin'
+                     'global.type.end'
+                     'import.entry.begin'
+                     'import.entry.end'
+                     'import.entry.field'
+                     'import.entry.function'
+                     'import.entry.global'
+                     'import.entry.memory'
+                     'import.entry.module'
+                     'import.entry.table'
+                     'import.section.begin'
+                     'import.section.count'
+                     'import.section.end'
+                     'init_expr.begin'
+                     'init_expr.end'
+                     'init_expr.opcode'
+                     'inst.block'
+                     'inst.br'
+                     'inst.br_if'
+                     'inst.br_table'
+                     'inst.call'
+                     'inst.call_indirect'
+                     'inst.current_memory'
+                     'inst.drop'
+                     'inst.else'
+                     'inst.end'
+                     'inst.f32.abs'
+                     'inst.f32.add'
+                     'inst.f32.ceil'
+                     'inst.f32.const'
+                     'inst.f32.convert_s/i32'
+                     'inst.f32.convert_s/i64'
+                     'inst.f32.convert_u/i32'
+                     'inst.f32.convert_u/i64'
+                     'inst.f32.copysign'
+                     'inst.f32.demote/f64'
+                     'inst.f32.div'
+                     'inst.f32.eq'
+                     'inst.f32.floor'
+                     'inst.f32.ge'
+                     'inst.f32.gt'
+                     'inst.f32.le'
+                     'inst.f32.load'
+                     'inst.f32.lt'
+                     'inst.f32.max'
+                     'inst.f32.min'
+                     'inst.f32.mul'
+                     'inst.f32.ne'
+                     'inst.f32.nearest'
+                     'inst.f32.neg'
+                     'inst.f32.reinterpret/i32'
+                     'inst.f32.sqrt'
+                     'inst.f32.store'
+                     'inst.f32.sub'
+                     'inst.f32.trunc'
+                     'inst.f64.abs'
+                     'inst.f64.add'
+                     'inst.f64.ceil'
+                     'inst.f64.const'
+                     'inst.f64.convert_s/i32'
+                     'inst.f64.convert_s/i64'
+                     'inst.f64.convert_u/i32'
+                     'inst.f64.convert_u/i64'
+                     'inst.f64.copysign'
+                     'inst.f64.div'
+                     'inst.f64.eq'
+                     'inst.f64.floor'
+                     'inst.f64.ge'
+                     'inst.f64.gt'
+                     'inst.f64.le'
+                     'inst.f64.load'
+                     'inst.f64.lt'
+                     'inst.f64.max'
+                     'inst.f64.min'
+                     'inst.f64.mul'
+                     'inst.f64.ne'
+                     'inst.f64.nearest'
+                     'inst.f64.neg'
+                     'inst.f64.promote/f32'
+                     'inst.f64.reinterpret/i64'
+                     'inst.f64.sqrt'
+                     'inst.f64.store'
+                     'inst.f64.sub'
+                     'inst.f64.trunc'
+                     'inst.get_global'
+                     'inst.get_local'
+                     'inst.grow_memory'
+                     'inst.if'
+                     'inst.i32.add'
+                     'inst.i32.and'
+                     'inst.i32.clz'
+                     'inst.i32.const'
+                     'inst.i32.ctx'
+                     'inst.i32.div_s'
+                     'inst.i32.div_u'
+                     'inst.i32.eq'
+                     'inst.i32.eqz'
+                     'inst.i32.ge_s'
+                     'inst.i32.ge_u'
+                     'inst.i32.gt_s'
+                     'inst.i32.gt_u'
+                     'inst.i32.le_s'
+                     'inst.i32.le_u'
+                     'inst.i32.load'
+                     'inst.i32.load16_s'
+                     'inst.i32.load16_u'
+                     'inst.i32.load8_s'
+                     'inst.i32.load8_u'
+                     'inst.i32.lt_s'
+                     'inst.i32.lt_u'
+                     'inst.i32.mul'
+                     'inst.i32.ne'
+                     'inst.i32.or'
+                     'inst.i32.popcnt'
+                     'inst.i32.reinterpret/f32'
+                     'inst.i32.rem_s'
+                     'inst.i32.rem_u'
+                     'inst.i32.rotl'
+                     'inst.i32.rotr'
+                     'inst.i32.shl'
+                     'inst.i32.shr_s'
+                     'inst.i32.shr_u'
+                     'inst.i32.store'
+                     'inst.i32.store16'
+                     'inst.i32.store8'
+                     'inst.i32.sub'
+                     'inst.i32.trunc_s/f32'
+                     'inst.i32.trunc_s/f64'
+                     'inst.i32.trunc_u/f32'
+                     'inst.i32.trunc_u/f64'
+                     'inst.i32.wrap/i64'
+                     'inst.i32.xor'
+                     'inst.i64.add'
+                     'inst.i64.and'
+                     'inst.i64.clz'
+                     'inst.i64.const'
+                     'inst.i64.ctx'
+                     'inst.i64.div_s'
+                     'inst.i64.div_u'
+                     'inst.i64.eq'
+                     'inst.i64.eqz'
+                     'inst.i64.extend_s/i32'
+                     'inst.i64.extend_u/i32'
+                     'inst.i64.ge_s'
+                     'inst.i64.ge_u'
+                     'inst.i64.gt_s'
+                     'inst.i64.gt_u'
+                     'inst.i64.le_s'
+                     'inst.i64.le_u'
+                     'inst.i64.load'
+                     'inst.i64.load16_s'
+                     'inst.i64.load16_u'
+                     'inst.i64.load32_s'
+                     'inst.i64.load32_u'
+                     'inst.i64.load8_s'
+                     'inst.i64.load8_u'
+                     'inst.i64.lt_s'
+                     'inst.i64.lt_u'
+                     'inst.i64.mul'
+                     'inst.i64.ne'
+                     'inst.i64.or'
+                     'inst.i64.popcnt'
+                     'inst.i64.reinterpret/f64'
+                     'inst.i64.rem_s'
+                     'inst.i64.rem_u'
+                     'inst.i64.rotl'
+                     'inst.i64.rotr'
+                     'inst.i64.store'
+                     'inst.i64.store8'
+                     'inst.i64.store16'
+                     'inst.i64.store32'
+                     'inst.i64.shl'
+                     'inst.i64.shr_s'
+                     'inst.i64.shr_u'
+                     'inst.i64.sub'
+                     'inst.i64.trunc_s/f32'
+                     'inst.i64.trunc_s/f64'
+                     'inst.i64.trunc_u/f32'
+                     'inst.i64.trunc_u/f64'
+                     'inst.i64.xor'
+                     'inst.loop'
+                     'inst.nop'
+                     'inst.return'
+                     'inst.select'
+                     'inst.set_global'
+                     'inst.set_local'
+                     'inst.tee_local'
+                     'inst.unreachable'
+                     'instruction.begin'
+                     'instruction.end'
+                     'instruction.opcode'
+                     'local.entry.begin'
+                     'local.entry.count'
+                     'local.entry.end'
+                     'memory.immediate.begin'
+                     'memory.immediate.end'
+                     'memory.section.begin'
+                     'memory.section.count'
+                     'memory.section.end'
+                     'memory.section.entry'
+                     'memory.type.begin'
+                     'memory.type.end'
+                     'name.section.begin'
+                     'name.section.count'
+                     'name.section.end'
+                     'resizable.limits.begin'
+                     'resizable.limits.end'
+                     'resizable.limits.flags'
+                     'resizable.limits.initial'
+                     'resizable.limits.maximum'
+                     'section.begin'
+                     'section.code'
+                     'section.end'
+                     'skip.section.begin'
+                     'skip.section.end'
+                     'start.section.begin'
+                     'start.section.end'
+                     'symbol.name.begin'
+                     'symbol.name.end'
+                     'symbol.name.length'
+                     'table.section.begin'
+                     'table.section.count'
+                     'table.section.end'
+                     'table.section.type'
+                     'table.type.begin'
+                     'table.type.end'
+                     'type.num.params'
+                     'type.num.returns'
+                     'type.param'
+                     'type.return'
+                     'type.section.begin'
+                     'type.section.count'
+                     'type.section.end'
+                     'type.value.begin'
+                     'type.value.end'
+                     'unknown.section.begin'
+                     'unknown.section.end'
+                     )
+#### WASM opcodes.
+
+(literal 'inst.unreachable'         (u8.const 0x00))
+(literal 'inst.nop'                 (u8.const 0x01))
+(literal 'inst.block'               (u8.const 0x02))
+(literal 'inst.loop'                (u8.const 0x03))
+(literal 'inst.if'                  (u8.const 0x04))
+(literal 'inst.else'                (u8.const 0x05))
+(literal 'inst.end'                 (u8.const 0x0b))
+(literal 'inst.br'                  (u8.const 0x0c))
+(literal 'inst.br_if'               (u8.const 0x0d))
+(literal 'inst.br_table'            (u8.const 0x0e))
+(literal 'inst.return'              (u8.const 0x0f))
+(literal 'inst.call'                (u8.const 0x10))
+(literal 'inst.call_indirect'       (u8.const 0x11))
+(literal 'inst.drop'                (u8.const 0x1a))
+(literal 'inst.select'              (u8.const 0x1b))
+(literal 'inst.get_local'           (u8.const 0x20))
+(literal 'inst.set_local'           (u8.const 0x21))
+(literal 'inst.tee_local'           (u8.const 0x22))
+(literal 'inst.get_global'          (u8.const 0x23))
+(literal 'inst.set_global'          (u8.const 0x24))
+(literal 'inst.i32.load'            (u8.const 0x28))
+(literal 'inst.i64.load'            (u8.const 0x29))
+(literal 'inst.f32.load'            (u8.const 0x2a))
+(literal 'inst.f64.load'            (u8.const 0x2b))
+(literal 'inst.i32.load8_s'         (u8.const 0x2c))
+(literal 'inst.i32.load8_u'         (u8.const 0x2d))
+(literal 'inst.i32.load16_s'        (u8.const 0x2e))
+(literal 'inst.i32.load16_u'        (u8.const 0x2f))
+(literal 'inst.i64.load8_s'         (u8.const 0x30))
+(literal 'inst.i64.load8_u'         (u8.const 0x31))
+(literal 'inst.i64.load16_s'        (u8.const 0x32))
+(literal 'inst.i64.load16_u'        (u8.const 0x33))
+(literal 'inst.i64.load32_s'        (u8.const 0x34))
+(literal 'inst.i64.load32_u'        (u8.const 0x35))
+(literal 'inst.i32.store'           (u8.const 0x36))
+(literal 'inst.i64.store'           (u8.const 0x37))
+(literal 'inst.f32.store'           (u8.const 0x38))
+(literal 'inst.f64.store'           (u8.const 0x39))
+(literal 'inst.i32.store8'          (u8.const 0x3a))
+(literal 'inst.i32.store16'         (u8.const 0x3b))
+(literal 'inst.i64.store8'          (u8.const 0x3c))
+(literal 'inst.i64.store16'         (u8.const 0x3d))
+(literal 'inst.i64.store32'         (u8.const 0x3e))
+(literal 'inst.current_memory'      (u8.const 0x3f))
+(literal 'inst.grow_memory'         (u8.const 0x40))
+(literal 'inst.i32.const'           (u8.const 0x41))
+(literal 'inst.i64.const'           (u8.const 0x42))
+(literal 'inst.f32.const'           (u8.const 0x43))
+(literal 'inst.f64.const'           (u8.const 0x44))
+(literal 'inst.i32.eqz'             (u8.const 0x45))
+(literal 'inst.i32.eq'              (u8.const 0x46))
+(literal 'inst.i32.ne'              (u8.const 0x47))
+(literal 'inst.i32.lt_s'            (u8.const 0x48))
+(literal 'inst.i32.lt_u'            (u8.const 0x49))
+(literal 'inst.i32.gt_s'            (u8.const 0x4a))
+(literal 'inst.i32.gt_u'            (u8.const 0x4b))
+(literal 'inst.i32.le_s'            (u8.const 0x4c))
+(literal 'inst.i32.le_u'            (u8.const 0x4d))
+(literal 'inst.i32.ge_s'            (u8.const 0x4e))
+(literal 'inst.i32.ge_u'            (u8.const 0x4f))
+(literal 'inst.i64.eqz'             (u8.const 0x50))
+(literal 'inst.i64.eq'              (u8.const 0x51))
+(literal 'inst.i64.ne'              (u8.const 0x52))
+(literal 'inst.i64.lt_s'            (u8.const 0x53))
+(literal 'inst.i64.lt_u'            (u8.const 0x54))
+(literal 'inst.i64.gt_s'            (u8.const 0x55))
+(literal 'inst.i64.gt_u'            (u8.const 0x56))
+(literal 'inst.i64.le_s'            (u8.const 0x57))
+(literal 'inst.i64.le_u'            (u8.const 0x58))
+(literal 'inst.i64.ge_s'            (u8.const 0x59))
+(literal 'inst.i64.ge_u'            (u8.const 0x5a))
+(literal 'inst.f32.eq'              (u8.const 0x5b))
+(literal 'inst.f32.ne'              (u8.const 0x5c))
+(literal 'inst.f32.lt'              (u8.const 0x5d))
+(literal 'inst.f32.gt'              (u8.const 0x5e))
+(literal 'inst.f32.le'              (u8.const 0x5f))
+(literal 'inst.f32.ge'              (u8.const 0x60))
+(literal 'inst.f64.eq'              (u8.const 0x61))
+(literal 'inst.f64.ne'              (u8.const 0x62))
+(literal 'inst.f64.lt'              (u8.const 0x63))
+(literal 'inst.f64.gt'              (u8.const 0x64))
+(literal 'inst.f64.le'              (u8.const 0x65))
+(literal 'inst.f64.ge'              (u8.const 0x66))
+(literal 'inst.i32.clz'             (u8.const 0x67))
+(literal 'inst.i32.ctx'             (u8.const 0x68))
+(literal 'inst.i32.popcnt'          (u8.const 0x69))
+(literal 'inst.i32.add'             (u8.const 0x6a))
+(literal 'inst.i32.sub'             (u8.const 0x6b))
+(literal 'inst.i32.mul'             (u8.const 0x6c))
+(literal 'inst.i32.div_s'           (u8.const 0x6d))
+(literal 'inst.i32.div_u'           (u8.const 0x6e))
+(literal 'inst.i32.rem_s'           (u8.const 0x6f))
+(literal 'inst.i32.rem_u'           (u8.const 0x70))
+(literal 'inst.i32.and'             (u8.const 0x71))
+(literal 'inst.i32.or'              (u8.const 0x72))
+(literal 'inst.i32.xor'             (u8.const 0x73))
+(literal 'inst.i32.shl'             (u8.const 0x74))
+(literal 'inst.i32.shr_s'           (u8.const 0x75))
+(literal 'inst.i32.shr_u'           (u8.const 0x76))
+(literal 'inst.i32.rotl'            (u8.const 0x77))
+(literal 'inst.i32.rotr'            (u8.const 0x78))
+(literal 'inst.i64.clz'             (u8.const 0x79))
+(literal 'inst.i64.ctx'             (u8.const 0x7a))
+(literal 'inst.i64.popcnt'          (u8.const 0x7b))
+(literal 'inst.i64.add'             (u8.const 0x7c))
+(literal 'inst.i64.sub'             (u8.const 0x7d))
+(literal 'inst.i64.mul'             (u8.const 0x7e))
+(literal 'inst.i64.div_s'           (u8.const 0x7f))
+(literal 'inst.i64.div_u'           (u8.const 0x80))
+(literal 'inst.i64.rem_s'           (u8.const 0x81))
+(literal 'inst.i64.rem_u'           (u8.const 0x82))
+(literal 'inst.i64.and'             (u8.const 0x83))
+(literal 'inst.i64.or'              (u8.const 0x84))
+(literal 'inst.i64.xor'             (u8.const 0x85))
+(literal 'inst.i64.shl'             (u8.const 0x86))
+(literal 'inst.i64.shr_s'           (u8.const 0x87))
+(literal 'inst.i64.shr_u'           (u8.const 0x88))
+(literal 'inst.i64.rotl'            (u8.const 0x89))
+(literal 'inst.i64.rotr'            (u8.const 0x8a))
+(literal 'inst.f32.abs'             (u8.const 0x8b))
+(literal 'inst.f32.neg'             (u8.const 0x8c))
+(literal 'inst.f32.ceil'            (u8.const 0x8d))
+(literal 'inst.f32.floor'           (u8.const 0x8e))
+(literal 'inst.f32.trunc'           (u8.const 0x8f))
+(literal 'inst.f32.nearest'         (u8.const 0x90))
+(literal 'inst.f32.sqrt'            (u8.const 0x91))
+(literal 'inst.f32.add'             (u8.const 0x92))
+(literal 'inst.f32.sub'             (u8.const 0x93))
+(literal 'inst.f32.mul'             (u8.const 0x94))
+(literal 'inst.f32.div'             (u8.const 0x95))
+(literal 'inst.f32.min'             (u8.const 0x96))
+(literal 'inst.f32.max'             (u8.const 0x97))
+(literal 'inst.f32.copysign'        (u8.const 0x98))
+(literal 'inst.f64.abs'             (u8.const 0x99))
+(literal 'inst.f64.neg'             (u8.const 0x9a))
+(literal 'inst.f64.ceil'            (u8.const 0x9b))
+(literal 'inst.f64.floor'           (u8.const 0x9c))
+(literal 'inst.f64.trunc'           (u8.const 0x9d))
+(literal 'inst.f64.nearest'         (u8.const 0x9e))
+(literal 'inst.f64.sqrt'            (u8.const 0x9f))
+(literal 'inst.f64.add'             (u8.const 0xa0))
+(literal 'inst.f64.sub'             (u8.const 0xa1))
+(literal 'inst.f64.mul'             (u8.const 0xa2))
+(literal 'inst.f64.div'             (u8.const 0xa3))
+(literal 'inst.f64.min'             (u8.const 0xa4))
+(literal 'inst.f64.max'             (u8.const 0xa5))
+(literal 'inst.f64.copysign'        (u8.const 0xa6))
+(literal 'inst.i32.wrap/i64'        (u8.const 0xa7))
+(literal 'inst.i32.trunc_s/f32'     (u8.const 0xa8))
+(literal 'inst.i32.trunc_u/f32'     (u8.const 0xa9))
+(literal 'inst.i32.trunc_s/f64'     (u8.const 0xaa))
+(literal 'inst.i32.trunc_u/f64'     (u8.const 0xab))
+(literal 'inst.i64.extend_s/i32'    (u8.const 0xac))
+(literal 'inst.i64.extend_u/i32'    (u8.const 0xad))
+(literal 'inst.i64.trunc_s/f32'     (u8.const 0xae))
+(literal 'inst.i64.trunc_u/f32'     (u8.const 0xaf))
+(literal 'inst.i64.trunc_s/f64'     (u8.const 0xb0))
+(literal 'inst.i64.trunc_u/f64'     (u8.const 0xb1))
+(literal 'inst.f32.convert_s/i32'   (u8.const 0xb2))
+(literal 'inst.f32.convert_u/i32'   (u8.const 0xb3))
+(literal 'inst.f32.convert_s/i64'   (u8.const 0xb4))
+(literal 'inst.f32.convert_u/i64'   (u8.const 0xb5))
+(literal 'inst.f32.demote/f64'      (u8.const 0xb6))
+(literal 'inst.f64.convert_s/i32'   (u8.const 0xb7))
+(literal 'inst.f64.convert_u/i32'   (u8.const 0xb8))
+(literal 'inst.f64.convert_s/i64'   (u8.const 0xb9))
+(literal 'inst.f64.convert_u/i64'   (u8.const 0xba))
+(literal 'inst.f64.promote/f32'     (u8.const 0xbb))
+(literal 'inst.i32.reinterpret/f32' (u8.const 0xbc))
+(literal 'inst.i64.reinterpret/f64' (u8.const 0xbd))
+(literal 'inst.f32.reinterpret/i32' (u8.const 0xbe))
+(literal 'inst.f64.reinterpret/i64' (u8.const 0xbf))
+
+#### Encoding of sections in a WASM file.
+
+(literal 'unknown.section'  (u32.const 0))
+(literal 'type.section'     (u32.const 1))
+(literal 'import.section'   (u32.const 2))
+(literal 'function.section' (u32.const 3))
+(literal 'table.section'    (u32.const 4))
+(literal 'memory.section'   (u32.const 5))
+(literal 'global.section'   (u32.const 6))
+(literal 'export.section'   (u32.const 7))
+(literal 'start.section'    (u32.const 8))
+(literal 'element.section'  (u32.const 9))
+(literal 'code.section'     (u32.const 10))
+(literal 'data.section'     (u32.const 11))
+
+#### Encoding of the kind of symbol being defined.
+
+(literal 'external.kind.function' (u8.const 0))
+(literal 'external.kind.table'    (u8.const 1))
+(literal 'external.kind.memory'   (u8.const 2))
+(literal 'external.kind.global'   (u8.const 3))

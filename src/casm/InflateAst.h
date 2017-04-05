@@ -24,7 +24,7 @@
 #ifndef DECOMPRESSOR_SRC_SEXP_INFLATEAST_H
 #define DECOMPRESSOR_SRC_SEXP_INFLATEAST_H
 
-#include "algorithms/casm0x0-enum.h"
+#include "algorithms/casm0x0-lits.h"
 #include "utils/ValueStack.h"
 #include "interp/Writer.h"
 
