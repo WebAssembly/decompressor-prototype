@@ -201,6 +201,7 @@ alg_name = $(patsubst $(ALG_GENDIR)/%.cast, Alg%, $(1))
 
 ALG_CAST = casm0x0.cast
 ALG_GENDIR_ALG = -a $(ALG_GENDIR)/casm0x0-lits.cast \
+		-a $(ALG_GENDIR)/casm0x0Boot.cast \
 		-a $(ALG_GENDIR)/casm0x0.cast
 
 #### Boot step 1

@@ -1008,8 +1008,8 @@ int main(int Argc, charstring Argv[]) {
                  .setDescription("Generated binary file"));
 
     ArgsParser::Toggle DisplayParsedInputFlag(DisplayParsedInput);
-    Args.add(DisplayParsedInputFlag.setShortName('d')
-                 .setLongName("display")
+    Args.add(DisplayParsedInputFlag
+                 .setLongName("display=input")
                  .setDescription("Display parsed cast text"));
 
     ArgsParser::Toggle DisplayStrippedInputFlag(DisplayStrippedInput);
@@ -1070,6 +1070,11 @@ int main(int Argc, charstring Argv[]) {
         VerboseFlag.setShortName('v').setLongName("verbose").setDescription(
             "Show progress and tree written to binary file"));
 
+    ArgsParser::Optional<bool> TraceAlgorithmFlag(TraceAlgorithm);
+    Args.add(
+        TraceAlgorithmFlag.setLongName("verbose=algorithm")
+            .setDescription("Show algorithm used to generate compressed file"));
+
 #if WASM_CAST_BOOT > 1
 
     ArgsParser::Optional<bool> BitCompressFlag(BitCompress);
@@ -1084,11 +1089,6 @@ int main(int Argc, charstring Argv[]) {
                  .setDescription(
                      "Minimize size in binary file "
                      "(note: runs slower)"));
-
-    ArgsParser::Optional<bool> TraceAlgorithmFlag(TraceAlgorithm);
-    Args.add(
-        TraceAlgorithmFlag.setLongName("verbose=algorithm")
-            .setDescription("Show algorithm used to generate compressed file"));
 
     ArgsParser::Optional<bool> TraceFlattenFlag(TraceFlatten);
     Args.add(TraceFlattenFlag.setLongName("verbose=flatten")
@@ -1177,30 +1177,20 @@ int main(int Argc, charstring Argv[]) {
       return exit_status(EXIT_SUCCESS);
   }
 
-  if (StripActions) {
-    fprintf(stderr, "Stripping callbacks ...\n");
+  if (StripActions)
     InputSymtab->stripCallbacksExcept(KeepActions);
-  }
 
-  if (StripSymbolicActions) {
-    fprintf(stderr, "Stripping symbolic actions ...\n");
+  if (StripSymbolicActions)
     InputSymtab->stripSymbolicCallbacks();
-  }
 
-  if (StripLiteralUses) {
-    fprintf(stderr, "Stripping literal uses ...\n");
+  if (StripLiteralUses)
     InputSymtab->stripLiteralUses();
-  }
 
-  if (StripLiteralDefs) {
-    fprintf(stderr, "Stripping literal definitions ...\n");
+  if (StripLiteralDefs)
     InputSymtab->stripLiteralDefs();
-  }
 
-  if (StripLiterals) {
-    fprintf(stderr, "Stripping literal constants ...\n");
+  if (StripLiterals)
     InputSymtab->stripLiterals();
-  }
 
   if (DisplayStrippedInput) {
     InputSymtab->describe(stdout, ShowInternalStructure);
@@ -1225,8 +1215,9 @@ int main(int Argc, charstring Argv[]) {
 #endif
 
   if (TraceAlgorithm) {
+    fprintf(stderr, "Algorithm:\n");
     TextWriter Writer;
-    Writer.write(stderr, AlgSymtab.get());
+    Writer.write(stderr, AlgSymtab);
   }
 
   if (Verbose && strcmp(OutputFilename, "-") != 0)

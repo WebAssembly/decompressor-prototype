@@ -329,6 +329,10 @@ ArgsParser::ArgsParser(charstring Description)
 
 ArgsParser& ArgsParser::add(Arg& A) {
   A.setAddIndex(Args.size());
+  if (TraceProgress) {
+    fprintf(stderr, "Add:\n");
+    A.describe(stderr, TabWidth);
+  }
   Args.push_back(&A);
   if (auto* Opt = dyn_cast<OptionalArg>(&A)) {
     if (Opt->getShortName() == 0 && Opt->getLongName() == nullptr) {
