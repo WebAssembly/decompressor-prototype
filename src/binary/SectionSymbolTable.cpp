@@ -34,7 +34,7 @@ SectionSymbolTable::SectionSymbolTable(std::shared_ptr<SymbolTable> Symtab)
 }
 
 void SectionSymbolTable::addSymbol(const std::string& Name) {
-  addSymbol(Symtab->getSymbolDefinition(Name));
+  addSymbol(Symtab->getOrCreateSymbol(Name));
 }
 
 void SectionSymbolTable::addSymbol(SymbolNode* Sym) {

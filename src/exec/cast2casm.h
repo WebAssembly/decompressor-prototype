@@ -466,7 +466,7 @@ void CodeGenerator::generateReturnCreate(charstring NodeType) {
 size_t CodeGenerator::generateSymbol(const SymbolNode* Sym) {
   size_t Index = NextIndex++;
   generateFunctionHeader("SymbolNode", Index);
-  puts("  return Symtab->getSymbolDefinition(\"");
+  puts("  return Symtab->getOrCreateSymbol(\"");
   for (auto& Ch : Sym->getName())
     putc(Ch);
   putc('"');
@@ -480,9 +480,9 @@ size_t CodeGenerator::generateIntegerNode(charstring NodeName,
   std::string NodeType(NodeName);
   NodeType.append("Node");
   generateFunctionHeader(NodeType, Index);
-  puts("  return Symtab->get");
+  puts("  return Symtab->getOrCreate");
   puts(NodeName);
-  puts("Definition(");
+  puts("(");
   generateInt(Nd->getValue());
   puts(", ");
   generateFormat(Nd->getFormat());
