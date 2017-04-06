@@ -475,7 +475,7 @@ const DefineNode* SymbolDefnNode::getDefineDefinition() const {
   for (SymbolTable* Scope = &Symtab; Scope != nullptr;
        Scope = Scope->getEnclosingScope()) {
     SymbolDefnNode* SymDef =
-        Scope->getSymbolDefn(Scope->getSymbolDefinition(Name));
+        Scope->getSymbolDefn(Scope->getOrCreateSymbol(Name));
     if (SymDef == nullptr)
       continue;
     if (SymDef->DefineDefinition)
@@ -514,7 +514,7 @@ const LiteralDefNode* SymbolDefnNode::getLiteralDefinition() const {
   for (SymbolTable* Scope = &Symtab; Scope != nullptr;
        Scope = Scope->getEnclosingScope()) {
     SymbolDefnNode* SymDef =
-        Scope->getSymbolDefn(Scope->getSymbolDefinition(Name));
+        Scope->getSymbolDefn(Scope->getOrCreateSymbol(Name));
     if (SymDef == nullptr)
       continue;
     if (SymDef->LiteralDefinition)
@@ -544,7 +544,7 @@ const LiteralActionDefNode* SymbolDefnNode::getLiteralActionDefinition() const {
   for (SymbolTable* Scope = &Symtab; Scope != nullptr;
        Scope = Scope->getEnclosingScope()) {
     SymbolDefnNode* SymDef =
-        Scope->getSymbolDefn(Scope->getSymbolDefinition(Name));
+        Scope->getSymbolDefn(Scope->getOrCreateSymbol(Name));
     if (SymDef == nullptr)
       continue;
     if (SymDef->LiteralActionDefinition)
@@ -698,7 +698,7 @@ void SymbolTable::deallocateNodes() {
     delete Nd;
 }
 
-SymbolNode* SymbolTable::getSymbolDefinition(const std::string& Name) {
+SymbolNode* SymbolTable::getOrCreateSymbol(const std::string& Name) {
   SymbolNode* Node = SymbolMap[Name];
   if (Node == nullptr) {
     Node = new SymbolNode(*this, Name);
@@ -712,15 +712,15 @@ SymbolNode* SymbolTable::getPredefined(PredefinedSymbol Sym) {
   SymbolNode* Nd = PredefinedMap[Sym];
   if (Nd != nullptr)
     return Nd;
-  Nd = getSymbolDefinition(PredefinedName[uint32_t(Sym)]);
+  Nd = getOrCreateSymbol(PredefinedName[uint32_t(Sym)]);
   Nd->setPredefinedSymbol(Sym);
   PredefinedMap[Sym] = Nd;
   return Nd;
 }
 
 #define X(tag, format, defval, mergable, NODE_DECLS)                 \
-  tag##Node* SymbolTable::get##tag##Definition(IntType Value,        \
-                                               ValueFormat Format) { \
+  tag##Node* SymbolTable::getOrCreate##tag(IntType Value,            \
+                                           ValueFormat Format) {     \
     if (mergable) {                                                  \
       IntegerValue I(Op##tag, Value, Format, false);                 \
       IntegerNode* Node = IntMap[I];                                 \
@@ -735,7 +735,7 @@ SymbolNode* SymbolTable::getPredefined(PredefinedSymbol Sym) {
     Allocated.push_back(Node);                                       \
     return Node;                                                     \
   }                                                                  \
-  tag##Node* SymbolTable::get##tag##Definition() {                   \
+  tag##Node* SymbolTable::getOrCreate##tag() {                       \
     if (mergable) {                                                  \
       IntegerValue I(Op##tag, (defval), ValueFormat::Decimal, true); \
       IntegerNode* Node = IntMap[I];                                 \
@@ -805,7 +805,7 @@ bool SymbolTable::areActionsConsistent() {
     }
     Node* SymNd = const_cast<SymbolNode*>(Sym);
     auto* Def = create<LiteralActionDefNode>(
-        SymNd, getU64ConstDefinition(NextEnumValue++, ValueFormat::Decimal));
+        SymNd, getOrCreateU64Const(NextEnumValue++, ValueFormat::Decimal));
     installDefinitions(Def);
     CallbackLiterals.insert(Def);
   }
@@ -887,7 +887,7 @@ bool SymbolTable::specifiesAlgorithm() const {
 void SymbolTable::installPredefined() {
   for (uint32_t i = 0; i < NumPredefinedSymbols; ++i) {
     SymbolNode* Sym = getPredefined(toPredefinedSymbol(i));
-    U32ConstNode* Const = getU32ConstDefinition(i, ValueFormat::Decimal);
+    U32ConstNode* Const = getOrCreateU32Const(i, ValueFormat::Decimal);
     const auto* Def = create<LiteralActionDefNode>(Sym, Const);
     Sym->setLiteralActionDefinition(Def);
     insertCallbackLiteral(Def);
@@ -940,7 +940,7 @@ void SymbolTable::installDefinitions(Node* Root) {
           errorDescribeNode("In", Root);
           return fatal("Unable to install algorithm");
         }
-        Node* Value = getU64ConstDefinition(Base, IntNd->getFormat());
+        Node* Value = getOrCreateU64Const(Base, IntNd->getFormat());
         Node* Lit = create<LiteralActionDefNode>(Sym, Value);
         installDefinitions(Lit);
         ++Base;

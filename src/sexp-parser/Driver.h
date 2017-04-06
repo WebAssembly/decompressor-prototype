@@ -66,17 +66,17 @@ class Driver {
   }
 
 #define X(tag, format, defval, mergable, NODE_DECLS)               \
-  tag##Node* get##tag##Definition(                                 \
+  tag##Node* getOrCreate##tag(                                     \
       decode::IntType Value,                                       \
       decode::ValueFormat Format = decode::ValueFormat::Decimal) { \
-    return Table->get##tag##Definition(Value, Format);             \
+    return Table->getOrCreate##tag(Value, Format);                 \
   }                                                                \
-  tag##Node* get##tag##Definition() { return Table->get##tag##Definition(); }
+  tag##Node* getOrCreate##tag() { return Table->getOrCreate##tag(); }
   AST_INTEGERNODE_TABLE
 #undef X
 
-  SymbolNode* getSymbolDefinition(std::string& Name) {
-    return Table->getSymbolDefinition(Name);
+  SymbolNode* getOrCreateSymbol(std::string& Name) {
+    return Table->getOrCreateSymbol(Name);
   }
 
   void appendArgument(Node* Nd, Node* Arg);

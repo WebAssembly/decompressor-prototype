@@ -156,7 +156,7 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   SymbolNode* getPredefined(PredefinedSymbol Sym);
   // Gets existing symbol if known. Otherwise returns newly created symbol.
   // Used to keep symbols unique within filter s-expressions.
-  SymbolNode* getSymbolDefinition(const std::string& Name);
+  SymbolNode* getOrCreateSymbol(const std::string& Name);
   // Returns local version of symbol definitions associated with the
   // symbol. Used to get local cached symbol definitions when interpreting
   // nodes with a symbol lookup, such as EvalNode.
@@ -166,10 +166,10 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
 
 // Gets integer node (as defined by the arguments) if known. Otherwise
 // returns newly created integer.
-#define X(tag, format, defval, mergable, NODE_DECLS)           \
-  tag##Node* get##tag##Definition(decode::IntType Value,       \
-                                  decode::ValueFormat Format); \
-  tag##Node* get##tag##Definition();
+#define X(tag, format, defval, mergable, NODE_DECLS)       \
+  tag##Node* getOrCreate##tag(decode::IntType Value,       \
+                              decode::ValueFormat Format); \
+  tag##Node* getOrCreate##tag();
   AST_INTEGERNODE_TABLE
 #undef X
   // Gets actions corresponding to enter/exit block.

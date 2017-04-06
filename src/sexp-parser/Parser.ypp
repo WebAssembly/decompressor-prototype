@@ -328,7 +328,7 @@ expression
             $$ = Driver.create<CallbackNode>($3);
           }
         | "(" "param" INTEGER ")" {
-            $$ = Driver.getParamDefinition($3.Value, $3.Format);
+            $$ = Driver.getOrCreateParam($3.Value, $3.Format);
           }
         | local_var { $$ = $1; }
         | "(" "error" ")" {
@@ -504,31 +504,31 @@ literal_action_args
 
 literal_expression
         : "(" "i32.const" INTEGER ")" {
-            $$ = Driver.getI32ConstDefinition($3.Value, $3.Format);
+            $$ = Driver.getOrCreateI32Const($3.Value, $3.Format);
           }
         | "(" "i64.const" INTEGER ")" {
-            $$ = Driver.getI64ConstDefinition($3.Value, $3.Format);
+            $$ = Driver.getOrCreateI64Const($3.Value, $3.Format);
           }
         | "(" "u8.const" INTEGER ")" {
-            $$ = Driver.getU8ConstDefinition($3.Value, $3.Format);
+            $$ = Driver.getOrCreateU8Const($3.Value, $3.Format);
           }
         | "(" "u32.const" INTEGER ")" {
-            $$ = Driver.getU32ConstDefinition($3.Value, $3.Format);
+            $$ = Driver.getOrCreateU32Const($3.Value, $3.Format);
           }
         | "(" "u64.const" INTEGER ")" {
-            $$ = Driver.getU64ConstDefinition($3.Value, $3.Format);
+            $$ = Driver.getOrCreateU64Const($3.Value, $3.Format);
           }
         ;
 
 local_var
         : "(" "local" INTEGER ")" {
-            $$ = Driver.getLocalDefinition($3.Value, $3.Format);
+            $$ = Driver.getOrCreateLocal($3.Value, $3.Format);
           }
         ;
 
 locals_decl
         : "(" "locals" INTEGER ")" {
-            $$ = Driver.getLocalsDefinition($3.Value, $3.Format);
+            $$ = Driver.getOrCreateLocals($3.Value, $3.Format);
           }
         ;
 
@@ -568,10 +568,10 @@ opcode_args
 
 params_decl
         : "(" "params" INTEGER ")" {
-            $$ = Driver.getParamsDefinition($3.Value, $3.Format);
+            $$ = Driver.getOrCreateParams($3.Value, $3.Format);
           }
         | "(" "params" ")" {
-            $$ = Driver.getParamsDefinition();
+            $$ = Driver.getOrCreateParams();
           }
         ;
 
@@ -621,7 +621,7 @@ write_args
           }
         ;
 
-symbol  : IDENTIFIER { $$ = Driver.getSymbolDefinition($1); }
+symbol  : IDENTIFIER { $$ = Driver.getOrCreateSymbol($1); }
         ;
 
 table_args
