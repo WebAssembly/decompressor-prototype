@@ -785,17 +785,21 @@ void CodeGenerator::generateArrayImplFile() {
   puts(
       "));\n"
       "  auto Input = std::make_shared<ReadBackedQueue>(ArrayInput);\n"
-      "  CasmReader Reader;\n"
-      "  Reader.readBinary(Input");
+      "  CasmReader Reader;\n");
 #if WASM_CAST_BOOT == 2
   if (Bootstrap) {
-    puts(", get");
+    puts("  std::shared_ptr<SymbolTable> BootSymtab = get");
     puts(BootstrapAlg);
-    puts("Symtab()");
-  }
+    puts(
+        "Symtab();\n"
+        "  Reader.readBinary(Input, BootSymtab, BootSymtab);\n");
+  } else {
+    puts("  Reader.readBinary(Input);\n");
+  };
+#else
+  puts("  Reader.readBinary(Input);\n");
 #endif
   puts(
-      ");\n"
       "  assert(!Reader.hasErrors());\n"
       "  Symtable = Reader.getReadSymtab();\n"
       "  return Symtable;\n");

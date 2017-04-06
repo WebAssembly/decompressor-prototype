@@ -76,6 +76,20 @@ void CasmReader::readText(charstring Filename,
 void CasmReader::readBinary(std::shared_ptr<Queue> Binary,
                             std::shared_ptr<SymbolTable> AlgSymtab) {
   auto Inflator = std::make_shared<InflateAst>();
+  inflateBinary(Binary, AlgSymtab, Inflator);
+}
+
+void CasmReader::readBinary(std::shared_ptr<Queue> Binary,
+                            std::shared_ptr<SymbolTable> AlgSymtab,
+                            std::shared_ptr<SymbolTable> EnclosingScope) {
+  auto Inflator = std::make_shared<InflateAst>();
+  Inflator->setEnclosingScope(EnclosingScope);
+  inflateBinary(Binary, AlgSymtab, Inflator);
+}
+
+void CasmReader::inflateBinary(std::shared_ptr<Queue> Binary,
+                               std::shared_ptr<SymbolTable> AlgSymtab,
+                               std::shared_ptr<InflateAst> Inflator) {
   InterpreterFlags Flags;
   Interpreter MyReader(std::make_shared<ByteReader>(Binary), Inflator, Flags,
                        AlgSymtab);
