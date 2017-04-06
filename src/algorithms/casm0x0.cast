@@ -19,32 +19,6 @@
 
 (declarations)
 
-(define 'file' (params)
-  (eval 'header')
-  (eval 'section')
-  # Parse top-level file node.
-  (eval 'node')
-)
-
-(define 'header' (params)
-  (loop (varuint32)
-    (eval 'node')
-  )
-)
-
-(define 'int.value' (params 1)
-  (=> 'int.value.begin')
-  (if (uint8)                   # 0 or (decode::ValueFormat+1)
-    (param 0)                   # integer value.
-  )
-  (=> 'int.value.end')
-)
-
-(define 'nary.node' (params)
-  (varuint32)
-  (=> 'nary.inst')
-)
-
 (define 'node' (params)
   (switch (uint8)
     (error)
@@ -124,35 +98,4 @@
   )
   (=> 'binary.end')
   (=> 'align')
-)
-
-(define 'section' (params)
-  (block
-    (eval 'symbol.table')
-    (loop.unbounded
-      (eval 'node')
-    )
-  )
-)
-
-(define 'symbol.lookup' (params)
-  (varuint32)
-  (=> 'symbol.lookup')
-)
-
-(define 'symbol.name' (params)
-  (loop
-    (seq
-      (varuint32)
-      (=> 'symbol.name.begin'))
-    (uint8)
-  )
-  (=> 'symbol.name.end')
-)
-
-(define 'symbol.table' (params)
-  (loop
-    (varuint32)
-    (eval 'symbol.name')
-  )
 )

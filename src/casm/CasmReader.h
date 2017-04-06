@@ -28,6 +28,7 @@ namespace wasm {
 
 namespace filt {
 class SymbolTable;
+class InflateAst;
 }  // end of namespace filt
 
 namespace decode {
@@ -45,6 +46,10 @@ class CasmReader {
   void readText(charstring Filename);
   void readText(charstring Filename,
                 std::shared_ptr<filt::SymbolTable> EnclosingScope);
+
+  void readBinary(std::shared_ptr<Queue> Binary,
+                  std::shared_ptr<filt::SymbolTable> AlgSymtab,
+                  std::shared_ptr<filt::SymbolTable> EnclosingScope);
 
   void readBinary(std::shared_ptr<Queue> Binary,
                   std::shared_ptr<filt::SymbolTable> AlgSymtab);
@@ -80,6 +85,9 @@ class CasmReader {
   bool ErrorsFound;
   std::shared_ptr<filt::SymbolTable> Symtab;
   void foundErrors();
+  void inflateBinary(std::shared_ptr<Queue> Binary,
+                     std::shared_ptr<filt::SymbolTable> AlgSymtab,
+                     std::shared_ptr<filt::InflateAst> Inflator);
 };
 
 }  // end of namespace filt

@@ -48,6 +48,9 @@ class InflateAst : public interp::Writer {
     InstallDuringInflation = NewValue;
   }
   FileNode* getGeneratedFile() const;
+  void setEnclosingScope(std::shared_ptr<SymbolTable> EnclosingScope) {
+    Symtab->setEnclosingScope(EnclosingScope);
+  }
   std::shared_ptr<SymbolTable> getSymtab() { return Symtab; }
   decode::StreamType getStreamType() const OVERRIDE;
   bool writeUint8(uint8_t Value) OVERRIDE;
