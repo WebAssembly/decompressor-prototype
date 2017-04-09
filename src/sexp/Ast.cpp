@@ -473,7 +473,7 @@ const DefineNode* SymbolDefnNode::getDefineDefinition() const {
     return nullptr;
   const std::string& Name = Symbol->getName();
   for (SymbolTable* Scope = &Symtab; Scope != nullptr;
-       Scope = Scope->getEnclosingScope()) {
+       Scope = Scope->getEnclosingScope().get()) {
     SymbolDefnNode* SymDef =
         Scope->getSymbolDefn(Scope->getOrCreateSymbol(Name));
     if (SymDef == nullptr)
@@ -512,7 +512,7 @@ const LiteralDefNode* SymbolDefnNode::getLiteralDefinition() const {
     return nullptr;
   const std::string& Name = Symbol->getName();
   for (SymbolTable* Scope = &Symtab; Scope != nullptr;
-       Scope = Scope->getEnclosingScope()) {
+       Scope = Scope->getEnclosingScope().get()) {
     SymbolDefnNode* SymDef =
         Scope->getSymbolDefn(Scope->getOrCreateSymbol(Name));
     if (SymDef == nullptr)
@@ -542,7 +542,7 @@ const LiteralActionDefNode* SymbolDefnNode::getLiteralActionDefinition() const {
     return nullptr;
   const std::string& Name = Symbol->getName();
   for (SymbolTable* Scope = &Symtab; Scope != nullptr;
-       Scope = Scope->getEnclosingScope()) {
+       Scope = Scope->getEnclosingScope().get()) {
     SymbolDefnNode* SymDef =
         Scope->getSymbolDefn(Scope->getOrCreateSymbol(Name));
     if (SymDef == nullptr)
@@ -603,7 +603,7 @@ SymbolTable::SymbolTable() {
 }
 
 void SymbolTable::init() {
-  Root = nullptr;
+  setRoot(nullptr);
   NextCreationIndex = 0;
   ActionBase = 0;
   Error = create<ErrorNode>();
@@ -669,7 +669,7 @@ void SymbolTable::collectActionDefs(ActionDefSet& DefSet) {
   while (Scope) {
     for (const LiteralActionDefNode* Def : Scope->CallbackLiterals)
       DefSet.insert(Def);
-    Scope = Scope->getEnclosingScope();
+    Scope = Scope->getEnclosingScope().get();
   }
 }
 
@@ -841,14 +841,26 @@ bool SymbolTable::areActionsConsistent() {
   return IsValid;
 }
 
-void SymbolTable::install(FileNode* Root) {
+void SymbolTable::setRoot(FileNode* NewRoot) {
+  Root = NewRoot;
+  RootInstalled = false;
+}
+
+bool SymbolTable::install() {
   TRACE_METHOD("install");
+  if (RootInstalled)
+    return true;
   CachedValue.clear();
   UndefinedCallbacks.clear();
   CallbackValues.clear();
   CallbackLiterals.clear();
   ActionBase = 0;
-  this->Root = Root;
+  if (Root == nullptr)
+    return false;
+  if (EnclosingScope && !EnclosingScope->isRootInstalled()) {
+    if (!EnclosingScope->install())
+      return false;
+  }
   installPredefined();
   installDefinitions(Root);
   std::vector<Node*> Parents;
@@ -857,6 +869,7 @@ void SymbolTable::install(FileNode* Root) {
     IsValid = areActionsConsistent();
   if (!IsValid)
     fatal("Unable to install algorthms, validation failed!");
+  return RootInstalled = true;
 }
 
 const FileHeaderNode* SymbolTable::getSourceHeader() const {
@@ -995,14 +1008,13 @@ void SymbolTable::describe(FILE* Out, bool ShowInternalStructure) {
 }
 
 void SymbolTable::stripCallbacksExcept(std::set<std::string>& KeepActions) {
-  install(dyn_cast<FileNode>(stripCallbacksExcept(KeepActions, Root)));
+  setRoot(dyn_cast<FileNode>(stripCallbacksExcept(KeepActions, Root)));
 }
 
 void SymbolTable::stripSymbolicCallbacks() {
-  Root = dyn_cast<FileNode>(stripSymbolicCallbackUses(Root));
+  setRoot(dyn_cast<FileNode>(stripSymbolicCallbackUses(Root)));
   if (Root != nullptr)
-    Root = dyn_cast<FileNode>(stripSymbolicCallbackDefs(Root));
-  install(Root);
+    setRoot(dyn_cast<FileNode>(stripSymbolicCallbackDefs(Root)));
 }
 
 void SymbolTable::stripLiterals() {
@@ -1011,13 +1023,13 @@ void SymbolTable::stripLiterals() {
 }
 
 void SymbolTable::stripLiteralUses() {
-  install(dyn_cast<FileNode>(stripLiteralUses(Root)));
+  setRoot(dyn_cast<FileNode>(stripLiteralUses(Root)));
 }
 
 void SymbolTable::stripLiteralDefs() {
   SymbolSet DefSyms;
   collectLiteralUseSymbols(DefSyms);
-  install(dyn_cast<FileNode>(stripLiteralDefs(Root, DefSyms)));
+  setRoot(dyn_cast<FileNode>(stripLiteralDefs(Root, DefSyms)));
 }
 
 Node* SymbolTable::stripUsing(Node* Root,
@@ -1788,7 +1800,7 @@ bool EvalNode::validateNode(NodeVectorType& Parents) {
 const FileHeaderNode* FileNode::getSourceHeader(bool UseEnclosing) const {
   if (UseEnclosing) {
     for (SymbolTable* Sym = &getSymtab(); Sym != nullptr;
-         Sym = Sym->getEnclosingScope()) {
+         Sym = Sym->getEnclosingScope().get()) {
       const FileNode* File = Sym->getInstalledRoot();
       if (File->getNumKids() <= 1)
         continue;
@@ -1809,7 +1821,7 @@ const FileHeaderNode* FileNode::getSourceHeader(bool UseEnclosing) const {
 const FileHeaderNode* FileNode::getReadHeader(bool UseEnclosing) const {
   if (UseEnclosing) {
     for (SymbolTable* Sym = &getSymtab(); Sym != nullptr;
-         Sym = Sym->getEnclosingScope()) {
+         Sym = Sym->getEnclosingScope().get()) {
       const FileNode* File = Sym->getInstalledRoot();
       if (File->getNumKids() <= 2)
         continue;
@@ -1829,7 +1841,7 @@ const FileHeaderNode* FileNode::getReadHeader(bool UseEnclosing) const {
 const FileHeaderNode* FileNode::getWriteHeader(bool UseEnclosing) const {
   if (UseEnclosing) {
     for (SymbolTable* Sym = &getSymtab(); Sym != nullptr;
-         Sym = Sym->getEnclosingScope()) {
+         Sym = Sym->getEnclosingScope().get()) {
       const FileNode* File = Sym->getInstalledRoot();
       if (File->getNumKids() <= 3)
         continue;

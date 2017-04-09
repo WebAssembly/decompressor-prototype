@@ -273,8 +273,9 @@ bool InflateAst::applyOp(IntType Op) {
       FileNode* File = buildNary<FileNode>() ? getGeneratedFile() : nullptr;
       if (File == nullptr)
         return failBuild("InflateAst", "Did not generate a file node");
+      Symtab->setRoot(File);
       if (InstallDuringInflation)
-        Symtab->install(File);
+        Symtab->install();
       return true;
     }
     case OpSequence:

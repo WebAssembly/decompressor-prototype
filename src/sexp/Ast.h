@@ -138,6 +138,7 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   SymbolTable& operator=(const SymbolTable&) = delete;
 
  public:
+  typedef std::shared_ptr<SymbolTable> SharedPtr;
   typedef std::unordered_set<const SymbolNode*> SymbolSet;
   typedef std::unordered_set<const IntegerNode*> ActionValueSet;
   typedef std::unordered_set<const LiteralActionDefNode*> ActionDefSet;
@@ -145,9 +146,9 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   explicit SymbolTable();
   explicit SymbolTable(std::shared_ptr<SymbolTable> EnclosingScope);
   ~SymbolTable();
-  SymbolTable* getEnclosingScope() { return EnclosingScope.get(); }
-  void setEnclosingScope(std::shared_ptr<SymbolTable> Value) {
-    EnclosingScope = Value;
+  SharedPtr getEnclosingScope() { return EnclosingScope; }
+  void setEnclosingScope(SharedPtr Symtab) {
+    EnclosingScope = Symtab;
   }
   // Gets existing symbol if known. Otherwise returns nullptr.
   SymbolNode* getSymbol(const std::string& Name);
@@ -175,8 +176,11 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   // Gets actions corresponding to enter/exit block.
   const CallbackNode* getBlockEnterCallback();
   const CallbackNode* getBlockExitCallback();
+  const FileNode* getRoot() const { return Root; }
+  void setRoot(FileNode* NewRoot);
   // Install definitions in tree defined by root.
-  void install(FileNode* Root);
+  bool install();
+  bool isRootInstalled() const { return RootInstalled; }
   const FileNode* getInstalledRoot() const { return Root; }
   Node* getError() const { return Error; }
   const FileHeaderNode* getSourceHeader() const;
@@ -239,6 +243,7 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   std::vector<Node*> Allocated;
   std::shared_ptr<utils::TraceClass> Trace;
   FileNode* Root;
+  bool RootInstalled;
   Node* Error;
   int NextCreationIndex;
   decode::IntType ActionBase;

@@ -68,7 +68,7 @@ int main(int Argc, char* Argv[]) {
     if (Files.size() > 1) {
       fprintf(stdout, "Parsing: %s...\n", Filename);
     }
-    if (!Driver.parse(Filename)) {
+    if (!Driver.parse(Filename) || !Driver.install()) {
       fprintf(stderr, "Errors detected: %s\n", Filename);
       return exit_status(EXIT_FAILURE);
     }

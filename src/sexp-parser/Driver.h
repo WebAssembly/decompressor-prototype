@@ -102,9 +102,13 @@ class Driver {
   // Returns the last parsed ast.
   Node* getParsedAst() const { return ParsedAst; }
 
+  SymbolTable::SharedPtr getSymbolTable() const { return Table; }
+
+  bool install() { return Table->install(); }
+
   void setParsedAst(Node* Ast) {
     ParsedAst = Ast;
-    Table->install(dyn_cast<FileNode>(ParsedAst));
+    Table->setRoot(dyn_cast<FileNode>(ParsedAst));
   }
 
   // Error handling.
