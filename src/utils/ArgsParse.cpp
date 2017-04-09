@@ -521,6 +521,8 @@ void ArgsParser::showUsage() {
   for (Arg* A : PlacementArgs) {
     printDescriptionContinue(stderr, TabWidth, Indent, " ");
     printDescriptionContinue(stderr, TabWidth, Indent, A->getOptionName());
+    if (A->isRepeatable())
+      printDescriptionContinue(stderr, TabWidth, Indent, " ...");
   }
   writeNewline(stderr, Indent);
   if (Description != nullptr) {

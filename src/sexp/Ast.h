@@ -147,9 +147,7 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   explicit SymbolTable(std::shared_ptr<SymbolTable> EnclosingScope);
   ~SymbolTable();
   SharedPtr getEnclosingScope() { return EnclosingScope; }
-  void setEnclosingScope(SharedPtr Symtab) {
-    EnclosingScope = Symtab;
-  }
+  void setEnclosingScope(SharedPtr Symtab) { EnclosingScope = Symtab; }
   // Gets existing symbol if known. Otherwise returns nullptr.
   SymbolNode* getSymbol(const std::string& Name);
   // Returns the corresponding symbol for the predefined symbol (creates if

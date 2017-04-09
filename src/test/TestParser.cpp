@@ -20,57 +20,98 @@
 #include "sexp/TextWriter.h"
 #include "sexp-parser/Parser.tab.hpp"
 #include "sexp-parser/Driver.h"
+#include "utils/ArgsParse.h"
 #include "utils/Defs.h"
 
 #include <iostream>
 
 using namespace wasm::filt;
 using namespace wasm::decode;
+using namespace wasm::utils;
 
-void usage(const char* AppName) {
-  fprintf(stderr, "usage: %s [options] [Filename ...]\n", AppName);
-  fprintf(stderr, "\n");
-  fprintf(stderr, "  Parses filter files (stdin if none).\n");
-  fprintf(stderr, "\n");
-  fprintf(stderr, "Options:\n");
-  fprintf(stderr, "  --expect-fail\tSucceed on failure/fail on success.\n");
-  fprintf(stderr, "  -h\t\tPrint this usage message.\n");
-  fprintf(stderr, "  -l\t\tTrace lexing of file(s).\n");
-  fprintf(stderr, "  -p\t\tTrace parsing of file(s).\n");
-  fprintf(stderr, "  -t\t\tUse internal type names for s-expressions\n");
-  fprintf(stderr, "  -w\t\tWrite out parsed s-expressions.\n");
-}
-
-int main(int Argc, char* Argv[]) {
-  Driver Driver(std::make_shared<SymbolTable>());
+int main(int Argc, wasm::charstring Argv[]) {
   bool PrintAst = false;
-  std::vector<const char*> Files;
-  for (int i = 1; i < Argc; ++i) {
-    if (Argv[i] == std::string("-p"))
-      Driver.setTraceParsing(true);
-    else if (Argv[i] == std::string("-l"))
-      Driver.setTraceLexing(true);
-    else if (Argv[i] == std::string("--expect-fail"))
-      ExpectExitFail = true;
-    else if (Argv[i] == std::string("-t"))
-      TextWriter::DefaultShowInternalStructure = true;
-    else if (Argv[i] == std::string("-w"))
-      PrintAst = true;
-    else if (Argv[i] == std::string("-h") || Argv[i] == std::string("--help")) {
-      usage(Argv[i]);
-      return exit_status(EXIT_SUCCESS);
-    } else
-      Files.push_back(Argv[i]);
+  std::vector<wasm::charstring> Files;
+  bool TraceParser = false;
+  bool TraceLexer = false;
+  bool ValidateAst = false;
+
+  {
+    ArgsParser Args("Parses algorithm files");
+
+    ArgsParser::Toggle ExpectExitFailFlag(ExpectExitFail);
+    Args.add(ExpectExitFailFlag.setLongName("expect-fail")
+                 .setDescription("Succeed on failure/fail on success."));
+
+    ArgsParser::RequiredVector<wasm::charstring> FilesFlag(Files);
+    Args.add(FilesFlag.setOptionName("INPUT")
+                 .setDescription("Input file to parse."));
+
+    ArgsParser::Toggle TraceLexerFlag(TraceLexer);
+    Args.add(TraceLexerFlag.setLongName("verbose=lexer")
+                 .setDescription("Trace lexing file(s)."));
+
+    ArgsParser::Toggle TraceParserFlag(TraceParser);
+    Args.add(TraceParserFlag.setLongName("verbose=parser")
+                 .setDescription("Trace parsing file(s)."));
+
+    ArgsParser::Toggle TracePrintAstFlag(PrintAst);
+    Args.add(TracePrintAstFlag.setShortName('p')
+                 .setLongName("print")
+                 .setDescription("Write out parsed s-expression"));
+
+    ArgsParser::Toggle ShowInternalStructureFlag(
+        TextWriter::DefaultShowInternalStructure);
+    Args.add(
+        ShowInternalStructureFlag.setShortName('s')
+            .setLongName("structure")
+            .setDescription(
+                "Show internal structure of how algorithms are represented "
+                "when printing."));
+
+    ArgsParser::Toggle ValidateAstFlag(ValidateAst);
+    Args.add(ValidateAstFlag.setShortName('v')
+                 .setLongName("validate")
+                 .setDescription(
+                     "Validate parsed algorithms also. Assumes "
+                     "order of input files define enclosing scopes."));
+
+    switch (Args.parse(Argc, Argv)) {
+      case ArgsParser::State::Good:
+        break;
+      case ArgsParser::State::Usage:
+        return exit_status(EXIT_SUCCESS);
+      default:
+        fprintf(stderr, "Unable to parse command line arguments!\n");
+        return exit_status(EXIT_FAILURE);
+    }
   }
+
+  Driver Driver(std::make_shared<SymbolTable>());
+  if (TraceParser)
+    Driver.setTraceParsing(true);
+  if (TraceLexer)
+    Driver.setTraceLexing(true);
   if (Files.empty())
     Files.push_back("-");
+
+  SymbolTable::SharedPtr ContextSymtab;
   for (const auto* Filename : Files) {
     if (Files.size() > 1) {
       fprintf(stdout, "Parsing: %s...\n", Filename);
     }
-    if (!Driver.parse(Filename) || !Driver.install()) {
-      fprintf(stderr, "Errors detected: %s\n", Filename);
+    if (!Driver.parse(Filename)) {
+      fprintf(stderr, "Errors detected while parsing: %s\n", Filename);
       return exit_status(EXIT_FAILURE);
+    }
+    if (ValidateAst) {
+      SymbolTable::SharedPtr Symtab = Driver.getSymbolTable();
+      Symtab->setEnclosingScope(ContextSymtab);
+      if (!Symtab->install()) {
+        fprintf(stderr, "Errors detected while validating: %s\n", Filename);
+        return exit_status(EXIT_FAILURE);
+      }
+      ContextSymtab = Symtab;
     }
     if (PrintAst) {
       if (Node* Root = Driver.getParsedAst()) {

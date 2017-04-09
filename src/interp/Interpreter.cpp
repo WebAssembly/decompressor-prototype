@@ -1588,9 +1588,8 @@ void Interpreter::algorithmResume() {
             if (!Output->writeHeaderClose())
               return fail("Unable to write header");
             SymbolNode* File = Symtab->getPredefined(PredefinedSymbol::File);
-            if (File == nullptr) {
+            if (File == nullptr)
               throwMessage("Can't find sexpression to process file");
-            }
             const Node* FileDefn = File->getDefineDefinition();
             if (FileDefn == nullptr)
               throwMessage("Can't find sexpression to process file");

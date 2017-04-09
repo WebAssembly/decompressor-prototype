@@ -896,7 +896,9 @@ std::shared_ptr<SymbolTable> readCasmFile(
   return Symtab;
 }
 
-bool installRoot(SymbolTable::SharedPtr Symtab, bool Display, const char* Title) {
+bool installRoot(SymbolTable::SharedPtr Symtab,
+                 bool Display,
+                 const char* Title) {
   if (Display) {
     fprintf(stdout, "After stripping %s:\n", Title);
     TextWriter Writer;
@@ -1026,7 +1028,8 @@ int main(int Argc, charstring Argv[]) {
                  .setDescription("Generated binary file"));
 
     ArgsParser::Toggle DisplayParsedInputFlag(DisplayParsedInput);
-    Args.add(DisplayParsedInputFlag.setShortName('d').setLongName("display=input")
+    Args.add(DisplayParsedInputFlag.setShortName('d')
+                 .setLongName("display=input")
                  .setDescription("Display parsed cast text"));
 
     ArgsParser::Toggle DisplayStrippedInputFlag(DisplayStrippedInput);

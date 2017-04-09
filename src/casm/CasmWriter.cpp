@@ -67,16 +67,12 @@ const BitWriteCursor& CasmWriter::writeBinary(
   auto StrmWriter = std::make_shared<ByteWriter>(Output);
   std::shared_ptr<Writer> Writer = StrmWriter;
   Writer->setMinimizeBlockSize(MinimizeBlockSize);
-#if 0
-  if (TraceTree)
-#else
-    // Inflate as written to verify tree written is correct!
-#endif
   {
+    // Inflate as written to verify tree written is correct!
     auto Tee = std::make_shared<TeeWriter>();
     auto Inflator = std::make_shared<InflateAst>();
     Inflator->setEnclosingScope(Symtab->getEnclosingScope());
-    Tee->add(Inflator, false, true, false);
+    Tee->add(Inflator, false, TraceTree, false);
     Tee->add(Writer, true, false, true);
     Writer = Tee;
   }

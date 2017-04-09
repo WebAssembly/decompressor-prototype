@@ -69,6 +69,8 @@ class ArgsParser {
       Description = NewValue;
       return *this;
     }
+
+    bool isRepeatable() const { return IsRepeatable; }
     bool getOptionFound() const { return OptionFound; }
     virtual void setOptionFound();
     virtual void setPlacementFound(size_t& CurPlacement);
