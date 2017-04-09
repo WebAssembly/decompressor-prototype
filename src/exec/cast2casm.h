@@ -948,6 +948,7 @@ int main(int Argc, charstring Argv[]) {
   bool TraceWrite = false;
   bool TraceTree = false;
   bool UseArrayImpl = false;
+  bool ValidateWhileWriting = false;
 #endif
 
   {
@@ -1136,6 +1137,13 @@ int main(int Argc, charstring Argv[]) {
         "array implementation, rather than the default that "
         "uses direct code"));
 
+    ArgsParser::Toggle ValidateWhileWritingFlag(ValidateWhileWriting);
+    Args.add(
+        ValidateWhileWritingFlag.setLongName("validate")
+        .setDescription(
+            "While writing, validate that it is readable. Useful "
+            "when writing new algorithms to parse algorithms."));
+
 #endif
 
     switch (Args.parse(Argc, Argv)) {
@@ -1297,8 +1305,9 @@ int main(int Argc, charstring Argv[]) {
         .setTraceFlatten(TraceFlatten)
         .setTraceTree(TraceTree)
         .setMinimizeBlockSize(MinimizeBlockSize)
-        .setBitCompress(BitCompress);
-    Writer.writeBinary(InputSymtab, OutputStream, AlgSymtab);
+        .setBitCompress(BitCompress)
+        .setValidateWhileWriting(ValidateWhileWriting)
+        .writeBinary(InputSymtab, OutputStream, AlgSymtab);
     if (Writer.hasErrors()) {
       fprintf(stderr, "Problems writing: %s\n", OutputFilename);
       return exit_status(EXIT_FAILURE);
