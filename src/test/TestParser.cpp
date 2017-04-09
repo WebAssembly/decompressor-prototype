@@ -34,6 +34,7 @@ int main(int Argc, wasm::charstring Argv[]) {
   std::vector<wasm::charstring> Files;
   bool TraceParser = false;
   bool TraceLexer = false;
+  bool TraceFilesParsed = false;
   bool ValidateAst = false;
 
   {
@@ -60,6 +61,11 @@ int main(int Argc, wasm::charstring Argv[]) {
                  .setLongName("print")
                  .setDescription("Write out parsed s-expression"));
 
+    ArgsParser::Toggle TraceFilesParsedFlag(TraceFilesParsed);
+    Args.add(TraceFilesParsedFlag.setShortName('v')
+                 .setLongName("verbose")
+                 .setDescription("Show file(s) being parsed."));
+
     ArgsParser::Toggle ShowInternalStructureFlag(
         TextWriter::DefaultShowInternalStructure);
     Args.add(
@@ -70,8 +76,7 @@ int main(int Argc, wasm::charstring Argv[]) {
                 "when printing."));
 
     ArgsParser::Toggle ValidateAstFlag(ValidateAst);
-    Args.add(ValidateAstFlag.setShortName('v')
-                 .setLongName("validate")
+    Args.add(ValidateAstFlag.setLongName("validate")
                  .setDescription(
                      "Validate parsed algorithms also. Assumes "
                      "order of input files define enclosing scopes."));
@@ -88,16 +93,15 @@ int main(int Argc, wasm::charstring Argv[]) {
   }
 
   Driver Driver(std::make_shared<SymbolTable>());
-  if (TraceParser)
-    Driver.setTraceParsing(true);
-  if (TraceLexer)
-    Driver.setTraceLexing(true);
+  Driver.setTraceParsing(TraceParser);
+  Driver.setTraceLexing(TraceLexer);
+  Driver.setTraceFilesParsed(TraceFilesParsed);
   if (Files.empty())
     Files.push_back("-");
 
   SymbolTable::SharedPtr ContextSymtab;
   for (const auto* Filename : Files) {
-    if (Files.size() > 1) {
+    if (!TraceFilesParsed && Files.size() > 1) {
       fprintf(stdout, "Parsing: %s...\n", Filename);
     }
     if (!Driver.parse(Filename)) {

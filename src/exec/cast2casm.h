@@ -872,6 +872,7 @@ void CodeGenerator::generateImplFile(bool UseArrayImpl) {
 
 std::shared_ptr<SymbolTable> readCasmFile(
     const char* Filename,
+    bool Verbose,
     bool TraceLexer,
     bool TraceParser,
     std::shared_ptr<SymbolTable> EnclosingScope) {
@@ -882,6 +883,7 @@ std::shared_ptr<SymbolTable> readCasmFile(
   Driver Parser(Symtab);
   Parser.setTraceLexing(TraceLexer);
   Parser.setTraceParsing(TraceParser);
+  Parser.setTraceFilesParsed(Verbose);
   HasErrors = !Parser.parse(Filename);
 #else
   CasmReader Reader;
@@ -1138,11 +1140,10 @@ int main(int Argc, charstring Argv[]) {
         "uses direct code"));
 
     ArgsParser::Toggle ValidateWhileWritingFlag(ValidateWhileWriting);
-    Args.add(
-        ValidateWhileWritingFlag.setLongName("validate")
-        .setDescription(
-            "While writing, validate that it is readable. Useful "
-            "when writing new algorithms to parse algorithms."));
+    Args.add(ValidateWhileWritingFlag.setLongName("validate")
+                 .setDescription(
+                     "While writing, validate that it is readable. Useful "
+                     "when writing new algorithms to parse algorithms."));
 
 #endif
 
@@ -1195,9 +1196,8 @@ int main(int Argc, charstring Argv[]) {
   charstring InputFilename = "-";
   for (charstring Filename : InputFilenames) {
     InputFilename = Filename;
-    if (Verbose)
-      fprintf(stderr, "Reading input: %s\n", InputFilename);
-    InputSymtab = readCasmFile(Filename, TraceLexer, TraceParser, InputSymtab);
+    InputSymtab =
+        readCasmFile(Filename, Verbose, TraceLexer, TraceParser, InputSymtab);
     if (!InputSymtab || !InputSymtab->install()) {
       fprintf(stderr, "Unable to parse: %s\n", InputFilename);
       return exit_status(EXIT_FAILURE);
@@ -1253,9 +1253,8 @@ int main(int Argc, charstring Argv[]) {
 
   std::shared_ptr<SymbolTable> AlgSymtab;
   for (charstring Filename : AlgorithmFilenames) {
-    if (Verbose)
-      fprintf(stderr, "Reading algorithm file: %s\n", Filename);
-    AlgSymtab = readCasmFile(Filename, TraceLexer, TraceParser, AlgSymtab);
+    AlgSymtab =
+        readCasmFile(Filename, Verbose, TraceLexer, TraceParser, AlgSymtab);
     if (!AlgSymtab || !AlgSymtab->install()) {
       fprintf(stderr, "Problems reading file: %s\n", Filename);
       return exit_status(EXIT_FAILURE);

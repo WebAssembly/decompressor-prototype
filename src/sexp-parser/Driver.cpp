@@ -42,6 +42,37 @@ const char* Driver::getName(ErrorLevel Level) {
 }
 
 bool Driver::parse(const std::string& Filename) {
+  SymbolTable::SharedPtr FirstSymtab = Table;
+  Enclosing.erase();
+  size_t LastSlash = Filename.find_last_of("/\\");
+  if (LastSlash == std::string::npos)
+    BaseFilename.erase();
+  else
+    BaseFilename = Filename.substr(0, LastSlash + 1);
+  bool Success = true;
+  std::string NextFile = Filename;
+  SymbolTable::SharedPtr EnclosedSymtab;
+  if (TraceFilesParsed)
+    fprintf(stderr, "Parsing algiorithm: '%s'\n", Filename.c_str());
+  while (true) {
+    Success = parseOneFile(NextFile);
+    if (!Success)
+      break;
+    if (Enclosing.empty())
+      break;
+    EnclosedSymtab = Table;
+    Table = std::make_shared<SymbolTable>();
+    EnclosedSymtab->setEnclosingScope(Table);
+    NextFile = BaseFilename + Enclosing;
+    Enclosing.erase();
+    if (TraceFilesParsed)
+      fprintf(stderr, "Parsing enclosing algorithm: '%s'\n", NextFile.c_str());
+  }
+  Table = FirstSymtab;
+  return Success;
+}
+
+bool Driver::parseOneFile(const std::string& Filename) {
   this->Filename = Filename;
   ParsedAst = nullptr;
   Begin();
