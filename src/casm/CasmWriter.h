@@ -75,6 +75,11 @@ class CasmWriter {
     return *this;
   }
 
+  CasmWriter& setValidateWhileWriting(bool Value) {
+    ValidateWhileWriting = Value;
+    return *this;
+  }
+
   CasmWriter& setTraceWriter(bool Value) {
     TraceWriter = Value;
     return *this;
@@ -95,6 +100,7 @@ class CasmWriter {
   bool FreezeEofAtExit;
   bool ErrorsFound;
   bool BitCompress;
+  bool ValidateWhileWriting;
   bool TraceWriter;
   bool TraceFlatten;
   bool TraceTree;
