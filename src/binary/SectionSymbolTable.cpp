@@ -54,7 +54,8 @@ void SectionSymbolTable::clear() {
 }
 
 void SectionSymbolTable::install(FileNode* Root) {
-  Symtab->install(Root);
+  Symtab->setRoot(Root);
+  Symtab->install();
 }
 
 void SectionSymbolTable::installSymbols(const Node* Nd) {

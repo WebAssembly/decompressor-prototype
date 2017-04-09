@@ -124,7 +124,7 @@ bool DecompressSelector::resetAlgorithm(Interpreter* R) {
   constexpr bool UseEnclosing = true;
   Algorithm->setEnclosingScope(State->MyInterpreter->getDefaultAlgorithm(
       Root->getReadHeader(!UseEnclosing)));
-  Algorithm->install(Root);
+  Algorithm->install();
   State->AlgQueue.push(Algorithm);
   State->Inflator.reset();
   return true;

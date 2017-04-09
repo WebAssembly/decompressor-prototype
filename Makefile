@@ -1313,12 +1313,12 @@ test-casm-cast: $(BUILD_EXECDIR)/cast2casm $(BUILD_EXECDIR)/casm2cast \
 .PHONY: test-casm-cast
 
 test-parser: $(TEST_EXECDIR)/TestParser
-	$< -w $(TEST_DEFAULT_CAST) | diff - $(TEST_DEFAULT_CAST_OUT)
+	$< -p $(TEST_DEFAULT_CAST) | diff - $(TEST_DEFAULT_CAST_OUT)
 	$< --expect-fail $(TEST_SRCS_DIR)/MismatchedParens.cast 2>&1 | \
 		diff - $(TEST_SRCS_DIR)/MismatchedParens.cast-out
-	$< -w $(TEST_SRCS_DIR)/ExprRedirects.cast | \
+	$< -p $(TEST_SRCS_DIR)/ExprRedirects.cast | \
 		diff - $(TEST_SRCS_DIR)/ExprRedirects.cast-out
-	$< -w $(TEST_SRCS_DIR)/BinaryFormat.cast | \
+	$< -p -v $(TEST_SRCS_DIR)/BinaryFormat.cast | \
 		diff - $(TEST_SRCS_DIR)/BinaryFormat.cast-out
 	@echo "*** parser tests passed ***"
 

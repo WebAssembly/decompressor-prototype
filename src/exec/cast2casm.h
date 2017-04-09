@@ -823,10 +823,11 @@ void CodeGenerator::generateFunctionImplFile() {
       "    return Symtable;\n"
       "  Symtable = std::make_shared<SymbolTable>();\n"
       "  SymbolTable* Symtab = Symtable.get();\n"
-      "  Symtab->install(");
+      "  Symtab->setRoot(");
   generateFunctionCall(Index);
   puts(
       ");\n"
+      "  Symtab->install();\n"
       "  return Symtable;\n");
   generateFunctionFooter();
 }
@@ -895,6 +896,20 @@ std::shared_ptr<SymbolTable> readCasmFile(
   return Symtab;
 }
 
+bool installRoot(SymbolTable::SharedPtr Symtab,
+                 bool Display,
+                 const char* Title) {
+  if (Display) {
+    fprintf(stdout, "After stripping %s:\n", Title);
+    TextWriter Writer;
+    Writer.write(stdout, Symtab->getRoot());
+  }
+  bool Success = Symtab->install();
+  if (!Success)
+    fprintf(stderr, "Problems stripping %s, can't continue.\n", Title);
+  return Success;
+}
+
 }  // end of anonymous namespace
 
 }  // end of namespace wasm;
@@ -912,6 +927,7 @@ int main(int Argc, charstring Argv[]) {
   std::set<std::string> KeepActions;
   bool DisplayParsedInput = false;
   bool DisplayStrippedInput = false;
+  bool DisplayStripAll = false;
   bool ShowInternalStructure = false;
   bool StripActions = false;
   bool StripSymbolicActions = false;
@@ -1012,11 +1028,18 @@ int main(int Argc, charstring Argv[]) {
                  .setDescription("Generated binary file"));
 
     ArgsParser::Toggle DisplayParsedInputFlag(DisplayParsedInput);
-    Args.add(DisplayParsedInputFlag.setLongName("display=input")
+    Args.add(DisplayParsedInputFlag.setShortName('d')
+                 .setLongName("display=input")
                  .setDescription("Display parsed cast text"));
 
     ArgsParser::Toggle DisplayStrippedInputFlag(DisplayStrippedInput);
     Args.add(DisplayStrippedInputFlag.setLongName("display=stripped")
+                 .setDescription(
+                     "Display parsed cast text after all strip "
+                     "operations"));
+
+    ArgsParser::Toggle DisplayStripAllFlag(DisplayStripAll);
+    Args.add(DisplayStripAllFlag.setLongName("display=strip-all")
                  .setDescription(
                      "Display parsed cast text after each strip "
                      "operation"));
@@ -1136,7 +1159,7 @@ int main(int Argc, charstring Argv[]) {
     if (InputFilenames.empty())
       InputFilenames.push_back("-");
 
-#if WASM_CAST_BOOT < 3
+#if WASM_CAST_BOOT < 2
     if (AlgorithmFilenames.empty() && !DisplayParsedInput) {
       fprintf(stderr, "No algorithm files specified, can't continue\n");
       return exit_status(EXIT_FAILURE);
@@ -1167,36 +1190,56 @@ int main(int Argc, charstring Argv[]) {
     if (Verbose)
       fprintf(stderr, "Reading input: %s\n", InputFilename);
     InputSymtab = readCasmFile(Filename, TraceLexer, TraceParser, InputSymtab);
-    if (!InputSymtab) {
+    if (!InputSymtab || !InputSymtab->install()) {
       fprintf(stderr, "Unable to parse: %s\n", InputFilename);
       return exit_status(EXIT_FAILURE);
     }
   }
 
   if (DisplayParsedInput) {
-    fprintf(stderr, "Parsed input:\n");
-    InputSymtab->describe(stderr, ShowInternalStructure);
-    if (!DisplayStrippedInput)
+    if (Verbose)
+      fprintf(stdout, "Parsed input:\n");
+    InputSymtab->describe(stdout, ShowInternalStructure);
+    if (!(DisplayStrippedInput || DisplayStripAll))
       return exit_status(EXIT_SUCCESS);
   }
 
-  if (StripActions)
+  if (StripActions) {
     InputSymtab->stripCallbacksExcept(KeepActions);
+    if (!installRoot(InputSymtab, DisplayStripAll, "actions"))
+      return exit_status(EXIT_FAILURE);
+  }
 
-  if (StripSymbolicActions)
+  if (StripSymbolicActions) {
     InputSymtab->stripSymbolicCallbacks();
+    if (!installRoot(InputSymtab, DisplayStripAll, "symbolic actions"))
+      return exit_status(EXIT_FAILURE);
+  }
 
-  if (StripLiteralUses)
+  if (StripLiteralUses) {
     InputSymtab->stripLiteralUses();
+    if (!installRoot(InputSymtab, DisplayStripAll, "literal uses"))
+      return exit_status(EXIT_FAILURE);
+  }
 
-  if (StripLiteralDefs)
+  if (StripLiteralDefs) {
     InputSymtab->stripLiteralDefs();
+    if (!installRoot(InputSymtab, DisplayStripAll, "literal definitions"))
+      return exit_status(EXIT_FAILURE);
+  }
 
-  if (StripLiterals)
+  if (StripLiterals) {
     InputSymtab->stripLiterals();
+    if (!installRoot(InputSymtab, DisplayStripAll, "literals"))
+      return exit_status(EXIT_FAILURE);
+  }
 
-  if (DisplayStrippedInput) {
-    InputSymtab->describe(stdout, ShowInternalStructure);
+  if (DisplayParsedInput || DisplayStrippedInput || DisplayStripAll) {
+    if (DisplayStrippedInput && !DisplayStripAll) {
+      if (Verbose)
+        fprintf(stdout, "Stripped input:\n");
+      InputSymtab->describe(stdout, ShowInternalStructure);
+    }
     return exit_status(EXIT_SUCCESS);
   }
 
@@ -1205,14 +1248,15 @@ int main(int Argc, charstring Argv[]) {
     if (Verbose)
       fprintf(stderr, "Reading algorithm file: %s\n", Filename);
     AlgSymtab = readCasmFile(Filename, TraceLexer, TraceParser, AlgSymtab);
-    if (!AlgSymtab) {
+    if (!AlgSymtab || !AlgSymtab->install()) {
       fprintf(stderr, "Problems reading file: %s\n", Filename);
       return exit_status(EXIT_FAILURE);
     }
   }
 #if WASM_CAST_BOOT > 1
   if (AlgorithmFilenames.empty()) {
-    fprintf(stderr, "Using prebuilt casm algorithm\n");
+    if (Verbose)
+      fprintf(stderr, "Using prebuilt casm algorithm\n");
     AlgSymtab = WASM_CASM_GET_SYMTAB();
   }
 #endif
