@@ -200,8 +200,8 @@ ALG_OBJDIR = $(OBJDIR)/algorithms
 alg_name = $(patsubst $(ALG_GENDIR)/%.cast, Alg%, $(1))
 
 ALG_CAST = casm0x0.cast
-ALG_GENDIR_ALG = -a $(ALG_GENDIR)/casm0x0-lits.cast \
-		-a $(ALG_GENDIR)/casm0x0Boot.cast \
+
+ALG_GENDIR_ALG = -a $(ALG_GENDIR)/casm0x0Boot.cast \
 		-a $(ALG_GENDIR)/casm0x0.cast
 
 #### Boot step 1
@@ -820,16 +820,16 @@ ifeq ($(GENSRCS), 3)
   $(ALG_BOOT1_H_SRCS): $(ALG_GENDIR)/%Boot.h: $(ALG_GENDIR)/%Boot.cast \
 		$(ALG_GENDIR)/%-lits.cast $(BUILD_EXECDIR_BOOT)/cast2casm-boot1
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1 \
-		-a $(patsubst %Boot.cast, %-lits.cast, $<) -a $< \
-		$(patsubst %Boot.cast, %-lits.cast, $<) $< -o $@ \
+		-a $< \
+		$< -o $@ \
 		--header --strip-literals --function \
 		--name $(call alg_name, $<)
 
   $(ALG_BOOT1_BASE_CPP_SRCS): $(ALG_GENDIR)/%Boot.cpp: $(ALG_GENDIR)/%Boot.cast \
 		$(ALG_GENDIR)/%-lits.cast $(BUILD_EXECDIR_BOOT)/cast2casm-boot1
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1 \
-		-a $(patsubst %Boot.cast, %-lits.cast, $<) -a $< \
-		$(patsubst %Boot.cast, %-lits.cast, $<) $< -o $@ \
+		-a $< \
+		$< -o $@ \
 		--strip-literals --strip-symbolic-actions --function \
 		--name $(call alg_name, $<)
 
@@ -858,7 +858,6 @@ ifeq ($(GENSRCS), 4)
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot2
 	@echo "case h $< $@"
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot2 \
-		$(patsubst %.cast, %-lits.cast, $<) \
 		$(if $(findstring casm0x0, $<), \
 			$(patsubst %.cast, %Boot.cast, $<), \
 			--strip-actions) \
@@ -869,7 +868,6 @@ ifeq ($(GENSRCS), 4)
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot2
 	@echo "case cpp $< $@"
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot2  \
-		$(patsubst %.cast, %-lits.cast, $<) \
 		$(if $(findstring casm0x0, $<), \
 			$(patsubst %.cast, %Boot.cast, $<) \
 			--boot --strip-symbolic-actions, \
