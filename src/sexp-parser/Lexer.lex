@@ -221,6 +221,7 @@ letter	[a-zA-Z]
 "declarations"    return Parser::make_DECLARATIONS(Driver.getLoc());
 "define"          return Parser::make_DEFINE(Driver.getLoc());
 "enum"            return Parser::make_ENUM(Driver.getLoc());
+"enclosing"       return Parser::make_ENCLOSING(Driver.getLoc());
 "error"           return Parser::make_ERROR(Driver.getLoc());
 "eval"            return Parser::make_EVAL(Driver.getLoc());
 "header"          return Parser::make_HEADER(Driver.getLoc());

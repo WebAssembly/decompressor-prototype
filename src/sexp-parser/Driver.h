@@ -39,6 +39,7 @@ class Driver {
       : Table(Table),
         TraceLexing(false),
         TraceParsing(false),
+        TraceFilesParsed(false),
         ParsedAst(nullptr),
         ErrorsReported(false) {}
 
@@ -83,6 +84,10 @@ class Driver {
 
   // The name of the file being parsed.
   std::string& getFilename() { return Filename; }
+
+  void setEnclosing(const std::string& Name) { Enclosing = Name; }
+
+  void setTraceFilesParsed(bool NewValue) { TraceFilesParsed = NewValue; }
 
   void setTraceLexing(bool NewValue) { TraceLexing = NewValue; }
 
@@ -137,8 +142,11 @@ class Driver {
  private:
   std::shared_ptr<SymbolTable> Table;
   std::string Filename;
+  std::string BaseFilename;
+  std::string Enclosing;
   bool TraceLexing;
   bool TraceParsing;
+  bool TraceFilesParsed;
   bool MaintainIntegerFormatting;
   // The location of the last token.
   location Loc;
@@ -149,6 +157,8 @@ class Driver {
   void Begin();
   // Called after parsing for cleanup.
   void End();
+
+  bool parseOneFile(const std::string& Filename);
 };
 
 }  // end of namespace filt

@@ -1318,7 +1318,7 @@ test-parser: $(TEST_EXECDIR)/TestParser
 		diff - $(TEST_SRCS_DIR)/MismatchedParens.cast-out
 	$< -p $(TEST_SRCS_DIR)/ExprRedirects.cast | \
 		diff - $(TEST_SRCS_DIR)/ExprRedirects.cast-out
-	$< -p -v $(TEST_SRCS_DIR)/BinaryFormat.cast | \
+	$< -p --validate $(TEST_SRCS_DIR)/BinaryFormat.cast | \
 		diff - $(TEST_SRCS_DIR)/BinaryFormat.cast-out
 	@echo "*** parser tests passed ***"
 

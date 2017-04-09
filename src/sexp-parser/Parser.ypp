@@ -91,6 +91,7 @@ struct IntValue {
 %token DEFINE        "define"
 %token DOT           "."
 %token DOUBLE_ARROW  "=>"
+%token ENCLOSING     "enclosing"
 %token ENUM          "enum"
 %token ERROR         "error"
 %token EVAL          "eval"
@@ -156,6 +157,7 @@ struct IntValue {
 %type <wasm::filt::Node *> expression
 %type <wasm::filt::Node *> expression_redirect
 %type <wasm::filt::Node *> file
+%type <wasm::filt::Node *> file_contents
 %type <wasm::filt::Node *> file_header
 %type <wasm::filt::Node *> file_header_args
 /*%type <wasm::filt::Node *> file_header_optional*/
@@ -377,6 +379,14 @@ eval_args
         ;
 
 file
+         : file_contents { $$ = $1; }
+         | "(" "enclosing" IDENTIFIER ")" file_contents {
+             $$ = $5;
+             Driver.setEnclosing($3);
+           }
+         ;
+
+file_contents
          : file_header file_header file_header section {
              $$ = Driver.create<FileNode>();
              $$->append($1);
