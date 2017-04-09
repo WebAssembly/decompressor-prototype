@@ -1140,11 +1140,10 @@ int main(int Argc, charstring Argv[]) {
         "uses direct code"));
 
     ArgsParser::Toggle ValidateWhileWritingFlag(ValidateWhileWriting);
-    Args.add(
-        ValidateWhileWritingFlag.setLongName("validate")
-        .setDescription(
-            "While writing, validate that it is readable. Useful "
-            "when writing new algorithms to parse algorithms."));
+    Args.add(ValidateWhileWritingFlag.setLongName("validate")
+                 .setDescription(
+                     "While writing, validate that it is readable. Useful "
+                     "when writing new algorithms to parse algorithms."));
 
 #endif
 
@@ -1197,7 +1196,8 @@ int main(int Argc, charstring Argv[]) {
   charstring InputFilename = "-";
   for (charstring Filename : InputFilenames) {
     InputFilename = Filename;
-    InputSymtab = readCasmFile(Filename, Verbose, TraceLexer, TraceParser, InputSymtab);
+    InputSymtab =
+        readCasmFile(Filename, Verbose, TraceLexer, TraceParser, InputSymtab);
     if (!InputSymtab || !InputSymtab->install()) {
       fprintf(stderr, "Unable to parse: %s\n", InputFilename);
       return exit_status(EXIT_FAILURE);
@@ -1253,7 +1253,8 @@ int main(int Argc, charstring Argv[]) {
 
   std::shared_ptr<SymbolTable> AlgSymtab;
   for (charstring Filename : AlgorithmFilenames) {
-    AlgSymtab = readCasmFile(Filename, Verbose, TraceLexer, TraceParser, AlgSymtab);
+    AlgSymtab =
+        readCasmFile(Filename, Verbose, TraceLexer, TraceParser, AlgSymtab);
     if (!AlgSymtab || !AlgSymtab->install()) {
       fprintf(stderr, "Problems reading file: %s\n", Filename);
       return exit_status(EXIT_FAILURE);

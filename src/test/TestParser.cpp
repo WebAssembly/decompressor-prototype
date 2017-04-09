@@ -63,8 +63,8 @@ int main(int Argc, wasm::charstring Argv[]) {
 
     ArgsParser::Toggle TraceFilesParsedFlag(TraceFilesParsed);
     Args.add(TraceFilesParsedFlag.setShortName('v')
-             .setLongName("verbose")
-             .setDescription("Show file(s) being parsed."));
+                 .setLongName("verbose")
+                 .setDescription("Show file(s) being parsed."));
 
     ArgsParser::Toggle ShowInternalStructureFlag(
         TextWriter::DefaultShowInternalStructure);
@@ -76,8 +76,7 @@ int main(int Argc, wasm::charstring Argv[]) {
                 "when printing."));
 
     ArgsParser::Toggle ValidateAstFlag(ValidateAst);
-    Args.add(ValidateAstFlag
-                 .setLongName("validate")
+    Args.add(ValidateAstFlag.setLongName("validate")
                  .setDescription(
                      "Validate parsed algorithms also. Assumes "
                      "order of input files define enclosing scopes."));
