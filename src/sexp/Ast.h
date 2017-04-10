@@ -39,6 +39,8 @@ class TraceClass;
 
 namespace filt {
 
+// Note: mutable fields define caching values in classes.
+
 class BinaryAcceptNode;
 class DefineNode;
 class FileHeaderNode;
@@ -175,7 +177,7 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   const CallbackNode* getBlockEnterCallback();
   const CallbackNode* getBlockExitCallback();
   const FileNode* getRoot() const { return Root; }
-  void setRoot(FileNode* NewRoot);
+  void setRoot(const FileNode* NewRoot);
   // Install definitions in tree defined by root.
   bool install();
   bool isRootInstalled() const { return RootInstalled; }
@@ -259,7 +261,7 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   void deallocateNodes();
 
   void installPredefined();
-  void installDefinitions(Node* Root);
+  void installDefinitions(const Node* Root);
 
   bool areActionsConsistent();
   Node* stripUsing(Node* Root, std::function<Node*(Node*)> stripKid);
@@ -326,13 +328,13 @@ class Node {
   size_t getTreeSize() const;
 
   // Validates the node, based on the parents.
-  virtual bool validateNode(NodeVectorType& Parents);
+  virtual bool validateNode(ConstNodeVectorType& Parents) const;
 
   // Recursively walks tree and validates (Scope allows lexical validation).
   // Returns true if validation succeeds.
-  bool validateKid(NodeVectorType& Parents, Node* Kid);
-  bool validateKids(NodeVectorType& Parents);
-  bool validateSubtree(NodeVectorType& Parents);
+  bool validateKid(ConstNodeVectorType& Parents, const Node* Kid) const;
+  bool validateKids(ConstNodeVectorType& Parents) const;
+  bool validateSubtree(ConstNodeVectorType& Parents) const;
 
   // WARNING: Only supported if underlying type allows.
   virtual void append(Node* Kid);
@@ -352,7 +354,7 @@ class Node {
   interp::IntTypeFormat getIntTypeFormat() const;
 
   FILE* getErrorFile() const { return Symtab.getErrorFile(); }
-  FILE* error() { return Symtab.error(); }
+  FILE* error() const { return Symtab.error(); }
 
  protected:
   NodeType Type;
@@ -431,7 +433,7 @@ class IntegerNode : public NullaryNode {
   static bool implementsClass(NodeType Type);
 
  protected:
-  IntegerValue Value;
+  mutable IntegerValue Value;
   // Note: ValueFormat provided so that we can echo back out same
   // representation as when lexing s-expressions.
   IntegerNode(SymbolTable& Symtab,
@@ -586,13 +588,13 @@ class BinaryAcceptNode FINAL : public IntegerNode {
                    unsigned NumBits);
   ~BinaryAcceptNode() OVERRIDE;
   int nodeCompare(const Node*) const OVERRIDE;
-  bool validateNode(NodeVectorType& Parents) OVERRIDE;
+  bool validateNode(ConstNodeVectorType& Parents) const OVERRIDE;
   unsigned getNumBits() const { return NumBits; }
 
   static bool implementsClass(NodeType Type) { return Type == OpBinaryAccept; }
 
  protected:
-  unsigned NumBits;
+  mutable unsigned NumBits;
 };
 
 // Holds cached information about a Symbol
@@ -734,7 +736,7 @@ class SelectBaseNode : public NaryNode {
  public:
   ~SelectBaseNode() OVERRIDE;
   const CaseNode* getCase(decode::IntType Key) const;
-  bool addCase(const CaseNode* Case);
+  bool addCase(const CaseNode* Case) const;
   static bool implementsClass(NodeType Type);
 
  protected:
@@ -807,9 +809,9 @@ class OpcodeNode FINAL : public SelectBaseNode {
     uint32_t ShiftValue;
   };
 
-  bool validateNode(NodeVectorType& Paremts) OVERRIDE;
+  bool validateNode(ConstNodeVectorType& Paremts) const OVERRIDE;
   typedef std::vector<WriteRange> CaseRangeVectorType;
-  CaseRangeVectorType CaseRangeVector;
+  mutable CaseRangeVectorType CaseRangeVector;
 };
 
 class BinaryEvalNode : public UnaryNode {
@@ -822,7 +824,7 @@ class BinaryEvalNode : public UnaryNode {
   ~BinaryEvalNode() OVERRIDE;
 
   const Node* getEncoding(decode::IntType Value) const;
-  bool addEncoding(BinaryAcceptNode* Encoding);
+  bool addEncoding(const BinaryAcceptNode* Encoding) const;
 
   static bool implementsClass(NodeType Type) { return OpBinaryEval == Type; }
 

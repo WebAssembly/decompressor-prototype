@@ -54,7 +54,14 @@ bool Driver::parse(const std::string& Filename) {
   SymbolTable::SharedPtr EnclosedSymtab;
   if (TraceFilesParsed)
     fprintf(stderr, "Parsing algiorithm: '%s'\n", Filename.c_str());
+  std::set<std::string> ParsedFilenames;
   while (true) {
+    if (ParsedFilenames.count(NextFile) > 0) {
+      fprintf(stderr, "Algorithm encloses self: %s\n", NextFile.c_str());
+      Success = false;
+      break;
+    }
+    ParsedFilenames.insert(NextFile);
     Success = parseOneFile(NextFile);
     if (!Success)
       break;
@@ -69,11 +76,13 @@ bool Driver::parse(const std::string& Filename) {
       fprintf(stderr, "Parsing enclosing algorithm: '%s'\n", NextFile.c_str());
   }
   Table = FirstSymtab;
+  ParsedAst = Table->getInstalledRoot();
   return Success;
 }
 
-bool Driver::parseOneFile(const std::string& Filename) {
+bool Driver::parseOneFile(std::string& Filename) {
   this->Filename = Filename;
+  Loc.initialize(&Filename);
   ParsedAst = nullptr;
   Begin();
   wasm::filt::Parser parser(*this);

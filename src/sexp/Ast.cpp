@@ -53,7 +53,7 @@ namespace filt {
 
 namespace {
 
-void errorDescribeContext(NodeVectorType& Parents,
+void errorDescribeContext(ConstNodeVectorType& Parents,
                           const char* Context = "Context",
                           bool Abbrev = true) {
   if (Parents.empty())
@@ -83,7 +83,7 @@ void errorDescribeNode(const char* Message,
 
 void errorDescribeNodeContext(const char* Message,
                               const Node* Nd,
-                              NodeVectorType& Parents) {
+                              ConstNodeVectorType& Parents) {
   errorDescribeNode(Message, Nd);
   errorDescribeContext(Parents);
 }
@@ -373,14 +373,14 @@ void Node::append(Node*) {
   decode::fatal("Node::append not supported for ast node!");
 }
 
-bool Node::validateKid(NodeVectorType& Parents, Node* Kid) {
+bool Node::validateKid(ConstNodeVectorType& Parents, const Node* Kid) const {
   Parents.push_back(this);
   bool Result = Kid->validateSubtree(Parents);
   Parents.pop_back();
   return Result;
 }
 
-bool Node::validateKids(NodeVectorType& Parents) {
+bool Node::validateKids(ConstNodeVectorType& Parents) const {
   if (!hasKids())
     return true;
   TRACE(int, "NumKids", getNumKids());
@@ -390,7 +390,7 @@ bool Node::validateKids(NodeVectorType& Parents) {
   return true;
 }
 
-bool Node::validateSubtree(NodeVectorType& Parents) {
+bool Node::validateSubtree(ConstNodeVectorType& Parents) const {
   TRACE_METHOD("validateSubtree");
   TRACE(node_ptr, nullptr, this);
   if (!validateNode(Parents))
@@ -398,7 +398,8 @@ bool Node::validateSubtree(NodeVectorType& Parents) {
   return validateKids(Parents);
 }
 
-bool Node::validateNode(NodeVectorType& Scope) {
+bool Node::validateNode(ConstNodeVectorType& Scope) const {
+  TRACE_METHOD("validateNode");
   return true;
 }
 
@@ -841,8 +842,8 @@ bool SymbolTable::areActionsConsistent() {
   return IsValid;
 }
 
-void SymbolTable::setRoot(FileNode* NewRoot) {
-  Root = NewRoot;
+void SymbolTable::setRoot(const FileNode* NewRoot) {
+  Root = const_cast<FileNode*>(NewRoot);
   RootInstalled = false;
 }
 
@@ -863,7 +864,7 @@ bool SymbolTable::install() {
   }
   installPredefined();
   installDefinitions(Root);
-  std::vector<Node*> Parents;
+  ConstNodeVectorType Parents;
   bool IsValid = Root->validateSubtree(Parents);
   if (IsValid)
     IsValid = areActionsConsistent();
@@ -907,7 +908,7 @@ void SymbolTable::installPredefined() {
   }
 }
 
-void SymbolTable::installDefinitions(Node* Root) {
+void SymbolTable::installDefinitions(const Node* Root) {
   TRACE_METHOD("installDefinitions");
   TRACE(node_ptr, nullptr, Root);
   if (Root == nullptr)
@@ -1337,14 +1338,16 @@ const LiteralActionDefNode* LiteralActionUseNode::getDef() const {
   return cast<SymbolNode>(getKid(0))->getLiteralActionDefinition();
 }
 
-bool LiteralUseNode::validateNode(NodeVectorType& Parents) {
+bool LiteralUseNode::validateNode(ConstNodeVectorType& Parents) const {
+  TRACE_METHOD("validateNode");
   if (getDef())
     return true;
   fprintf(getErrorFile(), "No corresponding literal definition found\n");
   return false;
 }
 
-bool LiteralActionUseNode::validateNode(NodeVectorType& Parents) {
+bool LiteralActionUseNode::validateNode(ConstNodeVectorType& Parents) const {
+  TRACE_METHOD("validateNode");
   if (const LiteralActionDefNode* Def = getDef()) {
     getSymtab().insertCallbackLiteral(Def);
     return true;
@@ -1371,7 +1374,8 @@ const IntegerNode* LiteralActionUseNode::getIntNode() const {
   return IntNd;
 }
 
-bool CallbackNode::validateNode(NodeVectorType& Parents) {
+bool CallbackNode::validateNode(ConstNodeVectorType& Parents) const {
+  TRACE_METHOD("validateNode");
   const Node* Action = getKid(0);
   if (const auto* IntNd = dyn_cast<IntegerNode>(Action)) {
     getSymtab().insertCallbackValue(IntNd);
@@ -1445,7 +1449,7 @@ AST_INTEGERNODE_TABLE
 AST_INTEGERNODE_TABLE
 #undef X
 
-bool ParamNode::validateNode(NodeVectorType& Parents) {
+bool ParamNode::validateNode(ConstNodeVectorType& Parents) const {
   TRACE_METHOD("validateNode");
   TRACE(node_ptr, nullptr, this);
   for (size_t i = Parents.size(); i > 0; --i) {
@@ -1508,16 +1512,16 @@ int BinaryAcceptNode::nodeCompare(const Node* Nd) const {
   return int(NumBits) - int(BaNd->NumBits);
 }
 
-bool BinaryAcceptNode::validateNode(NodeVectorType& Parents) {
+bool BinaryAcceptNode::validateNode(ConstNodeVectorType& Parents) const {
   // Defines path (value) from leaf to (binary) root node, guaranteeing each
   // accept node has a unique value that can be case selected.
   TRACE_METHOD("validateNode");
   TRACE(node_ptr, nullptr, this);
   IntType MyValue = 0;
   unsigned MyNumBits = 0;
-  Node* LastNode = this;
+  const Node* LastNode = this;
   for (size_t i = Parents.size(); i > 0; --i) {
-    Node* Nd = Parents[i - 1];
+    const Node* Nd = Parents[i - 1];
     switch (Nd->getType()) {
       case OpBinaryEval: {
         bool Success = true;
@@ -1686,7 +1690,7 @@ AST_TERNARYNODE_TABLE
 #undef X
 
 // Returns nullptr if P is illegal, based on the define.
-bool DefineNode::isValidParam(IntType Index) {
+bool DefineNode::isValidParam(IntType Index) const {
   assert(isa<ParamsNode>(getKid(1)));
   return Index < cast<ParamsNode>(getKid(1))->getValue();
 }
@@ -1777,7 +1781,8 @@ SymbolNode* EvalNode::getCallName() const {
   return dyn_cast<SymbolNode>(getKid(0));
 }
 
-bool EvalNode::validateNode(NodeVectorType& Parents) {
+bool EvalNode::validateNode(ConstNodeVectorType& Parents) const {
+  TRACE_METHOD("validateNode");
   const auto* Sym = dyn_cast<SymbolNode>(getKid(0));
   assert(Sym);
   const auto* Defn = dyn_cast<DefineNode>(Sym->getDefineDefinition());
@@ -1864,7 +1869,8 @@ const SectionNode* FileNode::getDeclarations() const {
   return cast<SectionNode>(Nd);
 }
 
-bool FileNode::validateNode(NodeVectorType& Parents) {
+bool FileNode::validateNode(ConstNodeVectorType& Parents) const {
+  TRACE_METHOD("validateNode");
   if (!Parents.empty()) {
     fprintf(error(),
             "File nodes can only appear as a top-level s-expression\n");
@@ -1934,11 +1940,11 @@ const CaseNode* SelectBaseNode::getCase(IntType Key) const {
   return nullptr;
 }
 
-bool SelectBaseNode::addCase(const CaseNode* Case) {
+bool SelectBaseNode::addCase(const CaseNode* Case) const {
   return getIntLookup()->add(Case->getValue(), Case);
 }
 
-bool CaseNode::validateNode(NodeVectorType& Parents) {
+bool CaseNode::validateNode(ConstNodeVectorType& Parents) const {
   TRACE_METHOD("validateNode");
   TRACE(node_ptr, nullptr, this);
   // Install quick lookup to CaseBody.
@@ -2121,7 +2127,7 @@ template OpcodeNode* SymbolTable::create<OpcodeNode>();
 OpcodeNode::~OpcodeNode() {
 }
 
-bool OpcodeNode::validateNode(NodeVectorType& Parents) {
+bool OpcodeNode::validateNode(ConstNodeVectorType& Parents) const {
   TRACE_METHOD("validateNode");
   TRACE(node_ptr, nullptr, this);
   CaseRangeVector.clear();
@@ -2258,7 +2264,7 @@ const Node* BinaryEvalNode::getEncoding(IntType Value) const {
   return Nd;
 }
 
-bool BinaryEvalNode::addEncoding(BinaryAcceptNode* Encoding) {
+bool BinaryEvalNode::addEncoding(const BinaryAcceptNode* Encoding) const {
   return getIntLookup()->add(Encoding->getValue(), Encoding);
 }
 

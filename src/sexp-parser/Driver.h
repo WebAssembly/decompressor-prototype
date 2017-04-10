@@ -105,13 +105,13 @@ class Driver {
   bool parse(const std::string& Filename);
 
   // Returns the last parsed ast.
-  Node* getParsedAst() const { return ParsedAst; }
+  const Node* getParsedAst() const { return ParsedAst; }
 
   SymbolTable::SharedPtr getSymbolTable() const { return Table; }
 
   bool install() { return Table->install(); }
 
-  void setParsedAst(Node* Ast) {
+  void setParsedAst(const Node* Ast) {
     ParsedAst = Ast;
     Table->setRoot(dyn_cast<FileNode>(ParsedAst));
   }
@@ -150,7 +150,7 @@ class Driver {
   bool MaintainIntegerFormatting;
   // The location of the last token.
   location Loc;
-  Node* ParsedAst;
+  const Node* ParsedAst;
   bool ErrorsReported;
 
   // Called before parsing for setup.
@@ -158,7 +158,7 @@ class Driver {
   // Called after parsing for cleanup.
   void End();
 
-  bool parseOneFile(const std::string& Filename);
+  bool parseOneFile(std::string& Filename);
 };
 
 }  // end of namespace filt
