@@ -52,6 +52,14 @@ class Interpreter {
   Interpreter& operator=(const Interpreter&) = delete;
 
  public:
+  enum class Method {
+#define X(tag) tag,
+    INTERPRETER_METHODS_TABLE
+#undef X
+        NO_SUCH_METHOD
+  };
+  static const char* getName(Method M);
+
   Interpreter(std::shared_ptr<Reader> Input,
               std::shared_ptr<Writer> Output,
               const InterpreterFlags& Flags,
@@ -88,6 +96,7 @@ class Interpreter {
 
   // Starts up decompression using a (file) algorithm.
   void algorithmStart();
+  void algorithmStart(Method M) { callTopLevel(M, nullptr); }
 
   // Resumes decompression where it left off. Assumes that more
   // input has been added since the previous start()/resume() call.
@@ -147,14 +156,6 @@ class Interpreter {
   static const char* getName(SectionCode Code);
 
  protected:
-  enum class Method {
-#define X(tag) tag,
-    INTERPRETER_METHODS_TABLE
-#undef X
-        NO_SUCH_METHOD
-  };
-  static const char* getName(Method M);
-
   enum class MethodModifier {
 #define X(tag, flags) tag = flags,
     INTERPRETER_METHOD_MODIFIERS_TABLE

@@ -613,10 +613,10 @@ std::shared_ptr<SymbolTable> Interpreter::getDefaultAlgorithm(
 
 void Interpreter::algorithmStart() {
   if (Symtab.get() != nullptr)
-    return callTopLevel(Method::GetFile, nullptr);
-  assert(!Selectors.empty());
-  // TODO(karlschimpf) Find correct symbol table to use.
-  callTopLevel(Method::GetAlgorithm, nullptr);
+    return algorithmStart(Method::GetFile);
+  if (Selectors.empty())
+    fail("No selectors specified, can't run algorithm interpreter");
+  algorithmStart(Method::GetAlgorithm);
 }
 
 void Interpreter::algorithmRead() {
@@ -1573,8 +1573,6 @@ void Interpreter::algorithmResume() {
               assert(Frame.Nd);
               assert(isa<FileNode>(Frame.Nd));
             }
-            // TODO: Separate out read and write headers, since they may
-            // be different.
             const Node* Header =
                 HeaderOverride ? HeaderOverride : Symtab->getReadHeader();
             if (!isa<FileHeaderNode>(Header))
