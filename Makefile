@@ -201,8 +201,7 @@ alg_name = $(patsubst $(ALG_GENDIR)/%.cast, Alg%, $(1))
 
 ALG_CAST = casm0x0.cast
 
-ALG_GENDIR_ALG = -a $(ALG_GENDIR)/casm0x0Boot.cast \
-		-a $(ALG_GENDIR)/casm0x0.cast
+ALG_GENDIR_ALG = -a $(ALG_GENDIR)/casm0x0.cast
 
 #### Boot step 1
 
@@ -807,29 +806,23 @@ ifeq ($(GENSRCS), 3)
 
   $(ALG_BOOT1_LIT_H_SRCS): $(ALG_GENDIR)/%.h: $(ALG_GENDIR)/%.cast \
 		$(BUILD_EXECDIR_BOOT)/cast2casm-boot1
-	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1 \
-		-a $< $< -o $@ --header --enum \
+	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1 $< -o $@ --header --enum \
 		--name $(call alg_name, $(patsubst %-lits.cast, %.cast, $<))
 
   $(ALG_BOOT1_LIT_CPP_SRCS): $(ALG_GENDIR)/%.cpp: $(ALG_GENDIR)/%.cast \
 		$(BUILD_EXECDIR_BOOT)/cast2casm-boot1
-	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1 \
-		-a $< $< -o $@ --enum \
+	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1 $< -o $@ --enum \
 		--name $(call alg_name, $(patsubst %-lits.cast, %.cast, $<))
 
   $(ALG_BOOT1_H_SRCS): $(ALG_GENDIR)/%Boot.h: $(ALG_GENDIR)/%Boot.cast \
 		$(ALG_GENDIR)/%-lits.cast $(BUILD_EXECDIR_BOOT)/cast2casm-boot1
-	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1 \
-		-a $< \
-		$< -o $@ \
+	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1 $< -o $@ \
 		--header --strip-literals --function \
 		--name $(call alg_name, $<)
 
   $(ALG_BOOT1_BASE_CPP_SRCS): $(ALG_GENDIR)/%Boot.cpp: $(ALG_GENDIR)/%Boot.cast \
 		$(ALG_GENDIR)/%-lits.cast $(BUILD_EXECDIR_BOOT)/cast2casm-boot1
-	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1 \
-		-a $< \
-		$< -o $@ \
+	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1 $< -o $@ \
 		--strip-literals --strip-symbolic-actions --function \
 		--name $(call alg_name, $<)
 
@@ -841,38 +834,30 @@ ifeq ($(GENSRCS), 4)
   # requires a separate implementation file for enumerations.
 
   $(ALG_BOOT2_LIT_H_SRCS): $(ALG_GENDIR)/%.h: $(ALG_GENDIR)/%.cast \
-		$(BUILD_EXECDIR_BOOT)/cast2casm-boot1
-	@echo "case lit h $< $@"
-	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1 \
-		-a $< $< -o $@ --header --enum \
+		$(BUILD_EXECDIR_BOOT)/cast2casm-boot2
+	$(BUILD_EXECDIR_BOOT)/cast2casm-boot2 \
+		$< -o $@ --header --enum --validate \
 		--name $(call alg_name, $(patsubst %-lits.cast, %.cast, $<))
 
   $(ALG_BOOT2_LIT_CPP_SRCS): $(ALG_GENDIR)/%.cpp: $(ALG_GENDIR)/%.cast \
-		$(BUILD_EXECDIR_BOOT)/cast2casm-boot1
-	@echo "case lit cpp $< $@"
-	$(BUILD_EXECDIR_BOOT)/cast2casm-boot1 \
-		-a $< $< -o $@ --enum \
+		$(BUILD_EXECDIR_BOOT)/cast2casm-boot2
+	$(BUILD_EXECDIR_BOOT)/cast2casm-boot2 $< -o $@ --enum --validate \
 		--name $(call alg_name, $(patsubst %-lits.cast, %.cast, $<))
 
   $(ALG_BOOT2_BASE_H_SRCS): $(ALG_GENDIR)/%.h: $(ALG_GENDIR)/%.cast \
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot2
-	@echo "case h $< $@"
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot2 \
-		$(if $(findstring casm0x0, $<), \
-			$(patsubst %.cast, %Boot.cast, $<), \
-			--strip-actions) \
-		$< -o $@ --header --strip-literal-uses $(ALG_GENDIR_ALG) \
-		--function --name $(call alg_name, $<)
+		$(if $(findstring casm0x0, $<),,--strip-actions) $< -o $@ \
+		--header --strip-literal-uses $(ALG_GENDIR_ALG) \
+		--function --name $(call alg_name, $<) --validate
 
   $(ALG_BOOT2_BASE_CPP_SRCS): $(ALG_GENDIR)/%.cpp: $(ALG_GENDIR)/%.cast \
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot2
-	@echo "case cpp $< $@"
 	$(BUILD_EXECDIR_BOOT)/cast2casm-boot2  \
 		$(if $(findstring casm0x0, $<), \
-			$(patsubst %.cast, %Boot.cast, $<) \
 			--boot --strip-symbolic-actions, \
 			--strip-actions) \
-		$< -o $@ --strip-literal-uses --array \
+		$< -o $@ --strip-literal-uses --array --validate \
 		$(ALG_GENDIR_ALG) --function --name $(call alg_name, $<)
 
 endif

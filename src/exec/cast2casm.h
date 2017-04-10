@@ -956,25 +956,6 @@ int main(int Argc, charstring Argv[]) {
   {
     ArgsParser Args("Converts compression algorithm from text to binary");
 
-    ArgsParser::OptionalVector<charstring> AlgorithmFilenamesFlag(
-        AlgorithmFilenames);
-    Args.add(AlgorithmFilenamesFlag.setShortName('a')
-                 .setLongName("algorithm")
-                 .setOptionName("ALGORITHM")
-                 .setDescription(
-#if WASM_CAST_BOOT == 1
-                     "use the aglorithm defined by ALGORITHM(s) to generate "
-                     "the cast binary file. If repeated, each file defines "
-                     "the enclosing scope for the next ALGORITHM file"
-#else
-                     "Instead of using the default casm algorithm to generate "
-                     "the casm binary file, use the aglorithm defined by "
-                     "ALGORITHM(s). If repeated, each file defines the "
-                     "enclosing "
-                     "scope for the next ALGORITHM file"
-#endif
-                     ));
-
     ArgsParser::Optional<bool> ExpectFailFlag(ExpectExitFail);
     Args.add(ExpectFailFlag.setDefault(false)
                  .setLongName("expect-fail")
@@ -1106,6 +1087,19 @@ int main(int Argc, charstring Argv[]) {
 
 #if WASM_CAST_BOOT > 1
 
+    ArgsParser::OptionalVector<charstring> AlgorithmFilenamesFlag(
+        AlgorithmFilenames);
+    Args.add(AlgorithmFilenamesFlag.setShortName('a')
+                 .setLongName("algorithm")
+                 .setOptionName("ALGORITHM")
+                 .setDescription(
+                     "Instead of using the default casm algorithm to generate "
+                     "the casm binary file, use the aglorithm defined by "
+                     "ALGORITHM(s). If repeated, each file defines the "
+                     "enclosing "
+                     "scope for the next ALGORITHM file"
+                     ));
+
     ArgsParser::Optional<bool> BitCompressFlag(BitCompress);
     Args.add(BitCompressFlag.setLongName("bit-compress")
                  .setDescription(
@@ -1167,13 +1161,6 @@ int main(int Argc, charstring Argv[]) {
 
     if (InputFilenames.empty())
       InputFilenames.push_back("-");
-
-#if WASM_CAST_BOOT < 2
-    if (AlgorithmFilenames.empty() && !DisplayParsedInput) {
-      fprintf(stderr, "No algorithm files specified, can't continue\n");
-      return exit_status(EXIT_FAILURE);
-    }
-#endif
 
 #if WASM_CAST_BOOT > 1
     if (TraceTree)
@@ -1266,13 +1253,13 @@ int main(int Argc, charstring Argv[]) {
       fprintf(stderr, "Using prebuilt casm algorithm\n");
     AlgSymtab = WASM_CASM_GET_SYMTAB();
   }
-#endif
 
   if (TraceAlgorithm) {
     fprintf(stderr, "Algorithm:\n");
     TextWriter Writer;
     Writer.write(stderr, AlgSymtab);
   }
+#endif
 
   if (Verbose && strcmp(OutputFilename, "-") != 0)
     fprintf(stderr, "Opening file: %s\n", OutputFilename);
