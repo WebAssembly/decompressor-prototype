@@ -61,7 +61,7 @@ bool Driver::parse(const std::string& Filename) {
       Success = false;
       break;
     }
-    ParsedFilenames.emplace(NextFile);
+    ParsedFilenames.insert(NextFile);
     Success = parseOneFile(NextFile);
     if (!Success)
       break;

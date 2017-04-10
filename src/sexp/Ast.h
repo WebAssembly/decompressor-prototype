@@ -62,7 +62,6 @@ AST_INTEGERNODE_TABLE
 typedef std::unordered_set<Node*> VisitedNodesType;
 typedef std::vector<Node*> NodeVectorType;
 typedef std::vector<const Node*> ConstNodeVectorType;
-typedef std::vector<const Node*> ConstNodeVectorType;
 
 static constexpr size_t NumNodeTypes = 0
 #define X(tag, opcode, sexp_name, text_num_args, text_max_args) +1
