@@ -57,6 +57,10 @@ class CasmReader {
   void readBinary(charstring Filename,
                   std::shared_ptr<filt::SymbolTable> AlgSymtab);
 
+  bool hasBinaryHeader(charstring Filename);
+  bool hasBinaryHeader(charstring Filename,
+                       std::shared_ptr<filt::SymbolTable> AlgSymtab);
+
   // The following two methods call the above methods using the algorithm
   // casm0x0.
   void readBinary(std::shared_ptr<Queue> Binary);
