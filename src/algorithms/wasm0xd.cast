@@ -14,6 +14,8 @@
 
 # Defines the CAST algorithm for reading/writing WASM files.
 
+(enclosing 'wasm0xd-lits.cast')
+
 (header (u32.const 0x6d736163) (u32.const 0x0))
 (header (u32.const 0x6d736100) (u32.const 0xd))
 
