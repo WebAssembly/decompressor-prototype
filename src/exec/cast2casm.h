@@ -1097,8 +1097,7 @@ int main(int Argc, charstring Argv[]) {
                      "the casm binary file, use the aglorithm defined by "
                      "ALGORITHM(s). If repeated, each file defines the "
                      "enclosing "
-                     "scope for the next ALGORITHM file"
-                     ));
+                     "scope for the next ALGORITHM file"));
 
     ArgsParser::Optional<bool> BitCompressFlag(BitCompress);
     Args.add(BitCompressFlag.setLongName("bit-compress")

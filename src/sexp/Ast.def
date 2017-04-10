@@ -145,7 +145,7 @@
 
 #define PARAM_DECLS                                                            \
   public:                                                                      \
-    bool validateNode(NodeVectorType &Parents) OVERRIDE;                       \
+    bool validateNode(ConstNodeVectorType &Parents) const OVERRIDE;            \
 
 //#define X(tag, NODE_DECLS)
 #define AST_UNARYNODE_TABLE                                                    \
@@ -164,19 +164,19 @@
 
 #define CALLBACK_DECLS                                                         \
   public:                                                                      \
-    bool validateNode(NodeVectorType &Parents) OVERRIDE;                       \
+    bool validateNode(ConstNodeVectorType &Parents) const OVERRIDE;            \
     const IntegerNode* getValue() const;                                       \
 
 #define LITERALUSE_DECLS                                                       \
   const LiteralDefNode* getDef() const;                                        \
   const IntegerNode* getIntNode() const;                                       \
-  bool validateNode(NodeVectorType &Parents) OVERRIDE;                         \
+  bool validateNode(ConstNodeVectorType &Parents) const OVERRIDE;              \
 
 
 #define LITERALACTIONUSE_DECLS                                                 \
   const LiteralActionDefNode* getDef() const;                                  \
   const IntegerNode* getIntNode() const;                                       \
-  bool validateNode(NodeVectorType &Parents) OVERRIDE;                         \
+  bool validateNode(ConstNodeVectorType &Parents) const OVERRIDE;              \
 
 //#define X(tag, NODE_DECLS)
 #define AST_BINARYNODE_TABLE                                                   \
@@ -199,10 +199,10 @@
   public:                                                                      \
     decode::IntType getValue() const { return Value; }                         \
     const Node* getCaseBody() const { return CaseBody; }                       \
-    bool validateNode(NodeVectorType &Parents) OVERRIDE;                       \
+    bool validateNode(ConstNodeVectorType &Parents) const OVERRIDE;            \
   private:                                                                     \
-    decode::IntType Value;                                                     \
-    const Node* CaseBody;                                                      \
+    mutable decode::IntType Value;                                             \
+    mutable const Node* CaseBody;                                              \
 
 //#define X(tag, NODE_DECLS)
 #define AST_SELECTNODE_TABLE                                                   \
@@ -226,11 +226,11 @@
     const FileHeaderNode* getReadHeader(bool UseEnclosing=true) const;         \
     const FileHeaderNode* getWriteHeader(bool UseEnclosing=true) const;        \
     const SectionNode* getDeclarations() const;                                \
-    bool validateNode(NodeVectorType &Parents) OVERRIDE;                       \
+    bool validateNode(ConstNodeVectorType &Parents) const OVERRIDE;            \
 
 #define DEFINE_DECLS                                                           \
   public:                                                                      \
-    bool isValidParam(decode::IntType Index);                                  \
+    bool isValidParam(decode::IntType Index) const;                            \
     const std::string getName() const;                                         \
     size_t getNumLocals() const;                                               \
     Node* getBody() const;                                                     \
@@ -238,7 +238,7 @@
 #define EVAL_DECLS                                                             \
  public:                                                                       \
   SymbolNode* getCallName() const;                                             \
-  bool validateNode(NodeVectorType &Parents) OVERRIDE;                         \
+  bool validateNode(ConstNodeVectorType &Parents) const OVERRIDE;              \
 
 //#define X(tag, NODE_DECLS)
 #define AST_TERNARYNODE_TABLE                                                  \

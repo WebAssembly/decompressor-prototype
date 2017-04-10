@@ -118,7 +118,7 @@ int main(int Argc, wasm::charstring Argv[]) {
       ContextSymtab = Symtab;
     }
     if (PrintAst) {
-      if (Node* Root = Driver.getParsedAst()) {
+      if (const Node* Root = Driver.getParsedAst()) {
         TextWriter Writer;
         Writer.write(stdout, Root);
       } else {
