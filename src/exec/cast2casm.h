@@ -1247,6 +1247,7 @@ int main(int Argc, charstring Argv[]) {
       return exit_status(EXIT_FAILURE);
     }
   }
+
 #if WASM_CAST_BOOT > 1
   if (AlgorithmFilenames.empty()) {
     if (Verbose)
