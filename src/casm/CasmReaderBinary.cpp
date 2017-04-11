@@ -36,6 +36,20 @@ void CasmReader::readBinary(charstring Filename) {
   readBinary(Filename, getAlgcasm0x0Symtab());
 }
 
+bool CasmReader::hasBinaryHeader(charstring Filename) {
+  return hasBinaryHeader(Filename, getAlgcasm0x0Symtab());
+}
+
+void CasmReader::readTextOrBinary(charstring Filename) {
+  SymbolTable::SharedPtr EnclosingScope;
+  readTextOrBinary(Filename, EnclosingScope);
+}
+
+void CasmReader::readTextOrBinary(charstring Filename,
+                                  std::shared_ptr<SymbolTable> EnclosingScope) {
+  readTextOrBinary(Filename, EnclosingScope, getAlgcasm0x0Symtab());
+}
+
 }  // end of namespace filt
 
 }  // end of namespace wasm

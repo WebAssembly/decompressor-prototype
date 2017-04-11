@@ -57,15 +57,31 @@ class CasmReader {
   void readBinary(charstring Filename,
                   std::shared_ptr<filt::SymbolTable> AlgSymtab);
 
+  void readBinary(charstring Filename,
+                  std::shared_ptr<filt::SymbolTable> AlgSymtab,
+                  std::shared_ptr<filt::SymbolTable> EnclosingScope);
+
   bool hasBinaryHeader(charstring Filename);
   bool hasBinaryHeader(charstring Filename,
                        std::shared_ptr<filt::SymbolTable> AlgSymtab);
+
+  void readTextOrBinary(charstring Filename);
+
+  void readTextOrBinary(charstring Filename,
+                        std::shared_ptr<filt::SymbolTable> EnclosingScope);
+
+  void readTextOrBinary(charstring Filename,
+                        std::shared_ptr<filt::SymbolTable> EnclosingScope,
+                        std::shared_ptr<filt::SymbolTable> AlgSymtab);
 
   // The following two methods call the above methods using the algorithm
   // casm0x0.
   void readBinary(std::shared_ptr<Queue> Binary);
 
   void readBinary(charstring Filename);
+
+  bool hasFileHeader(charstring Filename,
+                     std::shared_ptr<filt::SymbolTable> AlgSymtab);
 
   bool hasErrors() const { return ErrorsFound; }
   CasmReader& setTraceRead(bool Value) {
