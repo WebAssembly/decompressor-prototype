@@ -57,6 +57,11 @@ class CasmReader {
   void readBinary(charstring Filename,
                   std::shared_ptr<filt::SymbolTable> AlgSymtab);
 
+
+  void readBinary(charstring Filename,
+                  std::shared_ptr<filt::SymbolTable> AlgSymtab,
+                  std::shared_ptr<filt::SymbolTable> EnclosingScope);
+
   bool hasBinaryHeader(charstring Filename);
   bool hasBinaryHeader(charstring Filename,
                        std::shared_ptr<filt::SymbolTable> AlgSymtab);

@@ -118,6 +118,15 @@ void CasmReader::readBinary(charstring Filename,
       AlgSymtab);
 }
 
+void CasmReader::readBinary(charstring Filename,
+                            std::shared_ptr<SymbolTable> AlgSymtab,
+                            std::shared_ptr<SymbolTable> EnclosingScope) {
+  readBinary(
+      std::make_shared<ReadBackedQueue>(std::make_shared<FileReader>(Filename)),
+      AlgSymtab,
+      EnclosingScope);
+}
+
 }  // end of namespace filt
 
 }  // end of namespace wasm

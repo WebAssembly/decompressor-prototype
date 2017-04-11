@@ -57,7 +57,11 @@ class OutputHandler {
 }  // end of anonymous namespace
 
 int main(int Argc, const char* Argv[]) {
+#if 0
   const char* InputFilename = "-";
+#else
+  std::vector<charstring> InputFilenames;
+#endif
   const char* OutputFilename = "-";
   const char* AlgorithmFilename = nullptr;
   bool InstallInput = true;
@@ -86,9 +90,16 @@ int main(int Argc, const char* Argv[]) {
                  .setLongName("expect-fail")
                  .setDescription("Succeed on failure/fail on success"));
 
+#if 0
     ArgsParser::Required<charstring> InputFlag(InputFilename);
     Args.add(InputFlag.setOptionName("INPUT")
-                 .setDescription("BInary file to convert to text"));
+                 .setDescription("Binary file to convert to text"));
+#else
+    ArgsParser::RequiredVector<charstring> InputFilenamesFlag(InputFilenames);
+    Args.add(InputFilenamesFlag.setOptionName("INPUT").setDescription(
+        "Binary file(s) to convert to text. If repeated, each file contains "
+        "the enclosing algorithm for the next INPUT file."));
+#endif
 
     ArgsParser::Optional<charstring> OutputFlag(OutputFilename);
     Args.add(OutputFlag.setShortName('o')
@@ -168,6 +179,32 @@ int main(int Argc, const char* Argv[]) {
 #endif
   }
 
+#if 1
+  if (InputFilenames.empty())
+    InputFilenames.push_back("-");
+
+  std::shared_ptr<SymbolTable> InputSymtab;
+  for (charstring Filename : InputFilenames) {
+    if (Verbose)
+      fprintf(stderr, "Reading input: %s\n", Filename);
+    CasmReader Reader;
+    Reader.setInstall(InstallInput).setTraceRead(TraceRead).setTraceTree(TraceTree)
+        .readTextOrBinary(Filename, AlgSymtab, InputSymtab);
+    if (Reader.hasErrors()) {
+      fprintf(stderr, "Problems reading: %s\n", Filename);
+      return exit_status(EXIT_FAILURE);
+    }
+    InputSymtab = Reader.getReadSymtab();
+  }
+
+  if (Verbose && strcmp(OutputFilename, "-") != 0)
+    fprintf(stderr, "Writing file: %s\n", OutputFilename);
+  OutputHandler Output(OutputFilename);
+  InputSymtab->describe(Output.getFile());
+  return exit_status(EXIT_SUCCESS);
+
+
+#else
   if (Verbose)
     fprintf(stderr, "Reading input: %s\n", InputFilename);
 
@@ -185,4 +222,5 @@ int main(int Argc, const char* Argv[]) {
   OutputHandler Output(OutputFilename);
   Reader.getReadSymtab()->describe(Output.getFile());
   return exit_status(EXIT_SUCCESS);
+#endif
 }
