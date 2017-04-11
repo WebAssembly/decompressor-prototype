@@ -111,9 +111,46 @@ void CasmReader::inflateBinary(std::shared_ptr<Queue> Binary,
 
 void CasmReader::readBinary(charstring Filename,
                             std::shared_ptr<SymbolTable> AlgSymtab) {
+  std::shared_ptr<SymbolTable> EnclosingScope;
+  readBinary(Filename, AlgSymtab, EnclosingScope);
+}
+
+void CasmReader::readBinary(charstring Filename,
+                            std::shared_ptr<SymbolTable> AlgSymtab,
+                            std::shared_ptr<SymbolTable> EnclosingScope) {
   readBinary(
       std::make_shared<ReadBackedQueue>(std::make_shared<FileReader>(Filename)),
-      AlgSymtab);
+      AlgSymtab, EnclosingScope);
+}
+
+bool CasmReader::hasBinaryHeader(charstring Filename,
+                                 std::shared_ptr<SymbolTable> AlgSymtab) {
+  // Note: This is inefficent, but at least works.
+  auto Inflator = std::make_shared<InflateAst>();
+  std::shared_ptr<Queue> Binary =
+      std::make_shared<ReadBackedQueue>(std::make_shared<FileReader>(Filename));
+  InterpreterFlags Flags;
+  Interpreter MyReader(std::make_shared<ByteReader>(Binary), Inflator, Flags,
+                       AlgSymtab);
+  if (TraceRead || TraceTree) {
+    auto Trace = std::make_shared<TraceClass>("CasmInterpreter");
+    Trace->setTraceProgress(true);
+    MyReader.setTrace(Trace);
+    if (TraceTree)
+      Inflator->setTrace(Trace);
+  }
+  MyReader.algorithmStartHasFileHeader();
+  MyReader.algorithmReadBackFilled();
+  return !MyReader.errorsFound();
+}
+
+void CasmReader::readTextOrBinary(charstring Filename,
+                                  std::shared_ptr<SymbolTable> EnclosingScope,
+                                  std::shared_ptr<SymbolTable> AlgSymtab) {
+  if (AlgSymtab && hasBinaryHeader(Filename, AlgSymtab))
+    readBinary(Filename, AlgSymtab, EnclosingScope);
+  else
+    readText(Filename, EnclosingScope);
 }
 
 }  // end of namespace filt

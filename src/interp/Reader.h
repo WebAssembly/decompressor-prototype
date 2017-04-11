@@ -58,7 +58,7 @@ class Reader : public std::enable_shared_from_this<Reader> {
   virtual bool pushPeekPos() = 0;
   virtual bool popPeekPos() = 0;
   virtual decode::StreamType getStreamType() = 0;
-  virtual bool processedInputCorrectly() = 0;
+  virtual bool processedInputCorrectly(bool CheckForEof) = 0;
   virtual bool readAction(decode::IntType Action);
   virtual void readFillStart() = 0;
   virtual void readFillMoreInput() = 0;

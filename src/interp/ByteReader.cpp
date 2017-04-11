@@ -147,8 +147,8 @@ decode::StreamType ByteReader::getStreamType() {
   return Input->getType();
 }
 
-bool ByteReader::processedInputCorrectly() {
-  return ReadPos.atEof() && ReadPos.isQueueGood();
+bool ByteReader::processedInputCorrectly(bool CheckForEof) {
+  return (!CheckForEof || ReadPos.atEof()) && ReadPos.isQueueGood();
 }
 
 bool ByteReader::readBlockEnter() {

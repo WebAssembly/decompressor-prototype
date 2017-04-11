@@ -135,8 +135,8 @@ StreamType IntReader::getStreamType() {
   return StreamType::Int;
 }
 
-bool IntReader::processedInputCorrectly() {
-  return Pos.atEnd();
+bool IntReader::processedInputCorrectly(bool CheckForEof) {
+  return !CheckForEof || Pos.atEnd();
 }
 
 bool IntReader::readBlockEnter() {
