@@ -49,7 +49,7 @@ class ByteReader : public Reader {
   bool pushPeekPos() OVERRIDE;
   bool popPeekPos() OVERRIDE;
   decode::StreamType getStreamType() OVERRIDE;
-  bool processedInputCorrectly() OVERRIDE;
+  bool processedInputCorrectly(bool CheckForEof) OVERRIDE;
   void readFillStart() OVERRIDE;
   void readFillMoreInput() OVERRIDE;
   uint8_t readBit() OVERRIDE;

@@ -80,6 +80,9 @@ class CasmReader {
 
   void readBinary(charstring Filename);
 
+  bool hasFileHeader(charstring Filename,
+                     std::shared_ptr<filt::SymbolTable> AlgSymtab);
+
   bool hasErrors() const { return ErrorsFound; }
   CasmReader& setTraceRead(bool Value) {
     TraceRead = Value;
