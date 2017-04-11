@@ -60,6 +60,7 @@ int main(int Argc, const char* Argv[]) {
   const char* InputFilename = "-";
   const char* OutputFilename = "-";
   const char* AlgorithmFilename = nullptr;
+  bool InstallInput = true;
   bool Verbose = false;
   bool TraceParser = false;
   bool TraceLexer = false;
@@ -93,6 +94,13 @@ int main(int Argc, const char* Argv[]) {
     Args.add(OutputFlag.setShortName('o')
                  .setOptionName("OUTPUT")
                  .setDescription("Generated text file"));
+
+    ArgsParser::Toggle InstallInputFlag(InstallInput);
+    Args.add(InstallInputFlag.setLongName("install")
+             .setDescription(
+                 "Install (i.e. validate) the read algorithm. Turn off "
+                 "when reading an input file that needs an enclosing "
+                 "algorithm to validate."));
 
     ArgsParser::Toggle VerboseFlag(Verbose);
     Args.add(
@@ -164,8 +172,9 @@ int main(int Argc, const char* Argv[]) {
     fprintf(stderr, "Reading input: %s\n", InputFilename);
 
   CasmReader Reader;
-  Reader.setTraceRead(TraceRead).setTraceTree(TraceTree).readBinary(
+  Reader.setInstall(InstallInput).setTraceRead(TraceRead).setTraceTree(TraceTree).readBinary(
       InputFilename, AlgSymtab);
+
   if (Reader.hasErrors()) {
     fprintf(stderr, "Problems reading: %s\n", InputFilename);
     return exit_status(EXIT_FAILURE);

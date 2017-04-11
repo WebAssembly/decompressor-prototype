@@ -36,7 +36,8 @@ using namespace utils;
 namespace decode {
 
 CasmReader::CasmReader()
-    : TraceRead(false),
+    : Install(true),
+      TraceRead(false),
       TraceTree(false),
       TraceLexer(false),
       ErrorsFound(false) {
@@ -93,6 +94,7 @@ void CasmReader::inflateBinary(std::shared_ptr<Queue> Binary,
   InterpreterFlags Flags;
   Interpreter MyReader(std::make_shared<ByteReader>(Binary), Inflator, Flags,
                        AlgSymtab);
+  Inflator->setInstallDuringInflation(Install);
   if (TraceRead || TraceTree) {
     auto Trace = std::make_shared<TraceClass>("CasmInterpreter");
     Trace->setTraceProgress(true);

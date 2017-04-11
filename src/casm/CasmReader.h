@@ -72,6 +72,10 @@ class CasmReader {
     TraceRead = Value;
     return *this;
   }
+  CasmReader& setInstall(bool Value) {
+    Install = Value;
+    return *this;
+  }
   CasmReader& setTraceTree(bool Value) {
     TraceTree = Value;
     return *this;
@@ -83,6 +87,7 @@ class CasmReader {
   std::shared_ptr<filt::SymbolTable> getReadSymtab() { return Symtab; }
 
  private:
+  bool Install;
   bool TraceRead;
   bool TraceTree;
   bool TraceLexer;
