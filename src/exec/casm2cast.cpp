@@ -16,9 +16,7 @@
 
 // Converts binary algorithm file back to textual form.
 
-#if WASM_BOOT == 0
 #include "algorithms/casm0x0.h"
-#endif
 #include "casm/CasmReader.h"
 #include "utils/ArgsParse.h"
 
@@ -59,7 +57,11 @@ class OutputHandler {
 int main(int Argc, const char* Argv[]) {
   std::vector<charstring> InputFilenames;
   const char* OutputFilename = "-";
+#if 0
   const char* AlgorithmFilename = nullptr;
+#else
+  std::vector<charstring> AlgorithmFilenames;
+#endif
   bool InstallInput = true;
   bool Verbose = false;
   bool TraceParser = false;
@@ -70,16 +72,19 @@ int main(int Argc, const char* Argv[]) {
   {
     ArgsParser Args("Converts compression algorithm from binary fto text");
 
-#if WASM_BOOT
-    ArgsParser::Required<charstring>
-#else
+#if 0
     ArgsParser::Optional<charstring>
+#else
+    ArgsParser::OptionalVector<charstring>
 #endif
-        AlgorithmFlag(AlgorithmFilename);
-    Args.add(
-        AlgorithmFlag.setShortName('a').setOptionName("ALG").setDescription(
-            "File containing algorithm defining binary "
-            "format"));
+    AlgorithmFilenamesFlag(AlgorithmFilenames);
+    Args.add(AlgorithmFilenamesFlag.setShortName('a')
+                 .setOptionName("ALGORITHM")
+                 .setDescription(
+                     "Instead of using the default casm algorithm to generate "
+                     "the casm binary file, use the aglorithm defined by "
+                     "ALGORITHM(s). If repeated, each file defines the "
+                     "enclosing scope for the next ALGORITHM file"));
 
     ArgsParser::Optional<bool> ExpectFailFlag(ExpectExitFail);
     Args.add(ExpectFailFlag.setDefault(false)
@@ -97,11 +102,10 @@ int main(int Argc, const char* Argv[]) {
                  .setDescription("Generated text file"));
 
     ArgsParser::Toggle InstallInputFlag(InstallInput);
-    Args.add(InstallInputFlag.setLongName("install")
-             .setDescription(
-                 "Install (i.e. validate) the read algorithm. Turn off "
-                 "when reading an input file that needs an enclosing "
-                 "algorithm to validate."));
+    Args.add(InstallInputFlag.setLongName("install").setDescription(
+        "Install (i.e. validate) the read algorithm. Turn off "
+        "when reading an input file that needs an enclosing "
+        "algorithm to validate."));
 
     ArgsParser::Toggle VerboseFlag(Verbose);
     Args.add(
@@ -141,10 +145,9 @@ int main(int Argc, const char* Argv[]) {
 
     if (TraceTree)
       TraceRead = true;
-
-    assert(!(WASM_BOOT && AlgorithmFilename == nullptr));
   }
 
+#if 0
   if (Verbose) {
     if (AlgorithmFilename)
       fprintf(stderr, "Reading algorithms file: %s\n", AlgorithmFilename);
@@ -163,11 +166,31 @@ int main(int Argc, const char* Argv[]) {
       return exit_status(EXIT_FAILURE);
     }
     AlgSymtab = Reader.getReadSymtab();
-#if WASM_BOOT == 0
   } else {
     AlgSymtab = getAlgcasm0x0Symtab();
-#endif
   }
+#else
+  SymbolTable::SharedPtr AlgSymtab;
+  if (AlgorithmFilenames.empty()) {
+    if (Verbose)
+      fprintf(stderr, "Using prebuilt casm algorithm\n");
+    AlgSymtab = getAlgcasm0x0Symtab();
+  }
+  for (charstring Filename : AlgorithmFilenames) {
+    if (Verbose)
+      fprintf(stderr, "Reading: %s\n", Filename);
+    CasmReader Reader;
+    Reader.setInstall(true)
+        .setTraceRead(TraceRead)
+        .setTraceTree(TraceTree)
+        .readTextOrBinary(Filename, AlgSymtab);
+    if (Reader.hasErrors()) {
+      fprintf(stderr, "Problems reading: %s\n", Filename);
+      return exit_status(EXIT_FAILURE);
+    }
+    AlgSymtab = Reader.getReadSymtab();
+  }
+#endif
 
   if (InputFilenames.empty())
     InputFilenames.push_back("-");
@@ -177,7 +200,9 @@ int main(int Argc, const char* Argv[]) {
     if (Verbose)
       fprintf(stderr, "Reading input: %s\n", Filename);
     CasmReader Reader;
-    Reader.setInstall(InstallInput).setTraceRead(TraceRead).setTraceTree(TraceTree)
+    Reader.setInstall(InstallInput)
+        .setTraceRead(TraceRead)
+        .setTraceTree(TraceTree)
         .readTextOrBinary(Filename, InputSymtab, AlgSymtab);
     if (Reader.hasErrors()) {
       fprintf(stderr, "Problems reading: %s\n", Filename);

@@ -155,8 +155,8 @@ void CasmReader::readTextOrBinary(charstring Filename,
                                   std::shared_ptr<SymbolTable> EnclosingScope,
                                   std::shared_ptr<SymbolTable> AlgSymtab) {
   if (AlgSymtab) {
-    std::shared_ptr<Queue> Binary =
-        std::make_shared<ReadBackedQueue>(std::make_shared<FileReader>(Filename));
+    std::shared_ptr<Queue> Binary = std::make_shared<ReadBackedQueue>(
+        std::make_shared<FileReader>(Filename));
     // Mark the beginning of the stream, so that it doesn't loose the page.
     ReadCursor Hold(Binary);
     if (hasBinaryHeader(Binary, AlgSymtab))

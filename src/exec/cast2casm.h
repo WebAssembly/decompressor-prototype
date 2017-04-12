@@ -887,6 +887,8 @@ std::shared_ptr<SymbolTable> readCasmFile(
   HasErrors = !Parser.parse(Filename);
 #else
   CasmReader Reader;
+  if (Verbose)
+    fprintf(stderr, "Reading: %s\n", Filename);
   Reader.setTraceRead(TraceParser)
       .setTraceLexer(TraceLexer)
       .readTextOrBinary(Filename, EnclosingScope);
@@ -1097,8 +1099,7 @@ int main(int Argc, charstring Argv[]) {
                      "Instead of using the default casm algorithm to generate "
                      "the casm binary file, use the aglorithm defined by "
                      "ALGORITHM(s). If repeated, each file defines the "
-                     "enclosing "
-                     "scope for the next ALGORITHM file"));
+                     "enclosing scope for the next ALGORITHM file"));
 
     ArgsParser::Optional<bool> BitCompressFlag(BitCompress);
     Args.add(BitCompressFlag.setLongName("bit-compress")
