@@ -127,10 +127,15 @@ void CasmReader::readBinary(charstring Filename,
 
 bool CasmReader::hasBinaryHeader(charstring Filename,
                                  std::shared_ptr<SymbolTable> AlgSymtab) {
+  return hasBinaryHeader(
+      std::make_shared<ReadBackedQueue>(std::make_shared<FileReader>(Filename)),
+      AlgSymtab);
+}
+
+bool CasmReader::hasBinaryHeader(std::shared_ptr<Queue> Binary,
+                                 std::shared_ptr<SymbolTable> AlgSymtab) {
   // Note: This is inefficent, but at least works.
   auto Inflator = std::make_shared<InflateAst>();
-  std::shared_ptr<Queue> Binary =
-      std::make_shared<ReadBackedQueue>(std::make_shared<FileReader>(Filename));
   InterpreterFlags Flags;
   Interpreter MyReader(std::make_shared<ByteReader>(Binary), Inflator, Flags,
                        AlgSymtab);
@@ -149,10 +154,15 @@ bool CasmReader::hasBinaryHeader(charstring Filename,
 void CasmReader::readTextOrBinary(charstring Filename,
                                   std::shared_ptr<SymbolTable> EnclosingScope,
                                   std::shared_ptr<SymbolTable> AlgSymtab) {
-  if (AlgSymtab && hasBinaryHeader(Filename, AlgSymtab))
-    readBinary(Filename, AlgSymtab, EnclosingScope);
-  else
-    readText(Filename, EnclosingScope);
+  if (AlgSymtab) {
+    std::shared_ptr<Queue> Binary =
+        std::make_shared<ReadBackedQueue>(std::make_shared<FileReader>(Filename));
+    // Mark the beginning of the stream, so that it doesn't loose the page.
+    ReadCursor Hold(Binary);
+    if (hasBinaryHeader(Binary, AlgSymtab))
+      return readBinary(Binary, AlgSymtab, EnclosingScope);
+  }
+  readText(Filename, EnclosingScope);
 }
 
 }  // end of namespace filt

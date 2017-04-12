@@ -178,11 +178,7 @@ int main(int Argc, const char* Argv[]) {
       fprintf(stderr, "Reading input: %s\n", Filename);
     CasmReader Reader;
     Reader.setInstall(InstallInput).setTraceRead(TraceRead).setTraceTree(TraceTree)
-#if 1
-        .readBinary(Filename, AlgSymtab, InputSymtab);
-#else
-    .readTextOrBinary(Filename, InputSymtab, AlgSymtab);
-#endif
+        .readTextOrBinary(Filename, InputSymtab, AlgSymtab);
     if (Reader.hasErrors()) {
       fprintf(stderr, "Problems reading: %s\n", Filename);
       return exit_status(EXIT_FAILURE);

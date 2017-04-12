@@ -65,6 +65,9 @@ class CasmReader {
   bool hasBinaryHeader(charstring Filename,
                        std::shared_ptr<filt::SymbolTable> AlgSymtab);
 
+  bool hasBinaryHeader(std::shared_ptr<Queue> Binary,
+                       std::shared_ptr<filt::SymbolTable> AlgSymtab);
+
   void readTextOrBinary(charstring Filename);
 
   void readTextOrBinary(charstring Filename,
@@ -81,6 +84,9 @@ class CasmReader {
   void readBinary(charstring Filename);
 
   bool hasFileHeader(charstring Filename,
+                     std::shared_ptr<filt::SymbolTable> AlgSymtab);
+
+  bool hasFileHeader(std::shared_ptr<Queue> Binary,
                      std::shared_ptr<filt::SymbolTable> AlgSymtab);
 
   bool hasErrors() const { return ErrorsFound; }
