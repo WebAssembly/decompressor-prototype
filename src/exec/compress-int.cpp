@@ -15,6 +15,7 @@
 // limitations under the License.
 
 #include "algorithms/wasm0xd.h"
+#include "casm/CasmReader.h"
 #include "intcomp/IntCompress.h"
 #include "stream/FileReader.h"
 #include "stream/FileWriter.h"
@@ -40,7 +41,8 @@ std::shared_ptr<RawStream> getOutput() {
 }
 
 int main(int Argc, const char* Argv[]) {
-  charstring AlgorithmFilename = nullptr;
+  std::vector<charstring> AlgorithmFilenames;
+  bool TraceAlgorithmRead;
   CompressionFlags MyCompressionFlags;
 
   {
@@ -57,13 +59,19 @@ int main(int Argc, const char* Argv[]) {
             .setOptionName("OUTPUT")
             .setDescription("Place to put resulting compressed WASM binary"));
 
-    ArgsParser::Optional<charstring> AlgorithmFilenameFlag(AlgorithmFilename);
-    Args.add(AlgorithmFilenameFlag.setShortName('a')
-                 .setLongName("algorithm")
-                 .setOptionName("ALGORITHM")
-                 .setDescription(
-                     "File containing algorithm to parse WASM file "
-                     "(rather than using builting algorithm)"));
+    ArgsParser::OptionalVector<charstring> AlgorithmFilenamesFlag(AlgorithmFilenames);
+    Args.add(AlgorithmFilenamesFlag.setShortName('a')
+             .setLongName("algorithm")
+             .setOptionName("ALGORITHM")
+             .setDescription(
+                     "Instead of using the default wasm algorithm to parse "
+                     "the WASM file, use the aglorithm defined by "
+                     "ALGORITHM(s). If repeated, each file defines the "
+                     "enclosing scope for the next ALGORITHM file"));
+
+    ArgsParser::Toggle TraceAlgorithmReadFlag(TraceAlgorithmRead);
+    Args.add(TraceAlgorithmReadFlag.setLongName("verbose=algorithm")
+             .setDescription("Trace reading ALGORITHM(s) files"));
 
     ArgsParser::Toggle UseHuffmanEncodingFlag(
         MyCompressionFlags.UseHuffmanEncoding);
@@ -345,14 +353,30 @@ int main(int Argc, const char* Argv[]) {
     }
   }
 
-  // TODO(karlschimpf) Fill in code here to get default algorithm if not
-  // explicitly defined.
+  SymbolTable::SharedPtr AlgSymtab;
+  if (AlgorithmFilenames.empty()) {
+    if (MyCompressionFlags.TraceCompression)
+      fprintf(stderr, "Using prebuilt casm algorithm\n");
+    AlgSymtab = getAlgwasm0xdSymtab();
+  }
+  for (charstring Filename : AlgorithmFilenames) {
+    if (MyCompressionFlags.TraceCompression)
+      fprintf(stderr, "Reading: %s\n", Filename);
+    CasmReader Reader;
+    Reader.setInstall(true)
+        .setTraceRead(TraceAlgorithmRead)
+        .readTextOrBinary(Filename, AlgSymtab);
+    if (Reader.hasErrors()) {
+      fprintf(stderr, "Problems reading: %s\n", Filename);
+      return exit_status(EXIT_FAILURE);
+    }
+    AlgSymtab = Reader.getReadSymtab();
+  }
 
   IntCompressor Compressor(std::make_shared<ReadBackedQueue>(getInput()),
                            std::make_shared<WriteBackedQueue>(getOutput()),
-                           getAlgwasm0xdSymtab(), MyCompressionFlags);
+                           AlgSymtab, MyCompressionFlags);
   Compressor.compress();
-
   if (Compressor.errorsFound()) {
     fatal("Failed to compress due to errors!");
     exit_status(EXIT_FAILURE);
