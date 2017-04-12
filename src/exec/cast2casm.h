@@ -878,7 +878,7 @@ std::shared_ptr<SymbolTable> readCasmFile(
     std::shared_ptr<SymbolTable> EnclosingScope) {
   bool HasErrors = false;
   std::shared_ptr<SymbolTable> Symtab;
-#if WASM_CAST_BOOT == 1
+#if WASM_CAST_BOOT < 3
   Symtab = std::make_shared<SymbolTable>(EnclosingScope);
   Driver Parser(Symtab);
   Parser.setTraceLexing(TraceLexer);
@@ -889,12 +889,13 @@ std::shared_ptr<SymbolTable> readCasmFile(
   CasmReader Reader;
   Reader.setTraceRead(TraceParser)
       .setTraceLexer(TraceLexer)
-      .readText(Filename, EnclosingScope);
-  Symtab = Reader.getReadSymtab();
+      .readTextOrBinary(Filename, EnclosingScope);
   HasErrors = Reader.hasErrors();
+  if (!HasErrors)
+    Symtab = Reader.getReadSymtab();
 #endif
   if (HasErrors)
-    Symtab.reset();
+    Symtab = SymbolTable::SharedPtr();
   return Symtab;
 }
 
@@ -1246,6 +1247,7 @@ int main(int Argc, charstring Argv[]) {
       return exit_status(EXIT_FAILURE);
     }
   }
+
 #if WASM_CAST_BOOT > 1
   if (AlgorithmFilenames.empty()) {
     if (Verbose)

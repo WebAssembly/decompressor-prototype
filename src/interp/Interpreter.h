@@ -96,7 +96,7 @@ class Interpreter {
 
   // Starts up decompression using a (file) algorithm.
   void algorithmStart();
-  void algorithmStart(Method M) { callTopLevel(M, nullptr); }
+  void algorithmStartHasFileHeader();
 
   // Resumes decompression where it left off. Assumes that more
   // input has been added since the previous start()/resume() call.
@@ -235,6 +235,7 @@ class Interpreter {
   // Fatal override that causes reader to fail, even wth the presence of
   // catches.
   bool IsFatalFailure;
+  bool CheckForEof;
   // The stack of called methods.
   CallFrame Frame;
   utils::ValueStack<CallFrame> FrameStack;
@@ -270,7 +271,7 @@ class Interpreter {
   bool FreezeEofAtExit;
 
   void reset();
-
+  void algorithmStart(Method M) { callTopLevel(M, nullptr); }
   void handleOtherMethods();
 
   // Initializes all internal stacks, for an initial call to Method with

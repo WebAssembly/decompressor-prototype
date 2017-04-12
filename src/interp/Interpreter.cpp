@@ -261,6 +261,7 @@ Interpreter::Interpreter(std::shared_ptr<Reader> Input,
       CatchStack(Catch),
       CatchState(State::NO_SUCH_STATE),
       IsFatalFailure(false),
+      CheckForEof(true),
       FrameStack(Frame),
       CallingEvalStack(CallingEval),
       LoopCounter(0),
@@ -572,7 +573,7 @@ void Interpreter::handleOtherMethods() {
         // If reached, we finished processing the input.
         assert(FrameStack.empty());
         Frame.CallMethod = Method::Finished;
-        if (Input->processedInputCorrectly())
+        if (Input->processedInputCorrectly(CheckForEof))
           Frame.CallState = State::Succeeded;
         else
           return throwMessage("Malformed input in compressed file");
@@ -612,11 +613,17 @@ std::shared_ptr<SymbolTable> Interpreter::getDefaultAlgorithm(
 }
 
 void Interpreter::algorithmStart() {
+  CheckForEof = true;
   if (Symtab.get() != nullptr)
     return algorithmStart(Method::GetFile);
   if (Selectors.empty())
     fail("No selectors specified, can't run algorithm interpreter");
   algorithmStart(Method::GetAlgorithm);
+}
+
+void Interpreter::algorithmStartHasFileHeader() {
+  CheckForEof = false;
+  algorithmStart(Method::HasFileHeader);
 }
 
 void Interpreter::algorithmRead() {
@@ -1599,6 +1606,35 @@ void Interpreter::algorithmResume() {
               return throwCantFreezeEof();
             popAndReturn();
             break;
+          default:
+            return failBadState();
+        }
+        break;
+      case Method::HasFileHeader:
+        switch (Frame.CallState) {
+          case State::Enter:
+            CatchStack.push(Method::HasFileHeader);
+            if (!Symtab)
+              return failBadState();
+            if (!Input->pushPeekPos())
+              return failBadState();
+            Frame.CallState = State::Exit;
+            call(Method::Eval, MethodModifier::ReadOnly,
+                 Symtab->getReadHeader());
+            break;
+          case State::Exit:
+            if (CatchStack.empty())
+              return failBadState();
+            CatchStack.pop();
+            if (!Input->popPeekPos())
+              return failBadState();
+            popAndReturn();
+            break;
+          case State::Catch:
+            if (!CatchStack.empty())
+              return failBadState();
+            // Quitely fail.
+            return catchOrElseFail();
           default:
             return failBadState();
         }
