@@ -98,12 +98,9 @@ size_t NextSeparator = 1;
 size_t SeparatorIndex = 0;
 
 void getNextSeparator() {
-  fprintf(stderr, "get next %u %u\n", unsigned(SeparatorIndex),
-          unsigned(NextSeparator));
   while (SeparatorIndex < AlgorithmsSeparators.size()) {
     size_t Separator = AlgorithmsSeparators[SeparatorIndex];
     ++SeparatorIndex;
-    fprintf(stderr, "Sep = %u\n", unsigned(Separator));
     if (Separator >= NextSeparator) {
       NextSeparator = Separator;
       break;
