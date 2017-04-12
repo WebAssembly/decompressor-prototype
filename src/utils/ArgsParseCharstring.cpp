@@ -72,6 +72,13 @@ void ArgsParser::OptionalVector<charstring>::describeDefault(
 }
 
 template <>
+bool ArgsParser::OptionalVectorSeparator<charstring>::select(ArgsParser* Parser,
+                                                             charstring Add) {
+  IndexVector.push_back(BaseVector.size());
+  return false;
+}
+
+template <>
 void ArgsParser::RequiredVector<charstring>::setOptionFound() {
   // Note: Later call to select() will add matched placement.
   if (Values.size() + 1 >= MinSize)

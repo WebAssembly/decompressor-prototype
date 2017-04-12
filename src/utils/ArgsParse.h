@@ -252,6 +252,8 @@ class ArgsParser {
                          size_t TabSize,
                          size_t& Indent) const OVERRIDE;
 
+    ~OptionalSet() OVERRIDE {}
+
    protected:
     set_type& Values;
   };
@@ -274,8 +276,34 @@ class ArgsParser {
                          size_t TabSize,
                          size_t& Indent) const OVERRIDE;
 
+    ~OptionalVector() OVERRIDE {}
+
    protected:
     vector_type& Values;
+  };
+
+  template <class T>
+  class OptionalVectorSeparator : public OptionalArg {
+    OptionalVectorSeparator() = delete;
+    OptionalVectorSeparator(const OptionalVectorSeparator&) = delete;
+    OptionalVectorSeparator& operator=(const OptionalVectorSeparator&) = delete;
+
+   public:
+    typedef std::vector<size_t> index_vector_type;
+    typedef std::vector<T> base_vector_type;
+    OptionalVectorSeparator(index_vector_type& IndexVector,
+                            base_vector_type& BaseVector)
+        : IndexVector(IndexVector), BaseVector(BaseVector) {
+      IsRepeatable = true;
+    }
+
+    bool select(ArgsParser* Parser, charstring Add) OVERRIDE;
+
+    ~OptionalVectorSeparator() OVERRIDE {}
+
+   protected:
+    index_vector_type& IndexVector;
+    base_vector_type& BaseVector;
   };
 
   class RequiredArg : public Arg {
@@ -331,6 +359,8 @@ class ArgsParser {
     void describeDefault(FILE* Out,
                          size_t TabSize,
                          size_t& Indent) const OVERRIDE;
+
+    ~RequiredVector() OVERRIDE {}
 
    protected:
     vector_type& Values;
