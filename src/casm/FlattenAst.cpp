@@ -148,17 +148,17 @@ void FlattenAst::flattenNode(const Node* Nd) {
       reportError("s-expression: ", Nd);
       break;
     }
-#define X(tag, format, defval, mergable, NODE_DECLS) \
-  case Op##tag: {                                    \
-    Writer->write(Opcode);                           \
-    auto* Int = cast<tag##Node>(Nd);                 \
-    if (Int->isDefaultValue()) {                     \
-      Writer->write(0);                              \
-    } else {                                         \
-      Writer->write(int(Int->getFormat()) + 1);      \
-      Writer->write(Int->getValue());                \
-    }                                                \
-    break;                                           \
+#define X(tag, format, defval, mergable, BASE, NODE_DECLS) \
+  case Op##tag: {                                          \
+    Writer->write(Opcode);                                 \
+    auto* Int = cast<tag##Node>(Nd);                       \
+    if (Int->isDefaultValue()) {                           \
+      Writer->write(0);                                    \
+    } else {                                               \
+      Writer->write(int(Int->getFormat()) + 1);            \
+      Writer->write(Int->getValue());                      \
+    }                                                      \
+    break;                                                 \
   }
       AST_INTEGERNODE_TABLE
 #undef X

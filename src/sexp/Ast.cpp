@@ -138,14 +138,52 @@ const char* getName(PredefinedSymbol Sym) {
 }
 
 AstTraitsType AstTraits[NumNodeTypes] = {
-#define X(tag, opcode, sexp_name, text_num_args, text_max_args) \
-  { Op##tag, #tag, sexp_name, text_num_args, text_max_args }    \
+#define X(tag, opcode, sexp_name, text_num_args, text_max_args, NSL, hidden) \
+  { Op##tag, #tag, sexp_name, text_num_args, text_max_args, NSL, hidden }    \
   ,
     AST_OPCODE_TABLE
 #undef X
 };
 
+const AstTraitsType* getAstTraits(NodeType Type) {
+  static std::unordered_map<int, AstTraitsType*> Mapping;
+  if (Mapping.empty()) {
+    for (size_t i = 0; i < NumNodeTypes; ++i) {
+      AstTraitsType* Traits = &AstTraits[i];
+      Mapping[int(Traits->Type)] = Traits;
+    }
+  }
+  AstTraitsType* Traits = Mapping[Type];
+  if (Traits)
+    return Traits;
+  // Unknown case, make up entry
+  Traits = new AstTraitsType();
+  Traits->Type = Type;
+  std::string NewName(std::string("NodeType::") +
+                      std::to_string(static_cast<int>(Type)));
+  char* Name = new char[NewName.size() + 1];
+  Name[NewName.size()] = '\0';
+  memcpy(Name, NewName.data(), NewName.size());
+  Traits->TypeName = Name;
+  Traits->SexpName = Name;
+  Traits->NumTextArgs = 1;
+  Traits->AdditionalTextArgs = 0;
+  Traits->NeverSameLineInText = false;
+  Traits->HidesSeqInText = false;
+  Mapping[Type] = Traits;
+  return Traits;
+}
+
 const char* getNodeSexpName(NodeType Type) {
+  const AstTraitsType* Traits = getAstTraits(Type);
+  charstring Name = Traits->SexpName;
+  if (Name)
+    return Name;
+  Name = Traits->TypeName;
+  if (Name)
+    return Name;
+  return "?Unknown?";
+#if 0
   // TODO(KarlSchimpf): Make thread safe
   static std::unordered_map<int, const char*> Mapping;
   if (Mapping.empty()) {
@@ -164,9 +202,19 @@ const char* getNodeSexpName(NodeType Type) {
     Mapping[static_cast<int>(Type)] = Name;
   }
   return Name;
+#endif
 }
 
 const char* getNodeTypeName(NodeType Type) {
+  const AstTraitsType* Traits = getAstTraits(Type);
+  charstring Name = Traits->TypeName;
+  if (Name)
+    return Name;
+  Name = Traits->SexpName;
+  if (Name)
+    return Name;
+  return "?Unknown?";
+#if 0
   // TODO(KarlSchimpf): Make thread safe
   static std::unordered_map<int, const char*> Mapping;
   if (Mapping.empty()) {
@@ -179,6 +227,7 @@ const char* getNodeTypeName(NodeType Type) {
   if (Name == nullptr)
     Mapping[static_cast<int>(Type)] = Name = getNodeSexpName(Type);
   return Name;
+#endif
 }
 
 Node::Iterator::Iterator(const Node* Nd, int Index) : Nd(Nd), Index(Index) {
@@ -719,12 +768,12 @@ SymbolNode* SymbolTable::getPredefined(PredefinedSymbol Sym) {
   return Nd;
 }
 
-#define X(tag, format, defval, mergable, NODE_DECLS)                 \
+#define X(tag, format, defval, mergable, BASE, NODE_DECLS)           \
   tag##Node* SymbolTable::getOrCreate##tag(IntType Value,            \
                                            ValueFormat Format) {     \
     if (mergable) {                                                  \
       IntegerValue I(Op##tag, Value, Format, false);                 \
-      IntegerNode* Node = IntMap[I];                                 \
+      BASE* Node = IntMap[I];                                        \
       if (Node == nullptr) {                                         \
         Node = new tag##Node(*this, Value, Format);                  \
         Allocated.push_back(Node);                                   \
@@ -739,7 +788,7 @@ SymbolNode* SymbolTable::getPredefined(PredefinedSymbol Sym) {
   tag##Node* SymbolTable::getOrCreate##tag() {                       \
     if (mergable) {                                                  \
       IntegerValue I(Op##tag, (defval), ValueFormat::Decimal, true); \
-      IntegerNode* Node = IntMap[I];                                 \
+      BASE* Node = IntMap[I];                                        \
       if (Node == nullptr) {                                         \
         Node = new tag##Node(*this);                                 \
         Allocated.push_back(Node);                                   \
@@ -1040,7 +1089,7 @@ Node* SymbolTable::stripUsing(Node* Root,
       for (int i = 0; i < Root->getNumKids(); ++i)
         Root->setKid(i, stripKid(Root->getKid(i)));
       return Root;
-#define X(tag, NODE_DECLS) case Op##tag:
+#define X(tag, BASE, NODE_DECLS) case Op##tag:
       AST_NARYNODE_TABLE
 #undef X
       {
@@ -1256,24 +1305,25 @@ bool NullaryNode::implementsClass(NodeType Type) {
   switch (Type) {
     default:
       return false;
-#define X(tag, NODE_DECLS) \
-  case Op##tag:            \
+#define X(tag, BASE, NODE_DECLS) \
+  case Op##tag:                  \
     return true;
       AST_NULLARYNODE_TABLE
 #undef X
   }
 }
 
-#define X(tag, NODE_DECLS) \
-  tag##Node::tag##Node(SymbolTable& Symtab) : NullaryNode(Symtab, Op##tag) {}
+#define X(tag, BASE, NODE_DECLS) \
+  tag##Node::tag##Node(SymbolTable& Symtab) : BASE(Symtab, Op##tag) {}
 AST_NULLARYNODE_TABLE
 #undef X
 
-#define X(tag, NODE_DECLS) template tag##Node* SymbolTable::create<tag##Node>();
+#define X(tag, BASE, NODE_DECLS) \
+  template tag##Node* SymbolTable::create<tag##Node>();
 AST_NULLARYNODE_TABLE
 #undef X
 
-#define X(tag, NODE_DECLS) \
+#define X(tag, BASE, NODE_DECLS) \
   tag##Node::~tag##Node() {}
 AST_NULLARYNODE_TABLE
 #undef X
@@ -1306,26 +1356,26 @@ bool UnaryNode::implementsClass(NodeType Type) {
     default:
       return false;
     case OpBinaryEval:
-#define X(tag, NODE_DECLS) \
-  case Op##tag:            \
+#define X(tag, BASE, NODE_DECLS) \
+  case Op##tag:                  \
     return true;
       AST_UNARYNODE_TABLE
 #undef X
   }
 }
 
-#define X(tag, NODE_DECLS)                             \
+#define X(tag, BASE, NODE_DECLS)                       \
   tag##Node::tag##Node(SymbolTable& Symtab, Node* Kid) \
-      : UnaryNode(Symtab, Op##tag, Kid) {}
+      : BASE(Symtab, Op##tag, Kid) {}
 AST_UNARYNODE_TABLE
 #undef X
 
-#define X(tag, NODE_DECLS) \
+#define X(tag, BASE, NODE_DECLS) \
   template tag##Node* SymbolTable::create<tag##Node>(Node * Nd);
 AST_UNARYNODE_TABLE
 #undef X
 
-#define X(tag, NODE_DECLS) \
+#define X(tag, BASE, NODE_DECLS) \
   tag##Node::~tag##Node() {}
 AST_UNARYNODE_TABLE
 #undef X
@@ -1423,28 +1473,27 @@ bool IntegerNode::implementsClass(NodeType Type) {
     default:
       return false;
     case OpBinaryAccept:
-#define X(tag, format, defval, mergable, NODE_DECLS) case Op##tag:
+#define X(tag, format, defval, mergable, BASE, NODE_DECLS) case Op##tag:
       AST_INTEGERNODE_TABLE
 #undef X
       return true;
   }
 }
 
-#define X(tag, format, defval, mergable, NODE_DECLS)               \
+#define X(tag, format, defval, mergable, BASE, NODE_DECLS)         \
   tag##Node::tag##Node(SymbolTable& Symtab, decode::IntType Value, \
                        decode::ValueFormat Format)                 \
-      : IntegerNode(Symtab, Op##tag, Value, Format, false) {}
+      : BASE(Symtab, Op##tag, Value, Format, false) {}
 AST_INTEGERNODE_TABLE
 #undef X
 
-#define X(tag, format, defval, mergable, NODE_DECLS)                         \
-  tag##Node::tag##Node(SymbolTable& Symtab)                                  \
-      : IntegerNode(Symtab, Op##tag, (defval), decode::ValueFormat::Decimal, \
-                    true) {}
+#define X(tag, format, defval, mergable, BASE, NODE_DECLS) \
+  tag##Node::tag##Node(SymbolTable& Symtab)                \
+      : BASE(Symtab, Op##tag, (defval), decode::ValueFormat::Decimal, true) {}
 AST_INTEGERNODE_TABLE
 #undef X
 
-#define X(tag, format, defval, mergable, NODE_DECLS) \
+#define X(tag, format, defval, mergable, BASE, NODE_DECLS) \
   tag##Node::~tag##Node() {}
 AST_INTEGERNODE_TABLE
 #undef X
@@ -1606,26 +1655,26 @@ bool BinaryNode::implementsClass(NodeType Type) {
   switch (Type) {
     default:
       return false;
-#define X(tag, NODE_DECLS) \
-  case Op##tag:            \
+#define X(tag, BASE, NODE_DECLS) \
+  case Op##tag:                  \
     return true;
       AST_BINARYNODE_TABLE
 #undef X
   }
 }
 
-#define X(tag, NODE_DECLS)                                          \
+#define X(tag, BASE, NODE_DECLS)                                    \
   tag##Node::tag##Node(SymbolTable& Symtab, Node* Kid1, Node* Kid2) \
-      : BinaryNode(Symtab, Op##tag, Kid1, Kid2) {}
+      : BASE(Symtab, Op##tag, Kid1, Kid2) {}
 AST_BINARYNODE_TABLE
 #undef X
 
-#define X(tag, NODE_DECLS) \
+#define X(tag, BASE, NODE_DECLS) \
   template tag##Node* SymbolTable::create<tag##Node>(Node * Nd1, Node * Nd2);
 AST_BINARYNODE_TABLE
 #undef X
 
-#define X(tag, NODE_DECLS) \
+#define X(tag, BASE, NODE_DECLS) \
   tag##Node::~tag##Node() {}
 AST_BINARYNODE_TABLE
 #undef X
@@ -1663,28 +1712,28 @@ bool TernaryNode::implementsClass(NodeType Type) {
   switch (Type) {
     default:
       return false;
-#define X(tag, NODE_DECLS) \
-  case Op##tag:            \
+#define X(tag, BASE, NODE_DECLS) \
+  case Op##tag:                  \
     return true;
       AST_TERNARYNODE_TABLE
 #undef X
   }
 }
 
-#define X(tag, NODE_DECLS)                                          \
+#define X(tag, BASE, NODE_DECLS)                                    \
   tag##Node::tag##Node(SymbolTable& Symtab, Node* Kid1, Node* Kid2, \
                        Node* Kid3)                                  \
-      : TernaryNode(Symtab, Op##tag, Kid1, Kid2, Kid3) {}
+      : BASE(Symtab, Op##tag, Kid1, Kid2, Kid3) {}
 AST_TERNARYNODE_TABLE
 #undef X
 
-#define X(tag, NODE_DECLS)                                                   \
+#define X(tag, BASE, NODE_DECLS)                                             \
   template tag##Node* SymbolTable::create<tag##Node>(Node * Nd1, Node * Nd2, \
                                                      Node * Nd3);
 AST_TERNARYNODE_TABLE
 #undef X
 
-#define X(tag, NODE_DECLS) \
+#define X(tag, BASE, NODE_DECLS) \
   tag##Node::~tag##Node() {}
 AST_TERNARYNODE_TABLE
 #undef X
@@ -1755,24 +1804,25 @@ bool NaryNode::implementsClass(NodeType Type) {
   switch (Type) {
     default:
       return false;
-#define X(tag, NOD_DECLS) \
-  case Op##tag:           \
+#define X(tag, BASE, NODE_DECLS) \
+  case Op##tag:                  \
     return true;
       AST_NARYNODE_TABLE
 #undef X
   }
 }
 
-#define X(tag, NODE_DECLS) \
-  tag##Node::tag##Node(SymbolTable& Symtab) : NaryNode(Symtab, Op##tag) {}
+#define X(tag, BASE, NODE_DECLS) \
+  tag##Node::tag##Node(SymbolTable& Symtab) : BASE(Symtab, Op##tag) {}
 AST_NARYNODE_TABLE
 #undef X
 
-#define X(tag, NODE_DECLS) template tag##Node* SymbolTable::create<tag##Node>();
+#define X(tag, BASE, NODE_DECLS) \
+  template tag##Node* SymbolTable::create<tag##Node>();
 AST_NARYNODE_TABLE
 #undef X
 
-#define X(tag, NODE_DECLS) \
+#define X(tag, BASE, NODE_DECLS) \
   tag##Node::~tag##Node() {}
 AST_NARYNODE_TABLE
 #undef X

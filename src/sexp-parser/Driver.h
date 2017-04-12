@@ -66,7 +66,7 @@ class Driver {
     return Table->createBinaryAccept(Value, NumBits);
   }
 
-#define X(tag, format, defval, mergable, NODE_DECLS)               \
+#define X(tag, format, defval, mergable, BASE, NODE_DECLS)         \
   tag##Node* getOrCreate##tag(                                     \
       decode::IntType Value,                                       \
       decode::ValueFormat Format = decode::ValueFormat::Decimal) { \

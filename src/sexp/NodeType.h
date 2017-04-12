@@ -38,12 +38,37 @@ namespace wasm {
 namespace filt {
 
 enum NodeType : uint32_t {
-#define X(tag, opcode, sexp_name, text_num_args, text_max_args) \
+#define X(tag, opcode, sexp_name, text_num_args, text_max_args, NSL, hidden) \
   Op##tag = opcode,
   AST_OPCODE_TABLE
 #undef X
       NO_SUCH_NODETYPE
 };
+
+static constexpr size_t NumNodeTypes = 0
+#define X(tag, opcode, sexp_name, text_num_args, text_max_args, NSL, hidden) +1
+    AST_OPCODE_TABLE
+#undef X
+    ;
+
+static constexpr size_t MaxNodeType = const_maximum(
+#define X(tag, opcode, sexp_name, text_num_args, text_max_args, NSL, hidden) \
+  size_t(opcode),
+    AST_OPCODE_TABLE
+#undef X
+        std::numeric_limits<size_t>::min());
+
+struct AstTraitsType {
+  NodeType Type;
+  const char* TypeName;
+  const char* SexpName;
+  int NumTextArgs;
+  int AdditionalTextArgs;
+  bool NeverSameLineInText;
+  bool HidesSeqInText;
+};
+
+extern const AstTraitsType* getAstTraits(NodeType Type);
 
 // Returns the s-expression name
 const char* getNodeSexpName(NodeType Type);
