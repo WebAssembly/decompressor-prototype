@@ -162,7 +162,11 @@ void CasmReader::readTextOrBinary(charstring Filename,
     if (hasBinaryHeader(Binary, AlgSymtab))
       return readBinary(Binary, AlgSymtab, EnclosingScope);
   }
-  readText(Filename, EnclosingScope);
+  if (std::string(Filename) == "-")
+    // Can't reread from stdin, so fail!
+    foundErrors();
+  else
+    readText(Filename, EnclosingScope);
 }
 
 }  // end of namespace filt

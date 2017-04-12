@@ -55,13 +55,9 @@ class OutputHandler {
 }  // end of anonymous namespace
 
 int main(int Argc, const char* Argv[]) {
+  std::vector<charstring> AlgorithmFilenames;
   std::vector<charstring> InputFilenames;
   const char* OutputFilename = "-";
-#if 0
-  const char* AlgorithmFilename = nullptr;
-#else
-  std::vector<charstring> AlgorithmFilenames;
-#endif
   bool InstallInput = true;
   bool Verbose = false;
   bool TraceParser = false;
@@ -71,13 +67,8 @@ int main(int Argc, const char* Argv[]) {
 
   {
     ArgsParser Args("Converts compression algorithm from binary fto text");
-
-#if 0
-    ArgsParser::Optional<charstring>
-#else
-    ArgsParser::OptionalVector<charstring>
-#endif
-    AlgorithmFilenamesFlag(AlgorithmFilenames);
+    ArgsParser::OptionalVector<charstring> AlgorithmFilenamesFlag(
+        AlgorithmFilenames);
     Args.add(AlgorithmFilenamesFlag.setShortName('a')
                  .setOptionName("ALGORITHM")
                  .setDescription(
@@ -147,29 +138,6 @@ int main(int Argc, const char* Argv[]) {
       TraceRead = true;
   }
 
-#if 0
-  if (Verbose) {
-    if (AlgorithmFilename)
-      fprintf(stderr, "Reading algorithms file: %s\n", AlgorithmFilename);
-    else
-      fprintf(stderr, "Using prebuilt casm algorithm\n");
-  }
-  std::shared_ptr<SymbolTable> AlgSymtab;
-  if (AlgorithmFilename) {
-    CasmReader Reader;
-    Reader.setTraceRead(TraceParser)
-        .setTraceLexer(TraceLexer)
-        .setTraceTree(TraceParser)
-        .readText(AlgorithmFilename);
-    if (Reader.hasErrors()) {
-      fprintf(stderr, "Problems reading file: %s\n", AlgorithmFilename);
-      return exit_status(EXIT_FAILURE);
-    }
-    AlgSymtab = Reader.getReadSymtab();
-  } else {
-    AlgSymtab = getAlgcasm0x0Symtab();
-  }
-#else
   SymbolTable::SharedPtr AlgSymtab;
   if (AlgorithmFilenames.empty()) {
     if (Verbose)
@@ -190,7 +158,6 @@ int main(int Argc, const char* Argv[]) {
     }
     AlgSymtab = Reader.getReadSymtab();
   }
-#endif
 
   if (InputFilenames.empty())
     InputFilenames.push_back("-");
