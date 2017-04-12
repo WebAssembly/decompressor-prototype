@@ -16,9 +16,7 @@
 
 // Converts binary algorithm file back to textual form.
 
-#if WASM_BOOT == 0
 #include "algorithms/casm0x0.h"
-#endif
 #include "casm/CasmReader.h"
 #include "utils/ArgsParse.h"
 
@@ -57,9 +55,10 @@ class OutputHandler {
 }  // end of anonymous namespace
 
 int main(int Argc, const char* Argv[]) {
-  const char* InputFilename = "-";
+  std::vector<charstring> AlgorithmFilenames;
+  std::vector<charstring> InputFilenames;
   const char* OutputFilename = "-";
-  const char* AlgorithmFilename = nullptr;
+  bool InstallInput = true;
   bool Verbose = false;
   bool TraceParser = false;
   bool TraceLexer = false;
@@ -68,31 +67,36 @@ int main(int Argc, const char* Argv[]) {
 
   {
     ArgsParser Args("Converts compression algorithm from binary fto text");
-
-#if WASM_BOOT
-    ArgsParser::Required<charstring>
-#else
-    ArgsParser::Optional<charstring>
-#endif
-        AlgorithmFlag(AlgorithmFilename);
-    Args.add(
-        AlgorithmFlag.setShortName('a').setOptionName("ALG").setDescription(
-            "File containing algorithm defining binary "
-            "format"));
+    ArgsParser::OptionalVector<charstring> AlgorithmFilenamesFlag(
+        AlgorithmFilenames);
+    Args.add(AlgorithmFilenamesFlag.setShortName('a')
+                 .setOptionName("ALGORITHM")
+                 .setDescription(
+                     "Instead of using the default casm algorithm to generate "
+                     "the casm binary file, use the aglorithm defined by "
+                     "ALGORITHM(s). If repeated, each file defines the "
+                     "enclosing scope for the next ALGORITHM file"));
 
     ArgsParser::Optional<bool> ExpectFailFlag(ExpectExitFail);
     Args.add(ExpectFailFlag.setDefault(false)
                  .setLongName("expect-fail")
                  .setDescription("Succeed on failure/fail on success"));
 
-    ArgsParser::Required<charstring> InputFlag(InputFilename);
-    Args.add(InputFlag.setOptionName("INPUT")
-                 .setDescription("BInary file to convert to text"));
+    ArgsParser::RequiredVector<charstring> InputFilenamesFlag(InputFilenames);
+    Args.add(InputFilenamesFlag.setOptionName("INPUT").setDescription(
+        "Binary file(s) to convert to text. If repeated, each file contains "
+        "the enclosing algorithm for the next INPUT file."));
 
     ArgsParser::Optional<charstring> OutputFlag(OutputFilename);
     Args.add(OutputFlag.setShortName('o')
                  .setOptionName("OUTPUT")
                  .setDescription("Generated text file"));
+
+    ArgsParser::Toggle InstallInputFlag(InstallInput);
+    Args.add(InstallInputFlag.setLongName("install").setDescription(
+        "Install (i.e. validate) the read algorithm. Turn off "
+        "when reading an input file that needs an enclosing "
+        "algorithm to validate."));
 
     ArgsParser::Toggle VerboseFlag(Verbose);
     Args.add(
@@ -132,48 +136,51 @@ int main(int Argc, const char* Argv[]) {
 
     if (TraceTree)
       TraceRead = true;
-
-    assert(!(WASM_BOOT && AlgorithmFilename == nullptr));
   }
 
-  if (Verbose) {
-    if (AlgorithmFilename)
-      fprintf(stderr, "Reading algorithms file: %s\n", AlgorithmFilename);
-    else
+  SymbolTable::SharedPtr AlgSymtab;
+  if (AlgorithmFilenames.empty()) {
+    if (Verbose)
       fprintf(stderr, "Using prebuilt casm algorithm\n");
+    AlgSymtab = getAlgcasm0x0Symtab();
   }
-  std::shared_ptr<SymbolTable> AlgSymtab;
-  if (AlgorithmFilename) {
+  for (charstring Filename : AlgorithmFilenames) {
+    if (Verbose)
+      fprintf(stderr, "Reading: %s\n", Filename);
     CasmReader Reader;
-    Reader.setTraceRead(TraceParser)
-        .setTraceLexer(TraceLexer)
-        .setTraceTree(TraceParser)
-        .readText(AlgorithmFilename);
+    Reader.setInstall(true)
+        .setTraceRead(TraceRead)
+        .setTraceTree(TraceTree)
+        .readTextOrBinary(Filename, AlgSymtab);
     if (Reader.hasErrors()) {
-      fprintf(stderr, "Problems reading file: %s\n", AlgorithmFilename);
+      fprintf(stderr, "Problems reading: %s\n", Filename);
       return exit_status(EXIT_FAILURE);
     }
     AlgSymtab = Reader.getReadSymtab();
-#if WASM_BOOT == 0
-  } else {
-    AlgSymtab = getAlgcasm0x0Symtab();
-#endif
   }
 
-  if (Verbose)
-    fprintf(stderr, "Reading input: %s\n", InputFilename);
+  if (InputFilenames.empty())
+    InputFilenames.push_back("-");
 
-  CasmReader Reader;
-  Reader.setTraceRead(TraceRead).setTraceTree(TraceTree).readBinary(
-      InputFilename, AlgSymtab);
-  if (Reader.hasErrors()) {
-    fprintf(stderr, "Problems reading: %s\n", InputFilename);
-    return exit_status(EXIT_FAILURE);
+  std::shared_ptr<SymbolTable> InputSymtab;
+  for (charstring Filename : InputFilenames) {
+    if (Verbose)
+      fprintf(stderr, "Reading input: %s\n", Filename);
+    CasmReader Reader;
+    Reader.setInstall(InstallInput)
+        .setTraceRead(TraceRead)
+        .setTraceTree(TraceTree)
+        .readTextOrBinary(Filename, InputSymtab, AlgSymtab);
+    if (Reader.hasErrors()) {
+      fprintf(stderr, "Problems reading: %s\n", Filename);
+      return exit_status(EXIT_FAILURE);
+    }
+    InputSymtab = Reader.getReadSymtab();
   }
 
   if (Verbose && strcmp(OutputFilename, "-") != 0)
     fprintf(stderr, "Writing file: %s\n", OutputFilename);
   OutputHandler Output(OutputFilename);
-  Reader.getReadSymtab()->describe(Output.getFile());
+  InputSymtab->describe(Output.getFile());
   return exit_status(EXIT_SUCCESS);
 }

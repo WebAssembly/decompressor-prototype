@@ -65,6 +65,9 @@ class CasmReader {
   bool hasBinaryHeader(charstring Filename,
                        std::shared_ptr<filt::SymbolTable> AlgSymtab);
 
+  bool hasBinaryHeader(std::shared_ptr<Queue> Binary,
+                       std::shared_ptr<filt::SymbolTable> AlgSymtab);
+
   void readTextOrBinary(charstring Filename);
 
   void readTextOrBinary(charstring Filename,
@@ -83,9 +86,16 @@ class CasmReader {
   bool hasFileHeader(charstring Filename,
                      std::shared_ptr<filt::SymbolTable> AlgSymtab);
 
+  bool hasFileHeader(std::shared_ptr<Queue> Binary,
+                     std::shared_ptr<filt::SymbolTable> AlgSymtab);
+
   bool hasErrors() const { return ErrorsFound; }
   CasmReader& setTraceRead(bool Value) {
     TraceRead = Value;
+    return *this;
+  }
+  CasmReader& setInstall(bool Value) {
+    Install = Value;
     return *this;
   }
   CasmReader& setTraceTree(bool Value) {
@@ -99,6 +109,7 @@ class CasmReader {
   std::shared_ptr<filt::SymbolTable> getReadSymtab() { return Symtab; }
 
  private:
+  bool Install;
   bool TraceRead;
   bool TraceTree;
   bool TraceLexer;
