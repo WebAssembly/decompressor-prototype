@@ -90,7 +90,6 @@ int runUsingCApi(bool TraceProgress) {
 }
 
 int main(const int Argc, const char* Argv[]) {
-  // TODO(karlschimpf) Add other default algorithms.
   bool Verbose = false;
   bool MinimizeBlockSize = false;
   bool UseCApi = false;
@@ -118,9 +117,9 @@ int main(const int Argc, const char* Argv[]) {
     ArgsParser::OptionalVector<charstring> AlgorithmsFlag(Algorithms);
     Args.add(AlgorithmsFlag.setShortName('a')
                  .setLongName("algorithm")
-                 .setOptionName("FILE")
+                 .setOptionName("ALGORITHM")
                  .setDescription(
-                     "Parse FILE and add algorithm before the set of known "
+                     "Parse ALGORITHM(s) and add before the set of known "
                      "algorithms."));
 
     ArgsParser::Optional<charstring> OutputFilenameFlag(OutputFilename);
@@ -191,7 +190,7 @@ int main(const int Argc, const char* Argv[]) {
     if (Verbose)
       fprintf(stderr, "Opening algorithm file: %s\n", Filename);
     CasmReader Reader;
-    Reader.readText(Filename);
+    Reader.setInstall(true).readTextOrBinary(Filename);
     if (Reader.hasErrors()) {
       fprintf(stderr, "Unable to parse: %s\n", Filename);
       return exit_status(EXIT_FAILURE);

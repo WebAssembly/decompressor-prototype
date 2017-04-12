@@ -68,6 +68,8 @@ void CasmReader::readText(charstring Filename,
     foundErrors();
     return;
   }
+  if (Install)
+    Symtab->install();
   if (TraceTree) {
     TextWriter Writer;
     Writer.write(stderr, Symtab.get());

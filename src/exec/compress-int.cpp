@@ -59,11 +59,12 @@ int main(int Argc, const char* Argv[]) {
             .setOptionName("OUTPUT")
             .setDescription("Place to put resulting compressed WASM binary"));
 
-    ArgsParser::OptionalVector<charstring> AlgorithmFilenamesFlag(AlgorithmFilenames);
+    ArgsParser::OptionalVector<charstring> AlgorithmFilenamesFlag(
+        AlgorithmFilenames);
     Args.add(AlgorithmFilenamesFlag.setShortName('a')
-             .setLongName("algorithm")
-             .setOptionName("ALGORITHM")
-             .setDescription(
+                 .setLongName("algorithm")
+                 .setOptionName("ALGORITHM")
+                 .setDescription(
                      "Instead of using the default wasm algorithm to parse "
                      "the WASM file, use the aglorithm defined by "
                      "ALGORITHM(s). If repeated, each file defines the "
@@ -71,7 +72,7 @@ int main(int Argc, const char* Argv[]) {
 
     ArgsParser::Toggle TraceAlgorithmReadFlag(TraceAlgorithmRead);
     Args.add(TraceAlgorithmReadFlag.setLongName("verbose=algorithm")
-             .setDescription("Trace reading ALGORITHM(s) files"));
+                 .setDescription("Trace reading ALGORITHM(s) files"));
 
     ArgsParser::Toggle UseHuffmanEncodingFlag(
         MyCompressionFlags.UseHuffmanEncoding);
