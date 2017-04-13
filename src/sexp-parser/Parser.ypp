@@ -330,7 +330,7 @@ expression
             $$ = Driver.create<CallbackNode>($3);
           }
         | "(" "param" INTEGER ")" {
-            $$ = Driver.getOrCreateParam($3.Value, $3.Format);
+            $$ = Driver.create<ParamNode>($3.Value, $3.Format);
           }
         | local_var { $$ = $1; }
         | "(" "error" ")" {
@@ -514,31 +514,31 @@ literal_action_args
 
 literal_expression
         : "(" "i32.const" INTEGER ")" {
-            $$ = Driver.getOrCreateI32Const($3.Value, $3.Format);
+            $$ = Driver.create<I32ConstNode>($3.Value, $3.Format);
           }
         | "(" "i64.const" INTEGER ")" {
-            $$ = Driver.getOrCreateI64Const($3.Value, $3.Format);
+            $$ = Driver.create<I64ConstNode>($3.Value, $3.Format);
           }
         | "(" "u8.const" INTEGER ")" {
-            $$ = Driver.getOrCreateU8Const($3.Value, $3.Format);
+            $$ = Driver.create<U8ConstNode>($3.Value, $3.Format);
           }
         | "(" "u32.const" INTEGER ")" {
-            $$ = Driver.getOrCreateU32Const($3.Value, $3.Format);
+            $$ = Driver.create<U32ConstNode>($3.Value, $3.Format);
           }
         | "(" "u64.const" INTEGER ")" {
-            $$ = Driver.getOrCreateU64Const($3.Value, $3.Format);
+            $$ = Driver.create<U64ConstNode>($3.Value, $3.Format);
           }
         ;
 
 local_var
         : "(" "local" INTEGER ")" {
-            $$ = Driver.getOrCreateLocal($3.Value, $3.Format);
+            $$ = Driver.create<LocalNode>($3.Value, $3.Format);
           }
         ;
 
 locals_decl
         : "(" "locals" INTEGER ")" {
-            $$ = Driver.getOrCreateLocals($3.Value, $3.Format);
+            $$ = Driver.create<LocalsNode>($3.Value, $3.Format);
           }
         ;
 
@@ -578,10 +578,10 @@ opcode_args
 
 params_decl
         : "(" "params" INTEGER ")" {
-            $$ = Driver.getOrCreateParams($3.Value, $3.Format);
+            $$ = Driver.create<ParamsNode>($3.Value, $3.Format);
           }
         | "(" "params" ")" {
-            $$ = Driver.getOrCreateParams();
+            $$ = Driver.create<ParamsNode>();
           }
         ;
 

@@ -17,11 +17,13 @@
 
 #include "sexp-parser/Driver.h"
 
-using namespace wasm::filt;
+namespace wasm {
+
+namespace filt {
 
 namespace {
 const char* ErrorLevelName[] = {"warning", "error", "fatal"};
-}
+}  // end of anonymous namespace
 
 void Driver::appendArgument(Node* Nd, Node* Arg) {
   Node* LastKid = Nd->getLastKid();
@@ -111,3 +113,7 @@ void Driver::tokenError(const std::string& Token) {
   std::string Message("Invalid token'");
   error(std::string("invalidToken '") + Token + "'");
 }
+
+}  // end of namespace filt
+
+}  // end of namespace wasm

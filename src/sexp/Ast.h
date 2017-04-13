@@ -145,14 +145,9 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
 
   void collectActionDefs(ActionDefSet& DefSet);
 
-// Gets integer node (as defined by the arguments) if known. Otherwise
-// returns newly created integer.
-#define X(tag, format, defval, mergable, BASE, NODE_DECLS) \
-  tag##Node* getOrCreate##tag(decode::IntType Value,       \
-                              decode::ValueFormat Format); \
-  tag##Node* getOrCreate##tag();
-  AST_INTEGERNODE_TABLE
-#undef X
+  // Gets integer node (as defined by the arguments) if known. Otherwise
+  // returns newly created integer.
+
   // Gets actions corresponding to enter/exit block.
   const CallbackNode* getBlockEnterCallback();
   const CallbackNode* getBlockExitCallback();
@@ -181,6 +176,9 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   T* create(Node* Nd1, Node* Nd2);
   template <typename T>
   T* create(Node* Nd1, Node* Nd2, Node* Nd3);
+  template <class T>
+  T* create(decode::IntType Value, decode::ValueFormat Format);
+
   BinaryAcceptNode* createBinaryAccept(decode::IntType Value, unsigned NumBits);
 
   // Returns the cached value associated with a node, or nullptr if not cached.

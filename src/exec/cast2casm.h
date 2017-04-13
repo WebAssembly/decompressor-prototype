@@ -480,9 +480,9 @@ size_t CodeGenerator::generateIntegerNode(charstring NodeName,
   std::string NodeType(NodeName);
   NodeType.append("Node");
   generateFunctionHeader(NodeType, Index);
-  puts("  return Symtab->getOrCreate");
+  puts("  return Symtab->create<");
   puts(NodeName);
-  puts("(");
+  puts("Node>(");
   generateInt(Nd->getValue());
   puts(", ");
   generateFormat(Nd->getFormat());

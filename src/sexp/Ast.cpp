@@ -183,26 +183,6 @@ const char* getNodeSexpName(NodeType Type) {
   if (Name)
     return Name;
   return "?Unknown?";
-#if 0
-  // TODO(KarlSchimpf): Make thread safe
-  static std::unordered_map<int, const char*> Mapping;
-  if (Mapping.empty()) {
-    for (size_t i = 0; i < NumNodeTypes; ++i) {
-      AstTraitsType& Traits = AstTraits[i];
-      Mapping[int(Traits.Type)] = Traits.SexpName;
-    }
-  }
-  char* Name = const_cast<char*>(Mapping[static_cast<int>(Type)]);
-  if (Name == nullptr) {
-    std::string NewName(std::string("NodeType::") +
-                        std::to_string(static_cast<int>(Type)));
-    Name = new char[NewName.size() + 1];
-    Name[NewName.size()] = '\0';
-    memcpy(Name, NewName.data(), NewName.size());
-    Mapping[static_cast<int>(Type)] = Name;
-  }
-  return Name;
-#endif
 }
 
 const char* getNodeTypeName(NodeType Type) {
@@ -214,20 +194,6 @@ const char* getNodeTypeName(NodeType Type) {
   if (Name)
     return Name;
   return "?Unknown?";
-#if 0
-  // TODO(KarlSchimpf): Make thread safe
-  static std::unordered_map<int, const char*> Mapping;
-  if (Mapping.empty()) {
-    for (size_t i = 0; i < NumNodeTypes; ++i) {
-      AstTraitsType& Traits = AstTraits[i];
-      Mapping[int(Traits.Type)] = Traits.TypeName;
-    }
-  }
-  const char* Name = Mapping[static_cast<int>(Type)];
-  if (Name == nullptr)
-    Mapping[static_cast<int>(Type)] = Name = getNodeSexpName(Type);
-  return Name;
-#endif
 }
 
 Node::Iterator::Iterator(const Node* Nd, int Index) : Nd(Nd), Index(Index) {
@@ -769,8 +735,9 @@ SymbolNode* SymbolTable::getPredefined(PredefinedSymbol Sym) {
 }
 
 #define X(tag, format, defval, mergable, BASE, NODE_DECLS)           \
-  tag##Node* SymbolTable::getOrCreate##tag(IntType Value,            \
-                                           ValueFormat Format) {     \
+  template <>                                                        \
+  tag##Node* SymbolTable::create<tag##Node>(IntType Value,           \
+                                            ValueFormat Format) {    \
     if (mergable) {                                                  \
       IntegerValue I(Op##tag, Value, Format, false);                 \
       BASE* Node = IntMap[I];                                        \
@@ -785,7 +752,8 @@ SymbolNode* SymbolTable::getPredefined(PredefinedSymbol Sym) {
     Allocated.push_back(Node);                                       \
     return Node;                                                     \
   }                                                                  \
-  tag##Node* SymbolTable::getOrCreate##tag() {                       \
+  template <>                                                        \
+  tag##Node* SymbolTable::create<tag##Node>() {                      \
     if (mergable) {                                                  \
       IntegerValue I(Op##tag, (defval), ValueFormat::Decimal, true); \
       BASE* Node = IntMap[I];                                        \
@@ -855,7 +823,7 @@ bool SymbolTable::areActionsConsistent() {
     }
     Node* SymNd = const_cast<SymbolNode*>(Sym);
     auto* Def = create<LiteralActionDefNode>(
-        SymNd, getOrCreateU64Const(NextEnumValue++, ValueFormat::Decimal));
+        SymNd, create<U64ConstNode>(NextEnumValue++, ValueFormat::Decimal));
     installDefinitions(Def);
     CallbackLiterals.insert(Def);
   }
@@ -950,7 +918,7 @@ bool SymbolTable::specifiesAlgorithm() const {
 void SymbolTable::installPredefined() {
   for (uint32_t i = 0; i < NumPredefinedSymbols; ++i) {
     SymbolNode* Sym = getPredefined(toPredefinedSymbol(i));
-    U32ConstNode* Const = getOrCreateU32Const(i, ValueFormat::Decimal);
+    U32ConstNode* Const = create<U32ConstNode>(i, ValueFormat::Decimal);
     const auto* Def = create<LiteralActionDefNode>(Sym, Const);
     Sym->setLiteralActionDefinition(Def);
     insertCallbackLiteral(Def);
@@ -1003,7 +971,7 @@ void SymbolTable::installDefinitions(const Node* Root) {
           errorDescribeNode("In", Root);
           return fatal("Unable to install algorithm");
         }
-        Node* Value = getOrCreateU64Const(Base, IntNd->getFormat());
+        Node* Value = create<U64ConstNode>(Base, IntNd->getFormat());
         Node* Lit = create<LiteralActionDefNode>(Sym, Value);
         installDefinitions(Lit);
         ++Base;
@@ -1498,27 +1466,36 @@ AST_INTEGERNODE_TABLE
 AST_INTEGERNODE_TABLE
 #undef X
 
+bool LocalNode::validateNode(ConstNodeVectorType& Parents) const {
+  TRACE_METHOD("validateNode");
+  TRACE(node_ptr, nullptr, this);
+  for (const Node* Nd : Parents) {
+    if (const auto* Define = dyn_cast<DefineNode>(Nd)) {
+      TRACE(node_ptr, "Enclosing define", Define);
+      if (Define->isValidLocal(getValue()))
+        return true;
+      errorDescribeNodeContext("Invalid local usage", this, Parents);
+      return false;
+    }
+  }
+  errorDescribeNodeContext("Not used within a define", this, Parents);
+  return false;
+}
+
 bool ParamNode::validateNode(ConstNodeVectorType& Parents) const {
   TRACE_METHOD("validateNode");
   TRACE(node_ptr, nullptr, this);
-  for (size_t i = Parents.size(); i > 0; --i) {
-    auto* Nd = Parents[i - 1];
-    auto* Define = dyn_cast<DefineNode>(Nd);
-    if (Define == nullptr) {
-      TRACE(node_ptr, "parent Nd", Nd);
-      continue;
-    }
-    TRACE(node_ptr, "Enclosing define", Nd);
-    // Scope found. Check if parameter is legal.
-    if (!Define->isValidParam(getValue())) {
-      FILE* Out = error();
-      fputs("Param ", Out);
-      fprint_IntType(Out, getValue());
-      fprintf(Out, " not defined for method: %s\n", Define->getName().c_str());
+  for (const Node* Nd : Parents) {
+    if (const auto* Define = dyn_cast<DefineNode>(Nd)) {
+      TRACE(node_ptr, "Enclosing define", Define);
+      if (Define->isValidParam(getValue()))
+        return true;
+      errorDescribeNodeContext("Invalid parameter usage", this, Parents);
       return false;
     }
     return true;
   }
+  errorDescribeNodeContext("Not used within a define", this, Parents);
   return false;
 }
 
@@ -1740,18 +1717,30 @@ AST_TERNARYNODE_TABLE
 
 // Returns nullptr if P is illegal, based on the define.
 bool DefineNode::isValidParam(IntType Index) const {
-  assert(isa<ParamsNode>(getKid(1)));
+  if (getNumKids() < 2)
+    return false;
+  if (!isa<ParamsNode>(getKid(1)))
+    return false;
   return Index < cast<ParamsNode>(getKid(1))->getValue();
 }
 
+bool DefineNode::isValidLocal(IntType Index) const {
+  if (getNumKids() < 3)
+    return false;
+  if (!isa<LocalsNode>(getKid(2)))
+    return false;
+  return Index < cast<LocalsNode>(getKid(2))->getValue();
+}
+
 const std::string DefineNode::getName() const {
-  assert(getNumKids() >= 3);
+  assert(getNumKids() == 0);
   assert(isa<SymbolNode>(getKid(0)));
   return cast<SymbolNode>(getKid(0))->getName();
 }
 
 size_t DefineNode::getNumLocals() const {
-  assert(getNumKids() >= 3);
+  if (getNumKids() < 3)
+    return false;
   if (auto* Locals = dyn_cast<LocalsNode>(getKid(2)))
     return Locals->getValue();
   return 0;

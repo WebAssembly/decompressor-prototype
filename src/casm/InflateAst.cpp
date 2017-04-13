@@ -184,13 +184,13 @@ bool InflateAst::writeHeaderValue(decode::IntType Value,
   Node* Header = AstsTop;
   switch (Format) {
     case IntTypeFormat::Uint8:
-      Asts.push(Symtab->getOrCreateU8Const(Value, ValueFormat::Hexidecimal));
+      Asts.push(Symtab->create<U8ConstNode>(Value, ValueFormat::Hexidecimal));
       break;
     case IntTypeFormat::Uint32:
-      Asts.push(Symtab->getOrCreateU32Const(Value, ValueFormat::Hexidecimal));
+      Asts.push(Symtab->create<U32ConstNode>(Value, ValueFormat::Hexidecimal));
       break;
     case IntTypeFormat::Uint64:
-      Asts.push(Symtab->getOrCreateU64Const(Value, ValueFormat::Hexidecimal));
+      Asts.push(Symtab->create<U64ConstNode>(Value, ValueFormat::Hexidecimal));
       break;
     default:
       return failWriteHeaderMalformed();
@@ -396,40 +396,40 @@ bool InflateAst::writeAction(IntType Action) {
       Node* Nd = nullptr;
       switch (Values.popValue()) {
         case OpI32Const:
-          Nd = IsDefault ? Symtab->getOrCreateI32Const()
-                         : Symtab->getOrCreateI32Const(Value, Format);
+          Nd = IsDefault ? Symtab->create<I32ConstNode>()
+                         : Symtab->create<I32ConstNode>(Value, Format);
           break;
         case OpI64Const:
-          Nd = IsDefault ? Symtab->getOrCreateI64Const()
-                         : Symtab->getOrCreateI64Const(Value, Format);
+          Nd = IsDefault ? Symtab->create<I64ConstNode>()
+                         : Symtab->create<I64ConstNode>(Value, Format);
           break;
         case OpLocal:
-          Nd = IsDefault ? Symtab->getOrCreateLocal()
-                         : Symtab->getOrCreateLocal(Value, Format);
+          Nd = IsDefault ? Symtab->create<LocalNode>()
+                         : Symtab->create<LocalNode>(Value, Format);
           break;
         case OpLocals:
-          Nd = IsDefault ? Symtab->getOrCreateLocals()
-                         : Symtab->getOrCreateLocals(Value, Format);
+          Nd = IsDefault ? Symtab->create<LocalsNode>()
+                         : Symtab->create<LocalsNode>(Value, Format);
           break;
         case OpParam:
-          Nd = IsDefault ? Symtab->getOrCreateParam()
-                         : Symtab->getOrCreateParam(Value, Format);
+          Nd = IsDefault ? Symtab->create<ParamNode>()
+                         : Symtab->create<ParamNode>(Value, Format);
           break;
         case OpParams:
-          Nd = IsDefault ? Symtab->getOrCreateParams()
-                         : Symtab->getOrCreateParams(Value, Format);
+          Nd = IsDefault ? Symtab->create<ParamsNode>()
+                         : Symtab->create<ParamsNode>(Value, Format);
           break;
         case OpU8Const:
-          Nd = IsDefault ? Symtab->getOrCreateU8Const()
-                         : Symtab->getOrCreateU8Const(Value, Format);
+          Nd = IsDefault ? Symtab->create<U8ConstNode>()
+                         : Symtab->create<U8ConstNode>(Value, Format);
           break;
         case OpU32Const:
-          Nd = IsDefault ? Symtab->getOrCreateU32Const()
-                         : Symtab->getOrCreateU32Const(Value, Format);
+          Nd = IsDefault ? Symtab->create<U32ConstNode>()
+                         : Symtab->create<U32ConstNode>(Value, Format);
           break;
         case OpU64Const:
-          Nd = IsDefault ? Symtab->getOrCreateU64Const()
-                         : Symtab->getOrCreateU64Const(Value, Format);
+          Nd = IsDefault ? Symtab->create<U64ConstNode>()
+                         : Symtab->create<U64ConstNode>(Value, Format);
           break;
         default:
           return failWriteActionMalformed();

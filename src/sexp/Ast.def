@@ -140,13 +140,17 @@
 #define AST_INTEGERNODE_TABLE                                                  \
   X(I32Const, Varint32, 0, true, IntegerNode,)                                 \
   X(I64Const, Varint64, 0, true, IntegerNode,)                                 \
-  X(Local, Varuint32, 0, true, IntegerNode,)                                   \
+  X(Local, Varuint32, 0, true, IntegerNode, LOCAL_DECLS)                       \
   X(Locals, Varuint32, 0, true, IntegerNode,)                                  \
   X(Param, Varuint32, 0, false, IntegerNode, PARAM_DECLS)                      \
   X(Params, Varuint32, 0, false, IntegerNode,)                                 \
   X(U8Const, Uint8, 0, true, IntegerNode,)                                     \
   X(U32Const, Varuint32, 0, true, IntegerNode,)                                \
   X(U64Const, Varuint64, 0, true, IntegerNode,)                                \
+
+#define LOCAL_DECLS                                                            \
+  public:                                                                      \
+    bool validateNode(ConstNodeVectorType &Parents) const OVERRIDE;            \
 
 #define PARAM_DECLS                                                            \
   public:                                                                      \
@@ -236,6 +240,7 @@
 #define DEFINE_DECLS                                                           \
   public:                                                                      \
     bool isValidParam(decode::IntType Index) const;                            \
+    bool isValidLocal(decode::IntType Index) const;                            \
     const std::string getName() const;                                         \
     size_t getNumLocals() const;                                               \
     Node* getBody() const;                                                     \
@@ -253,38 +258,5 @@
 #define AST_CACHEDNODE_TABLE                                                   \
   X(SymbolDefn)                                                                \
   X(IntLookup)                                                                 \
-
-//#define X(tag)
-#define AST_NODE_HAS_HIDDEN_SEQ                                                \
-  X(Block)                                                                     \
-  X(Case)                                                                      \
-  X(Define)                                                                    \
-  X(Loop)                                                                      \
-  X(LoopUnbounded)                                                             \
-  X(Peek)                                                                      \
-  X(Read)                                                                      \
-  X(Table)                                                                     \
-
-//#define X(tag)
-#define AST_NODE_NEVER_SAME_LINE                                               \
-  X(BinaryEval)                                                                \
-  X(BinarySelect)                                                              \
-  X(Block)                                                                     \
-  X(Case)                                                                      \
-  X(Define)                                                                    \
-  X(FileHeader)                                                                \
-  X(IfThen)                                                                    \
-  X(IfThenElse)                                                                \
-  X(Loop)                                                                      \
-  X(LoopUnbounded)                                                             \
-  X(Opcode)                                                                    \
-  X(Switch)                                                                    \
-  X(Map)                                                                       \
-  X(Sequence)                                                                  \
-  X(Section)                                                                   \
-  X(Undefine)                                                                  \
-  X(UnknownSection)                                                            \
-  X(Table)                                                                     \
-  X(Write)                                                                     \
 
 #endif // DECOMPRESSOR_SRC_AST_DEF

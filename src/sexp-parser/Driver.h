@@ -61,20 +61,14 @@ class Driver {
   T* create(Node* Nd1, Node* Nd2, Node* Nd3) {
     return Table->create<T>(Nd1, Nd2, Nd3);
   }
+  template <class T>
+  T* create(decode::IntType Value, decode::ValueFormat Format) {
+    return Table->create<T>(Value, Format);
+  }
   BinaryAcceptNode* createBinaryAccept(decode::IntType Value,
                                        unsigned NumBits) {
     return Table->createBinaryAccept(Value, NumBits);
   }
-
-#define X(tag, format, defval, mergable, BASE, NODE_DECLS)         \
-  tag##Node* getOrCreate##tag(                                     \
-      decode::IntType Value,                                       \
-      decode::ValueFormat Format = decode::ValueFormat::Decimal) { \
-    return Table->getOrCreate##tag(Value, Format);                 \
-  }                                                                \
-  tag##Node* getOrCreate##tag() { return Table->getOrCreate##tag(); }
-  AST_INTEGERNODE_TABLE
-#undef X
 
   SymbolNode* getOrCreateSymbol(std::string& Name) {
     return Table->getOrCreateSymbol(Name);
