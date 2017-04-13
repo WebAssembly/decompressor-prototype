@@ -692,8 +692,8 @@ void Interpreter::algorithmResume() {
             return failNotImplemented();
           case OpError:  // Method::Eval
             return throwMessage("Algorithm error!");
-          case OpFileHeader:
           case OpReadHeader:
+          case OpSourceHeader:
           case OpWriteHeader:
             switch (Frame.CallState) {
               case State::Enter:

@@ -49,7 +49,8 @@ class AbbreviationCodegen {
   CountNode::PtrSet& Assignments;
   bool ToRead;
 
-  filt::Node* generateFileHeader(filt::NodeType Type, uint32_t MagicNumber,
+  filt::Node* generateFileHeader(filt::NodeType Type,
+                                 uint32_t MagicNumber,
                                  uint32_t VersionNumber);
   void generateFile(filt::Node* SourceHeader, filt::Node* TargetHeader);
   filt::Node* generateFileBody();

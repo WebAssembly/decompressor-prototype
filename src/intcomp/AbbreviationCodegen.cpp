@@ -48,8 +48,8 @@ Node* AbbreviationCodegen::generateFileHeader(NodeType Type,
   switch (Type) {
     default:
       return Symtab->create<VoidNode>();
-    case OpFileHeader:
-      Header = Symtab->create<FileHeaderNode>();
+    case OpSourceHeader:
+      Header = Symtab->create<SourceHeaderNode>();
       break;
     case OpReadHeader:
       Header = Symtab->create<ReadHeaderNode>();
@@ -218,10 +218,12 @@ Node* AbbreviationCodegen::generateIntLitActionWrite(IntCountNode* Nd) {
 
 std::shared_ptr<SymbolTable> AbbreviationCodegen::getCodeSymtab() {
   Symtab = std::make_shared<SymbolTable>();
-  generateFile(generateFileHeader(OpFileHeader, CasmBinaryMagic, CasmBinaryVersion),
-               Flags.UseCismModel
-               ? generateFileHeader(OpReadHeader, CismBinaryMagic, CismBinaryVersion)
-               : generateFileHeader(OpReadHeader, WasmBinaryMagic, WasmBinaryVersionD));
+  generateFile(
+      generateFileHeader(OpSourceHeader, CasmBinaryMagic, CasmBinaryVersion),
+      Flags.UseCismModel
+          ? generateFileHeader(OpReadHeader, CismBinaryMagic, CismBinaryVersion)
+          : generateFileHeader(OpReadHeader, WasmBinaryMagic,
+                               WasmBinaryVersionD));
   return Symtab;
 }
 

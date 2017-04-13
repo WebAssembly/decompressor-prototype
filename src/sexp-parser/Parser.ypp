@@ -422,7 +422,7 @@ file_header
 
 file_header_args
         : "header" {
-            $$ = Driver.create<FileHeaderNode>();
+            $$ = Driver.create<SourceHeaderNode>();
           }
         | "header" "." "read" {
             $$ = Driver.create<ReadHeaderNode>();
@@ -435,26 +435,6 @@ file_header_args
             $$->append($2);
           }
         ;
-/*
-file_header
-        : "(" "header" file_header_args ")" {
-            $$ = $3;
-          }
-        | "(" "void" ")" {
-            $$ = Driver.create<VoidNode>();
-          }
-        ;
-
-file_header_args
-        : %empty {
-            $$ = Driver.create<FileHeaderNode>();
-          }
-        | file_header_args literal_expression {
-            $$ = $1;
-            $$->append($2);
-          }
-        ;
-*/
 
 fixed_format_directive
         : "(" "void" ")" {

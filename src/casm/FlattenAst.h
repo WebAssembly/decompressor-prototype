@@ -66,7 +66,6 @@ class FlattenAst {
   std::unique_ptr<SectionSymbolTable> SectionSymtab;
   bool FreezeEofOnDestruct;
   bool HasErrors;
-  bool WrotePrimaryHeader;
   bool BitCompress;
   std::shared_ptr<utils::TraceClass> Trace;
 

@@ -178,7 +178,7 @@ bool InflateAst::writeTypedValue(decode::IntType Value, interp::IntTypeFormat) {
 bool InflateAst::writeHeaderValue(decode::IntType Value,
                                   interp::IntTypeFormat Format) {
   if (Asts.empty())
-    Asts.push(Symtab->create<FileHeaderNode>());
+    Asts.push(Symtab->create<SourceHeaderNode>());
   if (Asts.size() != 1)
     return failWriteHeaderMalformed();
   Node* Header = AstsTop;
@@ -231,8 +231,8 @@ bool InflateAst::applyOp(IntType Op) {
       return buildNullary<ErrorNode>();
     case OpEval:
       return buildNary<EvalNode>();
-    case OpFileHeader:
-      return buildNary<FileHeaderNode>();
+    case OpSourceHeader:
+      return buildNary<SourceHeaderNode>();
     case OpIfThen:
       return buildBinary<IfThenNode>();
     case OpIfThenElse:

@@ -43,7 +43,6 @@ FlattenAst::FlattenAst(std::shared_ptr<IntStream> Output,
       SectionSymtab(utils::make_unique<SectionSymbolTable>(Symtab)),
       FreezeEofOnDestruct(true),
       HasErrors(false),
-      WrotePrimaryHeader(false),
       BitCompress(false) {
 }
 
@@ -237,17 +236,7 @@ void FlattenAst::flattenNode(const Node* Nd) {
       Writer->write(NumKids);
       break;
     }
-    case OpFileHeader: {
-#if 0
-      if (WrotePrimaryHeader) {
-        // Must be secondary header. write out as ordinary nary node.
-        for (const auto* Kid : *Nd)
-          flattenNode(Kid);
-        Writer->write(Opcode);
-        Writer->write(Nd->getNumKids());
-        break;
-      }
-#endif
+    case OpSourceHeader: {
       // The primary header is special in that the size is defined by the
       // reading algorithm, and no "FileHeader" opcode is generated.
       for (const auto* Kid : *Nd) {
@@ -263,7 +252,6 @@ void FlattenAst::flattenNode(const Node* Nd) {
         }
         Writer->writeHeaderValue(Const->getValue(), Const->getIntTypeFormat());
       }
-      WrotePrimaryHeader = true;
       break;
       // Intentionally drop to next case.
     }

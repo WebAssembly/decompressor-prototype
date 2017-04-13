@@ -43,7 +43,6 @@ namespace filt {
 
 class BinaryAcceptNode;
 class DefineNode;
-class FileHeaderNode;
 class FileNode;
 class HeaderNode;
 class IntegerNode;
@@ -51,6 +50,7 @@ class LiteralDefNode;
 class LiteralActionDefNode;
 class Node;
 class ReadHeaderNode;
+class SourceHeaderNode;
 class SymbolDefnNode;
 class SymbolNode;
 class SymbolTable;

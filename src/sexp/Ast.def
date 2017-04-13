@@ -108,7 +108,7 @@
   X(LiteralActionDef,  0x6a, "literal.action.define", 2, 0, false, false)      \
   X(LiteralActionUse,  0x6b, "literal.action.use", 11, 0, false, false)        \
   X(LiteralActionBase, 0x6c, "literal.action.enum", 1, 0, false, false)        \
-  X(FileHeader,        0x77, "header",           0, 3, true,  false)           \
+  X(SourceHeader,      0x77, "header",           0, 3, true,  false)           \
   X(ReadHeader,        0x78, "header.read",      0, 3, true,  false)           \
   X(WriteHeader,       0x79, "header.write",     0, 3, true,  false)           \
                                                                                \
@@ -225,13 +225,13 @@
   X(Define, NaryNode, DEFINE_DECLS)                                            \
   X(Eval, NaryNode, EVAL_DECLS)                                                \
   X(File, NaryNode, FILE_DECLS)                                                \
-  X(FileHeader, HeaderNode,)                                                   \
-  X(ReadHeader, HeaderNode,)                                                   \
-  X(WriteHeader, HeaderNode,)                                                  \
   X(LiteralActionBase, NaryNode,)                                              \
+  X(ReadHeader, HeaderNode,)                                                   \
   X(Section, NaryNode,)                                                        \
   X(Sequence, NaryNode,)                                                       \
+  X(SourceHeader, HeaderNode,)                                                 \
   X(Write, NaryNode,)                                                          \
+  X(WriteHeader, HeaderNode,)                                                  \
 
 #define FILE_DECLS                                                             \
   public:                                                                      \

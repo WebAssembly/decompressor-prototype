@@ -1817,14 +1817,15 @@ AST_NARYNODE_TABLE
 #undef X
 
 HeaderNode::HeaderNode(SymbolTable& Symtab, NodeType Type)
-    : NaryNode(Symtab, Type) {}
+    : NaryNode(Symtab, Type) {
+}
 
-HeaderNode::~HeaderNode() {}
+HeaderNode::~HeaderNode() {
+}
 
 bool HeaderNode::implementsClass(NodeType Type) {
-  return Type == OpFileHeader
-      || Type == OpReadHeader
-      || Type == OpWriteHeader;
+  return Type == OpSourceHeader || Type == OpReadHeader ||
+         Type == OpWriteHeader;
 }
 
 SymbolNode* EvalNode::getCallName() const {
@@ -1854,18 +1855,18 @@ bool EvalNode::validateNode(ConstNodeVectorType& Parents) const {
 
 const HeaderNode* FileNode::getSourceHeader(bool UseEnclosing) const {
   for (const Node* Kid : *this) {
-    if (!isa<FileHeaderNode>(Kid))
+    if (!isa<SourceHeaderNode>(Kid))
       continue;
-    return cast<FileHeaderNode>(Kid);
+    return cast<SourceHeaderNode>(Kid);
   }
   if (UseEnclosing) {
     for (SymbolTable* Sym = Symtab.getEnclosingScope().get(); Sym != nullptr;
          Sym = Sym->getEnclosingScope().get()) {
       const FileNode* File = Sym->getInstalledRoot();
       for (const Node* Kid : *File) {
-        if (!isa<FileHeaderNode>(Kid))
+        if (!isa<SourceHeaderNode>(Kid))
           continue;
-        return cast<FileHeaderNode>(Kid);
+        return cast<SourceHeaderNode>(Kid);
       }
     }
   }
@@ -1913,9 +1914,11 @@ const HeaderNode* FileNode::getWriteHeader(bool UseEnclosing) const {
 }
 
 const SectionNode* FileNode::getDeclarations() const {
-  const Node* Nd = getLastKid();
-  assert(isa<SectionNode>(Nd));
-  return cast<SectionNode>(Nd);
+  for (const Node* Kid : *this)
+    if (isa<SectionNode>(Kid))
+      return cast<SectionNode>(Kid);
+  assert(false && "Declarations not defined for algorithm");
+  return nullptr;
 }
 
 bool FileNode::validateNode(ConstNodeVectorType& Parents) const {
@@ -1927,31 +1930,60 @@ bool FileNode::validateNode(ConstNodeVectorType& Parents) const {
     errorDescribeContext(Parents);
     return false;
   }
-  int NumKids = getNumKids();
-  if (NumKids < 1 || NumKids > 4) {
-    FILE* Out = error();
-    fprintf(Out, "File has wrong number of kids: %d\n", NumKids);
-    fprintf(Out, "Expected range: 1 <= NumKids <= 4\n");
-    return false;
+  const Node* Source = nullptr;
+  const Node* Read = nullptr;
+  const Node* Write = nullptr;
+  const Node* Decls = nullptr;
+  if (hasKids()) {
+    if (!isa<SourceHeaderNode>(getKid(0))) {
+      errorDescribeNode("Algorithm doesn't begin with a source header",
+                        getKid(0));
+      return false;
+    }
   }
-  for (int i = 0; i < NumKids - 1; ++i) {
-    const Node* Nd = getKid(i);
-    switch (Nd->getType()) {
-      case OpFileHeader:
+  for (const Node* Kid : *this) {
+    switch (Kid->getType()) {
+      case OpSourceHeader:
+        if (Source) {
+          errorDescribeNode("Duplicate source header", Kid);
+          errorDescribeNode("Original", Source);
+          return false;
+        }
+        Source = Kid;
+        break;
       case OpReadHeader:
+        if (Read) {
+          errorDescribeNode("Duplicate read header", Kid);
+          errorDescribeNode("Original", Source);
+          return false;
+        }
+        Read = Kid;
+        break;
       case OpWriteHeader:
+        if (Read) {
+          errorDescribeNode("Duplicate read header", Kid);
+          errorDescribeNode("Original", Source);
+          return false;
+        }
+        Write = Kid;
+        break;
+      case OpSection:
+        if (Decls) {
+          errorDescribeNode("Duplicate declarations node", Kid);
+          return false;
+        }
+        Decls = Kid;
         break;
       default:
-        fprintf(error(), "File argument not header s-expression\n");
-        errorDescribeNode("Found", Nd);
+        errorDescribeNode("Expected header/declarations node", Kid);
         return false;
     }
   }
-  if (!isa<SectionNode>(getLastKid())) {
-    fprintf(error(), "Headers of file must be followed by declarations\n");
-    errorDescribeNode("Found", getLastKid());
+  if (Decls == nullptr) {
+    errorDescribeNode("No (declarations) node found", this);
     return false;
   }
+
   return true;
 }
 
