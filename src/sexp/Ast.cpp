@@ -1590,7 +1590,7 @@ bool BinaryAcceptNode::validateNode(ConstNodeVectorType& Parents) const {
         TextWriter Writer;
         Writer.write(Out, this);
         fprintf(Out, "Doesn't appear under %s\n",
-                getNodeSexpName(NodeType::OpBinaryEval));
+                getNodeSexpName(NodeType::kBinaryEval));
         fprintf(Out, "Appears in:\n");
         Writer.write(Out, Nd);
         return false;
@@ -1824,8 +1824,8 @@ HeaderNode::~HeaderNode() {
 }
 
 bool HeaderNode::implementsClass(NodeType Type) {
-  return Type == OpSourceHeader || Type == OpReadHeader ||
-         Type == OpWriteHeader;
+  return Type == kSourceHeader || Type == kReadHeader ||
+         Type == kWriteHeader;
 }
 
 SymbolNode* EvalNode::getCallName() const {
@@ -2201,7 +2201,7 @@ AST_SELECTNODE_TABLE
 AST_SELECTNODE_TABLE
 #undef X
 
-OpcodeNode::OpcodeNode(SymbolTable& Symtab) : SelectBaseNode(Symtab, OpOpcode) {
+OpcodeNode::OpcodeNode(SymbolTable& Symtab) : SelectBaseNode(Symtab, kOpcode) {
 }
 
 template OpcodeNode* SymbolTable::create<OpcodeNode>();
@@ -2321,7 +2321,7 @@ utils::TraceClass& OpcodeNode::WriteRange::getTrace() const {
 }
 
 BinaryEvalNode::BinaryEvalNode(SymbolTable& Symtab, Node* Encoding)
-    : UnaryNode(Symtab, OpBinaryEval, Encoding) {
+    : UnaryNode(Symtab, kBinaryEval, Encoding) {
 }
 
 template BinaryEvalNode* SymbolTable::create<BinaryEvalNode>(Node* Kid);

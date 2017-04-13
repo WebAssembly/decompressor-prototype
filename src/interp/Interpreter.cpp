@@ -672,29 +672,29 @@ void Interpreter::algorithmResume() {
       case Method::Eval:
         switch (Frame.Nd->getType()) {
           case NO_SUCH_NODETYPE:
-          case OpSymbolDefn:
-          case OpIntLookup:
-          case OpBinaryEvalBits:
-          case OpBinaryAccept:
-          case OpBinarySelect:
-          case OpParams:
-          case OpLastSymbolIs:
-          case OpLiteralActionBase:
-          case OpLiteralActionDef:
-          case OpLiteralDef:
-          case OpFile:
-          case OpLocals:
-          case OpRename:
-          case OpSymbol:
-          case OpSection:
-          case OpUndefine:
-          case OpUnknownSection:  // Method::Eval
+          case kSymbolDefn:
+          case kIntLookup:
+          case kBinaryEvalBits:
+          case kBinaryAccept:
+          case kBinarySelect:
+          case kParams:
+          case kLastSymbolIs:
+          case kLiteralActionBase:
+          case kLiteralActionDef:
+          case kLiteralDef:
+          case kFile:
+          case kLocals:
+          case kRename:
+          case kSymbol:
+          case kSection:
+          case kUndefine:
+          case kUnknownSection:  // Method::Eval
             return failNotImplemented();
-          case OpError:  // Method::Eval
+          case kError:  // Method::Eval
             return throwMessage("Algorithm error!");
-          case OpReadHeader:
-          case OpSourceHeader:
-          case OpWriteHeader:
+          case kReadHeader:
+          case kSourceHeader:
+          case kWriteHeader:
             switch (Frame.CallState) {
               case State::Enter:
                 if (!CatchStack.empty()) {
@@ -747,7 +747,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpBitwiseAnd:
+          case kBitwiseAnd:
             switch (Frame.CallState) {
               case State::Enter:
                 if (!hasReadMode())
@@ -771,7 +771,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpBitwiseOr:
+          case kBitwiseOr:
             switch (Frame.CallState) {
               case State::Enter:
                 if (!hasReadMode())
@@ -795,7 +795,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpBitwiseXor:
+          case kBitwiseXor:
             switch (Frame.CallState) {
               case State::Enter:
                 if (!hasReadMode())
@@ -819,7 +819,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpBitwiseNegate:
+          case kBitwiseNegate:
             switch (Frame.CallState) {
               case State::Enter:
                 if (!hasReadMode())
@@ -837,7 +837,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpCallback: {  // Method::Eval
+          case kCallback: {  // Method::Eval
             IntType Action =
                 cast<CallbackNode>(Frame.Nd)->getValue()->getValue();
             if (!Input->readAction(Action) || !Output->writeAction(Action))
@@ -845,21 +845,21 @@ void Interpreter::algorithmResume() {
             popAndReturn(LastReadValue);
             break;
           }
-          case OpI32Const:
-          case OpI64Const:
-          case OpU8Const:
-          case OpU32Const:
-          case OpU64Const: {  // Method::Eval
+          case kI32Const:
+          case kI64Const:
+          case kU8Const:
+          case kU32Const:
+          case kU64Const: {  // Method::Eval
             IntType Value = dyn_cast<IntegerNode>(Frame.Nd)->getValue();
             if (hasReadMode())
               LastReadValue = Value;
             popAndReturn(Value);
             break;
           }
-          case OpLastRead:
+          case kLastRead:
             popAndReturn(LastReadValue);
             break;
-          case OpLocal: {
+          case kLocal: {
             const auto* Local = dyn_cast<LocalNode>(Frame.Nd);
             size_t Index = Local->getValue();
             if (LocalsBase + Index >= LocalValues.size()) {
@@ -868,7 +868,7 @@ void Interpreter::algorithmResume() {
             popAndReturn(LocalValues[LocalsBase + Index]);
             break;
           }
-          case OpPeek:
+          case kPeek:
             switch (Frame.CallState) {
               case State::Enter:
                 if (!Input->pushPeekPos())
@@ -886,7 +886,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpRead:  // Method::Eval
+          case kRead:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Exit;
@@ -900,14 +900,14 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpBit:
-          case OpUint32:
-          case OpUint64:
-          case OpUint8:
-          case OpVarint32:
-          case OpVarint64:
-          case OpVaruint32:
-          case OpVaruint64: {
+          case kBit:
+          case kUint32:
+          case kUint64:
+          case kUint8:
+          case kVarint32:
+          case kVarint64:
+          case kVaruint32:
+          case kVaruint64: {
             if (hasReadMode())
               if (!Input->readValue(Frame.Nd, LastReadValue))
                 return throwCantRead();
@@ -918,7 +918,7 @@ void Interpreter::algorithmResume() {
             popAndReturn(LastReadValue);
             break;
           }
-          case OpBinaryEval:
+          case kBinaryEval:
             if (hasReadMode())
               if (!Input->readBinary(Frame.Nd, LastReadValue))
                 return throwCantRead();
@@ -927,7 +927,7 @@ void Interpreter::algorithmResume() {
                 return throwCantWrite();
             popAndReturn(LastReadValue);
             break;
-          case OpMap:
+          case kMap:
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Step2;
@@ -951,9 +951,9 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpOpcode:  // Method::Eval
+          case kOpcode:  // Method::Eval
             return throwMessage("Multibyte opcodes broken!");
-          case OpSet:  // Method::Eval
+          case kSet:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Exit;
@@ -974,7 +974,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpWrite:  // Method::Eval
+          case kWrite:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
                 LoopCounterStack.push(0);
@@ -1002,7 +1002,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpNot:  // Method::Eval
+          case kNot:  // Method::Eval
             if (!hasReadMode())
               return throwCantWriteInWriteOnlyMode();
             switch (Frame.CallState) {
@@ -1018,7 +1018,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpAnd:  // Method::Eval
+          case kAnd:  // Method::Eval
             if (!hasReadMode())
               return throwCantWriteInWriteOnlyMode();
             switch (Frame.CallState) {
@@ -1039,7 +1039,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpOr:  // Method::Eval
+          case kOr:  // Method::Eval
             if (!hasReadMode())
               return throwCantWriteInWriteOnlyMode();
             switch (Frame.CallState) {
@@ -1060,7 +1060,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpSequence:  // Method::Eval
+          case kSequence:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
                 LoopCounterStack.push(0);
@@ -1082,7 +1082,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpTable:  // Method::Eval
+          case kTable:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Step2;
@@ -1123,7 +1123,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpLoop:  // Method::Eval
+          case kLoop:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Step2;
@@ -1148,7 +1148,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpLoopUnbounded:  // Method::Eval
+          case kLoopUnbounded:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Loop;
@@ -1167,7 +1167,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpIfThen:  // Method::Eval
+          case kIfThen:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Step2;
@@ -1185,7 +1185,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpIfThenElse:  // Method::Eval
+          case kIfThenElse:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Step2;
@@ -1205,7 +1205,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpSwitch:  // Method::Eval
+          case kSwitch:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Step2;
@@ -1227,7 +1227,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpCase:  // Method::Eval
+          case kCase:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter: {
                 Frame.CallState = State::Exit;
@@ -1242,7 +1242,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpDefine:  // Method::Eval
+          case kDefine:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter: {
                 const DefineNode* Define = cast<DefineNode>(Frame.Nd);
@@ -1269,7 +1269,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpParam:  // Method::Eval
+          case kParam:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Exit;
@@ -1283,7 +1283,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpLiteralActionUse:  // Method::Eval
+          case kLiteralActionUse:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter: {
                 Frame.CallState = State::Exit;
@@ -1310,7 +1310,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpLiteralUse:  // Method::Eval
+          case kLiteralUse:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter: {
                 Frame.CallState = State::Exit;
@@ -1337,7 +1337,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpEval:  // Method::Eval
+          case kEval:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter: {
                 auto* Sym = dyn_cast<SymbolNode>(Frame.Nd->getKid(0));
@@ -1380,7 +1380,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpBlock:  // Method::Eval
+          case kBlock:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
 #if LOG_FUNCTIONS || LOG_NUMBERED_BLOCK
@@ -1415,7 +1415,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpVoid:  // Method::Eval
+          case kVoid:  // Method::Eval
             popAndReturn(LastReadValue);
             break;
         }
@@ -1646,7 +1646,7 @@ void Interpreter::algorithmResume() {
         switch (Frame.Nd->getType()) {
           default:
             return failNotImplemented();
-          case OpOpcode:  // Method::ReadOpcode
+          case kOpcode:  // Method::ReadOpcode
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Step2;
@@ -1681,7 +1681,7 @@ void Interpreter::algorithmResume() {
               default:
                 return failBadState();
             }
-          case OpUint8:  // Method::ReadOpcode
+          case kUint8:  // Method::ReadOpcode
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Exit;
@@ -1695,7 +1695,7 @@ void Interpreter::algorithmResume() {
               default:
                 return failBadState();
             }
-          case OpUint32:  // Method::ReadOpcode
+          case kUint32:  // Method::ReadOpcode
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Exit;
@@ -1710,7 +1710,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpUint64:  // Method::ReadOpcode
+          case kUint64:  // Method::ReadOpcode
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Exit;

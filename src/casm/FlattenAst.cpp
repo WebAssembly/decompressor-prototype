@@ -110,10 +110,10 @@ bool FlattenAst::binaryEvalEncode(const BinaryEvalNode* Nd) {
       default:
         // Not suitable for bit encoding.
         return false;
-      case OpBinarySelect:
+      case kBinarySelect:
         PostorderEncoding.push_back(1);
         break;
-      case OpBinaryAccept:
+      case kBinaryAccept:
         PostorderEncoding.push_back(0);
         break;
     }
@@ -122,7 +122,7 @@ bool FlattenAst::binaryEvalEncode(const BinaryEvalNode* Nd) {
   }
   std::reverse(PostorderEncoding.begin(), PostorderEncoding.end());
   // Can bit encode tree (1 => BinaryEvalNode, 0 => BinaryAcceptNode).
-  Writer->write(OpBinaryEvalBits);
+  Writer->write(kBinaryEvalBits);
   TRACE(size_t, "NumBIts", PostorderEncoding.size());
   Writer->write(PostorderEncoding.size());
   for (uint8_t Val : PostorderEncoding) {
@@ -139,16 +139,16 @@ void FlattenAst::flattenNode(const Node* Nd) {
   TRACE(node_ptr, nullptr, Nd);
   switch (NodeType Opcode = Nd->getType()) {
     case NO_SUCH_NODETYPE:
-    case OpBinaryEvalBits:
-    case OpIntLookup:
-    case OpSymbolDefn:
-    case OpUnknownSection: {
+    case kBinaryEvalBits:
+    case kIntLookup:
+    case kSymbolDefn:
+    case kUnknownSection: {
       reportError("Unexpected s-expression, can't write!");
       reportError("s-expression: ", Nd);
       break;
     }
 #define X(tag, format, defval, mergable, BASE, NODE_DECLS) \
-  case Op##tag: {                                          \
+  case k##tag: {                                          \
     Writer->write(Opcode);                                 \
     auto* Int = cast<tag##Node>(Nd);                       \
     if (Int->isDefaultValue()) {                           \
@@ -161,49 +161,49 @@ void FlattenAst::flattenNode(const Node* Nd) {
   }
       AST_INTEGERNODE_TABLE
 #undef X
-    case OpBinaryEval:
+    case kBinaryEval:
       if (BitCompress && binaryEvalEncode(cast<BinaryEvalNode>(Nd)))
         break;
     // Not binary encoding, Intentionally fall to next case that
     // will generate non-compressed form.
-    case OpAnd:
-    case OpBlock:
-    case OpBinaryAccept:
-    case OpBinarySelect:
-    case OpBit:
-    case OpBitwiseAnd:
-    case OpBitwiseNegate:
-    case OpBitwiseOr:
-    case OpBitwiseXor:
-    case OpCallback:
-    case OpCase:
-    case OpError:
-    case OpIfThen:
-    case OpIfThenElse:
-    case OpLastRead:
-    case OpLastSymbolIs:
-    case OpLiteralActionDef:
-    case OpLiteralActionUse:
-    case OpLiteralDef:
-    case OpLiteralUse:
-    case OpLoop:
-    case OpLoopUnbounded:
-    case OpNot:
-    case OpOr:
-    case OpPeek:
-    case OpRead:
-    case OpRename:
-    case OpSet:
-    case OpTable:
-    case OpUint32:
-    case OpUint64:
-    case OpUint8:
-    case OpUndefine:
-    case OpVarint32:
-    case OpVarint64:
-    case OpVaruint32:
-    case OpVaruint64:
-    case OpVoid: {
+    case kAnd:
+    case kBlock:
+    case kBinaryAccept:
+    case kBinarySelect:
+    case kBit:
+    case kBitwiseAnd:
+    case kBitwiseNegate:
+    case kBitwiseOr:
+    case kBitwiseXor:
+    case kCallback:
+    case kCase:
+    case kError:
+    case kIfThen:
+    case kIfThenElse:
+    case kLastRead:
+    case kLastSymbolIs:
+    case kLiteralActionDef:
+    case kLiteralActionUse:
+    case kLiteralDef:
+    case kLiteralUse:
+    case kLoop:
+    case kLoopUnbounded:
+    case kNot:
+    case kOr:
+    case kPeek:
+    case kRead:
+    case kRename:
+    case kSet:
+    case kTable:
+    case kUint32:
+    case kUint64:
+    case kUint8:
+    case kUndefine:
+    case kVarint32:
+    case kVarint64:
+    case kVaruint32:
+    case kVaruint64:
+    case kVoid: {
       // Operations that are written out in postorder, with a fixed number of
       // arguments.
       for (const auto* Kid : *Nd)
@@ -211,12 +211,12 @@ void FlattenAst::flattenNode(const Node* Nd) {
       Writer->write(Opcode);
       break;
     }
-    case OpFile: {
+    case kFile: {
       int NumKids = Nd->getNumKids();
       if (NumKids <= 1)
         return reportError("No source header defined for algorithm");
       // Write primary header. Note: Only the constants are written out (See
-      // case OpFileHeader). The reader will automatically build the
+      // case kFileHeader). The reader will automatically build the
       // corresponding AST while reading the constants.
       flattenNode(Nd->getKid(0));
 
@@ -236,7 +236,7 @@ void FlattenAst::flattenNode(const Node* Nd) {
       Writer->write(NumKids);
       break;
     }
-    case OpSourceHeader: {
+    case kSourceHeader: {
       // The primary header is special in that the size is defined by the
       // reading algorithm, and no "FileHeader" opcode is generated.
       for (const auto* Kid : *Nd) {
@@ -255,14 +255,14 @@ void FlattenAst::flattenNode(const Node* Nd) {
       break;
       // Intentionally drop to next case.
     }
-    case OpReadHeader:
-    case OpWriteHeader:
+    case kReadHeader:
+    case kWriteHeader:
       for (const auto* Kid : *Nd)
         flattenNode(Kid);
       Writer->write(Opcode);
       Writer->write(Nd->getNumKids());
       break;
-    case OpSection: {
+    case kSection: {
       Writer->writeAction(IntType(PredefinedSymbol::Block_enter));
       const auto* Section = cast<SectionNode>(Nd);
       SectionSymtab->installSection(Section);
@@ -285,14 +285,14 @@ void FlattenAst::flattenNode(const Node* Nd) {
       SectionSymtab->clear();
       break;
     }
-    case OpDefine:
-    case OpEval:
-    case OpLiteralActionBase:
-    case OpOpcode:
-    case OpMap:
-    case OpSwitch:
-    case OpSequence:
-    case OpWrite: {
+    case kDefine:
+    case kEval:
+    case kLiteralActionBase:
+    case kOpcode:
+    case kMap:
+    case kSwitch:
+    case kSequence:
+    case kWrite: {
       // Operations that are written out in postorder, and have a variable
       // number of arguments.
       for (const auto* Kid : *Nd)
@@ -301,7 +301,7 @@ void FlattenAst::flattenNode(const Node* Nd) {
       Writer->write(Nd->getNumKids());
       break;
     }
-    case OpSymbol: {
+    case kSymbol: {
       Writer->write(Opcode);
       SymbolNode* Sym = cast<SymbolNode>(const_cast<Node*>(Nd));
       Writer->write(SectionSymtab->getSymbolIndex(Sym));

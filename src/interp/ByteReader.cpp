@@ -175,10 +175,10 @@ bool ByteReader::readBinary(const Node* Eval, IntType& Value) {
   const Node* Encoding = cast<BinaryEvalNode>(Eval)->getKid(0);
   while (1) {
     switch (Encoding->getType()) {
-      case OpBinaryAccept:
+      case kBinaryAccept:
         Value = cast<BinaryAcceptNode>(Encoding)->getValue();
         return true;
-      case OpBinarySelect:
+      case kBinarySelect:
         Encoding = const_cast<Node*>(Encoding->getKid(ReadPos.readBit()));
         break;
       default:

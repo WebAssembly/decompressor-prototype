@@ -197,12 +197,12 @@ void TextWriter::writeNode(const Node* Nd,
       if (isa<CaseNode>(Nd)) {
         writeIndent(-1);
         writeSpace();
-        writeName(OpCase);
+        writeName(kCase);
       }
       writeNodeKids(Nd, true);
       return;
     }
-    case OpFile: {
+    case kFile: {
       if (ShowInternalStructure)
         break;
       // Treat like hidden node. That is, visually just a list of
@@ -211,26 +211,26 @@ void TextWriter::writeNode(const Node* Nd,
         writeNode(Kid, true);
       return;
     }
-    case OpLiteralUse:
-    case OpLiteralActionUse:
+    case kLiteralUse:
+    case kLiteralActionUse:
       if (ShowInternalStructure)
         break;
       writeNode(Nd->getKid(0), AddNewline, EmbedInParent);
       return;
-    case OpSection:
+    case kSection:
       if (ShowInternalStructure)
         break;
       { Parenthesize _(this, Type, true); }
       for (auto* Kid : *Nd)
         writeNode(Kid, true, false);
       return;
-    case OpSymbolDefn: {
+    case kSymbolDefn: {
       Parenthesize _(this, Type, AddNewline);
       writeSpace();
       writeNode(cast<SymbolDefnNode>(Nd)->getSymbol(), false);
       return;
     }
-    case OpSymbol: {
+    case kSymbol: {
       return writeSymbolNode(cast<SymbolNode>(Nd), AddNewline);
     }
   }
@@ -305,19 +305,19 @@ void TextWriter::writeNodeAbbrev(const Node* Nd,
       fprintf(File, " ...");
       return;
     }
-    case OpSection:
-    case OpFile: {
+    case kSection:
+    case kFile: {
       // Treat like hidden node. That is, visually just a list of s-expressions.
       fprintf(File, "(%s ...)\n", getNodeName(Nd));
       return;
     }
-    case OpSymbol:
+    case kSymbol:
       return writeSymbolNode(cast<SymbolNode>(Nd), AddNewline);
-    case OpSymbolDefn:
+    case kSymbolDefn:
       writeNode(Nd, AddNewline, EmbedInParent);
       return;
-    case OpLiteralUse:
-    case OpLiteralActionUse:
+    case kLiteralUse:
+    case kLiteralActionUse:
       if (ShowInternalStructure)
         break;
       writeNodeAbbrev(Nd->getKid(0), AddNewline, EmbedInParent);
