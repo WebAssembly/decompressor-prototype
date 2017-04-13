@@ -45,15 +45,18 @@ class BinaryAcceptNode;
 class DefineNode;
 class FileHeaderNode;
 class FileNode;
+class HeaderNode;
 class IntegerNode;
 class LiteralDefNode;
 class LiteralActionDefNode;
 class Node;
+class ReadHeaderNode;
 class SymbolDefnNode;
 class SymbolNode;
 class SymbolTable;
 class CallbackNode;
 class SectionNode;
+class WriteHeaderNode;
 
 #define X(tag, format, defval, mergable, BASE, NODE_DECLS) class tag##Node;
 AST_INTEGERNODE_TABLE
@@ -158,9 +161,9 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   bool isRootInstalled() const { return RootInstalled; }
   const FileNode* getInstalledRoot() const { return Root; }
   Node* getError() const { return Error; }
-  const FileHeaderNode* getSourceHeader() const;
-  const FileHeaderNode* getReadHeader() const;
-  const FileHeaderNode* getWriteHeader() const;
+  const HeaderNode* getSourceHeader() const;
+  const HeaderNode* getReadHeader() const;
+  const HeaderNode* getWriteHeader() const;
 
   // True if root specifies how to read an algorithm (i.e. the source and target
   // headers are the same).
@@ -498,6 +501,19 @@ class NaryNode : public Node {
  protected:
   std::vector<Node*> Kids;
   NaryNode(SymbolTable& Symtab, NodeType Type);
+};
+
+class HeaderNode : public NaryNode {
+  HeaderNode() = delete;
+  HeaderNode(const HeaderNode&) = delete;
+  HeaderNode& operator=(const HeaderNode&) = delete;
+
+ public:
+  ~HeaderNode() OVERRIDE;
+  static bool implementsClass(NodeType Type);
+
+ protected:
+  HeaderNode(SymbolTable& Symtab, NodeType Type);
 };
 
 class IntLookupNode FINAL : public CachedNode {

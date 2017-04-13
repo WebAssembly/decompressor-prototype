@@ -32,7 +32,7 @@ namespace filt {
 
 class CaseNode;
 class EvalNode;
-class FileHeaderNode;
+class HeaderNode;
 class Node;
 class SymbolTable;
 class TextWriter;
@@ -69,7 +69,7 @@ class Interpreter {
               const InterpreterFlags& Flags);
   virtual ~Interpreter();
 
-  void useFileHeader(const filt::FileHeaderNode* Header) {
+  void useFileHeader(const filt::HeaderNode* Header) {
     HeaderOverride = Header;
   }
 
@@ -267,7 +267,7 @@ class Interpreter {
   OpcodeLocalsFrame OpcodeLocals;
   utils::ValueStack<OpcodeLocalsFrame> OpcodeLocalsStack;
 
-  const filt::FileHeaderNode* HeaderOverride;
+  const filt::HeaderNode* HeaderOverride;
   bool FreezeEofAtExit;
 
   void reset();

@@ -693,6 +693,8 @@ void Interpreter::algorithmResume() {
           case OpError:  // Method::Eval
             return throwMessage("Algorithm error!");
           case OpFileHeader:
+          case OpReadHeader:
+          case OpWriteHeader:
             switch (Frame.CallState) {
               case State::Enter:
                 if (!CatchStack.empty()) {
@@ -1582,7 +1584,7 @@ void Interpreter::algorithmResume() {
             }
             const Node* Header =
                 HeaderOverride ? HeaderOverride : Symtab->getReadHeader();
-            if (!isa<FileHeaderNode>(Header))
+            if (!isa<HeaderNode>(Header))
               return fail("Can't find matching header definition");
             Frame.CallState = State::Step2;
             call(Method::Eval, Frame.CallModifier, Header);

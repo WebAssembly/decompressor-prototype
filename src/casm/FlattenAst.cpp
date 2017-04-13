@@ -238,6 +238,7 @@ void FlattenAst::flattenNode(const Node* Nd) {
       break;
     }
     case OpFileHeader: {
+#if 0
       if (WrotePrimaryHeader) {
         // Must be secondary header. write out as ordinary nary node.
         for (const auto* Kid : *Nd)
@@ -246,6 +247,7 @@ void FlattenAst::flattenNode(const Node* Nd) {
         Writer->write(Nd->getNumKids());
         break;
       }
+#endif
       // The primary header is special in that the size is defined by the
       // reading algorithm, and no "FileHeader" opcode is generated.
       for (const auto* Kid : *Nd) {
@@ -263,7 +265,15 @@ void FlattenAst::flattenNode(const Node* Nd) {
       }
       WrotePrimaryHeader = true;
       break;
+      // Intentionally drop to next case.
     }
+    case OpReadHeader:
+    case OpWriteHeader:
+      for (const auto* Kid : *Nd)
+        flattenNode(Kid);
+      Writer->write(Opcode);
+      Writer->write(Nd->getNumKids());
+      break;
     case OpSection: {
       Writer->writeAction(IntType(PredefinedSymbol::Block_enter));
       const auto* Section = cast<SectionNode>(Nd);

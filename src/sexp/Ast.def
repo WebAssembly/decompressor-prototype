@@ -98,7 +98,6 @@
   /* Declarations */                                                           \
   X(Define,            0x60, "define",           2, 1, true,  true)            \
   X(File,              0x62, "file",             2, 0, false, false)           \
-  X(FileHeader,        0x77, "header",           0, 3, true,  false)           \
   X(Section,           0x63, "declarations",     0, 0, true,  false)           \
   X(Undefine,          0x64, "undefine",         1, 0, true, false)            \
   X(LiteralDef,        0x65, "literal",          2, 0, false, false)           \
@@ -109,6 +108,9 @@
   X(LiteralActionDef,  0x6a, "literal.action.define", 2, 0, false, false)      \
   X(LiteralActionUse,  0x6b, "literal.action.use", 11, 0, false, false)        \
   X(LiteralActionBase, 0x6c, "literal.action.enum", 1, 0, false, false)        \
+  X(FileHeader,        0x77, "header",           0, 3, true,  false)           \
+  X(ReadHeader,        0x78, "header",           0, 3, true,  false)           \
+  X(WriteHeader,       0x79, "header",           0, 3, true,  false)           \
                                                                                \
   /* Internal (not opcodes in compressed file) */                              \
   X(UnknownSection,    0xFF, "unknown.section",  1, 0, true,  false)           \
@@ -223,7 +225,9 @@
   X(Define, NaryNode, DEFINE_DECLS)                                            \
   X(Eval, NaryNode, EVAL_DECLS)                                                \
   X(File, NaryNode, FILE_DECLS)                                                \
-  X(FileHeader, NaryNode,)                                                     \
+  X(FileHeader, HeaderNode,)                                                   \
+  X(ReadHeader, HeaderNode,)                                                   \
+  X(WriteHeader, HeaderNode,)                                                  \
   X(LiteralActionBase, NaryNode,)                                              \
   X(Section, NaryNode,)                                                        \
   X(Sequence, NaryNode,)                                                       \
@@ -231,9 +235,9 @@
 
 #define FILE_DECLS                                                             \
   public:                                                                      \
-    const FileHeaderNode* getSourceHeader(bool UseEnclosing=true) const;       \
-    const FileHeaderNode* getReadHeader(bool UseEnclosing=true) const;         \
-    const FileHeaderNode* getWriteHeader(bool UseEnclosing=true) const;        \
+    const HeaderNode* getSourceHeader(bool UseEnclosing=true) const;           \
+    const HeaderNode* getReadHeader(bool UseEnclosing=true) const;             \
+    const HeaderNode* getWriteHeader(bool UseEnclosing=true) const;            \
     const SectionNode* getDeclarations() const;                                \
     bool validateNode(ConstNodeVectorType &Parents) const OVERRIDE;            \
 

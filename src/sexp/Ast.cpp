@@ -890,19 +890,19 @@ bool SymbolTable::install() {
   return RootInstalled = true;
 }
 
-const FileHeaderNode* SymbolTable::getSourceHeader() const {
+const HeaderNode* SymbolTable::getSourceHeader() const {
   if (Root == nullptr)
     return nullptr;
   return Root->getSourceHeader();
 }
 
-const FileHeaderNode* SymbolTable::getReadHeader() const {
+const HeaderNode* SymbolTable::getReadHeader() const {
   if (Root == nullptr)
     return nullptr;
   return Root->getReadHeader();
 }
 
-const FileHeaderNode* SymbolTable::getWriteHeader() const {
+const HeaderNode* SymbolTable::getWriteHeader() const {
   if (Root == nullptr)
     return nullptr;
   return Root->getWriteHeader();
@@ -1816,6 +1816,17 @@ AST_NARYNODE_TABLE
 AST_NARYNODE_TABLE
 #undef X
 
+HeaderNode::HeaderNode(SymbolTable& Symtab, NodeType Type)
+    : NaryNode(Symtab, Type) {}
+
+HeaderNode::~HeaderNode() {}
+
+bool HeaderNode::implementsClass(NodeType Type) {
+  return Type == OpFileHeader
+      || Type == OpReadHeader
+      || Type == OpWriteHeader;
+}
+
 SymbolNode* EvalNode::getCallName() const {
   return dyn_cast<SymbolNode>(getKid(0));
 }
@@ -1841,65 +1852,64 @@ bool EvalNode::validateNode(ConstNodeVectorType& Parents) const {
   return true;
 }
 
-const FileHeaderNode* FileNode::getSourceHeader(bool UseEnclosing) const {
+const HeaderNode* FileNode::getSourceHeader(bool UseEnclosing) const {
+  for (const Node* Kid : *this) {
+    if (!isa<FileHeaderNode>(Kid))
+      continue;
+    return cast<FileHeaderNode>(Kid);
+  }
   if (UseEnclosing) {
-    for (SymbolTable* Sym = &getSymtab(); Sym != nullptr;
+    for (SymbolTable* Sym = Symtab.getEnclosingScope().get(); Sym != nullptr;
          Sym = Sym->getEnclosingScope().get()) {
       const FileNode* File = Sym->getInstalledRoot();
-      if (File->getNumKids() <= 1)
-        continue;
-      const Node* Nd = File->getKid(0);
-      if (isa<FileHeaderNode>(Nd))
-        return cast<FileHeaderNode>(Nd);
+      for (const Node* Kid : *File) {
+        if (!isa<FileHeaderNode>(Kid))
+          continue;
+        return cast<FileHeaderNode>(Kid);
+      }
     }
   }
-  if (getNumKids() >= 2) {
-    const Node* Nd = getKid(0);
-    if (isa<FileHeaderNode>(Nd))
-      return cast<FileHeaderNode>(Nd);
-  }
-  assert(false && "Can't find source header for file");
   return nullptr;
 }
 
-const FileHeaderNode* FileNode::getReadHeader(bool UseEnclosing) const {
+const HeaderNode* FileNode::getReadHeader(bool UseEnclosing) const {
+  for (const Node* Kid : *this) {
+    if (!isa<ReadHeaderNode>(Kid))
+      continue;
+    return cast<ReadHeaderNode>(Kid);
+  }
   if (UseEnclosing) {
-    for (SymbolTable* Sym = &getSymtab(); Sym != nullptr;
+    for (SymbolTable* Sym = Symtab.getEnclosingScope().get(); Sym != nullptr;
          Sym = Sym->getEnclosingScope().get()) {
       const FileNode* File = Sym->getInstalledRoot();
-      if (File->getNumKids() <= 2)
-        continue;
-      const Node* Nd = File->getKid(1);
-      if (isa<FileHeaderNode>(Nd))
-        return cast<FileHeaderNode>(Nd);
+      for (const Node* Kid : *File) {
+        if (!isa<ReadHeaderNode>(Kid))
+          continue;
+        return cast<ReadHeaderNode>(Kid);
+      }
     }
-  }
-  if (getNumKids() >= 3) {
-    const FileHeaderNode* Header = dyn_cast<FileHeaderNode>(getKid(1));
-    if (Header != nullptr)
-      return Header;
   }
   return getSourceHeader(UseEnclosing);
 }
 
-const FileHeaderNode* FileNode::getWriteHeader(bool UseEnclosing) const {
+const HeaderNode* FileNode::getWriteHeader(bool UseEnclosing) const {
+  for (const Node* Kid : *this) {
+    if (!isa<WriteHeaderNode>(Kid))
+      continue;
+    return cast<WriteHeaderNode>(Kid);
+  }
   if (UseEnclosing) {
-    for (SymbolTable* Sym = &getSymtab(); Sym != nullptr;
+    for (SymbolTable* Sym = Symtab.getEnclosingScope().get(); Sym != nullptr;
          Sym = Sym->getEnclosingScope().get()) {
       const FileNode* File = Sym->getInstalledRoot();
-      if (File->getNumKids() <= 3)
-        continue;
-      const Node* Nd = File->getKid(2);
-      if (isa<FileHeaderNode>(Nd))
-        return cast<FileHeaderNode>(Nd);
+      for (const Node* Kid : *File) {
+        if (!isa<WriteHeaderNode>(Kid))
+          continue;
+        return cast<WriteHeaderNode>(Kid);
+      }
     }
   }
-  if (getNumKids() >= 3) {
-    const FileHeaderNode* Header = dyn_cast<FileHeaderNode>(getKid(2));
-    if (Header != nullptr)
-      return Header;
-  }
-  return getReadHeader(UseEnclosing);
+  return getWriteHeader(UseEnclosing);
 }
 
 const SectionNode* FileNode::getDeclarations() const {
@@ -1928,7 +1938,8 @@ bool FileNode::validateNode(ConstNodeVectorType& Parents) const {
     const Node* Nd = getKid(i);
     switch (Nd->getType()) {
       case OpFileHeader:
-      case OpVoid:
+      case OpReadHeader:
+      case OpWriteHeader:
         break;
       default:
         fprintf(error(), "File argument not header s-expression\n");

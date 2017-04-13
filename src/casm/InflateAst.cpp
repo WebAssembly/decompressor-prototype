@@ -265,6 +265,8 @@ bool InflateAst::applyOp(IntType Op) {
       return buildUnary<PeekNode>();
     case OpRead:
       return buildUnary<ReadNode>();
+    case OpReadHeader:
+      return buildNary<ReadHeaderNode>();
     case OpRename:
       return buildBinary<RenameNode>();
     case OpSection:
@@ -318,6 +320,8 @@ bool InflateAst::applyOp(IntType Op) {
       return buildNullary<VoidNode>();
     case OpWrite:
       return buildNary<WriteNode>();
+    case OpWriteHeader:
+      return buildNary<WriteHeaderNode>();
     default:
       return failWriteActionMalformed();
   }
