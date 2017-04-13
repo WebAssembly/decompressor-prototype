@@ -541,7 +541,7 @@ class IntLookupNode FINAL : public CachedNode {
    public:                                                                 \
     explicit tag##Node(SymbolTable& Symtab);                               \
     ~tag##Node() OVERRIDE;                                                 \
-    static bool implementsClass(NodeType Type) { return Type == Op##tag; } \
+    static bool implementsClass(NodeType Type) { return Type == k##tag; } \
     NODE_DECLS                                                             \
   };
 AST_NULLARYNODE_TABLE
@@ -560,7 +560,7 @@ AST_NULLARYNODE_TABLE
                                                                            \
     tag##Node(SymbolTable& Symtab);                                        \
     ~tag##Node() OVERRIDE;                                                 \
-    static bool implementsClass(NodeType Type) { return Type == Op##tag; } \
+    static bool implementsClass(NodeType Type) { return Type == k##tag; } \
     NODE_DECLS                                                             \
   };
 AST_INTEGERNODE_TABLE
@@ -585,7 +585,7 @@ class BinaryAcceptNode FINAL : public IntegerNode {
   bool validateNode(ConstNodeVectorType& Parents) const OVERRIDE;
   unsigned getNumBits() const { return NumBits; }
 
-  static bool implementsClass(NodeType Type) { return Type == OpBinaryAccept; }
+  static bool implementsClass(NodeType Type) { return Type == kBinaryAccept; }
 
  protected:
   mutable unsigned NumBits;
@@ -610,7 +610,7 @@ class SymbolDefnNode FINAL : public CachedNode {
   const LiteralActionDefNode* getLiteralActionDefinition() const;
   void setLiteralActionDefinition(const LiteralActionDefNode* Defn);
 
-  static bool implementsClass(NodeType Type) { return Type == OpSymbolDefn; }
+  static bool implementsClass(NodeType Type) { return Type == kSymbolDefn; }
 
  private:
   const SymbolNode* Symbol;
@@ -651,7 +651,7 @@ class SymbolNode FINAL : public NullaryNode {
   PredefinedSymbol getPredefinedSymbol() const { return PredefinedValue; }
   bool isPredefinedSymbol() const { return PredefinedValueIsCached; }
 
-  static bool implementsClass(NodeType Type) { return Type == OpSymbol; }
+  static bool implementsClass(NodeType Type) { return Type == kSymbol; }
 
  private:
   std::string Name;
@@ -671,7 +671,7 @@ class SymbolNode FINAL : public NullaryNode {
    public:                                                                 \
     tag##Node(SymbolTable& Symtab, Node* Kid);                             \
     ~tag##Node() OVERRIDE;                                                 \
-    static bool implementsClass(NodeType Type) { return Op##tag == Type; } \
+    static bool implementsClass(NodeType Type) { return k##tag == Type; } \
     NODE_DECLS                                                             \
   };
 AST_UNARYNODE_TABLE
@@ -686,7 +686,7 @@ AST_UNARYNODE_TABLE
    public:                                                                 \
     tag##Node(SymbolTable& Symtab, Node* Kid1, Node* Kid2);                \
     ~tag##Node() OVERRIDE;                                                 \
-    static bool implementsClass(NodeType Type) { return Op##tag == Type; } \
+    static bool implementsClass(NodeType Type) { return k##tag == Type; } \
     NODE_DECLS                                                             \
   };
 AST_BINARYNODE_TABLE
@@ -701,7 +701,7 @@ AST_BINARYNODE_TABLE
    public:                                                                 \
     tag##Node(SymbolTable& Symtab, Node* Kid1, Node* Kid2, Node* Kid3);    \
     ~tag##Node() OVERRIDE;                                                 \
-    static bool implementsClass(NodeType Type) { return Op##tag == Type; } \
+    static bool implementsClass(NodeType Type) { return k##tag == Type; } \
     NODE_DECLS                                                             \
   };
 AST_TERNARYNODE_TABLE
@@ -716,7 +716,7 @@ AST_TERNARYNODE_TABLE
    public:                                                                 \
     explicit tag##Node(SymbolTable& Symtab);                               \
     ~tag##Node() OVERRIDE;                                                 \
-    static bool implementsClass(NodeType Type) { return Op##tag == Type; } \
+    static bool implementsClass(NodeType Type) { return k##tag == Type; } \
     NODE_DECLS                                                             \
   };
 AST_NARYNODE_TABLE
@@ -747,7 +747,7 @@ class SelectBaseNode : public NaryNode {
    public:                                                                 \
     explicit tag##Node(SymbolTable& Symtab);                               \
     ~tag##Node() OVERRIDE;                                                 \
-    static bool implementsClass(NodeType Type) { return Op##tag == Type; } \
+    static bool implementsClass(NodeType Type) { return k##tag == Type; } \
     NODE_DECLS                                                             \
   };
 AST_SELECTNODE_TABLE
@@ -761,7 +761,7 @@ class OpcodeNode FINAL : public SelectBaseNode {
  public:
   explicit OpcodeNode(SymbolTable& Symtab);
   ~OpcodeNode() OVERRIDE;
-  static bool implementsClass(NodeType Type) { return OpOpcode == Type; }
+  static bool implementsClass(NodeType Type) { return kOpcode == Type; }
   const CaseNode* getWriteCase(decode::IntType Value,
                                uint32_t& SelShift,
                                decode::IntType& CaseMask) const;
@@ -820,7 +820,7 @@ class BinaryEvalNode : public UnaryNode {
   const Node* getEncoding(decode::IntType Value) const;
   bool addEncoding(const BinaryAcceptNode* Encoding) const;
 
-  static bool implementsClass(NodeType Type) { return OpBinaryEval == Type; }
+  static bool implementsClass(NodeType Type) { return kBinaryEval == Type; }
 
  private:
   IntLookupNode* getIntLookup() const;

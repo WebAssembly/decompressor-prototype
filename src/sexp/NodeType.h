@@ -39,7 +39,7 @@ namespace filt {
 
 enum NodeType : uint32_t {
 #define X(tag, opcode, sexp_name, text_num_args, text_max_args, NSL, hidden) \
-  Op##tag = opcode,
+  k##tag = opcode,
   AST_OPCODE_TABLE
 #undef X
       NO_SUCH_NODETYPE
