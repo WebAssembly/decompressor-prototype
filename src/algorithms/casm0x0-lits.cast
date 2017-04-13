@@ -90,7 +90,6 @@
 # declarations
 (literal 'define'         (u8.const 0x60))
 (literal 'file'           (u8.const 0x62))
-(literal 'file.header'    (u8.const 0x77))
 (literal 'section'        (u8.const 0x63))
 (literal 'undefine'       (u8.const 0x64))
 (literal 'literal.define' (u8.const 0x65))
@@ -101,3 +100,6 @@
 (literal 'literal.action.define'  (u8.const 0x6a))
 (literal 'literal.action.use'     (u8.const 0x6b))
 (literal 'literal.action.enum'    (u8.const 0x6c))
+(literal 'header.file'    (u8.const 0x77))
+(literal 'header.read'    (u8.const 0x78))
+(literal 'header.write'   (u8.const 0x79))

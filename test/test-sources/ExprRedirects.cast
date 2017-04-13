@@ -16,8 +16,6 @@
 # (hidden) sequence node it they get more than one argument.
 
 (header (u32.const 0x6d736163) (u32.const 0x0))
-(void)
-(void)
 
 (declarations)
 

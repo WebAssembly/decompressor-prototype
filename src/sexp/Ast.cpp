@@ -1909,7 +1909,7 @@ const HeaderNode* FileNode::getWriteHeader(bool UseEnclosing) const {
       }
     }
   }
-  return getWriteHeader(UseEnclosing);
+  return getReadHeader(UseEnclosing);
 }
 
 const SectionNode* FileNode::getDeclarations() const {

@@ -41,9 +41,23 @@ AbbreviationCodegen::AbbreviationCodegen(const CompressionFlags& Flags,
       ToRead(ToRead) {
 }
 
-Node* AbbreviationCodegen::generateFileHeader(uint32_t MagicNumber,
+Node* AbbreviationCodegen::generateFileHeader(NodeType Type,
+                                              uint32_t MagicNumber,
                                               uint32_t VersionNumber) {
-  auto* Header = Symtab->create<FileHeaderNode>();
+  HeaderNode* Header = nullptr;
+  switch (Type) {
+    default:
+      return Symtab->create<VoidNode>();
+    case OpFileHeader:
+      Header = Symtab->create<FileHeaderNode>();
+      break;
+    case OpReadHeader:
+      Header = Symtab->create<ReadHeaderNode>();
+      break;
+    case OpWriteHeader:
+      Header = Symtab->create<WriteHeaderNode>();
+      break;
+  }
   Header->append(Symtab->create<U32ConstNode>(
       MagicNumber, decode::ValueFormat::Hexidecimal));
   Header->append(Symtab->create<U32ConstNode>(
@@ -55,7 +69,6 @@ void AbbreviationCodegen::generateFile(Node* SourceHeader, Node* TargetHeader) {
   auto* File = Symtab->create<FileNode>();
   File->append(SourceHeader);
   File->append(TargetHeader);
-  File->append(Symtab->create<VoidNode>());
   File->append(generateFileBody());
   Symtab->setRoot(File);
   Symtab->install();
@@ -205,10 +218,10 @@ Node* AbbreviationCodegen::generateIntLitActionWrite(IntCountNode* Nd) {
 
 std::shared_ptr<SymbolTable> AbbreviationCodegen::getCodeSymtab() {
   Symtab = std::make_shared<SymbolTable>();
-  generateFile(generateFileHeader(CasmBinaryMagic, CasmBinaryVersion),
+  generateFile(generateFileHeader(OpFileHeader, CasmBinaryMagic, CasmBinaryVersion),
                Flags.UseCismModel
-                   ? generateFileHeader(CismBinaryMagic, CismBinaryVersion)
-                   : generateFileHeader(WasmBinaryMagic, WasmBinaryVersionD));
+               ? generateFileHeader(OpReadHeader, CismBinaryMagic, CismBinaryVersion)
+               : generateFileHeader(OpReadHeader, WasmBinaryMagic, WasmBinaryVersionD));
   return Symtab;
 }
 

@@ -16,8 +16,7 @@
 # This file defines the CAST algorithms for reading/writing WASM files.
 
 (header (u32.const 0x6d736163) (u32.const 0x0))
-(header (u32.const 0x6d736100) (u32.const 0xd))
-(void)
+(header.read (u32.const 0x6d736100) (u32.const 0xd))
 
 (declarations)
 

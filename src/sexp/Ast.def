@@ -109,8 +109,8 @@
   X(LiteralActionUse,  0x6b, "literal.action.use", 11, 0, false, false)        \
   X(LiteralActionBase, 0x6c, "literal.action.enum", 1, 0, false, false)        \
   X(FileHeader,        0x77, "header",           0, 3, true,  false)           \
-  X(ReadHeader,        0x78, "header",           0, 3, true,  false)           \
-  X(WriteHeader,       0x79, "header",           0, 3, true,  false)           \
+  X(ReadHeader,        0x78, "header.read",      0, 3, true,  false)           \
+  X(WriteHeader,       0x79, "header.write",     0, 3, true,  false)           \
                                                                                \
   /* Internal (not opcodes in compressed file) */                              \
   X(UnknownSection,    0xFF, "unknown.section",  1, 0, true,  false)           \
