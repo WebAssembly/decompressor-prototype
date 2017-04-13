@@ -46,26 +46,6 @@ TextWriter::TextWriter()
       IndentCount(0),
       LineEmpty(true),
       ShowInternalStructure(DefaultShowInternalStructure) {
-  // Build fast lookup for number of arguments to write on same line.
-  for (size_t i = 0; i < MaxNodeType; ++i) {
-    KidCountSameLine.push_back(0);
-    MaxKidCountSameLine.push_back(0);
-  }
-  for (size_t i = 0; i < NumNodeTypes; ++i) {
-    AstTraitsType& Traits = AstTraits[i];
-    KidCountSameLine[int(Traits.Type)] = Traits.NumTextArgs;
-    MaxKidCountSameLine[int(Traits.Type)] =
-        Traits.NumTextArgs + Traits.AdditionalTextArgs;
-  }
-// Build map of nodes that can have hidden seq as last kid.
-#define X(tag) HasHiddenSeqSet.insert(int(Op##tag));
-  AST_NODE_HAS_HIDDEN_SEQ
-#undef X
-// Build map of nodes that never should be on the same line
-// as its parent.
-#define X(tag) NeverSameLine.insert(int(Op##tag));
-  AST_NODE_NEVER_SAME_LINE
-#undef X
 }
 
 TextWriter::Indent::Indent(TextWriter* Writer, bool AddNewline)
@@ -147,14 +127,15 @@ void TextWriter::writeIndent(int Adjustment) {
 void TextWriter::writeNodeKids(const Node* Nd, bool EmbeddedInParent) {
   // Write out with number of kids specified to be on same line,
   // with remaining kids on separate (indented) lines.
-  int Type = int(Nd->getType());
   int Count = 0;
-  int KidsSameLine = KidCountSameLine[int(Type)];
+  const AstTraitsType* Traits = getAstTraits(Nd->getType());
+  int KidsSameLine = Traits->NumTextArgs;
+  int MaxKidsSameLine = KidsSameLine + Traits->AdditionalTextArgs;
   int NumKids = Nd->getNumKids();
-  if (NumKids <= MaxKidCountSameLine[int(Type)])
-    KidsSameLine = MaxKidCountSameLine[int(Type)];
+  if (NumKids <= MaxKidsSameLine)
+    KidsSameLine = MaxKidsSameLine;
   Node* LastKid = Nd->getLastKid();
-  int HasHiddenSeq = HasHiddenSeqSet.count(Type);
+  bool HasHiddenSeq = Traits->HidesSeqInText;
   bool ForceNewline = false;
   for (auto* Kid : *Nd) {
     if (Kid == LastKid && !ShowInternalStructure) {
@@ -171,7 +152,7 @@ void TextWriter::writeNodeKids(const Node* Nd, bool EmbeddedInParent) {
       writeNode(Kid, true);
       continue;
     }
-    if (NeverSameLine.count(Kid->getType())) {
+    if (getAstTraits(Kid->getType())->NeverSameLineInText) {
       if (!(Count == 1 && EmbeddedInParent))
         writeNewline();
       ForceNewline = true;
@@ -261,12 +242,14 @@ void TextWriter::writeNode(const Node* Nd,
 void TextWriter::writeNodeKidsAbbrev(const Node* Nd, bool EmbeddedInParent) {
   // Write out with number of kids specified to be on same line,
   // with remaining kids on separate (indented) lines.
-  int Type = int(Nd->getType());
-  int KidsSameLine = KidCountSameLine[int(Type)];
+
+  const AstTraitsType* Traits = getAstTraits(Nd->getType());
+  int KidsSameLine = Traits->NumTextArgs;
+  int MaxKidsSameLine = KidsSameLine + Traits->AdditionalTextArgs;
   int NumKids = Nd->getNumKids();
-  if (NumKids <= MaxKidCountSameLine[int(Type)])
-    KidsSameLine = MaxKidCountSameLine[int(Type)];
-  int HasHiddenSeq = HasHiddenSeqSet.count(Type);
+  if (NumKids <= MaxKidsSameLine)
+    KidsSameLine = MaxKidsSameLine;
+  bool HasHiddenSeq = Traits->HidesSeqInText;
   for (int i = 0; i < NumKids; ++i) {
     Node* Kid = Nd->getKid(i);
     bool LastKid = i + 1 == NumKids;
@@ -274,7 +257,7 @@ void TextWriter::writeNodeKidsAbbrev(const Node* Nd, bool EmbeddedInParent) {
       fprintf(File, " ...[%d]", Kid->getNumKids());
       return;
     }
-    if (NeverSameLine.count(Kid->getType())) {
+    if (getAstTraits(Kid->getType())->NeverSameLineInText) {
       fprintf(File, " ...[%d]", NumKids - i);
       return;
     }

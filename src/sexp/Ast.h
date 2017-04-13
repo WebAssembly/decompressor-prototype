@@ -55,7 +55,7 @@ class SymbolTable;
 class CallbackNode;
 class SectionNode;
 
-#define X(tag, format, defval, mergable, NODE_DECLS) class tag##Node;
+#define X(tag, format, defval, mergable, BASE, NODE_DECLS) class tag##Node;
 AST_INTEGERNODE_TABLE
 #undef X
 
@@ -63,27 +63,7 @@ typedef std::unordered_set<Node*> VisitedNodesType;
 typedef std::vector<Node*> NodeVectorType;
 typedef std::vector<const Node*> ConstNodeVectorType;
 
-static constexpr size_t NumNodeTypes = 0
-#define X(tag, opcode, sexp_name, text_num_args, text_max_args) +1
-    AST_OPCODE_TABLE
-#undef X
-    ;
-
-static constexpr size_t MaxNodeType = const_maximum(
-#define X(tag, opcode, sexp_name, text_num_args, text_max_args) size_t(opcode),
-    AST_OPCODE_TABLE
-#undef X
-        std::numeric_limits<size_t>::min());
-
-struct AstTraitsType {
-  const NodeType Type;
-  const char* TypeName;
-  const char* SexpName;
-  const int NumTextArgs;
-  const int AdditionalTextArgs;
-};
-
-extern AstTraitsType AstTraits[NumNodeTypes];
+// extern AstTraitsType AstTraits[NumNodeTypes];
 
 // Models integer values (as used in AST nodes).
 class IntegerValue {
@@ -165,14 +145,9 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
 
   void collectActionDefs(ActionDefSet& DefSet);
 
-// Gets integer node (as defined by the arguments) if known. Otherwise
-// returns newly created integer.
-#define X(tag, format, defval, mergable, NODE_DECLS)       \
-  tag##Node* getOrCreate##tag(decode::IntType Value,       \
-                              decode::ValueFormat Format); \
-  tag##Node* getOrCreate##tag();
-  AST_INTEGERNODE_TABLE
-#undef X
+  // Gets integer node (as defined by the arguments) if known. Otherwise
+  // returns newly created integer.
+
   // Gets actions corresponding to enter/exit block.
   const CallbackNode* getBlockEnterCallback();
   const CallbackNode* getBlockExitCallback();
@@ -201,6 +176,9 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   T* create(Node* Nd1, Node* Nd2);
   template <typename T>
   T* create(Node* Nd1, Node* Nd2, Node* Nd3);
+  template <class T>
+  T* create(decode::IntType Value, decode::ValueFormat Format);
+
   BinaryAcceptNode* createBinaryAccept(decode::IntType Value, unsigned NumBits);
 
   // Returns the cached value associated with a node, or nullptr if not cached.
@@ -538,8 +516,8 @@ class IntLookupNode FINAL : public CachedNode {
   LookupMap Lookup;
 };
 
-#define X(tag, NODE_DECLS)                                                 \
-  class tag##Node FINAL : public NullaryNode {                             \
+#define X(tag, BASE, NODE_DECLS)                                           \
+  class tag##Node FINAL : public BASE {                                    \
     tag##Node() = delete;                                                  \
     tag##Node(const tag##Node&) = delete;                                  \
     tag##Node& operator=(const tag##Node&) = delete;                       \
@@ -553,8 +531,8 @@ class IntLookupNode FINAL : public CachedNode {
 AST_NULLARYNODE_TABLE
 #undef X
 
-#define X(tag, format, defval, mergable, NODE_DECLS)                       \
-  class tag##Node FINAL : public IntegerNode {                             \
+#define X(tag, format, defval, mergable, BASE, NODE_DECLS)                 \
+  class tag##Node FINAL : public BASE {                                    \
     tag##Node() = delete;                                                  \
     tag##Node(const tag##Node&) = delete;                                  \
     tag##Node& operator=(const tag##Node&) = delete;                       \
@@ -668,8 +646,8 @@ class SymbolNode FINAL : public NullaryNode {
   void setPredefinedSymbol(PredefinedSymbol NewValue);
 };
 
-#define X(tag, NODE_DECLS)                                                 \
-  class tag##Node FINAL : public UnaryNode {                               \
+#define X(tag, BASE, NODE_DECLS)                                           \
+  class tag##Node FINAL : public BASE {                                    \
     tag##Node() = delete;                                                  \
     tag##Node(const tag##Node&) = delete;                                  \
     tag##Node& operator=(const tag##Node&) = delete;                       \
@@ -683,8 +661,8 @@ class SymbolNode FINAL : public NullaryNode {
 AST_UNARYNODE_TABLE
 #undef X
 
-#define X(tag, NODE_DECLS)                                                 \
-  class tag##Node FINAL : public BinaryNode {                              \
+#define X(tag, BASE, NODE_DECLS)                                           \
+  class tag##Node FINAL : public BASE {                                    \
     tag##Node() = delete;                                                  \
     tag##Node(const tag##Node&) = delete;                                  \
     tag##Node& operator=(const tag##Node&) = delete;                       \
@@ -698,8 +676,8 @@ AST_UNARYNODE_TABLE
 AST_BINARYNODE_TABLE
 #undef X
 
-#define X(tag, NODE_DECLS)                                                 \
-  class tag##Node FINAL : public TernaryNode {                             \
+#define X(tag, BASE, NODE_DECLS)                                           \
+  class tag##Node FINAL : public BASE {                                    \
     tag##Node() = delete;                                                  \
     tag##Node(const tag##Node&) = delete;                                  \
     tag##Node& operator=(const tag##Node&) = delete;                       \
@@ -713,8 +691,8 @@ AST_BINARYNODE_TABLE
 AST_TERNARYNODE_TABLE
 #undef X
 
-#define X(tag, NODE_DECLS)                                                 \
-  class tag##Node FINAL : public NaryNode {                                \
+#define X(tag, BASE, NODE_DECLS)                                           \
+  class tag##Node FINAL : public BASE {                                    \
     tag##Node() = delete;                                                  \
     tag##Node(const tag##Node&) = delete;                                  \
     tag##Node& operator=(const tag##Node&) = delete;                       \

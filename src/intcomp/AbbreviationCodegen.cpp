@@ -44,10 +44,10 @@ AbbreviationCodegen::AbbreviationCodegen(const CompressionFlags& Flags,
 Node* AbbreviationCodegen::generateFileHeader(uint32_t MagicNumber,
                                               uint32_t VersionNumber) {
   auto* Header = Symtab->create<FileHeaderNode>();
-  Header->append(Symtab->getOrCreateU32Const(MagicNumber,
-                                             decode::ValueFormat::Hexidecimal));
-  Header->append(Symtab->getOrCreateU32Const(VersionNumber,
-                                             decode::ValueFormat::Hexidecimal));
+  Header->append(Symtab->create<U32ConstNode>(
+      MagicNumber, decode::ValueFormat::Hexidecimal));
+  Header->append(Symtab->create<U32ConstNode>(
+      VersionNumber, decode::ValueFormat::Hexidecimal));
   return Header;
 }
 
@@ -73,7 +73,7 @@ Node* AbbreviationCodegen::generateFileBody() {
 Node* AbbreviationCodegen::generateFileFcn() {
   auto* Fcn = Symtab->create<DefineNode>();
   Fcn->append(Symtab->getPredefined(PredefinedSymbol::File));
-  Fcn->append(Symtab->getOrCreateParams());
+  Fcn->append(Symtab->create<ParamsNode>());
   Fcn->append(Symtab->create<LoopUnboundedNode>(generateSwitchStatement()));
   return Fcn;
 }
@@ -122,7 +122,7 @@ Node* AbbreviationCodegen::generateSwitchStatement() {
 
 Node* AbbreviationCodegen::generateCase(size_t AbbrevIndex, CountNode::Ptr Nd) {
   return Symtab->create<CaseNode>(
-      Symtab->getOrCreateU64Const(AbbrevIndex, decode::ValueFormat::Decimal),
+      Symtab->create<U64ConstNode>(AbbrevIndex, decode::ValueFormat::Decimal),
       generateAction(Nd));
 }
 
@@ -178,7 +178,7 @@ Node* AbbreviationCodegen::generateAlignAction() {
 }
 
 Node* AbbreviationCodegen::generateIntType(IntType Value) {
-  return Symtab->getOrCreateU64Const(Value, decode::ValueFormat::Decimal);
+  return Symtab->create<U64ConstNode>(Value, decode::ValueFormat::Decimal);
 }
 
 Node* AbbreviationCodegen::generateIntLitAction(IntCountNode* Nd) {

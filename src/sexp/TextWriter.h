@@ -102,10 +102,6 @@ class TextWriter {
   size_t IndentCount;
   bool LineEmpty;
   bool ShowInternalStructure;
-  std::vector<int> KidCountSameLine;
-  std::vector<int> MaxKidCountSameLine;
-  std::unordered_set<int> HasHiddenSeqSet;
-  std::unordered_set<int> NeverSameLine;
 
   void initialize(FILE* File);
 
