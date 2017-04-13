@@ -34,9 +34,7 @@ using namespace utils;
 namespace filt {
 
 namespace {
-
 constexpr const char* IndentString = "  ";
-
 }  // end of anonyous namespace
 
 bool TextWriter::DefaultShowInternalStructure = false;
