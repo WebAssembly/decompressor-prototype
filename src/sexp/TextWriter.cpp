@@ -87,12 +87,12 @@ void TextWriter::writeName(NodeType Type) {
 }
 
 void TextWriter::write(FILE* File, SymbolTable* Symtab) {
-  write(File, Symtab->getInstalledRoot());
+  write(File, Symtab->getAlgorithm());
   Symtab = Symtab->getEnclosingScope().get();
   while (Symtab != nullptr) {
     writeIndent();
     fprintf(File, "Enclosing scope:\n");
-    write(File, Symtab->getInstalledRoot());
+    write(File, Symtab->getAlgorithm());
     Symtab = Symtab->getEnclosingScope().get();
   }
 }
@@ -200,7 +200,7 @@ void TextWriter::writeNode(const Node* Nd,
       writeNodeKids(Nd, true);
       return;
     }
-    case NodeType::File: {
+    case NodeType::Algorithm: {
       if (ShowInternalStructure)
         break;
       // Treat like hidden node. That is, visually just a list of
@@ -304,7 +304,7 @@ void TextWriter::writeNodeAbbrev(const Node* Nd,
       return;
     }
     case NodeType::Section:
-    case NodeType::File: {
+    case NodeType::Algorithm: {
       // Treat like hidden node. That is, visually just a list of s-expressions.
       fprintf(File, "(%s ...)\n", getNodeName(Nd));
       return;

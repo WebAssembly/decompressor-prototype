@@ -248,7 +248,7 @@ std::shared_ptr<SymbolTable> IntCompressor::generateCode(
   std::shared_ptr<SymbolTable> Symtab = Codegen.getCodeSymtab();
   if (Trace) {
     TextWriter Writer;
-    Writer.write(stderr, Symtab->getInstalledRoot());
+    Writer.write(stderr, Symtab->getAlgorithm());
   }
   return Symtab;
 }

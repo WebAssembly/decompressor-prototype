@@ -593,8 +593,8 @@ size_t CodeGenerator::generateNode(const Node* Nd) {
       return generateNullary("Error", Nd);
     case NodeType::Eval:
       return generateNary("Eval", Nd);
-    case NodeType::File:
-      return generateNary("File", Nd);
+    case NodeType::Algorithm:
+      return generateNary("Algorithm", Nd);
     case NodeType::IfThen:
       return generateBinary("IfThen", Nd);
     case NodeType::IfThenElse:
@@ -810,7 +810,7 @@ void CodeGenerator::generateFunctionImplFile() {
   puts(
       "namespace {\n"
       "\n");
-  size_t Index = generateNode(Symtab->getInstalledRoot());
+  size_t Index = generateNode(Symtab->getAlgorithm());
   puts(
       "}  // end of anonymous namespace\n"
       "\n");
@@ -822,7 +822,7 @@ void CodeGenerator::generateFunctionImplFile() {
       "    return Symtable;\n"
       "  Symtable = std::make_shared<SymbolTable>();\n"
       "  SymbolTable* Symtab = Symtable.get();\n"
-      "  Symtab->setRoot(");
+      "  Symtab->setAlgorithm(");
   generateFunctionCall(Index);
   puts(
       ");\n"
@@ -900,13 +900,11 @@ std::shared_ptr<SymbolTable> readCasmFile(
   return Symtab;
 }
 
-bool installRoot(SymbolTable::SharedPtr Symtab,
-                 bool Display,
-                 const char* Title) {
+bool install(SymbolTable::SharedPtr Symtab, bool Display, const char* Title) {
   if (Display) {
     fprintf(stdout, "After stripping %s:\n", Title);
     TextWriter Writer;
-    Writer.write(stdout, Symtab->getRoot());
+    Writer.write(stdout, Symtab->getAlgorithm());
   }
   bool Success = Symtab->install();
   if (!Success)
@@ -1201,31 +1199,31 @@ int main(int Argc, charstring Argv[]) {
 
   if (StripActions) {
     InputSymtab->stripCallbacksExcept(KeepActions);
-    if (!installRoot(InputSymtab, DisplayStripAll, "actions"))
+    if (!install(InputSymtab, DisplayStripAll, "actions"))
       return exit_status(EXIT_FAILURE);
   }
 
   if (StripSymbolicActions) {
     InputSymtab->stripSymbolicCallbacks();
-    if (!installRoot(InputSymtab, DisplayStripAll, "symbolic actions"))
+    if (!install(InputSymtab, DisplayStripAll, "symbolic actions"))
       return exit_status(EXIT_FAILURE);
   }
 
   if (StripLiteralUses) {
     InputSymtab->stripLiteralUses();
-    if (!installRoot(InputSymtab, DisplayStripAll, "literal uses"))
+    if (!install(InputSymtab, DisplayStripAll, "literal uses"))
       return exit_status(EXIT_FAILURE);
   }
 
   if (StripLiteralDefs) {
     InputSymtab->stripLiteralDefs();
-    if (!installRoot(InputSymtab, DisplayStripAll, "literal definitions"))
+    if (!install(InputSymtab, DisplayStripAll, "literal definitions"))
       return exit_status(EXIT_FAILURE);
   }
 
   if (StripLiterals) {
     InputSymtab->stripLiterals();
-    if (!installRoot(InputSymtab, DisplayStripAll, "literals"))
+    if (!install(InputSymtab, DisplayStripAll, "literals"))
       return exit_status(EXIT_FAILURE);
   }
 

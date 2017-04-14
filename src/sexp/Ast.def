@@ -97,7 +97,7 @@
                                                                                \
   /* Declarations */                                                           \
   X(Define,            0x60, "define",           2, 1, true,  true)            \
-  X(File,              0x62, "file",             2, 0, false, false)           \
+  X(Algorithm,         0x62, "algorithm",        2, 0, false, false)           \
   X(Section,           0x63, "declarations",     0, 0, true,  false)           \
   X(Undefine,          0x64, "undefine",         1, 0, true, false)            \
   X(LiteralDef,        0x65, "literal",          2, 0, false, false)           \
@@ -222,9 +222,9 @@
 
 //#define X(tag, BASE, NODE_DECLS)
 #define AST_NARYNODE_TABLE                                                     \
+  X(Algorithm, Nary, ALGORITHM_DECLS)                                          \
   X(Define, Nary, DEFINE_DECLS)                                                \
   X(Eval, Nary, EVAL_DECLS)                                                    \
-  X(File, Nary, FILE_DECLS)                                                    \
   X(LiteralActionBase, Nary,)                                                  \
   X(ReadHeader, Header,)                                                       \
   X(Section, Nary,)                                                            \
@@ -233,7 +233,7 @@
   X(Write, Nary,)                                                              \
   X(WriteHeader, Header,)                                                      \
 
-#define FILE_DECLS                                                             \
+#define ALGORITHM_DECLS                                                        \
   public:                                                                      \
     const Header* getSourceHeader(bool UseEnclosing=true) const;               \
     const Header* getReadHeader(bool UseEnclosing=true) const;                 \

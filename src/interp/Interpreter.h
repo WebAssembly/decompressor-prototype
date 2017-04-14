@@ -92,7 +92,7 @@ class Interpreter {
   std::shared_ptr<filt::SymbolTable> getDefaultAlgorithm(
       const filt::Node* TargetHeader);
 
-  // Starts up decompression using a (file) algorithm.
+  // Starts up decompression using an algorithm.
   void algorithmStart();
   void algorithmStartHasFileHeader();
 

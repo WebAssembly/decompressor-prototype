@@ -52,7 +52,7 @@ FlattenAst::~FlattenAst() {
 
 bool FlattenAst::flatten(bool BitCompressValue) {
   BitCompress = BitCompressValue;
-  flattenNode(Symtab->getInstalledRoot());
+  flattenNode(Symtab->getAlgorithm());
   freezeOutput();
   return !HasErrors;
 }
@@ -211,7 +211,7 @@ void FlattenAst::flattenNode(const Node* Nd) {
       Writer->write(IntType(Opcode));
       break;
     }
-    case NodeType::File: {
+    case NodeType::Algorithm: {
       int NumKids = Nd->getNumKids();
       if (NumKids <= 1)
         return reportError("No source header defined for algorithm");

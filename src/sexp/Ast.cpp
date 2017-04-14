@@ -619,7 +619,7 @@ SymbolTable::SymbolTable() {
 }
 
 void SymbolTable::init() {
-  setRoot(nullptr);
+  setAlgorithm(nullptr);
   NextCreationIndex = 0;
   ActionBase = 0;
   Err = create<Error>();
@@ -858,60 +858,60 @@ bool SymbolTable::areActionsConsistent() {
   return IsValid;
 }
 
-void SymbolTable::setRoot(const File* NewRoot) {
-  Root = const_cast<File*>(NewRoot);
-  RootInstalled = false;
+void SymbolTable::setAlgorithm(const Algorithm* NewAlg) {
+  Alg = const_cast<Algorithm*>(NewAlg);
+  IsAlgInstalled = false;
 }
 
 bool SymbolTable::install() {
   TRACE_METHOD("install");
-  if (RootInstalled)
+  if (IsAlgInstalled)
     return true;
   CachedValue.clear();
   UndefinedCallbacks.clear();
   CallbackValues.clear();
   CallbackLiterals.clear();
   ActionBase = 0;
-  if (Root == nullptr)
+  if (Alg == nullptr)
     return false;
-  if (EnclosingScope && !EnclosingScope->isRootInstalled()) {
+  if (EnclosingScope && !EnclosingScope->isAlgorithmInstalled()) {
     if (!EnclosingScope->install())
       return false;
   }
   installPredefined();
-  installDefinitions(Root);
+  installDefinitions(Alg);
   ConstNodeVectorType Parents;
-  bool IsValid = Root->validateSubtree(Parents);
+  bool IsValid = Alg->validateSubtree(Parents);
   if (IsValid)
     IsValid = areActionsConsistent();
   if (!IsValid)
     fatal("Unable to install algorthms, validation failed!");
-  return RootInstalled = true;
+  return IsAlgInstalled = true;
 }
 
 const Header* SymbolTable::getSourceHeader() const {
-  if (Root == nullptr)
+  if (Alg == nullptr)
     return nullptr;
-  return Root->getSourceHeader();
+  return Alg->getSourceHeader();
 }
 
 const Header* SymbolTable::getReadHeader() const {
-  if (Root == nullptr)
+  if (Alg == nullptr)
     return nullptr;
-  return Root->getReadHeader();
+  return Alg->getReadHeader();
 }
 
 const Header* SymbolTable::getWriteHeader() const {
-  if (Root == nullptr)
+  if (Alg == nullptr)
     return nullptr;
-  return Root->getWriteHeader();
+  return Alg->getWriteHeader();
 }
 
 bool SymbolTable::specifiesAlgorithm() const {
-  if (Root == nullptr)
+  if (Alg == nullptr)
     return false;
-  return *Root->getSourceHeader() == *Root->getReadHeader() &&
-         *Root->getReadHeader() == *Root->getWriteHeader();
+  return *Alg->getSourceHeader() == *Alg->getReadHeader() &&
+         *Alg->getReadHeader() == *Alg->getWriteHeader();
 }
 
 void SymbolTable::installPredefined() {
@@ -924,50 +924,50 @@ void SymbolTable::installPredefined() {
   }
 }
 
-void SymbolTable::installDefinitions(const Node* Root) {
+void SymbolTable::installDefinitions(const Node* Nd) {
   TRACE_METHOD("installDefinitions");
-  TRACE(node_ptr, nullptr, Root);
-  if (Root == nullptr)
+  TRACE(node_ptr, nullptr, Nd);
+  if (Nd == nullptr)
     return;
-  switch (Root->getType()) {
+  switch (Nd->getType()) {
     default:
       return;
-    case NodeType::File:
+    case NodeType::Algorithm:
     case NodeType::Section:
-      for (Node* Kid : *Root)
+      for (Node* Kid : *Nd)
         installDefinitions(Kid);
       return;
     case NodeType::Define: {
-      if (auto* DefineSymbol = dyn_cast<Symbol>(Root->getKid(0)))
-        return DefineSymbol->setDefineDefinition(cast<Define>(Root));
-      errorDescribeNode("Malformed define", Root);
+      if (auto* DefineSymbol = dyn_cast<Symbol>(Nd->getKid(0)))
+        return DefineSymbol->setDefineDefinition(cast<Define>(Nd));
+      errorDescribeNode("Malformed define", Nd);
       fatal("Malformed define s-expression found!");
       return;
     }
     case NodeType::LiteralDef: {
-      if (auto* LiteralSymbol = dyn_cast<Symbol>(Root->getKid(0)))
-        return LiteralSymbol->setLiteralDefinition(cast<LiteralDef>(Root));
-      errorDescribeNode("Malformed", Root);
+      if (auto* LiteralSymbol = dyn_cast<Symbol>(Nd->getKid(0)))
+        return LiteralSymbol->setLiteralDefinition(cast<LiteralDef>(Nd));
+      errorDescribeNode("Malformed", Nd);
       fatal("Malformed literal s-expression found!");
       return;
     }
     case NodeType::LiteralActionBase: {
-      const auto* IntNd = cast<IntegerNode>(Root->getKid(0));
+      const auto* IntNd = cast<IntegerNode>(Nd->getKid(0));
       if (IntNd == nullptr)
-        errorDescribeNode("Unable to extract literal action base", Root);
+        errorDescribeNode("Unable to extract literal action base", Nd);
       IntType Base = IntNd->getValue();
       if (ActionBase != 0) {
-        fprintf(Root->getErrorFile(), "Literal action base was: %" PRIuMAX "\n",
+        fprintf(Nd->getErrorFile(), "Literal action base was: %" PRIuMAX "\n",
                 uintmax_t(ActionBase));
-        errorDescribeNode("Redefining to", Root);
+        errorDescribeNode("Redefining to", Nd);
         fatal("Duplicate literal action bases defined!");
       }
       ActionBase = Base;
-      for (int i = 1, NumKids = Root->getNumKids(); i < NumKids; ++i) {
-        auto* Sym = dyn_cast<Symbol>(Root->getKid(i));
+      for (int i = 1, NumKids = Nd->getNumKids(); i < NumKids; ++i) {
+        auto* Sym = dyn_cast<Symbol>(Nd->getKid(i));
         if (Sym == nullptr) {
-          errorDescribeNode("Symbol expected", Root->getKid(1));
-          errorDescribeNode("In", Root);
+          errorDescribeNode("Symbol expected", Nd->getKid(1));
+          errorDescribeNode("In", Nd);
           return fatal("Unable to install algorithm");
         }
         Node* Value = create<U64Const>(Base, IntNd->getFormat());
@@ -978,36 +978,36 @@ void SymbolTable::installDefinitions(const Node* Root) {
       return;
     }
     case NodeType::LiteralActionDef: {
-      if (auto* LiteralSymbol = dyn_cast<Symbol>(Root->getKid(0))) {
+      if (auto* LiteralSymbol = dyn_cast<Symbol>(Nd->getKid(0))) {
         if (LiteralSymbol->isPredefinedSymbol()) {
-          errorDescribeNode("In", Root);
+          errorDescribeNode("In", Nd);
           return fatal("Can't redefine predefined symbol");
         }
-        const auto* Def = cast<LiteralActionDef>(Root);
+        const auto* Def = cast<LiteralActionDef>(Nd);
         insertCallbackLiteral(Def);
         return LiteralSymbol->setLiteralActionDefinition(Def);
       }
-      errorDescribeNode("Malformed", Root);
+      errorDescribeNode("Malformed", Nd);
       return fatal("Malformed literal s-expression found!");
     }
     case NodeType::Rename: {
-      if (auto* OldSymbol = dyn_cast<Symbol>(Root->getKid(0))) {
-        if (auto* NewSymbol = dyn_cast<Symbol>(Root->getKid(1))) {
+      if (auto* OldSymbol = dyn_cast<Symbol>(Nd->getKid(0))) {
+        if (auto* NewSymbol = dyn_cast<Symbol>(Nd->getKid(1))) {
           const Define* Defn = OldSymbol->getDefineDefinition();
           NewSymbol->setDefineDefinition(Defn);
           return;
         }
       }
-      errorDescribeNode("Malformed", Root);
+      errorDescribeNode("Malformed", Nd);
       fatal("Malformed rename s-expression found!");
       return;
     }
     case NodeType::Undefine: {
-      if (auto* UndefineSymbol = dyn_cast<Symbol>(Root->getKid(0))) {
+      if (auto* UndefineSymbol = dyn_cast<Symbol>(Nd->getKid(0))) {
         UndefineSymbol->setDefineDefinition(nullptr);
         return;
       }
-      errorDescribeNode("Can't undefine", Root);
+      errorDescribeNode("Can't undefine", Nd);
       fatal("Malformed undefine s-expression found!");
       return;
     }
@@ -1025,13 +1025,13 @@ void SymbolTable::describe(FILE* Out, bool ShowInternalStructure) {
 }
 
 void SymbolTable::stripCallbacksExcept(std::set<std::string>& KeepActions) {
-  setRoot(dyn_cast<File>(stripCallbacksExcept(KeepActions, Root)));
+  setAlgorithm(dyn_cast<Algorithm>(stripCallbacksExcept(KeepActions, Alg)));
 }
 
 void SymbolTable::stripSymbolicCallbacks() {
-  setRoot(dyn_cast<File>(stripSymbolicCallbackUses(Root)));
-  if (Root != nullptr)
-    setRoot(dyn_cast<File>(stripSymbolicCallbackDefs(Root)));
+  setAlgorithm(dyn_cast<Algorithm>(stripSymbolicCallbackUses(Alg)));
+  if (Alg != nullptr)
+    setAlgorithm(dyn_cast<Algorithm>(stripSymbolicCallbackDefs(Alg)));
 }
 
 void SymbolTable::stripLiterals() {
@@ -1040,22 +1040,21 @@ void SymbolTable::stripLiterals() {
 }
 
 void SymbolTable::stripLiteralUses() {
-  setRoot(dyn_cast<File>(stripLiteralUses(Root)));
+  setAlgorithm(dyn_cast<Algorithm>(stripLiteralUses(Alg)));
 }
 
 void SymbolTable::stripLiteralDefs() {
   SymbolSet DefSyms;
   collectLiteralUseSymbols(DefSyms);
-  setRoot(dyn_cast<File>(stripLiteralDefs(Root, DefSyms)));
+  setAlgorithm(dyn_cast<Algorithm>(stripLiteralDefs(Alg, DefSyms)));
 }
 
-Node* SymbolTable::stripUsing(Node* Root,
-                              std::function<Node*(Node*)> stripKid) {
-  switch (NodeType Op = Root->getType()) {
+Node* SymbolTable::stripUsing(Node* Nd, std::function<Node*(Node*)> stripKid) {
+  switch (NodeType Op = Nd->getType()) {
     default:
-      for (int i = 0; i < Root->getNumKids(); ++i)
-        Root->setKid(i, stripKid(Root->getKid(i)));
-      return Root;
+      for (int i = 0; i < Nd->getNumKids(); ++i)
+        Nd->setKid(i, stripKid(Nd->getKid(i)));
+      return Nd;
 #define X(tag, BASE, NODE_DECLS) case NodeType::tag:
       AST_NARYNODE_TABLE
 #undef X
@@ -1063,13 +1062,13 @@ Node* SymbolTable::stripUsing(Node* Root,
         // TODO: Make strip functions return nullptr to remove!
         std::vector<Node*> Kids;
         int index = 0;
-        int limit = Root->getNumKids();
-        if (Op == NodeType::File) {
+        int limit = Nd->getNumKids();
+        if (Op == NodeType::Algorithm) {
           // Note: Never remove void's in a file node (They represent
           // header information). Only process once declarations (i.e.
           // a section node) are reached.
           for (; index < limit; ++index) {
-            Node* Kid = Root->getKid(index);
+            Node* Kid = Nd->getKid(index);
             if (isa<Section>(Kid))
               break;
             Kids.push_back(Kid);
@@ -1077,65 +1076,65 @@ Node* SymbolTable::stripUsing(Node* Root,
         }
         // Simplify kids, removing "void" operations from the nary node.
         for (; index < limit; ++index) {
-          Node* Kid = stripKid(Root->getKid(index));
+          Node* Kid = stripKid(Nd->getKid(index));
           if (!isa<Void>(Kid))
             Kids.push_back(Kid);
         }
-        if (Kids.size() == size_t(Root->getNumKids())) {
+        if (Kids.size() == size_t(Nd->getNumKids())) {
           // Replace kids in place.
           for (size_t i = 0; i < Kids.size(); ++i)
-            Root->setKid(i, Kids[i]);
-          return Root;
+            Nd->setKid(i, Kids[i]);
+          return Nd;
         }
         if (Kids.empty())
           break;
-        if (Kids.size() == 1 && Root->getType() == NodeType::Sequence)
+        if (Kids.size() == 1 && Nd->getType() == NodeType::Sequence)
           return Kids[0];
-        Nary* Nd = dyn_cast<Nary>(Root);
-        if (Nd == nullptr)
+        Nary* NaryNd = dyn_cast<Nary>(Nd);
+        if (NaryNd == nullptr)
           break;
-        Nd->clearKids();
+        NaryNd->clearKids();
         for (auto Kid : Kids)
-          Nd->append(Kid);
-        return Nd;
+          NaryNd->append(Kid);
+        return NaryNd;
       }
   }
   return create<Void>();
 }
 
 Node* SymbolTable::stripCallbacksExcept(std::set<std::string>& KeepActions,
-                                        Node* Root) {
-  switch (Root->getType()) {
+                                        Node* Nd) {
+  switch (Nd->getType()) {
     default:
-      return stripUsing(Root, [&](Node* Nd) -> Node* {
-        return stripCallbacksExcept(KeepActions, Nd);
+      return stripUsing(Nd, [&](Node* Kid) -> Node* {
+        return stripCallbacksExcept(KeepActions, Kid);
       });
     case NodeType::Callback: {
-      Node* Action = Root->getKid(0);
+      Node* Action = Nd->getKid(0);
       switch (Action->getType()) {
         default:
-          return Root;
+          return Nd;
         case NodeType::LiteralActionUse: {
           auto* Sym = dyn_cast<Symbol>(Action->getKid(0));
           if (Sym == nullptr)
-            return Root;
+            return Nd;
           if (Sym->isPredefinedSymbol() || KeepActions.count(Sym->getName()))
-            return Root;
+            return Nd;
           break;
         }
       }
       break;
     }
     case NodeType::LiteralActionDef:
-      if (const auto* Sym = dyn_cast<Symbol>(Root->getKid(0))) {
+      if (const auto* Sym = dyn_cast<Symbol>(Nd->getKid(0))) {
         if (KeepActions.count(Sym->getName()))
-          return Root;
+          return Nd;
       }
       break;
     case NodeType::LiteralActionBase: {
       bool CanRemove = true;
-      for (int i = 1; i < Root->getNumKids(); ++i) {
-        if (const auto* Sym = dyn_cast<Symbol>(Root->getKid(i))) {
+      for (int i = 1; i < Nd->getNumKids(); ++i) {
+        if (const auto* Sym = dyn_cast<Symbol>(Nd->getKid(i))) {
           if (KeepActions.count(Sym->getName())) {
             CanRemove = false;
             break;
@@ -1143,23 +1142,23 @@ Node* SymbolTable::stripCallbacksExcept(std::set<std::string>& KeepActions,
         }
       }
       if (!CanRemove)
-        return Root;
+        return Nd;
       break;
     }
   }
   return create<Void>();
 }
 
-Node* SymbolTable::stripSymbolicCallbackUses(Node* Root) {
-  switch (Root->getType()) {
+Node* SymbolTable::stripSymbolicCallbackUses(Node* Nd) {
+  switch (Nd->getType()) {
     default:
-      return stripUsing(Root, [&](Node* Nd) -> Node* {
-        return stripSymbolicCallbackUses(Nd);
+      return stripUsing(Nd, [&](Node* Kid) -> Node* {
+        return stripSymbolicCallbackUses(Kid);
       });
     case NodeType::LiteralActionUse: {
-      const auto* Sym = dyn_cast<Symbol>(Root->getKid(0));
+      const auto* Sym = dyn_cast<Symbol>(Nd->getKid(0));
       if (Sym == nullptr)
-        return Root;
+        return Nd;
       const auto* Def = Sym->getLiteralActionDefinition();
       if (Def == nullptr)
         break;
@@ -1170,15 +1169,15 @@ Node* SymbolTable::stripSymbolicCallbackUses(Node* Root) {
   TextWriter Writer;
   FILE* Out = error();
   fprintf(Out, "No action definition for: ");
-  Writer.write(Out, Root);
+  Writer.write(Out, Nd);
   return create<Void>();
 }
 
-Node* SymbolTable::stripSymbolicCallbackDefs(Node* Root) {
-  switch (Root->getType()) {
+Node* SymbolTable::stripSymbolicCallbackDefs(Node* Nd) {
+  switch (Nd->getType()) {
     default:
-      return stripUsing(Root, [&](Node* Nd) -> Node* {
-        return stripSymbolicCallbackDefs(Nd);
+      return stripUsing(Nd, [&](Node* Kid) -> Node* {
+        return stripSymbolicCallbackDefs(Kid);
       });
     case NodeType::LiteralActionDef:
       break;
@@ -1188,15 +1187,15 @@ Node* SymbolTable::stripSymbolicCallbackDefs(Node* Root) {
   return create<Void>();
 }
 
-Node* SymbolTable::stripLiteralUses(Node* Root) {
-  switch (Root->getType()) {
+Node* SymbolTable::stripLiteralUses(Node* Nd) {
+  switch (Nd->getType()) {
     default:
       return stripUsing(
-          Root, [&](Node* Nd) -> Node* { return stripLiteralUses(Nd); });
+          Nd, [&](Node* Kid) -> Node* { return stripLiteralUses(Kid); });
     case NodeType::LiteralActionUse:
-      return Root;
+      return Nd;
     case NodeType::LiteralUse: {
-      const auto* Use = cast<LiteralUse>(Root);
+      const auto* Use = cast<LiteralUse>(Nd);
       const auto* Sym = dyn_cast<Symbol>(Use->getKid(0));
       if (Sym == nullptr)
         break;
@@ -1210,13 +1209,13 @@ Node* SymbolTable::stripLiteralUses(Node* Root) {
   TextWriter Writer;
   FILE* Out = error();
   fprintf(Out, "No literal definition for: ");
-  Writer.write(Out, Root);
+  Writer.write(Out, Nd);
   return create<Void>();
 }
 
 void SymbolTable::collectLiteralUseSymbols(SymbolSet& Symbols) {
   ConstNodeVectorType ToVisit;
-  ToVisit.push_back(Root);
+  ToVisit.push_back(Alg);
   while (!ToVisit.empty()) {
     const Node* Nd = ToVisit.back();
     ToVisit.pop_back();
@@ -1231,19 +1230,19 @@ void SymbolTable::collectLiteralUseSymbols(SymbolSet& Symbols) {
   }
 }
 
-Node* SymbolTable::stripLiteralDefs(Node* Root, SymbolSet& DefSyms) {
-  switch (Root->getType()) {
+Node* SymbolTable::stripLiteralDefs(Node* Nd, SymbolSet& DefSyms) {
+  switch (Nd->getType()) {
     default:
-      return stripUsing(Root, [&](Node* Nd) -> Node* {
-        return stripLiteralDefs(Nd, DefSyms);
+      return stripUsing(Nd, [&](Node* Kid) -> Node* {
+        return stripLiteralDefs(Kid, DefSyms);
       });
     case NodeType::LiteralDef:
-      if (DefSyms.count(dyn_cast<Symbol>(Root->getKid(0))))
-        return Root;
+      if (DefSyms.count(dyn_cast<Symbol>(Nd->getKid(0))))
+        return Nd;
       break;
     case NodeType::LiteralActionDef:
-      if (CallbackLiterals.count(cast<LiteralActionDef>(Root)))
-        return Root;
+      if (CallbackLiterals.count(cast<LiteralActionDef>(Nd)))
+        return Nd;
       break;
   }
   return create<Void>();
@@ -1535,8 +1534,9 @@ int BinaryAccept::nodeCompare(const Node* Nd) const {
 }
 
 bool BinaryAccept::validateNode(ConstNodeVectorType& Parents) const {
-  // Defines path (value) from leaf to (binary) root node, guaranteeing each
-  // accept node has a unique value that can be case selected.
+  // Defines path (value) from leaf to algorithm root node,
+  // guaranteeing each accept node has a unique value that can be case
+  // selected.
   TRACE_METHOD("validateNode");
   TRACE(node_ptr, nullptr, this);
   IntType MyValue = 0;
@@ -1842,7 +1842,7 @@ bool Eval::validateNode(ConstNodeVectorType& Parents) const {
   return true;
 }
 
-const Header* File::getSourceHeader(bool UseEnclosing) const {
+const Header* Algorithm::getSourceHeader(bool UseEnclosing) const {
   for (const Node* Kid : *this) {
     if (!isa<SourceHeader>(Kid))
       continue;
@@ -1851,8 +1851,8 @@ const Header* File::getSourceHeader(bool UseEnclosing) const {
   if (UseEnclosing) {
     for (SymbolTable* Sym = Symtab.getEnclosingScope().get(); Sym != nullptr;
          Sym = Sym->getEnclosingScope().get()) {
-      const File* F = Sym->getInstalledRoot();
-      for (const Node* Kid : *F) {
+      const Algorithm* Alg = Sym->getAlgorithm();
+      for (const Node* Kid : *Alg) {
         if (!isa<SourceHeader>(Kid))
           continue;
         return cast<SourceHeader>(Kid);
@@ -1862,7 +1862,7 @@ const Header* File::getSourceHeader(bool UseEnclosing) const {
   return nullptr;
 }
 
-const Header* File::getReadHeader(bool UseEnclosing) const {
+const Header* Algorithm::getReadHeader(bool UseEnclosing) const {
   for (const Node* Kid : *this) {
     if (!isa<ReadHeader>(Kid))
       continue;
@@ -1871,8 +1871,8 @@ const Header* File::getReadHeader(bool UseEnclosing) const {
   if (UseEnclosing) {
     for (SymbolTable* Sym = Symtab.getEnclosingScope().get(); Sym != nullptr;
          Sym = Sym->getEnclosingScope().get()) {
-      const File* F = Sym->getInstalledRoot();
-      for (const Node* Kid : *F) {
+      const Algorithm* Alg = Sym->getAlgorithm();
+      for (const Node* Kid : *Alg) {
         if (!isa<ReadHeader>(Kid))
           continue;
         return cast<ReadHeader>(Kid);
@@ -1882,7 +1882,7 @@ const Header* File::getReadHeader(bool UseEnclosing) const {
   return getSourceHeader(UseEnclosing);
 }
 
-const Header* File::getWriteHeader(bool UseEnclosing) const {
+const Header* Algorithm::getWriteHeader(bool UseEnclosing) const {
   for (const Node* Kid : *this) {
     if (!isa<WriteHeader>(Kid))
       continue;
@@ -1891,8 +1891,8 @@ const Header* File::getWriteHeader(bool UseEnclosing) const {
   if (UseEnclosing) {
     for (SymbolTable* Sym = Symtab.getEnclosingScope().get(); Sym != nullptr;
          Sym = Sym->getEnclosingScope().get()) {
-      const File* F = Sym->getInstalledRoot();
-      for (const Node* Kid : *F) {
+      const Algorithm* Alg = Sym->getAlgorithm();
+      for (const Node* Kid : *Alg) {
         if (!isa<WriteHeader>(Kid))
           continue;
         return cast<WriteHeader>(Kid);
@@ -1902,7 +1902,7 @@ const Header* File::getWriteHeader(bool UseEnclosing) const {
   return getReadHeader(UseEnclosing);
 }
 
-const Section* File::getDeclarations() const {
+const Section* Algorithm::getDeclarations() const {
   for (const Node* Kid : *this)
     if (isa<Section>(Kid))
       return cast<Section>(Kid);
@@ -1910,12 +1910,12 @@ const Section* File::getDeclarations() const {
   return nullptr;
 }
 
-bool File::validateNode(ConstNodeVectorType& Parents) const {
+bool Algorithm::validateNode(ConstNodeVectorType& Parents) const {
   TRACE_METHOD("validateNode");
   if (!Parents.empty()) {
     fprintf(error(),
-            "File nodes can only appear as a top-level s-expression\n");
-    errorDescribeNode("Bad file node", this);
+            "Algorithm nodes can only appear as a top-level s-expression\n");
+    errorDescribeNode("Bad algorithm node", this);
     errorDescribeContext(Parents);
     return false;
   }

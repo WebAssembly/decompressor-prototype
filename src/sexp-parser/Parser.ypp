@@ -156,10 +156,10 @@ struct IntValue {
 %type <wasm::filt::Node *> eval_args
 %type <wasm::filt::Node *> expression
 %type <wasm::filt::Node *> expression_redirect
-%type <wasm::filt::Node *> file
-%type <wasm::filt::Node *> file_contents
-%type <wasm::filt::Node *> file_header
-%type <wasm::filt::Node *> file_header_args
+%type <wasm::filt::Node *> algorithm
+%type <wasm::filt::Node *> algorithm_contents
+%type <wasm::filt::Node *> algorithm_header
+%type <wasm::filt::Node *> algorithm_header_args
 %type <wasm::filt::Node *> fixed_format_directive
 %type <wasm::filt::Node *> format_binary
 %type <wasm::filt::Node *> format_directive
@@ -177,9 +177,68 @@ struct IntValue {
 %type <wasm::filt::Node *> table_args
 %type <wasm::filt::Node *> write_args
 
-%start file
+%start algorithm
 
 %%
+
+algorithm
+         : algorithm_contents { $$ = $1; }
+         | "(" "enclosing" IDENTIFIER ")" algorithm_contents {
+             $$ = $5;
+             Driver.setEnclosing($3);
+           }
+         ;
+
+algorithm_contents
+         : algorithm_header algorithm_header algorithm_header section {
+             $$ = Driver.create<Algorithm>();
+             $$->append($1);
+             $$->append($2);
+             $$->append($3);
+             $$->append($4);
+             Driver.setParsedAst($$);
+           }
+         | algorithm_header algorithm_header section {
+             $$ = Driver.create<Algorithm>();
+             $$->append($1);
+             $$->append($2);
+             $$->append($3);
+             Driver.setParsedAst($$);
+           }
+         | algorithm_header section {
+             $$ = Driver.create<Algorithm>();
+             $$->append($1);
+             $$->append($2);
+             Driver.setParsedAst($$);
+           }
+         | section {
+             $$ = Driver.create<Algorithm>();
+             $$->append($1);
+             Driver.setParsedAst($$);
+           }
+        ;
+
+algorithm_header
+        : "(" algorithm_header_args ")" {
+           $$ = $2;
+          }
+        ;
+
+algorithm_header_args
+        : "header" {
+            $$ = Driver.create<SourceHeader>();
+          }
+        | "header" "." "read" {
+            $$ = Driver.create<ReadHeader>();
+          }
+        | "header" "." "write" {
+            $$ = Driver.create<WriteHeader>();
+          }
+        | algorithm_header_args literal_expression {
+            $$ = $1;
+            $$->append($2);
+          }
+        ;
 
 block_args
         : expression  {
@@ -375,65 +434,6 @@ eval_args
             $$ = $1;
             $$->append($2);
         }
-        ;
-
-file
-         : file_contents { $$ = $1; }
-         | "(" "enclosing" IDENTIFIER ")" file_contents {
-             $$ = $5;
-             Driver.setEnclosing($3);
-           }
-         ;
-
-file_contents
-         : file_header file_header file_header section {
-             $$ = Driver.create<File>();
-             $$->append($1);
-             $$->append($2);
-             $$->append($3);
-             $$->append($4);
-             Driver.setParsedAst($$);
-           }
-         | file_header file_header section {
-             $$ = Driver.create<File>();
-             $$->append($1);
-             $$->append($2);
-             $$->append($3);
-             Driver.setParsedAst($$);
-           }
-         | file_header section {
-             $$ = Driver.create<File>();
-             $$->append($1);
-             $$->append($2);
-             Driver.setParsedAst($$);
-           }
-         | section {
-             $$ = Driver.create<File>();
-             $$->append($1);
-             Driver.setParsedAst($$);
-           }
-        ;
-
-file_header
-        : "(" file_header_args ")" {
-           $$ = $2;
-          }
-        ;
-
-file_header_args
-        : "header" {
-            $$ = Driver.create<SourceHeader>();
-          }
-        | "header" "." "read" {
-            $$ = Driver.create<ReadHeader>();
-          }
-        | "header" "." "write" {
-            $$ = Driver.create<WriteHeader>();
-          }
-        | file_header_args literal_expression {
-            $$ = $1;
-            $$->append($2);
-          }
         ;
 
 fixed_format_directive

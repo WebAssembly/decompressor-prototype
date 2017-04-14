@@ -78,7 +78,7 @@ bool Driver::parse(const std::string& Filename) {
       fprintf(stderr, "Parsing enclosing algorithm: '%s'\n", NextFile.c_str());
   }
   Table = FirstSymtab;
-  ParsedAst = Table->getInstalledRoot();
+  ParsedAst = Table->getAlgorithm();
   return Success;
 }
 

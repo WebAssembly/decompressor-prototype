@@ -49,12 +49,12 @@ class AbbreviationCodegen {
   CountNode::PtrSet& Assignments;
   bool ToRead;
 
-  filt::Node* generateFileHeader(filt::NodeType Type,
-                                 uint32_t MagicNumber,
-                                 uint32_t VersionNumber);
-  void generateFile(filt::Node* SourceHeader, filt::Node* TargetHeader);
-  filt::Node* generateFileBody();
-  filt::Node* generateFileFcn();
+  filt::Node* generateHeader(filt::NodeType Type,
+                             uint32_t MagicNumber,
+                             uint32_t VersionNumber);
+  void generateAlgorithm(filt::Node* SourceHeader, filt::Node* TargetHeader);
+  filt::Node* generateBody();
+  filt::Node* generateStartFunction();
   filt::Node* generateAbbreviationRead();
   filt::Node* generateSwitchStatement();
   filt::Node* generateCase(size_t AbbrevIndex, CountNode::Ptr Nd);
