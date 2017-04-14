@@ -1577,7 +1577,7 @@ void Interpreter::algorithmResume() {
         switch (Frame.CallState) {
           case State::Enter: {
             if (Frame.Nd == nullptr) {
-              Frame.Nd = Symtab->getInstalledRoot();
+              Frame.Nd = Symtab->getAlgorithm();
               if (Frame.Nd == nullptr || !isa<Algorithm>(Frame.Nd))
                 throwMessage("Can't find algorithm to interpret!");
             }

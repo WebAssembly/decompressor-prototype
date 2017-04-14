@@ -154,19 +154,18 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   // Gets actions corresponding to enter/exit block.
   const Callback* getBlockEnterCallback();
   const Callback* getBlockExitCallback();
-  const Algorithm* getRoot() const { return Root; }
-  void setRoot(const Algorithm* NewRoot);
-  // Install definitions in tree defined by root.
+  const Algorithm* getAlgorithm() const { return Alg; }
+  void setAlgorithm(const Algorithm* Alg);
+  // Install current algorithm
   bool install();
-  bool isRootInstalled() const { return RootInstalled; }
-  const Algorithm* getInstalledRoot() const { return Root; }
+  bool isAlgorithmInstalled() const { return IsAlgInstalled; }
   Node* getError() const { return Err; }
   const Header* getSourceHeader() const;
   const Header* getReadHeader() const;
   const Header* getWriteHeader() const;
 
-  // True if root specifies how to read an algorithm (i.e. the source and target
-  // headers are the same).
+  // True if the algorithm specifies how to read an algorithm
+  // (i.e. the source and target headers are the same).
   bool specifiesAlgorithm() const;
   void clearSymbols();
   int getNextCreationIndex() { return ++NextCreationIndex; }
@@ -223,8 +222,8 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   std::shared_ptr<SymbolTable> EnclosingScope;
   std::vector<Node*> Allocated;
   std::shared_ptr<utils::TraceClass> Trace;
-  Algorithm* Root;
-  bool RootInstalled;
+  Algorithm* Alg;
+  bool IsAlgInstalled;
   Node* Err;
   int NextCreationIndex;
   decode::IntType ActionBase;

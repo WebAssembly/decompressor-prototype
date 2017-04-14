@@ -275,7 +275,7 @@ bool InflateAst::applyOp(IntType Op) {
       Algorithm* Alg = buildNary<Algorithm>() ? getGeneratedFile() : nullptr;
       if (Alg == nullptr)
         return failBuild("InflateAst", "Unable to read (inflate) algorithm");
-      Symtab->setRoot(Alg);
+      Symtab->setAlgorithm(Alg);
       if (InstallDuringInflation)
         Symtab->install();
       return true;

@@ -71,7 +71,7 @@ void AbbreviationCodegen::generateAlgorithm(Node* SourceHeader,
   Alg->append(SourceHeader);
   Alg->append(TargetHeader);
   Alg->append(generateBody());
-  Symtab->setRoot(Alg);
+  Symtab->setAlgorithm(Alg);
   Symtab->install();
 }
 

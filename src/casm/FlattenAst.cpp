@@ -52,7 +52,7 @@ FlattenAst::~FlattenAst() {
 
 bool FlattenAst::flatten(bool BitCompressValue) {
   BitCompress = BitCompressValue;
-  flattenNode(Symtab->getInstalledRoot());
+  flattenNode(Symtab->getAlgorithm());
   freezeOutput();
   return !HasErrors;
 }

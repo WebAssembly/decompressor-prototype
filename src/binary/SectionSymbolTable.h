@@ -55,7 +55,7 @@ class SectionSymbolTable {
   void clear();
   Symbol* getIndexSymbol(IndexType Index);
   bool empty() const { return IndexLookup.empty(); }
-  void install(Algorithm* Root);
+  void install(Algorithm* Alg);
 
  private:
   // Cache that holds the set of uniquified symbols.

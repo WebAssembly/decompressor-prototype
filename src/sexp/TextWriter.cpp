@@ -87,12 +87,12 @@ void TextWriter::writeName(NodeType Type) {
 }
 
 void TextWriter::write(FILE* File, SymbolTable* Symtab) {
-  write(File, Symtab->getInstalledRoot());
+  write(File, Symtab->getAlgorithm());
   Symtab = Symtab->getEnclosingScope().get();
   while (Symtab != nullptr) {
     writeIndent();
     fprintf(File, "Enclosing scope:\n");
-    write(File, Symtab->getInstalledRoot());
+    write(File, Symtab->getAlgorithm());
     Symtab = Symtab->getEnclosingScope().get();
   }
 }
