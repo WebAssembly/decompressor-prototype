@@ -593,8 +593,8 @@ size_t CodeGenerator::generateNode(const Node* Nd) {
       return generateNullary("Error", Nd);
     case NodeType::Eval:
       return generateNary("Eval", Nd);
-    case NodeType::File:
-      return generateNary("File", Nd);
+    case NodeType::Algorithm:
+      return generateNary("Algorithm", Nd);
     case NodeType::IfThen:
       return generateBinary("IfThen", Nd);
     case NodeType::IfThenElse:

@@ -106,7 +106,7 @@ class Driver {
 
   void setParsedAst(const Node* Ast) {
     ParsedAst = Ast;
-    Table->setRoot(dyn_cast<File>(ParsedAst));
+    Table->setRoot(dyn_cast<Algorithm>(ParsedAst));
   }
 
   // Error handling.

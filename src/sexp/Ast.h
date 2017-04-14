@@ -43,7 +43,7 @@ namespace filt {
 
 class BinaryAccept;
 class Define;
-class File;
+class Algorithm;
 class Header;
 class IntegerNode;
 class LiteralDef;
@@ -154,12 +154,12 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   // Gets actions corresponding to enter/exit block.
   const Callback* getBlockEnterCallback();
   const Callback* getBlockExitCallback();
-  const File* getRoot() const { return Root; }
-  void setRoot(const File* NewRoot);
+  const Algorithm* getRoot() const { return Root; }
+  void setRoot(const Algorithm* NewRoot);
   // Install definitions in tree defined by root.
   bool install();
   bool isRootInstalled() const { return RootInstalled; }
-  const File* getInstalledRoot() const { return Root; }
+  const Algorithm* getInstalledRoot() const { return Root; }
   Node* getError() const { return Err; }
   const Header* getSourceHeader() const;
   const Header* getReadHeader() const;
@@ -223,7 +223,7 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   std::shared_ptr<SymbolTable> EnclosingScope;
   std::vector<Node*> Allocated;
   std::shared_ptr<utils::TraceClass> Trace;
-  File* Root;
+  Algorithm* Root;
   bool RootInstalled;
   Node* Err;
   int NextCreationIndex;

@@ -682,7 +682,7 @@ void Interpreter::algorithmResume() {
           case NodeType::LiteralActionBase:
           case NodeType::LiteralActionDef:
           case NodeType::LiteralDef:
-          case NodeType::File:
+          case NodeType::Algorithm:
           case NodeType::Locals:
           case NodeType::Rename:
           case NodeType::Symbol:
@@ -1578,8 +1578,8 @@ void Interpreter::algorithmResume() {
           case State::Enter: {
             if (Frame.Nd == nullptr) {
               Frame.Nd = Symtab->getInstalledRoot();
-              assert(Frame.Nd);
-              assert(isa<File>(Frame.Nd));
+              if (Frame.Nd == nullptr || !isa<Algorithm>(Frame.Nd))
+                throwMessage("Can't find algorithm to interpret!");
             }
             const Node* Hdr =
                 HeaderOverride ? HeaderOverride : Symtab->getReadHeader();

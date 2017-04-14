@@ -200,7 +200,7 @@ void TextWriter::writeNode(const Node* Nd,
       writeNodeKids(Nd, true);
       return;
     }
-    case NodeType::File: {
+    case NodeType::Algorithm: {
       if (ShowInternalStructure)
         break;
       // Treat like hidden node. That is, visually just a list of
@@ -304,7 +304,7 @@ void TextWriter::writeNodeAbbrev(const Node* Nd,
       return;
     }
     case NodeType::Section:
-    case NodeType::File: {
+    case NodeType::Algorithm: {
       // Treat like hidden node. That is, visually just a list of s-expressions.
       fprintf(File, "(%s ...)\n", getNodeName(Nd));
       return;

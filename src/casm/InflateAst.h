@@ -32,7 +32,7 @@ namespace wasm {
 
 namespace filt {
 
-class File;
+class Algorithm;
 class SectionSymbolTable;
 class SymbolTable;
 
@@ -47,7 +47,7 @@ class InflateAst : public interp::Writer {
   void setInstallDuringInflation(bool NewValue) {
     InstallDuringInflation = NewValue;
   }
-  File* getGeneratedFile() const;
+  Algorithm* getGeneratedFile() const;
   void setEnclosingScope(std::shared_ptr<SymbolTable> EnclosingScope) {
     Symtab->setEnclosingScope(EnclosingScope);
   }

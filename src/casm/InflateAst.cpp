@@ -68,10 +68,10 @@ bool InflateAst::failWriteHeaderMalformed() {
   return failBuild("writeHeader", "Input malformed");
 }
 
-File* InflateAst::getGeneratedFile() const {
+Algorithm* InflateAst::getGeneratedFile() const {
   if (Asts.size() != 1)
     return nullptr;
-  return dyn_cast<File>(AstsTop);
+  return dyn_cast<Algorithm>(AstsTop);
 }
 
 template <class T>
@@ -271,11 +271,11 @@ bool InflateAst::applyOp(IntType Op) {
       return buildBinary<Rename>();
     case NodeType::Section:
       return buildNary<Section>();
-    case NodeType::File: {
-      File* F = buildNary<File>() ? getGeneratedFile() : nullptr;
-      if (F == nullptr)
-        return failBuild("InflateAst", "Did not generate a file node");
-      Symtab->setRoot(F);
+    case NodeType::Algorithm: {
+      Algorithm* Alg = buildNary<Algorithm>() ? getGeneratedFile() : nullptr;
+      if (Alg == nullptr)
+        return failBuild("InflateAst", "Unable to read (inflate) algorithm");
+      Symtab->setRoot(Alg);
       if (InstallDuringInflation)
         Symtab->install();
       return true;

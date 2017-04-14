@@ -41,9 +41,9 @@ AbbreviationCodegen::AbbreviationCodegen(const CompressionFlags& Flags,
       ToRead(ToRead) {
 }
 
-Node* AbbreviationCodegen::generateFileHeader(NodeType Type,
-                                              uint32_t MagicNumber,
-                                              uint32_t VersionNumber) {
+Node* AbbreviationCodegen::generateHeader(NodeType Type,
+                                          uint32_t MagicNumber,
+                                          uint32_t VersionNumber) {
   Header* Header = nullptr;
   switch (Type) {
     default:
@@ -65,25 +65,26 @@ Node* AbbreviationCodegen::generateFileHeader(NodeType Type,
   return Header;
 }
 
-void AbbreviationCodegen::generateFile(Node* SourceHeader, Node* TargetHeader) {
-  auto* F = Symtab->create<File>();
-  F->append(SourceHeader);
-  F->append(TargetHeader);
-  F->append(generateFileBody());
-  Symtab->setRoot(F);
+void AbbreviationCodegen::generateAlgorithm(Node* SourceHeader,
+                                            Node* TargetHeader) {
+  auto* Alg = Symtab->create<Algorithm>();
+  Alg->append(SourceHeader);
+  Alg->append(TargetHeader);
+  Alg->append(generateBody());
+  Symtab->setRoot(Alg);
   Symtab->install();
 }
 
 AbbreviationCodegen::~AbbreviationCodegen() {
 }
 
-Node* AbbreviationCodegen::generateFileBody() {
+Node* AbbreviationCodegen::generateBody() {
   auto* Body = Symtab->create<Section>();
-  Body->append(generateFileFcn());
+  Body->append(generateStartFunction());
   return Body;
 }
 
-Node* AbbreviationCodegen::generateFileFcn() {
+Node* AbbreviationCodegen::generateStartFunction() {
   auto* Fcn = Symtab->create<Define>();
   Fcn->append(Symtab->getPredefined(PredefinedSymbol::File));
   Fcn->append(Symtab->create<Params>());
@@ -218,13 +219,13 @@ Node* AbbreviationCodegen::generateIntLitActionWrite(IntCountNode* Nd) {
 
 std::shared_ptr<SymbolTable> AbbreviationCodegen::getCodeSymtab() {
   Symtab = std::make_shared<SymbolTable>();
-  generateFile(generateFileHeader(NodeType::SourceHeader, CasmBinaryMagic,
-                                  CasmBinaryVersion),
-               Flags.UseCismModel
-                   ? generateFileHeader(NodeType::ReadHeader, CismBinaryMagic,
-                                        CismBinaryVersion)
-                   : generateFileHeader(NodeType::ReadHeader, WasmBinaryMagic,
-                                        WasmBinaryVersionD));
+  generateAlgorithm(generateHeader(NodeType::SourceHeader, CasmBinaryMagic,
+                                   CasmBinaryVersion),
+                    Flags.UseCismModel
+                        ? generateHeader(NodeType::ReadHeader, CismBinaryMagic,
+                                         CismBinaryVersion)
+                        : generateHeader(NodeType::ReadHeader, WasmBinaryMagic,
+                                         WasmBinaryVersionD));
   return Symtab;
 }
 

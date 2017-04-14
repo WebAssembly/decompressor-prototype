@@ -858,8 +858,8 @@ bool SymbolTable::areActionsConsistent() {
   return IsValid;
 }
 
-void SymbolTable::setRoot(const File* NewRoot) {
-  Root = const_cast<File*>(NewRoot);
+void SymbolTable::setRoot(const Algorithm* NewRoot) {
+  Root = const_cast<Algorithm*>(NewRoot);
   RootInstalled = false;
 }
 
@@ -932,7 +932,7 @@ void SymbolTable::installDefinitions(const Node* Root) {
   switch (Root->getType()) {
     default:
       return;
-    case NodeType::File:
+    case NodeType::Algorithm:
     case NodeType::Section:
       for (Node* Kid : *Root)
         installDefinitions(Kid);
@@ -1025,13 +1025,13 @@ void SymbolTable::describe(FILE* Out, bool ShowInternalStructure) {
 }
 
 void SymbolTable::stripCallbacksExcept(std::set<std::string>& KeepActions) {
-  setRoot(dyn_cast<File>(stripCallbacksExcept(KeepActions, Root)));
+  setRoot(dyn_cast<Algorithm>(stripCallbacksExcept(KeepActions, Root)));
 }
 
 void SymbolTable::stripSymbolicCallbacks() {
-  setRoot(dyn_cast<File>(stripSymbolicCallbackUses(Root)));
+  setRoot(dyn_cast<Algorithm>(stripSymbolicCallbackUses(Root)));
   if (Root != nullptr)
-    setRoot(dyn_cast<File>(stripSymbolicCallbackDefs(Root)));
+    setRoot(dyn_cast<Algorithm>(stripSymbolicCallbackDefs(Root)));
 }
 
 void SymbolTable::stripLiterals() {
@@ -1040,13 +1040,13 @@ void SymbolTable::stripLiterals() {
 }
 
 void SymbolTable::stripLiteralUses() {
-  setRoot(dyn_cast<File>(stripLiteralUses(Root)));
+  setRoot(dyn_cast<Algorithm>(stripLiteralUses(Root)));
 }
 
 void SymbolTable::stripLiteralDefs() {
   SymbolSet DefSyms;
   collectLiteralUseSymbols(DefSyms);
-  setRoot(dyn_cast<File>(stripLiteralDefs(Root, DefSyms)));
+  setRoot(dyn_cast<Algorithm>(stripLiteralDefs(Root, DefSyms)));
 }
 
 Node* SymbolTable::stripUsing(Node* Root,
@@ -1064,7 +1064,7 @@ Node* SymbolTable::stripUsing(Node* Root,
         std::vector<Node*> Kids;
         int index = 0;
         int limit = Root->getNumKids();
-        if (Op == NodeType::File) {
+        if (Op == NodeType::Algorithm) {
           // Note: Never remove void's in a file node (They represent
           // header information). Only process once declarations (i.e.
           // a section node) are reached.
@@ -1842,7 +1842,7 @@ bool Eval::validateNode(ConstNodeVectorType& Parents) const {
   return true;
 }
 
-const Header* File::getSourceHeader(bool UseEnclosing) const {
+const Header* Algorithm::getSourceHeader(bool UseEnclosing) const {
   for (const Node* Kid : *this) {
     if (!isa<SourceHeader>(Kid))
       continue;
@@ -1851,8 +1851,8 @@ const Header* File::getSourceHeader(bool UseEnclosing) const {
   if (UseEnclosing) {
     for (SymbolTable* Sym = Symtab.getEnclosingScope().get(); Sym != nullptr;
          Sym = Sym->getEnclosingScope().get()) {
-      const File* F = Sym->getInstalledRoot();
-      for (const Node* Kid : *F) {
+      const Algorithm* Alg = Sym->getInstalledRoot();
+      for (const Node* Kid : *Alg) {
         if (!isa<SourceHeader>(Kid))
           continue;
         return cast<SourceHeader>(Kid);
@@ -1862,7 +1862,7 @@ const Header* File::getSourceHeader(bool UseEnclosing) const {
   return nullptr;
 }
 
-const Header* File::getReadHeader(bool UseEnclosing) const {
+const Header* Algorithm::getReadHeader(bool UseEnclosing) const {
   for (const Node* Kid : *this) {
     if (!isa<ReadHeader>(Kid))
       continue;
@@ -1871,8 +1871,8 @@ const Header* File::getReadHeader(bool UseEnclosing) const {
   if (UseEnclosing) {
     for (SymbolTable* Sym = Symtab.getEnclosingScope().get(); Sym != nullptr;
          Sym = Sym->getEnclosingScope().get()) {
-      const File* F = Sym->getInstalledRoot();
-      for (const Node* Kid : *F) {
+      const Algorithm* Alg = Sym->getInstalledRoot();
+      for (const Node* Kid : *Alg) {
         if (!isa<ReadHeader>(Kid))
           continue;
         return cast<ReadHeader>(Kid);
@@ -1882,7 +1882,7 @@ const Header* File::getReadHeader(bool UseEnclosing) const {
   return getSourceHeader(UseEnclosing);
 }
 
-const Header* File::getWriteHeader(bool UseEnclosing) const {
+const Header* Algorithm::getWriteHeader(bool UseEnclosing) const {
   for (const Node* Kid : *this) {
     if (!isa<WriteHeader>(Kid))
       continue;
@@ -1891,8 +1891,8 @@ const Header* File::getWriteHeader(bool UseEnclosing) const {
   if (UseEnclosing) {
     for (SymbolTable* Sym = Symtab.getEnclosingScope().get(); Sym != nullptr;
          Sym = Sym->getEnclosingScope().get()) {
-      const File* F = Sym->getInstalledRoot();
-      for (const Node* Kid : *F) {
+      const Algorithm* Alg = Sym->getInstalledRoot();
+      for (const Node* Kid : *Alg) {
         if (!isa<WriteHeader>(Kid))
           continue;
         return cast<WriteHeader>(Kid);
@@ -1902,7 +1902,7 @@ const Header* File::getWriteHeader(bool UseEnclosing) const {
   return getReadHeader(UseEnclosing);
 }
 
-const Section* File::getDeclarations() const {
+const Section* Algorithm::getDeclarations() const {
   for (const Node* Kid : *this)
     if (isa<Section>(Kid))
       return cast<Section>(Kid);
@@ -1910,12 +1910,12 @@ const Section* File::getDeclarations() const {
   return nullptr;
 }
 
-bool File::validateNode(ConstNodeVectorType& Parents) const {
+bool Algorithm::validateNode(ConstNodeVectorType& Parents) const {
   TRACE_METHOD("validateNode");
   if (!Parents.empty()) {
     fprintf(error(),
-            "File nodes can only appear as a top-level s-expression\n");
-    errorDescribeNode("Bad file node", this);
+            "Algorithm nodes can only appear as a top-level s-expression\n");
+    errorDescribeNode("Bad algorithm node", this);
     errorDescribeContext(Parents);
     return false;
   }
