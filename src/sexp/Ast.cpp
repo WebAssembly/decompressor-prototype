@@ -469,7 +469,7 @@ bool IntLookup::add(decode::IntType Value, const Node* Nd) {
 
 SymbolDefn::SymbolDefn(SymbolTable& Symtab)
     : Cached(Symtab, NodeType::SymbolDefn),
-      Symbol(nullptr),
+      ForSymbol(nullptr),
       DefineDefinition(nullptr),
       LiteralDefinition(nullptr),
       LiteralActionDefinition(nullptr) {
@@ -479,8 +479,8 @@ SymbolDefn::~SymbolDefn() {
 }
 
 const std::string& SymbolDefn::getName() const {
-  if (Symbol)
-    return Symbol->getName();
+  if (ForSymbol)
+    return ForSymbol->getName();
   static std::string Unknown("???");
   return Unknown;
 }
@@ -489,9 +489,9 @@ const Define* SymbolDefn::getDefineDefinition() const {
   if (DefineDefinition)
     return DefineDefinition;
   // Not defined locally, find enclosing definition.
-  if (Symbol == nullptr)
+  if (ForSymbol == nullptr)
     return nullptr;
-  const std::string& Name = Symbol->getName();
+  const std::string& Name = ForSymbol->getName();
   for (SymbolTable* Scope = &Symtab; Scope != nullptr;
        Scope = Scope->getEnclosingScope().get()) {
     SymbolDefn* SymDef = Scope->getSymbolDefn(Scope->getOrCreateSymbol(Name));
@@ -527,9 +527,9 @@ const LiteralDef* SymbolDefn::getLiteralDefinition() const {
   if (LiteralDefinition)
     return LiteralDefinition;
   // Not defined locally, find enclosing definition.
-  if (Symbol == nullptr)
+  if (ForSymbol == nullptr)
     return nullptr;
-  const std::string& Name = Symbol->getName();
+  const std::string& Name = ForSymbol->getName();
   for (SymbolTable* Scope = &Symtab; Scope != nullptr;
        Scope = Scope->getEnclosingScope().get()) {
     SymbolDefn* SymDef = Scope->getSymbolDefn(Scope->getOrCreateSymbol(Name));
@@ -555,9 +555,9 @@ const LiteralActionDef* SymbolDefn::getLiteralActionDefinition() const {
   if (LiteralActionDefinition)
     return LiteralActionDefinition;
   // Not defined locally, find enclosing definition.
-  if (Symbol == nullptr)
+  if (ForSymbol == nullptr)
     return nullptr;
-  const std::string& Name = Symbol->getName();
+  const std::string& Name = ForSymbol->getName();
   for (SymbolTable* Scope = &Symtab; Scope != nullptr;
        Scope = Scope->getEnclosingScope().get()) {
     SymbolDefn* SymDef = Scope->getSymbolDefn(Scope->getOrCreateSymbol(Name));
@@ -1949,7 +1949,7 @@ bool File::validateNode(ConstNodeVectorType& Parents) const {
         Read = Kid;
         break;
       case NodeType::WriteHeader:
-        if (Read) {
+        if (Write) {
           errorDescribeNode("Duplicate read header", Kid);
           errorDescribeNode("Original", Source);
           return false;

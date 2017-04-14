@@ -604,8 +604,8 @@ class SymbolDefn FINAL : public Cached {
  public:
   SymbolDefn(SymbolTable& Symtab);
   ~SymbolDefn() OVERRIDE;
-  const Symbol* getSymbol() const { return Symbol; }
-  void setSymbol(const Symbol* Nd) { Symbol = Nd; }
+  const Symbol* getSymbol() const { return ForSymbol; }
+  void setSymbol(const Symbol* Nd) { ForSymbol = Nd; }
   const std::string& getName() const;
   const Define* getDefineDefinition() const;
   void setDefineDefinition(const Define* Defn);
@@ -619,7 +619,7 @@ class SymbolDefn FINAL : public Cached {
   }
 
  private:
-  const Symbol* Symbol;
+  const Symbol* ForSymbol;
   mutable const Define* DefineDefinition;
   mutable const LiteralDef* LiteralDefinition;
   mutable const LiteralActionDef* LiteralActionDefinition;
