@@ -82,7 +82,7 @@ class CodeGenerator {
   std::shared_ptr<SymbolTable> Symtab;
   std::shared_ptr<ReadCursor> ReadPos;
   std::vector<charstring>& Namespaces;
-  std::vector<const LiteralActionDefNode*> ActionDefs;
+  std::vector<const LiteralActionDef*> ActionDefs;
   charstring AlgName;
   bool ErrorsFound;
   size_t NextIndex;
@@ -105,13 +105,13 @@ class CodeGenerator {
   void generateAlgorithmHeader();
   void generateAlgorithmHeader(charstring AlgName);
   size_t generateNode(const Node* Nd);
-  size_t generateSymbol(const SymbolNode* Sym);
-  size_t generateIntegerNode(charstring NodeType, const IntegerNode* Nd);
-  size_t generateNullaryNode(charstring NodeType, const Node* Nd);
-  size_t generateUnaryNode(charstring NodeType, const Node* Nd);
-  size_t generateBinaryNode(charstring NodeType, const Node* Nd);
-  size_t generateTernaryNode(charstring NodeType, const Node* Nd);
-  size_t generateNaryNode(charstring NodeName, const Node* Nd);
+  size_t generateSymbol(const Symbol* Sym);
+  size_t generateInteger(charstring NodeType, const IntegerNode* Nd);
+  size_t generateNullary(charstring NodeType, const Node* Nd);
+  size_t generateUnary(charstring NodeType, const Node* Nd);
+  size_t generateBinary(charstring NodeType, const Node* Nd);
+  size_t generateTernary(charstring NodeType, const Node* Nd);
+  size_t generateNary(charstring NodeName, const Node* Nd);
   void generateInt(IntType Value);
   void generateFormat(ValueFormat Format);
   void generateLocal(size_t Index);
@@ -283,20 +283,20 @@ void CodeGenerator::putSymbol(charstring Name, bool Capitalize) {
 
 namespace {
 
-IntType getActionDefValue(const LiteralActionDefNode* Nd) {
+IntType getActionDefValue(const LiteralActionDef* Nd) {
   if (const IntegerNode* Num = dyn_cast<IntegerNode>(Nd->getKid(1)))
     return Num->getValue();
   return 0;
 }
 
-std::string getActionDefName(const LiteralActionDefNode* Nd) {
-  if (const SymbolNode* Sym = dyn_cast<SymbolNode>(Nd->getKid(0)))
+std::string getActionDefName(const LiteralActionDef* Nd) {
+  if (const Symbol* Sym = dyn_cast<Symbol>(Nd->getKid(0)))
     return Sym->getName();
   return std::string("???");
 }
 
-bool compareLtActionDefs(const LiteralActionDefNode* N1,
-                         const LiteralActionDefNode* N2) {
+bool compareLtActionDefs(const LiteralActionDef* N1,
+                         const LiteralActionDef* N2) {
   IntType V1 = getActionDefValue(N1);
   IntType V2 = getActionDefValue(N2);
   if (V1 < V2)
@@ -313,7 +313,7 @@ void CodeGenerator::collectActionDefs() {
     return;
   SymbolTable::ActionDefSet DefSet;
   Symtab->collectActionDefs(DefSet);
-  for (const LiteralActionDefNode* Def : DefSet)
+  for (const LiteralActionDef* Def : DefSet)
     ActionDefs.push_back(Def);
   std::sort(ActionDefs.begin(), ActionDefs.end(), compareLtActionDefs);
 }
@@ -324,7 +324,7 @@ void CodeGenerator::generatePredefinedEnum() {
   puts(AlgName);
   puts(" : uint32_t {\n");
   bool IsFirst = true;
-  for (const LiteralActionDefNode* Def : ActionDefs) {
+  for (const LiteralActionDef* Def : ActionDefs) {
     if (IsFirst)
       IsFirst = false;
     else
@@ -357,7 +357,7 @@ void CodeGenerator::generatePredefinedEnumNames() {
       "  charstring Name;\n"
       "} PredefinedNames[] {\n");
   bool IsFirst = true;
-  for (const LiteralActionDefNode* Def : ActionDefs) {
+  for (const LiteralActionDef* Def : ActionDefs) {
     if (IsFirst)
       IsFirst = false;
     else
@@ -463,9 +463,9 @@ void CodeGenerator::generateReturnCreate(charstring NodeType) {
   generateCreate(NodeType);
 }
 
-size_t CodeGenerator::generateSymbol(const SymbolNode* Sym) {
+size_t CodeGenerator::generateSymbol(const Symbol* Sym) {
   size_t Index = NextIndex++;
-  generateFunctionHeader("SymbolNode", Index);
+  generateFunctionHeader("Symbol", Index);
   puts("  return Symtab->getOrCreateSymbol(\"");
   for (auto& Ch : Sym->getName())
     putc(Ch);
@@ -474,15 +474,14 @@ size_t CodeGenerator::generateSymbol(const SymbolNode* Sym) {
   return Index;
 }
 
-size_t CodeGenerator::generateIntegerNode(charstring NodeName,
-                                          const IntegerNode* Nd) {
+size_t CodeGenerator::generateInteger(charstring NodeName,
+                                      const IntegerNode* Nd) {
   size_t Index = NextIndex++;
   std::string NodeType(NodeName);
-  NodeType.append("Node");
   generateFunctionHeader(NodeType, Index);
   puts("  return Symtab->create<");
   puts(NodeName);
-  puts("Node>(");
+  puts(">(");
   generateInt(Nd->getValue());
   puts(", ");
   generateFormat(Nd->getFormat());
@@ -490,7 +489,7 @@ size_t CodeGenerator::generateIntegerNode(charstring NodeName,
   return Index;
 }
 
-size_t CodeGenerator::generateNullaryNode(charstring NodeType, const Node* Nd) {
+size_t CodeGenerator::generateNullary(charstring NodeType, const Node* Nd) {
   size_t Index = NextIndex++;
   generateFunctionHeader(NodeType, Index);
   generateReturnCreate(NodeType);
@@ -498,7 +497,7 @@ size_t CodeGenerator::generateNullaryNode(charstring NodeType, const Node* Nd) {
   return Index;
 }
 
-size_t CodeGenerator::generateUnaryNode(charstring NodeType, const Node* Nd) {
+size_t CodeGenerator::generateUnary(charstring NodeType, const Node* Nd) {
   size_t Index = NextIndex++;
   assert(Nd->getNumKids() == 1);
   size_t Kid1 = generateNode(Nd->getKid(0));
@@ -509,7 +508,7 @@ size_t CodeGenerator::generateUnaryNode(charstring NodeType, const Node* Nd) {
   return Index;
 }
 
-size_t CodeGenerator::generateBinaryNode(charstring NodeType, const Node* Nd) {
+size_t CodeGenerator::generateBinary(charstring NodeType, const Node* Nd) {
   assert(Nd->getNumKids() == 2);
   size_t Kid1 = generateNode(Nd->getKid(0));
   size_t Kid2 = generateNode(Nd->getKid(1));
@@ -523,7 +522,7 @@ size_t CodeGenerator::generateBinaryNode(charstring NodeType, const Node* Nd) {
   return Index;
 }
 
-size_t CodeGenerator::generateTernaryNode(charstring NodeType, const Node* Nd) {
+size_t CodeGenerator::generateTernary(charstring NodeType, const Node* Nd) {
   assert(Nd->getNumKids() == 3);
   size_t Kid1 = generateNode(Nd->getKid(0));
   size_t Kid2 = generateNode(Nd->getKid(1));
@@ -540,7 +539,7 @@ size_t CodeGenerator::generateTernaryNode(charstring NodeType, const Node* Nd) {
   return Index;
 }
 
-size_t CodeGenerator::generateNaryNode(charstring NodeType, const Node* Nd) {
+size_t CodeGenerator::generateNary(charstring NodeType, const Node* Nd) {
   std::vector<size_t> Kids;
   for (int i = 0; i < Nd->getNumKids(); ++i)
     Kids.push_back(generateNode(Nd->getKid(i)));
@@ -571,119 +570,119 @@ size_t CodeGenerator::generateNode(const Node* Nd) {
     default:
       return generateBadLocal(Nd);
     case kAnd:
-      return generateBinaryNode("AndNode", Nd);
+      return generateBinary("And", Nd);
     case kBit:
-      return generateNullaryNode("BitNode", Nd);
+      return generateNullary("Bit", Nd);
     case kBitwiseAnd:
-      return generateBinaryNode("BitwiseAndNode", Nd);
+      return generateBinary("BitwiseAnd", Nd);
     case kBitwiseNegate:
-      return generateUnaryNode("BitwiseNegateNode", Nd);
+      return generateUnary("BitwiseNegate", Nd);
     case kBitwiseOr:
-      return generateBinaryNode("BitwiseOrNode", Nd);
+      return generateBinary("BitwiseOr", Nd);
     case kBitwiseXor:
-      return generateBinaryNode("BitwiseXorNode", Nd);
+      return generateBinary("BitwiseXor", Nd);
     case kBlock:
-      return generateUnaryNode("BlockNode", Nd);
+      return generateUnary("Block", Nd);
     case kCallback:
-      return generateUnaryNode("CallbackNode", Nd);
+      return generateUnary("Callback", Nd);
     case kCase:
-      return generateBinaryNode("CaseNode", Nd);
+      return generateBinary("Case", Nd);
     case kDefine:
-      return generateNaryNode("DefineNode", Nd);
+      return generateNary("Define", Nd);
     case kError:
-      return generateNullaryNode("ErrorNode", Nd);
+      return generateNullary("Error", Nd);
     case kEval:
-      return generateNaryNode("EvalNode", Nd);
+      return generateNary("Eval", Nd);
     case kFile:
-      return generateNaryNode("FileNode", Nd);
+      return generateNary("File", Nd);
     case kIfThen:
-      return generateBinaryNode("IfThenNode", Nd);
+      return generateBinary("IfThen", Nd);
     case kIfThenElse:
-      return generateTernaryNode("IfThenElseNode", Nd);
+      return generateTernary("IfThenElse", Nd);
     case kI32Const:
-      return generateIntegerNode("I32Const", cast<I32ConstNode>(Nd));
+      return generateInteger("I32Const", cast<I32Const>(Nd));
     case kI64Const:
-      return generateIntegerNode("I64Const", cast<I64ConstNode>(Nd));
+      return generateInteger("I64Const", cast<I64Const>(Nd));
     case kLastRead:
-      return generateNullaryNode("LastReadNode", Nd);
+      return generateNullary("LastRead", Nd);
     case kLastSymbolIs:
-      return generateUnaryNode("LastSymbolIsNode", Nd);
+      return generateUnary("LastSymbolIs", Nd);
     case kLiteralActionBase:
-      return generateNaryNode("LiteralActionBaseNode", Nd);
+      return generateNary("LiteralActionBase", Nd);
     case kLiteralActionDef:
-      return generateBinaryNode("LiteralActionDefNode", Nd);
+      return generateBinary("LiteralActionDef", Nd);
     case kLiteralActionUse:
-      return generateUnaryNode("LiteralActionUseNode", Nd);
+      return generateUnary("LiteralActionUse", Nd);
     case kLiteralDef:
-      return generateBinaryNode("LiteralDefNode", Nd);
+      return generateBinary("LiteralDef", Nd);
     case kLiteralUse:
-      return generateUnaryNode("LiteralUseNode", Nd);
+      return generateUnary("LiteralUse", Nd);
     case kLocal:
-      return generateIntegerNode("Local", cast<LocalNode>(Nd));
+      return generateInteger("Local", cast<Local>(Nd));
     case kLocals:
-      return generateIntegerNode("Locals", cast<LocalNode>(Nd));
+      return generateInteger("Locals", cast<Local>(Nd));
     case kLoop:
-      return generateBinaryNode("LoopNode", Nd);
+      return generateBinary("Loop", Nd);
     case kLoopUnbounded:
-      return generateUnaryNode("LoopUnboundedNode", Nd);
+      return generateUnary("LoopUnbounded", Nd);
     case kMap:
-      return generateNaryNode("MapNode", Nd);
+      return generateNary("Map", Nd);
     case kNot:
-      return generateUnaryNode("NotNode", Nd);
+      return generateUnary("Not", Nd);
     case kOpcode:
-      return generateNaryNode("OpcodeNode", Nd);
+      return generateNary("Opcode", Nd);
     case kOr:
-      return generateBinaryNode("OrNode", Nd);
+      return generateBinary("Or", Nd);
     case kParam:
-      return generateIntegerNode("Param", cast<ParamsNode>(Nd));
+      return generateInteger("Param", cast<Params>(Nd));
     case kParams:
-      return generateIntegerNode("Params", cast<ParamsNode>(Nd));
+      return generateInteger("Params", cast<Params>(Nd));
     case kPeek:
-      return generateUnaryNode("PeekNode", Nd);
+      return generateUnary("Peek", Nd);
     case kRead:
-      return generateUnaryNode("ReadNode", Nd);
+      return generateUnary("Read", Nd);
     case kRename:
-      return generateBinaryNode("RenameNode", Nd);
+      return generateBinary("Rename", Nd);
     case kSection:
-      return generateNaryNode("SectionNode", Nd);
+      return generateNary("Section", Nd);
     case kSequence:
-      return generateNaryNode("SequenceNode", Nd);
+      return generateNary("Sequence", Nd);
     case kSet:
-      return generateBinaryNode("SetNode", Nd);
+      return generateBinary("Set", Nd);
     case kSourceHeader:
-      return generateNaryNode("SourceHeaderNode", Nd);
+      return generateNary("SourceHeader", Nd);
     case kSymbol:
-      return generateSymbol(cast<SymbolNode>(Nd));
+      return generateSymbol(cast<Symbol>(Nd));
     case kSwitch:
-      return generateNaryNode("SwitchNode", Nd);
+      return generateNary("Switch", Nd);
     case kTable:
-      return generateNaryNode("TableNode", Nd);
+      return generateNary("Table", Nd);
     case kUint8:
-      return generateNullaryNode("Uint8Node", Nd);
+      return generateNullary("Uint8", Nd);
     case kUint32:
-      return generateNullaryNode("Uint32Node", Nd);
+      return generateNullary("Uint32", Nd);
     case kUint64:
-      return generateNullaryNode("Uint64Node", Nd);
+      return generateNullary("Uint64", Nd);
     case kUndefine:
-      return generateUnaryNode("UndefineNode", Nd);
+      return generateUnary("Undefine", Nd);
     case kU8Const:
-      return generateIntegerNode("U8Const", cast<U8ConstNode>(Nd));
+      return generateInteger("U8Const", cast<U8Const>(Nd));
     case kU32Const:
-      return generateIntegerNode("U32Const", cast<U32ConstNode>(Nd));
+      return generateInteger("U32Const", cast<U32Const>(Nd));
     case kU64Const:
-      return generateIntegerNode("U64Const", cast<U64ConstNode>(Nd));
+      return generateInteger("U64Const", cast<U64Const>(Nd));
     case kVarint32:
-      return generateNullaryNode("Varint32Node", Nd);
+      return generateNullary("Varint32", Nd);
     case kVarint64:
-      return generateNullaryNode("Varint64Node", Nd);
+      return generateNullary("Varint64", Nd);
     case kVaruint32:
-      return generateNullaryNode("Varuint32Node", Nd);
+      return generateNullary("Varuint32", Nd);
     case kVaruint64:
-      return generateNullaryNode("Varuint64Node", Nd);
+      return generateNullary("Varuint64", Nd);
     case kVoid:
-      return generateNullaryNode("VoidNode", Nd);
+      return generateNullary("Void", Nd);
     case kWrite:
-      return generateNaryNode("WriteNode", Nd);
+      return generateNary("Write", Nd);
   }
   WASM_RETURN_UNREACHABLE(0);
 }

@@ -139,8 +139,8 @@ void TextWriter::writeNodeKids(const Node* Nd, bool EmbeddedInParent) {
   bool ForceNewline = false;
   for (auto* Kid : *Nd) {
     if (Kid == LastKid && !ShowInternalStructure) {
-      bool IsEmbedded = (HasHiddenSeq && isa<SequenceNode>(LastKid)) ||
-                        (isa<CaseNode>(Nd) && isa<CaseNode>(Kid));
+      bool IsEmbedded = (HasHiddenSeq && isa<Sequence>(LastKid)) ||
+                        (isa<Case>(Nd) && isa<Case>(Kid));
       if (IsEmbedded) {
         writeNewline();
         writeNode(Kid, true, true);
@@ -194,7 +194,7 @@ void TextWriter::writeNode(const Node* Nd,
     default: {
       if (!(EmbedInParent && !ShowInternalStructure))
         break;
-      if (isa<CaseNode>(Nd)) {
+      if (isa<Case>(Nd)) {
         writeIndent(-1);
         writeSpace();
         writeName(kCase);
@@ -227,11 +227,11 @@ void TextWriter::writeNode(const Node* Nd,
     case kSymbolDefn: {
       Parenthesize _(this, Type, AddNewline);
       writeSpace();
-      writeNode(cast<SymbolDefnNode>(Nd)->getSymbol(), false);
+      writeNode(cast<SymbolDefn>(Nd)->getSymbol(), false);
       return;
     }
     case kSymbol: {
-      return writeSymbolNode(cast<SymbolNode>(Nd), AddNewline);
+      return writeSymbolNode(cast<Symbol>(Nd), AddNewline);
     }
   }
   // Default case.
@@ -253,7 +253,7 @@ void TextWriter::writeNodeKidsAbbrev(const Node* Nd, bool EmbeddedInParent) {
   for (int i = 0; i < NumKids; ++i) {
     Node* Kid = Nd->getKid(i);
     bool LastKid = i + 1 == NumKids;
-    if (HasHiddenSeq && LastKid && isa<SequenceNode>(Kid)) {
+    if (HasHiddenSeq && LastKid && isa<Sequence>(Kid)) {
       fprintf(File, " ...[%d]", Kid->getNumKids());
       return;
     }
@@ -312,7 +312,7 @@ void TextWriter::writeNodeAbbrev(const Node* Nd,
       return;
     }
     case kSymbol:
-      return writeSymbolNode(cast<SymbolNode>(Nd), AddNewline);
+      return writeSymbolNode(cast<Symbol>(Nd), AddNewline);
     case kSymbolDefn:
       writeNode(Nd, AddNewline, EmbedInParent);
       return;
@@ -373,7 +373,7 @@ void TextWriter::writeSymbolName(std::string Name) {
   fputc('\'', File);
 }
 
-void TextWriter::writeSymbolNode(const SymbolNode* Sym, bool AddNewline) {
+void TextWriter::writeSymbolNode(const Symbol* Sym, bool AddNewline) {
   if (ShowInternalStructure) {
     Parenthesize _(this, Sym->getType(), AddNewline);
     writeSpace();
@@ -391,7 +391,7 @@ void TextWriter::writeIntegerNode(const IntegerNode* Int, bool AddNewline) {
   if (!Int->isDefaultValue()) {
     fputc(' ', File);
     writeInt(File, Int->getValue(), Int->getFormat());
-    if (const auto* Accept = dyn_cast<BinaryAcceptNode>(Int)) {
+    if (const auto* Accept = dyn_cast<BinaryAccept>(Int)) {
       fputc(':', File);
       fprintf(File, "%u", Accept->getNumBits());
     }

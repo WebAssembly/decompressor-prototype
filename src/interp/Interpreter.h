@@ -30,9 +30,9 @@ namespace wasm {
 
 namespace filt {
 
-class CaseNode;
-class EvalNode;
-class HeaderNode;
+class Case;
+class Eval;
+class Header;
 class Node;
 class SymbolTable;
 class TextWriter;
@@ -69,9 +69,7 @@ class Interpreter {
               const InterpreterFlags& Flags);
   virtual ~Interpreter();
 
-  void useFileHeader(const filt::HeaderNode* Header) {
-    HeaderOverride = Header;
-  }
+  void useFileHeader(const filt::Header* Header) { HeaderOverride = Header; }
 
   const InterpreterFlags& getFlags() const { return Flags; }
 
@@ -199,12 +197,12 @@ class Interpreter {
   // The stack of calling "eval" expressions.
   struct EvalFrame {
     EvalFrame();
-    EvalFrame(const filt::EvalNode* Caller, size_t CallingEvalIndex);
+    EvalFrame(const filt::Eval* Caller, size_t CallingEvalIndex);
     EvalFrame(const EvalFrame& F);
     bool isDefined() const;
     void reset();
     void describe(FILE* File, filt::TextWriter* Writer) const;
-    const filt::EvalNode* Caller;
+    const filt::Eval* Caller;
     size_t CallingEvalIndex;
   };
 
@@ -255,7 +253,7 @@ class Interpreter {
   struct OpcodeLocalsFrame {
     uint32_t SelShift;
     decode::IntType CaseMask;
-    const filt::CaseNode* Case;
+    const filt::Case* Case;
     OpcodeLocalsFrame() { reset(); }
     void describe(FILE* File, filt::TextWriter* Writer = nullptr) const;
     void reset() {
@@ -267,7 +265,7 @@ class Interpreter {
   OpcodeLocalsFrame OpcodeLocals;
   utils::ValueStack<OpcodeLocalsFrame> OpcodeLocalsStack;
 
-  const filt::HeaderNode* HeaderOverride;
+  const filt::Header* HeaderOverride;
   bool FreezeEofAtExit;
 
   void reset();

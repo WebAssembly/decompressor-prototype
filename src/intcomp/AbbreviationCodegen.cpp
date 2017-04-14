@@ -44,33 +44,33 @@ AbbreviationCodegen::AbbreviationCodegen(const CompressionFlags& Flags,
 Node* AbbreviationCodegen::generateFileHeader(NodeType Type,
                                               uint32_t MagicNumber,
                                               uint32_t VersionNumber) {
-  HeaderNode* Header = nullptr;
+  Header* Header = nullptr;
   switch (Type) {
     default:
-      return Symtab->create<VoidNode>();
+      return Symtab->create<Void>();
     case kSourceHeader:
-      Header = Symtab->create<SourceHeaderNode>();
+      Header = Symtab->create<SourceHeader>();
       break;
     case kReadHeader:
-      Header = Symtab->create<ReadHeaderNode>();
+      Header = Symtab->create<ReadHeader>();
       break;
     case kWriteHeader:
-      Header = Symtab->create<WriteHeaderNode>();
+      Header = Symtab->create<WriteHeader>();
       break;
   }
-  Header->append(Symtab->create<U32ConstNode>(
-      MagicNumber, decode::ValueFormat::Hexidecimal));
-  Header->append(Symtab->create<U32ConstNode>(
-      VersionNumber, decode::ValueFormat::Hexidecimal));
+  Header->append(
+      Symtab->create<U32Const>(MagicNumber, decode::ValueFormat::Hexidecimal));
+  Header->append(Symtab->create<U32Const>(VersionNumber,
+                                          decode::ValueFormat::Hexidecimal));
   return Header;
 }
 
 void AbbreviationCodegen::generateFile(Node* SourceHeader, Node* TargetHeader) {
-  auto* File = Symtab->create<FileNode>();
-  File->append(SourceHeader);
-  File->append(TargetHeader);
-  File->append(generateFileBody());
-  Symtab->setRoot(File);
+  auto* F = Symtab->create<File>();
+  F->append(SourceHeader);
+  F->append(TargetHeader);
+  F->append(generateFileBody());
+  Symtab->setRoot(F);
   Symtab->install();
 }
 
@@ -78,26 +78,26 @@ AbbreviationCodegen::~AbbreviationCodegen() {
 }
 
 Node* AbbreviationCodegen::generateFileBody() {
-  auto* Body = Symtab->create<SectionNode>();
+  auto* Body = Symtab->create<Section>();
   Body->append(generateFileFcn());
   return Body;
 }
 
 Node* AbbreviationCodegen::generateFileFcn() {
-  auto* Fcn = Symtab->create<DefineNode>();
+  auto* Fcn = Symtab->create<Define>();
   Fcn->append(Symtab->getPredefined(PredefinedSymbol::File));
-  Fcn->append(Symtab->create<ParamsNode>());
-  Fcn->append(Symtab->create<LoopUnboundedNode>(generateSwitchStatement()));
+  Fcn->append(Symtab->create<Params>());
+  Fcn->append(Symtab->create<LoopUnbounded>(generateSwitchStatement()));
   return Fcn;
 }
 
 Node* AbbreviationCodegen::generateAbbreviationRead() {
-  auto* Format = EncodingRoot
-                     ? Symtab->create<BinaryEvalNode>(
-                           generateHuffmanEncoding(EncodingRoot))
-                     : generateAbbrevFormat(Flags.AbbrevFormat);
+  auto* Format =
+      EncodingRoot
+          ? Symtab->create<BinaryEval>(generateHuffmanEncoding(EncodingRoot))
+          : generateAbbrevFormat(Flags.AbbrevFormat);
   if (ToRead) {
-    Format = Symtab->create<ReadNode>(Format);
+    Format = Symtab->create<Read>(Format);
   }
   return Format;
 }
@@ -109,22 +109,22 @@ Node* AbbreviationCodegen::generateHuffmanEncoding(
     case HuffmanEncoder::NodeType::Selector: {
       HuffmanEncoder::Selector* Sel =
           cast<HuffmanEncoder::Selector>(Root.get());
-      Result = Symtab->create<BinarySelectNode>(
-          generateHuffmanEncoding(Sel->getKid1()),
-          generateHuffmanEncoding(Sel->getKid2()));
+      Result =
+          Symtab->create<BinarySelect>(generateHuffmanEncoding(Sel->getKid1()),
+                                       generateHuffmanEncoding(Sel->getKid2()));
       break;
     }
     case HuffmanEncoder::NodeType::Symbol:
-      Result = Symtab->create<BinaryAcceptNode>();
+      Result = Symtab->create<BinaryAccept>();
       break;
   }
   return Result;
 }
 
 Node* AbbreviationCodegen::generateSwitchStatement() {
-  auto* SwitchStmt = Symtab->create<SwitchNode>();
+  auto* SwitchStmt = Symtab->create<Switch>();
   SwitchStmt->append(generateAbbreviationRead());
-  SwitchStmt->append(Symtab->create<ErrorNode>());
+  SwitchStmt->append(Symtab->create<Error>());
   // TODO(karlschimpf): Sort so that output consistent or more readable?
   for (CountNode::Ptr Nd : Assignments) {
     assert(Nd->hasAbbrevIndex());
@@ -134,8 +134,8 @@ Node* AbbreviationCodegen::generateSwitchStatement() {
 }
 
 Node* AbbreviationCodegen::generateCase(size_t AbbrevIndex, CountNode::Ptr Nd) {
-  return Symtab->create<CaseNode>(
-      Symtab->create<U64ConstNode>(AbbrevIndex, decode::ValueFormat::Decimal),
+  return Symtab->create<Case>(
+      Symtab->create<U64Const>(AbbrevIndex, decode::ValueFormat::Decimal),
       generateAction(Nd));
 }
 
@@ -149,11 +149,11 @@ Node* AbbreviationCodegen::generateAction(CountNode::Ptr Nd) {
     return generateDefaultAction(DefaultPtr);
   else if (isa<AlignCountNode>(NdPtr))
     return generateAlignAction();
-  return Symtab->create<ErrorNode>();
+  return Symtab->create<Error>();
 }
 
-Node* AbbreviationCodegen::generateUseAction(SymbolNode* Sym) {
-  return Symtab->create<LiteralActionUseNode>(Sym);
+Node* AbbreviationCodegen::generateUseAction(Symbol* Sym) {
+  return Symtab->create<LiteralActionUse>(Sym);
 }
 
 Node* AbbreviationCodegen::generateBlockAction(BlockCountNode* Blk) {
@@ -165,7 +165,7 @@ Node* AbbreviationCodegen::generateBlockAction(BlockCountNode* Blk) {
     Sym = ToRead ? PredefinedSymbol::Block_exit
                  : PredefinedSymbol::Block_exit_writeonly;
   }
-  return Symtab->create<CallbackNode>(
+  return Symtab->create<Callback>(
       generateUseAction(Symtab->getPredefined(Sym)));
 }
 
@@ -175,23 +175,23 @@ Node* AbbreviationCodegen::generateDefaultAction(DefaultCountNode* Default) {
 }
 
 Node* AbbreviationCodegen::generateDefaultMultipleAction() {
-  Node* LoopSize = Symtab->create<Varuint64Node>();
+  Node* LoopSize = Symtab->create<Varuint64>();
   if (ToRead)
-    LoopSize = Symtab->create<ReadNode>(LoopSize);
-  return Symtab->create<LoopNode>(LoopSize, generateDefaultSingleAction());
+    LoopSize = Symtab->create<Read>(LoopSize);
+  return Symtab->create<Loop>(LoopSize, generateDefaultSingleAction());
 }
 
 Node* AbbreviationCodegen::generateDefaultSingleAction() {
-  return Symtab->create<Varint64Node>();
+  return Symtab->create<Varint64>();
 }
 
 Node* AbbreviationCodegen::generateAlignAction() {
-  return Symtab->create<CallbackNode>(
+  return Symtab->create<Callback>(
       generateUseAction(Symtab->getPredefined(PredefinedSymbol::Align)));
 }
 
 Node* AbbreviationCodegen::generateIntType(IntType Value) {
-  return Symtab->create<U64ConstNode>(Value, decode::ValueFormat::Decimal);
+  return Symtab->create<U64Const>(Value, decode::ValueFormat::Decimal);
 }
 
 Node* AbbreviationCodegen::generateIntLitAction(IntCountNode* Nd) {
@@ -205,15 +205,15 @@ Node* AbbreviationCodegen::generateIntLitActionRead(IntCountNode* Nd) {
     Nd = Nd->getParent().get();
   }
   std::reverse(Values.begin(), Values.end());
-  auto* Write = Symtab->create<WriteNode>();
-  Write->append(Symtab->create<Varuint64Node>());
+  auto* W = Symtab->create<Write>();
+  W->append(Symtab->create<Varuint64>());
   for (IntCountNode* Nd : Values)
-    Write->append(generateIntType(Nd->getValue()));
-  return Write;
+    W->append(generateIntType(Nd->getValue()));
+  return W;
 }
 
 Node* AbbreviationCodegen::generateIntLitActionWrite(IntCountNode* Nd) {
-  return Symtab->create<VoidNode>();
+  return Symtab->create<Void>();
 }
 
 std::shared_ptr<SymbolTable> AbbreviationCodegen::getCodeSymtab() {
@@ -230,19 +230,19 @@ std::shared_ptr<SymbolTable> AbbreviationCodegen::getCodeSymtab() {
 Node* AbbreviationCodegen::generateAbbrevFormat(IntTypeFormat AbbrevFormat) {
   switch (AbbrevFormat) {
     case IntTypeFormat::Uint8:
-      return Symtab->create<Uint8Node>();
+      return Symtab->create<Uint8>();
     case IntTypeFormat::Varint32:
-      return Symtab->create<Varint32Node>();
+      return Symtab->create<Varint32>();
     case IntTypeFormat::Varuint32:
-      return Symtab->create<Varuint32Node>();
+      return Symtab->create<Varuint32>();
     case IntTypeFormat::Uint32:
-      return Symtab->create<Uint32Node>();
+      return Symtab->create<Uint32>();
     case IntTypeFormat::Varint64:
-      return Symtab->create<Varint64Node>();
+      return Symtab->create<Varint64>();
     case IntTypeFormat::Varuint64:
-      return Symtab->create<Varuint64Node>();
+      return Symtab->create<Varuint64>();
     case IntTypeFormat::Uint64:
-      return Symtab->create<Uint64Node>();
+      return Symtab->create<Uint64>();
   }
   WASM_RETURN_UNREACHABLE(nullptr);
 }

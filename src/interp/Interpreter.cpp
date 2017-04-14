@@ -148,7 +148,7 @@ Interpreter::EvalFrame::EvalFrame() {
   reset();
 }
 
-Interpreter::EvalFrame::EvalFrame(const filt::EvalNode* Caller,
+Interpreter::EvalFrame::EvalFrame(const filt::Eval* Caller,
                                   size_t CallingEvalIndex)
     : Caller(Caller), CallingEvalIndex(CallingEvalIndex) {
   assert(Caller != nullptr);
@@ -838,8 +838,7 @@ void Interpreter::algorithmResume() {
             }
             break;
           case kCallback: {  // Method::Eval
-            IntType Action =
-                cast<CallbackNode>(Frame.Nd)->getValue()->getValue();
+            IntType Action = cast<Callback>(Frame.Nd)->getValue()->getValue();
             if (!Input->readAction(Action) || !Output->writeAction(Action))
               return throwMessage("Unable to apply action: ", Action);
             popAndReturn(LastReadValue);
@@ -860,8 +859,8 @@ void Interpreter::algorithmResume() {
             popAndReturn(LastReadValue);
             break;
           case kLocal: {
-            const auto* Local = dyn_cast<LocalNode>(Frame.Nd);
-            size_t Index = Local->getValue();
+            const auto* L = dyn_cast<Local>(Frame.Nd);
+            size_t Index = L->getValue();
             if (LocalsBase + Index >= LocalValues.size()) {
               return throwMessage("Local variable index out of range!");
             }
@@ -939,7 +938,7 @@ void Interpreter::algorithmResume() {
                 if (hasReadMode()) {
                   LastReadValue = Frame.ReturnValue;
                   call(Method::Eval, MethodModifier::ReadOnly,
-                       cast<MapNode>(Frame.Nd)->getCase(LastReadValue));
+                       cast<Map>(Frame.Nd)->getCase(LastReadValue));
                 }
                 break;
               case State::Exit:
@@ -960,8 +959,8 @@ void Interpreter::algorithmResume() {
                 call(Method::Eval, Frame.CallModifier, Frame.Nd->getKid(1));
                 break;
               case State::Exit: {
-                const auto* Local = dyn_cast<LocalNode>(Frame.Nd->getKid(0));
-                size_t Index = Local->getValue();
+                const auto* L = dyn_cast<Local>(Frame.Nd->getKid(0));
+                size_t Index = L->getValue();
                 if (LocalsBase + Index >= LocalValues.size()) {
                   return throwMessage(
                       "Local variable index out of range, can't set!");
@@ -1213,7 +1212,7 @@ void Interpreter::algorithmResume() {
                 break;
               case State::Step2: {
                 Frame.CallState = State::Exit;
-                const auto* Sel = cast<SwitchNode>(Frame.Nd);
+                const auto* Sel = cast<Switch>(Frame.Nd);
                 if (const auto* Case = Sel->getCase(Frame.ReturnValue))
                   call(Method::Eval, Frame.CallModifier, Case);
                 else
@@ -1232,7 +1231,7 @@ void Interpreter::algorithmResume() {
               case State::Enter: {
                 Frame.CallState = State::Exit;
                 call(Method::Eval, Frame.CallModifier,
-                     cast<CaseNode>(Frame.Nd)->getCaseBody());
+                     cast<Case>(Frame.Nd)->getCaseBody());
                 break;
               }
               case State::Exit:
@@ -1245,19 +1244,19 @@ void Interpreter::algorithmResume() {
           case kDefine:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter: {
-                const DefineNode* Define = cast<DefineNode>(Frame.Nd);
-                if (size_t NumLocals = Define->getNumLocals()) {
+                const Define* Def = cast<Define>(Frame.Nd);
+                if (size_t NumLocals = Def->getNumLocals()) {
                   LocalsBaseStack.push(LocalValues.size());
                   for (size_t i = 0; i < NumLocals; ++i)
                     LocalValues.push_back(0);
                 }
                 Frame.CallState = State::Exit;
-                call(Method::Eval, Frame.CallModifier, Define->getBody());
+                call(Method::Eval, Frame.CallModifier, Def->getBody());
                 break;
               }
               case State::Exit: {
-                const DefineNode* Define = cast<DefineNode>(Frame.Nd);
-                if (Define->getNumLocals()) {
+                const Define* Def = cast<Define>(Frame.Nd);
+                if (Def->getNumLocals()) {
                   while (LocalValues.size() > LocalsBase)
                     LocalValues.pop_back();
                   LocalsBaseStack.pop();
@@ -1287,13 +1286,13 @@ void Interpreter::algorithmResume() {
             switch (Frame.CallState) {
               case State::Enter: {
                 Frame.CallState = State::Exit;
-                auto* Sym = dyn_cast<SymbolNode>(Frame.Nd->getKid(0));
+                auto* Sym = dyn_cast<Symbol>(Frame.Nd->getKid(0));
                 assert(Sym);
                 // Note: To handle local algorithm overrides (when processing
                 // code in an enclosing scope) we need to get the definition
                 // from the current algorithm, not the algorithm the symbol was
                 // defined in.
-                const LiteralActionDefNode* Defn =
+                const LiteralActionDef* Defn =
                     Symtab->getSymbolDefn(Sym)->getLiteralActionDefinition();
                 if (Defn == nullptr) {
                   fprintf(stderr, "Eval can't find literal action: %s\n",
@@ -1314,13 +1313,13 @@ void Interpreter::algorithmResume() {
             switch (Frame.CallState) {
               case State::Enter: {
                 Frame.CallState = State::Exit;
-                auto* Sym = dyn_cast<SymbolNode>(Frame.Nd->getKid(0));
+                auto* Sym = dyn_cast<Symbol>(Frame.Nd->getKid(0));
                 assert(Sym);
                 // Note: To handle local algorithm overrides (when processing
                 // code in an enclosing scope) we need to get the definition
                 // from the current algorithm, not the algorithm the symbol was
                 // defined in.
-                const LiteralDefNode* Defn =
+                const LiteralDef* Defn =
                     Symtab->getSymbolDefn(Sym)->getLiteralDefinition();
                 if (Defn == nullptr) {
                   fprintf(stderr, "Eval can't find literal: %s\n",
@@ -1340,20 +1339,20 @@ void Interpreter::algorithmResume() {
           case kEval:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter: {
-                auto* Sym = dyn_cast<SymbolNode>(Frame.Nd->getKid(0));
+                auto* Sym = dyn_cast<Symbol>(Frame.Nd->getKid(0));
                 assert(Sym);
                 // Note: To handle local algorithm overrides (when processing
                 // code in an enclosing scope) we need to get the definition
                 // from the current algorithm, not the algorithm the symbol was
                 // defined in.
-                const DefineNode* Defn =
+                const Define* Defn =
                     Symtab->getSymbolDefn(Sym)->getDefineDefinition();
                 if (Defn == nullptr) {
                   fprintf(stderr, "Eval can't find definition: %s\n",
                           Sym->getName().c_str());
                   return throwMessage("Unable to evaluate call");
                 }
-                auto* NumParams = dyn_cast<ParamsNode>(Defn->getKid(1));
+                auto* NumParams = dyn_cast<Params>(Defn->getKid(1));
                 assert(NumParams);
                 int NumCallArgs = Frame.Nd->getNumKids() - 1;
                 if (NumParams->getValue() != IntType(NumCallArgs)) {
@@ -1366,7 +1365,7 @@ void Interpreter::algorithmResume() {
                 }
                 size_t CallingEvalIndex = CallingEvalStack.size();
                 CallingEvalStack.push();
-                CallingEval.Caller = cast<EvalNode>(Frame.Nd);
+                CallingEval.Caller = cast<Eval>(Frame.Nd);
                 CallingEval.CallingEvalIndex = CallingEvalIndex;
                 Frame.CallState = State::Exit;
                 call(Method::Eval, Frame.CallModifier, Defn);
@@ -1450,9 +1449,9 @@ void Interpreter::algorithmResume() {
               return throwMessage(
                   "Not inside a call frame, can't evaluate parameter "
                   "accessor!");
-            assert(isa<ParamNode>(Frame.Nd));
-            auto* Param = cast<ParamNode>(Frame.Nd);
-            IntType ParamIndex = Param->getValue() + 1;
+            assert(isa<Param>(Frame.Nd));
+            auto* Parm = cast<Param>(Frame.Nd);
+            IntType ParamIndex = Parm->getValue() + 1;
             if (ParamIndex >= IntType(CallingEval.Caller->getNumKids()))
               return throwMessage(
                   "Parameter reference doesn't match callling context!");
@@ -1580,21 +1579,21 @@ void Interpreter::algorithmResume() {
             if (Frame.Nd == nullptr) {
               Frame.Nd = Symtab->getInstalledRoot();
               assert(Frame.Nd);
-              assert(isa<FileNode>(Frame.Nd));
+              assert(isa<File>(Frame.Nd));
             }
-            const Node* Header =
+            const Node* Hdr =
                 HeaderOverride ? HeaderOverride : Symtab->getReadHeader();
-            if (!isa<HeaderNode>(Header))
+            if (!isa<Header>(Hdr))
               return fail("Can't find matching header definition");
             Frame.CallState = State::Step2;
-            call(Method::Eval, Frame.CallModifier, Header);
+            call(Method::Eval, Frame.CallModifier, Hdr);
             break;
           }
           case State::Step2: {
             Frame.CallState = State::Exit;
             if (!Output->writeHeaderClose())
               return fail("Unable to write header");
-            SymbolNode* File = Symtab->getPredefined(PredefinedSymbol::File);
+            Symbol* File = Symtab->getPredefined(PredefinedSymbol::File);
             if (File == nullptr)
               throwMessage("Can't find sexpression to process file");
             const Node* FileDefn = File->getDefineDefinition();
@@ -1654,9 +1653,8 @@ void Interpreter::algorithmResume() {
                      Frame.Nd->getKid(0));
                 break;
               case State::Step2: {
-                const auto* Sel = cast<OpcodeNode>(Frame.Nd);
-                if (const CaseNode* Case =
-                        Sel->getCase(OpcodeLocals.CaseMask)) {
+                const auto* Sel = cast<Opcode>(Frame.Nd);
+                if (const Case* Case = Sel->getCase(OpcodeLocals.CaseMask)) {
                   Frame.CallState = State::Step3;
                   OpcodeLocalsStack.push();
                   call(Method::ReadOpcode, Frame.CallModifier, Case);

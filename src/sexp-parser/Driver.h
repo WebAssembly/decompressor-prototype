@@ -65,12 +65,11 @@ class Driver {
   T* create(decode::IntType Value, decode::ValueFormat Format) {
     return Table->create<T>(Value, Format);
   }
-  BinaryAcceptNode* createBinaryAccept(decode::IntType Value,
-                                       unsigned NumBits) {
+  BinaryAccept* createBinaryAccept(decode::IntType Value, unsigned NumBits) {
     return Table->createBinaryAccept(Value, NumBits);
   }
 
-  SymbolNode* getOrCreateSymbol(std::string& Name) {
+  Symbol* getOrCreateSymbol(std::string& Name) {
     return Table->getOrCreateSymbol(Name);
   }
 
@@ -107,7 +106,7 @@ class Driver {
 
   void setParsedAst(const Node* Ast) {
     ParsedAst = Ast;
-    Table->setRoot(dyn_cast<FileNode>(ParsedAst));
+    Table->setRoot(dyn_cast<File>(ParsedAst));
   }
 
   // Error handling.

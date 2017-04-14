@@ -37,7 +37,7 @@ void SectionSymbolTable::addSymbol(const std::string& Name) {
   addSymbol(Symtab->getOrCreateSymbol(Name));
 }
 
-void SectionSymbolTable::addSymbol(SymbolNode* Sym) {
+void SectionSymbolTable::addSymbol(Symbol* Sym) {
   if (Sym->getPredefinedSymbol() != PredefinedSymbol::Unknown)
     return;
   if (SymbolLookup.count(Sym) == 0) {
@@ -53,26 +53,26 @@ void SectionSymbolTable::clear() {
   IndexLookup.clear();
 }
 
-void SectionSymbolTable::install(FileNode* Root) {
+void SectionSymbolTable::install(File* Root) {
   Symtab->setRoot(Root);
   Symtab->install();
 }
 
 void SectionSymbolTable::installSymbols(const Node* Nd) {
   // TODO(karlschimpf) Make this non-recursive.
-  if (const SymbolNode* Symbol = dyn_cast<SymbolNode>(Nd)) {
-    addSymbol(Symbol->getName());
+  if (const Symbol* Sym = dyn_cast<Symbol>(Nd)) {
+    addSymbol(Sym->getName());
   }
   for (const auto* Kid : *Nd)
     installSymbols(Kid);
 }
 
-void SectionSymbolTable::installSection(const SectionNode* Section) {
+void SectionSymbolTable::installSection(const Section* Section) {
   for (size_t i = 0, len = Section->getNumKids(); i < len; ++i)
     installSymbols(Section->getKid(i));
 }
 
-uint32_t SectionSymbolTable::getSymbolIndex(SymbolNode* Symbol) {
+uint32_t SectionSymbolTable::getSymbolIndex(Symbol* Symbol) {
   PredefinedSymbol Sym = Symbol->getPredefinedSymbol();
   if (Sym != PredefinedSymbol::Unknown)
     return uint32_t(Sym);
@@ -82,7 +82,7 @@ uint32_t SectionSymbolTable::getSymbolIndex(SymbolNode* Symbol) {
   return Iter->second + NumPredefinedSymbols;
 }
 
-SymbolNode* SectionSymbolTable::getIndexSymbol(IndexType Index) {
+Symbol* SectionSymbolTable::getIndexSymbol(IndexType Index) {
   if (Index < NumPredefinedSymbols)
     return Symtab->getPredefined(PredefinedSymbol(Index));
   Index -= NumPredefinedSymbols;

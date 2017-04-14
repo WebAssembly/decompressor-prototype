@@ -170,13 +170,13 @@ bool ByteReader::readBlockExit() {
 
 bool ByteReader::readBinary(const Node* Eval, IntType& Value) {
   Value = 0;
-  if (!isa<BinaryEvalNode>(Eval))
+  if (!isa<BinaryEval>(Eval))
     return false;
-  const Node* Encoding = cast<BinaryEvalNode>(Eval)->getKid(0);
+  const Node* Encoding = cast<BinaryEval>(Eval)->getKid(0);
   while (1) {
     switch (Encoding->getType()) {
       case kBinaryAccept:
-        Value = cast<BinaryAcceptNode>(Encoding)->getValue();
+        Value = cast<BinaryAccept>(Encoding)->getValue();
         return true;
       case kBinarySelect:
         Encoding = const_cast<Node*>(Encoding->getKid(ReadPos.readBit()));

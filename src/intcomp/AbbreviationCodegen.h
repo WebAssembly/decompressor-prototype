@@ -59,7 +59,7 @@ class AbbreviationCodegen {
   filt::Node* generateSwitchStatement();
   filt::Node* generateCase(size_t AbbrevIndex, CountNode::Ptr Nd);
   filt::Node* generateAction(CountNode::Ptr Nd);
-  filt::Node* generateUseAction(filt::SymbolNode* Sym);
+  filt::Node* generateUseAction(filt::Symbol* Sym);
   filt::Node* generateBlockAction(BlockCountNode* Blk);
   filt::Node* generateDefaultAction(DefaultCountNode* Default);
   filt::Node* generateDefaultMultipleAction();

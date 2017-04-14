@@ -97,7 +97,7 @@ void FlattenAst::reportError(charstring Label, const Node* Nd) {
   HasErrors = true;
 }
 
-bool FlattenAst::binaryEvalEncode(const BinaryEvalNode* Nd) {
+bool FlattenAst::binaryEvalEncode(const BinaryEval* Nd) {
   TRACE_METHOD("binaryEValEncode");
   // Build a (reversed) postorder sequence of nodes, and then reverse.
   std::vector<uint8_t> PostorderEncoding;
@@ -148,9 +148,9 @@ void FlattenAst::flattenNode(const Node* Nd) {
       break;
     }
 #define X(tag, format, defval, mergable, BASE, NODE_DECLS) \
-  case k##tag: {                                          \
+  case k##tag: {                                           \
     Writer->write(Opcode);                                 \
-    auto* Int = cast<tag##Node>(Nd);                       \
+    auto* Int = cast<tag>(Nd);                             \
     if (Int->isDefaultValue()) {                           \
       Writer->write(0);                                    \
     } else {                                               \
@@ -162,7 +162,7 @@ void FlattenAst::flattenNode(const Node* Nd) {
       AST_INTEGERNODE_TABLE
 #undef X
     case kBinaryEval:
-      if (BitCompress && binaryEvalEncode(cast<BinaryEvalNode>(Nd)))
+      if (BitCompress && binaryEvalEncode(cast<BinaryEval>(Nd)))
         break;
     // Not binary encoding, Intentionally fall to next case that
     // will generate non-compressed form.
@@ -264,14 +264,14 @@ void FlattenAst::flattenNode(const Node* Nd) {
       break;
     case kSection: {
       Writer->writeAction(IntType(PredefinedSymbol::Block_enter));
-      const auto* Section = cast<SectionNode>(Nd);
-      SectionSymtab->installSection(Section);
+      const auto* Sec = cast<Section>(Nd);
+      SectionSymtab->installSection(Sec);
       const SectionSymbolTable::IndexLookupType& Vector =
           SectionSymtab->getVector();
       Writer->write(Vector.size());
       TRACE(size_t, "Number symbols", Vector.size());
-      for (const SymbolNode* Symbol : Vector) {
-        const std::string& SymName = Symbol->getName();
+      for (const Symbol* Sym : Vector) {
+        const std::string& SymName = Sym->getName();
         TRACE(string, "Symbol", SymName);
         Writer->write(SymName.size());
         for (size_t i = 0, len = SymName.size(); i < len; ++i)
@@ -303,7 +303,7 @@ void FlattenAst::flattenNode(const Node* Nd) {
     }
     case kSymbol: {
       Writer->write(Opcode);
-      SymbolNode* Sym = cast<SymbolNode>(const_cast<Node*>(Nd));
+      Symbol* Sym = cast<Symbol>(const_cast<Node*>(Nd));
       Writer->write(SectionSymtab->getSymbolIndex(Sym));
       break;
     }

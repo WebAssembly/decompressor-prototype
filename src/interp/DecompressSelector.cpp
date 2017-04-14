@@ -115,7 +115,7 @@ bool DecompressSelector::resetAlgorithm(Interpreter* R) {
   R->setWriter(State->OrigWriter);
   State->OrigWriter->reset();
   assert(State->Inflator);
-  FileNode* Root = State->Inflator->getGeneratedFile();
+  File* Root = State->Inflator->getGeneratedFile();
   if (Root == nullptr) {
     State->Inflator.reset();
     return false;

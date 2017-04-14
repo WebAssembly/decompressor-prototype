@@ -27,9 +27,9 @@ const char* ErrorLevelName[] = {"warning", "error", "fatal"};
 
 void Driver::appendArgument(Node* Nd, Node* Arg) {
   Node* LastKid = Nd->getLastKid();
-  auto* Seq = dyn_cast<SequenceNode>(LastKid);
+  auto* Seq = dyn_cast<Sequence>(LastKid);
   if (Seq == nullptr) {
-    Seq = create<SequenceNode>();
+    Seq = create<Sequence>();
     Seq->append(LastKid);
     Nd->setLastKid(Seq);
   }
