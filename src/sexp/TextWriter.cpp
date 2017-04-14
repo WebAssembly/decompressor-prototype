@@ -197,12 +197,12 @@ void TextWriter::writeNode(const Node* Nd,
       if (isa<Case>(Nd)) {
         writeIndent(-1);
         writeSpace();
-        writeName(kCase);
+        writeName(NodeType::Case);
       }
       writeNodeKids(Nd, true);
       return;
     }
-    case kFile: {
+    case NodeType::File: {
       if (ShowInternalStructure)
         break;
       // Treat like hidden node. That is, visually just a list of
@@ -211,26 +211,26 @@ void TextWriter::writeNode(const Node* Nd,
         writeNode(Kid, true);
       return;
     }
-    case kLiteralUse:
-    case kLiteralActionUse:
+    case NodeType::LiteralUse:
+    case NodeType::LiteralActionUse:
       if (ShowInternalStructure)
         break;
       writeNode(Nd->getKid(0), AddNewline, EmbedInParent);
       return;
-    case kSection:
+    case NodeType::Section:
       if (ShowInternalStructure)
         break;
       { Parenthesize _(this, Type, true); }
       for (auto* Kid : *Nd)
         writeNode(Kid, true, false);
       return;
-    case kSymbolDefn: {
+    case NodeType::SymbolDefn: {
       Parenthesize _(this, Type, AddNewline);
       writeSpace();
       writeNode(cast<SymbolDefn>(Nd)->getSymbol(), false);
       return;
     }
-    case kSymbol: {
+    case NodeType::Symbol: {
       return writeSymbolNode(cast<Symbol>(Nd), AddNewline);
     }
   }
@@ -305,19 +305,19 @@ void TextWriter::writeNodeAbbrev(const Node* Nd,
       fprintf(File, " ...");
       return;
     }
-    case kSection:
-    case kFile: {
+    case NodeType::Section:
+    case NodeType::File: {
       // Treat like hidden node. That is, visually just a list of s-expressions.
       fprintf(File, "(%s ...)\n", getNodeName(Nd));
       return;
     }
-    case kSymbol:
+    case NodeType::Symbol:
       return writeSymbolNode(cast<Symbol>(Nd), AddNewline);
-    case kSymbolDefn:
+    case NodeType::SymbolDefn:
       writeNode(Nd, AddNewline, EmbedInParent);
       return;
-    case kLiteralUse:
-    case kLiteralActionUse:
+    case NodeType::LiteralUse:
+    case NodeType::LiteralActionUse:
       if (ShowInternalStructure)
         break;
       writeNodeAbbrev(Nd->getKid(0), AddNewline, EmbedInParent);

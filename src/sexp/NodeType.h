@@ -37,12 +37,12 @@ namespace wasm {
 
 namespace filt {
 
-enum NodeType : uint32_t {
+enum class NodeType : uint32_t {
 #define X(tag, opcode, sexp_name, text_num_args, text_max_args, NSL, hidden) \
-  k##tag = opcode,
+  tag = opcode,
   AST_OPCODE_TABLE
 #undef X
-      NO_SUCH_NODETYPE
+      NO_SUCH_NODETYPE = std::numeric_limits<uint32_t>::max()
 };
 
 static constexpr size_t NumNodeTypes = 0

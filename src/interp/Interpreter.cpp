@@ -671,30 +671,30 @@ void Interpreter::algorithmResume() {
         break;
       case Method::Eval:
         switch (Frame.Nd->getType()) {
-          case NO_SUCH_NODETYPE:
-          case kSymbolDefn:
-          case kIntLookup:
-          case kBinaryEvalBits:
-          case kBinaryAccept:
-          case kBinarySelect:
-          case kParams:
-          case kLastSymbolIs:
-          case kLiteralActionBase:
-          case kLiteralActionDef:
-          case kLiteralDef:
-          case kFile:
-          case kLocals:
-          case kRename:
-          case kSymbol:
-          case kSection:
-          case kUndefine:
-          case kUnknownSection:  // Method::Eval
+          case NodeType::NO_SUCH_NODETYPE:
+          case NodeType::SymbolDefn:
+          case NodeType::IntLookup:
+          case NodeType::BinaryEvalBits:
+          case NodeType::BinaryAccept:
+          case NodeType::BinarySelect:
+          case NodeType::Params:
+          case NodeType::LastSymbolIs:
+          case NodeType::LiteralActionBase:
+          case NodeType::LiteralActionDef:
+          case NodeType::LiteralDef:
+          case NodeType::File:
+          case NodeType::Locals:
+          case NodeType::Rename:
+          case NodeType::Symbol:
+          case NodeType::Section:
+          case NodeType::Undefine:
+          case NodeType::UnknownSection:  // Method::Eval
             return failNotImplemented();
-          case kError:  // Method::Eval
+          case NodeType::Error:  // Method::Eval
             return throwMessage("Algorithm error!");
-          case kReadHeader:
-          case kSourceHeader:
-          case kWriteHeader:
+          case NodeType::ReadHeader:
+          case NodeType::SourceHeader:
+          case NodeType::WriteHeader:
             switch (Frame.CallState) {
               case State::Enter:
                 if (!CatchStack.empty()) {
@@ -747,7 +747,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case kBitwiseAnd:
+          case NodeType::BitwiseAnd:
             switch (Frame.CallState) {
               case State::Enter:
                 if (!hasReadMode())
@@ -771,7 +771,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case kBitwiseOr:
+          case NodeType::BitwiseOr:
             switch (Frame.CallState) {
               case State::Enter:
                 if (!hasReadMode())
@@ -795,7 +795,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case kBitwiseXor:
+          case NodeType::BitwiseXor:
             switch (Frame.CallState) {
               case State::Enter:
                 if (!hasReadMode())
@@ -819,7 +819,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case kBitwiseNegate:
+          case NodeType::BitwiseNegate:
             switch (Frame.CallState) {
               case State::Enter:
                 if (!hasReadMode())
@@ -837,28 +837,28 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case kCallback: {  // Method::Eval
+          case NodeType::Callback: {  // Method::Eval
             IntType Action = cast<Callback>(Frame.Nd)->getValue()->getValue();
             if (!Input->readAction(Action) || !Output->writeAction(Action))
               return throwMessage("Unable to apply action: ", Action);
             popAndReturn(LastReadValue);
             break;
           }
-          case kI32Const:
-          case kI64Const:
-          case kU8Const:
-          case kU32Const:
-          case kU64Const: {  // Method::Eval
+          case NodeType::I32Const:
+          case NodeType::I64Const:
+          case NodeType::U8Const:
+          case NodeType::U32Const:
+          case NodeType::U64Const: {  // Method::Eval
             IntType Value = dyn_cast<IntegerNode>(Frame.Nd)->getValue();
             if (hasReadMode())
               LastReadValue = Value;
             popAndReturn(Value);
             break;
           }
-          case kLastRead:
+          case NodeType::LastRead:
             popAndReturn(LastReadValue);
             break;
-          case kLocal: {
+          case NodeType::Local: {
             const auto* L = dyn_cast<Local>(Frame.Nd);
             size_t Index = L->getValue();
             if (LocalsBase + Index >= LocalValues.size()) {
@@ -867,7 +867,7 @@ void Interpreter::algorithmResume() {
             popAndReturn(LocalValues[LocalsBase + Index]);
             break;
           }
-          case kPeek:
+          case NodeType::Peek:
             switch (Frame.CallState) {
               case State::Enter:
                 if (!Input->pushPeekPos())
@@ -885,7 +885,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case kRead:  // Method::Eval
+          case NodeType::Read:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Exit;
@@ -899,14 +899,14 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case kBit:
-          case kUint32:
-          case kUint64:
-          case kUint8:
-          case kVarint32:
-          case kVarint64:
-          case kVaruint32:
-          case kVaruint64: {
+          case NodeType::Bit:
+          case NodeType::Uint32:
+          case NodeType::Uint64:
+          case NodeType::Uint8:
+          case NodeType::Varint32:
+          case NodeType::Varint64:
+          case NodeType::Varuint32:
+          case NodeType::Varuint64: {
             if (hasReadMode())
               if (!Input->readValue(Frame.Nd, LastReadValue))
                 return throwCantRead();
@@ -917,7 +917,7 @@ void Interpreter::algorithmResume() {
             popAndReturn(LastReadValue);
             break;
           }
-          case kBinaryEval:
+          case NodeType::BinaryEval:
             if (hasReadMode())
               if (!Input->readBinary(Frame.Nd, LastReadValue))
                 return throwCantRead();
@@ -926,7 +926,7 @@ void Interpreter::algorithmResume() {
                 return throwCantWrite();
             popAndReturn(LastReadValue);
             break;
-          case kMap:
+          case NodeType::Map:
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Step2;
@@ -950,9 +950,9 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case kOpcode:  // Method::Eval
+          case NodeType::Opcode:  // Method::Eval
             return throwMessage("Multibyte opcodes broken!");
-          case kSet:  // Method::Eval
+          case NodeType::Set:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Exit;
@@ -973,7 +973,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case kWrite:  // Method::Eval
+          case NodeType::Write:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
                 LoopCounterStack.push(0);
@@ -1001,7 +1001,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case kNot:  // Method::Eval
+          case NodeType::Not:  // Method::Eval
             if (!hasReadMode())
               return throwCantWriteInWriteOnlyMode();
             switch (Frame.CallState) {
@@ -1017,7 +1017,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case kAnd:  // Method::Eval
+          case NodeType::And:  // Method::Eval
             if (!hasReadMode())
               return throwCantWriteInWriteOnlyMode();
             switch (Frame.CallState) {
@@ -1038,7 +1038,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case kOr:  // Method::Eval
+          case NodeType::Or:  // Method::Eval
             if (!hasReadMode())
               return throwCantWriteInWriteOnlyMode();
             switch (Frame.CallState) {
@@ -1059,7 +1059,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case kSequence:  // Method::Eval
+          case NodeType::Sequence:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
                 LoopCounterStack.push(0);
@@ -1081,7 +1081,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case kTable:  // Method::Eval
+          case NodeType::Table:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Step2;
@@ -1122,7 +1122,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case kLoop:  // Method::Eval
+          case NodeType::Loop:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Step2;
@@ -1147,7 +1147,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case kLoopUnbounded:  // Method::Eval
+          case NodeType::LoopUnbounded:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Loop;
@@ -1166,7 +1166,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case kIfThen:  // Method::Eval
+          case NodeType::IfThen:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Step2;
@@ -1184,7 +1184,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case kIfThenElse:  // Method::Eval
+          case NodeType::IfThenElse:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Step2;
@@ -1204,7 +1204,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case kSwitch:  // Method::Eval
+          case NodeType::Switch:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Step2;
@@ -1226,7 +1226,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case kCase:  // Method::Eval
+          case NodeType::Case:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter: {
                 Frame.CallState = State::Exit;
@@ -1241,7 +1241,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case kDefine:  // Method::Eval
+          case NodeType::Define:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter: {
                 const Define* Def = cast<Define>(Frame.Nd);
@@ -1268,7 +1268,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case kParam:  // Method::Eval
+          case NodeType::Param:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Exit;
@@ -1282,7 +1282,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case kLiteralActionUse:  // Method::Eval
+          case NodeType::LiteralActionUse:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter: {
                 Frame.CallState = State::Exit;
@@ -1309,7 +1309,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case kLiteralUse:  // Method::Eval
+          case NodeType::LiteralUse:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter: {
                 Frame.CallState = State::Exit;
@@ -1336,7 +1336,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case kEval:  // Method::Eval
+          case NodeType::Eval:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter: {
                 auto* Sym = dyn_cast<Symbol>(Frame.Nd->getKid(0));
@@ -1379,7 +1379,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case kBlock:  // Method::Eval
+          case NodeType::Block:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
 #if LOG_FUNCTIONS || LOG_NUMBERED_BLOCK
@@ -1414,7 +1414,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case kVoid:  // Method::Eval
+          case NodeType::Void:  // Method::Eval
             popAndReturn(LastReadValue);
             break;
         }
@@ -1645,7 +1645,7 @@ void Interpreter::algorithmResume() {
         switch (Frame.Nd->getType()) {
           default:
             return failNotImplemented();
-          case kOpcode:  // Method::ReadOpcode
+          case NodeType::Opcode:  // Method::ReadOpcode
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Step2;
@@ -1679,7 +1679,7 @@ void Interpreter::algorithmResume() {
               default:
                 return failBadState();
             }
-          case kUint8:  // Method::ReadOpcode
+          case NodeType::Uint8:  // Method::ReadOpcode
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Exit;
@@ -1693,7 +1693,7 @@ void Interpreter::algorithmResume() {
               default:
                 return failBadState();
             }
-          case kUint32:  // Method::ReadOpcode
+          case NodeType::Uint32:  // Method::ReadOpcode
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Exit;
@@ -1708,7 +1708,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case kUint64:  // Method::ReadOpcode
+          case NodeType::Uint64:  // Method::ReadOpcode
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Exit;

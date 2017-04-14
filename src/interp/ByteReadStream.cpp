@@ -33,21 +33,21 @@ ByteReadStream::~ByteReadStream() {
 
 IntType ByteReadStream::readValue(ReadCursor& Pos, const filt::Node* Format) {
   switch (Format->getType()) {
-    case kBit:
+    case NodeType::Bit:
       return readBit(Pos);
-    case kUint32:
+    case NodeType::Uint32:
       return readUint32(Pos);
-    case kUint64:
+    case NodeType::Uint64:
       return readUint64(Pos);
-    case kUint8:
+    case NodeType::Uint8:
       return readUint8(Pos);
-    case kVarint32:
+    case NodeType::Varint32:
       return readVarint32(Pos);
-    case kVarint64:
+    case NodeType::Varint64:
       return readVarint64(Pos);
-    case kVaruint32:
+    case NodeType::Varuint32:
       return readVaruint32(Pos);
-    case kVaruint64:
+    case NodeType::Varuint64:
       return readVaruint64(Pos);
     default:
       fatal("readValue not defined for format!");

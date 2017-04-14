@@ -532,36 +532,40 @@ class IntLookup FINAL : public Cached {
   LookupMap Lookup;
 };
 
-#define X(tag, BASE, NODE_DECLS)                                          \
-  class tag FINAL : public BASE {                                         \
-    tag() = delete;                                                       \
-    tag(const tag&) = delete;                                             \
-    tag& operator=(const tag&) = delete;                                  \
-                                                                          \
-   public:                                                                \
-    explicit tag(SymbolTable& Symtab);                                    \
-    ~tag() OVERRIDE;                                                      \
-    static bool implementsClass(NodeType Type) { return Type == k##tag; } \
-    NODE_DECLS                                                            \
+#define X(tag, BASE, NODE_DECLS)                 \
+  class tag FINAL : public BASE {                \
+    tag() = delete;                              \
+    tag(const tag&) = delete;                    \
+    tag& operator=(const tag&) = delete;         \
+                                                 \
+   public:                                       \
+    explicit tag(SymbolTable& Symtab);           \
+    ~tag() OVERRIDE;                             \
+    static bool implementsClass(NodeType Type) { \
+      return Type == NodeType::tag;              \
+    }                                            \
+    NODE_DECLS                                   \
   };
 AST_NULLARYNODE_TABLE
 #undef X
 
-#define X(tag, format, defval, mergable, BASE, NODE_DECLS)                \
-  class tag FINAL : public BASE {                                         \
-    tag() = delete;                                                       \
-    tag(const tag&) = delete;                                             \
-    tag& operator=(const tag&) = delete;                                  \
-                                                                          \
-   public:                                                                \
-    tag(SymbolTable& Symtab,                                              \
-        decode::IntType Value,                                            \
-        decode::ValueFormat Format = decode::ValueFormat::Decimal);       \
-                                                                          \
-    tag(SymbolTable& Symtab);                                             \
-    ~tag() OVERRIDE;                                                      \
-    static bool implementsClass(NodeType Type) { return Type == k##tag; } \
-    NODE_DECLS                                                            \
+#define X(tag, format, defval, mergable, BASE, NODE_DECLS)          \
+  class tag FINAL : public BASE {                                   \
+    tag() = delete;                                                 \
+    tag(const tag&) = delete;                                       \
+    tag& operator=(const tag&) = delete;                            \
+                                                                    \
+   public:                                                          \
+    tag(SymbolTable& Symtab,                                        \
+        decode::IntType Value,                                      \
+        decode::ValueFormat Format = decode::ValueFormat::Decimal); \
+                                                                    \
+    tag(SymbolTable& Symtab);                                       \
+    ~tag() OVERRIDE;                                                \
+    static bool implementsClass(NodeType Type) {                    \
+      return Type == NodeType::tag;                                 \
+    }                                                               \
+    NODE_DECLS                                                      \
   };
 AST_INTEGERNODE_TABLE
 #undef X
@@ -583,7 +587,9 @@ class BinaryAccept FINAL : public IntegerNode {
   bool validateNode(ConstNodeVectorType& Parents) const OVERRIDE;
   unsigned getNumBits() const { return NumBits; }
 
-  static bool implementsClass(NodeType Type) { return Type == kBinaryAccept; }
+  static bool implementsClass(NodeType Type) {
+    return Type == NodeType::BinaryAccept;
+  }
 
  protected:
   mutable unsigned NumBits;
@@ -608,7 +614,9 @@ class SymbolDefn FINAL : public Cached {
   const LiteralActionDef* getLiteralActionDefinition() const;
   void setLiteralActionDefinition(const LiteralActionDef* Defn);
 
-  static bool implementsClass(NodeType Type) { return Type == kSymbolDefn; }
+  static bool implementsClass(NodeType Type) {
+    return Type == NodeType::SymbolDefn;
+  }
 
  private:
   const Symbol* Symbol;
@@ -649,7 +657,9 @@ class Symbol FINAL : public Nullary {
   PredefinedSymbol getPredefinedSymbol() const { return PredefinedValue; }
   bool isPredefinedSymbol() const { return PredefinedValueIsCached; }
 
-  static bool implementsClass(NodeType Type) { return Type == kSymbol; }
+  static bool implementsClass(NodeType Type) {
+    return Type == NodeType::Symbol;
+  }
 
  private:
   std::string Name;
@@ -660,62 +670,70 @@ class Symbol FINAL : public Nullary {
   void setPredefinedSymbol(PredefinedSymbol NewValue);
 };
 
-#define X(tag, BASE, NODE_DECLS)                                          \
-  class tag FINAL : public BASE {                                         \
-    tag() = delete;                                                       \
-    tag(const tag&) = delete;                                             \
-    tag& operator=(const tag&) = delete;                                  \
-                                                                          \
-   public:                                                                \
-    tag(SymbolTable& Symtab, Node* Kid);                                  \
-    ~tag() OVERRIDE;                                                      \
-    static bool implementsClass(NodeType Type) { return k##tag == Type; } \
-    NODE_DECLS                                                            \
+#define X(tag, BASE, NODE_DECLS)                 \
+  class tag FINAL : public BASE {                \
+    tag() = delete;                              \
+    tag(const tag&) = delete;                    \
+    tag& operator=(const tag&) = delete;         \
+                                                 \
+   public:                                       \
+    tag(SymbolTable& Symtab, Node* Kid);         \
+    ~tag() OVERRIDE;                             \
+    static bool implementsClass(NodeType Type) { \
+      return NodeType::tag == Type;              \
+    }                                            \
+    NODE_DECLS                                   \
   };
 AST_UNARYNODE_TABLE
 #undef X
 
-#define X(tag, BASE, NODE_DECLS)                                          \
-  class tag FINAL : public BASE {                                         \
-    tag() = delete;                                                       \
-    tag(const tag&) = delete;                                             \
-    tag& operator=(const tag&) = delete;                                  \
-                                                                          \
-   public:                                                                \
-    tag(SymbolTable& Symtab, Node* Kid1, Node* Kid2);                     \
-    ~tag() OVERRIDE;                                                      \
-    static bool implementsClass(NodeType Type) { return k##tag == Type; } \
-    NODE_DECLS                                                            \
+#define X(tag, BASE, NODE_DECLS)                      \
+  class tag FINAL : public BASE {                     \
+    tag() = delete;                                   \
+    tag(const tag&) = delete;                         \
+    tag& operator=(const tag&) = delete;              \
+                                                      \
+   public:                                            \
+    tag(SymbolTable& Symtab, Node* Kid1, Node* Kid2); \
+    ~tag() OVERRIDE;                                  \
+    static bool implementsClass(NodeType Type) {      \
+      return NodeType::tag == Type;                   \
+    }                                                 \
+    NODE_DECLS                                        \
   };
 AST_BINARYNODE_TABLE
 #undef X
 
-#define X(tag, BASE, NODE_DECLS)                                          \
-  class tag FINAL : public BASE {                                         \
-    tag() = delete;                                                       \
-    tag(const tag&) = delete;                                             \
-    tag& operator=(const tag&) = delete;                                  \
-                                                                          \
-   public:                                                                \
-    tag(SymbolTable& Symtab, Node* Kid1, Node* Kid2, Node* Kid3);         \
-    ~tag() OVERRIDE;                                                      \
-    static bool implementsClass(NodeType Type) { return k##tag == Type; } \
-    NODE_DECLS                                                            \
+#define X(tag, BASE, NODE_DECLS)                                  \
+  class tag FINAL : public BASE {                                 \
+    tag() = delete;                                               \
+    tag(const tag&) = delete;                                     \
+    tag& operator=(const tag&) = delete;                          \
+                                                                  \
+   public:                                                        \
+    tag(SymbolTable& Symtab, Node* Kid1, Node* Kid2, Node* Kid3); \
+    ~tag() OVERRIDE;                                              \
+    static bool implementsClass(NodeType Type) {                  \
+      return NodeType::tag == Type;                               \
+    }                                                             \
+    NODE_DECLS                                                    \
   };
 AST_TERNARYNODE_TABLE
 #undef X
 
-#define X(tag, BASE, NODE_DECLS)                                          \
-  class tag FINAL : public BASE {                                         \
-    tag() = delete;                                                       \
-    tag(const tag&) = delete;                                             \
-    tag& operator=(const tag&) = delete;                                  \
-                                                                          \
-   public:                                                                \
-    explicit tag(SymbolTable& Symtab);                                    \
-    ~tag() OVERRIDE;                                                      \
-    static bool implementsClass(NodeType Type) { return k##tag == Type; } \
-    NODE_DECLS                                                            \
+#define X(tag, BASE, NODE_DECLS)                 \
+  class tag FINAL : public BASE {                \
+    tag() = delete;                              \
+    tag(const tag&) = delete;                    \
+    tag& operator=(const tag&) = delete;         \
+                                                 \
+   public:                                       \
+    explicit tag(SymbolTable& Symtab);           \
+    ~tag() OVERRIDE;                             \
+    static bool implementsClass(NodeType Type) { \
+      return NodeType::tag == Type;              \
+    }                                            \
+    NODE_DECLS                                   \
   };
 AST_NARYNODE_TABLE
 #undef X
@@ -736,17 +754,19 @@ class SelectBase : public Nary {
   IntLookup* getIntLookup() const;
 };
 
-#define X(tag, NODE_DECLS)                                                \
-  class tag FINAL : public SelectBase {                                   \
-    tag() = delete;                                                       \
-    tag(const tag&) = delete;                                             \
-    tag& operator=(const tag&) = delete;                                  \
-                                                                          \
-   public:                                                                \
-    explicit tag(SymbolTable& Symtab);                                    \
-    ~tag() OVERRIDE;                                                      \
-    static bool implementsClass(NodeType Type) { return k##tag == Type; } \
-    NODE_DECLS                                                            \
+#define X(tag, NODE_DECLS)                       \
+  class tag FINAL : public SelectBase {          \
+    tag() = delete;                              \
+    tag(const tag&) = delete;                    \
+    tag& operator=(const tag&) = delete;         \
+                                                 \
+   public:                                       \
+    explicit tag(SymbolTable& Symtab);           \
+    ~tag() OVERRIDE;                             \
+    static bool implementsClass(NodeType Type) { \
+      return NodeType::tag == Type;              \
+    }                                            \
+    NODE_DECLS                                   \
   };
 AST_SELECTNODE_TABLE
 #undef X
@@ -759,7 +779,9 @@ class Opcode FINAL : public SelectBase {
  public:
   explicit Opcode(SymbolTable& Symtab);
   ~Opcode() OVERRIDE;
-  static bool implementsClass(NodeType Type) { return kOpcode == Type; }
+  static bool implementsClass(NodeType Type) {
+    return NodeType::Opcode == Type;
+  }
   const Case* getWriteCase(decode::IntType Value,
                            uint32_t& SelShift,
                            decode::IntType& CaseMask) const;
@@ -818,7 +840,9 @@ class BinaryEval : public Unary {
   const Node* getEncoding(decode::IntType Value) const;
   bool addEncoding(const BinaryAccept* Encoding) const;
 
-  static bool implementsClass(NodeType Type) { return kBinaryEval == Type; }
+  static bool implementsClass(NodeType Type) {
+    return NodeType::BinaryEval == Type;
+  }
 
  private:
   IntLookup* getIntLookup() const;

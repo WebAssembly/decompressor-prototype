@@ -201,77 +201,77 @@ bool InflateAst::writeHeaderValue(decode::IntType Value,
 
 bool InflateAst::applyOp(IntType Op) {
   switch (NodeType(Op)) {
-    case kAnd:
+    case NodeType::And:
       return buildBinary<And>();
-    case kBinaryAccept:
+    case NodeType::BinaryAccept:
       return buildNullary<BinaryAccept>();
-    case kBinaryEval:
+    case NodeType::BinaryEval:
       return buildUnary<BinaryEval>();
-    case kBinarySelect:
+    case NodeType::BinarySelect:
       return buildBinary<BinarySelect>();
-    case kBit:
+    case NodeType::Bit:
       return buildNullary<Bit>();
-    case kBitwiseAnd:
+    case NodeType::BitwiseAnd:
       return buildBinary<BitwiseAnd>();
-    case kBitwiseOr:
+    case NodeType::BitwiseOr:
       return buildBinary<BitwiseOr>();
-    case kBitwiseNegate:
+    case NodeType::BitwiseNegate:
       return buildUnary<BitwiseNegate>();
-    case kBitwiseXor:
+    case NodeType::BitwiseXor:
       return buildBinary<BitwiseXor>();
-    case kBlock:
+    case NodeType::Block:
       return buildUnary<Block>();
-    case kCallback:
+    case NodeType::Callback:
       return buildUnary<Callback>();
-    case kCase:
+    case NodeType::Case:
       return buildBinary<Case>();
-    case kDefine:
+    case NodeType::Define:
       return buildNary<Define>();
-    case kError:
+    case NodeType::Error:
       return buildNullary<Error>();
-    case kEval:
+    case NodeType::Eval:
       return buildNary<Eval>();
-    case kSourceHeader:
+    case NodeType::SourceHeader:
       return buildNary<SourceHeader>();
-    case kIfThen:
+    case NodeType::IfThen:
       return buildBinary<IfThen>();
-    case kIfThenElse:
+    case NodeType::IfThenElse:
       return buildTernary<IfThenElse>();
-    case kLastRead:
+    case NodeType::LastRead:
       return buildNullary<LastRead>();
-    case kLastSymbolIs:
+    case NodeType::LastSymbolIs:
       return buildUnary<LastSymbolIs>();
-    case kLiteralActionBase:
+    case NodeType::LiteralActionBase:
       return buildNary<LiteralActionBase>();
-    case kLiteralActionDef:
+    case NodeType::LiteralActionDef:
       return buildBinary<LiteralActionDef>();
-    case kLiteralActionUse:
+    case NodeType::LiteralActionUse:
       return buildUnary<LiteralActionUse>();
-    case kLiteralDef:
+    case NodeType::LiteralDef:
       return buildBinary<LiteralDef>();
-    case kLiteralUse:
+    case NodeType::LiteralUse:
       return buildUnary<LiteralUse>();
-    case kLoop:
+    case NodeType::Loop:
       return buildBinary<Loop>();
-    case kLoopUnbounded:
+    case NodeType::LoopUnbounded:
       return buildUnary<LoopUnbounded>();
-    case kMap:
+    case NodeType::Map:
       return buildNary<Map>();
-    case kNot:
+    case NodeType::Not:
       return buildUnary<Not>();
-    case kOr:
+    case NodeType::Or:
       return buildBinary<Or>();
-    case kPeek:
+    case NodeType::Peek:
       return buildUnary<Peek>();
-    case kRead:
+    case NodeType::Read:
       return buildUnary<Read>();
-    case kReadHeader:
+    case NodeType::ReadHeader:
       return buildNary<ReadHeader>();
-    case kRename:
+    case NodeType::Rename:
       return buildBinary<Rename>();
-    case kSection:
+    case NodeType::Section:
       return buildNary<Section>();
-    case kFile: {
+    case NodeType::File: {
       File* F = buildNary<File>() ? getGeneratedFile() : nullptr;
       if (F == nullptr)
         return failBuild("InflateAst", "Did not generate a file node");
@@ -280,13 +280,13 @@ bool InflateAst::applyOp(IntType Op) {
         Symtab->install();
       return true;
     }
-    case kSequence:
+    case NodeType::Sequence:
       return buildNary<Sequence>();
-    case kSet:
+    case NodeType::Set:
       return buildBinary<Set>();
-    case kSwitch:
+    case NodeType::Switch:
       return buildNary<Switch>();
-    case kSymbol: {
+    case NodeType::Symbol: {
       Symbol* Sym = SectionSymtab->getIndexSymbol(Values.popValue());
       Values.pop();
       if (Sym == nullptr) {
@@ -296,31 +296,31 @@ bool InflateAst::applyOp(IntType Op) {
       Asts.push(Sym);
       return true;
     }
-    case kTable:
+    case NodeType::Table:
       return buildBinary<Table>();
-    case kUndefine:
+    case NodeType::Undefine:
       return buildUnary<Undefine>();
-    case kUnknownSection:
+    case NodeType::UnknownSection:
       return buildUnary<UnknownSection>();
-    case kUint32:
+    case NodeType::Uint32:
       return buildNullary<Uint32>();
-    case kUint64:
+    case NodeType::Uint64:
       return buildNullary<Uint64>();
-    case kUint8:
+    case NodeType::Uint8:
       return buildNullary<Uint8>();
-    case kVarint32:
+    case NodeType::Varint32:
       return buildNullary<Varint32>();
-    case kVarint64:
+    case NodeType::Varint64:
       return buildNullary<Varint64>();
-    case kVaruint32:
+    case NodeType::Varuint32:
       return buildNullary<Varuint32>();
-    case kVaruint64:
+    case NodeType::Varuint64:
       return buildNullary<Varuint64>();
-    case kVoid:
+    case NodeType::Void:
       return buildNullary<Void>();
-    case kWrite:
+    case NodeType::Write:
       return buildNary<Write>();
-    case kWriteHeader:
+    case NodeType::WriteHeader:
       return buildNary<WriteHeader>();
     default:
       return failWriteActionMalformed();
@@ -360,10 +360,10 @@ bool InflateAst::writeAction(IntType Action) {
     case IntType(PredefinedSymbol::Binary_bit):
       switch (ValuesTop) {
         case 0:
-          Values.push(kBinaryAccept);
+          Values.push(IntType(NodeType::BinaryAccept));
           return buildNullary<BinaryAccept>();
         case 1:
-          Values.push(kBinaryEval);
+          Values.push(IntType(NodeType::BinaryEval));
           return buildBinary<BinarySelect>();
         default:
           fprintf(stderr, "Binary encoding Value not 0/1: %" PRIuMAX "\n",
@@ -372,7 +372,7 @@ bool InflateAst::writeAction(IntType Action) {
       }
       WASM_RETURN_UNREACHABLE(false);
     case IntType(PredefinedSymbol::Binary_end):
-      Values.push(kBinaryEval);
+      Values.push(IntType(NodeType::BinaryEval));
       return buildUnary<BinaryEval>();
     case IntType(PredefinedAlgcasm0x0::Int_value_begin):
       ValueMarker = Values.size();
@@ -398,40 +398,40 @@ bool InflateAst::writeAction(IntType Action) {
           return failWriteActionMalformed();
       }
       Node* Nd = nullptr;
-      switch (Values.popValue()) {
-        case kI32Const:
+      switch (NodeType(Values.popValue())) {
+        case NodeType::I32Const:
           Nd = IsDefault ? Symtab->create<I32Const>()
                          : Symtab->create<I32Const>(Value, Format);
           break;
-        case kI64Const:
+        case NodeType::I64Const:
           Nd = IsDefault ? Symtab->create<I64Const>()
                          : Symtab->create<I64Const>(Value, Format);
           break;
-        case kLocal:
+        case NodeType::Local:
           Nd = IsDefault ? Symtab->create<Local>()
                          : Symtab->create<Local>(Value, Format);
           break;
-        case kLocals:
+        case NodeType::Locals:
           Nd = IsDefault ? Symtab->create<Locals>()
                          : Symtab->create<Locals>(Value, Format);
           break;
-        case kParam:
+        case NodeType::Param:
           Nd = IsDefault ? Symtab->create<Param>()
                          : Symtab->create<Param>(Value, Format);
           break;
-        case kParams:
+        case NodeType::Params:
           Nd = IsDefault ? Symtab->create<Params>()
                          : Symtab->create<Params>(Value, Format);
           break;
-        case kU8Const:
+        case NodeType::U8Const:
           Nd = IsDefault ? Symtab->create<U8Const>()
                          : Symtab->create<U8Const>(Value, Format);
           break;
-        case kU32Const:
+        case NodeType::U32Const:
           Nd = IsDefault ? Symtab->create<U32Const>()
                          : Symtab->create<U32Const>(Value, Format);
           break;
-        case kU64Const:
+        case NodeType::U64Const:
           Nd = IsDefault ? Symtab->create<U64Const>()
                          : Symtab->create<U64Const>(Value, Format);
           break;

@@ -107,28 +107,28 @@ bool Reader::readBinary(const Node*, IntType& Value) {
 
 bool Reader::readValue(const filt::Node* Format, IntType& Value) {
   switch (Format->getType()) {
-    case kBit:
+    case NodeType::Bit:
       Value = readBit();
       return true;
-    case kUint8:
+    case NodeType::Uint8:
       Value = readUint8();
       return true;
-    case kUint32:
+    case NodeType::Uint32:
       Value = readUint32();
       return true;
-    case kUint64:
+    case NodeType::Uint64:
       Value = readUint64();
       return true;
-    case kVarint32:
+    case NodeType::Varint32:
       Value = readVarint32();
       return true;
-    case kVarint64:
+    case NodeType::Varint64:
       Value = readVarint64();
       return true;
-    case kVaruint32:
+    case NodeType::Varuint32:
       Value = readVaruint32();
       return true;
-    case kVaruint64:
+    case NodeType::Varuint64:
       Value = readVaruint64();
       return true;
     default:
