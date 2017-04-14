@@ -47,10 +47,10 @@ class SectionSymbolTable {
   typedef std::vector<Symbol*> IndexLookupType;
   SectionSymbolTable(std::shared_ptr<SymbolTable> Symtab);
   ~SectionSymbolTable() {}
-  void installSection(const Section* Section);
+  void installSection(const Section* Sec);
   const IndexLookupType& getVector() { return IndexLookup; }
   void addSymbol(const std::string& Name);
-  uint32_t getSymbolIndex(Symbol* Symbol);
+  uint32_t getSymbolIndex(Symbol* Sym);
   IndexType getNumberSymbols() const { return IndexLookup.size(); }
   void clear();
   Symbol* getIndexSymbol(IndexType Index);

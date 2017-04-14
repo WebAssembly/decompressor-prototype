@@ -69,7 +69,7 @@ class Interpreter {
               const InterpreterFlags& Flags);
   virtual ~Interpreter();
 
-  void useFileHeader(const filt::Header* Header) { HeaderOverride = Header; }
+  void useFileHeader(const filt::Header* Hdr) { HeaderOverride = Hdr; }
 
   const InterpreterFlags& getFlags() const { return Flags; }
 
@@ -252,14 +252,14 @@ class Interpreter {
   // The stack of opcode Selshift/CaseMasks for multi-byte opcodes.
   struct OpcodeLocalsFrame {
     uint32_t SelShift;
-    decode::IntType CaseMask;
-    const filt::Case* Case;
+    decode::IntType CMask;
+    const filt::Case* C;
     OpcodeLocalsFrame() { reset(); }
     void describe(FILE* File, filt::TextWriter* Writer = nullptr) const;
     void reset() {
       SelShift = 0;
-      CaseMask = 0;
-      Case = nullptr;
+      CMask = 0;
+      C = nullptr;
     }
   };
   OpcodeLocalsFrame OpcodeLocals;

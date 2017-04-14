@@ -341,11 +341,11 @@ void Interpreter::EvalFrame::describe(FILE* File, TextWriter* Writer) const {
 void Interpreter::OpcodeLocalsFrame::describe(FILE* File,
                                               TextWriter* Writer) const {
   fprintf(File, "OpcodeFrame <%" PRIuMAX ",%" PRIuMAX "> ", uintmax_t(SelShift),
-          uintmax_t(CaseMask));
-  if (Writer && Case != nullptr)
-    Writer->writeAbbrev(File, Case);
+          uintmax_t(CMask));
+  if (Writer && C != nullptr)
+    Writer->writeAbbrev(File, C);
   else
-    fprintf(File, "%p\n", (void*)Case);
+    fprintf(File, "%p\n", (void*)C);
 }
 
 void Interpreter::describeFrameStack(FILE* File) {
@@ -1654,10 +1654,10 @@ void Interpreter::algorithmResume() {
                 break;
               case State::Step2: {
                 const auto* Sel = cast<Opcode>(Frame.Nd);
-                if (const Case* Case = Sel->getCase(OpcodeLocals.CaseMask)) {
+                if (const Case* C = Sel->getCase(OpcodeLocals.CMask)) {
                   Frame.CallState = State::Step3;
                   OpcodeLocalsStack.push();
-                  call(Method::ReadOpcode, Frame.CallModifier, Case);
+                  call(Method::ReadOpcode, Frame.CallModifier, C);
                   break;
                 }
                 Frame.CallState = State::Exit;
@@ -1666,9 +1666,9 @@ void Interpreter::algorithmResume() {
               case State::Step3: {
                 OpcodeLocalsFrame CaseResults = OpcodeLocals;
                 OpcodeLocalsStack.pop();
-                OpcodeLocals.CaseMask =
-                    (OpcodeLocals.CaseMask << CaseResults.SelShift) |
-                    CaseResults.CaseMask;
+                OpcodeLocals.CMask =
+                    (OpcodeLocals.CMask << CaseResults.SelShift) |
+                    CaseResults.CMask;
                 OpcodeLocals.SelShift += CaseResults.SelShift;
                 Frame.CallState = State::Exit;
                 break;
@@ -1686,7 +1686,7 @@ void Interpreter::algorithmResume() {
                 call(Method::Eval, MethodModifier::ReadOnly, Frame.Nd);
                 break;
               case State::Exit:
-                OpcodeLocals.CaseMask = Frame.ReturnValue;
+                OpcodeLocals.CMask = Frame.ReturnValue;
                 OpcodeLocals.SelShift = CHAR_BIT;
                 popAndReturn();
                 break;
@@ -1700,7 +1700,7 @@ void Interpreter::algorithmResume() {
                 call(Method::Eval, MethodModifier::ReadOnly, Frame.Nd);
                 break;
               case State::Exit:
-                OpcodeLocals.CaseMask = Frame.ReturnValue;
+                OpcodeLocals.CMask = Frame.ReturnValue;
                 OpcodeLocals.SelShift = CHAR_BIT;
                 popAndReturn();
                 break;
@@ -1715,7 +1715,7 @@ void Interpreter::algorithmResume() {
                 call(Method::Eval, MethodModifier::ReadOnly, Frame.Nd);
                 break;
               case State::Exit:
-                OpcodeLocals.CaseMask = Frame.ReturnValue;
+                OpcodeLocals.CMask = Frame.ReturnValue;
                 OpcodeLocals.SelShift = CHAR_BIT;
                 popAndReturn();
                 break;

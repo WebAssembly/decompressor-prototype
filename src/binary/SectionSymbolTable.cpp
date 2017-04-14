@@ -67,18 +67,18 @@ void SectionSymbolTable::installSymbols(const Node* Nd) {
     installSymbols(Kid);
 }
 
-void SectionSymbolTable::installSection(const Section* Section) {
-  for (size_t i = 0, len = Section->getNumKids(); i < len; ++i)
-    installSymbols(Section->getKid(i));
+void SectionSymbolTable::installSection(const Section* Sec) {
+  for (size_t i = 0, len = Sec->getNumKids(); i < len; ++i)
+    installSymbols(Sec->getKid(i));
 }
 
-uint32_t SectionSymbolTable::getSymbolIndex(Symbol* Symbol) {
-  PredefinedSymbol Sym = Symbol->getPredefinedSymbol();
+uint32_t SectionSymbolTable::getSymbolIndex(Symbol* ForSym) {
+  PredefinedSymbol Sym = ForSym->getPredefinedSymbol();
   if (Sym != PredefinedSymbol::Unknown)
     return uint32_t(Sym);
-  const auto Iter = SymbolLookup.find(Symbol);
+  const auto Iter = SymbolLookup.find(ForSym);
   if (Iter == SymbolLookup.end())
-    fatal("Can't find index for symbol: " + Symbol->getName());
+    fatal("Can't find index for symbol: " + ForSym->getName());
   return Iter->second + NumPredefinedSymbols;
 }
 
