@@ -1049,8 +1049,7 @@ void SymbolTable::stripLiteralDefs() {
   setAlgorithm(dyn_cast<Algorithm>(stripLiteralDefs(Alg, DefSyms)));
 }
 
-Node* SymbolTable::stripUsing(Node* Nd,
-                              std::function<Node*(Node*)> stripKid) {
+Node* SymbolTable::stripUsing(Node* Nd, std::function<Node*(Node*)> stripKid) {
   switch (NodeType Op = Nd->getType()) {
     default:
       for (int i = 0; i < Nd->getNumKids(); ++i)

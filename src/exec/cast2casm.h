@@ -900,9 +900,7 @@ std::shared_ptr<SymbolTable> readCasmFile(
   return Symtab;
 }
 
-bool install(SymbolTable::SharedPtr Symtab,
-             bool Display,
-             const char* Title) {
+bool install(SymbolTable::SharedPtr Symtab, bool Display, const char* Title) {
   if (Display) {
     fprintf(stdout, "After stripping %s:\n", Title);
     TextWriter Writer;
