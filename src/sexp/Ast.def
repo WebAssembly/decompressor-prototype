@@ -98,7 +98,6 @@
   /* Declarations */                                                           \
   X(Define,            0x60, "define",           2, 1, true,  true)            \
   X(File,              0x62, "file",             2, 0, false, false)           \
-  X(FileHeader,        0x77, "header",           0, 3, true,  false)           \
   X(Section,           0x63, "declarations",     0, 0, true,  false)           \
   X(Undefine,          0x64, "undefine",         1, 0, true, false)            \
   X(LiteralDef,        0x65, "literal",          2, 0, false, false)           \
@@ -109,6 +108,9 @@
   X(LiteralActionDef,  0x6a, "literal.action.define", 2, 0, false, false)      \
   X(LiteralActionUse,  0x6b, "literal.action.use", 11, 0, false, false)        \
   X(LiteralActionBase, 0x6c, "literal.action.enum", 1, 0, false, false)        \
+  X(SourceHeader,      0x77, "header",           0, 3, true,  false)           \
+  X(ReadHeader,        0x78, "header.read",      0, 3, true,  false)           \
+  X(WriteHeader,       0x79, "header.write",     0, 3, true,  false)           \
                                                                                \
   /* Internal (not opcodes in compressed file) */                              \
   X(UnknownSection,    0xFF, "unknown.section",  1, 0, true,  false)           \
@@ -117,17 +119,17 @@
 
 //#define X(tag, BASE, NODE_DECLS)
 #define AST_NULLARYNODE_TABLE                                                  \
-  X(Bit, NullaryNode,)                                                         \
-  X(Error, NullaryNode,)                                                       \
-  X(LastRead, NullaryNode,)                                                    \
-  X(Uint32, NullaryNode,)                                                      \
-  X(Uint64, NullaryNode,)                                                      \
-  X(Uint8, NullaryNode,)                                                       \
-  X(Varint32, NullaryNode,)                                                    \
-  X(Varint64, NullaryNode,)                                                    \
-  X(Varuint32, NullaryNode,)                                                   \
-  X(Varuint64, NullaryNode,)                                                   \
-  X(Void, NullaryNode,)                                                                     \
+  X(Bit, Nullary,)                                                             \
+  X(Error, Nullary,)                                                           \
+  X(LastRead, Nullary,)                                                        \
+  X(Uint32, Nullary,)                                                          \
+  X(Uint64, Nullary,)                                                          \
+  X(Uint8, Nullary,)                                                           \
+  X(Varint32, Nullary,)                                                        \
+  X(Varint64, Nullary,)                                                        \
+  X(Varuint32, Nullary,)                                                       \
+  X(Varuint64, Nullary,)                                                       \
+  X(Void, Nullary,)                                                            \
 
 //#define X(tag, defval, mergable, BASE, NODE_DECLS)
 // where:
@@ -158,18 +160,18 @@
 
 //#define X(tag, BASE, NODE_DECLS)
 #define AST_UNARYNODE_TABLE                                                    \
-  X(Block, UnaryNode,)                                                         \
-  X(BitwiseNegate, UnaryNode,)                                                 \
-  X(Callback, UnaryNode, CALLBACK_DECLS)                                       \
-  X(LastSymbolIs, UnaryNode,)                                                  \
-  X(LiteralActionUse, UnaryNode, LITERALACTIONUSE_DECLS)                       \
-  X(LiteralUse, UnaryNode, LITERALUSE_DECLS)                                   \
-  X(LoopUnbounded, UnaryNode,)                                                 \
-  X(Not, UnaryNode,)                                                           \
-  X(Peek, UnaryNode,)                                                          \
-  X(Read, UnaryNode,)                                                          \
-  X(Undefine, UnaryNode,)                                                      \
-  X(UnknownSection, UnaryNode,)                                                \
+  X(Block, Unary,)                                                             \
+  X(BitwiseNegate, Unary,)                                                     \
+  X(Callback, Unary, CALLBACK_DECLS)                                           \
+  X(LastSymbolIs, Unary,)                                                      \
+  X(LiteralActionUse, Unary, LITERALACTIONUSE_DECLS)                           \
+  X(LiteralUse, Unary, LITERALUSE_DECLS)                                       \
+  X(LoopUnbounded, Unary,)                                                     \
+  X(Not, Unary,)                                                               \
+  X(Peek, Unary,)                                                              \
+  X(Read, Unary,)                                                              \
+  X(Undefine, Unary,)                                                          \
+  X(UnknownSection, Unary,)                                                    \
 
 #define CALLBACK_DECLS                                                         \
   public:                                                                      \
@@ -177,32 +179,32 @@
     const IntegerNode* getValue() const;                                       \
 
 #define LITERALUSE_DECLS                                                       \
-  const LiteralDefNode* getDef() const;                                        \
+  const LiteralDef* getDef() const;                                            \
   const IntegerNode* getIntNode() const;                                       \
   bool validateNode(ConstNodeVectorType &Parents) const OVERRIDE;              \
 
 
 #define LITERALACTIONUSE_DECLS                                                 \
-  const LiteralActionDefNode* getDef() const;                                  \
+  const LiteralActionDef* getDef() const;                                      \
   const IntegerNode* getIntNode() const;                                       \
   bool validateNode(ConstNodeVectorType &Parents) const OVERRIDE;              \
 
 //#define X(tag, BASE, NODE_DECLS)
 #define AST_BINARYNODE_TABLE                                                   \
-  X(And, BinaryNode,)                                                          \
-  X(BinarySelect, BinaryNode,)                                                 \
-  X(BitwiseAnd, BinaryNode,)                                                   \
-  X(BitwiseOr, BinaryNode,)                                                    \
-  X(BitwiseXor, BinaryNode,)                                                   \
-  X(Case, BinaryNode, CASE_DECLS)                                              \
-  X(IfThen, BinaryNode,)                                                       \
-  X(LiteralActionDef, BinaryNode,)                                             \
-  X(LiteralDef, BinaryNode,)                                                   \
-  X(Loop, BinaryNode,)                                                         \
-  X(Or, BinaryNode,)                                                           \
-  X(Rename, BinaryNode,)                                                       \
-  X(Set, BinaryNode,)                                                          \
-  X(Table, BinaryNode,)                                                        \
+  X(And, Binary,)                                                              \
+  X(BinarySelect, Binary,)                                                     \
+  X(BitwiseAnd, Binary,)                                                       \
+  X(BitwiseOr, Binary,)                                                        \
+  X(BitwiseXor, Binary,)                                                       \
+  X(Case, Binary, CASE_DECLS)                                                  \
+  X(IfThen, Binary,)                                                           \
+  X(LiteralActionDef, Binary,)                                                 \
+  X(LiteralDef, Binary,)                                                       \
+  X(Loop, Binary,)                                                             \
+  X(Or, Binary,)                                                               \
+  X(Rename, Binary,)                                                           \
+  X(Set, Binary,)                                                              \
+  X(Table, Binary,)                                                            \
 
 #define CASE_DECLS                                                             \
   public:                                                                      \
@@ -220,21 +222,23 @@
 
 //#define X(tag, BASE, NODE_DECLS)
 #define AST_NARYNODE_TABLE                                                     \
-  X(Define, NaryNode, DEFINE_DECLS)                                            \
-  X(Eval, NaryNode, EVAL_DECLS)                                                \
-  X(File, NaryNode, FILE_DECLS)                                                \
-  X(FileHeader, NaryNode,)                                                     \
-  X(LiteralActionBase, NaryNode,)                                              \
-  X(Section, NaryNode,)                                                        \
-  X(Sequence, NaryNode,)                                                       \
-  X(Write, NaryNode,)                                                          \
+  X(Define, Nary, DEFINE_DECLS)                                                \
+  X(Eval, Nary, EVAL_DECLS)                                                    \
+  X(File, Nary, FILE_DECLS)                                                    \
+  X(LiteralActionBase, Nary,)                                                  \
+  X(ReadHeader, Header,)                                                       \
+  X(Section, Nary,)                                                            \
+  X(Sequence, Nary,)                                                           \
+  X(SourceHeader, Header,)                                                     \
+  X(Write, Nary,)                                                              \
+  X(WriteHeader, Header,)                                                      \
 
 #define FILE_DECLS                                                             \
   public:                                                                      \
-    const FileHeaderNode* getSourceHeader(bool UseEnclosing=true) const;       \
-    const FileHeaderNode* getReadHeader(bool UseEnclosing=true) const;         \
-    const FileHeaderNode* getWriteHeader(bool UseEnclosing=true) const;        \
-    const SectionNode* getDeclarations() const;                                \
+    const Header* getSourceHeader(bool UseEnclosing=true) const;               \
+    const Header* getReadHeader(bool UseEnclosing=true) const;                 \
+    const Header* getWriteHeader(bool UseEnclosing=true) const;                \
+    const Section* getDeclarations() const;                                    \
     bool validateNode(ConstNodeVectorType &Parents) const OVERRIDE;            \
 
 #define DEFINE_DECLS                                                           \
@@ -247,12 +251,12 @@
 
 #define EVAL_DECLS                                                             \
  public:                                                                       \
-  SymbolNode* getCallName() const;                                             \
+  Symbol* getCallName() const;                                                 \
   bool validateNode(ConstNodeVectorType &Parents) const OVERRIDE;              \
 
 //#define X(tag, BASE, NODE_DECLS)
 #define AST_TERNARYNODE_TABLE                                                  \
-  X(IfThenElse, TernaryNode,)                                                  \
+  X(IfThenElse, Ternary,)                                                      \
 
 //#define X(tag)
 #define AST_CACHEDNODE_TABLE                                                   \

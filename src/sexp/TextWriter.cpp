@@ -137,8 +137,8 @@ void TextWriter::writeNodeKids(const Node* Nd, bool EmbeddedInParent) {
   bool ForceNewline = false;
   for (auto* Kid : *Nd) {
     if (Kid == LastKid && !ShowInternalStructure) {
-      bool IsEmbedded = (HasHiddenSeq && isa<SequenceNode>(LastKid)) ||
-                        (isa<CaseNode>(Nd) && isa<CaseNode>(Kid));
+      bool IsEmbedded = (HasHiddenSeq && isa<Sequence>(LastKid)) ||
+                        (isa<Case>(Nd) && isa<Case>(Kid));
       if (IsEmbedded) {
         writeNewline();
         writeNode(Kid, true, true);
@@ -192,15 +192,15 @@ void TextWriter::writeNode(const Node* Nd,
     default: {
       if (!(EmbedInParent && !ShowInternalStructure))
         break;
-      if (isa<CaseNode>(Nd)) {
+      if (isa<Case>(Nd)) {
         writeIndent(-1);
         writeSpace();
-        writeName(OpCase);
+        writeName(NodeType::Case);
       }
       writeNodeKids(Nd, true);
       return;
     }
-    case OpFile: {
+    case NodeType::File: {
       if (ShowInternalStructure)
         break;
       // Treat like hidden node. That is, visually just a list of
@@ -209,27 +209,27 @@ void TextWriter::writeNode(const Node* Nd,
         writeNode(Kid, true);
       return;
     }
-    case OpLiteralUse:
-    case OpLiteralActionUse:
+    case NodeType::LiteralUse:
+    case NodeType::LiteralActionUse:
       if (ShowInternalStructure)
         break;
       writeNode(Nd->getKid(0), AddNewline, EmbedInParent);
       return;
-    case OpSection:
+    case NodeType::Section:
       if (ShowInternalStructure)
         break;
       { Parenthesize _(this, Type, true); }
       for (auto* Kid : *Nd)
         writeNode(Kid, true, false);
       return;
-    case OpSymbolDefn: {
+    case NodeType::SymbolDefn: {
       Parenthesize _(this, Type, AddNewline);
       writeSpace();
-      writeNode(cast<SymbolDefnNode>(Nd)->getSymbol(), false);
+      writeNode(cast<SymbolDefn>(Nd)->getSymbol(), false);
       return;
     }
-    case OpSymbol: {
-      return writeSymbolNode(cast<SymbolNode>(Nd), AddNewline);
+    case NodeType::Symbol: {
+      return writeSymbolNode(cast<Symbol>(Nd), AddNewline);
     }
   }
   // Default case.
@@ -251,7 +251,7 @@ void TextWriter::writeNodeKidsAbbrev(const Node* Nd, bool EmbeddedInParent) {
   for (int i = 0; i < NumKids; ++i) {
     Node* Kid = Nd->getKid(i);
     bool LastKid = i + 1 == NumKids;
-    if (HasHiddenSeq && LastKid && isa<SequenceNode>(Kid)) {
+    if (HasHiddenSeq && LastKid && isa<Sequence>(Kid)) {
       fprintf(File, " ...[%d]", Kid->getNumKids());
       return;
     }
@@ -303,19 +303,19 @@ void TextWriter::writeNodeAbbrev(const Node* Nd,
       fprintf(File, " ...");
       return;
     }
-    case OpSection:
-    case OpFile: {
+    case NodeType::Section:
+    case NodeType::File: {
       // Treat like hidden node. That is, visually just a list of s-expressions.
       fprintf(File, "(%s ...)\n", getNodeName(Nd));
       return;
     }
-    case OpSymbol:
-      return writeSymbolNode(cast<SymbolNode>(Nd), AddNewline);
-    case OpSymbolDefn:
+    case NodeType::Symbol:
+      return writeSymbolNode(cast<Symbol>(Nd), AddNewline);
+    case NodeType::SymbolDefn:
       writeNode(Nd, AddNewline, EmbedInParent);
       return;
-    case OpLiteralUse:
-    case OpLiteralActionUse:
+    case NodeType::LiteralUse:
+    case NodeType::LiteralActionUse:
       if (ShowInternalStructure)
         break;
       writeNodeAbbrev(Nd->getKid(0), AddNewline, EmbedInParent);
@@ -371,7 +371,7 @@ void TextWriter::writeSymbolName(std::string Name) {
   fputc('\'', File);
 }
 
-void TextWriter::writeSymbolNode(const SymbolNode* Sym, bool AddNewline) {
+void TextWriter::writeSymbolNode(const Symbol* Sym, bool AddNewline) {
   if (ShowInternalStructure) {
     Parenthesize _(this, Sym->getType(), AddNewline);
     writeSpace();
@@ -389,7 +389,7 @@ void TextWriter::writeIntegerNode(const IntegerNode* Int, bool AddNewline) {
   if (!Int->isDefaultValue()) {
     fputc(' ', File);
     writeInt(File, Int->getValue(), Int->getFormat());
-    if (const auto* Accept = dyn_cast<BinaryAcceptNode>(Int)) {
+    if (const auto* Accept = dyn_cast<BinaryAccept>(Int)) {
       fputc(':', File);
       fprintf(File, "%u", Accept->getNumBits());
     }

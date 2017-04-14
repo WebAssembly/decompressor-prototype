@@ -30,9 +30,9 @@ namespace wasm {
 
 namespace filt {
 
-class CaseNode;
-class EvalNode;
-class FileHeaderNode;
+class Case;
+class Eval;
+class Header;
 class Node;
 class SymbolTable;
 class TextWriter;
@@ -69,9 +69,7 @@ class Interpreter {
               const InterpreterFlags& Flags);
   virtual ~Interpreter();
 
-  void useFileHeader(const filt::FileHeaderNode* Header) {
-    HeaderOverride = Header;
-  }
+  void useFileHeader(const filt::Header* Hdr) { HeaderOverride = Hdr; }
 
   const InterpreterFlags& getFlags() const { return Flags; }
 
@@ -199,12 +197,12 @@ class Interpreter {
   // The stack of calling "eval" expressions.
   struct EvalFrame {
     EvalFrame();
-    EvalFrame(const filt::EvalNode* Caller, size_t CallingEvalIndex);
+    EvalFrame(const filt::Eval* Caller, size_t CallingEvalIndex);
     EvalFrame(const EvalFrame& F);
     bool isDefined() const;
     void reset();
     void describe(FILE* File, filt::TextWriter* Writer) const;
-    const filt::EvalNode* Caller;
+    const filt::Eval* Caller;
     size_t CallingEvalIndex;
   };
 
@@ -254,20 +252,20 @@ class Interpreter {
   // The stack of opcode Selshift/CaseMasks for multi-byte opcodes.
   struct OpcodeLocalsFrame {
     uint32_t SelShift;
-    decode::IntType CaseMask;
-    const filt::CaseNode* Case;
+    decode::IntType CMask;
+    const filt::Case* C;
     OpcodeLocalsFrame() { reset(); }
     void describe(FILE* File, filt::TextWriter* Writer = nullptr) const;
     void reset() {
       SelShift = 0;
-      CaseMask = 0;
-      Case = nullptr;
+      CMask = 0;
+      C = nullptr;
     }
   };
   OpcodeLocalsFrame OpcodeLocals;
   utils::ValueStack<OpcodeLocalsFrame> OpcodeLocalsStack;
 
-  const filt::FileHeaderNode* HeaderOverride;
+  const filt::Header* HeaderOverride;
   bool FreezeEofAtExit;
 
   void reset();

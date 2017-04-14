@@ -148,7 +148,7 @@ Interpreter::EvalFrame::EvalFrame() {
   reset();
 }
 
-Interpreter::EvalFrame::EvalFrame(const filt::EvalNode* Caller,
+Interpreter::EvalFrame::EvalFrame(const filt::Eval* Caller,
                                   size_t CallingEvalIndex)
     : Caller(Caller), CallingEvalIndex(CallingEvalIndex) {
   assert(Caller != nullptr);
@@ -341,11 +341,11 @@ void Interpreter::EvalFrame::describe(FILE* File, TextWriter* Writer) const {
 void Interpreter::OpcodeLocalsFrame::describe(FILE* File,
                                               TextWriter* Writer) const {
   fprintf(File, "OpcodeFrame <%" PRIuMAX ",%" PRIuMAX "> ", uintmax_t(SelShift),
-          uintmax_t(CaseMask));
-  if (Writer && Case != nullptr)
-    Writer->writeAbbrev(File, Case);
+          uintmax_t(CMask));
+  if (Writer && C != nullptr)
+    Writer->writeAbbrev(File, C);
   else
-    fprintf(File, "%p\n", (void*)Case);
+    fprintf(File, "%p\n", (void*)C);
 }
 
 void Interpreter::describeFrameStack(FILE* File) {
@@ -671,28 +671,30 @@ void Interpreter::algorithmResume() {
         break;
       case Method::Eval:
         switch (Frame.Nd->getType()) {
-          case NO_SUCH_NODETYPE:
-          case OpSymbolDefn:
-          case OpIntLookup:
-          case OpBinaryEvalBits:
-          case OpBinaryAccept:
-          case OpBinarySelect:
-          case OpParams:
-          case OpLastSymbolIs:
-          case OpLiteralActionBase:
-          case OpLiteralActionDef:
-          case OpLiteralDef:
-          case OpFile:
-          case OpLocals:
-          case OpRename:
-          case OpSymbol:
-          case OpSection:
-          case OpUndefine:
-          case OpUnknownSection:  // Method::Eval
+          case NodeType::NO_SUCH_NODETYPE:
+          case NodeType::SymbolDefn:
+          case NodeType::IntLookup:
+          case NodeType::BinaryEvalBits:
+          case NodeType::BinaryAccept:
+          case NodeType::BinarySelect:
+          case NodeType::Params:
+          case NodeType::LastSymbolIs:
+          case NodeType::LiteralActionBase:
+          case NodeType::LiteralActionDef:
+          case NodeType::LiteralDef:
+          case NodeType::File:
+          case NodeType::Locals:
+          case NodeType::Rename:
+          case NodeType::Symbol:
+          case NodeType::Section:
+          case NodeType::Undefine:
+          case NodeType::UnknownSection:  // Method::Eval
             return failNotImplemented();
-          case OpError:  // Method::Eval
+          case NodeType::Error:  // Method::Eval
             return throwMessage("Algorithm error!");
-          case OpFileHeader:
+          case NodeType::ReadHeader:
+          case NodeType::SourceHeader:
+          case NodeType::WriteHeader:
             switch (Frame.CallState) {
               case State::Enter:
                 if (!CatchStack.empty()) {
@@ -745,7 +747,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpBitwiseAnd:
+          case NodeType::BitwiseAnd:
             switch (Frame.CallState) {
               case State::Enter:
                 if (!hasReadMode())
@@ -769,7 +771,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpBitwiseOr:
+          case NodeType::BitwiseOr:
             switch (Frame.CallState) {
               case State::Enter:
                 if (!hasReadMode())
@@ -793,7 +795,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpBitwiseXor:
+          case NodeType::BitwiseXor:
             switch (Frame.CallState) {
               case State::Enter:
                 if (!hasReadMode())
@@ -817,7 +819,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpBitwiseNegate:
+          case NodeType::BitwiseNegate:
             switch (Frame.CallState) {
               case State::Enter:
                 if (!hasReadMode())
@@ -835,38 +837,37 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpCallback: {  // Method::Eval
-            IntType Action =
-                cast<CallbackNode>(Frame.Nd)->getValue()->getValue();
+          case NodeType::Callback: {  // Method::Eval
+            IntType Action = cast<Callback>(Frame.Nd)->getValue()->getValue();
             if (!Input->readAction(Action) || !Output->writeAction(Action))
               return throwMessage("Unable to apply action: ", Action);
             popAndReturn(LastReadValue);
             break;
           }
-          case OpI32Const:
-          case OpI64Const:
-          case OpU8Const:
-          case OpU32Const:
-          case OpU64Const: {  // Method::Eval
+          case NodeType::I32Const:
+          case NodeType::I64Const:
+          case NodeType::U8Const:
+          case NodeType::U32Const:
+          case NodeType::U64Const: {  // Method::Eval
             IntType Value = dyn_cast<IntegerNode>(Frame.Nd)->getValue();
             if (hasReadMode())
               LastReadValue = Value;
             popAndReturn(Value);
             break;
           }
-          case OpLastRead:
+          case NodeType::LastRead:
             popAndReturn(LastReadValue);
             break;
-          case OpLocal: {
-            const auto* Local = dyn_cast<LocalNode>(Frame.Nd);
-            size_t Index = Local->getValue();
+          case NodeType::Local: {
+            const auto* L = dyn_cast<Local>(Frame.Nd);
+            size_t Index = L->getValue();
             if (LocalsBase + Index >= LocalValues.size()) {
               return throwMessage("Local variable index out of range!");
             }
             popAndReturn(LocalValues[LocalsBase + Index]);
             break;
           }
-          case OpPeek:
+          case NodeType::Peek:
             switch (Frame.CallState) {
               case State::Enter:
                 if (!Input->pushPeekPos())
@@ -884,7 +885,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpRead:  // Method::Eval
+          case NodeType::Read:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Exit;
@@ -898,14 +899,14 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpBit:
-          case OpUint32:
-          case OpUint64:
-          case OpUint8:
-          case OpVarint32:
-          case OpVarint64:
-          case OpVaruint32:
-          case OpVaruint64: {
+          case NodeType::Bit:
+          case NodeType::Uint32:
+          case NodeType::Uint64:
+          case NodeType::Uint8:
+          case NodeType::Varint32:
+          case NodeType::Varint64:
+          case NodeType::Varuint32:
+          case NodeType::Varuint64: {
             if (hasReadMode())
               if (!Input->readValue(Frame.Nd, LastReadValue))
                 return throwCantRead();
@@ -916,7 +917,7 @@ void Interpreter::algorithmResume() {
             popAndReturn(LastReadValue);
             break;
           }
-          case OpBinaryEval:
+          case NodeType::BinaryEval:
             if (hasReadMode())
               if (!Input->readBinary(Frame.Nd, LastReadValue))
                 return throwCantRead();
@@ -925,7 +926,7 @@ void Interpreter::algorithmResume() {
                 return throwCantWrite();
             popAndReturn(LastReadValue);
             break;
-          case OpMap:
+          case NodeType::Map:
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Step2;
@@ -937,7 +938,7 @@ void Interpreter::algorithmResume() {
                 if (hasReadMode()) {
                   LastReadValue = Frame.ReturnValue;
                   call(Method::Eval, MethodModifier::ReadOnly,
-                       cast<MapNode>(Frame.Nd)->getCase(LastReadValue));
+                       cast<Map>(Frame.Nd)->getCase(LastReadValue));
                 }
                 break;
               case State::Exit:
@@ -949,17 +950,17 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpOpcode:  // Method::Eval
+          case NodeType::Opcode:  // Method::Eval
             return throwMessage("Multibyte opcodes broken!");
-          case OpSet:  // Method::Eval
+          case NodeType::Set:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Exit;
                 call(Method::Eval, Frame.CallModifier, Frame.Nd->getKid(1));
                 break;
               case State::Exit: {
-                const auto* Local = dyn_cast<LocalNode>(Frame.Nd->getKid(0));
-                size_t Index = Local->getValue();
+                const auto* L = dyn_cast<Local>(Frame.Nd->getKid(0));
+                size_t Index = L->getValue();
                 if (LocalsBase + Index >= LocalValues.size()) {
                   return throwMessage(
                       "Local variable index out of range, can't set!");
@@ -972,7 +973,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpWrite:  // Method::Eval
+          case NodeType::Write:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
                 LoopCounterStack.push(0);
@@ -1000,7 +1001,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpNot:  // Method::Eval
+          case NodeType::Not:  // Method::Eval
             if (!hasReadMode())
               return throwCantWriteInWriteOnlyMode();
             switch (Frame.CallState) {
@@ -1016,7 +1017,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpAnd:  // Method::Eval
+          case NodeType::And:  // Method::Eval
             if (!hasReadMode())
               return throwCantWriteInWriteOnlyMode();
             switch (Frame.CallState) {
@@ -1037,7 +1038,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpOr:  // Method::Eval
+          case NodeType::Or:  // Method::Eval
             if (!hasReadMode())
               return throwCantWriteInWriteOnlyMode();
             switch (Frame.CallState) {
@@ -1058,7 +1059,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpSequence:  // Method::Eval
+          case NodeType::Sequence:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
                 LoopCounterStack.push(0);
@@ -1080,7 +1081,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpTable:  // Method::Eval
+          case NodeType::Table:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Step2;
@@ -1121,7 +1122,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpLoop:  // Method::Eval
+          case NodeType::Loop:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Step2;
@@ -1146,7 +1147,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpLoopUnbounded:  // Method::Eval
+          case NodeType::LoopUnbounded:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Loop;
@@ -1165,7 +1166,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpIfThen:  // Method::Eval
+          case NodeType::IfThen:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Step2;
@@ -1183,7 +1184,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpIfThenElse:  // Method::Eval
+          case NodeType::IfThenElse:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Step2;
@@ -1203,7 +1204,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpSwitch:  // Method::Eval
+          case NodeType::Switch:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Step2;
@@ -1211,7 +1212,7 @@ void Interpreter::algorithmResume() {
                 break;
               case State::Step2: {
                 Frame.CallState = State::Exit;
-                const auto* Sel = cast<SwitchNode>(Frame.Nd);
+                const auto* Sel = cast<Switch>(Frame.Nd);
                 if (const auto* Case = Sel->getCase(Frame.ReturnValue))
                   call(Method::Eval, Frame.CallModifier, Case);
                 else
@@ -1225,12 +1226,12 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpCase:  // Method::Eval
+          case NodeType::Case:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter: {
                 Frame.CallState = State::Exit;
                 call(Method::Eval, Frame.CallModifier,
-                     cast<CaseNode>(Frame.Nd)->getCaseBody());
+                     cast<Case>(Frame.Nd)->getCaseBody());
                 break;
               }
               case State::Exit:
@@ -1240,22 +1241,22 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpDefine:  // Method::Eval
+          case NodeType::Define:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter: {
-                const DefineNode* Define = cast<DefineNode>(Frame.Nd);
-                if (size_t NumLocals = Define->getNumLocals()) {
+                const Define* Def = cast<Define>(Frame.Nd);
+                if (size_t NumLocals = Def->getNumLocals()) {
                   LocalsBaseStack.push(LocalValues.size());
                   for (size_t i = 0; i < NumLocals; ++i)
                     LocalValues.push_back(0);
                 }
                 Frame.CallState = State::Exit;
-                call(Method::Eval, Frame.CallModifier, Define->getBody());
+                call(Method::Eval, Frame.CallModifier, Def->getBody());
                 break;
               }
               case State::Exit: {
-                const DefineNode* Define = cast<DefineNode>(Frame.Nd);
-                if (Define->getNumLocals()) {
+                const Define* Def = cast<Define>(Frame.Nd);
+                if (Def->getNumLocals()) {
                   while (LocalValues.size() > LocalsBase)
                     LocalValues.pop_back();
                   LocalsBaseStack.pop();
@@ -1267,7 +1268,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpParam:  // Method::Eval
+          case NodeType::Param:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Exit;
@@ -1281,17 +1282,17 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpLiteralActionUse:  // Method::Eval
+          case NodeType::LiteralActionUse:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter: {
                 Frame.CallState = State::Exit;
-                auto* Sym = dyn_cast<SymbolNode>(Frame.Nd->getKid(0));
+                auto* Sym = dyn_cast<Symbol>(Frame.Nd->getKid(0));
                 assert(Sym);
                 // Note: To handle local algorithm overrides (when processing
                 // code in an enclosing scope) we need to get the definition
                 // from the current algorithm, not the algorithm the symbol was
                 // defined in.
-                const LiteralActionDefNode* Defn =
+                const LiteralActionDef* Defn =
                     Symtab->getSymbolDefn(Sym)->getLiteralActionDefinition();
                 if (Defn == nullptr) {
                   fprintf(stderr, "Eval can't find literal action: %s\n",
@@ -1308,17 +1309,17 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpLiteralUse:  // Method::Eval
+          case NodeType::LiteralUse:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter: {
                 Frame.CallState = State::Exit;
-                auto* Sym = dyn_cast<SymbolNode>(Frame.Nd->getKid(0));
+                auto* Sym = dyn_cast<Symbol>(Frame.Nd->getKid(0));
                 assert(Sym);
                 // Note: To handle local algorithm overrides (when processing
                 // code in an enclosing scope) we need to get the definition
                 // from the current algorithm, not the algorithm the symbol was
                 // defined in.
-                const LiteralDefNode* Defn =
+                const LiteralDef* Defn =
                     Symtab->getSymbolDefn(Sym)->getLiteralDefinition();
                 if (Defn == nullptr) {
                   fprintf(stderr, "Eval can't find literal: %s\n",
@@ -1335,23 +1336,23 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpEval:  // Method::Eval
+          case NodeType::Eval:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter: {
-                auto* Sym = dyn_cast<SymbolNode>(Frame.Nd->getKid(0));
+                auto* Sym = dyn_cast<Symbol>(Frame.Nd->getKid(0));
                 assert(Sym);
                 // Note: To handle local algorithm overrides (when processing
                 // code in an enclosing scope) we need to get the definition
                 // from the current algorithm, not the algorithm the symbol was
                 // defined in.
-                const DefineNode* Defn =
+                const Define* Defn =
                     Symtab->getSymbolDefn(Sym)->getDefineDefinition();
                 if (Defn == nullptr) {
                   fprintf(stderr, "Eval can't find definition: %s\n",
                           Sym->getName().c_str());
                   return throwMessage("Unable to evaluate call");
                 }
-                auto* NumParams = dyn_cast<ParamsNode>(Defn->getKid(1));
+                auto* NumParams = dyn_cast<Params>(Defn->getKid(1));
                 assert(NumParams);
                 int NumCallArgs = Frame.Nd->getNumKids() - 1;
                 if (NumParams->getValue() != IntType(NumCallArgs)) {
@@ -1364,7 +1365,7 @@ void Interpreter::algorithmResume() {
                 }
                 size_t CallingEvalIndex = CallingEvalStack.size();
                 CallingEvalStack.push();
-                CallingEval.Caller = cast<EvalNode>(Frame.Nd);
+                CallingEval.Caller = cast<Eval>(Frame.Nd);
                 CallingEval.CallingEvalIndex = CallingEvalIndex;
                 Frame.CallState = State::Exit;
                 call(Method::Eval, Frame.CallModifier, Defn);
@@ -1378,7 +1379,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpBlock:  // Method::Eval
+          case NodeType::Block:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter:
 #if LOG_FUNCTIONS || LOG_NUMBERED_BLOCK
@@ -1413,7 +1414,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpVoid:  // Method::Eval
+          case NodeType::Void:  // Method::Eval
             popAndReturn(LastReadValue);
             break;
         }
@@ -1448,9 +1449,9 @@ void Interpreter::algorithmResume() {
               return throwMessage(
                   "Not inside a call frame, can't evaluate parameter "
                   "accessor!");
-            assert(isa<ParamNode>(Frame.Nd));
-            auto* Param = cast<ParamNode>(Frame.Nd);
-            IntType ParamIndex = Param->getValue() + 1;
+            assert(isa<Param>(Frame.Nd));
+            auto* Parm = cast<Param>(Frame.Nd);
+            IntType ParamIndex = Parm->getValue() + 1;
             if (ParamIndex >= IntType(CallingEval.Caller->getNumKids()))
               return throwMessage(
                   "Parameter reference doesn't match callling context!");
@@ -1578,21 +1579,21 @@ void Interpreter::algorithmResume() {
             if (Frame.Nd == nullptr) {
               Frame.Nd = Symtab->getInstalledRoot();
               assert(Frame.Nd);
-              assert(isa<FileNode>(Frame.Nd));
+              assert(isa<File>(Frame.Nd));
             }
-            const Node* Header =
+            const Node* Hdr =
                 HeaderOverride ? HeaderOverride : Symtab->getReadHeader();
-            if (!isa<FileHeaderNode>(Header))
+            if (!isa<Header>(Hdr))
               return fail("Can't find matching header definition");
             Frame.CallState = State::Step2;
-            call(Method::Eval, Frame.CallModifier, Header);
+            call(Method::Eval, Frame.CallModifier, Hdr);
             break;
           }
           case State::Step2: {
             Frame.CallState = State::Exit;
             if (!Output->writeHeaderClose())
               return fail("Unable to write header");
-            SymbolNode* File = Symtab->getPredefined(PredefinedSymbol::File);
+            Symbol* File = Symtab->getPredefined(PredefinedSymbol::File);
             if (File == nullptr)
               throwMessage("Can't find sexpression to process file");
             const Node* FileDefn = File->getDefineDefinition();
@@ -1644,7 +1645,7 @@ void Interpreter::algorithmResume() {
         switch (Frame.Nd->getType()) {
           default:
             return failNotImplemented();
-          case OpOpcode:  // Method::ReadOpcode
+          case NodeType::Opcode:  // Method::ReadOpcode
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Step2;
@@ -1652,12 +1653,11 @@ void Interpreter::algorithmResume() {
                      Frame.Nd->getKid(0));
                 break;
               case State::Step2: {
-                const auto* Sel = cast<OpcodeNode>(Frame.Nd);
-                if (const CaseNode* Case =
-                        Sel->getCase(OpcodeLocals.CaseMask)) {
+                const auto* Sel = cast<Opcode>(Frame.Nd);
+                if (const Case* C = Sel->getCase(OpcodeLocals.CMask)) {
                   Frame.CallState = State::Step3;
                   OpcodeLocalsStack.push();
-                  call(Method::ReadOpcode, Frame.CallModifier, Case);
+                  call(Method::ReadOpcode, Frame.CallModifier, C);
                   break;
                 }
                 Frame.CallState = State::Exit;
@@ -1666,9 +1666,9 @@ void Interpreter::algorithmResume() {
               case State::Step3: {
                 OpcodeLocalsFrame CaseResults = OpcodeLocals;
                 OpcodeLocalsStack.pop();
-                OpcodeLocals.CaseMask =
-                    (OpcodeLocals.CaseMask << CaseResults.SelShift) |
-                    CaseResults.CaseMask;
+                OpcodeLocals.CMask =
+                    (OpcodeLocals.CMask << CaseResults.SelShift) |
+                    CaseResults.CMask;
                 OpcodeLocals.SelShift += CaseResults.SelShift;
                 Frame.CallState = State::Exit;
                 break;
@@ -1679,28 +1679,28 @@ void Interpreter::algorithmResume() {
               default:
                 return failBadState();
             }
-          case OpUint8:  // Method::ReadOpcode
+          case NodeType::Uint8:  // Method::ReadOpcode
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Exit;
                 call(Method::Eval, MethodModifier::ReadOnly, Frame.Nd);
                 break;
               case State::Exit:
-                OpcodeLocals.CaseMask = Frame.ReturnValue;
+                OpcodeLocals.CMask = Frame.ReturnValue;
                 OpcodeLocals.SelShift = CHAR_BIT;
                 popAndReturn();
                 break;
               default:
                 return failBadState();
             }
-          case OpUint32:  // Method::ReadOpcode
+          case NodeType::Uint32:  // Method::ReadOpcode
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Exit;
                 call(Method::Eval, MethodModifier::ReadOnly, Frame.Nd);
                 break;
               case State::Exit:
-                OpcodeLocals.CaseMask = Frame.ReturnValue;
+                OpcodeLocals.CMask = Frame.ReturnValue;
                 OpcodeLocals.SelShift = CHAR_BIT;
                 popAndReturn();
                 break;
@@ -1708,14 +1708,14 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case OpUint64:  // Method::ReadOpcode
+          case NodeType::Uint64:  // Method::ReadOpcode
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Exit;
                 call(Method::Eval, MethodModifier::ReadOnly, Frame.Nd);
                 break;
               case State::Exit:
-                OpcodeLocals.CaseMask = Frame.ReturnValue;
+                OpcodeLocals.CMask = Frame.ReturnValue;
                 OpcodeLocals.SelShift = CHAR_BIT;
                 popAndReturn();
                 break;

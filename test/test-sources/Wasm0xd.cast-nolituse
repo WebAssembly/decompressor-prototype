@@ -1,6 +1,5 @@
 (header (u32.const 0x6d736163) (u32.const 0x0))
-(header (u32.const 0x6d736100) (u32.const 0xd))
-(void)
+(header.read (u32.const 0x6d736100) (u32.const 0xd))
 (declarations)
 (literal.action.enum (u32.const 1001)
   'br_table.begin'

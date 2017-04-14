@@ -127,28 +127,28 @@ bool Writer::writeValue(decode::IntType Value, const filt::Node* Format) {
   // Note: We pass through virtual functions to force any applicable cast
   // conversions.
   switch (Format->getType()) {
-    case OpBit:
+    case NodeType::Bit:
       writeBit(Value);
       return true;
-    case OpUint8:
+    case NodeType::Uint8:
       writeUint8(Value);
       return true;
-    case OpUint32:
+    case NodeType::Uint32:
       writeUint32(Value);
       return true;
-    case OpUint64:
+    case NodeType::Uint64:
       writeUint64(Value);
       return true;
-    case OpVarint32:
+    case NodeType::Varint32:
       writeVarint32(Value);
       return true;
-    case OpVarint64:
+    case NodeType::Varint64:
       writeVarint64(Value);
       return true;
-    case OpVaruint32:
+    case NodeType::Varuint32:
       writeVaruint32(Value);
       return true;
-    case OpVaruint64:
+    case NodeType::Varuint64:
       writeVaruint64(Value);
       return true;
     default:

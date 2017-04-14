@@ -68,10 +68,10 @@ bool InflateAst::failWriteHeaderMalformed() {
   return failBuild("writeHeader", "Input malformed");
 }
 
-FileNode* InflateAst::getGeneratedFile() const {
+File* InflateAst::getGeneratedFile() const {
   if (Asts.size() != 1)
     return nullptr;
-  return dyn_cast<FileNode>(AstsTop);
+  return dyn_cast<File>(AstsTop);
 }
 
 template <class T>
@@ -178,19 +178,19 @@ bool InflateAst::writeTypedValue(decode::IntType Value, interp::IntTypeFormat) {
 bool InflateAst::writeHeaderValue(decode::IntType Value,
                                   interp::IntTypeFormat Format) {
   if (Asts.empty())
-    Asts.push(Symtab->create<FileHeaderNode>());
+    Asts.push(Symtab->create<SourceHeader>());
   if (Asts.size() != 1)
     return failWriteHeaderMalformed();
   Node* Header = AstsTop;
   switch (Format) {
     case IntTypeFormat::Uint8:
-      Asts.push(Symtab->create<U8ConstNode>(Value, ValueFormat::Hexidecimal));
+      Asts.push(Symtab->create<U8Const>(Value, ValueFormat::Hexidecimal));
       break;
     case IntTypeFormat::Uint32:
-      Asts.push(Symtab->create<U32ConstNode>(Value, ValueFormat::Hexidecimal));
+      Asts.push(Symtab->create<U32Const>(Value, ValueFormat::Hexidecimal));
       break;
     case IntTypeFormat::Uint64:
-      Asts.push(Symtab->create<U64ConstNode>(Value, ValueFormat::Hexidecimal));
+      Asts.push(Symtab->create<U64Const>(Value, ValueFormat::Hexidecimal));
       break;
     default:
       return failWriteHeaderMalformed();
@@ -201,91 +201,93 @@ bool InflateAst::writeHeaderValue(decode::IntType Value,
 
 bool InflateAst::applyOp(IntType Op) {
   switch (NodeType(Op)) {
-    case OpAnd:
-      return buildBinary<AndNode>();
-    case OpBinaryAccept:
-      return buildNullary<BinaryAcceptNode>();
-    case OpBinaryEval:
-      return buildUnary<BinaryEvalNode>();
-    case OpBinarySelect:
-      return buildBinary<BinarySelectNode>();
-    case OpBit:
-      return buildNullary<BitNode>();
-    case OpBitwiseAnd:
-      return buildBinary<BitwiseAndNode>();
-    case OpBitwiseOr:
-      return buildBinary<BitwiseOrNode>();
-    case OpBitwiseNegate:
-      return buildUnary<BitwiseNegateNode>();
-    case OpBitwiseXor:
-      return buildBinary<BitwiseXorNode>();
-    case OpBlock:
-      return buildUnary<BlockNode>();
-    case OpCallback:
-      return buildUnary<CallbackNode>();
-    case OpCase:
-      return buildBinary<CaseNode>();
-    case OpDefine:
-      return buildNary<DefineNode>();
-    case OpError:
-      return buildNullary<ErrorNode>();
-    case OpEval:
-      return buildNary<EvalNode>();
-    case OpFileHeader:
-      return buildNary<FileHeaderNode>();
-    case OpIfThen:
-      return buildBinary<IfThenNode>();
-    case OpIfThenElse:
-      return buildTernary<IfThenElseNode>();
-    case OpLastRead:
-      return buildNullary<LastReadNode>();
-    case OpLastSymbolIs:
-      return buildUnary<LastSymbolIsNode>();
-    case OpLiteralActionBase:
-      return buildNary<LiteralActionBaseNode>();
-    case OpLiteralActionDef:
-      return buildBinary<LiteralActionDefNode>();
-    case OpLiteralActionUse:
-      return buildUnary<LiteralActionUseNode>();
-    case OpLiteralDef:
-      return buildBinary<LiteralDefNode>();
-    case OpLiteralUse:
-      return buildUnary<LiteralUseNode>();
-    case OpLoop:
-      return buildBinary<LoopNode>();
-    case OpLoopUnbounded:
-      return buildUnary<LoopUnboundedNode>();
-    case OpMap:
-      return buildNary<MapNode>();
-    case OpNot:
-      return buildUnary<NotNode>();
-    case OpOr:
-      return buildBinary<OrNode>();
-    case OpPeek:
-      return buildUnary<PeekNode>();
-    case OpRead:
-      return buildUnary<ReadNode>();
-    case OpRename:
-      return buildBinary<RenameNode>();
-    case OpSection:
-      return buildNary<SectionNode>();
-    case OpFile: {
-      FileNode* File = buildNary<FileNode>() ? getGeneratedFile() : nullptr;
-      if (File == nullptr)
+    case NodeType::And:
+      return buildBinary<And>();
+    case NodeType::BinaryAccept:
+      return buildNullary<BinaryAccept>();
+    case NodeType::BinaryEval:
+      return buildUnary<BinaryEval>();
+    case NodeType::BinarySelect:
+      return buildBinary<BinarySelect>();
+    case NodeType::Bit:
+      return buildNullary<Bit>();
+    case NodeType::BitwiseAnd:
+      return buildBinary<BitwiseAnd>();
+    case NodeType::BitwiseOr:
+      return buildBinary<BitwiseOr>();
+    case NodeType::BitwiseNegate:
+      return buildUnary<BitwiseNegate>();
+    case NodeType::BitwiseXor:
+      return buildBinary<BitwiseXor>();
+    case NodeType::Block:
+      return buildUnary<Block>();
+    case NodeType::Callback:
+      return buildUnary<Callback>();
+    case NodeType::Case:
+      return buildBinary<Case>();
+    case NodeType::Define:
+      return buildNary<Define>();
+    case NodeType::Error:
+      return buildNullary<Error>();
+    case NodeType::Eval:
+      return buildNary<Eval>();
+    case NodeType::SourceHeader:
+      return buildNary<SourceHeader>();
+    case NodeType::IfThen:
+      return buildBinary<IfThen>();
+    case NodeType::IfThenElse:
+      return buildTernary<IfThenElse>();
+    case NodeType::LastRead:
+      return buildNullary<LastRead>();
+    case NodeType::LastSymbolIs:
+      return buildUnary<LastSymbolIs>();
+    case NodeType::LiteralActionBase:
+      return buildNary<LiteralActionBase>();
+    case NodeType::LiteralActionDef:
+      return buildBinary<LiteralActionDef>();
+    case NodeType::LiteralActionUse:
+      return buildUnary<LiteralActionUse>();
+    case NodeType::LiteralDef:
+      return buildBinary<LiteralDef>();
+    case NodeType::LiteralUse:
+      return buildUnary<LiteralUse>();
+    case NodeType::Loop:
+      return buildBinary<Loop>();
+    case NodeType::LoopUnbounded:
+      return buildUnary<LoopUnbounded>();
+    case NodeType::Map:
+      return buildNary<Map>();
+    case NodeType::Not:
+      return buildUnary<Not>();
+    case NodeType::Or:
+      return buildBinary<Or>();
+    case NodeType::Peek:
+      return buildUnary<Peek>();
+    case NodeType::Read:
+      return buildUnary<Read>();
+    case NodeType::ReadHeader:
+      return buildNary<ReadHeader>();
+    case NodeType::Rename:
+      return buildBinary<Rename>();
+    case NodeType::Section:
+      return buildNary<Section>();
+    case NodeType::File: {
+      File* F = buildNary<File>() ? getGeneratedFile() : nullptr;
+      if (F == nullptr)
         return failBuild("InflateAst", "Did not generate a file node");
-      Symtab->setRoot(File);
+      Symtab->setRoot(F);
       if (InstallDuringInflation)
         Symtab->install();
       return true;
     }
-    case OpSequence:
-      return buildNary<SequenceNode>();
-    case OpSet:
-      return buildBinary<SetNode>();
-    case OpSwitch:
-      return buildNary<SwitchNode>();
-    case OpSymbol: {
-      SymbolNode* Sym = SectionSymtab->getIndexSymbol(Values.popValue());
+    case NodeType::Sequence:
+      return buildNary<Sequence>();
+    case NodeType::Set:
+      return buildBinary<Set>();
+    case NodeType::Switch:
+      return buildNary<Switch>();
+    case NodeType::Symbol: {
+      Symbol* Sym = SectionSymtab->getIndexSymbol(Values.popValue());
       Values.pop();
       if (Sym == nullptr) {
         return failWriteActionMalformed();
@@ -294,30 +296,32 @@ bool InflateAst::applyOp(IntType Op) {
       Asts.push(Sym);
       return true;
     }
-    case OpTable:
-      return buildBinary<TableNode>();
-    case OpUndefine:
-      return buildUnary<UndefineNode>();
-    case OpUnknownSection:
-      return buildUnary<UnknownSectionNode>();
-    case OpUint32:
-      return buildNullary<Uint32Node>();
-    case OpUint64:
-      return buildNullary<Uint64Node>();
-    case OpUint8:
-      return buildNullary<Uint8Node>();
-    case OpVarint32:
-      return buildNullary<Varint32Node>();
-    case OpVarint64:
-      return buildNullary<Varint64Node>();
-    case OpVaruint32:
-      return buildNullary<Varuint32Node>();
-    case OpVaruint64:
-      return buildNullary<Varuint64Node>();
-    case OpVoid:
-      return buildNullary<VoidNode>();
-    case OpWrite:
-      return buildNary<WriteNode>();
+    case NodeType::Table:
+      return buildBinary<Table>();
+    case NodeType::Undefine:
+      return buildUnary<Undefine>();
+    case NodeType::UnknownSection:
+      return buildUnary<UnknownSection>();
+    case NodeType::Uint32:
+      return buildNullary<Uint32>();
+    case NodeType::Uint64:
+      return buildNullary<Uint64>();
+    case NodeType::Uint8:
+      return buildNullary<Uint8>();
+    case NodeType::Varint32:
+      return buildNullary<Varint32>();
+    case NodeType::Varint64:
+      return buildNullary<Varint64>();
+    case NodeType::Varuint32:
+      return buildNullary<Varuint32>();
+    case NodeType::Varuint64:
+      return buildNullary<Varuint64>();
+    case NodeType::Void:
+      return buildNullary<Void>();
+    case NodeType::Write:
+      return buildNary<Write>();
+    case NodeType::WriteHeader:
+      return buildNary<WriteHeader>();
     default:
       return failWriteActionMalformed();
   }
@@ -356,11 +360,11 @@ bool InflateAst::writeAction(IntType Action) {
     case IntType(PredefinedSymbol::Binary_bit):
       switch (ValuesTop) {
         case 0:
-          Values.push(OpBinaryAccept);
-          return buildNullary<BinaryAcceptNode>();
+          Values.push(IntType(NodeType::BinaryAccept));
+          return buildNullary<BinaryAccept>();
         case 1:
-          Values.push(OpBinaryEval);
-          return buildBinary<BinarySelectNode>();
+          Values.push(IntType(NodeType::BinaryEval));
+          return buildBinary<BinarySelect>();
         default:
           fprintf(stderr, "Binary encoding Value not 0/1: %" PRIuMAX "\n",
                   uintmax_t(ValuesTop));
@@ -368,8 +372,8 @@ bool InflateAst::writeAction(IntType Action) {
       }
       WASM_RETURN_UNREACHABLE(false);
     case IntType(PredefinedSymbol::Binary_end):
-      Values.push(OpBinaryEval);
-      return buildUnary<BinaryEvalNode>();
+      Values.push(IntType(NodeType::BinaryEval));
+      return buildUnary<BinaryEval>();
     case IntType(PredefinedAlgcasm0x0::Int_value_begin):
       ValueMarker = Values.size();
       return true;
@@ -394,42 +398,42 @@ bool InflateAst::writeAction(IntType Action) {
           return failWriteActionMalformed();
       }
       Node* Nd = nullptr;
-      switch (Values.popValue()) {
-        case OpI32Const:
-          Nd = IsDefault ? Symtab->create<I32ConstNode>()
-                         : Symtab->create<I32ConstNode>(Value, Format);
+      switch (NodeType(Values.popValue())) {
+        case NodeType::I32Const:
+          Nd = IsDefault ? Symtab->create<I32Const>()
+                         : Symtab->create<I32Const>(Value, Format);
           break;
-        case OpI64Const:
-          Nd = IsDefault ? Symtab->create<I64ConstNode>()
-                         : Symtab->create<I64ConstNode>(Value, Format);
+        case NodeType::I64Const:
+          Nd = IsDefault ? Symtab->create<I64Const>()
+                         : Symtab->create<I64Const>(Value, Format);
           break;
-        case OpLocal:
-          Nd = IsDefault ? Symtab->create<LocalNode>()
-                         : Symtab->create<LocalNode>(Value, Format);
+        case NodeType::Local:
+          Nd = IsDefault ? Symtab->create<Local>()
+                         : Symtab->create<Local>(Value, Format);
           break;
-        case OpLocals:
-          Nd = IsDefault ? Symtab->create<LocalsNode>()
-                         : Symtab->create<LocalsNode>(Value, Format);
+        case NodeType::Locals:
+          Nd = IsDefault ? Symtab->create<Locals>()
+                         : Symtab->create<Locals>(Value, Format);
           break;
-        case OpParam:
-          Nd = IsDefault ? Symtab->create<ParamNode>()
-                         : Symtab->create<ParamNode>(Value, Format);
+        case NodeType::Param:
+          Nd = IsDefault ? Symtab->create<Param>()
+                         : Symtab->create<Param>(Value, Format);
           break;
-        case OpParams:
-          Nd = IsDefault ? Symtab->create<ParamsNode>()
-                         : Symtab->create<ParamsNode>(Value, Format);
+        case NodeType::Params:
+          Nd = IsDefault ? Symtab->create<Params>()
+                         : Symtab->create<Params>(Value, Format);
           break;
-        case OpU8Const:
-          Nd = IsDefault ? Symtab->create<U8ConstNode>()
-                         : Symtab->create<U8ConstNode>(Value, Format);
+        case NodeType::U8Const:
+          Nd = IsDefault ? Symtab->create<U8Const>()
+                         : Symtab->create<U8Const>(Value, Format);
           break;
-        case OpU32Const:
-          Nd = IsDefault ? Symtab->create<U32ConstNode>()
-                         : Symtab->create<U32ConstNode>(Value, Format);
+        case NodeType::U32Const:
+          Nd = IsDefault ? Symtab->create<U32Const>()
+                         : Symtab->create<U32Const>(Value, Format);
           break;
-        case OpU64Const:
-          Nd = IsDefault ? Symtab->create<U64ConstNode>()
-                         : Symtab->create<U64ConstNode>(Value, Format);
+        case NodeType::U64Const:
+          Nd = IsDefault ? Symtab->create<U64Const>()
+                         : Symtab->create<U64Const>(Value, Format);
           break;
         default:
           return failWriteActionMalformed();

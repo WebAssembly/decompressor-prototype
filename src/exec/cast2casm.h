@@ -82,7 +82,7 @@ class CodeGenerator {
   std::shared_ptr<SymbolTable> Symtab;
   std::shared_ptr<ReadCursor> ReadPos;
   std::vector<charstring>& Namespaces;
-  std::vector<const LiteralActionDefNode*> ActionDefs;
+  std::vector<const LiteralActionDef*> ActionDefs;
   charstring AlgName;
   bool ErrorsFound;
   size_t NextIndex;
@@ -105,13 +105,13 @@ class CodeGenerator {
   void generateAlgorithmHeader();
   void generateAlgorithmHeader(charstring AlgName);
   size_t generateNode(const Node* Nd);
-  size_t generateSymbol(const SymbolNode* Sym);
-  size_t generateIntegerNode(charstring NodeType, const IntegerNode* Nd);
-  size_t generateNullaryNode(charstring NodeType, const Node* Nd);
-  size_t generateUnaryNode(charstring NodeType, const Node* Nd);
-  size_t generateBinaryNode(charstring NodeType, const Node* Nd);
-  size_t generateTernaryNode(charstring NodeType, const Node* Nd);
-  size_t generateNaryNode(charstring NodeName, const Node* Nd);
+  size_t generateSymbol(const Symbol* Sym);
+  size_t generateInteger(charstring NodeType, const IntegerNode* Nd);
+  size_t generateNullary(charstring NodeType, const Node* Nd);
+  size_t generateUnary(charstring NodeType, const Node* Nd);
+  size_t generateBinary(charstring NodeType, const Node* Nd);
+  size_t generateTernary(charstring NodeType, const Node* Nd);
+  size_t generateNary(charstring NodeName, const Node* Nd);
   void generateInt(IntType Value);
   void generateFormat(ValueFormat Format);
   void generateLocal(size_t Index);
@@ -283,20 +283,20 @@ void CodeGenerator::putSymbol(charstring Name, bool Capitalize) {
 
 namespace {
 
-IntType getActionDefValue(const LiteralActionDefNode* Nd) {
+IntType getActionDefValue(const LiteralActionDef* Nd) {
   if (const IntegerNode* Num = dyn_cast<IntegerNode>(Nd->getKid(1)))
     return Num->getValue();
   return 0;
 }
 
-std::string getActionDefName(const LiteralActionDefNode* Nd) {
-  if (const SymbolNode* Sym = dyn_cast<SymbolNode>(Nd->getKid(0)))
+std::string getActionDefName(const LiteralActionDef* Nd) {
+  if (const Symbol* Sym = dyn_cast<Symbol>(Nd->getKid(0)))
     return Sym->getName();
   return std::string("???");
 }
 
-bool compareLtActionDefs(const LiteralActionDefNode* N1,
-                         const LiteralActionDefNode* N2) {
+bool compareLtActionDefs(const LiteralActionDef* N1,
+                         const LiteralActionDef* N2) {
   IntType V1 = getActionDefValue(N1);
   IntType V2 = getActionDefValue(N2);
   if (V1 < V2)
@@ -313,7 +313,7 @@ void CodeGenerator::collectActionDefs() {
     return;
   SymbolTable::ActionDefSet DefSet;
   Symtab->collectActionDefs(DefSet);
-  for (const LiteralActionDefNode* Def : DefSet)
+  for (const LiteralActionDef* Def : DefSet)
     ActionDefs.push_back(Def);
   std::sort(ActionDefs.begin(), ActionDefs.end(), compareLtActionDefs);
 }
@@ -324,7 +324,7 @@ void CodeGenerator::generatePredefinedEnum() {
   puts(AlgName);
   puts(" : uint32_t {\n");
   bool IsFirst = true;
-  for (const LiteralActionDefNode* Def : ActionDefs) {
+  for (const LiteralActionDef* Def : ActionDefs) {
     if (IsFirst)
       IsFirst = false;
     else
@@ -357,7 +357,7 @@ void CodeGenerator::generatePredefinedEnumNames() {
       "  charstring Name;\n"
       "} PredefinedNames[] {\n");
   bool IsFirst = true;
-  for (const LiteralActionDefNode* Def : ActionDefs) {
+  for (const LiteralActionDef* Def : ActionDefs) {
     if (IsFirst)
       IsFirst = false;
     else
@@ -463,9 +463,9 @@ void CodeGenerator::generateReturnCreate(charstring NodeType) {
   generateCreate(NodeType);
 }
 
-size_t CodeGenerator::generateSymbol(const SymbolNode* Sym) {
+size_t CodeGenerator::generateSymbol(const Symbol* Sym) {
   size_t Index = NextIndex++;
-  generateFunctionHeader("SymbolNode", Index);
+  generateFunctionHeader("Symbol", Index);
   puts("  return Symtab->getOrCreateSymbol(\"");
   for (auto& Ch : Sym->getName())
     putc(Ch);
@@ -474,15 +474,14 @@ size_t CodeGenerator::generateSymbol(const SymbolNode* Sym) {
   return Index;
 }
 
-size_t CodeGenerator::generateIntegerNode(charstring NodeName,
-                                          const IntegerNode* Nd) {
+size_t CodeGenerator::generateInteger(charstring NodeName,
+                                      const IntegerNode* Nd) {
   size_t Index = NextIndex++;
   std::string NodeType(NodeName);
-  NodeType.append("Node");
   generateFunctionHeader(NodeType, Index);
   puts("  return Symtab->create<");
   puts(NodeName);
-  puts("Node>(");
+  puts(">(");
   generateInt(Nd->getValue());
   puts(", ");
   generateFormat(Nd->getFormat());
@@ -490,7 +489,7 @@ size_t CodeGenerator::generateIntegerNode(charstring NodeName,
   return Index;
 }
 
-size_t CodeGenerator::generateNullaryNode(charstring NodeType, const Node* Nd) {
+size_t CodeGenerator::generateNullary(charstring NodeType, const Node* Nd) {
   size_t Index = NextIndex++;
   generateFunctionHeader(NodeType, Index);
   generateReturnCreate(NodeType);
@@ -498,7 +497,7 @@ size_t CodeGenerator::generateNullaryNode(charstring NodeType, const Node* Nd) {
   return Index;
 }
 
-size_t CodeGenerator::generateUnaryNode(charstring NodeType, const Node* Nd) {
+size_t CodeGenerator::generateUnary(charstring NodeType, const Node* Nd) {
   size_t Index = NextIndex++;
   assert(Nd->getNumKids() == 1);
   size_t Kid1 = generateNode(Nd->getKid(0));
@@ -509,7 +508,7 @@ size_t CodeGenerator::generateUnaryNode(charstring NodeType, const Node* Nd) {
   return Index;
 }
 
-size_t CodeGenerator::generateBinaryNode(charstring NodeType, const Node* Nd) {
+size_t CodeGenerator::generateBinary(charstring NodeType, const Node* Nd) {
   assert(Nd->getNumKids() == 2);
   size_t Kid1 = generateNode(Nd->getKid(0));
   size_t Kid2 = generateNode(Nd->getKid(1));
@@ -523,7 +522,7 @@ size_t CodeGenerator::generateBinaryNode(charstring NodeType, const Node* Nd) {
   return Index;
 }
 
-size_t CodeGenerator::generateTernaryNode(charstring NodeType, const Node* Nd) {
+size_t CodeGenerator::generateTernary(charstring NodeType, const Node* Nd) {
   assert(Nd->getNumKids() == 3);
   size_t Kid1 = generateNode(Nd->getKid(0));
   size_t Kid2 = generateNode(Nd->getKid(1));
@@ -540,7 +539,7 @@ size_t CodeGenerator::generateTernaryNode(charstring NodeType, const Node* Nd) {
   return Index;
 }
 
-size_t CodeGenerator::generateNaryNode(charstring NodeType, const Node* Nd) {
+size_t CodeGenerator::generateNary(charstring NodeType, const Node* Nd) {
   std::vector<size_t> Kids;
   for (int i = 0; i < Nd->getNumKids(); ++i)
     Kids.push_back(generateNode(Nd->getKid(i)));
@@ -570,120 +569,120 @@ size_t CodeGenerator::generateNode(const Node* Nd) {
   switch (Nd->getType()) {
     default:
       return generateBadLocal(Nd);
-    case OpAnd:
-      return generateBinaryNode("AndNode", Nd);
-    case OpBit:
-      return generateNullaryNode("BitNode", Nd);
-    case OpBitwiseAnd:
-      return generateBinaryNode("BitwiseAndNode", Nd);
-    case OpBitwiseNegate:
-      return generateUnaryNode("BitwiseNegateNode", Nd);
-    case OpBitwiseOr:
-      return generateBinaryNode("BitwiseOrNode", Nd);
-    case OpBitwiseXor:
-      return generateBinaryNode("BitwiseXorNode", Nd);
-    case OpBlock:
-      return generateUnaryNode("BlockNode", Nd);
-    case OpCallback:
-      return generateUnaryNode("CallbackNode", Nd);
-    case OpCase:
-      return generateBinaryNode("CaseNode", Nd);
-    case OpDefine:
-      return generateNaryNode("DefineNode", Nd);
-    case OpError:
-      return generateNullaryNode("ErrorNode", Nd);
-    case OpEval:
-      return generateNaryNode("EvalNode", Nd);
-    case OpFile:
-      return generateNaryNode("FileNode", Nd);
-    case OpFileHeader:
-      return generateNaryNode("FileHeaderNode", Nd);
-    case OpIfThen:
-      return generateBinaryNode("IfThenNode", Nd);
-    case OpIfThenElse:
-      return generateTernaryNode("IfThenElseNode", Nd);
-    case OpI32Const:
-      return generateIntegerNode("I32Const", cast<I32ConstNode>(Nd));
-    case OpI64Const:
-      return generateIntegerNode("I64Const", cast<I64ConstNode>(Nd));
-    case OpLastRead:
-      return generateNullaryNode("LastReadNode", Nd);
-    case OpLastSymbolIs:
-      return generateUnaryNode("LastSymbolIsNode", Nd);
-    case OpLiteralActionBase:
-      return generateNaryNode("LiteralActionBaseNode", Nd);
-    case OpLiteralActionDef:
-      return generateBinaryNode("LiteralActionDefNode", Nd);
-    case OpLiteralActionUse:
-      return generateUnaryNode("LiteralActionUseNode", Nd);
-    case OpLiteralDef:
-      return generateBinaryNode("LiteralDefNode", Nd);
-    case OpLiteralUse:
-      return generateUnaryNode("LiteralUseNode", Nd);
-    case OpLocal:
-      return generateIntegerNode("Local", cast<LocalNode>(Nd));
-    case OpLocals:
-      return generateIntegerNode("Locals", cast<LocalNode>(Nd));
-    case OpLoop:
-      return generateBinaryNode("LoopNode", Nd);
-    case OpLoopUnbounded:
-      return generateUnaryNode("LoopUnboundedNode", Nd);
-    case OpMap:
-      return generateNaryNode("MapNode", Nd);
-    case OpNot:
-      return generateUnaryNode("NotNode", Nd);
-    case OpOpcode:
-      return generateNaryNode("OpcodeNode", Nd);
-    case OpOr:
-      return generateBinaryNode("OrNode", Nd);
-    case OpParam:
-      return generateIntegerNode("Param", cast<ParamsNode>(Nd));
-    case OpParams:
-      return generateIntegerNode("Params", cast<ParamsNode>(Nd));
-    case OpPeek:
-      return generateUnaryNode("PeekNode", Nd);
-    case OpRead:
-      return generateUnaryNode("ReadNode", Nd);
-    case OpRename:
-      return generateBinaryNode("RenameNode", Nd);
-    case OpSection:
-      return generateNaryNode("SectionNode", Nd);
-    case OpSequence:
-      return generateNaryNode("SequenceNode", Nd);
-    case OpSet:
-      return generateBinaryNode("SetNode", Nd);
-    case OpSymbol:
-      return generateSymbol(cast<SymbolNode>(Nd));
-    case OpSwitch:
-      return generateNaryNode("SwitchNode", Nd);
-    case OpTable:
-      return generateNaryNode("TableNode", Nd);
-    case OpUint8:
-      return generateNullaryNode("Uint8Node", Nd);
-    case OpUint32:
-      return generateNullaryNode("Uint32Node", Nd);
-    case OpUint64:
-      return generateNullaryNode("Uint64Node", Nd);
-    case OpUndefine:
-      return generateUnaryNode("UndefineNode", Nd);
-    case OpU8Const:
-      return generateIntegerNode("U8Const", cast<U8ConstNode>(Nd));
-    case OpU32Const:
-      return generateIntegerNode("U32Const", cast<U32ConstNode>(Nd));
-    case OpU64Const:
-      return generateIntegerNode("U64Const", cast<U64ConstNode>(Nd));
-    case OpVarint32:
-      return generateNullaryNode("Varint32Node", Nd);
-    case OpVarint64:
-      return generateNullaryNode("Varint64Node", Nd);
-    case OpVaruint32:
-      return generateNullaryNode("Varuint32Node", Nd);
-    case OpVaruint64:
-      return generateNullaryNode("Varuint64Node", Nd);
-    case OpVoid:
-      return generateNullaryNode("VoidNode", Nd);
-    case OpWrite:
-      return generateNaryNode("WriteNode", Nd);
+    case NodeType::And:
+      return generateBinary("And", Nd);
+    case NodeType::Bit:
+      return generateNullary("Bit", Nd);
+    case NodeType::BitwiseAnd:
+      return generateBinary("BitwiseAnd", Nd);
+    case NodeType::BitwiseNegate:
+      return generateUnary("BitwiseNegate", Nd);
+    case NodeType::BitwiseOr:
+      return generateBinary("BitwiseOr", Nd);
+    case NodeType::BitwiseXor:
+      return generateBinary("BitwiseXor", Nd);
+    case NodeType::Block:
+      return generateUnary("Block", Nd);
+    case NodeType::Callback:
+      return generateUnary("Callback", Nd);
+    case NodeType::Case:
+      return generateBinary("Case", Nd);
+    case NodeType::Define:
+      return generateNary("Define", Nd);
+    case NodeType::Error:
+      return generateNullary("Error", Nd);
+    case NodeType::Eval:
+      return generateNary("Eval", Nd);
+    case NodeType::File:
+      return generateNary("File", Nd);
+    case NodeType::IfThen:
+      return generateBinary("IfThen", Nd);
+    case NodeType::IfThenElse:
+      return generateTernary("IfThenElse", Nd);
+    case NodeType::I32Const:
+      return generateInteger("I32Const", cast<I32Const>(Nd));
+    case NodeType::I64Const:
+      return generateInteger("I64Const", cast<I64Const>(Nd));
+    case NodeType::LastRead:
+      return generateNullary("LastRead", Nd);
+    case NodeType::LastSymbolIs:
+      return generateUnary("LastSymbolIs", Nd);
+    case NodeType::LiteralActionBase:
+      return generateNary("LiteralActionBase", Nd);
+    case NodeType::LiteralActionDef:
+      return generateBinary("LiteralActionDef", Nd);
+    case NodeType::LiteralActionUse:
+      return generateUnary("LiteralActionUse", Nd);
+    case NodeType::LiteralDef:
+      return generateBinary("LiteralDef", Nd);
+    case NodeType::LiteralUse:
+      return generateUnary("LiteralUse", Nd);
+    case NodeType::Local:
+      return generateInteger("Local", cast<Local>(Nd));
+    case NodeType::Locals:
+      return generateInteger("Locals", cast<Local>(Nd));
+    case NodeType::Loop:
+      return generateBinary("Loop", Nd);
+    case NodeType::LoopUnbounded:
+      return generateUnary("LoopUnbounded", Nd);
+    case NodeType::Map:
+      return generateNary("Map", Nd);
+    case NodeType::Not:
+      return generateUnary("Not", Nd);
+    case NodeType::Opcode:
+      return generateNary("Opcode", Nd);
+    case NodeType::Or:
+      return generateBinary("Or", Nd);
+    case NodeType::Param:
+      return generateInteger("Param", cast<Params>(Nd));
+    case NodeType::Params:
+      return generateInteger("Params", cast<Params>(Nd));
+    case NodeType::Peek:
+      return generateUnary("Peek", Nd);
+    case NodeType::Read:
+      return generateUnary("Read", Nd);
+    case NodeType::Rename:
+      return generateBinary("Rename", Nd);
+    case NodeType::Section:
+      return generateNary("Section", Nd);
+    case NodeType::Sequence:
+      return generateNary("Sequence", Nd);
+    case NodeType::Set:
+      return generateBinary("Set", Nd);
+    case NodeType::SourceHeader:
+      return generateNary("SourceHeader", Nd);
+    case NodeType::Symbol:
+      return generateSymbol(cast<Symbol>(Nd));
+    case NodeType::Switch:
+      return generateNary("Switch", Nd);
+    case NodeType::Table:
+      return generateNary("Table", Nd);
+    case NodeType::Uint8:
+      return generateNullary("Uint8", Nd);
+    case NodeType::Uint32:
+      return generateNullary("Uint32", Nd);
+    case NodeType::Uint64:
+      return generateNullary("Uint64", Nd);
+    case NodeType::Undefine:
+      return generateUnary("Undefine", Nd);
+    case NodeType::U8Const:
+      return generateInteger("U8Const", cast<U8Const>(Nd));
+    case NodeType::U32Const:
+      return generateInteger("U32Const", cast<U32Const>(Nd));
+    case NodeType::U64Const:
+      return generateInteger("U64Const", cast<U64Const>(Nd));
+    case NodeType::Varint32:
+      return generateNullary("Varint32", Nd);
+    case NodeType::Varint64:
+      return generateNullary("Varint64", Nd);
+    case NodeType::Varuint32:
+      return generateNullary("Varuint32", Nd);
+    case NodeType::Varuint64:
+      return generateNullary("Varuint64", Nd);
+    case NodeType::Void:
+      return generateNullary("Void", Nd);
+    case NodeType::Write:
+      return generateNary("Write", Nd);
   }
   WASM_RETURN_UNREACHABLE(0);
 }

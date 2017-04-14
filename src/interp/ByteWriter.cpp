@@ -178,13 +178,13 @@ bool ByteWriter::writeFreezeEof() {
 }
 
 bool ByteWriter::writeBinary(IntType Value, const Node* Encoding) {
-  if (!isa<BinaryEvalNode>(Encoding))
+  if (!isa<BinaryEval>(Encoding))
     return false;
-  const auto* Eval = cast<BinaryEvalNode>(Encoding);
+  const auto* Eval = cast<BinaryEval>(Encoding);
   const Node* Enc = Eval->getEncoding(Value);
-  if (!isa<BinaryAcceptNode>(Enc))
+  if (!isa<BinaryAccept>(Enc))
     return false;
-  const auto* Accept = cast<BinaryAcceptNode>(Enc);
+  const auto* Accept = cast<BinaryAccept>(Enc);
   unsigned NumBits = Accept->getNumBits();
   IntType Bits = Accept->getValue();
   while (NumBits) {

@@ -32,10 +32,10 @@ namespace wasm {
 namespace filt {
 
 class Node;
-class FileNode;
-class SymbolNode;
+class File;
+class Symbol;
 class SymbolTable;
-class SectionNode;
+class Section;
 
 class SectionSymbolTable {
   SectionSymbolTable(const SectionSymbolTable&) = delete;
@@ -43,19 +43,19 @@ class SectionSymbolTable {
 
  public:
   typedef uint32_t IndexType;
-  typedef std::unordered_map<SymbolNode*, IndexType> SymbolLookupType;
-  typedef std::vector<SymbolNode*> IndexLookupType;
+  typedef std::unordered_map<Symbol*, IndexType> SymbolLookupType;
+  typedef std::vector<Symbol*> IndexLookupType;
   SectionSymbolTable(std::shared_ptr<SymbolTable> Symtab);
   ~SectionSymbolTable() {}
-  void installSection(const SectionNode* Section);
+  void installSection(const Section* Sec);
   const IndexLookupType& getVector() { return IndexLookup; }
   void addSymbol(const std::string& Name);
-  uint32_t getSymbolIndex(SymbolNode* Symbol);
+  uint32_t getSymbolIndex(Symbol* Sym);
   IndexType getNumberSymbols() const { return IndexLookup.size(); }
   void clear();
-  SymbolNode* getIndexSymbol(IndexType Index);
+  Symbol* getIndexSymbol(IndexType Index);
   bool empty() const { return IndexLookup.empty(); }
-  void install(FileNode* Root);
+  void install(File* Root);
 
  private:
   // Cache that holds the set of uniquified symbols.
@@ -63,7 +63,7 @@ class SectionSymbolTable {
   SymbolLookupType SymbolLookup;
   IndexLookupType IndexLookup;
   void installSymbols(const Node* Nd);
-  void addSymbol(SymbolNode* Sym);
+  void addSymbol(Symbol* Sym);
 };
 
 }  // end of namespace filt
