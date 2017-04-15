@@ -19,7 +19,7 @@
 
 #include "casm/InflateAst.h"
 
-#include "binary/SectionSymbolTable.h"
+#include "casm/SymbolIndex.h"
 #include "sexp/Ast.h"
 #include "sexp/TextWriter.h"
 #include "utils/Casting.h"
@@ -38,7 +38,7 @@ namespace filt {
 InflateAst::InflateAst()
     : Writer(false),
       Symtab(std::make_shared<SymbolTable>()),
-      SectionSymtab(utils::make_unique<SectionSymbolTable>(Symtab)),
+      SymIndex(utils::make_unique<SymbolIndex>(Symtab)),
       ValuesTop(0),
       Values(ValuesTop),
       AstsTop(nullptr),
@@ -287,7 +287,7 @@ bool InflateAst::applyOp(IntType Op) {
     case NodeType::Switch:
       return buildNary<Switch>();
     case NodeType::Symbol: {
-      Symbol* Sym = SectionSymtab->getIndexSymbol(Values.popValue());
+      Symbol* Sym = SymIndex->getIndexSymbol(Values.popValue());
       Values.pop();
       if (Sym == nullptr) {
         return failWriteActionMalformed();
@@ -458,7 +458,7 @@ bool InflateAst::writeAction(IntType Action) {
         Values.pop();
       SymbolNameSize = 0;
       TRACE(string, "Name", Name);
-      SectionSymtab->addSymbol(Name);
+      SymIndex->addSymbol(Name);
       return true;
     }
     case IntType(PredefinedAlgcasm0x0::Symbol_lookup):

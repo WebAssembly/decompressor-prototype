@@ -21,6 +21,7 @@
 #define DECOMPRESSOR_SRC_SEXP_FLATTENAST_H_
 
 #include "utils/Defs.h"
+#include "interp/IntFormats.h"
 
 namespace wasm {
 
@@ -37,7 +38,7 @@ namespace filt {
 
 class BinaryEval;
 class Node;
-class SectionSymbolTable;
+class SymbolIndex;
 class SymbolTable;
 
 class FlattenAst {
@@ -63,7 +64,7 @@ class FlattenAst {
  private:
   std::shared_ptr<interp::IntWriter> Writer;
   std::shared_ptr<SymbolTable> Symtab;
-  std::unique_ptr<SectionSymbolTable> SectionSymtab;
+  std::unique_ptr<SymbolIndex> SymIndex;
   bool FreezeEofOnDestruct;
   bool HasErrors;
   bool BitCompress;
@@ -74,6 +75,10 @@ class FlattenAst {
   void reportError(charstring Message, const Node* Nd);
   void freezeOutput();
   bool binaryEvalEncode(const BinaryEval* Eval);
+  void write(decode::IntType Value);
+  void writeBit(uint8_t Bit);
+  void writeHeaderValue(decode::IntType Value, interp::IntTypeFormat Format);
+  void writeAction(decode::IntType Action);
 };
 
 }  // end of namespace filt

@@ -18,8 +18,8 @@
 // Defines the section symbol table that holds the set of symbols defined
 // in a section.
 
-#ifndef DECOMPRESSOR_SRC_BINARY_SECTIONSYMBOLTABLE_H
-#define DECOMPRESSOR_SRC_BINARY_SECTIONSYMBOLTABLE_H
+#ifndef DECOMPRESSOR_SRC_CASM_SYMBOLINDEX_H
+#define DECOMPRESSOR_SRC_CASM_SYMBOLINDEX_H
 
 #include <unordered_map>
 #include <vector>
@@ -37,25 +37,23 @@ class Symbol;
 class SymbolTable;
 class Section;
 
-class SectionSymbolTable {
-  SectionSymbolTable(const SectionSymbolTable&) = delete;
-  SectionSymbolTable& operator=(const SectionSymbolTable&) = delete;
+class SymbolIndex {
+  SymbolIndex(const SymbolIndex&) = delete;
+  SymbolIndex& operator=(const SymbolIndex&) = delete;
 
  public:
   typedef uint32_t IndexType;
   typedef std::unordered_map<Symbol*, IndexType> SymbolLookupType;
   typedef std::vector<Symbol*> IndexLookupType;
-  SectionSymbolTable(std::shared_ptr<SymbolTable> Symtab);
-  ~SectionSymbolTable() {}
-  void installSection(const Section* Sec);
-  const IndexLookupType& getVector() { return IndexLookup; }
+  SymbolIndex(std::shared_ptr<SymbolTable> Symtab);
+  ~SymbolIndex() {}
+  void installSymbols();
   void addSymbol(const std::string& Name);
+  const IndexLookupType& getVector() { return IndexLookup; }
   uint32_t getSymbolIndex(Symbol* Sym);
   IndexType getNumberSymbols() const { return IndexLookup.size(); }
-  void clear();
   Symbol* getIndexSymbol(IndexType Index);
   bool empty() const { return IndexLookup.empty(); }
-  void install(Algorithm* Alg);
 
  private:
   // Cache that holds the set of uniquified symbols.
@@ -64,10 +62,11 @@ class SectionSymbolTable {
   IndexLookupType IndexLookup;
   void installSymbols(const Node* Nd);
   void addSymbol(Symbol* Sym);
+  void clear();
 };
 
 }  // end of namespace filt
 
 }  // end of namespace wasm
 
-#endif  // DECOMPRESSOR_SRC_BINARY_SECTIONSYMBOLTABLE_H
+#endif  // DECOMPRESSOR_SRC_CASM_SYMBOLINDEX_H
