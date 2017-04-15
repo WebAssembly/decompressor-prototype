@@ -859,19 +859,21 @@ bool SymbolTable::areActionsConsistent() {
 }
 
 void SymbolTable::setAlgorithm(const Algorithm* NewAlg) {
+  if (IsAlgInstalled) {
+    IsAlgInstalled = false;
+    CachedValue.clear();
+    UndefinedCallbacks.clear();
+    CallbackValues.clear();
+    CallbackLiterals.clear();
+    ActionBase = 0;
+  }
   Alg = const_cast<Algorithm*>(NewAlg);
-  IsAlgInstalled = false;
 }
 
 bool SymbolTable::install() {
   TRACE_METHOD("install");
   if (IsAlgInstalled)
     return true;
-  CachedValue.clear();
-  UndefinedCallbacks.clear();
-  CallbackValues.clear();
-  CallbackLiterals.clear();
-  ActionBase = 0;
   if (Alg == nullptr)
     return false;
   if (EnclosingScope && !EnclosingScope->isAlgorithmInstalled()) {
