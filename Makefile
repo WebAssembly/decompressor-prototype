@@ -79,19 +79,6 @@ UTILS_LIB = $(LIBDIR)/$(LIBPREFIX)utis.a
 GENERATED_BOOT1_OBJS += $(UTIL_OBJS)
 GENERATED_BOOT1_LIBS += $(UTILS_LIB)
 
-###### Binary generation objects and locations ######
-
-BINARY_DIR = $(SRCDIR)/binary
-BINARY_OBJDIR = $(OBJDIR)/binary
-BINARY_SRCS = \
-	SectionSymbolTable.cpp
-
-BINARY_OBJS=$(patsubst %.cpp, $(BINARY_OBJDIR)/%.o, $(BINARY_SRCS))
-BINARY_LIB = $(LIBDIR)/$(LIBPREFIX)binary.a
-
-GENERATED_BOOT1_OBJS += $(BINARY_OBJS)
-GENERATED_BOOT1_LIBS += $(BINARY_LIB)
-
 ###### Parse objects and locations ######
 
 PARSER_DIR = $(SRCDIR)/sexp-parser
@@ -159,7 +146,8 @@ CASM_SRCS_BASE = \
 	CasmReader.cpp \
 	CasmWriter.cpp \
 	FlattenAst.cpp \
-	InflateAst.cpp
+	InflateAst.cpp \
+	SymbolIndex.cpp
 
 CASM_OBJS_BASE = $(patsubst %.cpp, $(CASM_OBJDIR)/%.o, $(CASM_SRCS_BASE))
 CASM_LIB_BASE = $(LIBDIR)/$(LIBPREFIX)casm-base.a
@@ -602,19 +590,15 @@ TEST_CASM_NOLITACT_GEN_FILES = $(patsubst %.cast, \
 
 ###### Libraries for each compilation step ######
 
-LIBS_BOOT1 = $(BINARY_LIB) \
-	$(SEXP_LIB) $(PARSER_LIB) \
-	$(BINARY_LIB) $(STRM_LIB) $(UTILS_LIB)
+LIBS_BOOT1 = $(SEXP_LIB) $(PARSER_LIB) $(BINARY_LIB) $(STRM_LIB) $(UTILS_LIB)
 
-LIBS_BOOT2 = $(BINARY_LIB) $(INTERP_LIB_BASE) \
-	$(SEXP_LIB) $(CASM_LIB_BASE) $(PARSER_LIB) \
-	$(INTERP_LIB_BASE) $(ALG_BOOT2_LIB) $(BINARY_LIB) \
-	$(STRM_LIB) $(UTILS_LIB) $(ALG_BOOT2_LIB)
+LIBS_BOOT2 =  $(INTERP_LIB_BASE) $(SEXP_LIB) $(CASM_LIB_BASE) $(PARSER_LIB) \
+	$(INTERP_LIB_BASE) $(ALG_BOOT2_LIB) $(STRM_LIB) $(UTILS_LIB) \
+	$(ALG_BOOT2_LIB)
 
-LIBS = $(INTCOMP_LIB) $(BINARY_LIB) $(INTERP_LIB) $(SEXP_LIB) $(CASM_LIB) $(PARSER_LIB) \
-       $(STRM_LIB) $(INTERP_LIB) $(BINARY_LIB) \
-       $(ALG_LIB) $(SEXP_LIB) $(INTERP_LIB) $(BINARY_LIB) $(ALG_LIB) \
-       $(CASM_LIB) $(STRM_LIB) $(UTILS_LIB) $(PARSER_LIB)
+LIBS = $(INTCOMP_LIB) $(INTERP_LIB) $(SEXP_LIB) $(CASM_LIB) $(PARSER_LIB) \
+	$(STRM_LIB) $(INTERP_LIB) $(ALG_LIB) $(SEXP_LIB) $(INTERP_LIB) \
+	$(ALG_LIB) $(CASM_LIB) $(STRM_LIB) $(UTILS_LIB) $(PARSER_LIB)
 
 ##### Track additional important variable definitions not in Makefile.common
 
@@ -861,23 +845,6 @@ ifeq ($(GENSRCS), 4)
 		$(ALG_GENDIR_ALG) --function --name $(call alg_name, $<)
 
 endif
-
-###### Compiliing binary Sources ######
-
-$(BINARY_OBJS): | $(BINARY_OBJDIR)
-
-$(BINARY_OBJDIR):
-	mkdir -p $@
-
-
--include $(foreach dep,$(BINARY_SRCS:.cpp=.d),$(BINARY_OBJDIR)/$(dep))
-
-$(BINARY_OBJS): $(BINARY_OBJDIR)/%.o: $(BINARY_DIR)/%.cpp
-	$(CPP_COMPILER) -c $(CXXFLAGS) $< -o $@
-
-$(BINARY_LIB): $(BINARY_OBJS)
-	ar -rs $@ $(BINARY_OBJS)
-	ranlib $@
 
 ###### Compiliing top-level Sources ######
 

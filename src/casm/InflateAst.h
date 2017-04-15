@@ -33,7 +33,7 @@ namespace wasm {
 namespace filt {
 
 class Algorithm;
-class SectionSymbolTable;
+class SymbolIndex;
 class SymbolTable;
 
 class InflateAst : public interp::Writer {
@@ -68,7 +68,7 @@ class InflateAst : public interp::Writer {
 
  private:
   std::shared_ptr<SymbolTable> Symtab;
-  std::unique_ptr<SectionSymbolTable> SectionSymtab;
+  std::unique_ptr<SymbolIndex> SymIndex;
   decode::IntType ValuesTop;
   utils::ValueStack<decode::IntType> Values;
   Node* AstsTop;

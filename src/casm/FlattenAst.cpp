@@ -21,7 +21,7 @@
 
 #include <algorithm>
 
-#include "binary/SectionSymbolTable.h"
+#include "casm/SymbolIndex.h"
 #include "interp/IntWriter.h"
 #include "sexp/Ast.h"
 #include "sexp/TextWriter.h"
@@ -40,7 +40,7 @@ FlattenAst::FlattenAst(std::shared_ptr<IntStream> Output,
                        std::shared_ptr<SymbolTable> Symtab)
     : Writer(std::make_shared<IntWriter>(Output)),
       Symtab(Symtab),
-      SectionSymtab(utils::make_unique<SectionSymbolTable>(Symtab)),
+      SymIndex(utils::make_unique<SymbolIndex>(Symtab)),
       FreezeEofOnDestruct(true),
       HasErrors(false),
       BitCompress(false) {
@@ -55,6 +55,27 @@ bool FlattenAst::flatten(bool BitCompressValue) {
   flattenNode(Symtab->getAlgorithm());
   freezeOutput();
   return !HasErrors;
+}
+
+void FlattenAst::write(IntType Value) {
+  TRACE(IntType, "write", Value);
+  Writer->write(Value);
+}
+
+void FlattenAst::writeBit(uint8_t Bit) {
+  TRACE(uint8_t, "writeBBit", Bit);
+  Writer->writeBit(Bit);
+}
+
+void FlattenAst::writeHeaderValue(decode::IntType Value, interp::IntTypeFormat Format) {
+  TRACE(IntType, "writeHeaderValue", Value);
+  TRACE(string, "Format", getName(Format));
+  Writer->writeHeaderValue(Value, Format);
+}
+
+void FlattenAst::writeAction(decode::IntType Action) {
+  TRACE(IntType, "writeAction", Action);
+  Writer->writeAction(Action);
 }
 
 void FlattenAst::freezeOutput() {
@@ -122,12 +143,12 @@ bool FlattenAst::binaryEvalEncode(const BinaryEval* Nd) {
   }
   std::reverse(PostorderEncoding.begin(), PostorderEncoding.end());
   // Can bit encode tree (1 => BinaryEvalNode, 0 => BinaryAcceptNode).
-  Writer->write(IntType(NodeType::BinaryEvalBits));
+  write(IntType(NodeType::BinaryEvalBits));
   TRACE(size_t, "NumBIts", PostorderEncoding.size());
-  Writer->write(PostorderEncoding.size());
+  write(PostorderEncoding.size());
   for (uint8_t Val : PostorderEncoding) {
     TRACE(uint8_t, "bit", Val);
-    Writer->writeBit(Val);
+    writeBit(Val);
   }
   return true;
 }
@@ -149,13 +170,13 @@ void FlattenAst::flattenNode(const Node* Nd) {
     }
 #define X(tag, format, defval, mergable, BASE, NODE_DECLS) \
   case NodeType::tag: {                                    \
-    Writer->write(IntType(Opcode));                        \
+    write(IntType(Opcode));                        \
     auto* Int = cast<tag>(Nd);                             \
     if (Int->isDefaultValue()) {                           \
-      Writer->write(0);                                    \
+      write(0);                                    \
     } else {                                               \
-      Writer->write(int(Int->getFormat()) + 1);            \
-      Writer->write(Int->getValue());                      \
+      write(int(Int->getFormat()) + 1);            \
+      write(Int->getValue());                      \
     }                                                      \
     break;                                                 \
   }
@@ -208,7 +229,7 @@ void FlattenAst::flattenNode(const Node* Nd) {
       // arguments.
       for (const auto* Kid : *Nd)
         flattenNode(Kid);
-      Writer->write(IntType(Opcode));
+      write(IntType(Opcode));
       break;
     }
     case NodeType::Algorithm: {
@@ -227,13 +248,13 @@ void FlattenAst::flattenNode(const Node* Nd) {
       for (int i = 1; i < NumKids - 1; ++i)
         NumHeaderNodes += Nd->getKid(i)->getTreeSize();
       TRACE(size_t, "HeaderSize", NumHeaderNodes);
-      Writer->write(NumHeaderNodes);
+      write(NumHeaderNodes);
 
       // Now flatten remaining kids.
       for (int i = 1; i < NumKids; ++i)
         flattenNode(Nd->getKid(i));
-      Writer->write(IntType(Opcode));
-      Writer->write(NumKids);
+      write(IntType(Opcode));
+      write(NumKids);
       break;
     }
     case NodeType::SourceHeader: {
@@ -250,7 +271,7 @@ void FlattenAst::flattenNode(const Node* Nd) {
           reportError("Bad literal constant", Const);
           return;
         }
-        Writer->writeHeaderValue(Const->getValue(), Const->getIntTypeFormat());
+        writeHeaderValue(Const->getValue(), Const->getIntTypeFormat());
       }
       break;
       // Intentionally drop to next case.
@@ -259,30 +280,27 @@ void FlattenAst::flattenNode(const Node* Nd) {
     case NodeType::WriteHeader:
       for (const auto* Kid : *Nd)
         flattenNode(Kid);
-      Writer->write(IntType(Opcode));
-      Writer->write(Nd->getNumKids());
+      write(IntType(Opcode));
+      write(Nd->getNumKids());
       break;
     case NodeType::Section: {
-      Writer->writeAction(IntType(PredefinedSymbol::Block_enter));
-      const auto* Sec = cast<Section>(Nd);
-      SectionSymtab->installSection(Sec);
-      const SectionSymbolTable::IndexLookupType& Vector =
-          SectionSymtab->getVector();
-      Writer->write(Vector.size());
+      writeAction(IntType(PredefinedSymbol::Block_enter));
+      SymIndex->installSymbols();
+      const SymbolIndex::IndexLookupType& Vector =  SymIndex->getVector();
+      write(Vector.size());
       TRACE(size_t, "Number symbols", Vector.size());
       for (const Symbol* Sym : Vector) {
         const std::string& SymName = Sym->getName();
         TRACE(string, "Symbol", SymName);
-        Writer->write(SymName.size());
+        write(SymName.size());
         for (size_t i = 0, len = SymName.size(); i < len; ++i)
-          Writer->write(SymName[i]);
+          write(SymName[i]);
       }
       for (int i = 0, len = Nd->getNumKids(); i < len; ++i)
         flattenNode(Nd->getKid(i));
-      Writer->writeUint8(IntType(Opcode));
-      Writer->write(Nd->getNumKids());
-      Writer->writeAction(IntType(PredefinedSymbol::Block_exit));
-      SectionSymtab->clear();
+      write(IntType(Opcode));
+      write(Nd->getNumKids());
+      writeAction(IntType(PredefinedSymbol::Block_exit));
       break;
     }
     case NodeType::Define:
@@ -297,14 +315,14 @@ void FlattenAst::flattenNode(const Node* Nd) {
       // number of arguments.
       for (const auto* Kid : *Nd)
         flattenNode(Kid);
-      Writer->write(IntType(Opcode));
-      Writer->write(Nd->getNumKids());
+      write(IntType(Opcode));
+      write(Nd->getNumKids());
       break;
     }
     case NodeType::Symbol: {
-      Writer->write(IntType(Opcode));
+      write(IntType(Opcode));
       Symbol* Sym = cast<Symbol>(const_cast<Node*>(Nd));
-      Writer->write(SectionSymtab->getSymbolIndex(Sym));
+      write(SymIndex->getSymbolIndex(Sym));
       break;
     }
   }

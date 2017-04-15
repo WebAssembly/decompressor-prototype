@@ -18,7 +18,7 @@
 // Implements the section symbol table that holds the set of symbols defined
 // in a section.
 
-#include "binary/SectionSymbolTable.h"
+#include "casm/SymbolIndex.h"
 
 #include "sexp/Ast.h"
 #include "utils/Casting.h"
@@ -29,15 +29,15 @@ using namespace decode;
 
 namespace filt {
 
-SectionSymbolTable::SectionSymbolTable(std::shared_ptr<SymbolTable> Symtab)
+SymbolIndex::SymbolIndex(std::shared_ptr<SymbolTable> Symtab)
     : Symtab(Symtab) {
 }
 
-void SectionSymbolTable::addSymbol(const std::string& Name) {
+void SymbolIndex::addSymbol(const std::string& Name) {
   addSymbol(Symtab->getOrCreateSymbol(Name));
 }
 
-void SectionSymbolTable::addSymbol(Symbol* Sym) {
+void SymbolIndex::addSymbol(Symbol* Sym) {
   if (Sym->getPredefinedSymbol() != PredefinedSymbol::Unknown)
     return;
   if (SymbolLookup.count(Sym) == 0) {
@@ -47,18 +47,13 @@ void SectionSymbolTable::addSymbol(Symbol* Sym) {
   }
 }
 
-void SectionSymbolTable::clear() {
+void SymbolIndex::clear() {
   Symtab->clearSymbols();
   SymbolLookup.clear();
   IndexLookup.clear();
 }
 
-void SectionSymbolTable::install(Algorithm* Alg) {
-  Symtab->setAlgorithm(Alg);
-  Symtab->install();
-}
-
-void SectionSymbolTable::installSymbols(const Node* Nd) {
+void SymbolIndex::installSymbols(const Node* Nd) {
   // TODO(karlschimpf) Make this non-recursive.
   if (const Symbol* Sym = dyn_cast<Symbol>(Nd)) {
     addSymbol(Sym->getName());
@@ -67,12 +62,18 @@ void SectionSymbolTable::installSymbols(const Node* Nd) {
     installSymbols(Kid);
 }
 
-void SectionSymbolTable::installSection(const Section* Sec) {
+#if 0
+void SymbolIndex::installSection(const Section* Sec) {
   for (size_t i = 0, len = Sec->getNumKids(); i < len; ++i)
     installSymbols(Sec->getKid(i));
 }
+#else
+void SymbolIndex::installSymbols() {
+  installSymbols(Symtab->getAlgorithm());
+}
+#endif
 
-uint32_t SectionSymbolTable::getSymbolIndex(Symbol* ForSym) {
+uint32_t SymbolIndex::getSymbolIndex(Symbol* ForSym) {
   PredefinedSymbol Sym = ForSym->getPredefinedSymbol();
   if (Sym != PredefinedSymbol::Unknown)
     return uint32_t(Sym);
@@ -82,7 +83,7 @@ uint32_t SectionSymbolTable::getSymbolIndex(Symbol* ForSym) {
   return Iter->second + NumPredefinedSymbols;
 }
 
-Symbol* SectionSymbolTable::getIndexSymbol(IndexType Index) {
+Symbol* SymbolIndex::getIndexSymbol(IndexType Index) {
   if (Index < NumPredefinedSymbols)
     return Symtab->getPredefined(PredefinedSymbol(Index));
   Index -= NumPredefinedSymbols;
