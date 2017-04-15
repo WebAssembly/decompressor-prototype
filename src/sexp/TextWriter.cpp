@@ -215,6 +215,7 @@ void TextWriter::writeNode(const Node* Nd,
         break;
       writeNode(Nd->getKid(0), AddNewline, EmbedInParent);
       return;
+#if 0
     case NodeType::Section:
       if (ShowInternalStructure)
         break;
@@ -222,6 +223,7 @@ void TextWriter::writeNode(const Node* Nd,
       for (auto* Kid : *Nd)
         writeNode(Kid, true, false);
       return;
+#endif
     case NodeType::SymbolDefn: {
       Parenthesize _(this, Type, AddNewline);
       writeSpace();
@@ -303,7 +305,9 @@ void TextWriter::writeNodeAbbrev(const Node* Nd,
       fprintf(File, " ...");
       return;
     }
+#if 0
     case NodeType::Section:
+#endif
     case NodeType::Algorithm: {
       // Treat like hidden node. That is, visually just a list of s-expressions.
       fprintf(File, "(%s ...)\n", getNodeName(Nd));

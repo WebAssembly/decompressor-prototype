@@ -35,7 +35,6 @@ class Node;
 class Algorithm;
 class Symbol;
 class SymbolTable;
-class Section;
 
 class SymbolIndex {
   SymbolIndex(const SymbolIndex&) = delete;

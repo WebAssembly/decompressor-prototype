@@ -55,7 +55,6 @@ class SymbolDefn;
 class Symbol;
 class SymbolTable;
 class Callback;
-class Section;
 class WriteHeader;
 
 #define X(tag, format, defval, mergable, BASE, NODE_DECLS) class tag;

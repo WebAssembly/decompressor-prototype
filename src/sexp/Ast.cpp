@@ -935,7 +935,9 @@ void SymbolTable::installDefinitions(const Node* Nd) {
     default:
       return;
     case NodeType::Algorithm:
+#if 0
     case NodeType::Section:
+#endif
       for (Node* Kid : *Nd)
         installDefinitions(Kid);
       return;
@@ -1065,6 +1067,7 @@ Node* SymbolTable::stripUsing(Node* Nd, std::function<Node*(Node*)> stripKid) {
         std::vector<Node*> Kids;
         int index = 0;
         int limit = Nd->getNumKids();
+#if 0
         if (Op == NodeType::Algorithm) {
           // Note: Never remove void's in a file node (They represent
           // header information). Only process once declarations (i.e.
@@ -1076,6 +1079,7 @@ Node* SymbolTable::stripUsing(Node* Nd, std::function<Node*(Node*)> stripKid) {
             Kids.push_back(Kid);
           }
         }
+#endif
         // Simplify kids, removing "void" operations from the nary node.
         for (; index < limit; ++index) {
           Node* Kid = stripKid(Nd->getKid(index));
@@ -1904,6 +1908,7 @@ const Header* Algorithm::getWriteHeader(bool UseEnclosing) const {
   return getReadHeader(UseEnclosing);
 }
 
+#if 0
 const Section* Algorithm::getDeclarations() const {
   for (const Node* Kid : *this)
     if (isa<Section>(Kid))
@@ -1911,6 +1916,7 @@ const Section* Algorithm::getDeclarations() const {
   assert(false && "Declarations not defined for algorithm");
   return nullptr;
 }
+#endif
 
 bool Algorithm::validateNode(ConstNodeVectorType& Parents) const {
   TRACE_METHOD("validateNode");
@@ -1924,7 +1930,8 @@ bool Algorithm::validateNode(ConstNodeVectorType& Parents) const {
   const Node* Source = nullptr;
   const Node* Read = nullptr;
   const Node* Write = nullptr;
-  const Node* Decls = nullptr;
+  bool FoundOther = false;
+  bool FoundHeader = false;
   if (hasKids()) {
     if (!isa<SourceHeader>(getKid(0))) {
       errorDescribeNode("Algorithm doesn't begin with a source header",
@@ -1933,48 +1940,57 @@ bool Algorithm::validateNode(ConstNodeVectorType& Parents) const {
     }
   }
   for (const Node* Kid : *this) {
-    switch (Kid->getType()) {
+    switch (NodeType Opcode = Kid->getType()) {
       case NodeType::SourceHeader:
-        if (Source) {
-          errorDescribeNode("Duplicate source header", Kid);
-          errorDescribeNode("Original", Source);
-          return false;
-        }
-        Source = Kid;
-        break;
       case NodeType::ReadHeader:
-        if (Read) {
-          errorDescribeNode("Duplicate read header", Kid);
-          errorDescribeNode("Original", Source);
-          return false;
-        }
-        Read = Kid;
-        break;
       case NodeType::WriteHeader:
-        if (Write) {
-          errorDescribeNode("Duplicate read header", Kid);
-          errorDescribeNode("Original", Source);
+        if (FoundOther) {
+          errorDescribeNode("Header nodes doesn't appear before declarations", Kid);
           return false;
         }
-        Write = Kid;
-        break;
-      case NodeType::Section:
-        if (Decls) {
-          errorDescribeNode("Duplicate declarations node", Kid);
-          return false;
+        FoundHeader = true;
+        switch (Opcode) {
+          default:
+            // This isn't possible, but compiler doesn't know it.
+            break;
+          case NodeType::SourceHeader:
+            if (Source) {
+              errorDescribeNode("Duplicate source header", Kid);
+              errorDescribeNode("Original", Source);
+              return false;
+            }
+            Source = Kid;
+            break;
+          case NodeType::ReadHeader:
+            if (Read) {
+              errorDescribeNode("Duplicate read header", Kid);
+              errorDescribeNode("Original", Source);
+              return false;
+            }
+            Read = Kid;
+            break;
+          case NodeType::WriteHeader:
+            if (Write) {
+              errorDescribeNode("Duplicate read header", Kid);
+              errorDescribeNode("Original", Source);
+              return false;
+            }
+            Write = Kid;
+            break;
         }
-        Decls = Kid;
         break;
       default:
-        errorDescribeNode("Expected header/declarations node", Kid);
-        return false;
+        FoundOther = true;
+        if (!FoundHeader) {
+          errorDescribeNode("Algorithm doesn't begin with a header", this);
+          return false;
+        }
     }
   }
-  if (Decls == nullptr) {
-    errorDescribeNode("No (declarations) node found", this);
+  if (Source == nullptr) {
+    errorDescribeNode("Algorithm doesn't have a source header", this);
     return false;
   }
-
   return true;
 }
 
