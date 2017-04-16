@@ -643,10 +643,6 @@ size_t CodeGenerator::generateNode(const Node* Nd) {
       return generateUnary("Read", Nd);
     case NodeType::Rename:
       return generateBinary("Rename", Nd);
-#if 0
-    case NodeType::Section:
-      return generateNary("Section", Nd);
-#endif
     case NodeType::Sequence:
       return generateNary("Sequence", Nd);
     case NodeType::Set:

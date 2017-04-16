@@ -28,12 +28,6 @@
   )
 )
 
-#(define 'header' (params)
-#  (loop (varuint32)
-#    (eval 'node')
-#  )
-#)
-
 (define 'int.value' (params 1)
   (=> 'int.value.begin')
   (if (uint8)                   # 0 or (decode::ValueFormat+1)
@@ -85,15 +79,6 @@
     (case 'symbol'              (eval 'symbol.lookup'))
   )
 )
-
-#(define 'section' (params)
-#  (block
-#    (eval 'symbol.table')
-#    (loop.unbounded
-#      (eval 'node')
-#    )
-#  )
-#)
 
 (define 'symbol.lookup' (params)
   (varuint32)
