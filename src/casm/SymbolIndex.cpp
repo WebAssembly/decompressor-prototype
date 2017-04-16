@@ -29,8 +29,7 @@ using namespace decode;
 
 namespace filt {
 
-SymbolIndex::SymbolIndex(std::shared_ptr<SymbolTable> Symtab)
-    : Symtab(Symtab) {
+SymbolIndex::SymbolIndex(std::shared_ptr<SymbolTable> Symtab) : Symtab(Symtab) {
 }
 
 void SymbolIndex::addSymbol(const std::string& Name) {
@@ -62,16 +61,9 @@ void SymbolIndex::installSymbols(const Node* Nd) {
     installSymbols(Kid);
 }
 
-#if 0
-void SymbolIndex::installSection(const Section* Sec) {
-  for (size_t i = 0, len = Sec->getNumKids(); i < len; ++i)
-    installSymbols(Sec->getKid(i));
-}
-#else
 void SymbolIndex::installSymbols() {
   installSymbols(Symtab->getAlgorithm());
 }
-#endif
 
 uint32_t SymbolIndex::getSymbolIndex(Symbol* ForSym) {
   PredefinedSymbol Sym = ForSym->getPredefinedSymbol();

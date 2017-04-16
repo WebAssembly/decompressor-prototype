@@ -87,7 +87,6 @@ struct IntValue {
 %token CASE          "case"
 %token CLOSEPAREN    ")"
 %token COLON         ":"
-%token DECLARATIONS  "declarations"
 %token DEFINE        "define"
 %token DOT           "."
 %token DOUBLE_ARROW  "=>"
@@ -157,7 +156,6 @@ struct IntValue {
 %type <wasm::filt::Node *> expression
 %type <wasm::filt::Node *> expression_redirect
 %type <wasm::filt::Node *> algorithm
-%type <wasm::filt::Node *> algorithm_contents
 %type <wasm::filt::Node *> algorithm_header
 %type <wasm::filt::Node *> algorithm_header_args
 %type <wasm::filt::Node *> fixed_format_directive
@@ -171,7 +169,6 @@ struct IntValue {
 %type <wasm::filt::Map *> map_args
 %type <wasm::filt::Opcode *> opcode_args
 %type <wasm::filt::Node *> params_decl
-%type <wasm::filt::Node *> section
 %type <wasm::filt::Node *> sequence_args
 %type <wasm::filt::Node *> symbol
 %type <wasm::filt::Node *> table_args
@@ -182,41 +179,30 @@ struct IntValue {
 %%
 
 algorithm
-         : algorithm_contents { $$ = $1; }
-         | "(" "enclosing" IDENTIFIER ")" algorithm_contents {
-             $$ = $5;
+         /* Note: Declarations must appear after headers, and the
+            primary (soure) header must appear fisrt (checked during
+            validation).
+         */
+         : algorithm_header {
+             $$ = Driver.create<Algorithm>();
+             Driver.setAlgorithm($$);
+             $$->append($1);
+           }
+         | "(" "enclosing" IDENTIFIER ")" algorithm_header {
              Driver.setEnclosing($3);
+             $$ = Driver.create<Algorithm>();
+             Driver.setAlgorithm($$);
+             $$->append($5);
+           }
+         | algorithm algorithm_header {
+             $$ = $1;
+             $$->append($2);
+           }
+         | algorithm declaration {
+             $$ = $1;
+             $$->append($2);
            }
          ;
-
-algorithm_contents
-         : algorithm_header algorithm_header algorithm_header section {
-             $$ = Driver.create<Algorithm>();
-             $$->append($1);
-             $$->append($2);
-             $$->append($3);
-             $$->append($4);
-             Driver.setParsedAst($$);
-           }
-         | algorithm_header algorithm_header section {
-             $$ = Driver.create<Algorithm>();
-             $$->append($1);
-             $$->append($2);
-             $$->append($3);
-             Driver.setParsedAst($$);
-           }
-         | algorithm_header section {
-             $$ = Driver.create<Algorithm>();
-             $$->append($1);
-             $$->append($2);
-             Driver.setParsedAst($$);
-           }
-         | section {
-             $$ = Driver.create<Algorithm>();
-             $$->append($1);
-             Driver.setParsedAst($$);
-           }
-        ;
 
 algorithm_header
         : "(" algorithm_header_args ")" {
@@ -574,16 +560,6 @@ params_decl
           }
         | "(" "params" ")" {
             $$ = Driver.create<Params>();
-          }
-        ;
-
-section
-        : "(" "declarations" ")"  {
-            $$ = Driver.create<Section>();
-          }
-          | section declaration { // defines etc.
-            $$ = $1;
-            $$->append($2);
           }
         ;
 

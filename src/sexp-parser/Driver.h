@@ -104,7 +104,7 @@ class Driver {
 
   bool install() { return Table->install(); }
 
-  void setParsedAst(const Node* Ast) {
+  void setAlgorithm(const Node* Ast) {
     ParsedAst = Ast;
     Table->setAlgorithm(dyn_cast<Algorithm>(ParsedAst));
   }

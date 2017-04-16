@@ -67,7 +67,8 @@ void FlattenAst::writeBit(uint8_t Bit) {
   Writer->writeBit(Bit);
 }
 
-void FlattenAst::writeHeaderValue(decode::IntType Value, interp::IntTypeFormat Format) {
+void FlattenAst::writeHeaderValue(decode::IntType Value,
+                                  interp::IntTypeFormat Format) {
   TRACE(IntType, "writeHeaderValue", Value);
   TRACE(string, "Format", getName(Format));
   Writer->writeHeaderValue(Value, Format);
@@ -170,13 +171,13 @@ void FlattenAst::flattenNode(const Node* Nd) {
     }
 #define X(tag, format, defval, mergable, BASE, NODE_DECLS) \
   case NodeType::tag: {                                    \
-    write(IntType(Opcode));                        \
+    write(IntType(Opcode));                                \
     auto* Int = cast<tag>(Nd);                             \
     if (Int->isDefaultValue()) {                           \
-      write(0);                                    \
+      write(0);                                            \
     } else {                                               \
-      write(int(Int->getFormat()) + 1);            \
-      write(Int->getValue());                      \
+      write(int(Int->getFormat()) + 1);                    \
+      write(Int->getValue());                              \
     }                                                      \
     break;                                                 \
   }
@@ -234,27 +235,36 @@ void FlattenAst::flattenNode(const Node* Nd) {
     }
     case NodeType::Algorithm: {
       int NumKids = Nd->getNumKids();
-      if (NumKids <= 1)
-        return reportError("No source header defined for algorithm");
-      // Write primary header. Note: Only the constants are written out (See
+      if (NumKids < 1 || !isa<SourceHeader>(Nd->getKid(0)))
+        return reportError("Algorithm doesn't begin with a source header");
+      // Write source header. Note: Only the constants are written out (See
       // case NodeType::FileHeader). The reader will automatically build the
       // corresponding AST while reading the constants.
       flattenNode(Nd->getKid(0));
 
-      // Write out other headers. However, first write out the total number
-      // of nodes in the ast's, so that the header nodes will be read and
-      // built by the inflator.
-      size_t NumHeaderNodes = 0;
-      for (int i = 1; i < NumKids - 1; ++i)
-        NumHeaderNodes += Nd->getKid(i)->getTreeSize();
-      TRACE(size_t, "HeaderSize", NumHeaderNodes);
-      write(NumHeaderNodes);
+      // Put rest of algorithm in a block. Begin with symbol table, and then
+      // nodes.
+      writeAction(IntType(PredefinedSymbol::Block_enter));
+      SymIndex->installSymbols();
+      const SymbolIndex::IndexLookupType& Vector = SymIndex->getVector();
+      write(Vector.size());
+      TRACE(size_t, "Number symbols", Vector.size());
+      for (const Symbol* Sym : Vector) {
+        const std::string& SymName = Sym->getName();
+        TRACE(string, "Symbol", SymName);
+        write(SymName.size());
+        for (size_t i = 0, len = SymName.size(); i < len; ++i)
+          write(SymName[i]);
+      }
 
       // Now flatten remaining kids.
       for (int i = 1; i < NumKids; ++i)
         flattenNode(Nd->getKid(i));
+
+      // Write out algorithm node.
       write(IntType(Opcode));
       write(NumKids);
+      writeAction(IntType(PredefinedSymbol::Block_exit));
       break;
     }
     case NodeType::SourceHeader: {
@@ -283,26 +293,6 @@ void FlattenAst::flattenNode(const Node* Nd) {
       write(IntType(Opcode));
       write(Nd->getNumKids());
       break;
-    case NodeType::Section: {
-      writeAction(IntType(PredefinedSymbol::Block_enter));
-      SymIndex->installSymbols();
-      const SymbolIndex::IndexLookupType& Vector =  SymIndex->getVector();
-      write(Vector.size());
-      TRACE(size_t, "Number symbols", Vector.size());
-      for (const Symbol* Sym : Vector) {
-        const std::string& SymName = Sym->getName();
-        TRACE(string, "Symbol", SymName);
-        write(SymName.size());
-        for (size_t i = 0, len = SymName.size(); i < len; ++i)
-          write(SymName[i]);
-      }
-      for (int i = 0, len = Nd->getNumKids(); i < len; ++i)
-        flattenNode(Nd->getKid(i));
-      write(IntType(Opcode));
-      write(Nd->getNumKids());
-      writeAction(IntType(PredefinedSymbol::Block_exit));
-      break;
-    }
     case NodeType::Define:
     case NodeType::Eval:
     case NodeType::LiteralActionBase:

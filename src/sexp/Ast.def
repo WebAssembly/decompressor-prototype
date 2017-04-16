@@ -98,7 +98,6 @@
   /* Declarations */                                                           \
   X(Define,            0x60, "define",           2, 1, true,  true)            \
   X(Algorithm,         0x62, "algorithm",        2, 0, false, false)           \
-  X(Section,           0x63, "declarations",     0, 0, true,  false)           \
   X(Undefine,          0x64, "undefine",         1, 0, true, false)            \
   X(LiteralDef,        0x65, "literal",          2, 0, false, false)           \
   X(LiteralUse,        0x66, "literal.use",      1, 0, false, false)           \
@@ -227,7 +226,6 @@
   X(Eval, Nary, EVAL_DECLS)                                                    \
   X(LiteralActionBase, Nary,)                                                  \
   X(ReadHeader, Header,)                                                       \
-  X(Section, Nary,)                                                            \
   X(Sequence, Nary,)                                                           \
   X(SourceHeader, Header,)                                                     \
   X(Write, Nary,)                                                              \
@@ -238,7 +236,6 @@
     const Header* getSourceHeader(bool UseEnclosing=true) const;               \
     const Header* getReadHeader(bool UseEnclosing=true) const;                 \
     const Header* getWriteHeader(bool UseEnclosing=true) const;                \
-    const Section* getDeclarations() const;                                    \
     bool validateNode(ConstNodeVectorType &Parents) const OVERRIDE;            \
 
 #define DEFINE_DECLS                                                           \

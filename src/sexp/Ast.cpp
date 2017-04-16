@@ -625,6 +625,9 @@ void SymbolTable::init() {
   Err = create<Error>();
   BlockEnterCallback = nullptr;
   BlockExitCallback = nullptr;
+  CachedSourceHeader = nullptr;
+  CachedReadHeader = nullptr;
+  CachedWriteHeader = nullptr;
 }
 
 SymbolTable::~SymbolTable() {
@@ -866,6 +869,9 @@ void SymbolTable::setAlgorithm(const Algorithm* NewAlg) {
     CallbackValues.clear();
     CallbackLiterals.clear();
     ActionBase = 0;
+    CachedSourceHeader = nullptr;
+    CachedReadHeader = nullptr;
+    CachedWriteHeader = nullptr;
   }
   Alg = const_cast<Algorithm*>(NewAlg);
 }
@@ -892,28 +898,34 @@ bool SymbolTable::install() {
 }
 
 const Header* SymbolTable::getSourceHeader() const {
+  if (CachedSourceHeader != nullptr)
+    return CachedSourceHeader;
   if (Alg == nullptr)
     return nullptr;
-  return Alg->getSourceHeader();
+  return CachedSourceHeader = Alg->getSourceHeader();
 }
 
 const Header* SymbolTable::getReadHeader() const {
+  if (CachedReadHeader != nullptr)
+    return CachedReadHeader;
   if (Alg == nullptr)
     return nullptr;
-  return Alg->getReadHeader();
+  return CachedReadHeader = Alg->getReadHeader();
 }
 
 const Header* SymbolTable::getWriteHeader() const {
+  if (CachedWriteHeader != nullptr)
+    return CachedWriteHeader;
   if (Alg == nullptr)
     return nullptr;
-  return Alg->getWriteHeader();
+  return CachedWriteHeader = Alg->getWriteHeader();
 }
 
 bool SymbolTable::specifiesAlgorithm() const {
   if (Alg == nullptr)
     return false;
-  return *Alg->getSourceHeader() == *Alg->getReadHeader() &&
-         *Alg->getReadHeader() == *Alg->getWriteHeader();
+  return getSourceHeader() == getReadHeader() &&
+         getReadHeader() == getWriteHeader();
 }
 
 void SymbolTable::installPredefined() {
@@ -935,7 +947,6 @@ void SymbolTable::installDefinitions(const Node* Nd) {
     default:
       return;
     case NodeType::Algorithm:
-    case NodeType::Section:
       for (Node* Kid : *Nd)
         installDefinitions(Kid);
       return;
@@ -1052,7 +1063,7 @@ void SymbolTable::stripLiteralDefs() {
 }
 
 Node* SymbolTable::stripUsing(Node* Nd, std::function<Node*(Node*)> stripKid) {
-  switch (NodeType Op = Nd->getType()) {
+  switch (Nd->getType()) {
     default:
       for (int i = 0; i < Nd->getNumKids(); ++i)
         Nd->setKid(i, stripKid(Nd->getKid(i)));
@@ -1065,17 +1076,6 @@ Node* SymbolTable::stripUsing(Node* Nd, std::function<Node*(Node*)> stripKid) {
         std::vector<Node*> Kids;
         int index = 0;
         int limit = Nd->getNumKids();
-        if (Op == NodeType::Algorithm) {
-          // Note: Never remove void's in a file node (They represent
-          // header information). Only process once declarations (i.e.
-          // a section node) are reached.
-          for (; index < limit; ++index) {
-            Node* Kid = Nd->getKid(index);
-            if (isa<Section>(Kid))
-              break;
-            Kids.push_back(Kid);
-          }
-        }
         // Simplify kids, removing "void" operations from the nary node.
         for (; index < limit; ++index) {
           Node* Kid = stripKid(Nd->getKid(index));
@@ -1904,14 +1904,6 @@ const Header* Algorithm::getWriteHeader(bool UseEnclosing) const {
   return getReadHeader(UseEnclosing);
 }
 
-const Section* Algorithm::getDeclarations() const {
-  for (const Node* Kid : *this)
-    if (isa<Section>(Kid))
-      return cast<Section>(Kid);
-  assert(false && "Declarations not defined for algorithm");
-  return nullptr;
-}
-
 bool Algorithm::validateNode(ConstNodeVectorType& Parents) const {
   TRACE_METHOD("validateNode");
   if (!Parents.empty()) {
@@ -1924,7 +1916,8 @@ bool Algorithm::validateNode(ConstNodeVectorType& Parents) const {
   const Node* Source = nullptr;
   const Node* Read = nullptr;
   const Node* Write = nullptr;
-  const Node* Decls = nullptr;
+  bool FoundOther = false;
+  bool FoundHeader = false;
   if (hasKids()) {
     if (!isa<SourceHeader>(getKid(0))) {
       errorDescribeNode("Algorithm doesn't begin with a source header",
@@ -1933,48 +1926,58 @@ bool Algorithm::validateNode(ConstNodeVectorType& Parents) const {
     }
   }
   for (const Node* Kid : *this) {
-    switch (Kid->getType()) {
+    switch (NodeType Opcode = Kid->getType()) {
       case NodeType::SourceHeader:
-        if (Source) {
-          errorDescribeNode("Duplicate source header", Kid);
-          errorDescribeNode("Original", Source);
-          return false;
-        }
-        Source = Kid;
-        break;
       case NodeType::ReadHeader:
-        if (Read) {
-          errorDescribeNode("Duplicate read header", Kid);
-          errorDescribeNode("Original", Source);
-          return false;
-        }
-        Read = Kid;
-        break;
       case NodeType::WriteHeader:
-        if (Write) {
-          errorDescribeNode("Duplicate read header", Kid);
-          errorDescribeNode("Original", Source);
+        if (FoundOther) {
+          errorDescribeNode("Header nodes doesn't appear before declarations",
+                            Kid);
           return false;
         }
-        Write = Kid;
-        break;
-      case NodeType::Section:
-        if (Decls) {
-          errorDescribeNode("Duplicate declarations node", Kid);
-          return false;
+        FoundHeader = true;
+        switch (Opcode) {
+          default:
+            // This isn't possible, but compiler doesn't know it.
+            break;
+          case NodeType::SourceHeader:
+            if (Source) {
+              errorDescribeNode("Duplicate source header", Kid);
+              errorDescribeNode("Original", Source);
+              return false;
+            }
+            Source = Kid;
+            break;
+          case NodeType::ReadHeader:
+            if (Read) {
+              errorDescribeNode("Duplicate read header", Kid);
+              errorDescribeNode("Original", Source);
+              return false;
+            }
+            Read = Kid;
+            break;
+          case NodeType::WriteHeader:
+            if (Write) {
+              errorDescribeNode("Duplicate read header", Kid);
+              errorDescribeNode("Original", Source);
+              return false;
+            }
+            Write = Kid;
+            break;
         }
-        Decls = Kid;
         break;
       default:
-        errorDescribeNode("Expected header/declarations node", Kid);
-        return false;
+        FoundOther = true;
+        if (!FoundHeader) {
+          errorDescribeNode("Algorithm doesn't begin with a header", this);
+          return false;
+        }
     }
   }
-  if (Decls == nullptr) {
-    errorDescribeNode("No (declarations) node found", this);
+  if (Source == nullptr) {
+    errorDescribeNode("Algorithm doesn't have a source header", this);
     return false;
   }
-
   return true;
 }
 

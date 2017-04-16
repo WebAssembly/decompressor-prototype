@@ -218,7 +218,6 @@ letter	[a-zA-Z]
 "block"           return Parser::make_BLOCK(Driver.getLoc());
 "bitwise"         return Parser::make_BITWISE(Driver.getLoc());
 "case"            return Parser::make_CASE(Driver.getLoc());
-"declarations"    return Parser::make_DECLARATIONS(Driver.getLoc());
 "define"          return Parser::make_DEFINE(Driver.getLoc());
 "enum"            return Parser::make_ENUM(Driver.getLoc());
 "enclosing"       return Parser::make_ENCLOSING(Driver.getLoc());
