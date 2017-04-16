@@ -235,6 +235,9 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   Callback* BlockEnterCallback;
   Callback* BlockExitCallback;
   CachedValueMap CachedValue;
+  mutable const Header* CachedSourceHeader;
+  mutable const Header* CachedReadHeader;
+  mutable const Header* CachedWriteHeader;
 
   void init();
   void deallocateNodes();

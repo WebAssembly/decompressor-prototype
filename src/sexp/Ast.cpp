@@ -625,6 +625,9 @@ void SymbolTable::init() {
   Err = create<Error>();
   BlockEnterCallback = nullptr;
   BlockExitCallback = nullptr;
+  CachedSourceHeader = nullptr;
+  CachedReadHeader = nullptr;
+  CachedWriteHeader = nullptr;
 }
 
 SymbolTable::~SymbolTable() {
@@ -866,6 +869,9 @@ void SymbolTable::setAlgorithm(const Algorithm* NewAlg) {
     CallbackValues.clear();
     CallbackLiterals.clear();
     ActionBase = 0;
+    CachedSourceHeader = nullptr;
+    CachedReadHeader = nullptr;
+    CachedWriteHeader = nullptr;
   }
   Alg = const_cast<Algorithm*>(NewAlg);
 }
@@ -892,28 +898,34 @@ bool SymbolTable::install() {
 }
 
 const Header* SymbolTable::getSourceHeader() const {
+  if (CachedSourceHeader != nullptr)
+    return CachedSourceHeader;
   if (Alg == nullptr)
     return nullptr;
-  return Alg->getSourceHeader();
+  return CachedSourceHeader = Alg->getSourceHeader();
 }
 
 const Header* SymbolTable::getReadHeader() const {
+  if (CachedReadHeader != nullptr)
+    return CachedReadHeader;
   if (Alg == nullptr)
     return nullptr;
-  return Alg->getReadHeader();
+  return CachedReadHeader = Alg->getReadHeader();
 }
 
 const Header* SymbolTable::getWriteHeader() const {
+  if (CachedWriteHeader != nullptr)
+    return CachedWriteHeader;
   if (Alg == nullptr)
     return nullptr;
-  return Alg->getWriteHeader();
+  return CachedWriteHeader = Alg->getWriteHeader();
 }
 
 bool SymbolTable::specifiesAlgorithm() const {
   if (Alg == nullptr)
     return false;
-  return *Alg->getSourceHeader() == *Alg->getReadHeader() &&
-         *Alg->getReadHeader() == *Alg->getWriteHeader();
+  return getSourceHeader() == getReadHeader() &&
+         getReadHeader() == getWriteHeader();
 }
 
 void SymbolTable::installPredefined() {
