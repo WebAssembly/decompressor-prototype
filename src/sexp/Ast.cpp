@@ -1063,7 +1063,7 @@ void SymbolTable::stripLiteralDefs() {
 }
 
 Node* SymbolTable::stripUsing(Node* Nd, std::function<Node*(Node*)> stripKid) {
-  switch (NodeType Op = Nd->getType()) {
+  switch (Nd->getType()) {
     default:
       for (int i = 0; i < Nd->getNumKids(); ++i)
         Nd->setKid(i, stripKid(Nd->getKid(i)));
