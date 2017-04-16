@@ -29,8 +29,7 @@ using namespace decode;
 
 namespace filt {
 
-SymbolIndex::SymbolIndex(std::shared_ptr<SymbolTable> Symtab)
-    : Symtab(Symtab) {
+SymbolIndex::SymbolIndex(std::shared_ptr<SymbolTable> Symtab) : Symtab(Symtab) {
 }
 
 void SymbolIndex::addSymbol(const std::string& Name) {

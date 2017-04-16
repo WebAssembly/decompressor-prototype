@@ -67,7 +67,8 @@ void FlattenAst::writeBit(uint8_t Bit) {
   Writer->writeBit(Bit);
 }
 
-void FlattenAst::writeHeaderValue(decode::IntType Value, interp::IntTypeFormat Format) {
+void FlattenAst::writeHeaderValue(decode::IntType Value,
+                                  interp::IntTypeFormat Format) {
   TRACE(IntType, "writeHeaderValue", Value);
   TRACE(string, "Format", getName(Format));
   Writer->writeHeaderValue(Value, Format);
@@ -170,13 +171,13 @@ void FlattenAst::flattenNode(const Node* Nd) {
     }
 #define X(tag, format, defval, mergable, BASE, NODE_DECLS) \
   case NodeType::tag: {                                    \
-    write(IntType(Opcode));                        \
+    write(IntType(Opcode));                                \
     auto* Int = cast<tag>(Nd);                             \
     if (Int->isDefaultValue()) {                           \
-      write(0);                                    \
+      write(0);                                            \
     } else {                                               \
-      write(int(Int->getFormat()) + 1);            \
-      write(Int->getValue());                      \
+      write(int(Int->getFormat()) + 1);                    \
+      write(Int->getValue());                              \
     }                                                      \
     break;                                                 \
   }
@@ -245,7 +246,7 @@ void FlattenAst::flattenNode(const Node* Nd) {
       // nodes.
       writeAction(IntType(PredefinedSymbol::Block_enter));
       SymIndex->installSymbols();
-      const SymbolIndex::IndexLookupType& Vector =  SymIndex->getVector();
+      const SymbolIndex::IndexLookupType& Vector = SymIndex->getVector();
       write(Vector.size());
       TRACE(size_t, "Number symbols", Vector.size());
       for (const Symbol* Sym : Vector) {

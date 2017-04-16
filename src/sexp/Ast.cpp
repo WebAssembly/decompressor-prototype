@@ -1931,7 +1931,8 @@ bool Algorithm::validateNode(ConstNodeVectorType& Parents) const {
       case NodeType::ReadHeader:
       case NodeType::WriteHeader:
         if (FoundOther) {
-          errorDescribeNode("Header nodes doesn't appear before declarations", Kid);
+          errorDescribeNode("Header nodes doesn't appear before declarations",
+                            Kid);
           return false;
         }
         FoundHeader = true;
