@@ -269,8 +269,6 @@ bool InflateAst::applyOp(IntType Op) {
       return buildNary<ReadHeader>();
     case NodeType::Rename:
       return buildBinary<Rename>();
-    case NodeType::Section:
-      return buildNary<Section>();
     case NodeType::Algorithm: {
       Algorithm* Alg = buildNary<Algorithm>() ? getGeneratedFile() : nullptr;
       if (Alg == nullptr)

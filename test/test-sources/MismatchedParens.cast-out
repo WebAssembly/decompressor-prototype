@@ -1,2 +1,2 @@
-error: test/test-sources/MismatchedParens.cast:3.31: syntax error, unexpected ), expecting $END
+error: test/test-sources/MismatchedParens.cast:2.31: syntax error, unexpected ), expecting $END or (
 Errors detected while parsing: test/test-sources/MismatchedParens.cast

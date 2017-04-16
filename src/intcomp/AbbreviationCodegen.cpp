@@ -79,9 +79,7 @@ AbbreviationCodegen::~AbbreviationCodegen() {
 }
 
 Node* AbbreviationCodegen::generateBody() {
-  auto* Body = Symtab->create<Section>();
-  Body->append(generateStartFunction());
-  return Body;
+  return generateStartFunction();
 }
 
 Node* AbbreviationCodegen::generateStartFunction() {

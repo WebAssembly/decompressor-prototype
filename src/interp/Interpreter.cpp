@@ -686,7 +686,6 @@ void Interpreter::algorithmResume() {
           case NodeType::Locals:
           case NodeType::Rename:
           case NodeType::Symbol:
-          case NodeType::Section:
           case NodeType::Undefine:
           case NodeType::UnknownSection:  // Method::Eval
             return failNotImplemented();

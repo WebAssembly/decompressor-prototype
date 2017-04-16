@@ -935,9 +935,6 @@ void SymbolTable::installDefinitions(const Node* Nd) {
     default:
       return;
     case NodeType::Algorithm:
-#if 0
-    case NodeType::Section:
-#endif
       for (Node* Kid : *Nd)
         installDefinitions(Kid);
       return;
@@ -1067,19 +1064,6 @@ Node* SymbolTable::stripUsing(Node* Nd, std::function<Node*(Node*)> stripKid) {
         std::vector<Node*> Kids;
         int index = 0;
         int limit = Nd->getNumKids();
-#if 0
-        if (Op == NodeType::Algorithm) {
-          // Note: Never remove void's in a file node (They represent
-          // header information). Only process once declarations (i.e.
-          // a section node) are reached.
-          for (; index < limit; ++index) {
-            Node* Kid = Nd->getKid(index);
-            if (isa<Section>(Kid))
-              break;
-            Kids.push_back(Kid);
-          }
-        }
-#endif
         // Simplify kids, removing "void" operations from the nary node.
         for (; index < limit; ++index) {
           Node* Kid = stripKid(Nd->getKid(index));
@@ -1907,16 +1891,6 @@ const Header* Algorithm::getWriteHeader(bool UseEnclosing) const {
   }
   return getReadHeader(UseEnclosing);
 }
-
-#if 0
-const Section* Algorithm::getDeclarations() const {
-  for (const Node* Kid : *this)
-    if (isa<Section>(Kid))
-      return cast<Section>(Kid);
-  assert(false && "Declarations not defined for algorithm");
-  return nullptr;
-}
-#endif
 
 bool Algorithm::validateNode(ConstNodeVectorType& Parents) const {
   TRACE_METHOD("validateNode");

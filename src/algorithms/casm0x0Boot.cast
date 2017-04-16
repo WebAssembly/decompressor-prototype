@@ -19,20 +19,20 @@
 
 (header (u32.const 0x6d736163) (u32.const 0x0))
 
-(declarations)
-
 (define 'file' (params)
-  (eval 'header')
-  (eval 'section')
-  # Parse top-level file node.
-  (eval 'node')
-)
-
-(define 'header' (params)
-  (loop (varuint32)
-    (eval 'node')
+  (block
+    (eval 'symbol.table')
+    (loop.unbounded
+      (eval 'node')
+    )
   )
 )
+
+#(define 'header' (params)
+#  (loop (varuint32)
+#    (eval 'node')
+#  )
+#)
 
 (define 'int.value' (params 1)
   (=> 'int.value.begin')
@@ -72,7 +72,7 @@
      case 'eval'
      case 'file'
      case 'literal.action.enum'
-     case 'section'
+     #case 'section'
      case 'sequence'
      case 'switch'              (eval 'nary.node'))
 
@@ -86,14 +86,14 @@
   )
 )
 
-(define 'section' (params)
-  (block
-    (eval 'symbol.table')
-    (loop.unbounded
-      (eval 'node')
-    )
-  )
-)
+#(define 'section' (params)
+#  (block
+#    (eval 'symbol.table')
+#    (loop.unbounded
+#      (eval 'node')
+#    )
+#  )
+#)
 
 (define 'symbol.lookup' (params)
   (varuint32)

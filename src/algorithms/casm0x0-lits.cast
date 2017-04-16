@@ -16,8 +16,6 @@
 
 (header (u32.const 0x6d736163) (u32.const 0x0))
 
-(declarations)
-
 (literal.action.enum (u32.const 101)
                      'int.value.begin'
                      'int.value.end'

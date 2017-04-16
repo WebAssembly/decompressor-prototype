@@ -19,8 +19,6 @@
 
 (header (u32.const 0x6d736163) (u32.const 0x0))
 
-(declarations)
-
 (define 'node' (params)
   (switch (uint8)
     (error)
