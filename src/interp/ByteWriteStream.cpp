@@ -27,8 +27,7 @@ using namespace filt;
 
 namespace interp {
 
-ByteWriteStream::~ByteWriteStream() {
-}
+ByteWriteStream::~ByteWriteStream() {}
 
 bool ByteWriteStream::writeAction(WriteCursor& Pos,
                                   const CallbackNode* Action) {

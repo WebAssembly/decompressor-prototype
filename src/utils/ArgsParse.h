@@ -22,8 +22,8 @@
 #include "utils/Casting.h"
 #include "utils/Defs.h"
 
-#include <string>
 #include <set>
+#include <string>
 #include <vector>
 
 namespace wasm {

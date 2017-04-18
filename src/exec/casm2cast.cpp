@@ -88,9 +88,9 @@ int main(int Argc, const char* Argv[]) {
         "the enclosing algorithm for the next INPUT file."));
 
     ArgsParser::Optional<charstring> OutputFlag(OutputFilename);
-    Args.add(OutputFlag.setShortName('o')
-                 .setOptionName("OUTPUT")
-                 .setDescription("Generated text file"));
+    Args.add(
+        OutputFlag.setShortName('o').setOptionName("OUTPUT").setDescription(
+            "Generated text file"));
 
     ArgsParser::Toggle InstallInputFlag(InstallInput);
     Args.add(InstallInputFlag.setLongName("install").setDescription(
@@ -110,9 +110,8 @@ int main(int Argc, const char* Argv[]) {
 
     ArgsParser::Optional<bool> TraceTreeFlag(TraceTree);
     Args.add(TraceTreeFlag.setLongName("verbose=tree")
-                 .setDescription(
-                     "Show tree being built while reading"
-                     "(implies --verbose=read)"));
+                 .setDescription("Show tree being built while reading"
+                                 "(implies --verbose=read)"));
 
     ArgsParser::Optional<bool> TraceParserFlag(TraceParser);
     Args.add(TraceParserFlag.setLongName("verbose=parser")

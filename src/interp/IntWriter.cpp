@@ -60,11 +60,9 @@ class IntWriter::TableHandler {
 };
 
 IntWriter::TableHandler::TableHandler(IntWriter& Writer)
-    : Writer(Writer), FreeStreams(MaxFreeStreams) {
-}
+    : Writer(Writer), FreeStreams(MaxFreeStreams) {}
 
-IntWriter::TableHandler::~TableHandler() {
-}
+IntWriter::TableHandler::~TableHandler() {}
 
 IntStream::Ptr IntWriter::TableHandler::allocStream() {
   if (FreeStreams.empty()) {
@@ -113,8 +111,7 @@ bool IntWriter::TableHandler::tablePop() {
 }
 
 IntWriter::IntWriter(std::shared_ptr<IntStream> Output)
-    : Writer(true), Output(Output), Pos(Output), TblHandler(nullptr) {
-}
+    : Writer(true), Output(Output), Pos(Output), TblHandler(nullptr) {}
 
 IntWriter::~IntWriter() {
   delete TblHandler;

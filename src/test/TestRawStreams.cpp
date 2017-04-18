@@ -20,9 +20,9 @@
 #include "stream/FileReader.h"
 #include "stream/FileWriter.h"
 
+#include <unistd.h>
 #include <cstdlib>
 #include <iostream>
-#include <unistd.h>
 
 using namespace wasm::decode;
 

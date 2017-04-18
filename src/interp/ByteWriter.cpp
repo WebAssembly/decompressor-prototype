@@ -66,8 +66,7 @@ ByteWriter::TableHandler::TableHandler(ByteWriter& Writer) : Writer(Writer) {
   ScratchCursor = Cursor;
 }
 
-ByteWriter::TableHandler::~TableHandler() {
-}
+ByteWriter::TableHandler::~TableHandler() {}
 
 bool ByteWriter::TableHandler::tablePush(IntType Value) {
   if (Cached.count(Value)) {
@@ -100,8 +99,7 @@ ByteWriter::ByteWriter(std::shared_ptr<decode::Queue> Output)
       WritePos(StreamType::Byte, Output),
       Stream(std::make_shared<ByteWriteStream>()),
       BlockStartStack(BlockStart),
-      TblHandler(nullptr) {
-}
+      TblHandler(nullptr) {}
 
 ByteWriter::~ByteWriter() {
   delete TblHandler;

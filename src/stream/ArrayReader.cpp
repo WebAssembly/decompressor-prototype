@@ -21,8 +21,7 @@ namespace wasm {
 
 namespace decode {
 
-ArrayReader::~ArrayReader() {
-}
+ArrayReader::~ArrayReader() {}
 
 AddressType ArrayReader::read(ByteType* Buf, AddressType Size) {
   AddressType ActualSize = std::min(Size, BufferSize - CurPosition);

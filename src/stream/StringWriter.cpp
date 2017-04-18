@@ -22,11 +22,9 @@ namespace wasm {
 
 namespace decode {
 
-StringWriter::StringWriter(std::string& Str) : Str(Str), IsFrozen(false) {
-}
+StringWriter::StringWriter(std::string& Str) : Str(Str), IsFrozen(false) {}
 
-StringWriter::~StringWriter() {
-}
+StringWriter::~StringWriter() {}
 
 AddressType StringWriter::read(ByteType*, AddressType) {
   return 0;

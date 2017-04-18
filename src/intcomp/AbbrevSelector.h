@@ -22,8 +22,8 @@
 #include "intcomp/CompressionFlags.h"
 #include "intcomp/CountNode.h"
 #include "interp/IntFormats.h"
-#include "utils/circular-vector.h"
 #include "utils/Trace.h"
+#include "utils/circular-vector.h"
 
 #ifdef NDEBUG
 

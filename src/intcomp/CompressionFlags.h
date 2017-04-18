@@ -17,9 +17,9 @@
 #ifndef DECOMPRESSOR_SRC_INTCOMP_COMPRESSIONFLAGS_H
 #define DECOMPRESSOR_SRC_INTCOMP_COMPRESSIONFLAGS_H
 
-#include "utils/Defs.h"
-#include "interp/InterpreterFlags.h"
 #include "interp/IntFormats.h"
+#include "interp/InterpreterFlags.h"
+#include "utils/Defs.h"
 
 namespace wasm {
 

@@ -57,8 +57,7 @@ std::shared_ptr<TraceClass> Reader::getTracePtr() {
   return Trace;
 }
 
-void Reader::reset() {
-}
+void Reader::reset() {}
 
 bool Reader::alignToByte() {
   return true;

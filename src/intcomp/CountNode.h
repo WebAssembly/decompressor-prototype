@@ -24,8 +24,8 @@
 #include <set>
 
 #include "intcomp/CompressionFlags.h"
-#include "utils/heap.h"
 #include "utils/HuffmanEncoding.h"
+#include "utils/heap.h"
 
 // WARNING: All CountNode classes should be created using sdt::make_shared!
 

@@ -20,29 +20,23 @@ namespace wasm {
 
 namespace decode {
 
-WriteCursor2ReadQueue::WriteCursor2ReadQueue() : WriteCursorBase() {
-}
+WriteCursor2ReadQueue::WriteCursor2ReadQueue() : WriteCursorBase() {}
 
 WriteCursor2ReadQueue::WriteCursor2ReadQueue(std::shared_ptr<Queue> Que)
-    : WriteCursorBase(StreamType::Byte, Que) {
-}
+    : WriteCursorBase(StreamType::Byte, Que) {}
 
 WriteCursor2ReadQueue::WriteCursor2ReadQueue(StreamType Type,
                                              std::shared_ptr<Queue> Que)
-    : WriteCursorBase(Type, Que) {
-}
+    : WriteCursorBase(Type, Que) {}
 
 WriteCursor2ReadQueue::WriteCursor2ReadQueue(const WriteCursor2ReadQueue& C)
-    : WriteCursorBase(C) {
-}
+    : WriteCursorBase(C) {}
 
 WriteCursor2ReadQueue::WriteCursor2ReadQueue(const Cursor& C,
                                              AddressType StartAddress)
-    : WriteCursorBase(C, StartAddress) {
-}
+    : WriteCursorBase(C, StartAddress) {}
 
-WriteCursor2ReadQueue::~WriteCursor2ReadQueue() {
-}
+WriteCursor2ReadQueue::~WriteCursor2ReadQueue() {}
 
 void WriteCursor2ReadQueue::writeFillWriteByte(ByteType Byte) {
   if (isIndexAtEndOfPage())

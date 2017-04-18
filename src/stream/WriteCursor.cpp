@@ -22,29 +22,22 @@ using namespace utils;
 
 namespace decode {
 
-WriteCursor::WriteCursor() : WriteCursorBase() {
-}
+WriteCursor::WriteCursor() : WriteCursorBase() {}
 
 WriteCursor::WriteCursor(std::shared_ptr<Queue> Que)
-    : WriteCursorBase(StreamType::Byte, Que) {
-}
+    : WriteCursorBase(StreamType::Byte, Que) {}
 
 WriteCursor::WriteCursor(StreamType Type, std::shared_ptr<Queue> Que)
-    : WriteCursorBase(Type, Que) {
-}
+    : WriteCursorBase(Type, Que) {}
 
-WriteCursor::WriteCursor(const WriteCursor& C) : WriteCursorBase(C) {
-}
+WriteCursor::WriteCursor(const WriteCursor& C) : WriteCursorBase(C) {}
 
 WriteCursor::WriteCursor(const Cursor& C, AddressType StartAddress)
-    : WriteCursorBase(C, StartAddress) {
-}
+    : WriteCursorBase(C, StartAddress) {}
 
-WriteCursor::WriteCursor(const WriteCursorBase& C) : WriteCursorBase(C) {
-}
+WriteCursor::WriteCursor(const WriteCursorBase& C) : WriteCursorBase(C) {}
 
-WriteCursor::~WriteCursor() {
-}
+WriteCursor::~WriteCursor() {}
 
 void WriteCursor::writeFillWriteByte(ByteType Byte) {
   if (isIndexAtEndOfPage())

@@ -248,8 +248,7 @@ void ArgsParser::Arg::describe(FILE* Out, size_t TabSize) const {
 
 void ArgsParser::Arg::describeDefault(FILE* Out,
                                       size_t TabSize,
-                                      size_t& Indent) const {
-}
+                                      size_t& Indent) const {}
 
 void ArgsParser::Arg::describeOptionName(FILE* Out,
                                          size_t TabSize,
@@ -268,8 +267,7 @@ int ArgsParser::Arg::compare(const Arg& A) const {
   return 0;
 }
 
-ArgsParser::OptionalArg::OptionalArg() : Arg(ArgKind::Optional) {
-}
+ArgsParser::OptionalArg::OptionalArg() : Arg(ArgKind::Optional) {}
 
 int ArgsParser::OptionalArg::compare(const Arg& A) const {
   if (isa<RequiredArg>(&A))

@@ -31,8 +31,7 @@ BlockEob::BlockEob(AddressType ByteAddr,
   init();
 }
 
-BlockEob::~BlockEob() {
-}
+BlockEob::~BlockEob() {}
 
 void BlockEob::fail() {
   BlockEob* Next = this;

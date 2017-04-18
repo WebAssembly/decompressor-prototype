@@ -77,8 +77,7 @@ IntReader::IntReader(std::shared_ptr<IntStream> Input)
       HeaderIndex(0),
       StillAvailable(0),
       SavedPosStack(SavedPos),
-      TblHandler(nullptr) {
-}
+      TblHandler(nullptr) {}
 
 IntReader::~IntReader() {
   delete TblHandler;
@@ -147,11 +146,9 @@ bool IntReader::readBlockExit() {
   return Pos.closeBlock();
 }
 
-void IntReader::readFillStart() {
-}
+void IntReader::readFillStart() {}
 
-void IntReader::readFillMoreInput() {
-}
+void IntReader::readFillMoreInput() {}
 
 decode::IntType IntReader::read() {
   return Pos.read();

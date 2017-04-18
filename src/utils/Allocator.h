@@ -162,8 +162,9 @@ class AllocatorBase : public Allocator {
   // Allocate a single element of Type
   template <class Type>
   Type* allocate(size_t AlignLog2 = DefaultAllocAlignLog2) {
-    return static_cast<Type*>(static_cast<DerivedClass*>(this)
-                                  ->allocateDispatch(sizeof(Type), AlignLog2));
+    return static_cast<Type*>(
+        static_cast<DerivedClass*>(this)->allocateDispatch(sizeof(Type),
+                                                           AlignLog2));
   }
 
   // Allocate and construct an instance of Type T using T(Args).
@@ -176,8 +177,8 @@ class AllocatorBase : public Allocator {
   template <class Type, size_t Size>
   Type* allocate(size_t AlignLog2 = DefaultAllocAlignLog2) {
     return static_cast<Type*>(
-        static_cast<DerivedClass*>(this)
-            ->allocateDispatch(sizeof(Type) * Size, AlignLog2));
+        static_cast<DerivedClass*>(this)->allocateDispatch(sizeof(Type) * Size,
+                                                           AlignLog2));
   }
 
   // Allocate and construct an instance of Type[Size];
@@ -190,8 +191,8 @@ class AllocatorBase : public Allocator {
   template <class Type>
   Type* allocateArray(size_t Size, size_t AlignLog2 = DefaultAllocAlignLog2) {
     return static_cast<Type*>(
-        static_cast<DerivedClass*>(this)
-            ->allocateDispatch(sizeof(Type) * Size, AlignLog2));
+        static_cast<DerivedClass*>(this)->allocateDispatch(sizeof(Type) * Size,
+                                                           AlignLog2));
   }
 
   // Allocate and construct an instance of Type[Size] (alternate form)
@@ -426,8 +427,7 @@ struct TemplateAllocator {
   TemplateAllocator(Allocator* Alloc) : Alloc(Alloc) {}
   TemplateAllocator() : Alloc(Allocator::Default) {}
   template <class U>
-  TemplateAllocator(const TemplateAllocator<U>& other)
-      : Alloc(other.Alloc) {}
+  TemplateAllocator(const TemplateAllocator<U>& other) : Alloc(other.Alloc) {}
   T* allocate(std::size_t Size) {
     return static_cast<T*>(Alloc->allocateVirtual(sizeof(T) * Size));
   }

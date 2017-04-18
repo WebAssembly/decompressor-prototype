@@ -73,8 +73,7 @@ CompressionFlags::CompressionFlags()
       TraceAbbrevSelectionSelect(false),
       TraceAbbrevSelectionCreate(false),
       TraceAbbrevSelectionDetail(false),
-      TraceAbbrevSelectionProgress(0) {
-}
+      TraceAbbrevSelectionProgress(0) {}
 
 }  // end of namespace intcomp
 

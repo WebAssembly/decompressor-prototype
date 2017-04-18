@@ -25,11 +25,11 @@
 #ifndef DECOMPRESSOR_SRC_UTILS_HEAP_H
 #define DECOMPRESSOR_SRC_UTILS_HEAP_H
 
+#include <stdio.h>
 #include <cassert>
 #include <cstdint>
 #include <functional>
 #include <memory>
-#include <stdio.h>
 #include <vector>
 
 namespace wasm {

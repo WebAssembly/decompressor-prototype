@@ -20,8 +20,8 @@
 #ifndef DECOMPRESSOR_SRC_STREAM_WRITEUTILS_H_
 #define DECOMPRESSOR_SRC_STREAM_WRITEUTILS_H_
 
-#include "utils/Defs.h"
 #include "stream/ValueFormat.h"
+#include "utils/Defs.h"
 
 namespace wasm {
 

@@ -39,8 +39,8 @@ class Pipe::PipeBackedQueue FINAL : public Queue {
   void dumpFirstPage() OVERRIDE;
 };
 
-Pipe::PipeBackedQueue::PipeBackedQueue(Pipe& MyPipe) : Queue(), MyPipe(MyPipe) {
-}
+Pipe::PipeBackedQueue::PipeBackedQueue(Pipe& MyPipe)
+    : Queue(), MyPipe(MyPipe) {}
 
 void Pipe::PipeBackedQueue::dumpFirstPage() {
   // TODO(karlschimpf) Optimize this!
@@ -52,11 +52,9 @@ void Pipe::PipeBackedQueue::dumpFirstPage() {
 Pipe::Pipe()
     : Input(std::make_shared<PipeBackedQueue>(*this)),
       Output(std::make_shared<Queue>()),
-      WritePos(utils::make_unique<WriteCursor2ReadQueue>(Output)) {
-}
+      WritePos(utils::make_unique<WriteCursor2ReadQueue>(Output)) {}
 
-Pipe::~Pipe() {
-}
+Pipe::~Pipe() {}
 
 std::shared_ptr<Queue> Pipe::getInput() const {
   return Input;

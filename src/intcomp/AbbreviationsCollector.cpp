@@ -30,11 +30,9 @@ namespace intcomp {
 AbbreviationsCollector::AbbreviationsCollector(CountNode::RootPtr Root,
                                                CountNode::PtrSet& Assignments,
                                                const CompressionFlags& MyFlags)
-    : CountNodeCollector(Root), Assignments(Assignments), MyFlags(MyFlags) {
-}
+    : CountNodeCollector(Root), Assignments(Assignments), MyFlags(MyFlags) {}
 
-AbbreviationsCollector::~AbbreviationsCollector() {
-}
+AbbreviationsCollector::~AbbreviationsCollector() {}
 
 void AbbreviationsCollector::setTrace(std::shared_ptr<TraceClass> NewTrace) {
   Trace = NewTrace;

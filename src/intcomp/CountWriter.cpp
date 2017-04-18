@@ -27,11 +27,9 @@ using namespace decode;
 using namespace filt;
 
 CountWriter::CountWriter(CountNode::RootPtr Root)
-    : Writer(true), Root(Root), CountCutoff(1), UpToSize(0) {
-}
+    : Writer(true), Root(Root), CountCutoff(1), UpToSize(0) {}
 
-CountWriter::~CountWriter() {
-}
+CountWriter::~CountWriter() {}
 
 StreamType CountWriter::getStreamType() const {
   return StreamType::Int;

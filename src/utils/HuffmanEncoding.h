@@ -36,8 +36,8 @@
 #ifndef DECOMPRESSOR_SRc_UTILS_HEAP_H
 #define DECOMPRESSOR_SRc_UTILS_HEAP_H
 
-#include "utils/Defs.h"
 #include "utils/Casting.h"
+#include "utils/Defs.h"
 
 #include <functional>
 #include <memory>

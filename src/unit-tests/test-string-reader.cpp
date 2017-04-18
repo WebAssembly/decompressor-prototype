@@ -18,8 +18,8 @@
 
 // Note: Requires gtest from https://github.com/google/googletest
 
-#include "stream/StringReader.h"
 #include "gtest/gtest.h"
+#include "stream/StringReader.h"
 
 namespace {
 

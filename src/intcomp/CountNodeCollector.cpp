@@ -37,8 +37,7 @@ CountNodeCollector::CountNodeCollector(CountNode::RootPtr Root)
       CountCutoff(0),
       WeightCutoff(0),
       CollectAbbreviations(false),
-      Flags(makeFlags(CollectionFlag::None)) {
-}
+      Flags(makeFlags(CollectionFlag::None)) {}
 
 void CountNodeCollector::setCompareFcn(CountNode::CompareFcnType LtFcn) {
   assert(ValuesHeap->empty());
@@ -199,11 +198,12 @@ void CountNodeCollector::collectNode(CountNode::Ptr Nd) {
 void CountNodeCollector::describe(FILE* Out) {
   assert(ValuesHeap->empty());
   buildHeap();
-  fprintf(Out, "Number nodes reported: %" PRIuMAX
-               "\n"
-               "Total weight: %" PRIuMAX " Reported Weight %" PRIuMAX
-               "\n"
-               "Total count: %" PRIuMAX " Reported count %" PRIuMAX "\n",
+  fprintf(Out,
+          "Number nodes reported: %" PRIuMAX
+          "\n"
+          "Total weight: %" PRIuMAX " Reported Weight %" PRIuMAX
+          "\n"
+          "Total count: %" PRIuMAX " Reported count %" PRIuMAX "\n",
           uintmax_t(NumNodesReported), uintmax_t(WeightTotal),
           uintmax_t(WeightReported), uintmax_t(CountTotal),
           uintmax_t(CountReported));

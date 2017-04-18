@@ -18,12 +18,12 @@
 
 #include "casm/CasmReader.h"
 
+#include "casm/InflateAst.h"
 #include "interp/ByteReader.h"
 #include "interp/Interpreter.h"
-#include "sexp/Ast.h"
-#include "casm/InflateAst.h"
-#include "sexp/TextWriter.h"
 #include "sexp-parser/Driver.h"
+#include "sexp/Ast.h"
+#include "sexp/TextWriter.h"
 #include "stream/FileReader.h"
 #include "stream/ReadBackedQueue.h"
 
@@ -40,11 +40,9 @@ CasmReader::CasmReader()
       TraceRead(false),
       TraceTree(false),
       TraceLexer(false),
-      ErrorsFound(false) {
-}
+      ErrorsFound(false) {}
 
-CasmReader::~CasmReader() {
-}
+CasmReader::~CasmReader() {}
 
 void CasmReader::foundErrors() {
   ErrorsFound = true;

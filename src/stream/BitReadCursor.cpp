@@ -47,15 +47,12 @@ BitReadCursor::BitReadCursor(StreamType Type, std::shared_ptr<Queue> Que)
 }
 
 BitReadCursor::BitReadCursor(const BitReadCursor& C)
-    : ReadCursor(C), CurWord(C.CurWord), NumBits(C.NumBits) {
-}
+    : ReadCursor(C), CurWord(C.CurWord), NumBits(C.NumBits) {}
 
 BitReadCursor::BitReadCursor(const BitReadCursor& C, AddressType StartAddress)
-    : ReadCursor(C, StartAddress), CurWord(C.CurWord), NumBits(C.NumBits) {
-}
+    : ReadCursor(C, StartAddress), CurWord(C.CurWord), NumBits(C.NumBits) {}
 
-BitReadCursor::~BitReadCursor() {
-}
+BitReadCursor::~BitReadCursor() {}
 
 void BitReadCursor::initFields() {
   CurWord = 0;

@@ -47,11 +47,9 @@ InflateAst::InflateAst()
       ValueMarker(0),
       AstMarkersTop(0),
       AstMarkers(AstMarkersTop),
-      InstallDuringInflation(true) {
-}
+      InstallDuringInflation(true) {}
 
-InflateAst::~InflateAst() {
-}
+InflateAst::~InflateAst() {}
 
 bool InflateAst::failBuild(const char* Method, std::string Message) {
   TRACE_METHOD(Method);

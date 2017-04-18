@@ -138,11 +138,8 @@ const char* getName(PredefinedSymbol Sym) {
 }
 
 AstTraitsType AstTraits[NumNodeTypes] = {
-#define X(tag, opcode, sexp_name, text_num_args, text_max_args, NSL, hidden)  \
-  {                                                                           \
-    NodeType::tag, #tag, sexp_name, text_num_args, text_max_args, NSL, hidden \
-  }                                                                           \
-  ,
+#define X(tag, opcode, sexp_name, text_num_args, text_max_args, NSL, hidden) \
+  {NodeType::tag, #tag, sexp_name, text_num_args, text_max_args, NSL, hidden},
     AST_OPCODE_TABLE
 #undef X
 };
@@ -198,12 +195,10 @@ const char* getNodeTypeName(NodeType Type) {
   return "?Unknown?";
 }
 
-Node::Iterator::Iterator(const Node* Nd, int Index) : Nd(Nd), Index(Index) {
-}
+Node::Iterator::Iterator(const Node* Nd, int Index) : Nd(Nd), Index(Index) {}
 
 Node::Iterator::Iterator(const Iterator& Iter)
-    : Nd(Iter.Nd), Index(Iter.Index) {
-}
+    : Nd(Iter.Nd), Index(Iter.Index) {}
 
 Node::Iterator& Node::Iterator::operator=(const Iterator& Iter) {
   Nd = Iter.Nd;
@@ -224,11 +219,11 @@ Node* Node::Iterator::operator*() const {
 }
 
 Node::Node(SymbolTable& Symtab, NodeType Type)
-    : Type(Type), Symtab(Symtab), CreationIndex(Symtab.getNextCreationIndex()) {
-}
+    : Type(Type),
+      Symtab(Symtab),
+      CreationIndex(Symtab.getNextCreationIndex()) {}
 
-Node::~Node() {
-}
+Node::~Node() {}
 
 int Node::compare(const Node* Nd) const {
   if (this == Nd)
@@ -343,26 +338,22 @@ IntegerValue::IntegerValue()
     : Type(NodeType::NO_SUCH_NODETYPE),
       Value(0),
       Format(decode::ValueFormat::Decimal),
-      isDefault(false) {
-}
+      isDefault(false) {}
 
 IntegerValue::IntegerValue(decode::IntType Value, decode::ValueFormat Format)
     : Type(NodeType::NO_SUCH_NODETYPE),
       Value(Value),
       Format(Format),
-      isDefault(false) {
-}
+      isDefault(false) {}
 
 IntegerValue::IntegerValue(NodeType Type,
                            decode::IntType Value,
                            decode::ValueFormat Format,
                            bool isDefault)
-    : Type(Type), Value(Value), Format(Format), isDefault(isDefault) {
-}
+    : Type(Type), Value(Value), Format(Format), isDefault(isDefault) {}
 
 IntegerValue::IntegerValue(const IntegerValue& V)
-    : Type(V.Type), Value(V.Value), Format(V.Format), isDefault(V.isDefault) {
-}
+    : Type(V.Type), Value(V.Value), Format(V.Format), isDefault(V.isDefault) {}
 
 void IntegerValue::describe(FILE* Out) const {
   fprintf(Out, "%s<", getNodeSexpName(Type));
@@ -370,8 +361,7 @@ void IntegerValue::describe(FILE* Out) const {
   fprintf(Out, ", %s>", getName(Format));
 }
 
-IntegerValue::~IntegerValue() {
-}
+IntegerValue::~IntegerValue() {}
 
 int IntegerValue::compare(const IntegerValue& V) const {
   if (Type < V.Type)
@@ -423,11 +413,9 @@ bool Node::validateNode(ConstNodeVectorType& Scope) const {
   return true;
 }
 
-Cached::Cached(SymbolTable& Symtab, NodeType Type) : Nullary(Symtab, Type) {
-}
+Cached::Cached(SymbolTable& Symtab, NodeType Type) : Nullary(Symtab, Type) {}
 
-Cached::~Cached() {
-}
+Cached::~Cached() {}
 
 int Cached::nodeCompare(const Node* Nd) const {
   int Diff = Nullary::nodeCompare(Nd);
@@ -448,11 +436,9 @@ bool Cached::implementsClass(NodeType Type) {
 }
 
 IntLookup::IntLookup(SymbolTable& Symtab)
-    : Cached(Symtab, NodeType::IntLookup) {
-}
+    : Cached(Symtab, NodeType::IntLookup) {}
 
-IntLookup::~IntLookup() {
-}
+IntLookup::~IntLookup() {}
 
 const Node* IntLookup::get(decode::IntType Value) {
   if (Lookup.count(Value))
@@ -472,11 +458,9 @@ SymbolDefn::SymbolDefn(SymbolTable& Symtab)
       ForSymbol(nullptr),
       DefineDefinition(nullptr),
       LiteralDefinition(nullptr),
-      LiteralActionDefinition(nullptr) {
-}
+      LiteralActionDefinition(nullptr) {}
 
-SymbolDefn::~SymbolDefn() {
-}
+SymbolDefn::~SymbolDefn() {}
 
 const std::string& SymbolDefn::getName() const {
   if (ForSymbol)
@@ -574,8 +558,7 @@ Symbol::Symbol(SymbolTable& Symtab, const std::string& Name)
   init();
 }
 
-Symbol::~Symbol() {
-}
+Symbol::~Symbol() {}
 
 void Symbol::init() {
   PredefinedValue = PredefinedSymbol::Unknown;
@@ -1250,11 +1233,9 @@ Node* SymbolTable::stripLiteralDefs(Node* Nd, SymbolSet& DefSyms) {
   return create<Void>();
 }
 
-Nullary::Nullary(SymbolTable& Symtab, NodeType Type) : Node(Symtab, Type) {
-}
+Nullary::Nullary(SymbolTable& Symtab, NodeType Type) : Node(Symtab, Type) {}
 
-Nullary::~Nullary() {
-}
+Nullary::~Nullary() {}
 
 int Nullary::getNumKids() const {
   return 0;
@@ -1299,8 +1280,7 @@ Unary::Unary(SymbolTable& Symtab, NodeType Type, Node* Kid)
   Kids[0] = Kid;
 }
 
-Unary::~Unary() {
-}
+Unary::~Unary() {}
 
 int Unary::getNumKids() const {
   return 1;
@@ -1418,11 +1398,9 @@ IntegerNode::IntegerNode(SymbolTable& Symtab,
                          decode::IntType Value,
                          decode::ValueFormat Format,
                          bool isDefault)
-    : Nullary(Symtab, Type), Value(Type, Value, Format, isDefault) {
-}
+    : Nullary(Symtab, Type), Value(Type, Value, Format, isDefault) {}
 
-IntegerNode::~IntegerNode() {
-}
+IntegerNode::~IntegerNode() {}
 
 int IntegerNode::nodeCompare(const Node* Nd) const {
   int Diff = Nullary::nodeCompare(Nd);
@@ -1502,8 +1480,7 @@ BinaryAccept::BinaryAccept(SymbolTable& Symtab)
                   NodeType::BinaryAccept,
                   0,
                   decode::ValueFormat::Hexidecimal,
-                  true) {
-}
+                  true) {}
 
 BinaryAccept::BinaryAccept(SymbolTable& Symtab,
                            decode::IntType Value,
@@ -1512,8 +1489,7 @@ BinaryAccept::BinaryAccept(SymbolTable& Symtab,
                   NodeType::BinaryAccept,
                   Value,
                   decode::ValueFormat::Hexidecimal,
-                  NumBits) {
-}
+                  NumBits) {}
 
 BinaryAccept* SymbolTable::createBinaryAccept(IntType Value, unsigned NumBits) {
   BinaryAccept* Nd = new BinaryAccept(*this, Value, NumBits);
@@ -1523,8 +1499,7 @@ BinaryAccept* SymbolTable::createBinaryAccept(IntType Value, unsigned NumBits) {
 
 template BinaryAccept* SymbolTable::create<BinaryAccept>();
 
-BinaryAccept::~BinaryAccept() {
-}
+BinaryAccept::~BinaryAccept() {}
 
 int BinaryAccept::nodeCompare(const Node* Nd) const {
   int Diff = IntegerNode::nodeCompare(Nd);
@@ -1605,8 +1580,7 @@ Binary::Binary(SymbolTable& Symtab, NodeType Type, Node* Kid1, Node* Kid2)
   Kids[1] = Kid2;
 }
 
-Binary::~Binary() {
-}
+Binary::~Binary() {}
 
 int Binary::getNumKids() const {
   return 2;
@@ -1662,8 +1636,7 @@ Ternary::Ternary(SymbolTable& Symtab,
   Kids[2] = Kid3;
 }
 
-Ternary::~Ternary() {
-}
+Ternary::~Ternary() {}
 
 int Ternary::getNumKids() const {
   return 3;
@@ -1749,11 +1722,9 @@ Node* Define::getBody() const {
   return Nd;
 }
 
-Nary::Nary(SymbolTable& Symtab, NodeType Type) : Node(Symtab, Type) {
-}
+Nary::Nary(SymbolTable& Symtab, NodeType Type) : Node(Symtab, Type) {}
 
-Nary::~Nary() {
-}
+Nary::~Nary() {}
 
 int Nary::nodeCompare(const Node* Nd) const {
   int Diff = Node::nodeCompare(Nd);
@@ -1808,11 +1779,9 @@ AST_NARYNODE_TABLE
 AST_NARYNODE_TABLE
 #undef X
 
-Header::Header(SymbolTable& Symtab, NodeType Type) : Nary(Symtab, Type) {
-}
+Header::Header(SymbolTable& Symtab, NodeType Type) : Nary(Symtab, Type) {}
 
-Header::~Header() {
-}
+Header::~Header() {}
 
 bool Header::implementsClass(NodeType Type) {
   return Type == NodeType::SourceHeader || Type == NodeType::ReadHeader ||
@@ -1981,8 +1950,7 @@ bool Algorithm::validateNode(ConstNodeVectorType& Parents) const {
   return true;
 }
 
-SelectBase::~SelectBase() {
-}
+SelectBase::~SelectBase() {}
 
 bool SelectBase::implementsClass(NodeType Type) {
   switch (Type) {
@@ -1997,8 +1965,7 @@ bool SelectBase::implementsClass(NodeType Type) {
 }
 
 SelectBase::SelectBase(SymbolTable& Symtab, NodeType Type)
-    : Nary(Symtab, Type) {
-}
+    : Nary(Symtab, Type) {}
 
 IntLookup* SelectBase::getIntLookup() const {
   IntLookup* Lookup = cast<IntLookup>(Symtab.getCachedValue(this));
@@ -2193,13 +2160,11 @@ AST_SELECTNODE_TABLE
 AST_SELECTNODE_TABLE
 #undef X
 
-Opcode::Opcode(SymbolTable& Symtab) : SelectBase(Symtab, NodeType::Opcode) {
-}
+Opcode::Opcode(SymbolTable& Symtab) : SelectBase(Symtab, NodeType::Opcode) {}
 
 template Opcode* SymbolTable::create<Opcode>();
 
-Opcode::~Opcode() {
-}
+Opcode::~Opcode() {}
 
 bool Opcode::validateNode(ConstNodeVectorType& Parents) const {
   TRACE_METHOD("validateNode");
@@ -2267,22 +2232,18 @@ const Case* Opcode::getWriteCase(decode::IntType Value,
   return nullptr;
 }
 
-Opcode::WriteRange::WriteRange() : C(nullptr), Min(0), Max(0), ShiftValue(0) {
-}
+Opcode::WriteRange::WriteRange() : C(nullptr), Min(0), Max(0), ShiftValue(0) {}
 
 Opcode::WriteRange::WriteRange(const Case* C,
                                decode::IntType Min,
                                decode::IntType Max,
                                uint32_t ShiftValue)
-    : C(C), Min(Min), Max(Max), ShiftValue(ShiftValue) {
-}
+    : C(C), Min(Min), Max(Max), ShiftValue(ShiftValue) {}
 
 Opcode::WriteRange::WriteRange(const WriteRange& R)
-    : C(R.C), Min(R.Min), Max(R.Max), ShiftValue(R.ShiftValue) {
-}
+    : C(R.C), Min(R.Min), Max(R.Max), ShiftValue(R.ShiftValue) {}
 
-Opcode::WriteRange::~WriteRange() {
-}
+Opcode::WriteRange::~WriteRange() {}
 
 void Opcode::WriteRange::assign(const WriteRange& R) {
   C = R.C;
@@ -2312,13 +2273,11 @@ utils::TraceClass& Opcode::WriteRange::getTrace() const {
 }
 
 BinaryEval::BinaryEval(SymbolTable& Symtab, Node* Encoding)
-    : Unary(Symtab, NodeType::BinaryEval, Encoding) {
-}
+    : Unary(Symtab, NodeType::BinaryEval, Encoding) {}
 
 template BinaryEval* SymbolTable::create<BinaryEval>(Node* Kid);
 
-BinaryEval::~BinaryEval() {
-}
+BinaryEval::~BinaryEval() {}
 
 IntLookup* BinaryEval::getIntLookup() const {
   IntLookup* Lookup = cast<IntLookup>(Symtab.getCachedValue(this));

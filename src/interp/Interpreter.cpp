@@ -94,9 +94,7 @@ struct {
   const char* Name;
   size_t Index;
 } MethodModifierName[] = {
-#define X(tag, flags) \
-  { #tag, flags }     \
-  ,
+#define X(tag, flags) {#tag, flags},
     INTERPRETER_METHOD_MODIFIERS_TABLE
 #undef X
     {"NO_SUCH_METHOD_MODIFIER", 0}};
@@ -107,8 +105,7 @@ InterpreterFlags::InterpreterFlags()
     : MacroContext(MacroDirective::Expand),
       TraceProgress(false),
       TraceIntermediateStreams(false),
-      TraceAppliedAlgorithms(false) {
-}
+      TraceAppliedAlgorithms(false) {}
 
 Interpreter::CallFrame::CallFrame() {
   reset();
@@ -118,15 +115,13 @@ Interpreter::CallFrame::CallFrame(Method CallMethod, const filt::Node* Nd)
     : CallMethod(CallMethod),
       CallState(State::Enter),
       CallModifier(MethodModifier::ReadAndWrite),
-      Nd(Nd) {
-}
+      Nd(Nd) {}
 
 Interpreter::CallFrame::CallFrame(const CallFrame& M)
     : CallMethod(M.CallMethod),
       CallState(M.CallState),
       CallModifier(M.CallModifier),
-      Nd(M.Nd) {
-}
+      Nd(M.Nd) {}
 
 void Interpreter::CallFrame::reset() {
   CallMethod = Method::Started;
@@ -155,8 +150,7 @@ Interpreter::EvalFrame::EvalFrame(const filt::Eval* Caller,
 }
 
 Interpreter::EvalFrame::EvalFrame(const EvalFrame& F)
-    : Caller(F.Caller), CallingEvalIndex(F.CallingEvalIndex) {
-}
+    : Caller(F.Caller), CallingEvalIndex(F.CallingEvalIndex) {}
 
 bool Interpreter::EvalFrame::isDefined() const {
   return Caller != nullptr;
@@ -307,8 +301,7 @@ void Interpreter::init() {
   OpcodeLocalsStack.reserve(DefaultStackSize);
 }
 
-Interpreter::~Interpreter() {
-}
+Interpreter::~Interpreter() {}
 
 void Interpreter::traceEnterFrameInternal() {
   // Note: Enclosed in TRACE_BLOCK so that g++ will not complain when
@@ -1358,8 +1351,9 @@ void Interpreter::algorithmResume() {
                 assert(NumParams);
                 int NumCallArgs = Frame.Nd->getNumKids() - 1;
                 if (NumParams->getValue() != IntType(NumCallArgs)) {
-                  fprintf(stderr, "Definition %s expects %" PRIuMAX
-                                  "parameters, found: %" PRIuMAX "\n",
+                  fprintf(stderr,
+                          "Definition %s expects %" PRIuMAX
+                          "parameters, found: %" PRIuMAX "\n",
                           Sym->getName().c_str(),
                           uintmax_t(NumParams->getValue()),
                           uintmax_t(NumCallArgs));

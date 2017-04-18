@@ -29,8 +29,7 @@ ReadBackedQueue::ReadBackedQueue(std::shared_ptr<RawStream> _Reader) {
   Reader = std::move(_Reader);
 }
 
-ReadBackedQueue::~ReadBackedQueue() {
-}
+ReadBackedQueue::~ReadBackedQueue() {}
 
 bool ReadBackedQueue::readFill(AddressType Address) {
   // Double check that there isn't more to read.

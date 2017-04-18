@@ -18,15 +18,15 @@
 
 #include "casm/CasmWriter.h"
 
-#include "interp/ByteWriter.h"
-#include "interp/Interpreter.h"
-#include "interp/IntReader.h"
-#include "interp/IntStream.h"
-#include "interp/Writer.h"
-#include "interp/TeeWriter.h"
-#include "sexp/Ast.h"
 #include "casm/FlattenAst.h"
 #include "casm/InflateAst.h"
+#include "interp/ByteWriter.h"
+#include "interp/IntReader.h"
+#include "interp/IntStream.h"
+#include "interp/Interpreter.h"
+#include "interp/TeeWriter.h"
+#include "interp/Writer.h"
+#include "sexp/Ast.h"
 
 namespace wasm {
 
@@ -44,8 +44,7 @@ CasmWriter::CasmWriter()
       ValidateWhileWriting(false),
       TraceWriter(false),
       TraceFlatten(false),
-      TraceTree(false) {
-}
+      TraceTree(false) {}
 
 void CasmWriter::writeBinary(std::shared_ptr<SymbolTable> Symtab,
                              std::shared_ptr<IntStream> Output) {

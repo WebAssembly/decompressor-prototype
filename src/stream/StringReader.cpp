@@ -22,11 +22,9 @@ namespace wasm {
 
 namespace decode {
 
-StringReader::StringReader(std::string& Str) : Str(Str), Cursor(0) {
-}
+StringReader::StringReader(std::string& Str) : Str(Str), Cursor(0) {}
 
-StringReader::~StringReader() {
-}
+StringReader::~StringReader() {}
 
 AddressType StringReader::read(ByteType* Buf, AddressType Size) {
   if (Cursor >= Str.size())

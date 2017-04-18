@@ -16,9 +16,9 @@
 
 // Implementation of the C API to the decompressor interpreter.
 
+#include "interp/Decompress.h"
 #include "algorithms/casm0x0.h"
 #include "algorithms/wasm0xd.h"
-#include "interp/Decompress.h"
 #include "interp/ByteReader.h"
 #include "interp/ByteWriter.h"
 #include "interp/DecompressSelector.h"

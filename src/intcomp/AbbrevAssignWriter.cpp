@@ -53,8 +53,7 @@ class AbbrevAssignValue {
   AbbrevAssignValue(ValueType Kind) : Kind(Kind) {}
 };
 
-AbbrevAssignValue::~AbbrevAssignValue() {
-}
+AbbrevAssignValue::~AbbrevAssignValue() {}
 
 namespace {
 
@@ -79,8 +78,7 @@ class AbbrevValue : public AbbrevAssignValue {
         Abbreviation(Abbreviation) {}
 };
 
-AbbrevValue::~AbbrevValue() {
-}
+AbbrevValue::~AbbrevValue() {}
 
 AbbrevValue* AbbrevValue::create(CountNode::Ptr Abbreviation) {
   return new AbbrevValue(Abbreviation);
@@ -111,8 +109,7 @@ class IntValue : public AbbrevAssignValue {
   const IntType Value;
 };
 
-IntValue::~IntValue() {
-}
+IntValue::~IntValue() {}
 
 class DefaultValue : public IntValue {
   DefaultValue() = delete;
@@ -131,8 +128,7 @@ class DefaultValue : public IntValue {
   DefaultValue(IntType Value) : IntValue(ValueType::Default, Value) {}
 };
 
-DefaultValue::~DefaultValue() {
-}
+DefaultValue::~DefaultValue() {}
 
 DefaultValue* DefaultValue::create(IntType Value) {
   return new DefaultValue(Value);
@@ -159,8 +155,7 @@ class LoopValue : public IntValue {
   LoopValue(decode::IntType Value) : IntValue(ValueType::Loop, Value) {}
 };
 
-LoopValue::~LoopValue() {
-}
+LoopValue::~LoopValue() {}
 
 LoopValue* LoopValue::create(size_t Value) {
   return new LoopValue(Value);

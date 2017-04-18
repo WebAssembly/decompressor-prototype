@@ -20,26 +20,20 @@ namespace wasm {
 
 namespace decode {
 
-WriteCursorBase::WriteCursorBase() : Cursor() {
-}
+WriteCursorBase::WriteCursorBase() : Cursor() {}
 
 WriteCursorBase::WriteCursorBase(std::shared_ptr<Queue> Que)
-    : Cursor(StreamType::Byte, Que) {
-}
+    : Cursor(StreamType::Byte, Que) {}
 
 WriteCursorBase::WriteCursorBase(StreamType Type, std::shared_ptr<Queue> Que)
-    : Cursor(Type, Que) {
-}
+    : Cursor(Type, Que) {}
 
-WriteCursorBase::WriteCursorBase(const WriteCursorBase& C) : Cursor(C) {
-}
+WriteCursorBase::WriteCursorBase(const WriteCursorBase& C) : Cursor(C) {}
 
 WriteCursorBase::WriteCursorBase(const Cursor& C, AddressType StartAddress)
-    : Cursor(C, StartAddress, false) {
-}
+    : Cursor(C, StartAddress, false) {}
 
-WriteCursorBase::~WriteCursorBase() {
-}
+WriteCursorBase::~WriteCursorBase() {}
 
 void WriteCursorBase::writeByte(ByteType Byte) {
   if (CurAddress < GuaranteedBeforeEob)

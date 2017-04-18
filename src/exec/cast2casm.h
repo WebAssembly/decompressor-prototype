@@ -22,9 +22,9 @@
 #include <cctype>
 #include <cstdio>
 
+#include "sexp-parser/Driver.h"
 #include "sexp/Ast.h"
 #include "sexp/TextWriter.h"
-#include "sexp-parser/Driver.h"
 #include "stream/FileWriter.h"
 #include "stream/ReadCursor.h"
 #include "stream/WriteBackedQueue.h"
@@ -970,12 +970,12 @@ int main(int Argc, charstring Argv[]) {
                      "function"));
 
     ArgsParser::Optional<charstring> AlgNameFlag(AlgName);
-    Args.add(AlgNameFlag.setShortName('f')
-                 .setLongName("name")
-                 .setOptionName("NAME")
-                 .setDescription(
-                     "The name prefix used to generate the name of C++ "
-                     "generated enum and/or function"));
+    Args.add(
+        AlgNameFlag.setShortName('f')
+            .setLongName("name")
+            .setOptionName("NAME")
+            .setDescription("The name prefix used to generate the name of C++ "
+                            "generated enum and/or function"));
 
 #if WASM_CAST_BOOT == 2
     ArgsParser::Toggle BootstrapFlag(Bootstrap);
@@ -1016,22 +1016,19 @@ int main(int Argc, charstring Argv[]) {
 
     ArgsParser::Toggle DisplayStrippedInputFlag(DisplayStrippedInput);
     Args.add(DisplayStrippedInputFlag.setLongName("display=stripped")
-                 .setDescription(
-                     "Display parsed cast text after all strip "
-                     "operations"));
+                 .setDescription("Display parsed cast text after all strip "
+                                 "operations"));
 
     ArgsParser::Toggle DisplayStripAllFlag(DisplayStripAll);
     Args.add(DisplayStripAllFlag.setLongName("display=strip-all")
-                 .setDescription(
-                     "Display parsed cast text after each strip "
-                     "operation"));
+                 .setDescription("Display parsed cast text after each strip "
+                                 "operation"));
 
     ArgsParser::Toggle ShowInternalStructureFlag(ShowInternalStructure);
     Args.add(ShowInternalStructureFlag.setShortName('i')
                  .setLongName("internal")
-                 .setDescription(
-                     "Show internal structure when displaying "
-                     "parsed text"));
+                 .setDescription("Show internal structure when displaying "
+                                 "parsed text"));
 
     ArgsParser::Toggle StripActionsFlag(StripActions);
     Args.add(StripActionsFlag.setLongName("strip-actions")
@@ -1039,9 +1036,8 @@ int main(int Argc, charstring Argv[]) {
 
     ArgsParser::Toggle StripSymbolicActionsFlag(StripSymbolicActions);
     Args.add(StripSymbolicActionsFlag.setLongName("strip-symbolic-actions")
-                 .setDescription(
-                     "Substitute action enumerated value for all "
-                     "action symbolic names"));
+                 .setDescription("Substitute action enumerated value for all "
+                                 "action symbolic names"));
 
     ArgsParser::Toggle StripAllFlag(StripAll);
     Args.add(StripAllFlag.setShortName('s').setLongName("strip").setDescription(
@@ -1055,9 +1051,8 @@ int main(int Argc, charstring Argv[]) {
 
     ArgsParser::Toggle StripLiteralDefsFlag(StripLiteralDefs);
     Args.add(StripLiteralDefsFlag.setLongName("strip-literal-defs")
-                 .setDescription(
-                     "Remove unreferenced literal definitions from "
-                     "the input"));
+                 .setDescription("Remove unreferenced literal definitions from "
+                                 "the input"));
 
     ArgsParser::Toggle StripLiteralUsesFlag(StripLiteralUses);
     Args.add(StripLiteralUsesFlag.setLongName("strip-literal-uses")
@@ -1105,9 +1100,8 @@ int main(int Argc, charstring Argv[]) {
     Args.add(MinimizeBlockFlag.setDefault(true)
                  .setShortName('m')
                  .setLongName("minimize")
-                 .setDescription(
-                     "Minimize size in binary file "
-                     "(note: runs slower)"));
+                 .setDescription("Minimize size in binary file "
+                                 "(note: runs slower)"));
 
     ArgsParser::Optional<bool> TraceFlattenFlag(TraceFlatten);
     Args.add(TraceFlattenFlag.setLongName("verbose=flatten")
@@ -1119,9 +1113,8 @@ int main(int Argc, charstring Argv[]) {
 
     ArgsParser::Optional<bool> TraceTreeFlag(TraceTree);
     Args.add(TraceTreeFlag.setLongName("verbose=tree")
-                 .setDescription(
-                     "Show tree being written while writing "
-                     "(implies --verbose=write)"));
+                 .setDescription("Show tree being written while writing "
+                                 "(implies --verbose=write)"));
 
     ArgsParser::Optional<bool> UseArrayImplFlag(UseArrayImpl);
     Args.add(UseArrayImplFlag.setLongName("array").setDescription(

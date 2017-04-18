@@ -81,8 +81,7 @@ ByteReader::ByteReader(std::shared_ptr<decode::Queue> StrmInput)
       Input(std::make_shared<ByteReadStream>()),
       FillPos(0),
       SavedPosStack(SavedPos),
-      TblHandler(nullptr) {
-}
+      TblHandler(nullptr) {}
 
 ByteReader::~ByteReader() {
   delete TblHandler;

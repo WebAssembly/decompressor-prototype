@@ -18,12 +18,12 @@
 #include "algorithms/casm0x0.h"
 #include "algorithms/cism0x0.h"
 #include "algorithms/wasm0xd.h"
-#include "interp/Decompress.h"
-#include "interp/DecompressSelector.h"
+#include "casm/CasmReader.h"
 #include "interp/ByteReader.h"
 #include "interp/ByteWriter.h"
+#include "interp/Decompress.h"
+#include "interp/DecompressSelector.h"
 #include "interp/Interpreter.h"
-#include "casm/CasmReader.h"
 #include "stream/FileReader.h"
 #include "stream/FileWriter.h"
 #include "stream/ReadBackedQueue.h"
@@ -121,18 +121,18 @@ int main(const int Argc, const char* Argv[]) {
     ArgsParser Args("Decompress WASM binary file");
 
     ArgsParser::Optional<bool> UseCApiFlag(UseCApi);
-    Args.add(UseCApiFlag.setLongName("c-api")
-                 .setDescription("Use C API to decompress"));
+    Args.add(UseCApiFlag.setLongName("c-api").setDescription(
+        "Use C API to decompress"));
 
     ArgsParser::Optional<bool> ExpectExitFailFlag(ExpectExitFail);
-    Args.add(ExpectExitFailFlag.setLongName("expect-fail")
-                 .setDescription(
-                     "Negate the exit status. That is, when true, "
-                     "Succeed on failure exit and fail on success"));
+    Args.add(
+        ExpectExitFailFlag.setLongName("expect-fail")
+            .setDescription("Negate the exit status. That is, when true, "
+                            "Succeed on failure exit and fail on success"));
 
     ArgsParser::Required<charstring> InputFilenameFlag(InputFilename);
-    Args.add(InputFilenameFlag.setOptionName("INPUT")
-                 .setDescription("INPUT is the File to decompress"));
+    Args.add(InputFilenameFlag.setOptionName("INPUT").setDescription(
+        "INPUT is the File to decompress"));
 
     ArgsParser::OptionalVector<charstring> AlgorithmsFlag(Algorithms);
     Args.add(AlgorithmsFlag.setShortName('a')
@@ -160,12 +160,12 @@ int main(const int Argc, const char* Argv[]) {
             .setDescription("Puts the decompressed input into file OUTPUT"));
 
     ArgsParser::Toggle MinimizeBlockSizeFlag(MinimizeBlockSize);
-    Args.add(MinimizeBlockSizeFlag.setDefault(true)
-                 .setShortName('m')
-                 .setLongName("minimize")
-                 .setDescription(
-                     "Toggle minimizing decompressed size (rather than "
-                     "conanical size)"));
+    Args.add(
+        MinimizeBlockSizeFlag.setDefault(true)
+            .setShortName('m')
+            .setLongName("minimize")
+            .setDescription("Toggle minimizing decompressed size (rather than "
+                            "conanical size)"));
 
     ArgsParser::Optional<size_t> NumTriesFlag(NumTries);
     Args.add(
@@ -174,9 +174,9 @@ int main(const int Argc, const char* Argv[]) {
             "when N!=1)"));
 
     ArgsParser::Toggle VerboseFlag(Verbose);
-    Args.add(VerboseFlag.setShortName('v')
-                 .setLongName("verbose")
-                 .setDescription("Show progress of decompression"));
+    Args.add(
+        VerboseFlag.setShortName('v').setLongName("verbose").setDescription(
+            "Show progress of decompression"));
 
     ArgsParser::Optional<bool> VerboseTraceFlag(InterpFlags.TraceProgress);
     Args.add(VerboseTraceFlag.setLongName("verbose=progress")

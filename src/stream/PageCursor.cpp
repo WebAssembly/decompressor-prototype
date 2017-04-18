@@ -23,8 +23,7 @@ namespace wasm {
 
 namespace decode {
 
-PageCursor::PageCursor() : CurAddress(0) {
-}
+PageCursor::PageCursor() : CurAddress(0) {}
 
 PageCursor::PageCursor(Queue* Que)
     : CurPage(Que->FirstPage), CurAddress(Que->FirstPage->getMinAddress()) {
@@ -41,8 +40,7 @@ PageCursor::PageCursor(const PageCursor& PC)
   //    assert(CurPage);
 }
 
-PageCursor::~PageCursor() {
-}
+PageCursor::~PageCursor() {}
 
 void PageCursor::assign(const PageCursor& C) {
   CurPage = C.CurPage;

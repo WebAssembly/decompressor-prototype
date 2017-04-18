@@ -35,13 +35,8 @@ namespace {
 // cut down the number of calls to get the minimum size.
 
 const char* IntTypeFormatName[NumIntTypeFormats] = {
-    "uint8",
-    "varint32",
-    "varuint32",
-    "uint32",
-    "varint64",
-    "varuint64",
-    "uint64",
+    "uint8",    "varint32",  "varuint32", "uint32",
+    "varint64", "varuint64", "uint64",
 };
 
 template <class T>

@@ -30,8 +30,7 @@ size_t DefaultArenaMaxPageSize = size_t(1) << 20;
 size_t DefaultArenaGrowAfterCount = 4;
 size_t DefaultArenaThreshold = size_t(1) << 10;
 
-Malloc::~Malloc() {
-}
+Malloc::~Malloc() {}
 
 namespace {
 Malloc MallocAllocator;
@@ -55,8 +54,7 @@ MallocArena::MallocArena(size_t InitPageSize,
                          size_t GrowAfterCount)
     : AllocatorBase<MallocArena>(),
       Allocator(),
-      Arena(Allocator, InitPageSize, MaxPageSize, Threshold, GrowAfterCount) {
-}
+      Arena(Allocator, InitPageSize, MaxPageSize, Threshold, GrowAfterCount) {}
 
 void* MallocArena::allocateVirtual(size_t Size, size_t AlignLog2) {
   return allocateDispatch(Size, AlignLog2);
