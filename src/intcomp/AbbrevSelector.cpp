@@ -106,8 +106,7 @@ AbbrevSelection::AbbrevSelection(CountNode::Ptr Abbreviation,
       Previous(Previous),
       IntsConsumed(IntsConsumed),
       Weight(Weight),
-      CreationIndex(CreationIndex) {
-}
+      CreationIndex(CreationIndex) {}
 
 void AbbrevSelection::trace(TraceClass& TC,
                             charstring Name,
@@ -148,8 +147,7 @@ AbbrevSelector::AbbrevSelector(BufferType Buffer,
       NumLeadingDefaultValues(NumLeadingDefaultValues),
       NextCreationIndex(0),
       Flags(Flags),
-      Heap(std::make_shared<HeapType>(isHillclimbLT)) {
-}
+      Heap(std::make_shared<HeapType>(isHillclimbLT)) {}
 
 void AbbrevSelector::setTrace(TraceClass::Ptr NewTrace) {
   Trace = NewTrace;

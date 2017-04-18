@@ -28,8 +28,7 @@ using namespace utils;
 
 namespace interp {
 
-Writer::~Writer() {
-}
+Writer::~Writer() {}
 
 bool Writer::writeBit(uint8_t Value) {
   return writeVaruint64(Value & 0x1);
@@ -92,8 +91,7 @@ const char* Writer::getDefaultTraceName() const {
   return "Writer";
 }
 
-void Writer::reset() {
-}
+void Writer::reset() {}
 
 bool Writer::writeFreezeEof() {
   return true;
@@ -195,8 +193,7 @@ bool Writer::tablePop() {
   return true;
 }
 
-void Writer::describeState(FILE* File) {
-}
+void Writer::describeState(FILE* File) {}
 
 }  // end of namespace interp
 

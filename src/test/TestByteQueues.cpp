@@ -24,8 +24,8 @@
 #include "stream/WriteBackedQueue.h"
 #include "stream/WriteCursor.h"
 
-#include <cstring>
 #include <unistd.h>
+#include <cstring>
 
 #include <iostream>
 

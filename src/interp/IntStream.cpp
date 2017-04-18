@@ -28,11 +28,9 @@ using namespace utils;
 namespace interp {
 
 IntStream::Block::Block(size_t BeginIndex, size_t EndIndex)
-    : BeginIndex(BeginIndex), EndIndex(EndIndex) {
-}
+    : BeginIndex(BeginIndex), EndIndex(EndIndex) {}
 
-IntStream::Block::~Block() {
-}
+IntStream::Block::~Block() {}
 
 class IntStream::Cursor::TraceContext : public utils::TraceContext {
   TraceContext() = delete;
@@ -55,15 +53,13 @@ void IntStream::Block::describe(FILE* File) {
   fputc(']', File);
 }
 
-IntStream::Cursor::TraceContext::~TraceContext() {
-}
+IntStream::Cursor::TraceContext::~TraceContext() {}
 
 void IntStream::Cursor::TraceContext::describe(FILE* File) {
   Pos.describe(File);
 }
 
-IntStream::Cursor::Cursor() : Index(0) {
-}
+IntStream::Cursor::Cursor() : Index(0) {}
 
 IntStream::Cursor::Cursor(Ptr Stream) : Index(0), Stream(Stream) {
   assert(Stream);
@@ -74,11 +70,9 @@ IntStream::Cursor::Cursor(const IntStream::Cursor& C)
     : std::enable_shared_from_this<Cursor>(C),
       Index(C.Index),
       EnclosingBlocks(C.EnclosingBlocks),
-      Stream(C.Stream) {
-}
+      Stream(C.Stream) {}
 
-IntStream::Cursor::~Cursor() {
-}
+IntStream::Cursor::~Cursor() {}
 
 IntStream::Cursor& IntStream::Cursor::operator=(const IntStream::Cursor& C) {
   Index = C.Index;
@@ -134,17 +128,13 @@ IntStream::BlockPtr IntStream::Cursor::closeBlock() {
   return Blk;
 }
 
-IntStream::WriteCursor::WriteCursor() : Cursor() {
-}
+IntStream::WriteCursor::WriteCursor() : Cursor() {}
 
-IntStream::WriteCursor::WriteCursor(Ptr Stream) : Cursor(Stream) {
-}
+IntStream::WriteCursor::WriteCursor(Ptr Stream) : Cursor(Stream) {}
 
-IntStream::WriteCursor::WriteCursor(const Cursor& C) : Cursor(C) {
-}
+IntStream::WriteCursor::WriteCursor(const Cursor& C) : Cursor(C) {}
 
-IntStream::WriteCursor::~WriteCursor() {
-}
+IntStream::WriteCursor::~WriteCursor() {}
 
 bool IntStream::WriteCursor::write(IntType Value) {
   // TODO(karlschimpf): Add capability to communicate failure to caller.
@@ -185,21 +175,17 @@ bool IntStream::WriteCursor::closeBlock() {
   return true;
 }
 
-IntStream::ReadCursor::ReadCursor() : Cursor() {
-}
+IntStream::ReadCursor::ReadCursor() : Cursor() {}
 
 IntStream::ReadCursor::ReadCursor(Ptr Stream)
     : Cursor(Stream),
       NextBlock(Stream->getBlocksBegin()),
-      EndBlocks(Stream->getBlocksEnd()) {
-}
+      EndBlocks(Stream->getBlocksEnd()) {}
 
 IntStream::ReadCursor::ReadCursor(const ReadCursor& C)
-    : Cursor(C), NextBlock(C.NextBlock), EndBlocks(C.EndBlocks) {
-}
+    : Cursor(C), NextBlock(C.NextBlock), EndBlocks(C.EndBlocks) {}
 
-IntStream::ReadCursor::~ReadCursor() {
-}
+IntStream::ReadCursor::~ReadCursor() {}
 
 IntType IntStream::ReadCursor::read() {
   // TODO(karlschimpf): Add capability to communicate failure to caller.
@@ -234,8 +220,7 @@ IntStream::IntStream() {
   reset();
 }
 
-IntStream::~IntStream() {
-}
+IntStream::~IntStream() {}
 
 void IntStream::reset() {
   Header.clear();

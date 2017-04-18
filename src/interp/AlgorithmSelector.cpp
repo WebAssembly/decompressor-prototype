@@ -20,11 +20,9 @@ namespace wasm {
 
 namespace interp {
 
-AlgorithmSelector::AlgorithmSelector() {
-}
+AlgorithmSelector::AlgorithmSelector() {}
 
-AlgorithmSelector::~AlgorithmSelector() {
-}
+AlgorithmSelector::~AlgorithmSelector() {}
 
 }  // end of namespace interp
 

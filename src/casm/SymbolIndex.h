@@ -21,9 +21,9 @@
 #ifndef DECOMPRESSOR_SRC_CASM_SYMBOLINDEX_H
 #define DECOMPRESSOR_SRC_CASM_SYMBOLINDEX_H
 
+#include <memory>
 #include <unordered_map>
 #include <vector>
-#include <memory>
 
 #include "utils/Defs.h"
 

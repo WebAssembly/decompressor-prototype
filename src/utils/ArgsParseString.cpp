@@ -35,8 +35,7 @@ template <>
 void ArgsParser::OptionalSet<std::string>::describeDefault(
     FILE* Out,
     size_t TabSize,
-    size_t& Indent) const {
-}
+    size_t& Indent) const {}
 
 }  // end of namespace utils
 

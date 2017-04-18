@@ -18,6 +18,7 @@
 
 #include "intcomp/IntCompress.h"
 
+#include "casm/CasmWriter.h"
 #include "intcomp/AbbrevAssignWriter.h"
 #include "intcomp/AbbreviationCodegen.h"
 #include "intcomp/AbbreviationsCollector.h"
@@ -25,10 +26,9 @@
 #include "intcomp/RemoveNodesVisitor.h"
 #include "interp/ByteReader.h"
 #include "interp/ByteWriter.h"
-#include "interp/Interpreter.h"
 #include "interp/IntInterpreter.h"
 #include "interp/IntReader.h"
-#include "casm/CasmWriter.h"
+#include "interp/Interpreter.h"
 #include "sexp/TextWriter.h"
 #include "utils/ArgsParse.h"
 
@@ -116,8 +116,7 @@ void IntCompressor::writeDataOutput(const BitWriteCursor& StartPos,
   return;
 }
 
-IntCompressor::~IntCompressor() {
-}
+IntCompressor::~IntCompressor() {}
 
 bool IntCompressor::compressUpToSize(size_t Size) {
   TRACE_BLOCK({

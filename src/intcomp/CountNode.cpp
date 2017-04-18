@@ -215,8 +215,7 @@ int compare(CountNode::Ptr N1, CountNode::Ptr N2) {
   return comparePointers(N1, N2);
 }
 
-CountNodeWithSuccs::~CountNodeWithSuccs() {
-}
+CountNodeWithSuccs::~CountNodeWithSuccs() {}
 
 CountNode::IntPtr CountNodeWithSuccs::getSucc(IntType Value) {
   if (Successors.count(Value))
@@ -244,11 +243,9 @@ RootCountNode::RootCountNode()
       BlockExit(std::make_shared<BlockCountNode>(false)),
       DefaultSingle(std::make_shared<DefaultCountNode>(true)),
       DefaultMultiple(std::make_shared<DefaultCountNode>(false)),
-      AlignCount(std::make_shared<AlignCountNode>()) {
-}
+      AlignCount(std::make_shared<AlignCountNode>()) {}
 
-RootCountNode::~RootCountNode() {
-}
+RootCountNode::~RootCountNode() {}
 
 void RootCountNode::getOthers(PtrVector& L) const {
   L.push_back(BlockEnter);
@@ -282,8 +279,7 @@ int RootCountNode::compare(const CountNode& Nd) const {
   return DefaultMultiple.get()->compare(*Root->DefaultMultiple);
 }
 
-BlockCountNode::~BlockCountNode() {
-}
+BlockCountNode::~BlockCountNode() {}
 
 int BlockCountNode::compare(const CountNode& Nd) const {
   int Diff = CountNode::compare(Nd);
@@ -301,8 +297,7 @@ void BlockCountNode::describe(FILE* Out, size_t NestLevel) const {
   newline(Out);
 }
 
-DefaultCountNode::~DefaultCountNode() {
-}
+DefaultCountNode::~DefaultCountNode() {}
 
 int DefaultCountNode::compare(const CountNode& Nd) const {
   int Diff = CountNode::compare(Nd);
@@ -320,8 +315,7 @@ void DefaultCountNode::describe(FILE* Out, size_t NestLevel) const {
   newline(Out);
 }
 
-AlignCountNode::~AlignCountNode() {
-}
+AlignCountNode::~AlignCountNode() {}
 
 void AlignCountNode::describe(FILE* Out, size_t NestLevel) const {
   indent(Out, NestLevel);
@@ -376,8 +370,7 @@ void IntCountNode::describe(FILE* Out, size_t NestLevel) const {
   newline(Out);
 }
 
-SingletonCountNode::~SingletonCountNode() {
-}
+SingletonCountNode::~SingletonCountNode() {}
 
 size_t SingletonCountNode::getWeight(size_t Count) const {
   return Count * getLocalWeight();
@@ -397,8 +390,7 @@ void SingletonCountNode::describeValues(FILE* Out) const {
   fprint_IntType(Out, getValue());
 }
 
-IntSeqCountNode::~IntSeqCountNode() {
-}
+IntSeqCountNode::~IntSeqCountNode() {}
 
 size_t IntSeqCountNode::getWeight(size_t Count) const {
   size_t Weight = 0;
@@ -420,10 +412,10 @@ void IntSeqCountNode::describeValues(FILE* Out) const {
   fputs("Values:", Out);
   size_t Count = 0;
   size_t ElidedCount = 0;
-  for (
-      std::vector<const IntCountNode*>::reverse_iterator Iter = Nodes.rbegin(),
-                                                         IterEnd = Nodes.rend();
-      Iter != IterEnd; ++Iter) {
+  for (std::vector<const IntCountNode*>::reverse_iterator
+           Iter = Nodes.rbegin(),
+           IterEnd = Nodes.rend();
+       Iter != IterEnd; ++Iter) {
     ++Count;
     if (Count > 10) {
       ++ElidedCount;

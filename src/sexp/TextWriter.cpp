@@ -43,8 +43,7 @@ TextWriter::TextWriter()
     : File(nullptr),
       IndentCount(0),
       LineEmpty(true),
-      ShowInternalStructure(DefaultShowInternalStructure) {
-}
+      ShowInternalStructure(DefaultShowInternalStructure) {}
 
 TextWriter::Indent::Indent(TextWriter* Writer, bool AddNewline)
     : Writer(Writer), AddNewline(AddNewline) {

@@ -32,8 +32,7 @@ const char* CountNodeVisitor::getName(State St) {
   return StateName[unsigned(St)];
 }
 
-CountNodeVisitor::Frame::~Frame() {
-}
+CountNodeVisitor::Frame::~Frame() {}
 
 void CountNodeVisitor::Frame::describe(FILE* Out) const {
   describePrefix(Out);
@@ -52,8 +51,7 @@ void CountNodeVisitor::Frame::describeSuffix(FILE* Out) const {
   fputs(">\n", Out);
 }
 
-CountNodeVisitor::CountNodeVisitor(CountNode::RootPtr Root) : Root(Root) {
-}
+CountNodeVisitor::CountNodeVisitor(CountNode::RootPtr Root) : Root(Root) {}
 
 CountNodeVisitor::FramePtr CountNodeVisitor::getFrame(size_t FirstKid,
                                                       size_t LastKid) {
@@ -125,14 +123,11 @@ void CountNodeVisitor::callNode(CountNode::IntPtr Nd) {
   Stack.push_back(getFrame(Nd, FirstKid, ToVisit.size()));
 }
 
-void CountNodeVisitor::visit(FramePtr Frame) {
-}
+void CountNodeVisitor::visit(FramePtr Frame) {}
 
-void CountNodeVisitor::visitReturn(FramePtr Frame) {
-}
+void CountNodeVisitor::visitReturn(FramePtr Frame) {}
 
-void CountNodeVisitor::visitOther(CountNode::Ptr Nd) {
-}
+void CountNodeVisitor::visitOther(CountNode::Ptr Nd) {}
 
 }  // end of namespace intcomp
 

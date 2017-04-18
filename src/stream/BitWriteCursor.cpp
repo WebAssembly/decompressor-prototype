@@ -44,16 +44,13 @@ BitWriteCursor::BitWriteCursor(StreamType Type, std::shared_ptr<Queue> Que)
 }
 
 BitWriteCursor::BitWriteCursor(const BitWriteCursor& C)
-    : WriteCursor(C), CurWord(C.CurWord), NumBits(C.NumBits) {
-}
+    : WriteCursor(C), CurWord(C.CurWord), NumBits(C.NumBits) {}
 
 BitWriteCursor::BitWriteCursor(const BitWriteCursor& C,
                                AddressType StartAddress)
-    : WriteCursor(C, StartAddress), CurWord(C.CurWord), NumBits(C.NumBits) {
-}
+    : WriteCursor(C, StartAddress), CurWord(C.CurWord), NumBits(C.NumBits) {}
 
-BitWriteCursor::~BitWriteCursor() {
-}
+BitWriteCursor::~BitWriteCursor() {}
 
 void BitWriteCursor::initFields() {
   CurWord = 0;

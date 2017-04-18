@@ -29,8 +29,7 @@ using namespace filt;
 
 namespace interp {
 
-ReadStream::~ReadStream() {
-}
+ReadStream::~ReadStream() {}
 
 uint8_t ReadStream::readBit(ReadCursor& Pos) {
   return Pos.readBit();

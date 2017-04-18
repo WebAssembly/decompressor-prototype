@@ -17,9 +17,9 @@
 
 // Reads a filter file.
 
-#include "sexp/TextWriter.h"
-#include "sexp-parser/Parser.tab.hpp"
 #include "sexp-parser/Driver.h"
+#include "sexp-parser/Parser.tab.hpp"
+#include "sexp/TextWriter.h"
 #include "utils/ArgsParse.h"
 #include "utils/Defs.h"
 
@@ -45,8 +45,8 @@ int main(int Argc, wasm::charstring Argv[]) {
                  .setDescription("Succeed on failure/fail on success."));
 
     ArgsParser::RequiredVector<wasm::charstring> FilesFlag(Files);
-    Args.add(FilesFlag.setOptionName("INPUT")
-                 .setDescription("Input file to parse."));
+    Args.add(FilesFlag.setOptionName("INPUT").setDescription(
+        "Input file to parse."));
 
     ArgsParser::Toggle TraceLexerFlag(TraceLexer);
     Args.add(TraceLexerFlag.setLongName("verbose=lexer")
@@ -57,9 +57,9 @@ int main(int Argc, wasm::charstring Argv[]) {
                  .setDescription("Trace parsing file(s)."));
 
     ArgsParser::Toggle TracePrintAstFlag(PrintAst);
-    Args.add(TracePrintAstFlag.setShortName('p')
-                 .setLongName("print")
-                 .setDescription("Write out parsed s-expression"));
+    Args.add(
+        TracePrintAstFlag.setShortName('p').setLongName("print").setDescription(
+            "Write out parsed s-expression"));
 
     ArgsParser::Toggle TraceFilesParsedFlag(TraceFilesParsed);
     Args.add(TraceFilesParsedFlag.setShortName('v')
@@ -76,10 +76,10 @@ int main(int Argc, wasm::charstring Argv[]) {
                 "when printing."));
 
     ArgsParser::Toggle ValidateAstFlag(ValidateAst);
-    Args.add(ValidateAstFlag.setLongName("validate")
-                 .setDescription(
-                     "Validate parsed algorithms also. Assumes "
-                     "order of input files define enclosing scopes."));
+    Args.add(
+        ValidateAstFlag.setLongName("validate")
+            .setDescription("Validate parsed algorithms also. Assumes "
+                            "order of input files define enclosing scopes."));
 
     switch (Args.parse(Argc, Argv)) {
       case ArgsParser::State::Good:

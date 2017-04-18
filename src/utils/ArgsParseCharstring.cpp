@@ -68,8 +68,7 @@ template <>
 void ArgsParser::OptionalVector<charstring>::describeDefault(
     FILE* Out,
     size_t TabSize,
-    size_t& Indent) const {
-}
+    size_t& Indent) const {}
 
 template <>
 bool ArgsParser::OptionalVectorSeparator<charstring>::select(ArgsParser* Parser,
@@ -86,8 +85,7 @@ void ArgsParser::RequiredVector<charstring>::setOptionFound() {
 }
 
 template <>
-void ArgsParser::RequiredVector<charstring>::setPlacementFound(size_t&) {
-}
+void ArgsParser::RequiredVector<charstring>::setPlacementFound(size_t&) {}
 
 template <>
 void ArgsParser::RequiredVector<charstring>::describeDefault(

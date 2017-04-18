@@ -30,8 +30,8 @@
 #ifndef DECOMPRESSOR_SRC_SEXP_NODETYPE_H
 #define DECOMPRESSOR_SRC_SEXP_NODETYPE_H
 
-#include "utils/Defs.h"
 #include "sexp/Ast.def"
+#include "utils/Defs.h"
 
 namespace wasm {
 

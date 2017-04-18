@@ -36,11 +36,9 @@ IntInterpreter::IntInterpreter(std::shared_ptr<IntReader> Input,
                                std::shared_ptr<Writer> Output,
                                const InterpreterFlags& Flags,
                                std::shared_ptr<filt::SymbolTable> Symtab)
-    : Interpreter(Input, Output, Flags, Symtab), IntInput(Input) {
-}
+    : Interpreter(Input, Output, Flags, Symtab), IntInput(Input) {}
 
-IntInterpreter::~IntInterpreter() {
-}
+IntInterpreter::~IntInterpreter() {}
 
 const char* IntInterpreter::getDefaultTraceName() const {
   return "IntReader";

@@ -49,8 +49,8 @@ int main(int Argc, const char* Argv[]) {
     ArgsParser Args("Compress integer sequences in a WASM file");
 
     ArgsParser::Required<charstring> InputFilenameFlag(InputFilename);
-    Args.add(InputFilenameFlag.setOptionName("INPUT")
-                 .setDescription("WASM file to compress"));
+    Args.add(InputFilenameFlag.setOptionName("INPUT").setDescription(
+        "WASM file to compress"));
 
     ArgsParser::Optional<charstring> OutputFilenameFlag(OutputFilename);
     Args.add(
@@ -87,11 +87,11 @@ int main(int Argc, const char* Argv[]) {
 
     ArgsParser::Optional<bool> TraceHuffmanAssignmentsFlag(
         MyCompressionFlags.TraceHuffmanAssignments);
-    Args.add(TraceHuffmanAssignmentsFlag.setDefault(true)
-                 .setLongName("verbose=Huffman-assignments")
-                 .setDescription(
-                     "Show defined Huffman encoding assignments for "
-                     "to use for pattern abbreviations"));
+    Args.add(
+        TraceHuffmanAssignmentsFlag.setDefault(true)
+            .setLongName("verbose=Huffman-assignments")
+            .setDescription("Show defined Huffman encoding assignments for "
+                            "to use for pattern abbreviations"));
 
     ArgsParser::Optional<bool> TraceBitCompressOpcodesFlag(
         MyCompressionFlags.BitCompressOpcodes);
@@ -121,14 +121,14 @@ int main(int Argc, const char* Argv[]) {
 
     ArgsParser::Optional<size_t> PatternLengthLimitFlag(
         MyCompressionFlags.PatternLengthLimit);
-    Args.add(PatternLengthLimitFlag.setDefault(5)
-                 .setLongName("max-length")
-                 .setOptionName("INTEGER")
-                 .setDescription(
-                     "Maximum integer sequence length that will be "
-                     "considered for compression patterns ("
-                     "execution time grows non-linearly when this value "
-                     " is increased)"));
+    Args.add(
+        PatternLengthLimitFlag.setDefault(5)
+            .setLongName("max-length")
+            .setOptionName("INTEGER")
+            .setDescription("Maximum integer sequence length that will be "
+                            "considered for compression patterns ("
+                            "execution time grows non-linearly when this value "
+                            " is increased)"));
 
     ArgsParser::Optional<size_t> PatternLengthMultiplierFlag(
         MyCompressionFlags.PatternLengthMultiplier);
@@ -158,12 +158,12 @@ int main(int Argc, const char* Argv[]) {
 
     ArgsParser::Optional<size_t> SmallValueCountCutoffFlag(
         MyCompressionFlags.SmallValueCountCutoff);
-    Args.add(SmallValueCountCutoffFlag.setDefault(5)
-                 .setLongName("small-min-count")
-                 .setOptionName("INTEGER")
-                 .setDescription(
-                     "Mimimum number of uses of a small value before "
-                     "it is considered an abbreviation pattern"));
+    Args.add(
+        SmallValueCountCutoffFlag.setDefault(5)
+            .setLongName("small-min-count")
+            .setOptionName("INTEGER")
+            .setDescription("Mimimum number of uses of a small value before "
+                            "it is considered an abbreviation pattern"));
 
     ArgsParser::Toggle TrimOverriddenPatternsFlag(
         MyCompressionFlags.TrimOverriddenPatterns);
@@ -181,10 +181,10 @@ int main(int Argc, const char* Argv[]) {
 
     ArgsParser::Optional<bool> TraceReadingIntStreamFlag(
         MyCompressionFlags.TraceReadingIntStream);
-    Args.add(TraceReadingIntStreamFlag.setLongName("verbose=reread")
-                 .setDescription(
-                     "Show trace of subsequent reads of the integer "
-                     "stream produced by the intial read"));
+    Args.add(
+        TraceReadingIntStreamFlag.setLongName("verbose=reread")
+            .setDescription("Show trace of subsequent reads of the integer "
+                            "stream produced by the intial read"));
 
     ArgsParser::Optional<bool> TraceWritingCodeOutputFlag(
         MyCompressionFlags.TraceWritingCodeOutput);
@@ -194,25 +194,24 @@ int main(int Argc, const char* Argv[]) {
 
     ArgsParser::Optional<bool> TraceCodeGenerationForReadingFlag(
         MyCompressionFlags.TraceCodeGenerationForReading);
-    Args.add(TraceCodeGenerationForReadingFlag.setLongName("verbose=read-code")
-                 .setDescription(
-                     "Show trace of generating code to compress the "
-                     "integer stream produced by the initial read, to "
-                     "the corresponding compressed integer stream"));
+    Args.add(
+        TraceCodeGenerationForReadingFlag.setLongName("verbose=read-code")
+            .setDescription("Show trace of generating code to compress the "
+                            "integer stream produced by the initial read, to "
+                            "the corresponding compressed integer stream"));
 
     ArgsParser::Optional<bool> TraceCodeGenerationForWritingFlag(
         MyCompressionFlags.TraceCodeGenerationForWriting);
-    Args.add(TraceCodeGenerationForWritingFlag.setLongName("verbose=write-code")
-                 .setDescription(
-                     "Show trace of generating code to write out the "
-                     "generated compressed integer stream"));
+    Args.add(
+        TraceCodeGenerationForWritingFlag.setLongName("verbose=write-code")
+            .setDescription("Show trace of generating code to write out the "
+                            "generated compressed integer stream"));
 
     ArgsParser::Optional<bool> TraceWritingDataOutputFlag(
         MyCompressionFlags.TraceWritingDataOutput);
     Args.add(TraceWritingDataOutputFlag.setLongName("verbose=data")
-                 .setDescription(
-                     "Show trace of how data is compressed in the "
-                     "output file"));
+                 .setDescription("Show trace of how data is compressed in the "
+                                 "output file"));
 
     ArgsParser::Optional<bool> TraceCompressionFlag(
         MyCompressionFlags.TraceCompression);
@@ -235,25 +234,22 @@ int main(int Argc, const char* Argv[]) {
 
     ArgsParser::Optional<bool> TraceIntCountsCollectionFlag(
         MyCompressionFlags.TraceIntCountsCollection);
-    Args.add(TraceIntCountsCollectionFlag.setLongName(
-                                              "verbose=int-counts-collection")
+    Args.add(TraceIntCountsCollectionFlag
+                 .setLongName("verbose=int-counts-collection")
                  .setDescription("Show how int counts were selected"));
 
     ArgsParser::Optional<bool> TraceSequenceCountsFlag(
         MyCompressionFlags.TraceSequenceCounts);
     Args.add(TraceSequenceCountsFlag.setLongName("verbose=seq-counts")
-                 .setDescription(
-                     "Show frequency of integer sequences in the "
-                     "input stream"));
+                 .setDescription("Show frequency of integer sequences in the "
+                                 "input stream"));
 
     ArgsParser::Optional<bool> TraceSequenceCountsCollectionFlag(
         MyCompressionFlags.TraceSequenceCountsCollection);
-    Args.add(
-        TraceSequenceCountsCollectionFlag.setLongName(
-                                              "verbose=seq-counts-collection")
-            .setDescription(
-                "Show how frequency of integer sequences were "
-                "selected"));
+    Args.add(TraceSequenceCountsCollectionFlag
+                 .setLongName("verbose=seq-counts-collection")
+                 .setDescription("Show how frequency of integer sequences were "
+                                 "selected"));
 
     ArgsParser::Optional<bool> TraceAbbreviationAssignmentsFlag(
         MyCompressionFlags.TraceAbbreviationAssignments);
@@ -271,19 +267,19 @@ int main(int Argc, const char* Argv[]) {
 
     ArgsParser::Toggle ReassignAbbreviationsFlag(
         MyCompressionFlags.ReassignAbbreviations);
-    Args.add(ReassignAbbreviationsFlag.setShortName('r')
-                 .setLongName("reassign")
-                 .setDescription(
-                     "Toggle whether abbrevation are reassigned after "
-                     "selecting patterns"));
+    Args.add(
+        ReassignAbbreviationsFlag.setShortName('r')
+            .setLongName("reassign")
+            .setDescription("Toggle whether abbrevation are reassigned after "
+                            "selecting patterns"));
 
     ArgsParser::Optional<bool> TraceAbbreviationAssignmentsCollectionFlag(
         MyCompressionFlags.TraceAbbreviationAssignmentsCollection);
-    Args.add(TraceAbbreviationAssignmentsCollectionFlag
-                 .setLongName("vebose=abbrev-collection")
-                 .setDescription(
-                     "Show how the (initial) abbreviation assignments "
-                     "were selected"));
+    Args.add(
+        TraceAbbreviationAssignmentsCollectionFlag
+            .setLongName("vebose=abbrev-collection")
+            .setDescription("Show how the (initial) abbreviation assignments "
+                            "were selected"));
 
     ArgsParser::Optional<bool> TraceAssigningAbbreviationsFlag(
         MyCompressionFlags.TraceAssigningAbbreviations);
@@ -298,37 +294,36 @@ int main(int Argc, const char* Argv[]) {
 
     ArgsParser::Optional<bool> TraceIntStreamGenerationFlag(
         MyCompressionFlags.TraceIntStreamGeneration);
-    Args.add(TraceIntStreamGenerationFlag.setLongName("verbose=select-abbrevs")
-                 .setDescription(
-                     "Trace the generation of the compressed integer "
-                     "stream. and show how abbreviations are selected"));
+    Args.add(
+        TraceIntStreamGenerationFlag.setLongName("verbose=select-abbrevs")
+            .setDescription("Trace the generation of the compressed integer "
+                            "stream. and show how abbreviations are selected"));
 
     ArgsParser::Optional<size_t> TraceAbbrevSelectionProgressFlag(
         MyCompressionFlags.TraceAbbrevSelectionProgress);
-    Args.add(
-        TraceAbbrevSelectionProgressFlag.setLongName(
-                                             "verbose=select-abbrevs-progress")
-            .setOptionName("INTEGER")
-            .setDescription(
-                "For every INTEGER values generated in the output integer "
-                "stream, generate a progress message. Use this to show "
-                "progress is being made, especially with large "
-                "command line overrides (INTEGER=0 turns off)"));
+    Args.add(TraceAbbrevSelectionProgressFlag
+                 .setLongName("verbose=select-abbrevs-progress")
+                 .setOptionName("INTEGER")
+                 .setDescription(
+                     "For every INTEGER values generated in the output integer "
+                     "stream, generate a progress message. Use this to show "
+                     "progress is being made, especially with large "
+                     "command line overrides (INTEGER=0 turns off)"));
 
     ArgsParser::Optional<bool> TraceAbbrevSelectionSelectFlag(
         MyCompressionFlags.TraceAbbrevSelectionSelect);
-    Args.add(TraceAbbrevSelectionSelectFlag.setLongName(
-                                                "verbose=select-abbrevs-select")
-                 .setDescription(
-                     "Show selected pattern sequences, as they apply. "
-                     "Only appiles when --verbose=select-abbrevs is "
-                     "also true"));
+    Args.add(
+        TraceAbbrevSelectionSelectFlag
+            .setLongName("verbose=select-abbrevs-select")
+            .setDescription("Show selected pattern sequences, as they apply. "
+                            "Only appiles when --verbose=select-abbrevs is "
+                            "also true"));
 
     ArgsParser::Optional<bool> TraceAbbrevSelectionCreateFlag(
         MyCompressionFlags.TraceAbbrevSelectionCreate);
     Args.add(
-        TraceAbbrevSelectionCreateFlag.setLongName(
-                                           "verbose=select-abbrevs-create")
+        TraceAbbrevSelectionCreateFlag
+            .setLongName("verbose=select-abbrevs-create")
             .setDescription(
                 "Show each created pattern sequence that is tried (not just "
                 "the selected ones). Only applies when "
@@ -336,8 +331,8 @@ int main(int Argc, const char* Argv[]) {
 
     ArgsParser::Optional<bool> TraceAbbrevSelectionDetailFlag(
         MyCompressionFlags.TraceAbbrevSelectionDetail);
-    Args.add(TraceAbbrevSelectionDetailFlag.setLongName(
-                                                "verbose=select-abbrev-details")
+    Args.add(TraceAbbrevSelectionDetailFlag
+                 .setLongName("verbose=select-abbrev-details")
                  .setDescription(
                      "Show additional detail (besides creating and selecting) "
                      "when creating the applied pattern sequence. Only applies "

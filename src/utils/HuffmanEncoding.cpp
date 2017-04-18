@@ -29,11 +29,9 @@ using namespace decode;
 namespace utils {
 
 HuffmanEncoder::Node::Node(NodeType Type, WeightType Weight)
-    : Type(Type), Weight(Weight) {
-}
+    : Type(Type), Weight(Weight) {}
 
-HuffmanEncoder::Node::~Node() {
-}
+HuffmanEncoder::Node::~Node() {}
 
 int HuffmanEncoder::Node::compare(Node* Nd) const {
   if (getWeight() < Nd->getWeight())
@@ -55,8 +53,7 @@ HuffmanEncoder::Symbol::Symbol(size_t Id, WeightType Weight)
   Path = Id;
 }
 
-HuffmanEncoder::Symbol::~Symbol() {
-}
+HuffmanEncoder::Symbol::~Symbol() {}
 
 int HuffmanEncoder::Symbol::compare(Node* Nd) const {
   int diff = Node::compare(Nd);
@@ -104,11 +101,9 @@ HuffmanEncoder::Selector::Selector(size_t Id, NodePtr Kid1, NodePtr Kid2)
       Id(Id),
       Kid1(Kid1),
       Kid2(Kid2),
-      Size(Kid1->nodeSize() + Kid2->nodeSize()) {
-}
+      Size(Kid1->nodeSize() + Kid2->nodeSize()) {}
 
-HuffmanEncoder::Selector::~Selector() {
-}
+HuffmanEncoder::Selector::~Selector() {}
 
 int HuffmanEncoder::Selector::compare(Node* Nd) const {
   int Diff = Node::compare(Nd);
@@ -230,11 +225,9 @@ HuffmanEncoder::HuffmanEncoder()
     : MaxAllowedPath(MaxPathLength),
       NextSelectorId(0),
       NodePtrLtFcn(
-          [](NodePtr N1, NodePtr N2) { return N1->compare(N2.get()) < 0; }) {
-}
+          [](NodePtr N1, NodePtr N2) { return N1->compare(N2.get()) < 0; }) {}
 
-HuffmanEncoder::~HuffmanEncoder() {
-}
+HuffmanEncoder::~HuffmanEncoder() {}
 
 void HuffmanEncoder::setMaxPathLength(unsigned NewSize) {
   assert(NewSize <= MaxPathLength);

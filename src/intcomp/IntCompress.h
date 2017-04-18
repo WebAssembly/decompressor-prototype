@@ -22,12 +22,12 @@
 #include "intcomp/AbbrevAssignWriter.h"
 #include "intcomp/CompressionFlags.h"
 #include "intcomp/CountNode.h"
-#include "interp/Interpreter.h"
 #include "interp/IntFormats.h"
 #include "interp/IntStream.h"
+#include "interp/Interpreter.h"
 #include "sexp/Ast.h"
-#include "stream/Queue.h"
 #include "stream/BitWriteCursor.h"
+#include "stream/Queue.h"
 #include "utils/HuffmanEncoding.h"
 
 namespace wasm {

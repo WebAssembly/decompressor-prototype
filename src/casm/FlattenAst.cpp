@@ -43,8 +43,7 @@ FlattenAst::FlattenAst(std::shared_ptr<IntStream> Output,
       SymIndex(utils::make_unique<SymbolIndex>(Symtab)),
       FreezeEofOnDestruct(true),
       HasErrors(false),
-      BitCompress(false) {
-}
+      BitCompress(false) {}
 
 FlattenAst::~FlattenAst() {
   freezeOutput();

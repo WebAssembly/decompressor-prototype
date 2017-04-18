@@ -18,8 +18,8 @@
 
 #include "interp/ByteReadStream.h"
 
-#include "stream/ReadCursor.h"
 #include "sexp/Ast.h"
+#include "stream/ReadCursor.h"
 
 namespace wasm {
 
@@ -28,8 +28,7 @@ using namespace filt;
 
 namespace interp {
 
-ByteReadStream::~ByteReadStream() {
-}
+ByteReadStream::~ByteReadStream() {}
 
 IntType ByteReadStream::readValue(ReadCursor& Pos, const filt::Node* Format) {
   switch (Format->getType()) {

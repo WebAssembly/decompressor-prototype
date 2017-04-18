@@ -20,8 +20,8 @@
 #ifndef DECOMPRESSOR_SRC_SEXP_FLATTENAST_H_
 #define DECOMPRESSOR_SRC_SEXP_FLATTENAST_H_
 
-#include "utils/Defs.h"
 #include "interp/IntFormats.h"
+#include "utils/Defs.h"
 
 namespace wasm {
 

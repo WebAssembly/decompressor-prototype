@@ -26,10 +26,8 @@ using namespace utils;
 
 namespace decode {
 
-Cursor::TraceContext::TraceContext(Cursor& Pos) : Pos(Pos) {
-}
-Cursor::TraceContext::~TraceContext() {
-}
+Cursor::TraceContext::TraceContext(Cursor& Pos) : Pos(Pos) {}
+Cursor::TraceContext::~TraceContext() {}
 
 Cursor::Cursor(StreamType Type, std::shared_ptr<Queue> Que)
     : PageCursor(Que->FirstPage, Que->FirstPage->getMinAddress()),
@@ -60,11 +58,9 @@ Cursor::Cursor(const Cursor& C, AddressType StartAddress, bool ForRead)
   updateGuaranteedBeforeEob();
 }
 
-Cursor::Cursor() : PageCursor(), Type(StreamType::Byte) {
-}
+Cursor::Cursor() : PageCursor(), Type(StreamType::Byte) {}
 
-Cursor::~Cursor() {
-}
+Cursor::~Cursor() {}
 
 bool Cursor::atEof() const {
   return CurAddress == Que->getEofAddress();

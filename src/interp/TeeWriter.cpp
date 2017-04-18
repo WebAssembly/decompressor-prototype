@@ -25,11 +25,9 @@ using namespace utils;
 
 namespace interp {
 
-TeeWriter::TeeWriter() : Writer(true) {
-}
+TeeWriter::TeeWriter() : Writer(true) {}
 
-TeeWriter::~TeeWriter() {
-}
+TeeWriter::~TeeWriter() {}
 
 void TeeWriter::add(std::shared_ptr<Writer> NodeWriter,
                     bool DefinesStreamType,
@@ -45,8 +43,7 @@ TeeWriter::Node::Node(std::shared_ptr<Writer> NodeWriter,
                       bool TraceNode)
     : NodeWriter(NodeWriter),
       TraceNode(TraceNode),
-      DefinesStreamType(DefinesStreamType) {
-}
+      DefinesStreamType(DefinesStreamType) {}
 
 void TeeWriter::reset() {
   for (Node& Nd : Writers)

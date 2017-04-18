@@ -39,8 +39,7 @@ AbbreviationCodegen::AbbreviationCodegen(const CompressionFlags& Flags,
       Root(Root),
       EncodingRoot(EncodingRoot),
       Assignments(Assignments),
-      ToRead(ToRead) {
-}
+      ToRead(ToRead) {}
 
 Node* AbbreviationCodegen::generateHeader(NodeType Type,
                                           uint32_t MagicNumber,
@@ -78,8 +77,7 @@ void AbbreviationCodegen::generateAlgorithm(Node* SourceHeader,
 }
 #endif
 
-AbbreviationCodegen::~AbbreviationCodegen() {
-}
+AbbreviationCodegen::~AbbreviationCodegen() {}
 
 #if 0
 Node* AbbreviationCodegen::generateBody() {

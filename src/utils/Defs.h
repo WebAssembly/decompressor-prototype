@@ -21,13 +21,13 @@
 #define DECOMPRESSOR_SRC_DEFS_H
 
 #include <cassert>
+#include <cctype>
 #include <cinttypes>
 #include <climits>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
-#include <cctype>
 
 #include <limits>
 #include <memory>
@@ -66,7 +66,7 @@ inline bool isDebug() {
 #endif
 
 template <class T, size_t N>
-size_t size(T(&)[N]) {
+size_t size(T (&)[N]) {
   return N;
 }
 

@@ -30,11 +30,9 @@ using namespace filt;
 
 namespace interp {
 
-WriteStream::WriteStream(decode::StreamType Type) : Type(Type) {
-}
+WriteStream::WriteStream(decode::StreamType Type) : Type(Type) {}
 
-WriteStream::~WriteStream() {
-}
+WriteStream::~WriteStream() {}
 
 void WriteStream::writeBit(uint8_t Value, WriteCursor& Pos) {
   Pos.writeBit(Value);
