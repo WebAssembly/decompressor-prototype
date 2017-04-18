@@ -17,6 +17,7 @@
 // Implements an s-exprssion code generator for abbreviations.
 
 #include "intcomp/AbbreviationCodegen.h"
+#include "algorithms/cism0x0.h"
 
 #include <algorithm>
 
@@ -65,6 +66,7 @@ Node* AbbreviationCodegen::generateHeader(NodeType Type,
   return Header;
 }
 
+#if 0
 void AbbreviationCodegen::generateAlgorithm(Node* SourceHeader,
                                             Node* TargetHeader) {
   auto* Alg = Symtab->create<Algorithm>();
@@ -74,13 +76,16 @@ void AbbreviationCodegen::generateAlgorithm(Node* SourceHeader,
   Symtab->setAlgorithm(Alg);
   Symtab->install();
 }
+#endif
 
 AbbreviationCodegen::~AbbreviationCodegen() {
 }
 
+#if 0
 Node* AbbreviationCodegen::generateBody() {
   return generateStartFunction();
 }
+#endif
 
 Node* AbbreviationCodegen::generateStartFunction() {
   auto* Fcn = Symtab->create<Define>();
@@ -217,13 +222,29 @@ Node* AbbreviationCodegen::generateIntLitActionWrite(IntCountNode* Nd) {
 
 std::shared_ptr<SymbolTable> AbbreviationCodegen::getCodeSymtab() {
   Symtab = std::make_shared<SymbolTable>();
-  generateAlgorithm(generateHeader(NodeType::SourceHeader, CasmBinaryMagic,
-                                   CasmBinaryVersion),
-                    Flags.UseCismModel
-                        ? generateHeader(NodeType::ReadHeader, CismBinaryMagic,
-                                         CismBinaryVersion)
-                        : generateHeader(NodeType::ReadHeader, WasmBinaryMagic,
-                                         WasmBinaryVersionD));
+  auto* Alg = Symtab->create<Algorithm>();
+  Alg->append(generateHeader(NodeType::SourceHeader, CasmBinaryMagic,
+                             CasmBinaryVersion));
+  if (Flags.UseCismModel) {
+    Symtab->setEnclosingScope(getAlgcism0x0Symtab());
+    if (ToRead) {
+      Alg->append(generateHeader(NodeType::WriteHeader, WasmBinaryMagic,
+                                 WasmBinaryVersionD));
+    } else {
+      Alg->append(generateHeader(NodeType::ReadHeader, WasmBinaryMagic,
+                                 WasmBinaryVersionD));
+      Alg->append(generateHeader(NodeType::WriteHeader, CismBinaryMagic,
+                                 CismBinaryVersion));
+    }
+    // TODO: Change this since we now inherit!
+    Alg->append(generateStartFunction());
+  } else {
+    Alg->append(generateHeader(NodeType::ReadHeader, WasmBinaryMagic,
+                               WasmBinaryVersionD));
+    Alg->append(generateStartFunction());
+  }
+  Symtab->setAlgorithm(Alg);
+  Symtab->install();
   return Symtab;
 }
 

@@ -52,8 +52,10 @@ class AbbreviationCodegen {
   filt::Node* generateHeader(filt::NodeType Type,
                              uint32_t MagicNumber,
                              uint32_t VersionNumber);
+#if 0
   void generateAlgorithm(filt::Node* SourceHeader, filt::Node* TargetHeader);
   filt::Node* generateBody();
+#endif
   filt::Node* generateStartFunction();
   filt::Node* generateAbbreviationRead();
   filt::Node* generateSwitchStatement();

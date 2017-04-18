@@ -244,11 +244,12 @@ std::shared_ptr<SymbolTable> IntCompressor::generateCode(
     bool ToRead,
     bool Trace) {
   TRACE_METHOD("generateCode");
+  TRACE(bool, "ToRead", ToRead);
   AbbreviationCodegen Codegen(MyFlags, Root, EncodingRoot, Assignments, ToRead);
   std::shared_ptr<SymbolTable> Symtab = Codegen.getCodeSymtab();
   if (Trace) {
     TextWriter Writer;
-    Writer.write(stderr, Symtab->getAlgorithm());
+    Writer.write(stderr, Symtab);
   }
   return Symtab;
 }

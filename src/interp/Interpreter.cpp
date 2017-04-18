@@ -718,18 +718,21 @@ void Interpreter::algorithmResume() {
                   return throwMessage(
                       "Format header contains badly formed constant");
                 IntTypeFormat TypeFormat = Lit->getIntTypeFormat();
-                IntType FoundValue;
-                if (!Input->readHeaderValue(TypeFormat, FoundValue)) {
-                  TRACE(IntType, "Found", FoundValue);
-                  return throwMessage("Unable to read header value");
+                if (hasReadMode()) {
+                  IntType FoundValue;
+                  if (!Input->readHeaderValue(TypeFormat, FoundValue)) {
+                    TRACE(IntType, "Found", FoundValue);
+                    return throwMessage("Unable to read header value");
+                  }
+                  if (errorsFound())
+                    return;
+                  if (WantedValue != FoundValue)
+                    return throwBadHeaderValue(WantedValue, FoundValue,
+                                               Lit->getFormat());
                 }
-                if (errorsFound())
-                  return;
-                if (WantedValue != FoundValue)
-                  return throwBadHeaderValue(WantedValue, FoundValue,
-                                             Lit->getFormat());
-                if (hasWriteMode())
-                  Output->writeHeaderValue(FoundValue, TypeFormat);
+                if (hasWriteMode()) {
+                  Output->writeHeaderValue(WantedValue, TypeFormat);
+                }
                 break;
               }
               case State::Catch:
@@ -1585,10 +1588,18 @@ void Interpreter::algorithmResume() {
             if (!isa<Header>(Hdr))
               return fail("Can't find matching header definition");
             Frame.CallState = State::Step2;
-            call(Method::Eval, Frame.CallModifier, Hdr);
+            call(Method::Eval, MethodModifier::ReadOnly, Hdr);
             break;
           }
           case State::Step2: {
+            Frame.CallState = State::Step3;
+            const Node* Hdr = Symtab->getWriteHeader();
+            if (!isa<Header>(Hdr))
+              return fail("Can't find matching header definition");
+            call(Method::Eval, MethodModifier::WriteOnly, Hdr);
+            break;
+          }
+          case State::Step3: {
             Frame.CallState = State::Exit;
             if (!Output->writeHeaderClose())
               return fail("Unable to write header");
