@@ -593,15 +593,20 @@ void Interpreter::handleOtherMethods() {
 
 std::shared_ptr<SymbolTable> Interpreter::getDefaultAlgorithm(
     const Node* Header) {
+  TRACE_METHOD("getDefaultAlgorithm");
+  TRACE(node_ptr, "Header", Header);
   for (std::shared_ptr<AlgorithmSelector>& Sel : Selectors) {
     std::shared_ptr<SymbolTable> Symtab = Sel->getSymtab();
     const Node* Target = Symtab->getReadHeader();
     if (Header == Target)
       // In same algorithm, ignore.
       continue;
-    if (*Header == *Target)
+    if (*Header == *Target) {
+      TRACE_MESSAGE("Found default");
       return Symtab;
+    }
   }
+  TRACE_MESSAGE("No default found");
   return std::shared_ptr<SymbolTable>();
 }
 

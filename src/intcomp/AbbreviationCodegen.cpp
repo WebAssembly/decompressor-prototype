@@ -226,6 +226,8 @@ std::shared_ptr<SymbolTable> AbbreviationCodegen::getCodeSymtab() {
   if (Flags.UseCismModel) {
     Symtab->setEnclosingScope(getAlgcism0x0Symtab());
     if (ToRead) {
+      Alg->append(generateHeader(NodeType::ReadHeader, CismBinaryMagic,
+                                 CismBinaryVersion));
       Alg->append(generateHeader(NodeType::WriteHeader, WasmBinaryMagic,
                                  WasmBinaryVersionD));
     } else {
