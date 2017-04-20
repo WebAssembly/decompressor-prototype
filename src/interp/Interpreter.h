@@ -83,6 +83,7 @@ class Interpreter {
   void setSymbolTable(std::shared_ptr<filt::SymbolTable> NewSymtab) {
     Symtab = NewSymtab;
   }
+  void resetSymbolTable() { Symtab.reset(); }
 
   bool getFreezeEofAtExit() { return FreezeEofAtExit; }
   void setFreezeEofAtExit(bool NewValue) { FreezeEofAtExit = NewValue; }

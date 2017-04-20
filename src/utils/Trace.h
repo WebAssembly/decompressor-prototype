@@ -26,7 +26,7 @@
 
 #ifdef NDEBUG
 
-#define TRACE_METHOD_USING(Name, Trace)
+#define TRACE_METHOD_USING(Trace, Name)
 #define TRACE_METHOD(Name)
 #define TRACE_USING(trace, type, name, value)
 #define TRACE(type, name, value)
@@ -45,9 +45,9 @@
 
 #else
 
-#define TRACE_METHOD_USING(name, trace) \
+#define TRACE_METHOD_USING(trace, name) \
   wasm::utils::TraceClass::Method tracEmethoD((name), (trace))
-#define TRACE_METHOD(name) TRACE_METHOD_USING(name, getTrace())
+#define TRACE_METHOD(name) TRACE_METHOD_USING(getTrace(), (name))
 #define TRACE_USING(trace, type, name, value) \
   do {                                        \
     auto& tracE = (trace);                    \

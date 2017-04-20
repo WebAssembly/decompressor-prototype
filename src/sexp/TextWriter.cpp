@@ -86,6 +86,10 @@ void TextWriter::writeName(NodeType Type) {
 }
 
 void TextWriter::write(FILE* File, SymbolTable* Symtab) {
+  if (Symtab == nullptr) {
+    fprintf(File, "nullptr\n");
+    return;
+  }
   write(File, Symtab->getAlgorithm());
   Symtab = Symtab->getEnclosingScope().get();
   while (Symtab != nullptr) {

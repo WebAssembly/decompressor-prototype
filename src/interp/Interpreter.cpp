@@ -595,13 +595,22 @@ std::shared_ptr<SymbolTable> Interpreter::getDefaultAlgorithm(
     const Node* Header) {
   TRACE_METHOD("getDefaultAlgorithm");
   TRACE(node_ptr, "Header", Header);
+  int HeaderSize = Header->getNumKids();
   for (std::shared_ptr<AlgorithmSelector>& Sel : Selectors) {
     std::shared_ptr<SymbolTable> Symtab = Sel->getSymtab();
     const Node* Target = Symtab->getReadHeader();
-    if (Header == Target)
-      // In same algorithm, ignore.
+    // Note: Ignore type of header. Rather do a structural compare of the
+    // values.
+    if (HeaderSize != Target->getNumKids())
       continue;
-    if (*Header == *Target) {
+    bool Matches = true;  // until proven otherwise
+    for (int i = 0; i < HeaderSize; ++i) {
+      if (*Header->getKid(i) == *Target->getKid(i))
+        continue;
+      Matches = false;
+      break;
+    }
+    if (Matches) {
       TRACE_MESSAGE("Found default");
       return Symtab;
     }
@@ -1518,7 +1527,7 @@ void Interpreter::algorithmResume() {
             if (Flags.TraceAppliedAlgorithms) {
               fprintf(stderr, "Applying Algorithm:\n");
               TextWriter Writer;
-              (++Writer).write(stderr, Symtab.get());
+              (++Writer).write(stderr, Symtab);
             }
             call(Method::GetFile, Frame.CallModifier, Frame.Nd);
             break;
