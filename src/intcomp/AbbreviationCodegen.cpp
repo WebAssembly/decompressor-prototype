@@ -39,7 +39,13 @@ AbbreviationCodegen::AbbreviationCodegen(const CompressionFlags& Flags,
       Root(Root),
       EncodingRoot(EncodingRoot),
       Assignments(Assignments),
-      ToRead(ToRead) {}
+      ToRead(ToRead),
+      CategorizeName("categorize"),
+      OpcodeName("opcode"),
+      ProcessName("process"),
+      OldName(".old") {}
+
+AbbreviationCodegen::~AbbreviationCodegen() {}
 
 Node* AbbreviationCodegen::generateHeader(NodeType Type,
                                           uint32_t MagicNumber,
@@ -65,25 +71,22 @@ Node* AbbreviationCodegen::generateHeader(NodeType Type,
   return Header;
 }
 
-#if 0
-void AbbreviationCodegen::generateAlgorithm(Node* SourceHeader,
-                                            Node* TargetHeader) {
-  auto* Alg = Symtab->create<Algorithm>();
-  Alg->append(SourceHeader);
-  Alg->append(TargetHeader);
-  Alg->append(generateBody());
-  Symtab->setAlgorithm(Alg);
-  Symtab->install();
+void AbbreviationCodegen::generateFunctions(Algorithm* Alg) {
+  if (Flags.UseCismModel) {
+    Alg->append(
+        generateRename(Symtab->getOrCreateSymbol(CategorizeName),
+                       Symtab->getOrCreateSymbol(CategorizeName + OldName)));
+    Alg->append(
+        generateRename(Symtab->getOrCreateSymbol(OpcodeName),
+                       Symtab->getOrCreateSymbol(OpcodeName + OldName)));
+  }
+  Alg->append(generateStartFunction());
 }
-#endif
 
-AbbreviationCodegen::~AbbreviationCodegen() {}
-
-#if 0
-Node* AbbreviationCodegen::generateBody() {
-  return generateStartFunction();
+Node* AbbreviationCodegen::generateRename(filt::Symbol* From,
+                                          filt::Symbol* To) {
+  return Symtab->create<Rename>(From, To);
 }
-#endif
 
 Node* AbbreviationCodegen::generateStartFunction() {
   auto* Fcn = Symtab->create<Define>();
@@ -236,13 +239,11 @@ std::shared_ptr<SymbolTable> AbbreviationCodegen::getCodeSymtab() {
       Alg->append(generateHeader(NodeType::WriteHeader, CismBinaryMagic,
                                  CismBinaryVersion));
     }
-    // TODO: Change this since we now inherit!
-    Alg->append(generateStartFunction());
   } else {
     Alg->append(generateHeader(NodeType::ReadHeader, WasmBinaryMagic,
                                WasmBinaryVersionD));
-    Alg->append(generateStartFunction());
   }
+  generateFunctions(Alg);
   Symtab->setAlgorithm(Alg);
   Symtab->install();
   return Symtab;
