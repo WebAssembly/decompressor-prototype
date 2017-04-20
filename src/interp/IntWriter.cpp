@@ -152,6 +152,10 @@ bool IntWriter::writeFreezeEof() {
 }
 
 bool IntWriter::writeHeaderValue(IntType Value, IntTypeFormat Format) {
+#if 0
+  fprintf(stderr, "Appending %" PRIuMAX "\n", uintmax_t(Value));
+  Output->describe(stderr);
+#endif
   Output->appendHeader(Value, Format);
   return true;
 }

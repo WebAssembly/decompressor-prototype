@@ -63,12 +63,10 @@ std::shared_ptr<SymbolTable> DecompressSelector::getSymtab() {
 }
 
 bool DecompressSelector::configure(Interpreter* R) {
-  TRACE_USING(R->getTrace(), bool, "IsAlgorithm", IsAlgorithm);
   return IsAlgorithm ? configureAlgorithm(R) : configureData(R);
 }
 
 bool DecompressSelector::configureAlgorithm(Interpreter* R) {
-  State->OrigSymtab = R->getSymbolTable();
   R->setSymbolTable(Symtab);
   State->OrigWriter = R->getWriter();
   State->Inflator = std::make_shared<InflateAst>();
@@ -78,15 +76,18 @@ bool DecompressSelector::configureAlgorithm(Interpreter* R) {
 }
 
 bool DecompressSelector::applyDataAlgorithm(Interpreter* R) {
-  // Assume this is the last algorithm to apply.
-  State->OrigSymtab = R->getSymbolTable();
   R->setSymbolTable(Symtab);
   return true;
 }
 
 bool DecompressSelector::applyNextQueuedAlgorithm(Interpreter* R) {
-  State->OrigSymtab = R->getSymbolTable();
-  R->setSymbolTable(State->AlgQueue.front());
+  SymbolTable::SharedPtr NextSymtab = State->AlgQueue.front();
+  R->setSymbolTable(NextSymtab);
+  State->AlgQueue.pop();
+  if (State->AlgQueue.empty())
+    // Define algorithm to convert from integer stream to binary stream.
+    State->FinalSymtab =
+        State->MyInterpreter->getDefaultAlgorithm(NextSymtab->getWriteHeader());
   State->OrigWriter = R->getWriter();
   State->IntermediateStream = std::make_shared<IntStream>();
   R->setWriter(std::make_shared<IntWriter>(State->IntermediateStream));
@@ -102,53 +103,43 @@ bool DecompressSelector::configureData(Interpreter* R) {
 }
 
 bool DecompressSelector::reset(Interpreter* R) {
+  R->resetSymbolTable();
   return IsAlgorithm ? resetAlgorithm(R) : resetData(R);
 }
 
 bool DecompressSelector::resetAlgorithm(Interpreter* R) {
-  R->setSymbolTable(State->OrigSymtab);
-  State->OrigSymtab.reset();
   R->setWriter(State->OrigWriter);
   State->OrigWriter->reset();
-  assert(State->Inflator);
-  Algorithm* Root = State->Inflator->getGeneratedFile();
-  if (Root == nullptr) {
-    State->Inflator.reset();
+  if (!State->Inflator)
     return false;
-  }
+  Algorithm* Root = State->Inflator->getGeneratedFile();
   std::shared_ptr<SymbolTable> Algorithm = State->Inflator->getSymtab();
+  State->Inflator.reset();
+  if (Root == nullptr)
+    return false;
   constexpr bool UseEnclosing = true;
   Algorithm->setEnclosingScope(State->MyInterpreter->getDefaultAlgorithm(
       Root->getReadHeader(!UseEnclosing)));
   Algorithm->install();
   State->AlgQueue.push(Algorithm);
-  State->Inflator.reset();
   return true;
 }
 
 bool DecompressSelector::resetData(Interpreter* R) {
-  if (State->AlgQueue.empty()) {
-    // TODO(karlschimpf): Why must we null the symbol table?
-    std::shared_ptr<SymbolTable> NullSymtab;
-    R->setSymbolTable(NullSymtab);
-    State->OrigSymtab.reset();
+  if (!State->IntermediateStream)
+    // No decompression applied, just did copy of input. so done!
     return true;
-  }
+  // Convert intermediate stream back to binary using final symbol table.
   R->setWriter(State->OrigWriter);
   State->OrigWriter.reset();
-  if (State->AlgQueue.empty()) {
-    // Last run was data algorith to generate final output.
-    R->setSymbolTable(State->OrigSymtab);
-    State->OrigSymtab.reset();
-    // TODO(karlschimpf) Where do we check input for eof?
-    return true;
-  }
-  // Last run was algorithm on front of queue.
-  State->AlgQueue.pop();
-  assert(State->IntermediateStream);
   auto Input = std::make_shared<IntReader>(State->IntermediateStream);
+  State->IntermediateStream.reset();
   R->setInput(Input);
-  return configureData(R);
+  if (!State->FinalSymtab)
+    return false;
+  R->setSymbolTable(State->FinalSymtab);
+  State->FinalSymtab.reset();
+  return true;
 }
 
 }  // end of namespace interp

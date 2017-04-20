@@ -57,8 +57,8 @@ class DecompAlgState : public std::enable_shared_from_this<DecompAlgState> {
  private:
   Interpreter* MyInterpreter;
   std::queue<std::shared_ptr<filt::SymbolTable>> AlgQueue;
+  std::shared_ptr<filt::SymbolTable> FinalSymtab;
   std::shared_ptr<filt::InflateAst> Inflator;
-  std::shared_ptr<filt::SymbolTable> OrigSymtab;
   std::shared_ptr<Writer> OrigWriter;
   std::shared_ptr<IntStream> IntermediateStream;
 };

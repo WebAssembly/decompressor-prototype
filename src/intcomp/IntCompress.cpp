@@ -107,7 +107,6 @@ void IntCompressor::writeDataOutput(const BitWriteCursor& StartPos,
                        MyFlags.MyInterpFlags, Symtab);
   if (MyFlags.TraceWritingDataOutput)
     MyReader.getTrace().setTraceProgress(true);
-  MyReader.useFileHeader(Symtab->getReadHeader());
   MyReader.algorithmStart();
   MyReader.algorithmReadBackFilled();
   bool Successful = MyReader.isFinished() && MyReader.isSuccessful();
