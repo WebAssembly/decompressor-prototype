@@ -1937,7 +1937,7 @@ bool Algorithm::validateNode(ConstNodeVectorType& Parents) const {
   WriteHdr = nullptr;
   IsAlgorithmSpecified = false;
   for (const Node* Kid : *this) {
-    switch (NodeType Opcode = Kid->getType()) {
+    switch (Kid->getType()) {
       case NodeType::SourceHeader:
         if (SourceHdr) {
           errorDescribeNode("Duplicate source header", Kid);
