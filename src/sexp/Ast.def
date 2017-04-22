@@ -119,7 +119,7 @@
   X(SymbolDefn,        0x100, "symbol.defn",     0, 0, false, false)           \
   X(IntLookup,         0x101, "int.lookup",      0, 0, false, false)           \
 
-//#define X(NAME, BASE, NODE_DECLS, INIT)
+//#define X(NAME, BASE, DECLS, INIT)
 // where:
 //   NAME: Class/enum node type name
 //   BASE: Base class for node class.
@@ -181,21 +181,27 @@
   public:                                                                      \
     bool validateNode(ConstNodeVectorType &Parents) const OVERRIDE;            \
 
-//#define X(tag, BASE, NODE_DECLS)
+//#define X(NAME, BASE, DECLS, INIT)
+// where:
+//   NAME: Class/enum node type name
+//   BASE: Base class for node class.
+//   DECLS: Other declarations for the node.
+//   INIT: code to run in the body of the constructors to finish
+//         initialization
 #define AST_UNARYNODE_TABLE                                                    \
-  X(AlgorithmFlag, Unary,)                                                     \
-  X(Block, Unary,)                                                             \
-  X(BitwiseNegate, Unary,)                                                     \
-  X(Callback, Unary, CALLBACK_DECLS)                                           \
-  X(LastSymbolIs, Unary,)                                                      \
-  X(LiteralActionUse, Unary, LITERALACTIONUSE_DECLS)                           \
-  X(LiteralUse, Unary, LITERALUSE_DECLS)                                       \
-  X(LoopUnbounded, Unary,)                                                     \
-  X(Not, Unary,)                                                               \
-  X(Peek, Unary,)                                                              \
-  X(Read, Unary,)                                                              \
-  X(Undefine, Unary,)                                                          \
-  X(UnknownSection, Unary,)                                                    \
+  X(AlgorithmFlag, Unary,,)                                                    \
+  X(Block, Unary,,)                                                            \
+  X(BitwiseNegate, Unary,,)                                                    \
+  X(Callback, Unary, CALLBACK_DECLS,)                                          \
+  X(LastSymbolIs, Unary,,)                                                     \
+  X(LiteralActionUse, Unary, LITERALACTIONUSE_DECLS,)                          \
+  X(LiteralUse, Unary, LITERALUSE_DECLS,)                                      \
+  X(LoopUnbounded, Unary,,)                                                    \
+  X(Not, Unary,,)                                                              \
+  X(Peek, Unary,,)                                                             \
+  X(Read, Unary,,)                                                             \
+  X(Undefine, Unary,,)                                                         \
+  X(UnknownSection, Unary,,)                                                   \
 
 #define CALLBACK_DECLS                                                         \
   public:                                                                      \
@@ -213,22 +219,28 @@
   const IntegerNode* getIntNode() const;                                       \
   bool validateNode(ConstNodeVectorType &Parents) const OVERRIDE;              \
 
-//#define X(tag, BASE, NODE_DECLS)
+//#define X(NAME, BASE, DECLS, INIT)
+// where:
+//   NAME: Class/enum node type name
+//   BASE: Base class for node class.
+//   DECLS: Other declarations for the node.
+//   INIT: code to run in the body of the constructors to finish
+//         initialization
 #define AST_BINARYNODE_TABLE                                                   \
-  X(And, Binary,)                                                              \
-  X(BinarySelect, Binary,)                                                     \
-  X(BitwiseAnd, Binary,)                                                       \
-  X(BitwiseOr, Binary,)                                                        \
-  X(BitwiseXor, Binary,)                                                       \
-  X(Case, Binary, CASE_DECLS)                                                  \
-  X(IfThen, Binary,)                                                           \
-  X(LiteralActionDef, Binary,)                                                 \
-  X(LiteralDef, Binary,)                                                       \
-  X(Loop, Binary,)                                                             \
-  X(Or, Binary,)                                                               \
-  X(Rename, Binary,)                                                           \
-  X(Set, Binary,)                                                              \
-  X(Table, Binary,)                                                            \
+  X(And, Binary,,)                                                             \
+  X(BinarySelect, Binary,,)                                                    \
+  X(BitwiseAnd, Binary,,)                                                      \
+  X(BitwiseOr, Binary,,)                                                       \
+  X(BitwiseXor, Binary,,)                                                      \
+  X(Case, Binary, CASE_DECLS,)                                                 \
+  X(IfThen, Binary,,)                                                          \
+  X(LiteralActionDef, Binary,,)                                                \
+  X(LiteralDef, Binary,,)                                                      \
+  X(Loop, Binary,,)                                                            \
+  X(Or, Binary,,)                                                              \
+  X(Rename, Binary,,)                                                          \
+  X(Set, Binary,,)                                                             \
+  X(Table, Binary,,)                                                           \
 
 #define CASE_DECLS                                                             \
   public:                                                                      \
@@ -239,12 +251,24 @@
     mutable decode::IntType Value;                                             \
     mutable const Node* CaseBody;                                              \
 
-//#define X(tag, NODE_DECLS)
+//#define X(NAME, BASE, DECLS, INIT)
+// where:
+//   NAME: Class/enum node type name
+//   BASE: Base class for node class.
+//   DECLS: Other declarations for the node.
+//   INIT: code to run in the body of the constructors to finish
+//         initialization
 #define AST_SELECTNODE_TABLE                                                   \
-  X(Switch,)                                                                   \
-  X(Map,)                                                                      \
+  X(Switch, SelectBase,,)                                                      \
+  X(Map, SelectBase,,)                                                         \
 
-//#define X(tag, BASE, NODE_DECLS, CTR_INIT)
+//#define X(NAME, BASE, DECLS, INIT)
+// where:
+//   NAME: Class/enum node type name
+//   BASE: Base class for node class.
+//   DECLS: Other declarations for the node.
+//   INIT: code to run in the body of the constructors to finish
+//         initialization
 #define AST_NARYNODE_TABLE                                                     \
   X(Algorithm, Nary, ALGORITHM_DECLS, init();)                                 \
   X(Define, Nary, DEFINE_DECLS,)                                               \
@@ -284,11 +308,19 @@
   Symbol* getCallName() const;                                                 \
   bool validateNode(ConstNodeVectorType &Parents) const OVERRIDE;              \
 
-//#define X(tag, BASE, NODE_DECLS)
+//#define X(NAME, BASE, DECLS, INIT)
+// where:
+//   NAME: Class/enum node type name
+//   BASE: Base class for node class.
+//   DECLS: Other declarations for the node.
+//   INIT: code to run in the body of the constructors to finish
+//         initialization
 #define AST_TERNARYNODE_TABLE                                                  \
-  X(IfThenElse, Ternary,)                                                      \
+  X(IfThenElse, Ternary,,)                                                     \
 
-//#define X(tag)
+//#define X(NAME)
+// where:
+//   NAME: Class/enum node type name
 #define AST_CACHEDNODE_TABLE                                                   \
   X(SymbolDefn)                                                                \
   X(IntLookup)                                                                 \
