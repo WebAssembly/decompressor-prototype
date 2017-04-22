@@ -162,6 +162,7 @@ void FlattenAst::flattenNode(const Node* Nd) {
     case NodeType::NO_SUCH_NODETYPE:
     case NodeType::BinaryEvalBits:
     case NodeType::IntLookup:
+    case NodeType::SourceType:
     case NodeType::SymbolDefn:
     case NodeType::UnknownSection: {
       reportError("Unexpected s-expression, can't write!");

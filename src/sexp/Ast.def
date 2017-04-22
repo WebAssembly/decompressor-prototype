@@ -110,6 +110,7 @@
   X(SourceHeader,      0x77, "header",           0, 3, true,  false)           \
   X(ReadHeader,        0x78, "header.read",      0, 3, true,  false)           \
   X(WriteHeader,       0x79, "header.write",     0, 3, true,  false)           \
+  X(SourceType,        0x80, "source.type",      0, 0, false, false)           \
                                                                                \
   /* Internal (not opcodes in compressed file) */                              \
   X(UnknownSection,    0xFF, "unknown.section",  1, 0, true,  false)           \
@@ -129,6 +130,15 @@
   X(Varuint32, Nullary,)                                                       \
   X(Varuint64, Nullary,)                                                       \
   X(Void, Nullary,)                                                            \
+  X(SourceType, Nullary, SOURCE_TYPE_DECLS)                                    \
+
+#define SOURCE_TYPE_DECLS                                                      \
+ public:                                                                       \
+  bool getIsAlgorithm() const { return IsAlgorithm; }                          \
+  void setIsAlgorithm(bool Value) {  IsAlgorithm = Value; }                    \
+ private:                                                                      \
+  bool IsAlgorithm = false;                                                    \
+  
 
 //#define X(tag, defval, mergable, BASE, NODE_DECLS)
 // where:
@@ -236,7 +246,14 @@
     const Header* getSourceHeader(bool UseEnclosing=true) const;               \
     const Header* getReadHeader(bool UseEnclosing=true) const;                 \
     const Header* getWriteHeader(bool UseEnclosing=true) const;                \
+    bool isAlgorithm() const { return IsAlgorithmSpecified; }                  \
     bool validateNode(ConstNodeVectorType &Parents) const OVERRIDE;            \
+  private:                                                                     \
+    mutable const Header* SourceHdr = nullptr;                                 \
+    mutable const Header* ReadHdr = nullptr;                                   \
+    mutable const Header* WriteHdr = nullptr;                                  \
+    mutable bool IsAlgorithmSpecified = false;                                 \
+    mutable bool IsValidated = false;                                          \
 
 #define DEFINE_DECLS                                                           \
   public:                                                                      \

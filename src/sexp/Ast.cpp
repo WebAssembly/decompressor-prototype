@@ -1814,60 +1814,64 @@ bool Eval::validateNode(ConstNodeVectorType& Parents) const {
 }
 
 const Header* Algorithm::getSourceHeader(bool UseEnclosing) const {
-  for (const Node* Kid : *this) {
-    if (!isa<SourceHeader>(Kid))
-      continue;
-    return cast<SourceHeader>(Kid);
+  if (SourceHdr != nullptr)
+    return SourceHdr;
+  if (!UseEnclosing && !IsValidated) {
+    // Note: this function must work, even if not installed. The reason
+    // is that the decompressor must look up the read header to find
+    // the appropriate enclosing algorithm, which must be done before
+    // the algorithm is installed.
+    for (const Node* Kid : *this) {
+      if (!isa<SourceHeader>(Kid))
+        continue;
+      return cast<SourceHeader>(Kid);
+    }
   }
   if (UseEnclosing) {
     for (SymbolTable* Sym = Symtab.getEnclosingScope().get(); Sym != nullptr;
          Sym = Sym->getEnclosingScope().get()) {
       const Algorithm* Alg = Sym->getAlgorithm();
-      for (const Node* Kid : *Alg) {
-        if (!isa<SourceHeader>(Kid))
-          continue;
-        return cast<SourceHeader>(Kid);
-      }
+      if (Alg->SourceHdr)
+          return Alg->SourceHdr;
     }
   }
   return nullptr;
 }
 
 const Header* Algorithm::getReadHeader(bool UseEnclosing) const {
-  for (const Node* Kid : *this) {
-    if (!isa<ReadHeader>(Kid))
-      continue;
-    return cast<ReadHeader>(Kid);
+  if (ReadHdr)
+    return ReadHdr;
+  if (!UseEnclosing && !IsValidated) {
+    // Note: this function must work, even if not installed. The reason
+    // is that the decompressor must look up the read header to find
+    // the appropriate enclosing algorithm, which must be done before
+    // the algorithm is installed.
+    for (const Node* Kid : *this) {
+      if (!isa<ReadHeader>(Kid))
+        continue;
+      return cast<ReadHeader>(Kid);
+    }
   }
   if (UseEnclosing) {
     for (SymbolTable* Sym = Symtab.getEnclosingScope().get(); Sym != nullptr;
          Sym = Sym->getEnclosingScope().get()) {
       const Algorithm* Alg = Sym->getAlgorithm();
-      for (const Node* Kid : *Alg) {
-        if (!isa<ReadHeader>(Kid))
-          continue;
-        return cast<ReadHeader>(Kid);
-      }
+      if (Alg->ReadHdr)
+        return Alg->ReadHdr;
     }
   }
   return getSourceHeader(UseEnclosing);
 }
 
 const Header* Algorithm::getWriteHeader(bool UseEnclosing) const {
-  for (const Node* Kid : *this) {
-    if (!isa<WriteHeader>(Kid))
-      continue;
-    return cast<WriteHeader>(Kid);
-  }
+  if (WriteHdr)
+    return WriteHdr;
   if (UseEnclosing) {
     for (SymbolTable* Sym = Symtab.getEnclosingScope().get(); Sym != nullptr;
          Sym = Sym->getEnclosingScope().get()) {
       const Algorithm* Alg = Sym->getAlgorithm();
-      for (const Node* Kid : *Alg) {
-        if (!isa<WriteHeader>(Kid))
-          continue;
-        return cast<WriteHeader>(Kid);
-      }
+      if (Alg->WriteHdr)
+        return Alg->WriteHdr;
     }
   }
   return getReadHeader(UseEnclosing);
@@ -1882,71 +1886,46 @@ bool Algorithm::validateNode(ConstNodeVectorType& Parents) const {
     errorDescribeContext(Parents);
     return false;
   }
-  const Node* Source = nullptr;
-  const Node* Read = nullptr;
-  const Node* Write = nullptr;
-  bool FoundOther = false;
-  bool FoundHeader = false;
-  if (hasKids()) {
-    if (!isa<SourceHeader>(getKid(0))) {
-      errorDescribeNode("Algorithm doesn't begin with a source header",
-                        getKid(0));
-      return false;
-    }
-  }
+  IsValidated = false;
+  SourceHdr = nullptr;
+  ReadHdr = nullptr;
+  WriteHdr = nullptr;
+  IsAlgorithmSpecified = false;
   for (const Node* Kid : *this) {
     switch (NodeType Opcode = Kid->getType()) {
       case NodeType::SourceHeader:
-      case NodeType::ReadHeader:
-      case NodeType::WriteHeader:
-        if (FoundOther) {
-          errorDescribeNode("Header nodes doesn't appear before declarations",
-                            Kid);
+        if (SourceHdr) {
+          errorDescribeNode("Duplicate source header", Kid);
+          errorDescribeNode("Original", SourceHdr);
           return false;
         }
-        FoundHeader = true;
-        switch (Opcode) {
-          default:
-            // This isn't possible, but compiler doesn't know it.
-            break;
-          case NodeType::SourceHeader:
-            if (Source) {
-              errorDescribeNode("Duplicate source header", Kid);
-              errorDescribeNode("Original", Source);
-              return false;
-            }
-            Source = Kid;
-            break;
-          case NodeType::ReadHeader:
-            if (Read) {
-              errorDescribeNode("Duplicate read header", Kid);
-              errorDescribeNode("Original", Source);
-              return false;
-            }
-            Read = Kid;
-            break;
-          case NodeType::WriteHeader:
-            if (Write) {
-              errorDescribeNode("Duplicate read header", Kid);
-              errorDescribeNode("Original", Source);
-              return false;
-            }
-            Write = Kid;
-            break;
+        SourceHdr = cast<SourceHeader>(Kid);
+        break;
+      case NodeType::ReadHeader:
+        if (ReadHdr) {
+          errorDescribeNode("Duplicate read header", Kid);
+          errorDescribeNode("Original", ReadHdr);
+          return false;
         }
+        ReadHdr = cast<ReadHeader>(Kid);
+        break;
+      case NodeType::WriteHeader:
+        if (WriteHdr) {
+          errorDescribeNode("Duplicate read header", Kid);
+          errorDescribeNode("Original", WriteHdr);
+          return false;
+        }
+        WriteHdr = cast<WriteHeader>(Kid);
         break;
       default:
-        FoundOther = true;
-        if (!FoundHeader) {
-          errorDescribeNode("Algorithm doesn't begin with a header", this);
-          return false;
-        }
+        break;
     }
   }
-  if (Source == nullptr) {
+  if (SourceHdr == nullptr) {
     errorDescribeNode("Algorithm doesn't have a source header", this);
     return false;
   }
+  IsValidated = true;
   return true;
 }
 

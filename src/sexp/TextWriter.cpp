@@ -218,14 +218,15 @@ void TextWriter::writeNode(const Node* Nd,
         break;
       writeNode(Nd->getKid(0), AddNewline, EmbedInParent);
       return;
+    case NodeType::SourceType:
+      return writeSourceType(cast<SourceType>(Nd), AddNewline);
+    case NodeType::Symbol:
+      return writeSymbol(cast<Symbol>(Nd), AddNewline);
     case NodeType::SymbolDefn: {
       Parenthesize _(this, Type, AddNewline);
       writeSpace();
       writeNode(cast<SymbolDefn>(Nd)->getSymbol(), false);
       return;
-    }
-    case NodeType::Symbol: {
-      return writeSymbolNode(cast<Symbol>(Nd), AddNewline);
     }
   }
   // Default case.
@@ -304,16 +305,18 @@ void TextWriter::writeNodeAbbrev(const Node* Nd,
       fprintf(File, "(%s ...)\n", getNodeName(Nd));
       return;
     }
-    case NodeType::Symbol:
-      return writeSymbolNode(cast<Symbol>(Nd), AddNewline);
-    case NodeType::SymbolDefn:
-      writeNode(Nd, AddNewline, EmbedInParent);
-      return;
     case NodeType::LiteralUse:
     case NodeType::LiteralActionUse:
       if (ShowInternalStructure)
         break;
       writeNodeAbbrev(Nd->getKid(0), AddNewline, EmbedInParent);
+      return;
+    case NodeType::SourceType:
+      return writeSourceType(cast<SourceType>(Nd), AddNewline);
+    case NodeType::Symbol:
+      return writeSymbol(cast<Symbol>(Nd), AddNewline);
+    case NodeType::SymbolDefn:
+      writeNode(Nd, AddNewline, EmbedInParent);
       return;
   }
   Parenthesize _(this, Type, AddNewline);
@@ -366,7 +369,7 @@ void TextWriter::writeSymbolName(std::string Name) {
   fputc('\'', File);
 }
 
-void TextWriter::writeSymbolNode(const Symbol* Sym, bool AddNewline) {
+void TextWriter::writeSymbol(const Symbol* Sym, bool AddNewline) {
   if (ShowInternalStructure) {
     Parenthesize _(this, Sym->getType(), AddNewline);
     writeSpace();
@@ -377,6 +380,13 @@ void TextWriter::writeSymbolNode(const Symbol* Sym, bool AddNewline) {
     LineEmpty = false;
   }
   return;
+}
+
+void TextWriter::writeSourceType(const SourceType* SrcTy, bool AddNewline) {
+  Parenthesize _(this, SrcTy->getType(), AddNewline);
+  writeSpace();
+  fprintf(File, "%s",
+          cast<SourceType>(SrcTy)->getIsAlgorithm() ? "algorithm" : "data");
 }
 
 void TextWriter::writeIntegerNode(const IntegerNode* Int, bool AddNewline) {

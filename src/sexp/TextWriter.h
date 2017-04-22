@@ -32,6 +32,7 @@ namespace filt {
 
 class Node;
 class IntegerNode;
+class SourceType;
 class Symbol;
 class SymbolTable;
 
@@ -116,7 +117,8 @@ class TextWriter {
                        bool EmbedInParent = false);
   void writeNodeKidsAbbrev(const Node* Node, bool EmbeddedInParent);
 
-  void writeSymbolNode(const Symbol* Sym, bool AddNewline);
+  void writeSourceType(const SourceType* SrcTy, bool AddNewline);
+  void writeSymbol(const Symbol* Sym, bool AddNewline);
   void writeSymbolName(std::string Name);
   void writeIntegerNode(const IntegerNode* Int, bool AddNewline);
 
