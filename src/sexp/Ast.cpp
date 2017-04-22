@@ -89,7 +89,7 @@ void errorDescribeNodeContext(const char* Message,
 }
 
 static const char* PredefinedName[NumPredefinedSymbols]{"Unknown"
-#define X(tag, name) , name
+#define X(NAME, name) , name
                                                         PREDEFINED_SYMBOLS_TABLE
 #undef X
 };
@@ -138,8 +138,8 @@ const char* getName(PredefinedSymbol Sym) {
 }
 
 AstTraitsType AstTraits[NumNodeTypes] = {
-#define X(tag, opcode, sexp_name, text_num_args, text_max_args, NSL, hidden) \
-  {NodeType::tag, #tag, sexp_name, text_num_args, text_max_args, NSL, hidden},
+#define X(NAME, opcode, sexp_name, text_num_args, text_max_args, NSL, hidden) \
+  {NodeType::NAME, #NAME, sexp_name, text_num_args, text_max_args, NSL, hidden},
     AST_OPCODE_TABLE
 #undef X
 };
@@ -428,7 +428,8 @@ bool Cached::implementsClass(NodeType Type) {
   switch (Type) {
     default:
       return false;
-#define X(tag) case NodeType::tag:
+#define X(NAME) \
+      case NodeType::NAME:
       AST_CACHEDNODE_TABLE
 #undef X
       return true;
@@ -720,40 +721,55 @@ Symbol* SymbolTable::getPredefined(PredefinedSymbol Sym) {
   return Nd;
 }
 
-#define X(tag, format, defval, mergable, BASE, NODE_DECLS)                 \
+#define X(NAME, FORMAT, DEFAULT, MERGE, BASE, DECLS, INIT)                 \
   template <>                                                              \
-  tag* SymbolTable::create<tag>(IntType Value, ValueFormat Format) {       \
-    if (mergable) {                                                        \
-      IntegerValue I(NodeType::tag, Value, Format, false);                 \
+  NAME* SymbolTable::create<NAME>(IntType Value, ValueFormat Format) {       \
+    if (MERGE) {                                                        \
+      IntegerValue I(NodeType::NAME, Value, Format, false);                 \
       BASE* Nd = IntMap[I];                                                \
       if (Nd == nullptr) {                                                 \
-        Nd = new tag(*this, Value, Format);                                \
+        Nd = new NAME(*this, Value, Format);                                \
         Allocated.push_back(Nd);                                           \
         IntMap[I] = Nd;                                                    \
       }                                                                    \
-      return dyn_cast<tag>(Nd);                                            \
+      return dyn_cast<NAME>(Nd);                                            \
     }                                                                      \
-    tag* Nd = new tag(*this, Value, Format);                               \
+    NAME* Nd = new NAME(*this, Value, Format);                               \
     Allocated.push_back(Nd);                                               \
     return Nd;                                                             \
   }                                                                        \
   template <>                                                              \
-  tag* SymbolTable::create<tag>() {                                        \
-    if (mergable) {                                                        \
-      IntegerValue I(NodeType::tag, (defval), ValueFormat::Decimal, true); \
+  NAME* SymbolTable::create<NAME>() {                                        \
+    if (MERGE) {                                                        \
+      IntegerValue I(NodeType::NAME, (DEFAULT), ValueFormat::Decimal, true); \
       BASE* Nd = IntMap[I];                                                \
       if (Nd == nullptr) {                                                 \
-        Nd = new tag(*this);                                               \
+        Nd = new NAME(*this);                                               \
         Allocated.push_back(Nd);                                           \
         IntMap[I] = Nd;                                                    \
       }                                                                    \
-      return dyn_cast<tag>(Nd);                                            \
+      return dyn_cast<NAME>(Nd);                                            \
     }                                                                      \
-    tag* Nd = new tag(*this);                                              \
+    NAME* Nd = new NAME(*this);                                              \
     Allocated.push_back(Nd);                                               \
     return Nd;                                                             \
   }
 AST_INTEGERNODE_TABLE
+#undef X
+
+#define X(NAME, BASE, VALUE, FORMAT, DECLS, INIT)                            \
+  template <>                                                              \
+  NAME* SymbolTable::create<NAME>() {                                        \
+    IntegerValue I(NodeType::NAME, (VALUE), ValueFormat::FORMAT, true); \
+    BASE* Nd = IntMap[I];                                                \
+    if (Nd == nullptr) {                                                 \
+      Nd = new NAME(*this);                                               \
+      Allocated.push_back(Nd);                                           \
+      IntMap[I] = Nd;                                                    \
+    }                                                                    \
+    return dyn_cast<NAME>(Nd);                                            \
+  }
+AST_LITERAL_TABLE
 #undef X
 
 bool SymbolTable::areActionsConsistent() {
@@ -1051,7 +1067,7 @@ Node* SymbolTable::stripUsing(Node* Nd, std::function<Node*(Node*)> stripKid) {
       for (int i = 0; i < Nd->getNumKids(); ++i)
         Nd->setKid(i, stripKid(Nd->getKid(i)));
       return Nd;
-#define X(tag, BASE, NODE_DECLS) case NodeType::tag:
+#define X(NAME, BASE, DECLS, INIT) case NodeType::NAME:
       AST_NARYNODE_TABLE
 #undef X
       {
@@ -1253,25 +1269,26 @@ bool Nullary::implementsClass(NodeType Type) {
   switch (Type) {
     default:
       return false;
-#define X(tag, BASE, NODE_DECLS) \
-  case NodeType::tag:            \
+#define X(NAME, BASE, DECLS, INIT)              \
+  case NodeType::NAME:            \
     return true;
       AST_NULLARYNODE_TABLE
 #undef X
   }
 }
 
-#define X(tag, BASE, NODE_DECLS) \
-  tag::tag(SymbolTable& Symtab) : BASE(Symtab, NodeType::tag) {}
+#define X(NAME, BASE, DECLS, INIT)                                      \
+  NAME::NAME(SymbolTable& Symtab) : BASE(Symtab, NodeType::NAME) { INIT }
 AST_NULLARYNODE_TABLE
 #undef X
 
-#define X(tag, BASE, NODE_DECLS) template tag* SymbolTable::create<tag>();
+#define X(NAME, BASE, DECLS, INIT) \
+  template NAME* SymbolTable::create<NAME>();
 AST_NULLARYNODE_TABLE
 #undef X
 
-#define X(tag, BASE, NODE_DECLS) \
-  tag::~tag() {}
+#define X(NAME, BASE, DECLS, INIT)                   \
+  NAME::~NAME() {}
 AST_NULLARYNODE_TABLE
 #undef X
 
@@ -1302,26 +1319,27 @@ bool Unary::implementsClass(NodeType Type) {
     default:
       return false;
     case NodeType::BinaryEval:
-#define X(tag, BASE, NODE_DECLS) \
-  case NodeType::tag:            \
+#define X(NAME, BASE, DECLS, INIT)     \
+  case NodeType::NAME:            \
     return true;
       AST_UNARYNODE_TABLE
 #undef X
   }
 }
 
-#define X(tag, BASE, NODE_DECLS) \
-  tag::tag(SymbolTable& Symtab, Node* Kid) : BASE(Symtab, NodeType::tag, Kid) {}
+#define X(NAME, BASE, DECLS, INIT)                                           \
+  NAME::NAME(SymbolTable& Symtab, Node* Kid) \
+      : BASE(Symtab, NodeType::NAME, Kid) { INIT }
 AST_UNARYNODE_TABLE
 #undef X
 
-#define X(tag, BASE, NODE_DECLS) \
-  template tag* SymbolTable::create<tag>(Node * Nd);
+#define X(NAME, BASE, DECLS, INIT)                           \
+  template NAME* SymbolTable::create<NAME>(Node * Nd);
 AST_UNARYNODE_TABLE
 #undef X
 
-#define X(tag, BASE, NODE_DECLS) \
-  tag::~tag() {}
+#define X(NAME, BASE, DECLS, INIT)                   \
+  NAME::~NAME() {}
 AST_UNARYNODE_TABLE
 #undef X
 
@@ -1416,30 +1434,47 @@ bool IntegerNode::implementsClass(NodeType Type) {
     default:
       return false;
     case NodeType::BinaryAccept:
-#define X(tag, format, defval, mergable, BASE, NODE_DECLS) case NodeType::tag:
+#define X(NAME, FORMAT, DEFAULT, MEGE, BASE, DECLS, INIT) \
+      case NodeType::NAME:
       AST_INTEGERNODE_TABLE
+#undef X
+#define X(NAME, BASE, VALUE, FORMAT, DECLS, INIT) \
+          case NodeType::NAME:
+      AST_LITERAL_TABLE
 #undef X
       return true;
   }
 }
 
-#define X(tag, format, defval, mergable, BASE, NODE_DECLS) \
-  tag::tag(SymbolTable& Symtab, decode::IntType Value,     \
-           decode::ValueFormat Format)                     \
-      : BASE(Symtab, NodeType::tag, Value, Format, false) {}
+#define X(NAME, FORMAT, DEFAULT, MERGE, BASE, DECLS, INIT)     \
+  NAME::NAME(SymbolTable& Symtab, decode::IntType Value,     \
+             decode::ValueFormat Format)                        \
+      : BASE(Symtab, NodeType::NAME, Value, Format, false) { INIT }
 AST_INTEGERNODE_TABLE
 #undef X
 
-#define X(tag, format, defval, mergable, BASE, NODE_DECLS)                  \
-  tag::tag(SymbolTable& Symtab)                                             \
-      : BASE(Symtab, NodeType::tag, (defval), decode::ValueFormat::Decimal, \
-             true) {}
+#define X(NAME, FORMAT, DEFAULT, MERGE, BASE, DECLS, INIT)                   \
+  NAME::NAME(SymbolTable& Symtab)                                             \
+      : BASE(Symtab, NodeType::NAME, (DEFAULT), decode::ValueFormat::Decimal, \
+             true) { INIT }
 AST_INTEGERNODE_TABLE
 #undef X
 
-#define X(tag, format, defval, mergable, BASE, NODE_DECLS) \
-  tag::~tag() {}
+#define X(NAME, FORMAT, DEFAULT, MERGE, BASE, DECLS, INIT)   \
+  NAME::~NAME() {}
 AST_INTEGERNODE_TABLE
+#undef X
+
+#define X(NAME, BASE, VALUE, FORMAT, DECLS, INIT)                            \
+  NAME::NAME(SymbolTable& Symtab)                                             \
+      : BASE(Symtab, NodeType::NAME, (VALUE), decode::ValueFormat::FORMAT,   \
+             true) { INIT }
+AST_LITERAL_TABLE
+#undef X
+
+#define X(NAME, BASE, VALUE, FORMAT, DECLS, INIT)    \
+  NAME::~NAME() {}
+AST_LITERAL_TABLE
 #undef X
 
 bool Local::validateNode(ConstNodeVectorType& Parents) const {
@@ -1601,27 +1636,27 @@ bool Binary::implementsClass(NodeType Type) {
   switch (Type) {
     default:
       return false;
-#define X(tag, BASE, NODE_DECLS) \
-  case NodeType::tag:            \
+#define X(NAME, BASE, DECLS, INIT)     \
+  case NodeType::NAME:            \
     return true;
       AST_BINARYNODE_TABLE
 #undef X
   }
 }
 
-#define X(tag, BASE, NODE_DECLS)                        \
-  tag::tag(SymbolTable& Symtab, Node* Kid1, Node* Kid2) \
-      : BASE(Symtab, NodeType::tag, Kid1, Kid2) {}
+#define X(NAME, BASE, DECLS, INIT)                             \
+  NAME::NAME(SymbolTable& Symtab, Node* Kid1, Node* Kid2) \
+      : BASE(Symtab, NodeType::NAME, Kid1, Kid2) { INIT }
 AST_BINARYNODE_TABLE
 #undef X
 
-#define X(tag, BASE, NODE_DECLS) \
-  template tag* SymbolTable::create<tag>(Node * Nd1, Node * Nd2);
+#define X(NAME, BASE, DECLS, INIT)                                           \
+  template NAME* SymbolTable::create<NAME>(Node * Nd1, Node * Nd2);
 AST_BINARYNODE_TABLE
 #undef X
 
-#define X(tag, BASE, NODE_DECLS) \
-  tag::~tag() {}
+#define X(NAME, BASE, DECLS, INIT)                   \
+  NAME::~NAME() {}
 AST_BINARYNODE_TABLE
 #undef X
 
@@ -1657,27 +1692,27 @@ bool Ternary::implementsClass(NodeType Type) {
   switch (Type) {
     default:
       return false;
-#define X(tag, BASE, NODE_DECLS) \
-  case NodeType::tag:            \
+#define X(NAME, BASE, DECLS, INIT)     \
+  case NodeType::NAME:            \
     return true;
       AST_TERNARYNODE_TABLE
 #undef X
   }
 }
 
-#define X(tag, BASE, NODE_DECLS)                                    \
-  tag::tag(SymbolTable& Symtab, Node* Kid1, Node* Kid2, Node* Kid3) \
-      : BASE(Symtab, NodeType::tag, Kid1, Kid2, Kid3) {}
+#define X(NAME, BASE, DECLS, INIT)                                         \
+  NAME::NAME(SymbolTable& Symtab, Node* Kid1, Node* Kid2, Node* Kid3) \
+      : BASE(Symtab, NodeType::NAME, Kid1, Kid2, Kid3) { INIT }
 AST_TERNARYNODE_TABLE
 #undef X
 
-#define X(tag, BASE, NODE_DECLS) \
-  template tag* SymbolTable::create<tag>(Node * Nd1, Node * Nd2, Node * Nd3);
+#define X(NAME, BASE, DECLS, INIT)                                           \
+  template NAME* SymbolTable::create<NAME>(Node * Nd1, Node * Nd2, Node * Nd3);
 AST_TERNARYNODE_TABLE
 #undef X
 
-#define X(tag, BASE, NODE_DECLS) \
-  tag::~tag() {}
+#define X(NAME, BASE, DECLS, INIT)                   \
+  NAME::~NAME() {}
 AST_TERNARYNODE_TABLE
 #undef X
 
@@ -1757,25 +1792,27 @@ bool Nary::implementsClass(NodeType Type) {
   switch (Type) {
     default:
       return false;
-#define X(tag, BASE, NODE_DECLS) \
-  case NodeType::tag:            \
+#define X(NAME, BASE, DECLS, INIT) \
+  case NodeType::NAME:            \
     return true;
       AST_NARYNODE_TABLE
 #undef X
   }
 }
 
-#define X(tag, BASE, NODE_DECLS) \
-  tag::tag(SymbolTable& Symtab) : BASE(Symtab, NodeType::tag) {}
+#define X(NAME, BASE, DECLS, INIT)  \
+  NAME::NAME(SymbolTable& Symtab) \
+      : BASE(Symtab, NodeType::NAME) { INIT }
 AST_NARYNODE_TABLE
 #undef X
 
-#define X(tag, BASE, NODE_DECLS) template tag* SymbolTable::create<tag>();
+#define X(NAME, BASE, DECLS, INIT) \
+  template NAME* SymbolTable::create<NAME>();
 AST_NARYNODE_TABLE
 #undef X
 
-#define X(tag, BASE, NODE_DECLS) \
-  tag::~tag() {}
+#define X(NAME, BASE, DECLS, INIT)               \
+  NAME::~NAME() {}
 AST_NARYNODE_TABLE
 #undef X
 
@@ -1813,61 +1850,73 @@ bool Eval::validateNode(ConstNodeVectorType& Parents) const {
   return true;
 }
 
+void Algorithm::init() {
+  SourceHdr = nullptr;
+  ReadHdr = nullptr;
+  WriteHdr = nullptr;
+  IsAlgorithmSpecified = false;
+  IsValidated = false;
+}
+
 const Header* Algorithm::getSourceHeader(bool UseEnclosing) const {
-  for (const Node* Kid : *this) {
-    if (!isa<SourceHeader>(Kid))
-      continue;
-    return cast<SourceHeader>(Kid);
-  }
+  if (SourceHdr != nullptr)
+    return SourceHdr;
   if (UseEnclosing) {
     for (SymbolTable* Sym = Symtab.getEnclosingScope().get(); Sym != nullptr;
          Sym = Sym->getEnclosingScope().get()) {
       const Algorithm* Alg = Sym->getAlgorithm();
-      for (const Node* Kid : *Alg) {
-        if (!isa<SourceHeader>(Kid))
-          continue;
-        return cast<SourceHeader>(Kid);
-      }
+      if (Alg->SourceHdr)
+          return Alg->SourceHdr;
+    }
+  }
+  if (!IsValidated) {
+    // Note: this function must work, even if not installed. The
+    // reason is that the decompressor must look up the read header to
+    // find the appropriate enclosing algorithm, which must be bound
+    // before the algorithm is installed.
+    for (const Node* Kid : *this) {
+      if (!isa<SourceHeader>(Kid))
+        continue;
+      return cast<SourceHeader>(Kid);
     }
   }
   return nullptr;
 }
 
 const Header* Algorithm::getReadHeader(bool UseEnclosing) const {
-  for (const Node* Kid : *this) {
-    if (!isa<ReadHeader>(Kid))
-      continue;
-    return cast<ReadHeader>(Kid);
-  }
+  if (ReadHdr)
+    return ReadHdr;
   if (UseEnclosing) {
     for (SymbolTable* Sym = Symtab.getEnclosingScope().get(); Sym != nullptr;
          Sym = Sym->getEnclosingScope().get()) {
       const Algorithm* Alg = Sym->getAlgorithm();
-      for (const Node* Kid : *Alg) {
-        if (!isa<ReadHeader>(Kid))
-          continue;
-        return cast<ReadHeader>(Kid);
-      }
+      if (Alg->ReadHdr)
+        return Alg->ReadHdr;
+    }
+  }
+  if (!IsValidated) {
+    // Note: this function must work, even if not installed. The
+    // reason is that the decompressor must look up the read header to
+    // find the appropriate enclosing algorithm, which must be bound
+    // before the algorithm is installed.
+    for (const Node* Kid : *this) {
+      if (!isa<ReadHeader>(Kid))
+        continue;
+      return cast<ReadHeader>(Kid);
     }
   }
   return getSourceHeader(UseEnclosing);
 }
 
 const Header* Algorithm::getWriteHeader(bool UseEnclosing) const {
-  for (const Node* Kid : *this) {
-    if (!isa<WriteHeader>(Kid))
-      continue;
-    return cast<WriteHeader>(Kid);
-  }
+  if (WriteHdr)
+    return WriteHdr;
   if (UseEnclosing) {
     for (SymbolTable* Sym = Symtab.getEnclosingScope().get(); Sym != nullptr;
          Sym = Sym->getEnclosingScope().get()) {
       const Algorithm* Alg = Sym->getAlgorithm();
-      for (const Node* Kid : *Alg) {
-        if (!isa<WriteHeader>(Kid))
-          continue;
-        return cast<WriteHeader>(Kid);
-      }
+      if (Alg->WriteHdr)
+        return Alg->WriteHdr;
     }
   }
   return getReadHeader(UseEnclosing);
@@ -1882,71 +1931,46 @@ bool Algorithm::validateNode(ConstNodeVectorType& Parents) const {
     errorDescribeContext(Parents);
     return false;
   }
-  const Node* Source = nullptr;
-  const Node* Read = nullptr;
-  const Node* Write = nullptr;
-  bool FoundOther = false;
-  bool FoundHeader = false;
-  if (hasKids()) {
-    if (!isa<SourceHeader>(getKid(0))) {
-      errorDescribeNode("Algorithm doesn't begin with a source header",
-                        getKid(0));
-      return false;
-    }
-  }
+  IsValidated = false;
+  SourceHdr = nullptr;
+  ReadHdr = nullptr;
+  WriteHdr = nullptr;
+  IsAlgorithmSpecified = false;
   for (const Node* Kid : *this) {
-    switch (NodeType Opcode = Kid->getType()) {
+    switch (Kid->getType()) {
       case NodeType::SourceHeader:
-      case NodeType::ReadHeader:
-      case NodeType::WriteHeader:
-        if (FoundOther) {
-          errorDescribeNode("Header nodes doesn't appear before declarations",
-                            Kid);
+        if (SourceHdr) {
+          errorDescribeNode("Duplicate source header", Kid);
+          errorDescribeNode("Original", SourceHdr);
           return false;
         }
-        FoundHeader = true;
-        switch (Opcode) {
-          default:
-            // This isn't possible, but compiler doesn't know it.
-            break;
-          case NodeType::SourceHeader:
-            if (Source) {
-              errorDescribeNode("Duplicate source header", Kid);
-              errorDescribeNode("Original", Source);
-              return false;
-            }
-            Source = Kid;
-            break;
-          case NodeType::ReadHeader:
-            if (Read) {
-              errorDescribeNode("Duplicate read header", Kid);
-              errorDescribeNode("Original", Source);
-              return false;
-            }
-            Read = Kid;
-            break;
-          case NodeType::WriteHeader:
-            if (Write) {
-              errorDescribeNode("Duplicate read header", Kid);
-              errorDescribeNode("Original", Source);
-              return false;
-            }
-            Write = Kid;
-            break;
+        SourceHdr = cast<SourceHeader>(Kid);
+        break;
+      case NodeType::ReadHeader:
+        if (ReadHdr) {
+          errorDescribeNode("Duplicate read header", Kid);
+          errorDescribeNode("Original", ReadHdr);
+          return false;
         }
+        ReadHdr = cast<ReadHeader>(Kid);
+        break;
+      case NodeType::WriteHeader:
+        if (WriteHdr) {
+          errorDescribeNode("Duplicate read header", Kid);
+          errorDescribeNode("Original", WriteHdr);
+          return false;
+        }
+        WriteHdr = cast<WriteHeader>(Kid);
         break;
       default:
-        FoundOther = true;
-        if (!FoundHeader) {
-          errorDescribeNode("Algorithm doesn't begin with a header", this);
-          return false;
-        }
+        break;
     }
   }
-  if (Source == nullptr) {
+  if (SourceHdr == nullptr) {
     errorDescribeNode("Algorithm doesn't have a source header", this);
     return false;
   }
+  IsValidated = true;
   return true;
 }
 
@@ -1956,8 +1980,8 @@ bool SelectBase::implementsClass(NodeType Type) {
   switch (Type) {
     default:
       return false;
-#define X(tag, NODE_DECLS) \
-  case NodeType::tag:      \
+#define X(NAME, BASE, DECLS, INIT)                   \
+  case NodeType::NAME:      \
     return true;
       AST_SELECTNODE_TABLE
 #undef X
@@ -2146,17 +2170,19 @@ bool collectCaseWidths(IntType Key,
 
 }  // end of anonymous namespace
 
-#define X(tag, NODE_DECLS) \
-  tag::tag(SymbolTable& Symtab) : SelectBase(Symtab, NodeType::tag) {}
+#define X(NAME, BASE, DECLS, INIT)                                           \
+  NAME::NAME(SymbolTable& Symtab) \
+      : BASE(Symtab, NodeType::NAME) { INIT }
 AST_SELECTNODE_TABLE
 #undef X
 
-#define X(tag, NODE_DECLS) template tag* SymbolTable::create<tag>();
+#define X(NAME, BASE, DECLS, INIT) \
+  template NAME* SymbolTable::create<NAME>();
 AST_SELECTNODE_TABLE
 #undef X
 
-#define X(tag, NODE_DECLS) \
-  tag::~tag() {}
+#define X(NAME, BASE, DECLS,INIT)                   \
+  NAME::~NAME() {}
 AST_SELECTNODE_TABLE
 #undef X
 

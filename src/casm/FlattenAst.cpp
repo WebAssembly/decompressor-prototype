@@ -168,10 +168,10 @@ void FlattenAst::flattenNode(const Node* Nd) {
       reportError("s-expression: ", Nd);
       break;
     }
-#define X(tag, format, defval, mergable, BASE, NODE_DECLS) \
-  case NodeType::tag: {                                    \
+#define X(NAME, FORMAT, DEFAULT, MERGE, BASE, DECLS, INIT) \
+  case NodeType::NAME: {                                    \
     write(IntType(Opcode));                                \
-    auto* Int = cast<tag>(Nd);                             \
+    auto* Int = cast<NAME>(Nd);                             \
     if (Int->isDefaultValue()) {                           \
       write(0);                                            \
     } else {                                               \
@@ -182,11 +182,19 @@ void FlattenAst::flattenNode(const Node* Nd) {
   }
       AST_INTEGERNODE_TABLE
 #undef X
+#define X(NAME, BASE, VALUE, FORMAT, DECLS, INIT)               \
+  case NodeType::NAME: {                                    \
+    write(IntType(Opcode));                                \
+    break;                                                 \
+  }
+      AST_LITERAL_TABLE
+#undef X
     case NodeType::BinaryEval:
       if (BitCompress && binaryEvalEncode(cast<BinaryEval>(Nd)))
         break;
     // Not binary encoding, Intentionally fall to next case that
     // will generate non-compressed form.
+    case NodeType::AlgorithmFlag:
     case NodeType::And:
     case NodeType::Block:
     case NodeType::BinaryAccept:

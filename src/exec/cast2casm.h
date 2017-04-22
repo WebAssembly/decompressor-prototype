@@ -569,6 +569,8 @@ size_t CodeGenerator::generateNode(const Node* Nd) {
   switch (Nd->getType()) {
     default:
       return generateBadLocal(Nd);
+    case NodeType::AlgorithmFlag:
+      return generateUnary("AlgorithmFlag", Nd);
     case NodeType::And:
       return generateBinary("And", Nd);
     case NodeType::Bit:

@@ -199,6 +199,8 @@ bool InflateAst::writeHeaderValue(decode::IntType Value,
 
 bool InflateAst::applyOp(IntType Op) {
   switch (NodeType(Op)) {
+    case NodeType::AlgorithmFlag:
+      return buildUnary<AlgorithmFlag>();
     case NodeType::And:
       return buildBinary<And>();
     case NodeType::BinaryAccept:

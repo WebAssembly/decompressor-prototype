@@ -79,6 +79,7 @@ struct IntValue {
 // Keywords
 %token ACCEPT        "accept"
 %token ACTION        "action"
+%token ALGORITHM     "algorithm"
 %token AND           "and"
 %token BINARY        "binary"
 %token BIT           "bit"
@@ -156,7 +157,6 @@ struct IntValue {
 %type <wasm::filt::Node *> expression
 %type <wasm::filt::Node *> expression_redirect
 %type <wasm::filt::Node *> algorithm
-%type <wasm::filt::Node *> algorithm_header
 %type <wasm::filt::Node *> algorithm_header_args
 %type <wasm::filt::Node *> fixed_format_directive
 %type <wasm::filt::Node *> format_binary
@@ -179,36 +179,24 @@ struct IntValue {
 %%
 
 algorithm
-         /* Note: Declarations must appear after headers, and the
-            primary (soure) header must appear fisrt (checked during
-            validation).
-         */
-         : algorithm_header {
-             $$ = Driver.create<Algorithm>();
-             Driver.setAlgorithm($$);
-             $$->append($1);
-           }
-         | "(" "enclosing" IDENTIFIER ")" algorithm_header {
-             Driver.setEnclosing($3);
-             $$ = Driver.create<Algorithm>();
+        : "(" "enclosing" IDENTIFIER ")" declaration {
+            Driver.setEnclosing($3);
+            $$ = Driver.create<Algorithm>();
+            Driver.setAlgorithm($$);
              Driver.setAlgorithm($$);
              $$->append($5);
            }
-         | algorithm algorithm_header {
-             $$ = $1;
-             $$->append($2);
-           }
-         | algorithm declaration {
-             $$ = $1;
-             $$->append($2);
-           }
-         ;
-
-algorithm_header
-        : "(" algorithm_header_args ")" {
-           $$ = $2;
+        | declaration {
+            $$ = Driver.create<Algorithm>();
+            Driver.setAlgorithm($$);
+            $$->append($1);
+          }
+        | algorithm declaration {
+            $$ = $1;
+            $$->append($2);
           }
         ;
+
 
 algorithm_header_args
         : "header" {
@@ -326,6 +314,12 @@ control_flow
 declaration
         : "(" "define" define_args ")" {
             $$ = $3;
+          }
+        | "(" algorithm_header_args ")" {
+            $$ = $2;
+          }
+        | "(" "algorithm" literal_expression ")" {
+            $$ = Driver.create<AlgorithmFlag>($3);
           }
         | "(" "rename" symbol symbol ")" {
             $$ = Driver.create<Rename>($3, $4);
@@ -505,6 +499,9 @@ literal_expression
           }
         | "(" "u64.const" INTEGER ")" {
             $$ = Driver.create<U64Const>($3.Value, $3.Format);
+          }
+        | INTEGER {
+            $$ = Driver.createLiteral($1.Value, $1.Format);
           }
         ;
 

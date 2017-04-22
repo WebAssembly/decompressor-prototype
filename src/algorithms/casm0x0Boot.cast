@@ -18,6 +18,7 @@
 (enclosing 'casm0x0-lits.cast')
 
 (header (u32.const 0x6d736163) (u32.const 0x0))
+(algorithm 1)
 
 (define 'file' (params)
   (block
@@ -44,7 +45,8 @@
 (define 'node' (params)
   (switch (uint8)
     (error)
-    (case 'bit'
+    (case 'algorithm'
+     case 'bit'
      case 'block'
      case 'case'
      case 'error'

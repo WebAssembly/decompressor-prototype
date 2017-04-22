@@ -265,6 +265,7 @@ Interpreter::Interpreter(std::shared_ptr<Reader> Input,
       OpcodeLocalsStack(OpcodeLocals),
       HeaderOverride(nullptr),
       FreezeEofAtExit(true) {
+  assert(Symtab->isAlgorithmInstalled());
   init();
 }
 
@@ -679,20 +680,21 @@ void Interpreter::algorithmResume() {
       case Method::Eval:
         switch (Frame.Nd->getType()) {
           case NodeType::NO_SUCH_NODETYPE:
-          case NodeType::SymbolDefn:
-          case NodeType::IntLookup:
-          case NodeType::BinaryEvalBits:
+          case NodeType::Algorithm:
+          case NodeType::AlgorithmFlag:
           case NodeType::BinaryAccept:
+          case NodeType::BinaryEvalBits:
           case NodeType::BinarySelect:
+          case NodeType::IntLookup:
           case NodeType::Params:
           case NodeType::LastSymbolIs:
           case NodeType::LiteralActionBase:
           case NodeType::LiteralActionDef:
           case NodeType::LiteralDef:
-          case NodeType::Algorithm:
           case NodeType::Locals:
           case NodeType::Rename:
           case NodeType::Symbol:
+          case NodeType::SymbolDefn:
           case NodeType::Undefine:
           case NodeType::UnknownSection:  // Method::Eval
             return failNotImplemented();
@@ -855,9 +857,11 @@ void Interpreter::algorithmResume() {
           }
           case NodeType::I32Const:
           case NodeType::I64Const:
+          case NodeType::One:
           case NodeType::U8Const:
           case NodeType::U32Const:
-          case NodeType::U64Const: {  // Method::Eval
+          case NodeType::U64Const:
+          case NodeType::Zero: {  // Method::Eval
             IntType Value = dyn_cast<IntegerNode>(Frame.Nd)->getValue();
             if (hasReadMode())
               LastReadValue = Value;
