@@ -48,14 +48,14 @@ class AbbreviationCodegen {
   utils::HuffmanEncoder::NodePtr EncodingRoot;
   CountNode::PtrSet& Assignments;
   bool ToRead;
+  std::string CategorizeName;
+  std::string OpcodeName;
+  std::string ProcessName;
+  std::string OldName;
 
   filt::Node* generateHeader(filt::NodeType Type,
                              uint32_t MagicNumber,
                              uint32_t VersionNumber);
-#if 0
-  void generateAlgorithm(filt::Node* SourceHeader, filt::Node* TargetHeader);
-  filt::Node* generateBody();
-#endif
   filt::Node* generateStartFunction();
   filt::Node* generateAbbreviationRead();
   filt::Node* generateSwitchStatement();
@@ -73,6 +73,8 @@ class AbbreviationCodegen {
   filt::Node* generateIntLitActionWrite(IntCountNode* Nd);
   filt::Node* generateAbbrevFormat(interp::IntTypeFormat AbbrevFormat);
   filt::Node* generateHuffmanEncoding(utils::HuffmanEncoder::NodePtr Root);
+  void generateFunctions(filt::Algorithm* Alg);
+  filt::Node* generateRename(filt::Symbol* from, filt::Symbol* to);
 };
 
 }  // end of namespace intcomp
