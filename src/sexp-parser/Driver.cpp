@@ -19,6 +19,8 @@
 
 namespace wasm {
 
+using namespace decode;
+
 namespace filt {
 
 namespace {
@@ -92,6 +94,24 @@ bool Driver::parseOneFile(std::string& Filename) {
   int Result = parser.parse();
   End();
   return Result == 0 && !ErrorsReported;
+}
+
+IntegerNode* Driver::createLiteral(IntType Value,
+                                   ValueFormat Format) {
+  /*
+  switch (Value) {
+#define X(tag, BASE, VALUE, FORMAT, NODE_DECLS) \
+    case VALUE:                                 \
+      if (Format == ValueFormat::FORMAT)        \
+        return Table->create<tag>();            \
+      break;
+      AST_LITERAL_TABLE
+#undef X
+    default:
+      break;
+  }
+  */
+  return create<U64Const>(Value, Format);
 }
 
 void Driver::report(ErrorLevel Level,

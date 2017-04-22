@@ -756,6 +756,21 @@ Symbol* SymbolTable::getPredefined(PredefinedSymbol Sym) {
 AST_INTEGERNODE_TABLE
 #undef X
 
+#define X(tag, BASE, VALUE, FORMAT, NODE_DECLS) \
+  template <>                                                              \
+  tag* SymbolTable::create<tag>() {                                        \
+    IntegerValue I(NodeType::tag, (VALUE), ValueFormat::FORMAT, true); \
+    BASE* Nd = IntMap[I];                                                \
+    if (Nd == nullptr) {                                                 \
+      Nd = new tag(*this);                                               \
+      Allocated.push_back(Nd);                                           \
+      IntMap[I] = Nd;                                                    \
+    }                                                                    \
+    return dyn_cast<tag>(Nd);                                            \
+  }
+AST_LITERAL_TABLE
+#undef X
+
 bool SymbolTable::areActionsConsistent() {
 #if DEBUG_FILE
   // Debugging information.
@@ -1419,6 +1434,9 @@ bool IntegerNode::implementsClass(NodeType Type) {
 #define X(tag, format, defval, mergable, BASE, NODE_DECLS) case NodeType::tag:
       AST_INTEGERNODE_TABLE
 #undef X
+#define X(tag, BASE, VALUE, FORMAT, NODE_DECLS) case NodeType::tag:
+      AST_LITERAL_TABLE
+#undef X
       return true;
   }
 }
@@ -1440,6 +1458,18 @@ AST_INTEGERNODE_TABLE
 #define X(tag, format, defval, mergable, BASE, NODE_DECLS) \
   tag::~tag() {}
 AST_INTEGERNODE_TABLE
+#undef X
+
+#define X(tag, BASE, VALUE, FORMAT, NODE_DECLS) \
+  tag::tag(SymbolTable& Symtab)                                             \
+      : BASE(Symtab, NodeType::tag, (VALUE), decode::ValueFormat::FORMAT,   \
+             true) {}
+AST_LITERAL_TABLE
+#undef X
+
+#define X(tag, BASE, VALUE, FORMAT, NODE_DECLS) \
+  tag::~tag() {}
+AST_LITERAL_TABLE
 #undef X
 
 bool Local::validateNode(ConstNodeVectorType& Parents) const {
@@ -1816,17 +1846,6 @@ bool Eval::validateNode(ConstNodeVectorType& Parents) const {
 const Header* Algorithm::getSourceHeader(bool UseEnclosing) const {
   if (SourceHdr != nullptr)
     return SourceHdr;
-  if (!UseEnclosing && !IsValidated) {
-    // Note: this function must work, even if not installed. The reason
-    // is that the decompressor must look up the read header to find
-    // the appropriate enclosing algorithm, which must be done before
-    // the algorithm is installed.
-    for (const Node* Kid : *this) {
-      if (!isa<SourceHeader>(Kid))
-        continue;
-      return cast<SourceHeader>(Kid);
-    }
-  }
   if (UseEnclosing) {
     for (SymbolTable* Sym = Symtab.getEnclosingScope().get(); Sym != nullptr;
          Sym = Sym->getEnclosingScope().get()) {
@@ -1835,29 +1854,40 @@ const Header* Algorithm::getSourceHeader(bool UseEnclosing) const {
           return Alg->SourceHdr;
     }
   }
+  if (!IsValidated) {
+    // Note: this function must work, even if not installed. The
+    // reason is that the decompressor must look up the read header to
+    // find the appropriate enclosing algorithm, which must be bound
+    // before the algorithm is installed.
+    for (const Node* Kid : *this) {
+      if (!isa<SourceHeader>(Kid))
+        continue;
+      return cast<SourceHeader>(Kid);
+    }
+  }
   return nullptr;
 }
 
 const Header* Algorithm::getReadHeader(bool UseEnclosing) const {
   if (ReadHdr)
     return ReadHdr;
-  if (!UseEnclosing && !IsValidated) {
-    // Note: this function must work, even if not installed. The reason
-    // is that the decompressor must look up the read header to find
-    // the appropriate enclosing algorithm, which must be done before
-    // the algorithm is installed.
-    for (const Node* Kid : *this) {
-      if (!isa<ReadHeader>(Kid))
-        continue;
-      return cast<ReadHeader>(Kid);
-    }
-  }
   if (UseEnclosing) {
     for (SymbolTable* Sym = Symtab.getEnclosingScope().get(); Sym != nullptr;
          Sym = Sym->getEnclosingScope().get()) {
       const Algorithm* Alg = Sym->getAlgorithm();
       if (Alg->ReadHdr)
         return Alg->ReadHdr;
+    }
+  }
+  if (!IsValidated) {
+    // Note: this function must work, even if not installed. The
+    // reason is that the decompressor must look up the read header to
+    // find the appropriate enclosing algorithm, which must be bound
+    // before the algorithm is installed.
+    for (const Node* Kid : *this) {
+      if (!isa<ReadHeader>(Kid))
+        continue;
+      return cast<ReadHeader>(Kid);
     }
   }
   return getSourceHeader(UseEnclosing);

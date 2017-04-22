@@ -54,6 +54,8 @@
   X(U8Const,           0x14, "u8.const",         1, 0, false, false)           \
   X(U32Const,          0x15, "u32.const",        1, 0, false, false)           \
   X(U64Const,          0x16, "u64.const",        1, 0, false, false)           \
+  X(Zero,              0x17, "0",                0, 0, false, false)           \
+  X(One,               0x18, "1",                0, 0, false, false)           \
                                                                                \
   /* Formatting */                                                             \
   X(Uint32,            0x20, "uint32",           0, 0, false, false)           \
@@ -97,7 +99,7 @@
                                                                                \
   /* Declarations */                                                           \
   X(Define,            0x60, "define",           2, 1, true,  true)            \
-  X(Algorithm,         0x62, "algorithm",        2, 0, false, false)           \
+  X(Algorithm,         0x62, "algorithm.node",   2, 0, false, false)           \
   X(Undefine,          0x64, "undefine",         1, 0, true, false)            \
   X(LiteralDef,        0x65, "literal",          2, 0, false, false)           \
   X(LiteralUse,        0x66, "literal.use",      1, 0, false, false)           \
@@ -110,7 +112,7 @@
   X(SourceHeader,      0x77, "header",           0, 3, true,  false)           \
   X(ReadHeader,        0x78, "header.read",      0, 3, true,  false)           \
   X(WriteHeader,       0x79, "header.write",     0, 3, true,  false)           \
-  X(SourceType,        0x80, "source.type",      0, 0, false, false)           \
+  X(AlgorithmFlag,     0x7a, "algorithm",        1, 0, false, false)           \
                                                                                \
   /* Internal (not opcodes in compressed file) */                              \
   X(UnknownSection,    0xFF, "unknown.section",  1, 0, true,  false)           \
@@ -130,15 +132,6 @@
   X(Varuint32, Nullary,)                                                       \
   X(Varuint64, Nullary,)                                                       \
   X(Void, Nullary,)                                                            \
-  X(SourceType, Nullary, SOURCE_TYPE_DECLS)                                    \
-
-#define SOURCE_TYPE_DECLS                                                      \
- public:                                                                       \
-  bool getIsAlgorithm() const { return IsAlgorithm; }                          \
-  void setIsAlgorithm(bool Value) {  IsAlgorithm = Value; }                    \
- private:                                                                      \
-  bool IsAlgorithm = false;                                                    \
-  
 
 //#define X(tag, defval, mergable, BASE, NODE_DECLS)
 // where:
@@ -159,6 +152,11 @@
   X(U32Const, Varuint32, 0, true, IntegerNode,)                                \
   X(U64Const, Varuint64, 0, true, IntegerNode,)                                \
 
+//#define X(tag, BASE, VALUE, FORMAT, NODE_DECLS)
+#define AST_LITERAL_TABLE                                                      \
+  X(Zero, IntegerNode, 0, Decimal,)                                            \
+  X(One, IntegerNode, 1, Decimal,)                                             \
+
 #define LOCAL_DECLS                                                            \
   public:                                                                      \
     bool validateNode(ConstNodeVectorType &Parents) const OVERRIDE;            \
@@ -169,6 +167,7 @@
 
 //#define X(tag, BASE, NODE_DECLS)
 #define AST_UNARYNODE_TABLE                                                    \
+  X(AlgorithmFlag, Unary,)                                                     \
   X(Block, Unary,)                                                             \
   X(BitwiseNegate, Unary,)                                                     \
   X(Callback, Unary, CALLBACK_DECLS)                                           \

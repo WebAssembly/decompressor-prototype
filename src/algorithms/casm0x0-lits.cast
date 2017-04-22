@@ -15,6 +15,7 @@
 # Defines symbolic literals used by the CASM algorithm as an enclosing scope.
 
 (header (u32.const 0x6d736163) (u32.const 0x0))
+(algorithm 1)
 
 (literal.action.enum (u32.const 101)
                      'int.value.begin'
@@ -101,3 +102,4 @@
 (literal 'header.file'    (u8.const 0x77))
 (literal 'header.read'    (u8.const 0x78))
 (literal 'header.write'   (u8.const 0x79))
+(literal 'algorithm'      (u8.const 0x7a))

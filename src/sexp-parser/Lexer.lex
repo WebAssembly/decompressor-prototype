@@ -219,7 +219,6 @@ letter	[a-zA-Z]
 "block"           return Parser::make_BLOCK(Driver.getLoc());
 "bitwise"         return Parser::make_BITWISE(Driver.getLoc());
 "case"            return Parser::make_CASE(Driver.getLoc());
-"data"            return Parser::make_DATA(Driver.getLoc());
 "define"          return Parser::make_DEFINE(Driver.getLoc());
 "enum"            return Parser::make_ENUM(Driver.getLoc());
 "enclosing"       return Parser::make_ENCLOSING(Driver.getLoc());
@@ -248,10 +247,8 @@ letter	[a-zA-Z]
 "rename"          return Parser::make_RENAME(Driver.getLoc());
 "seq"             return Parser::make_SEQ(Driver.getLoc());
 "set"             return Parser::make_SET(Driver.getLoc());
-"source"          return Parser::make_SOURCE(Driver.getLoc());
 "switch"          return Parser::make_SWITCH(Driver.getLoc());
 "symbol"          return Parser::make_SYMBOL(Driver.getLoc());
-"type"            return Parser::make_TYPE(Driver.getLoc());
 "table"           return Parser::make_TABLE(Driver.getLoc());
 "uint8"           return Parser::make_UINT8(Driver.getLoc());
 "uint32"          return Parser::make_UINT32(Driver.getLoc());

@@ -571,6 +571,23 @@ AST_NULLARYNODE_TABLE
 AST_INTEGERNODE_TABLE
 #undef X
 
+#define X(tag, BASE, VALUE, FORMAT, NODE_DECLS) \
+  class tag FINAL : public BASE {                                   \
+    tag() = delete;                                                 \
+    tag(const tag&) = delete;                                       \
+    tag& operator=(const tag&) = delete;                            \
+                                                                    \
+   public:                                                          \
+    tag(SymbolTable& Symtab);                                       \
+    ~tag() OVERRIDE;                                                \
+    static bool implementsClass(NodeType Type) {                    \
+      return Type == NodeType::tag;                                 \
+    }                                                               \
+    NODE_DECLS                                                      \
+  };
+AST_LITERAL_TABLE
+#undef X
+
 // The Value/Numbit fields are set by validateNode(). NumBits is the number of
 // bits used to reach this accept, and Value encodes the path (from leaf to
 // root) for the accept node. Note: The Value is unique for each accept, and

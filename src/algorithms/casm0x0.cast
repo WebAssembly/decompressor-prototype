@@ -18,11 +18,13 @@
 (enclosing 'casm0x0Boot.cast')
 
 (header (u32.const 0x6d736163) (u32.const 0x0))
+(algorithm 1)
 
 (define 'node' (params)
   (switch (uint8)
     (error)
     (case 'accept'
+     case 'algorithm'
      case 'and'
      case 'binary'
      case 'bit'

@@ -218,8 +218,6 @@ void TextWriter::writeNode(const Node* Nd,
         break;
       writeNode(Nd->getKid(0), AddNewline, EmbedInParent);
       return;
-    case NodeType::SourceType:
-      return writeSourceType(cast<SourceType>(Nd), AddNewline);
     case NodeType::Symbol:
       return writeSymbol(cast<Symbol>(Nd), AddNewline);
     case NodeType::SymbolDefn: {
@@ -311,8 +309,6 @@ void TextWriter::writeNodeAbbrev(const Node* Nd,
         break;
       writeNodeAbbrev(Nd->getKid(0), AddNewline, EmbedInParent);
       return;
-    case NodeType::SourceType:
-      return writeSourceType(cast<SourceType>(Nd), AddNewline);
     case NodeType::Symbol:
       return writeSymbol(cast<Symbol>(Nd), AddNewline);
     case NodeType::SymbolDefn:
@@ -380,13 +376,6 @@ void TextWriter::writeSymbol(const Symbol* Sym, bool AddNewline) {
     LineEmpty = false;
   }
   return;
-}
-
-void TextWriter::writeSourceType(const SourceType* SrcTy, bool AddNewline) {
-  Parenthesize _(this, SrcTy->getType(), AddNewline);
-  writeSpace();
-  fprintf(File, "%s",
-          cast<SourceType>(SrcTy)->getIsAlgorithm() ? "algorithm" : "data");
 }
 
 void TextWriter::writeIntegerNode(const IntegerNode* Int, bool AddNewline) {

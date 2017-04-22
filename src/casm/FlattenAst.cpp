@@ -162,7 +162,6 @@ void FlattenAst::flattenNode(const Node* Nd) {
     case NodeType::NO_SUCH_NODETYPE:
     case NodeType::BinaryEvalBits:
     case NodeType::IntLookup:
-    case NodeType::SourceType:
     case NodeType::SymbolDefn:
     case NodeType::UnknownSection: {
       reportError("Unexpected s-expression, can't write!");
@@ -183,11 +182,19 @@ void FlattenAst::flattenNode(const Node* Nd) {
   }
       AST_INTEGERNODE_TABLE
 #undef X
+#define X(tag, BASE, VALUE, FORMAT, NODE_DECLS) \
+  case NodeType::tag: {                                    \
+    write(IntType(Opcode));                                \
+    break;                                                 \
+  }
+      AST_LITERAL_TABLE
+#undef X
     case NodeType::BinaryEval:
       if (BitCompress && binaryEvalEncode(cast<BinaryEval>(Nd)))
         break;
     // Not binary encoding, Intentionally fall to next case that
     // will generate non-compressed form.
+    case NodeType::AlgorithmFlag:
     case NodeType::And:
     case NodeType::Block:
     case NodeType::BinaryAccept:

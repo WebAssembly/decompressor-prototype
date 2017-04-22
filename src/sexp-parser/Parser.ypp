@@ -88,7 +88,6 @@ struct IntValue {
 %token CASE          "case"
 %token CLOSEPAREN    ")"
 %token COLON         ":"
-%token DATA          "data"
 %token DEFINE        "define"
 %token DOT           "."
 %token DOUBLE_ARROW  "=>"
@@ -120,10 +119,8 @@ struct IntValue {
 %token RENAME        "rename"
 %token SEQ           "seq"
 %token SET           "set"
-%token SOURCE        "source"
 %token SWITCH        "switch"
 %token SYMBOL        "symbol"
-%token TYPE          "type"
 %token TABLE         "table"
 %token UINT8         "uint8"
 %token UINT32        "uint32"
@@ -321,15 +318,8 @@ declaration
         | "(" algorithm_header_args ")" {
             $$ = $2;
           }
-        | "(" "source" "." "type" "algorithm" ")" {
-            auto* SrcTy = Driver.create<SourceType>();
-            SrcTy->setIsAlgorithm(true);
-            $$ = SrcTy;
-          }
-        | "(" "source" "." "type" "data" ")" {
-            auto* SrcTy = Driver.create<SourceType>();
-            SrcTy->setIsAlgorithm(false);
-            $$ = SrcTy;
+        | "(" "algorithm" literal_expression ")" {
+            $$ = Driver.create<AlgorithmFlag>($3);
           }
         | "(" "rename" symbol symbol ")" {
             $$ = Driver.create<Rename>($3, $4);
@@ -509,6 +499,9 @@ literal_expression
           }
         | "(" "u64.const" INTEGER ")" {
             $$ = Driver.create<U64Const>($3.Value, $3.Format);
+          }
+        | INTEGER {
+            $$ = Driver.createLiteral($1.Value, $1.Format);
           }
         ;
 

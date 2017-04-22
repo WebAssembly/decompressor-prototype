@@ -69,6 +69,8 @@ class Driver {
     return Table->createBinaryAccept(Value, NumBits);
   }
 
+  IntegerNode* createLiteral(decode::IntType Value, decode::ValueFormat Format);
+
   Symbol* getOrCreateSymbol(std::string& Name) {
     return Table->getOrCreateSymbol(Name);
   }
