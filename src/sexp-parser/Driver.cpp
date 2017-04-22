@@ -96,8 +96,7 @@ bool Driver::parseOneFile(std::string& Filename) {
   return Result == 0 && !ErrorsReported;
 }
 
-IntegerNode* Driver::createLiteral(IntType Value,
-                                   ValueFormat Format) {
+IntegerNode* Driver::createLiteral(IntType Value, ValueFormat Format) {
   /*
   switch (Value) {
 #define X(tag, BASE, VALUE, FORMAT, NODE_DECLS) \

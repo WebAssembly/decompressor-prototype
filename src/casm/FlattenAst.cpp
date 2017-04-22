@@ -169,9 +169,9 @@ void FlattenAst::flattenNode(const Node* Nd) {
       break;
     }
 #define X(NAME, FORMAT, DEFAULT, MERGE, BASE, DECLS, INIT) \
-  case NodeType::NAME: {                                    \
+  case NodeType::NAME: {                                   \
     write(IntType(Opcode));                                \
-    auto* Int = cast<NAME>(Nd);                             \
+    auto* Int = cast<NAME>(Nd);                            \
     if (Int->isDefaultValue()) {                           \
       write(0);                                            \
     } else {                                               \
@@ -182,10 +182,10 @@ void FlattenAst::flattenNode(const Node* Nd) {
   }
       AST_INTEGERNODE_TABLE
 #undef X
-#define X(NAME, BASE, VALUE, FORMAT, DECLS, INIT)               \
-  case NodeType::NAME: {                                    \
-    write(IntType(Opcode));                                \
-    break;                                                 \
+#define X(NAME, BASE, VALUE, FORMAT, DECLS, INIT) \
+  case NodeType::NAME: {                          \
+    write(IntType(Opcode));                       \
+    break;                                        \
   }
       AST_LITERAL_TABLE
 #undef X
