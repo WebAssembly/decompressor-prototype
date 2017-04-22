@@ -168,10 +168,10 @@ void FlattenAst::flattenNode(const Node* Nd) {
       reportError("s-expression: ", Nd);
       break;
     }
-#define X(tag, format, defval, mergable, BASE, NODE_DECLS) \
-  case NodeType::tag: {                                    \
+#define X(NAME, FORMAT, DEFAULT, MERGE, BASE, DECLS, INIT) \
+  case NodeType::NAME: {                                    \
     write(IntType(Opcode));                                \
-    auto* Int = cast<tag>(Nd);                             \
+    auto* Int = cast<NAME>(Nd);                             \
     if (Int->isDefaultValue()) {                           \
       write(0);                                            \
     } else {                                               \
@@ -182,8 +182,8 @@ void FlattenAst::flattenNode(const Node* Nd) {
   }
       AST_INTEGERNODE_TABLE
 #undef X
-#define X(tag, BASE, VALUE, FORMAT, NODE_DECLS) \
-  case NodeType::tag: {                                    \
+#define X(NAME, BASE, VALUE, FORMAT, DECLS, INIT)               \
+  case NodeType::NAME: {                                    \
     write(IntType(Opcode));                                \
     break;                                                 \
   }

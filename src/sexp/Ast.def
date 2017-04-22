@@ -119,43 +119,59 @@
   X(SymbolDefn,        0x100, "symbol.defn",     0, 0, false, false)           \
   X(IntLookup,         0x101, "int.lookup",      0, 0, false, false)           \
 
-//#define X(tag, BASE, NODE_DECLS)
-#define AST_NULLARYNODE_TABLE                                                  \
-  X(Bit, Nullary,)                                                             \
-  X(Error, Nullary,)                                                           \
-  X(LastRead, Nullary,)                                                        \
-  X(Uint32, Nullary,)                                                          \
-  X(Uint64, Nullary,)                                                          \
-  X(Uint8, Nullary,)                                                           \
-  X(Varint32, Nullary,)                                                        \
-  X(Varint64, Nullary,)                                                        \
-  X(Varuint32, Nullary,)                                                       \
-  X(Varuint64, Nullary,)                                                       \
-  X(Void, Nullary,)                                                            \
-
-//#define X(tag, defval, mergable, BASE, NODE_DECLS)
+//#define X(NAME, BASE, NODE_DECLS, INIT)
 // where:
-//   tag: enumeration name (less Op prefix).
-//   format: Format for printing out value.
-//   defval: Default value assumed if not provided.
-//   mergable: True if instances can be merged.
+//   NAME: Class/enum node type name
 //   BASE: Base class for node class.
-//   NODE_DECLS: Other declarations for the node.
-#define AST_INTEGERNODE_TABLE                                                  \
-  X(I32Const, Varint32, 0, true, IntegerNode,)                                 \
-  X(I64Const, Varint64, 0, true, IntegerNode,)                                 \
-  X(Local, Varuint32, 0, true, IntegerNode, LOCAL_DECLS)                       \
-  X(Locals, Varuint32, 0, true, IntegerNode,)                                  \
-  X(Param, Varuint32, 0, false, IntegerNode, PARAM_DECLS)                      \
-  X(Params, Varuint32, 0, false, IntegerNode,)                                 \
-  X(U8Const, Uint8, 0, true, IntegerNode,)                                     \
-  X(U32Const, Varuint32, 0, true, IntegerNode,)                                \
-  X(U64Const, Varuint64, 0, true, IntegerNode,)                                \
+//   DECLS: Other declarations for the node.
+//   INIT: code to run in the body of the constructors to finish
+//         initialization
+#define AST_NULLARYNODE_TABLE                                                  \
+  X(Bit, Nullary,,)                                                            \
+  X(Error, Nullary,,)                                                          \
+  X(LastRead, Nullary,,)                                                       \
+  X(Uint32, Nullary,,)                                                         \
+  X(Uint64, Nullary,,)                                                         \
+  X(Uint8, Nullary,,)                                                          \
+  X(Varint32, Nullary,,)                                                       \
+  X(Varint64, Nullary,,)                                                       \
+  X(Varuint32, Nullary,,)                                                      \
+  X(Varuint64, Nullary,,)                                                      \
+  X(Void, Nullary,,)                                                           \
 
-//#define X(tag, BASE, VALUE, FORMAT, NODE_DECLS)
+//#define X(NAME, FORMAT, DEFAULT, MERGE, BASE, DECLS, INIT)
+// where:
+//   NAME: Class/enum node type name
+//   FORMAT: The binary format (in binary files) of the value.
+//   DEFAULT: Default value assumed if not provided.
+//   MERGE: True if instances can be merged.
+//   BASE: Base class for node class.
+//   DECLS: Other declarations for the node.
+//   INIT: code to run in the body of the constructors to finish
+//         initialization
+#define AST_INTEGERNODE_TABLE                                                  \
+  X(I32Const, Varint32, 0, true, IntegerNode,,)                                \
+  X(I64Const, Varint64, 0, true, IntegerNode,,)                                \
+  X(Local, Varuint32, 0, true, IntegerNode, LOCAL_DECLS,)                      \
+  X(Locals, Varuint32, 0, true, IntegerNode,,)                                 \
+  X(Param, Varuint32, 0, false, IntegerNode, PARAM_DECLS,)                     \
+  X(Params, Varuint32, 0, false, IntegerNode,,)                                \
+  X(U8Const, Uint8, 0, true, IntegerNode,,)                                    \
+  X(U32Const, Varuint32, 0, true, IntegerNode,,)                               \
+  X(U64Const, Varuint64, 0, true, IntegerNode,,)                               \
+
+//#define X(NAME, BASE, VALUE, FORMAT, DECLS, INIT)
+// where:
+//   NAME: Class/enum node type name
+//   BASE: Base class for node class.
+//   VALUE: The value of the literal.
+//   FORMAT: The ValueFormat to use to represent the literal.
+//   DECLS: Other declarations for the node.
+//   INIT: code to run in the body of the constructors to finish
+//         initialization
 #define AST_LITERAL_TABLE                                                      \
-  X(Zero, IntegerNode, 0, Decimal,)                                            \
-  X(One, IntegerNode, 1, Decimal,)                                             \
+  X(Zero, IntegerNode, 0, Decimal,,)                                           \
+  X(One, IntegerNode, 1, Decimal,,)                                            \
 
 #define LOCAL_DECLS                                                            \
   public:                                                                      \
@@ -228,17 +244,17 @@
   X(Switch,)                                                                   \
   X(Map,)                                                                      \
 
-//#define X(tag, BASE, NODE_DECLS)
+//#define X(tag, BASE, NODE_DECLS, CTR_INIT)
 #define AST_NARYNODE_TABLE                                                     \
-  X(Algorithm, Nary, ALGORITHM_DECLS)                                          \
-  X(Define, Nary, DEFINE_DECLS)                                                \
-  X(Eval, Nary, EVAL_DECLS)                                                    \
-  X(LiteralActionBase, Nary,)                                                  \
-  X(ReadHeader, Header,)                                                       \
-  X(Sequence, Nary,)                                                           \
-  X(SourceHeader, Header,)                                                     \
-  X(Write, Nary,)                                                              \
-  X(WriteHeader, Header,)                                                      \
+  X(Algorithm, Nary, ALGORITHM_DECLS, init();)                                 \
+  X(Define, Nary, DEFINE_DECLS,)                                               \
+  X(Eval, Nary, EVAL_DECLS,)                                                   \
+  X(LiteralActionBase, Nary,,)                                                 \
+  X(ReadHeader, Header,,)                                                      \
+  X(Sequence, Nary,,)                                                          \
+  X(SourceHeader, Header,,)                                                    \
+  X(Write, Nary,,)                                                             \
+  X(WriteHeader, Header,,)                                                     \
 
 #define ALGORITHM_DECLS                                                        \
   public:                                                                      \
@@ -247,12 +263,13 @@
     const Header* getWriteHeader(bool UseEnclosing=true) const;                \
     bool isAlgorithm() const { return IsAlgorithmSpecified; }                  \
     bool validateNode(ConstNodeVectorType &Parents) const OVERRIDE;            \
+    void init();                                                               \
   private:                                                                     \
-    mutable const Header* SourceHdr = nullptr;                                 \
-    mutable const Header* ReadHdr = nullptr;                                   \
-    mutable const Header* WriteHdr = nullptr;                                  \
-    mutable bool IsAlgorithmSpecified = false;                                 \
-    mutable bool IsValidated = false;                                          \
+    mutable const Header* SourceHdr;                                           \
+    mutable const Header* ReadHdr;                                             \
+    mutable const Header* WriteHdr;                                            \
+    mutable bool IsAlgorithmSpecified;                                         \
+    mutable bool IsValidated;                                                  \
 
 #define DEFINE_DECLS                                                           \
   public:                                                                      \
