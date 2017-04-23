@@ -285,15 +285,17 @@
     const Header* getSourceHeader(bool UseEnclosing=true) const;               \
     const Header* getReadHeader(bool UseEnclosing=true) const;                 \
     const Header* getWriteHeader(bool UseEnclosing=true) const;                \
-    bool isAlgorithm() const { return IsAlgorithmSpecified; }                  \
+    bool isAlgorithm() const;                                                  \
     bool validateNode(ConstNodeVectorType &Parents) const OVERRIDE;            \
     void init();                                                               \
+    void clearCaches() { init(); }                                             \
   private:                                                                     \
     mutable const Header* SourceHdr;                                           \
     mutable const Header* ReadHdr;                                             \
     mutable const Header* WriteHdr;                                            \
     mutable bool IsAlgorithmSpecified;                                         \
     mutable bool IsValidated;                                                  \
+    bool setIsAlgorithm(const Node* Nd);                                       \
 
 #define DEFINE_DECLS                                                           \
   public:                                                                      \
