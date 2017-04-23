@@ -602,6 +602,7 @@ SymbolTable::SymbolTable() {
 }
 
 void SymbolTable::init() {
+  Alg = nullptr;
   setAlgorithm(nullptr);
   NextCreationIndex = 0;
   ActionBase = 0;
@@ -870,8 +871,12 @@ void SymbolTable::setAlgorithm(const Algorithm* NewAlg) {
     CachedSourceHeader = nullptr;
     CachedReadHeader = nullptr;
     CachedWriteHeader = nullptr;
+    if (Alg)
+      Alg->init();
   }
   Alg = const_cast<Algorithm*>(NewAlg);
+  if (Alg)
+    Alg->init();
 }
 
 bool SymbolTable::install() {
