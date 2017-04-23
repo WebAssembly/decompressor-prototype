@@ -1956,6 +1956,7 @@ bool Algorithm::validateNode(ConstNodeVectorType& Parents) const {
   ReadHdr = nullptr;
   WriteHdr = nullptr;
   IsAlgorithmSpecified = false;
+  const Node* OldAlgorithmFlag = nullptr;
   for (const Node* Kid : *this) {
     switch (Kid->getType()) {
       case NodeType::SourceHeader:
@@ -1981,6 +1982,21 @@ bool Algorithm::validateNode(ConstNodeVectorType& Parents) const {
           return false;
         }
         WriteHdr = cast<WriteHeader>(Kid);
+        break;
+      case NodeType::AlgorithmFlag:
+        if (OldAlgorithmFlag != nullptr) {
+          errorDescribeNode("Duplicate flag", Kid);
+          errorDescribeNode("Original flag ", OldAlgorithmFlag);
+          return false;
+        }
+        OldAlgorithmFlag = Kid;
+        if (auto* Int = cast<IntegerNode>(Kid->getKid(0))) {
+          if (Int->getValue() != 0)
+            IsAlgorithmSpecified = true;
+        } else {
+          errorDescribeNode("Malformed flag", Kid);
+          return false;
+        }
         break;
       default:
         break;
