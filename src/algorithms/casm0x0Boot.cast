@@ -56,12 +56,14 @@
      case 'literal.use'
      case 'loop'
      case 'loop.unbounded'
+     case 'one'
      case 'uint8'
      case 'varint32'
      case 'varint64'
      case 'varuint32'
      case 'varuint64'
      case 'void'
+     case 'zero'
      case '=>'                  (=> 'postorder.inst'))
 
     (case 'define'

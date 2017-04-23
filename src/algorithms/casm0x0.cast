@@ -46,6 +46,7 @@
      case 'loop'
      case 'loop.unbounded'
      case 'not'
+     case 'one'
      case 'opcode.binary'
      case 'or'
      case 'peek'
@@ -62,6 +63,7 @@
      case 'varuint32'
      case 'varuint64'
      case 'void'
+     case 'zero'
      case '=>'                  (=> 'postorder.inst'))
 
     (case 'define'

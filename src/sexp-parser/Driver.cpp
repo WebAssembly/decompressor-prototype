@@ -97,19 +97,17 @@ bool Driver::parseOneFile(std::string& Filename) {
 }
 
 IntegerNode* Driver::createLiteral(IntType Value, ValueFormat Format) {
-  /*
   switch (Value) {
-#define X(tag, BASE, VALUE, FORMAT, NODE_DECLS) \
-    case VALUE:                                 \
-      if (Format == ValueFormat::FORMAT)        \
-        return Table->create<tag>();            \
-      break;
-      AST_LITERAL_TABLE
+#define X(NAME, BASE, VALUE, FORMAT, DECLS, INIT) \
+  case VALUE:                                     \
+    if (Format == ValueFormat::FORMAT)            \
+      return Table->create<NAME>();               \
+    break;
+    AST_LITERAL_TABLE
 #undef X
     default:
       break;
   }
-  */
   return create<U64Const>(Value, Format);
 }
 
