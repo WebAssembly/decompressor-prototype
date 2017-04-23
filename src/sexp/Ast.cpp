@@ -428,8 +428,7 @@ bool Cached::implementsClass(NodeType Type) {
   switch (Type) {
     default:
       return false;
-#define X(NAME) \
-      case NodeType::NAME:
+#define X(NAME) case NodeType::NAME:
       AST_CACHEDNODE_TABLE
 #undef X
       return true;
@@ -721,53 +720,53 @@ Symbol* SymbolTable::getPredefined(PredefinedSymbol Sym) {
   return Nd;
 }
 
-#define X(NAME, FORMAT, DEFAULT, MERGE, BASE, DECLS, INIT)                 \
-  template <>                                                              \
+#define X(NAME, FORMAT, DEFAULT, MERGE, BASE, DECLS, INIT)                   \
+  template <>                                                                \
   NAME* SymbolTable::create<NAME>(IntType Value, ValueFormat Format) {       \
-    if (MERGE) {                                                        \
-      IntegerValue I(NodeType::NAME, Value, Format, false);                 \
-      BASE* Nd = IntMap[I];                                                \
-      if (Nd == nullptr) {                                                 \
-        Nd = new NAME(*this, Value, Format);                                \
-        Allocated.push_back(Nd);                                           \
-        IntMap[I] = Nd;                                                    \
-      }                                                                    \
-      return dyn_cast<NAME>(Nd);                                            \
-    }                                                                      \
+    if (MERGE) {                                                             \
+      IntegerValue I(NodeType::NAME, Value, Format, false);                  \
+      BASE* Nd = IntMap[I];                                                  \
+      if (Nd == nullptr) {                                                   \
+        Nd = new NAME(*this, Value, Format);                                 \
+        Allocated.push_back(Nd);                                             \
+        IntMap[I] = Nd;                                                      \
+      }                                                                      \
+      return dyn_cast<NAME>(Nd);                                             \
+    }                                                                        \
     NAME* Nd = new NAME(*this, Value, Format);                               \
-    Allocated.push_back(Nd);                                               \
-    return Nd;                                                             \
-  }                                                                        \
-  template <>                                                              \
+    Allocated.push_back(Nd);                                                 \
+    return Nd;                                                               \
+  }                                                                          \
+  template <>                                                                \
   NAME* SymbolTable::create<NAME>() {                                        \
-    if (MERGE) {                                                        \
+    if (MERGE) {                                                             \
       IntegerValue I(NodeType::NAME, (DEFAULT), ValueFormat::Decimal, true); \
-      BASE* Nd = IntMap[I];                                                \
-      if (Nd == nullptr) {                                                 \
-        Nd = new NAME(*this);                                               \
-        Allocated.push_back(Nd);                                           \
-        IntMap[I] = Nd;                                                    \
-      }                                                                    \
-      return dyn_cast<NAME>(Nd);                                            \
-    }                                                                      \
+      BASE* Nd = IntMap[I];                                                  \
+      if (Nd == nullptr) {                                                   \
+        Nd = new NAME(*this);                                                \
+        Allocated.push_back(Nd);                                             \
+        IntMap[I] = Nd;                                                      \
+      }                                                                      \
+      return dyn_cast<NAME>(Nd);                                             \
+    }                                                                        \
     NAME* Nd = new NAME(*this);                                              \
-    Allocated.push_back(Nd);                                               \
-    return Nd;                                                             \
+    Allocated.push_back(Nd);                                                 \
+    return Nd;                                                               \
   }
 AST_INTEGERNODE_TABLE
 #undef X
 
-#define X(NAME, BASE, VALUE, FORMAT, DECLS, INIT)                            \
-  template <>                                                              \
-  NAME* SymbolTable::create<NAME>() {                                        \
+#define X(NAME, BASE, VALUE, FORMAT, DECLS, INIT)                       \
+  template <>                                                           \
+  NAME* SymbolTable::create<NAME>() {                                   \
     IntegerValue I(NodeType::NAME, (VALUE), ValueFormat::FORMAT, true); \
-    BASE* Nd = IntMap[I];                                                \
-    if (Nd == nullptr) {                                                 \
-      Nd = new NAME(*this);                                               \
-      Allocated.push_back(Nd);                                           \
-      IntMap[I] = Nd;                                                    \
-    }                                                                    \
-    return dyn_cast<NAME>(Nd);                                            \
+    BASE* Nd = IntMap[I];                                               \
+    if (Nd == nullptr) {                                                \
+      Nd = new NAME(*this);                                             \
+      Allocated.push_back(Nd);                                          \
+      IntMap[I] = Nd;                                                   \
+    }                                                                   \
+    return dyn_cast<NAME>(Nd);                                          \
   }
 AST_LITERAL_TABLE
 #undef X
@@ -1269,25 +1268,24 @@ bool Nullary::implementsClass(NodeType Type) {
   switch (Type) {
     default:
       return false;
-#define X(NAME, BASE, DECLS, INIT)              \
-  case NodeType::NAME:            \
+#define X(NAME, BASE, DECLS, INIT) \
+  case NodeType::NAME:             \
     return true;
       AST_NULLARYNODE_TABLE
 #undef X
   }
 }
 
-#define X(NAME, BASE, DECLS, INIT)                                      \
+#define X(NAME, BASE, DECLS, INIT) \
   NAME::NAME(SymbolTable& Symtab) : BASE(Symtab, NodeType::NAME) { INIT }
 AST_NULLARYNODE_TABLE
 #undef X
 
-#define X(NAME, BASE, DECLS, INIT) \
-  template NAME* SymbolTable::create<NAME>();
+#define X(NAME, BASE, DECLS, INIT) template NAME* SymbolTable::create<NAME>();
 AST_NULLARYNODE_TABLE
 #undef X
 
-#define X(NAME, BASE, DECLS, INIT)                   \
+#define X(NAME, BASE, DECLS, INIT) \
   NAME::~NAME() {}
 AST_NULLARYNODE_TABLE
 #undef X
@@ -1319,26 +1317,28 @@ bool Unary::implementsClass(NodeType Type) {
     default:
       return false;
     case NodeType::BinaryEval:
-#define X(NAME, BASE, DECLS, INIT)     \
-  case NodeType::NAME:            \
+#define X(NAME, BASE, DECLS, INIT) \
+  case NodeType::NAME:             \
     return true;
       AST_UNARYNODE_TABLE
 #undef X
   }
 }
 
-#define X(NAME, BASE, DECLS, INIT)                                           \
+#define X(NAME, BASE, DECLS, INIT)           \
   NAME::NAME(SymbolTable& Symtab, Node* Kid) \
-      : BASE(Symtab, NodeType::NAME, Kid) { INIT }
+      : BASE(Symtab, NodeType::NAME, Kid) {  \
+    INIT                                     \
+  }
 AST_UNARYNODE_TABLE
 #undef X
 
-#define X(NAME, BASE, DECLS, INIT)                           \
+#define X(NAME, BASE, DECLS, INIT) \
   template NAME* SymbolTable::create<NAME>(Node * Nd);
 AST_UNARYNODE_TABLE
 #undef X
 
-#define X(NAME, BASE, DECLS, INIT)                   \
+#define X(NAME, BASE, DECLS, INIT) \
   NAME::~NAME() {}
 AST_UNARYNODE_TABLE
 #undef X
@@ -1434,45 +1434,49 @@ bool IntegerNode::implementsClass(NodeType Type) {
     default:
       return false;
     case NodeType::BinaryAccept:
-#define X(NAME, FORMAT, DEFAULT, MEGE, BASE, DECLS, INIT) \
-      case NodeType::NAME:
+#define X(NAME, FORMAT, DEFAULT, MEGE, BASE, DECLS, INIT) case NodeType::NAME:
       AST_INTEGERNODE_TABLE
 #undef X
-#define X(NAME, BASE, VALUE, FORMAT, DECLS, INIT) \
-          case NodeType::NAME:
+#define X(NAME, BASE, VALUE, FORMAT, DECLS, INIT) case NodeType::NAME:
       AST_LITERAL_TABLE
 #undef X
       return true;
   }
 }
 
-#define X(NAME, FORMAT, DEFAULT, MERGE, BASE, DECLS, INIT)     \
+#define X(NAME, FORMAT, DEFAULT, MERGE, BASE, DECLS, INIT)   \
   NAME::NAME(SymbolTable& Symtab, decode::IntType Value,     \
-             decode::ValueFormat Format)                        \
-      : BASE(Symtab, NodeType::NAME, Value, Format, false) { INIT }
+             decode::ValueFormat Format)                     \
+      : BASE(Symtab, NodeType::NAME, Value, Format, false) { \
+    INIT                                                     \
+  }
 AST_INTEGERNODE_TABLE
 #undef X
 
-#define X(NAME, FORMAT, DEFAULT, MERGE, BASE, DECLS, INIT)                   \
+#define X(NAME, FORMAT, DEFAULT, MERGE, BASE, DECLS, INIT)                    \
   NAME::NAME(SymbolTable& Symtab)                                             \
       : BASE(Symtab, NodeType::NAME, (DEFAULT), decode::ValueFormat::Decimal, \
-             true) { INIT }
+             true) {                                                          \
+    INIT                                                                      \
+  }
 AST_INTEGERNODE_TABLE
 #undef X
 
-#define X(NAME, FORMAT, DEFAULT, MERGE, BASE, DECLS, INIT)   \
+#define X(NAME, FORMAT, DEFAULT, MERGE, BASE, DECLS, INIT) \
   NAME::~NAME() {}
 AST_INTEGERNODE_TABLE
 #undef X
 
-#define X(NAME, BASE, VALUE, FORMAT, DECLS, INIT)                            \
-  NAME::NAME(SymbolTable& Symtab)                                             \
-      : BASE(Symtab, NodeType::NAME, (VALUE), decode::ValueFormat::FORMAT,   \
-             true) { INIT }
+#define X(NAME, BASE, VALUE, FORMAT, DECLS, INIT)                          \
+  NAME::NAME(SymbolTable& Symtab)                                          \
+      : BASE(Symtab, NodeType::NAME, (VALUE), decode::ValueFormat::FORMAT, \
+             true) {                                                       \
+    INIT                                                                   \
+  }
 AST_LITERAL_TABLE
 #undef X
 
-#define X(NAME, BASE, VALUE, FORMAT, DECLS, INIT)    \
+#define X(NAME, BASE, VALUE, FORMAT, DECLS, INIT) \
   NAME::~NAME() {}
 AST_LITERAL_TABLE
 #undef X
@@ -1636,26 +1640,28 @@ bool Binary::implementsClass(NodeType Type) {
   switch (Type) {
     default:
       return false;
-#define X(NAME, BASE, DECLS, INIT)     \
-  case NodeType::NAME:            \
+#define X(NAME, BASE, DECLS, INIT) \
+  case NodeType::NAME:             \
     return true;
       AST_BINARYNODE_TABLE
 #undef X
   }
 }
 
-#define X(NAME, BASE, DECLS, INIT)                             \
+#define X(NAME, BASE, DECLS, INIT)                        \
   NAME::NAME(SymbolTable& Symtab, Node* Kid1, Node* Kid2) \
-      : BASE(Symtab, NodeType::NAME, Kid1, Kid2) { INIT }
+      : BASE(Symtab, NodeType::NAME, Kid1, Kid2) {        \
+    INIT                                                  \
+  }
 AST_BINARYNODE_TABLE
 #undef X
 
-#define X(NAME, BASE, DECLS, INIT)                                           \
+#define X(NAME, BASE, DECLS, INIT) \
   template NAME* SymbolTable::create<NAME>(Node * Nd1, Node * Nd2);
 AST_BINARYNODE_TABLE
 #undef X
 
-#define X(NAME, BASE, DECLS, INIT)                   \
+#define X(NAME, BASE, DECLS, INIT) \
   NAME::~NAME() {}
 AST_BINARYNODE_TABLE
 #undef X
@@ -1692,26 +1698,28 @@ bool Ternary::implementsClass(NodeType Type) {
   switch (Type) {
     default:
       return false;
-#define X(NAME, BASE, DECLS, INIT)     \
-  case NodeType::NAME:            \
+#define X(NAME, BASE, DECLS, INIT) \
+  case NodeType::NAME:             \
     return true;
       AST_TERNARYNODE_TABLE
 #undef X
   }
 }
 
-#define X(NAME, BASE, DECLS, INIT)                                         \
+#define X(NAME, BASE, DECLS, INIT)                                    \
   NAME::NAME(SymbolTable& Symtab, Node* Kid1, Node* Kid2, Node* Kid3) \
-      : BASE(Symtab, NodeType::NAME, Kid1, Kid2, Kid3) { INIT }
+      : BASE(Symtab, NodeType::NAME, Kid1, Kid2, Kid3) {              \
+    INIT                                                              \
+  }
 AST_TERNARYNODE_TABLE
 #undef X
 
-#define X(NAME, BASE, DECLS, INIT)                                           \
+#define X(NAME, BASE, DECLS, INIT) \
   template NAME* SymbolTable::create<NAME>(Node * Nd1, Node * Nd2, Node * Nd3);
 AST_TERNARYNODE_TABLE
 #undef X
 
-#define X(NAME, BASE, DECLS, INIT)                   \
+#define X(NAME, BASE, DECLS, INIT) \
   NAME::~NAME() {}
 AST_TERNARYNODE_TABLE
 #undef X
@@ -1793,25 +1801,23 @@ bool Nary::implementsClass(NodeType Type) {
     default:
       return false;
 #define X(NAME, BASE, DECLS, INIT) \
-  case NodeType::NAME:            \
+  case NodeType::NAME:             \
     return true;
       AST_NARYNODE_TABLE
 #undef X
   }
 }
 
-#define X(NAME, BASE, DECLS, INIT)  \
-  NAME::NAME(SymbolTable& Symtab) \
-      : BASE(Symtab, NodeType::NAME) { INIT }
+#define X(NAME, BASE, DECLS, INIT) \
+  NAME::NAME(SymbolTable& Symtab) : BASE(Symtab, NodeType::NAME) { INIT }
+AST_NARYNODE_TABLE
+#undef X
+
+#define X(NAME, BASE, DECLS, INIT) template NAME* SymbolTable::create<NAME>();
 AST_NARYNODE_TABLE
 #undef X
 
 #define X(NAME, BASE, DECLS, INIT) \
-  template NAME* SymbolTable::create<NAME>();
-AST_NARYNODE_TABLE
-#undef X
-
-#define X(NAME, BASE, DECLS, INIT)               \
   NAME::~NAME() {}
 AST_NARYNODE_TABLE
 #undef X
@@ -1866,7 +1872,7 @@ const Header* Algorithm::getSourceHeader(bool UseEnclosing) const {
          Sym = Sym->getEnclosingScope().get()) {
       const Algorithm* Alg = Sym->getAlgorithm();
       if (Alg->SourceHdr)
-          return Alg->SourceHdr;
+        return Alg->SourceHdr;
     }
   }
   if (!IsValidated) {
@@ -1980,8 +1986,8 @@ bool SelectBase::implementsClass(NodeType Type) {
   switch (Type) {
     default:
       return false;
-#define X(NAME, BASE, DECLS, INIT)                   \
-  case NodeType::NAME:      \
+#define X(NAME, BASE, DECLS, INIT) \
+  case NodeType::NAME:             \
     return true;
       AST_SELECTNODE_TABLE
 #undef X
@@ -2170,18 +2176,16 @@ bool collectCaseWidths(IntType Key,
 
 }  // end of anonymous namespace
 
-#define X(NAME, BASE, DECLS, INIT)                                           \
-  NAME::NAME(SymbolTable& Symtab) \
-      : BASE(Symtab, NodeType::NAME) { INIT }
+#define X(NAME, BASE, DECLS, INIT) \
+  NAME::NAME(SymbolTable& Symtab) : BASE(Symtab, NodeType::NAME) { INIT }
+AST_SELECTNODE_TABLE
+#undef X
+
+#define X(NAME, BASE, DECLS, INIT) template NAME* SymbolTable::create<NAME>();
 AST_SELECTNODE_TABLE
 #undef X
 
 #define X(NAME, BASE, DECLS, INIT) \
-  template NAME* SymbolTable::create<NAME>();
-AST_SELECTNODE_TABLE
-#undef X
-
-#define X(NAME, BASE, DECLS,INIT)                   \
   NAME::~NAME() {}
 AST_SELECTNODE_TABLE
 #undef X
