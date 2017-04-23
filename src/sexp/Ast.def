@@ -288,6 +288,7 @@
     bool isAlgorithm() const { return IsAlgorithmSpecified; }                  \
     bool validateNode(ConstNodeVectorType &Parents) const OVERRIDE;            \
     void init();                                                               \
+    void clearCaches() { init(); }                                             \
   private:                                                                     \
     mutable const Header* SourceHdr;                                           \
     mutable const Header* ReadHdr;                                             \

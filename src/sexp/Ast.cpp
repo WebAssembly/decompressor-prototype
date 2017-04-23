@@ -860,23 +860,32 @@ bool SymbolTable::areActionsConsistent() {
   return IsValid;
 }
 
-void SymbolTable::setAlgorithm(const Algorithm* NewAlg) {
-  if (IsAlgInstalled) {
-    IsAlgInstalled = false;
-    CachedValue.clear();
-    UndefinedCallbacks.clear();
-    CallbackValues.clear();
-    CallbackLiterals.clear();
-    ActionBase = 0;
-    CachedSourceHeader = nullptr;
-    CachedReadHeader = nullptr;
-    CachedWriteHeader = nullptr;
-    if (Alg)
-      Alg->init();
-  }
-  Alg = const_cast<Algorithm*>(NewAlg);
+void SymbolTable::setEnclosingScope(SharedPtr Symtab) {
+  EnclosingScope = Symtab;
+  clearCaches();
+}
+
+void SymbolTable::clearCaches() {
   if (Alg)
-    Alg->init();
+    Alg->clearCaches();
+  IsAlgInstalled = false;
+  CachedValue.clear();
+  UndefinedCallbacks.clear();
+  CallbackValues.clear();
+  CallbackLiterals.clear();
+  ActionBase = 0;
+  CachedSourceHeader = nullptr;
+  CachedReadHeader = nullptr;
+  CachedWriteHeader = nullptr;
+}
+
+void SymbolTable::setAlgorithm(const Algorithm* NewAlg) {
+  if (Alg == NewAlg)
+    return;
+  if (IsAlgInstalled)
+    clearCaches();
+  Alg = const_cast<Algorithm*>(NewAlg);
+  Alg->clearCaches();
 }
 
 bool SymbolTable::install() {
