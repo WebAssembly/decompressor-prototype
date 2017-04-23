@@ -569,6 +569,11 @@ size_t CodeGenerator::generateNode(const Node* Nd) {
   switch (Nd->getType()) {
     default:
       return generateBadLocal(Nd);
+#define X(NAME, BASE, VALUE, FORMAT, DECLS, INIT) \
+  case NodeType::NAME:                            \
+    return generateNullary(#NAME, Nd);
+      AST_LITERAL_TABLE
+#undef X
     case NodeType::AlgorithmFlag:
       return generateUnary("AlgorithmFlag", Nd);
     case NodeType::And:

@@ -199,6 +199,11 @@ bool InflateAst::writeHeaderValue(decode::IntType Value,
 
 bool InflateAst::applyOp(IntType Op) {
   switch (NodeType(Op)) {
+#define X(NAME, BASE, VALUE, FORMAT, DECLS, INIT) \
+  case NodeType::NAME:                            \
+    return buildNullary<NAME>();
+    AST_LITERAL_TABLE
+#undef X
     case NodeType::AlgorithmFlag:
       return buildUnary<AlgorithmFlag>();
     case NodeType::And:

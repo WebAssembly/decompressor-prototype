@@ -182,13 +182,6 @@ void FlattenAst::flattenNode(const Node* Nd) {
   }
       AST_INTEGERNODE_TABLE
 #undef X
-#define X(NAME, BASE, VALUE, FORMAT, DECLS, INIT) \
-  case NodeType::NAME: {                          \
-    write(IntType(Opcode));                       \
-    break;                                        \
-  }
-      AST_LITERAL_TABLE
-#undef X
     case NodeType::BinaryEval:
       if (BitCompress && binaryEvalEncode(cast<BinaryEval>(Nd)))
         break;
@@ -232,6 +225,9 @@ void FlattenAst::flattenNode(const Node* Nd) {
     case NodeType::Varint64:
     case NodeType::Varuint32:
     case NodeType::Varuint64:
+#define X(NAME, BASE, VALUE, FORMAT, DECLS, INIT) case NodeType::NAME:
+      AST_LITERAL_TABLE
+#undef X
     case NodeType::Void: {
       // Operations that are written out in postorder, with a fixed number of
       // arguments.

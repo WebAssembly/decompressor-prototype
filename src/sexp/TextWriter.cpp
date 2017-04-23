@@ -379,16 +379,29 @@ void TextWriter::writeSymbol(const Symbol* Sym, bool AddNewline) {
 }
 
 void TextWriter::writeIntegerNode(const IntegerNode* Int, bool AddNewline) {
-  Parenthesize _(this, Int->getType(), AddNewline);
-  if (!Int->isDefaultValue()) {
-    fputc(' ', File);
-    writeInt(File, Int->getValue(), Int->getFormat());
-    if (const auto* Accept = dyn_cast<BinaryAccept>(Int)) {
-      fputc(':', File);
-      fprintf(File, "%u", Accept->getNumBits());
+  switch (Int->getType()) {
+#define X(NAME, BASE, VALUE, FORMAT, DECLS, INIT)      \
+  case NodeType::NAME:                                 \
+    writeInt(File, Int->getValue(), Int->getFormat()); \
+    LineEmpty = false;                                 \
+    maybeWriteNewline(AddNewline);                     \
+    break;
+    AST_LITERAL_TABLE
+#undef X
+    default: {
+      Parenthesize _(this, Int->getType(), AddNewline);
+      if (!Int->isDefaultValue()) {
+        fputc(' ', File);
+        writeInt(File, Int->getValue(), Int->getFormat());
+        if (const auto* Accept = dyn_cast<BinaryAccept>(Int)) {
+          fputc(':', File);
+          fprintf(File, "%u", Accept->getNumBits());
+        }
+      }
+      LineEmpty = false;
+      break;
     }
   }
-  LineEmpty = false;
   return;
 }
 
