@@ -936,8 +936,7 @@ const Header* SymbolTable::getWriteHeader() const {
 bool SymbolTable::specifiesAlgorithm() const {
   if (Alg == nullptr)
     return false;
-  return getSourceHeader() == getReadHeader() &&
-         getReadHeader() == getWriteHeader();
+  return Alg->isAlgorithm();
 }
 
 void SymbolTable::installPredefined() {
@@ -1878,6 +1877,23 @@ void Algorithm::init() {
   IsValidated = false;
 }
 
+bool Algorithm::isAlgorithm() const {
+  if (IsAlgorithmSpecified || IsValidated)
+    return IsAlgorithmSpecified;
+  for (const Node* Kid : *this)
+    if (const_cast<Algorithm*>(this)->setIsAlgorithm(Kid))
+      return IsAlgorithmSpecified;
+  return false;
+}
+
+bool Algorithm::setIsAlgorithm(const Node* Nd) {
+  if (!isa<AlgorithmFlag>(Nd) || !isa<IntegerNode>(Nd->getKid(0)))
+    return false;
+  auto* Int = cast<IntegerNode>(Nd->getKid(0));
+  IsAlgorithmSpecified = (Int->getValue() != 0);
+  return true;
+}
+
 const Header* Algorithm::getSourceHeader(bool UseEnclosing) const {
   if (SourceHdr != nullptr)
     return SourceHdr;
@@ -1889,16 +1905,16 @@ const Header* Algorithm::getSourceHeader(bool UseEnclosing) const {
         return Alg->SourceHdr;
     }
   }
-  if (!IsValidated) {
-    // Note: this function must work, even if not installed. The
-    // reason is that the decompressor must look up the read header to
-    // find the appropriate enclosing algorithm, which must be bound
-    // before the algorithm is installed.
-    for (const Node* Kid : *this) {
-      if (!isa<SourceHeader>(Kid))
-        continue;
-      return cast<SourceHeader>(Kid);
-    }
+  if (IsValidated)
+    return nullptr;
+  // Note: this function must work, even if not installed. The
+  // reason is that the decompressor must look up the read header to
+  // find the appropriate enclosing algorithm, which must be bound
+  // before the algorithm is installed.
+  for (const Node* Kid : *this) {
+    if (!isa<SourceHeader>(Kid))
+      continue;
+    return cast<SourceHeader>(Kid);
   }
   return nullptr;
 }
@@ -1914,16 +1930,16 @@ const Header* Algorithm::getReadHeader(bool UseEnclosing) const {
         return Alg->ReadHdr;
     }
   }
-  if (!IsValidated) {
-    // Note: this function must work, even if not installed. The
-    // reason is that the decompressor must look up the read header to
-    // find the appropriate enclosing algorithm, which must be bound
-    // before the algorithm is installed.
-    for (const Node* Kid : *this) {
-      if (!isa<ReadHeader>(Kid))
-        continue;
-      return cast<ReadHeader>(Kid);
-    }
+  if (IsValidated)
+    return getSourceHeader(UseEnclosing);
+  // Note: this function must work, even if not installed. The
+  // reason is that the decompressor must look up the read header to
+  // find the appropriate enclosing algorithm, which must be bound
+  // before the algorithm is installed.
+  for (const Node* Kid : *this) {
+    if (!isa<ReadHeader>(Kid))
+      continue;
+    return cast<ReadHeader>(Kid);
   }
   return getSourceHeader(UseEnclosing);
 }
@@ -1938,6 +1954,17 @@ const Header* Algorithm::getWriteHeader(bool UseEnclosing) const {
       if (Alg->WriteHdr)
         return Alg->WriteHdr;
     }
+  }
+  if (IsValidated)
+    return getReadHeader(UseEnclosing);
+  // Note: this function must work, even if not installed. The
+  // reason is that the decompressor must look up the read header to
+  // find the appropriate enclosing algorithm, which must be bound
+  // before the algorithm is installed.
+  for (const Node* Kid : *this) {
+    if (!isa<WriteHeader>(Kid))
+      continue;
+    return cast<WriteHeader>(Kid);
   }
   return getReadHeader(UseEnclosing);
 }

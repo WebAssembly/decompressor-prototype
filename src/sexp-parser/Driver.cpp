@@ -108,7 +108,7 @@ IntegerNode* Driver::createLiteral(IntType Value, ValueFormat Format) {
     default:
       break;
   }
-  return create<U64Const>(Value, Format);
+  return create<I64Const>(Value, Format);
 }
 
 void Driver::report(ErrorLevel Level,

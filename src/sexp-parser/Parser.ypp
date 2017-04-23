@@ -163,6 +163,7 @@ struct IntValue {
 %type <wasm::filt::Node *> format_directive
 %type <wasm::filt::Node *> literal_action_args
 %type <wasm::filt::Node *> literal_expression
+%type <wasm::filt::Node *> literal_expression_explicit
 %type <wasm::filt::Node *> locals_decl
 %type <wasm::filt::Node *> local_var
 %type <wasm::filt::Node *> loop_body
@@ -208,7 +209,7 @@ algorithm_header_args
         | "header" "." "write" {
             $$ = Driver.create<WriteHeader>();
           }
-        | algorithm_header_args literal_expression {
+        | algorithm_header_args literal_expression_explicit {
             $$ = $1;
             $$->append($2);
           }
@@ -485,6 +486,15 @@ literal_action_args
         ;
 
 literal_expression
+        : literal_expression_explicit {
+            $$ = $1;
+          }
+        | INTEGER {
+            $$ = Driver.createLiteral($1.Value, $1.Format);
+          }
+        ;
+
+literal_expression_explicit
         : "(" "i32.const" INTEGER ")" {
             $$ = Driver.create<I32Const>($3.Value, $3.Format);
           }
@@ -499,9 +509,6 @@ literal_expression
           }
         | "(" "u64.const" INTEGER ")" {
             $$ = Driver.create<U64Const>($3.Value, $3.Format);
-          }
-        | INTEGER {
-            $$ = Driver.createLiteral($1.Value, $1.Format);
           }
         ;
 
