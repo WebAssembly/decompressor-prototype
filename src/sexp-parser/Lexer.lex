@@ -224,6 +224,7 @@ letter	[a-zA-Z]
 "enclosing"       return Parser::make_ENCLOSING(Driver.getLoc());
 "error"           return Parser::make_ERROR(Driver.getLoc());
 "eval"            return Parser::make_EVAL(Driver.getLoc());
+"exprs"           return Parser::make_EXPRS(Driver.getLoc());
 "header"          return Parser::make_HEADER(Driver.getLoc());
 "if"              return Parser::make_IF(Driver.getLoc());
 "is"              return Parser::make_IS(Driver.getLoc());

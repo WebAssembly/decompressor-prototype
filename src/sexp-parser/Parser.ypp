@@ -95,6 +95,7 @@ struct IntValue {
 %token ENUM          "enum"
 %token ERROR         "error"
 %token EVAL          "eval"
+%token EXPRS         "exprs"
 %token HEADER        "header"
 %token IF            "if"
 %token IS            "is"
@@ -169,7 +170,9 @@ struct IntValue {
 %type <wasm::filt::Node *> loop_body
 %type <wasm::filt::Map *> map_args
 %type <wasm::filt::Opcode *> opcode_args
+%type <wasm::filt::Node *> params_arg
 %type <wasm::filt::Node *> params_decl
+%type <wasm::filt::Node *> params_list
 %type <wasm::filt::Node *> sequence_args
 %type <wasm::filt::Node *> symbol
 %type <wasm::filt::Node *> table_args
@@ -339,24 +342,12 @@ declaration
           }
         ;
 
-define_args
-        : symbol params_decl expression {
-            $$ = Driver.create<Define>();
-            $$->append($1);
-            $$->append($2);
-            $$->append($3);
-          }
-        | symbol params_decl locals_decl expression {
-            $$ = Driver.create<Define>();
-            $$->append($1);
-            $$->append($2);
-            $$->append($3);
-            $$->append($4);
-          }
-        | define_args expression {
-            $$ = $1;
-            Driver.appendArgument($1, $2);
-          }
+
+define_args  /* TODO: fix semantics */
+        : symbol expression { $$ = nullptr; }
+        | symbol params_decl expression { $$ = nullptr; }
+        | symbol locals_decl expression { $$ = nullptr; }
+        | symbol params_decl locals_decl expression { $$ = nullptr; }
         ;
 
 expression
@@ -558,12 +549,37 @@ opcode_args
           }
         ;
 
-params_decl
+
+params_arg /* TODO: Fix semantics */
         : "(" "params" INTEGER ")" {
             $$ = Driver.create<Params>($3.Value, $3.Format);
           }
-        | "(" "params" ")" {
-            $$ = Driver.create<Params>();
+        | "(" "exprs" INTEGER ")" {
+            $$ = Driver.create<Params>($3.Value, $3.Format);
+          }
+        | "(" "exprs" "." "cached" INTEGER ")" {
+            $$ = nullptr;
+          }
+        | "(" "cached" ")" {
+            $$ = nullptr;
+          }
+        ;
+
+params_decl /* TODO: Fix semantics */
+        : params_arg {
+            $$ = $1;
+          }
+        | "(" "args" params_list ")" {
+            $$ = $3;
+          }
+        ;
+
+params_list /* TODO: Fix semantics */
+        : params_arg {
+            $$ = $1;
+          }
+        | params_list params_arg {
+            $$ = $1;
           }
         ;
 
