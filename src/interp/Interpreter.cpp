@@ -1287,13 +1287,27 @@ void Interpreter::algorithmResume() {
             break;
           case NodeType::Param:  // Method::Eval
             switch (Frame.CallState) {
-              case State::Enter:
+              case State::Enter: {
+                if (CallingEvalStack.empty())
+                  return throwMessage(
+                      "Not inside a call frame, can't evaluate parameter "
+                      "accessor!");
+                assert(isa<Param>(Frame.Nd));
+                auto* Parm = cast<Param>(Frame.Nd);
+                IntType ParamIndex = Parm->getValue() + 1;
+                if (ParamIndex >= IntType(CallingEval.Caller->getNumKids()))
+                  return throwMessage(
+                      "Parameter reference doesn't match callling context!");
+                const Node* Context = CallingEval.Caller->getKid(ParamIndex);
+                CallingEvalStack.push(
+                    CallingEvalStack.at(CallingEval.CallingEvalIndex));
                 Frame.CallState = State::Exit;
-                DispatchedMethod = Method::Eval;
-                call(Method::EvalParam, Frame.CallModifier, Frame.Nd);
+                call(Method::Eval, Frame.CallModifier, Context);
                 break;
+              }
               case State::Exit:
-                popAndReturn();
+                CallingEvalStack.pop();
+                popAndReturn(Frame.ReturnValue);
                 break;
               default:
                 return failBadState();
@@ -1454,34 +1468,6 @@ void Interpreter::algorithmResume() {
             popAndReturn();
             break;
           }
-          default:
-            return failBadState();
-        }
-        break;
-      case Method::EvalParam:
-        switch (Frame.CallState) {
-          case State::Enter: {
-            if (CallingEvalStack.empty())
-              return throwMessage(
-                  "Not inside a call frame, can't evaluate parameter "
-                  "accessor!");
-            assert(isa<Param>(Frame.Nd));
-            auto* Parm = cast<Param>(Frame.Nd);
-            IntType ParamIndex = Parm->getValue() + 1;
-            if (ParamIndex >= IntType(CallingEval.Caller->getNumKids()))
-              return throwMessage(
-                  "Parameter reference doesn't match callling context!");
-            const Node* Context = CallingEval.Caller->getKid(ParamIndex);
-            CallingEvalStack.push(
-                CallingEvalStack.at(CallingEval.CallingEvalIndex));
-            Frame.CallState = State::Exit;
-            call(DispatchedMethod, Frame.CallModifier, Context);
-            break;
-          }
-          case State::Exit:
-            CallingEvalStack.pop();
-            popAndReturn(Frame.ReturnValue);
-            break;
           default:
             return failBadState();
         }
