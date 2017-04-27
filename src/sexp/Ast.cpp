@@ -1737,6 +1737,19 @@ AST_TERNARYNODE_TABLE
 AST_TERNARYNODE_TABLE
 #undef X
 
+bool Define::validateNode(ConstNodeVectorType& Parents) const {
+  if (getNumKids() < 3) {
+    errorDescribeNode("Malformed define", this);
+    return false;
+  }
+  // TODO(karlschimpf) Allow other forms of parameters.
+  if (getKid(1)->getType() != NodeType::Params) {
+    errorDescribeNode("Parameter expression not implemented yet", this);
+    return false;
+  }
+  return true;
+}
+
 // Returns nullptr if P is illegal, based on the define.
 bool Define::isValidParam(IntType Index) const {
   if (getNumKids() < 2)
@@ -1762,9 +1775,17 @@ const std::string Define::getName() const {
 
 size_t Define::getNumLocals() const {
   if (getNumKids() < 3)
-    return false;
+    return 0;
   if (auto* Locs = dyn_cast<Locals>(getKid(2)))
     return Locs->getValue();
+  return 0;
+}
+
+size_t Define::getNumParams() const {
+  if (getNumKids() < 2)
+    return 0;
+  if (auto* Parms = dyn_cast<Params>(getKid(1)))
+    return Parms->getValue();
   return 0;
 }
 
@@ -1858,9 +1879,8 @@ bool Eval::validateNode(ConstNodeVectorType& Parents) const {
     errorDescribeNode("In", this);
     return false;
   }
-  const auto* Parms = dyn_cast<Params>(Defn->getKid(1));
-  assert(Parms);
-  if (int(Parms->getValue()) != getNumKids() - 1) {
+  size_t NumParms = Defn->getNumParams();
+  if (NumParms != size_t(getNumKids() - 1)) {
     fprintf(error(), "Eval called with wrong number of arguments!\n");
     errorDescribeNode("bad eval", this);
     errorDescribeNode("called define", Defn);

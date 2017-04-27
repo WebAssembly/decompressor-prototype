@@ -343,11 +343,30 @@ declaration
         ;
 
 
-define_args  /* TODO: fix semantics */
-        : symbol expression { $$ = nullptr; }
-        | symbol params_decl expression { $$ = nullptr; }
-        | symbol locals_decl expression { $$ = nullptr; }
-        | symbol params_decl locals_decl expression { $$ = nullptr; }
+define_args
+        : symbol params_decl expression {
+            $$ = Driver.create<Define>();
+            $$->append($1);
+            $$->append($2);
+            $$->append($3);
+          }
+        | symbol locals_decl expression {
+            $$ = Driver.create<Define>();
+            $$->append($1);
+            $$->append($2);
+            $$->append($3);
+          }
+        | symbol params_decl locals_decl expression {
+            $$ = Driver.create<Define>();
+            $$->append($1);
+            $$->append($2);
+            $$->append($3);
+            $$->append($4);
+          }
+        | define_args expression {
+            $$ = $1;
+            Driver.appendArgument($1, $2);
+          }
         ;
 
 expression
@@ -550,22 +569,25 @@ opcode_args
         ;
 
 
-params_arg /* TODO: Fix semantics */
+params_arg
         : "(" "params" INTEGER ")" {
             $$ = Driver.create<Params>($3.Value, $3.Format);
           }
+        | "(" "params" ")" {
+            $$ = Driver.create<Params>();
+          }
         | "(" "exprs" INTEGER ")" {
-            $$ = Driver.create<Params>($3.Value, $3.Format);
+            $$ = Driver.create<ParamExprs>($3.Value, $3.Format);
           }
         | "(" "exprs" "." "cached" INTEGER ")" {
-            $$ = nullptr;
+            $$ = Driver.create<ParamExprsCached>($5.Value, $5.Format);
           }
         | "(" "cached" ")" {
-            $$ = nullptr;
+            $$ = Driver.create<ParamCached>();
           }
         ;
 
-params_decl /* TODO: Fix semantics */
+params_decl
         : params_arg {
             $$ = $1;
           }
@@ -574,12 +596,14 @@ params_decl /* TODO: Fix semantics */
           }
         ;
 
-params_list /* TODO: Fix semantics */
+params_list
         : params_arg {
-            $$ = $1;
+            $$ = Driver.create<ParamArgs>();
+            $$->append($1);
           }
         | params_list params_arg {
             $$ = $1;
+            $$->append($2);
           }
         ;
 
