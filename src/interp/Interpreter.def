@@ -40,7 +40,6 @@ X(GetAlgorithm)                                               \
 X(CopyBlock)                                                  \
 X(Eval)                                                       \
 X(EvalBlock)                                                  \
-X(EvalParam)                                                  \
 X(Finished)                                                   \
 X(GetFile)                                                    \
 X(HasFileHeader)                                              \
