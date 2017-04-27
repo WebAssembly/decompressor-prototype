@@ -301,6 +301,7 @@ void FlattenAst::flattenNode(const Node* Nd) {
     case NodeType::LiteralActionBase:
     case NodeType::Opcode:
     case NodeType::Map:
+    case NodeType::ParamArgs:
     case NodeType::Switch:
     case NodeType::Sequence:
     case NodeType::Write: {

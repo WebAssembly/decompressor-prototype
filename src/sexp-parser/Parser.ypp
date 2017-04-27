@@ -95,6 +95,7 @@ struct IntValue {
 %token ENUM          "enum"
 %token ERROR         "error"
 %token EVAL          "eval"
+%token EXPRS         "exprs"
 %token HEADER        "header"
 %token IF            "if"
 %token IS            "is"
@@ -169,7 +170,9 @@ struct IntValue {
 %type <wasm::filt::Node *> loop_body
 %type <wasm::filt::Map *> map_args
 %type <wasm::filt::Opcode *> opcode_args
+%type <wasm::filt::Node *> params_arg
 %type <wasm::filt::Node *> params_decl
+%type <wasm::filt::Node *> params_list
 %type <wasm::filt::Node *> sequence_args
 %type <wasm::filt::Node *> symbol
 %type <wasm::filt::Node *> table_args
@@ -339,8 +342,15 @@ declaration
           }
         ;
 
+
 define_args
         : symbol params_decl expression {
+            $$ = Driver.create<Define>();
+            $$->append($1);
+            $$->append($2);
+            $$->append($3);
+          }
+        | symbol locals_decl expression {
             $$ = Driver.create<Define>();
             $$->append($1);
             $$->append($2);
@@ -558,12 +568,42 @@ opcode_args
           }
         ;
 
-params_decl
+
+params_arg
         : "(" "params" INTEGER ")" {
             $$ = Driver.create<Params>($3.Value, $3.Format);
           }
         | "(" "params" ")" {
             $$ = Driver.create<Params>();
+          }
+        | "(" "exprs" INTEGER ")" {
+            $$ = Driver.create<ParamExprs>($3.Value, $3.Format);
+          }
+        | "(" "exprs" "." "cached" INTEGER ")" {
+            $$ = Driver.create<ParamExprsCached>($5.Value, $5.Format);
+          }
+        | "(" "cached" ")" {
+            $$ = Driver.create<ParamCached>();
+          }
+        ;
+
+params_decl
+        : params_arg {
+            $$ = $1;
+          }
+        | "(" "args" params_list ")" {
+            $$ = $3;
+          }
+        ;
+
+params_list
+        : params_arg {
+            $$ = Driver.create<ParamArgs>();
+            $$->append($1);
+          }
+        | params_list params_arg {
+            $$ = $1;
+            $$->append($2);
           }
         ;
 

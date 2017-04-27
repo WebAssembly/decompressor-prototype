@@ -686,7 +686,11 @@ void Interpreter::algorithmResume() {
           case NodeType::BinaryEvalBits:
           case NodeType::BinarySelect:
           case NodeType::IntLookup:
+          case NodeType::ParamArgs:
           case NodeType::Params:
+          case NodeType::ParamExprs:
+          case NodeType::ParamExprsCached:
+          case NodeType::ParamCached:
           case NodeType::LastSymbolIs:
           case NodeType::LiteralActionBase:
           case NodeType::LiteralActionDef:
@@ -1365,15 +1369,13 @@ void Interpreter::algorithmResume() {
                           Sym->getName().c_str());
                   return throwMessage("Unable to evaluate call");
                 }
-                auto* NumParams = dyn_cast<Params>(Defn->getKid(1));
-                assert(NumParams);
+                size_t NumParams = Defn->getNumParams();
                 int NumCallArgs = Frame.Nd->getNumKids() - 1;
-                if (NumParams->getValue() != IntType(NumCallArgs)) {
+                if (NumParams != size_t(NumCallArgs)) {
                   fprintf(stderr,
                           "Definition %s expects %" PRIuMAX
                           "parameters, found: %" PRIuMAX "\n",
-                          Sym->getName().c_str(),
-                          uintmax_t(NumParams->getValue()),
+                          Sym->getName().c_str(), uintmax_t(NumParams),
                           uintmax_t(NumCallArgs));
                   return throwMessage("Unable to evaluate call");
                 }
