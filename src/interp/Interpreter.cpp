@@ -1305,14 +1305,6 @@ void Interpreter::algorithmResume() {
                 const Node* Context = CallingEval.Caller->getKid(ParamIndex);
                 size_t ContextFrameIndex =
                     CurEvalFrameStack[CurEvalFrameStack.back()];
-                if (ContextFrameIndex != CallingEval.CallingEvalIndex) {
-                  fprintf(stderr,
-                          "Cur Frame index mismatch: %" PRIuMAX " and %" PRIuMAX
-                          "\n",
-                          uintmax_t(ContextFrameIndex),
-                          uintmax_t(CallingEval.CallingEvalIndex));
-                  return throwMessage("Unable to continue");
-                }
                 CurEvalFrameStack.push_back(ContextFrameIndex);
                 Frame.CallState = State::Exit;
                 call(Method::Eval, Frame.CallModifier, Context);
