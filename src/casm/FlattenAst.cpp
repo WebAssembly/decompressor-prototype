@@ -210,6 +210,8 @@ void FlattenAst::flattenNode(const Node* Nd) {
     case NodeType::LiteralUse:
     case NodeType::Loop:
     case NodeType::LoopUnbounded:
+    case NodeType::NoLocals:
+    case NodeType::NoParams:
     case NodeType::Not:
     case NodeType::Or:
     case NodeType::Peek:

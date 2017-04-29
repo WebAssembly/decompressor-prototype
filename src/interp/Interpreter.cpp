@@ -690,6 +690,8 @@ void Interpreter::algorithmResume() {
           case NodeType::BinaryEvalBits:
           case NodeType::BinarySelect:
           case NodeType::IntLookup:
+          case NodeType::NoLocals:
+          case NodeType::NoParams:
           case NodeType::ParamArgs:
           case NodeType::Params:
           case NodeType::ParamExprs:

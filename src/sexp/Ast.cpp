@@ -1293,6 +1293,22 @@ bool Nullary::implementsClass(NodeType Type) {
   }
 }
 
+TextInvisible::~TextInvisible() {}
+
+TextInvisible::TextInvisible(SymbolTable& Symtab, NodeType Type)
+    : Nullary(Symtab, Type) {}
+
+bool TextInvisible::implementsClass(NodeType Type) {
+  switch (Type) {
+    default:
+      return false;
+#define X(NAME) case NodeType::NAME:
+      AST_TEXTINVISIBLE_TABLE
+#undef X
+      return true;
+  }
+}
+
 #define X(NAME, BASE, DECLS, INIT) \
   NAME::NAME(SymbolTable& Symtab) : BASE(Symtab, NodeType::NAME) { INIT }
 AST_NULLARYNODE_TABLE

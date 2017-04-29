@@ -262,6 +262,10 @@ bool InflateAst::applyOp(IntType Op) {
       return buildUnary<LoopUnbounded>();
     case NodeType::Map:
       return buildNary<Map>();
+    case NodeType::NoLocals:
+      return buildNullary<NoLocals>();
+    case NodeType::NoParams:
+      return buildNullary<NoParams>();
     case NodeType::Not:
       return buildUnary<Not>();
     case NodeType::Or:

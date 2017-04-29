@@ -634,6 +634,10 @@ size_t CodeGenerator::generateNode(const Node* Nd) {
       return generateUnary("LoopUnbounded", Nd);
     case NodeType::Map:
       return generateNary("Map", Nd);
+    case NodeType::NoLocals:
+      return generateNullary("NoLocals", Nd);
+    case NodeType::NoParams:
+      return generateNullary("NoParams", Nd);
     case NodeType::Not:
       return generateUnary("Not", Nd);
     case NodeType::Opcode:

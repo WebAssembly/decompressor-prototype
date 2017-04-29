@@ -383,6 +383,20 @@ class Nullary : public Node {
   Nullary(SymbolTable& Symtab, NodeType Type);
 };
 
+class TextInvisible : public Nullary {
+  TextInvisible() = delete;
+  TextInvisible(const TextInvisible&) = delete;
+  TextInvisible& operator=(const TextInvisible&) = delete;
+
+ public:
+  ~TextInvisible() OVERRIDE;
+
+  static bool implementsClass(NodeType Type);
+
+ protected:
+  TextInvisible(SymbolTable& Symtab, NodeType Type);
+};
+
 // Base class for cached data. What these nodes have in common is that
 // they are uncomparable because their content updates dynamically as
 // data is cached. As a result, we use this base class to capture that
