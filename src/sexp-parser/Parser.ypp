@@ -348,11 +348,13 @@ define_args
             $$ = Driver.create<Define>();
             $$->append($1);
             $$->append($2);
+            $$->append(Driver.create<NoLocals>());
             $$->append($3);
           }
         | symbol locals_decl expression {
             $$ = Driver.create<Define>();
             $$->append($1);
+            $$->append(Driver.create<NoParams>());
             $$->append($2);
             $$->append($3);
           }

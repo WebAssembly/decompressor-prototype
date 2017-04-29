@@ -45,6 +45,8 @@
      case 'literal.use'
      case 'loop'
      case 'loop.unbounded'
+     case 'no.locals'
+     case 'no.params'
      case 'not'
      case 'one'
      case 'opcode.binary'

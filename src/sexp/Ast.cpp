@@ -1808,11 +1808,14 @@ size_t Define::getNumParams() const {
 Node* Define::getBody() const {
   assert(getNumKids() >= 3);
   Node* Nd = getKid(2);
-  if (isa<Locals>(Nd)) {
-    assert(getNumKids() >= 4);
-    return getKid(3);
+  switch (Nd->getType()) {
+    default:
+      return Nd;
+    case NodeType::Locals:
+    case NodeType::NoLocals:
+      assert(getNumKids() >= 4);
+      return getKid(3);
   }
-  return Nd;
 }
 
 Nary::Nary(SymbolTable& Symtab, NodeType Type) : Node(Symtab, Type) {}

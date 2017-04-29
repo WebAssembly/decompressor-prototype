@@ -128,20 +128,23 @@ void TextWriter::writeIndent(int Adjustment) {
 void TextWriter::writeNodeKids(const Node* Nd, bool EmbeddedInParent) {
   // Write out with number of kids specified to be on same line,
   // with remaining kids on separate (indented) lines.
+  std::vector<Node*> Kids;
+  for (Node* Kid : *Nd) {
+    if (!isa<TextInvisible>(Kid))
+      Kids.push_back(Kid);
+  }
   int Count = 0;
   const AstTraitsType* Traits = getAstTraits(Nd->getType());
   int KidsSameLine = Traits->NumTextArgs;
   int MaxKidsSameLine = KidsSameLine + Traits->AdditionalTextArgs;
-  int NumKids = Nd->getNumKids();
+  int NumKids = Kids.size();
   if (NumKids <= MaxKidsSameLine)
     KidsSameLine = MaxKidsSameLine;
   Node* LastKid = Nd->getLastKid();
   bool HasHiddenSeq = Traits->HidesSeqInText;
   bool ForceNewline = false;
-  for (auto* Kid : *Nd) {
+  for (auto* Kid : Kids) {
     if (!ShowInternalStructure) {
-      if (isa<TextInvisible>(Kid))
-        continue;
       if (Kid == LastKid && HasHiddenSeq &&
           (isa<Sequence>(LastKid) || (isa<Case>(Nd) && isa<Case>(Kid)))) {
         writeNewline();
