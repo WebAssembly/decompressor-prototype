@@ -1024,8 +1024,12 @@ void SymbolTable::installDefinitions(const Node* Nd) {
       if (auto* OldSymbol = dyn_cast<Symbol>(Nd->getKid(0))) {
         if (auto* EncSymbol = EncSymtab->getSymbol(OldSymbol->getName())) {
           if (auto* NewSymbol = dyn_cast<Symbol>(Nd->getKid(1))) {
-            const Define* Defn = EncSymbol->getDefineDefinition();
-            NewSymbol->setDefineDefinition(Defn);
+            const Define* OldDefn = EncSymbol->getDefineDefinition();
+            Define* NewDefn = create<Define>();
+            NewDefn->append(NewSymbol);
+            for (int i = 1; i < OldDefn->getNumKids(); ++i)
+              NewDefn->append(OldDefn->getKid(i));
+            installDefinitions(NewDefn);
             return;
           }
         }
