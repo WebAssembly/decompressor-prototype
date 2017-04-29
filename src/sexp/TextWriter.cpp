@@ -129,9 +129,12 @@ void TextWriter::writeNodeKids(const Node* Nd, bool EmbeddedInParent) {
   // Write out with number of kids specified to be on same line,
   // with remaining kids on separate (indented) lines.
   std::vector<Node*> Kids;
+  Node* LastKid = nullptr;
   for (Node* Kid : *Nd) {
-    if (!isa<TextInvisible>(Kid))
+    if (!isa<TextInvisible>(Kid)) {
+      LastKid = Kid;
       Kids.push_back(Kid);
+    }
   }
   int Count = 0;
   const AstTraitsType* Traits = getAstTraits(Nd->getType());
@@ -140,7 +143,6 @@ void TextWriter::writeNodeKids(const Node* Nd, bool EmbeddedInParent) {
   int NumKids = Kids.size();
   if (NumKids <= MaxKidsSameLine)
     KidsSameLine = MaxKidsSameLine;
-  Node* LastKid = Nd->getLastKid();
   bool HasHiddenSeq = Traits->HidesSeqInText;
   bool ForceNewline = false;
   for (auto* Kid : Kids) {
