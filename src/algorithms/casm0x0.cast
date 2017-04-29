@@ -20,9 +20,11 @@
 (header (u32.const 0x6d736163) (u32.const 0x0))
 (algorithm 1)
 
-(define 'node'
-  (switch (uint8)
-    (error)
+(rename 'node' 'node.old')
+
+(define 'node' (params 1)
+  (switch (param 0)
+    (eval 'node.old' (param 0))
     (case 'accept'
      case 'algorithm'
      case 'and'
@@ -32,7 +34,7 @@
      case 'bitwise.negate'
      case 'bitwise.or'
      case 'bitwise.xor'
-     case 'block'
+     #case 'block'
      case 'case'
      case 'error'
      case 'if.then'

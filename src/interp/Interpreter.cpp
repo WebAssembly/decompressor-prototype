@@ -298,6 +298,7 @@ void Interpreter::init() {
   FrameStack.reserve(DefaultStackSize);
   CallingEvalStack.reserve(DefaultStackSize);
   CurEvalFrameStack.reserve(DefaultStackSize);
+  CurEvalFrameStack.push_back(0);
   LocalsBaseStack.reserve(DefaultStackSize);
   LocalValues.reserve(DefaultStackSize * DefaultExpectedLocals);
   OpcodeLocalsStack.reserve(DefaultStackSize);
@@ -422,6 +423,9 @@ void Interpreter::traceExitFrame() {
 void Interpreter::reset() {
   Frame.reset();
   FrameStack.clear();
+  CallingEvalStack.clear();
+  CurEvalFrameStack.clear();
+  CurEvalFrameStack.push_back(0);
   LoopCounter = 0;
   LoopCounterStack.clear();
   LocalsBase = 0;
@@ -1304,7 +1308,9 @@ void Interpreter::algorithmResume() {
                 if (ParamIndex >= IntType(CallingEval.Caller->getNumKids()))
                   return throwMessage(
                       "Parameter reference doesn't match callling context!");
-                const Node* Context = CallingEval.Caller->getKid(ParamIndex);
+                const EvalFrame& CallingFrame =
+                    CallingEvalStack[CurEvalFrameStack.back()];
+                const Node* Context = CallingFrame.Caller->getKid(ParamIndex);
                 size_t ContextFrameIndex =
                     CurEvalFrameStack[CurEvalFrameStack.back()];
                 CurEvalFrameStack.push_back(ContextFrameIndex);
