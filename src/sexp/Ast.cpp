@@ -1016,11 +1016,18 @@ void SymbolTable::installDefinitions(const Node* Nd) {
       return fatal("Malformed literal s-expression found!");
     }
     case NodeType::Rename: {
+      SymbolTable::SharedPtr EncSymtab = Nd->Symtab.getEnclosingScope();
+      if (!EncSymtab) {
+        errorDescribeNode("Bad rename", Nd);
+        fatal("Rename without enclosing scope");
+      }
       if (auto* OldSymbol = dyn_cast<Symbol>(Nd->getKid(0))) {
-        if (auto* NewSymbol = dyn_cast<Symbol>(Nd->getKid(1))) {
-          const Define* Defn = OldSymbol->getDefineDefinition();
-          NewSymbol->setDefineDefinition(Defn);
-          return;
+        if (auto* EncSymbol = EncSymtab->getSymbol(OldSymbol->getName())) {
+          if (auto* NewSymbol = dyn_cast<Symbol>(Nd->getKid(1))) {
+            const Define* Defn = EncSymbol->getDefineDefinition();
+            NewSymbol->setDefineDefinition(Defn);
+            return;
+          }
         }
       }
       errorDescribeNode("Malformed", Nd);

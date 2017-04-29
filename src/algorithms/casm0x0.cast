@@ -20,81 +20,45 @@
 (header (u32.const 0x6d736163) (u32.const 0x0))
 (algorithm 1)
 
-(define 'node'
-  (switch (uint8)
-    (error)
+(rename 'node' 'node.old')
+
+(define 'node' (params 1)
+  (switch (param 0)
+    (eval 'node.old' (param 0))
     (case 'accept'
-     case 'algorithm'
      case 'and'
      case 'binary'
-     case 'bit'
      case 'bitwise.and'
      case 'bitwise.negate'
      case 'bitwise.or'
      case 'bitwise.xor'
-     case 'block'
-     case 'case'
-     case 'error'
-     case 'if.then'
      case 'if.then.else'
      case 'last.read'
      case 'last.symbol.is'
      case 'literal.action.define'
-     case 'literal.action.use'
-     case 'literal.define'
-     case 'literal.use'
-     case 'loop'
-     case 'loop.unbounded'
-     case 'no.locals'
-     case 'no.params'
      case 'not'
-     case 'one'
      case 'opcode.binary'
      case 'or'
      case 'peek'
      case 'read'
-     case 'rename'
      case 'set'
      case 'table'
      case 'undefine'
      case 'uint32'
-     case 'uint64'
-     case 'uint8'
-     case 'varint32'
-     case 'varint64'
-     case 'varuint32'
-     case 'varuint64'
-     case 'void'
-     case 'zero'
-     case '=>'                  (=> 'postorder.inst'))
+     case 'uint64'              (=> 'postorder.inst'))
 
-    (case 'define'
-     case 'eval'
-     case 'file'
-     case 'header.file'
+    (case 'header.file'
      case 'header.read'
      case 'header.write'
-     case 'literal.action.enum'
      case 'map'
      case 'opcode.bytes'
-     case 'section'
-     case 'sequence'
-     case 'switch'
      case 'write'               (eval 'nary.node'))
 
-    (case 'param'
-     case 'params'
-     case 'local'
-     case 'locals'
-     case 'u32.const'           (eval 'int.value' (varuint32)))
+    (case 'local'
+     case 'locals'              (eval 'int.value' (varuint32)))
 
     (case 'i32.const'           (eval 'int.value' (varint32)))
     (case 'i64.const'           (eval 'int.value' (varint64)))
-    (case 'u64.const'           (eval 'int.value' (varuint64)))
-    (case 'u8.const'            (eval 'int.value' (uint8)))
-
-    (case 'symbol'              (eval 'symbol.lookup'))
-
     (case 'opcode.bits'         (eval 'opcode.binary'))
   )
 )

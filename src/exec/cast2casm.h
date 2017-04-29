@@ -808,7 +808,12 @@ void CodeGenerator::generateArrayImplFile() {
   puts("  Reader.readBinary(Input);\n");
 #endif
   puts(
-      "  assert(!Reader.hasErrors());\n"
+      "  if (Reader.hasErrors()) {\n"
+      "    fatal(\"Malformed builtin algorithm: ");
+  puts(AlgName);
+  puts(
+      "\");\n"
+      "  }\n"
       "  Symtable = Reader.getReadSymtab();\n"
       "  return Symtable;\n");
   generateFunctionFooter();

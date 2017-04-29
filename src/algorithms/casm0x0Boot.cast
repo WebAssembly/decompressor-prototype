@@ -21,10 +21,12 @@
 (algorithm 1)
 
 (define 'file'
+  (locals 1)
   (block
     (eval 'symbol.table')
     (loop.unbounded
-      (eval 'node')
+      (set (local 0) (uint8))
+      (eval 'node' (local 0))
     )
   )
 )
@@ -42,8 +44,8 @@
   (=> 'nary.inst')
 )
 
-(define 'node'
-  (switch (uint8)
+(define 'node' (params 1)
+  (switch (param 0)
     (error)
     (case 'algorithm'
      case 'bit'
@@ -59,6 +61,7 @@
      case 'no.locals'
      case 'no.params'
      case 'one'
+     case 'rename'
      case 'uint8'
      case 'varint32'
      case 'varint64'
