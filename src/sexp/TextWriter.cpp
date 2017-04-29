@@ -128,21 +128,25 @@ void TextWriter::writeIndent(int Adjustment) {
 void TextWriter::writeNodeKids(const Node* Nd, bool EmbeddedInParent) {
   // Write out with number of kids specified to be on same line,
   // with remaining kids on separate (indented) lines.
+  std::vector<Node*> Kids;
+  for (Node* Kid : *Nd) {
+    if (!isa<TextInvisible>(Kid))
+      Kids.push_back(Kid);
+  }
   int Count = 0;
   const AstTraitsType* Traits = getAstTraits(Nd->getType());
   int KidsSameLine = Traits->NumTextArgs;
   int MaxKidsSameLine = KidsSameLine + Traits->AdditionalTextArgs;
-  int NumKids = Nd->getNumKids();
+  int NumKids = Kids.size();
   if (NumKids <= MaxKidsSameLine)
     KidsSameLine = MaxKidsSameLine;
   Node* LastKid = Nd->getLastKid();
   bool HasHiddenSeq = Traits->HidesSeqInText;
   bool ForceNewline = false;
-  for (auto* Kid : *Nd) {
-    if (Kid == LastKid && !ShowInternalStructure) {
-      bool IsEmbedded = (HasHiddenSeq && isa<Sequence>(LastKid)) ||
-                        (isa<Case>(Nd) && isa<Case>(Kid));
-      if (IsEmbedded) {
+  for (auto* Kid : Kids) {
+    if (!ShowInternalStructure) {
+      if (Kid == LastKid && HasHiddenSeq &&
+          (isa<Sequence>(LastKid) || (isa<Case>(Nd) && isa<Case>(Kid)))) {
         writeNewline();
         writeNode(Kid, true, true);
         return;
@@ -239,22 +243,28 @@ void TextWriter::writeNodeKidsAbbrev(const Node* Nd, bool EmbeddedInParent) {
   const AstTraitsType* Traits = getAstTraits(Nd->getType());
   int KidsSameLine = Traits->NumTextArgs;
   int MaxKidsSameLine = KidsSameLine + Traits->AdditionalTextArgs;
-  int NumKids = Nd->getNumKids();
+  std::vector<Node*> Kids;
+  for (Node* Kid : *Nd) {
+    if (!isa<TextInvisible>(Kid))
+      Kids.push_back(Kid);
+  }
+  int NumKids = Kids.size();
   if (NumKids <= MaxKidsSameLine)
     KidsSameLine = MaxKidsSameLine;
   bool HasHiddenSeq = Traits->HidesSeqInText;
+  int Count = 0;
   for (int i = 0; i < NumKids; ++i) {
-    Node* Kid = Nd->getKid(i);
+    Node* Kid = Kids[i];
     bool LastKid = i + 1 == NumKids;
     if (HasHiddenSeq && LastKid && isa<Sequence>(Kid)) {
-      fprintf(File, " ...[%d]", Kid->getNumKids());
+      fprintf(File, " ...[%d]", NumKids);
       return;
     }
     if (getAstTraits(Kid->getType())->NeverSameLineInText) {
       fprintf(File, " ...[%d]", NumKids - i);
       return;
     }
-    int Count = i + 1;
+    ++Count;
     if (Count < KidsSameLine) {
       writeSpace();
       writeNodeAbbrev(Kid, false);

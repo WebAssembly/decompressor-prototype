@@ -83,9 +83,10 @@ void errorDescribeNode(const char* Message,
 
 void errorDescribeNodeContext(const char* Message,
                               const Node* Nd,
-                              ConstNodeVectorType& Parents) {
-  errorDescribeNode(Message, Nd);
-  errorDescribeContext(Parents);
+                              ConstNodeVectorType& Parents,
+                              bool Abbrev = true) {
+  errorDescribeNode(Message, Nd, Abbrev);
+  errorDescribeContext(Parents, "Context", Abbrev);
 }
 
 static const char* PredefinedName[NumPredefinedSymbols]{"Unknown"
@@ -1289,6 +1290,22 @@ bool Nullary::implementsClass(NodeType Type) {
   }
 }
 
+TextInvisible::~TextInvisible() {}
+
+TextInvisible::TextInvisible(SymbolTable& Symtab, NodeType Type)
+    : Nullary(Symtab, Type) {}
+
+bool TextInvisible::implementsClass(NodeType Type) {
+  switch (Type) {
+    default:
+      return false;
+#define X(NAME) case NodeType::NAME:
+      AST_TEXTINVISIBLE_TABLE
+#undef X
+      return true;
+  }
+}
+
 #define X(NAME, BASE, DECLS, INIT) \
   NAME::NAME(SymbolTable& Symtab) : BASE(Symtab, NodeType::NAME) { INIT }
 AST_NULLARYNODE_TABLE
@@ -1738,22 +1755,25 @@ AST_TERNARYNODE_TABLE
 #undef X
 
 bool Define::validateNode(ConstNodeVectorType& Parents) const {
-  if (getNumKids() < 3) {
+  if (getNumKids() != 4) {
     errorDescribeNode("Malformed define", this);
     return false;
   }
   // TODO(karlschimpf) Allow other forms of parameters.
-  if (getKid(1)->getType() != NodeType::Params) {
-    errorDescribeNode("Parameter expression not implemented yet", this);
-    return false;
+  switch (getKid(1)->getType()) {
+    default:
+      errorDescribeNodeContext("Parameter expression not implemented yet", this,
+                               Parents);
+      return false;
+    case NodeType::Params:
+    case NodeType::NoParams:
+      return true;
   }
-  return true;
 }
 
 // Returns nullptr if P is illegal, based on the define.
 bool Define::isValidParam(IntType Index) const {
-  if (getNumKids() < 2)
-    return false;
+  assert(getNumKids() == 4);
   if (!isa<Params>(getKid(1)))
     return false;
   return Index < cast<Params>(getKid(1))->getValue();
@@ -1768,35 +1788,36 @@ bool Define::isValidLocal(IntType Index) const {
 }
 
 const std::string Define::getName() const {
-  assert(getNumKids() == 0);
+  assert(getNumKids() == 4);
   assert(isa<Symbol>(getKid(0)));
   return cast<Symbol>(getKid(0))->getName();
 }
 
 size_t Define::getNumLocals() const {
-  if (getNumKids() < 3)
-    return 0;
+  assert(getNumKids() == 4);
   if (auto* Locs = dyn_cast<Locals>(getKid(2)))
     return Locs->getValue();
   return 0;
 }
 
 size_t Define::getNumParams() const {
-  if (getNumKids() < 2)
-    return 0;
+  assert(getNumKids() == 4);
   if (auto* Parms = dyn_cast<Params>(getKid(1)))
     return Parms->getValue();
   return 0;
 }
 
 Node* Define::getBody() const {
-  assert(getNumKids() >= 3);
+  assert(getNumKids() == 4);
   Node* Nd = getKid(2);
-  if (isa<Locals>(Nd)) {
-    assert(getNumKids() >= 4);
-    return getKid(3);
+  switch (Nd->getType()) {
+    default:
+      return Nd;
+    case NodeType::Locals:
+    case NodeType::NoLocals:
+      assert(getNumKids() >= 4);
+      return getKid(3);
   }
-  return Nd;
 }
 
 Nary::Nary(SymbolTable& Symtab, NodeType Type) : Node(Symtab, Type) {}

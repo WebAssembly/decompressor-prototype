@@ -117,6 +117,8 @@
   X(ParamExprsCached,  0x7c, "exprs.cached",     1, 0, false, false)           \
   X(ParamCached,       0x7d, "cached",           0, 0, false, false)           \
   X(ParamArgs,         0x7e, "args",             0, 2, false, false)           \
+  X(NoParams,          0x7f, "no.params",        0, 0, false, false)           \
+  X(NoLocals,          0x61, "no.locals",        0, 0, false, false)           \
                                                                                \
   /* Internal (not opcodes in compressed file) */                              \
   X(UnknownSection,    0xFF, "unknown.section",  1, 0, true,  false)           \
@@ -134,6 +136,8 @@
   X(Bit, Nullary,,)                                                            \
   X(Error, Nullary,,)                                                          \
   X(LastRead, Nullary,,)                                                       \
+  X(NoLocals, TextInvisible,,)                                                 \
+  X(NoParams, TextInvisible,,)                                                 \
   X(Uint32, Nullary,,)                                                         \
   X(Uint64, Nullary,,)                                                         \
   X(Uint8, Nullary,,)                                                          \
@@ -142,6 +146,11 @@
   X(Varuint32, Nullary,,)                                                      \
   X(Varuint64, Nullary,,)                                                      \
   X(Void, Nullary,,)                                                           \
+
+//#define X(NAME)
+#define AST_TEXTINVISIBLE_TABLE                                                \
+  X(NoLocals)                                                                  \
+  X(NoParams)                                                                  \
 
 //#define X(NAME, FORMAT, DEFAULT, MERGE, BASE, DECLS, INIT)
 // where:

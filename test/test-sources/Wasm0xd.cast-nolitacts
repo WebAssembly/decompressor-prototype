@@ -1,54 +1,54 @@
 (header (u32.const 0x6d736163) (u32.const 0x0))
 (header.read (u32.const 0x6d736100) (u32.const 0xd))
-(define 'br_table' (params)
+(define 'br_table'
   (loop (varuint32) (varuint32))
   (varuint32)
 )
-(define 'br_target' (params) (varuint32))
-(define 'code.section' (params)
+(define 'br_target' (varuint32))
+(define 'code.section'
   (loop (varuint32) (eval 'function.body'))
 )
-(define 'data.section' (params)
+(define 'data.section'
   (loop (varuint32) (eval 'data.segment'))
 )
-(define 'data.segment' (params)
+(define 'data.segment'
   (varuint32)
   (eval 'init_expr')
   (loop (varuint32) (uint8))
 )
-(define 'element.section' (params)
+(define 'element.section'
   (loop (varuint32) (eval 'element.segment'))
 )
-(define 'element.segment' (params)
+(define 'element.segment'
   (varuint32)
   (eval 'init_expr')
   (loop (varuint32) (varuint32))
 )
-(define 'export.section' (params)
+(define 'export.section'
   (loop (varuint32) (eval 'export.entry'))
 )
-(define 'export.entry' (params)
+(define 'export.entry'
   (eval 'symbol.name')
   (eval 'external.kind')
   (varuint32)
 )
-(define 'external.kind' (params) (uint8))
-(define 'file' (params)
+(define 'external.kind' (uint8))
+(define 'file'
   (loop.unbounded (eval 'section'))
 )
-(define 'function.section' (params)
+(define 'function.section'
   (loop (varuint32) (varuint32))
 )
-(define 'function.names' (params)
+(define 'function.names'
   (eval 'symbol.name')
   (loop (varuint32) (eval 'symbol.name'))
 )
-(define 'function.type' (params)
+(define 'function.type'
   (varint32)
   (loop (varuint32) (eval 'type.value'))
   (loop (varuint32) (eval 'type.value'))
 )
-(define 'function.body' (params)
+(define 'function.body'
   (block
     (loop (varuint32) (eval 'local.entry'))
     (loop.unbounded
@@ -57,20 +57,20 @@
     )
   )
 )
-(define 'global.section' (params)
+(define 'global.section'
   (loop (varuint32)
     (eval 'global.type')
     (eval 'init_expr')
   )
 )
-(define 'global.type' (params)
+(define 'global.type'
   (eval 'type.value')
   (uint8)
 )
-(define 'import.section' (params)
+(define 'import.section'
   (loop (varuint32) (eval 'import.entry'))
 )
-(define 'import.entry' (params)
+(define 'import.entry'
   (eval 'symbol.name')
   (eval 'symbol.name')
   (switch (eval 'external.kind')
@@ -81,8 +81,7 @@
     (case (u8.const 3) (eval 'global.type'))
   )
 )
-(define 'init_expr' (params)
-  (locals 1)
+(define 'init_expr' (locals 1)
   (set (local 0) (u32.const 1))
   (eval 'instruction.opcode')
   (switch (read)
@@ -101,7 +100,7 @@
     )
   )
 )
-(define 'instruction' (params)
+(define 'instruction'
   (switch (read)
     (error)
     (case (u8.const 0x0) (void))
@@ -281,32 +280,30 @@
     (case (u8.const 0xbf) (void))
   )
 )
-(define 'instruction.opcode' (params) (uint8))
-(define 'local.entry' (params)
+(define 'instruction.opcode' (uint8))
+(define 'local.entry'
   (varuint32)
   (eval 'type.value')
 )
-(define 'memory.section' (params)
+(define 'memory.section'
   (loop (varuint32) (eval 'memory.type'))
 )
-(define 'memory.immediate' (params)
+(define 'memory.immediate'
   (varuint32)
   (varuint32)
 )
-(define 'name.section' (params)
+(define 'name.section'
   (loop (varuint32) (eval 'function.names'))
 )
-(define 'memory.type' (params) (eval 'resizable.limits'))
-(define 'resizable.limits' (params)
-  (locals 1)
+(define 'memory.type' (eval 'resizable.limits'))
+(define 'resizable.limits' (locals 1)
   (set (local 0) (varuint32))
   (varuint32)
   (if (bitwise.and (local 0) (u32.const 0x1))
     (varuint32)
   )
 )
-(define 'section' (params)
-  (locals 1)
+(define 'section' (locals 1)
   (set (local 0) (varuint32))
   (block
     (switch (local 0)
@@ -326,29 +323,29 @@
     )
   )
 )
-(define 'skip.section' (params)
+(define 'skip.section'
   (loop.unbounded (uint8))
 )
-(define 'start.section' (params) (varuint32))
-(define 'symbol.name' (params)
+(define 'start.section' (varuint32))
+(define 'symbol.name'
   (loop (varuint32) (uint8))
 )
-(define 'table.section' (params)
+(define 'table.section'
   (loop (varuint32) (eval 'table.type'))
 )
-(define 'table.type' (params)
+(define 'table.type'
   (eval 'type.value')
   (eval 'resizable.limits')
 )
-(define 'type.section' (params)
+(define 'type.section'
   (loop (varuint32) (eval 'function.type'))
 )
-(define 'type.value' (params) (varint32))
-(define 'unknown.section' (params)
+(define 'type.value' (varint32))
+(define 'unknown.section'
   (eval 'symbol.name')
   (eval 'unknown_body')
 )
-(define 'unknown_body' (params)
+(define 'unknown_body'
   (if (last.symbol.is 'name')
     (eval 'name.section')
     (eval 'skip.section')

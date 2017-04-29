@@ -91,7 +91,8 @@ Node* AbbreviationCodegen::generateRename(filt::Symbol* From,
 Node* AbbreviationCodegen::generateStartFunction() {
   auto* Fcn = Symtab->create<Define>();
   Fcn->append(Symtab->getPredefined(PredefinedSymbol::File));
-  Fcn->append(Symtab->create<Params>());
+  Fcn->append(Symtab->create<NoParams>());
+  Fcn->append(Symtab->create<NoLocals>());
   Fcn->append(Symtab->create<LoopUnbounded>(generateSwitchStatement()));
   return Fcn;
 }
