@@ -344,7 +344,14 @@ declaration
 
 
 define_args
-        : symbol params_decl expression {
+        : symbol expression {
+            $$ = Driver.create<Define>();
+            $$->append($1);
+            $$->append(Driver.create<NoParams>());
+            $$->append(Driver.create<NoLocals>());
+            $$->append($2);
+          }
+        | symbol params_decl expression {
             $$ = Driver.create<Define>();
             $$->append($1);
             $$->append($2);

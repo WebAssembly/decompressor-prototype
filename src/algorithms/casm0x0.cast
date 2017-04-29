@@ -20,7 +20,7 @@
 (header (u32.const 0x6d736163) (u32.const 0x0))
 (algorithm 1)
 
-(define 'node' (params)
+(define 'node'
   (switch (uint8)
     (error)
     (case 'accept'
@@ -99,7 +99,7 @@
   )
 )
 
-(define 'opcode.binary' (params)
+(define 'opcode.binary'
   (loop (seq (varuint32) (=> 'binary.begin'))
     (bit)
     (=> 'binary.bit')
