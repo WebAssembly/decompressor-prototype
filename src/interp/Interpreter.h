@@ -241,6 +241,7 @@ class Interpreter {
   // The stack of (eval) calls.
   EvalFrame CallingEval;
   utils::ValueStack<EvalFrame> CallingEvalStack;
+  std::vector<size_t> CurEvalFrameStack;
   // The stack of loop counters.
   size_t LoopCounter;
   utils::ValueStack<size_t> LoopCounterStack;

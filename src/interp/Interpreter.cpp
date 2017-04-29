@@ -297,6 +297,7 @@ void Interpreter::init() {
   CurSectionName.reserve(MaxExpectedSectionNameSize);
   FrameStack.reserve(DefaultStackSize);
   CallingEvalStack.reserve(DefaultStackSize);
+  CurEvalFrameStack.reserve(DefaultStackSize);
   LocalsBaseStack.reserve(DefaultStackSize);
   LocalValues.reserve(DefaultStackSize * DefaultExpectedLocals);
   OpcodeLocalsStack.reserve(DefaultStackSize);
@@ -355,6 +356,9 @@ void Interpreter::describeCallingEvalStack(FILE* File) {
   TextWriter Writer;
   for (const auto& Frame : CallingEvalStack.iterRange(1))
     Frame.describe(File, &Writer);
+  fprintf(File, "*** Current Eval Call Stack ***\n");
+  for (size_t Index : CurEvalFrameStack)
+    fprintf(File, "%" PRIuMAX "\n", uintmax_t(Index));
   fprintf(File, "************************\n");
 }
 
@@ -1288,7 +1292,7 @@ void Interpreter::algorithmResume() {
           case NodeType::Param:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter: {
-                if (CallingEvalStack.empty())
+                if (CallingEvalStack.empty() || CurEvalFrameStack.empty())
                   return throwMessage(
                       "Not inside a call frame, can't evaluate parameter "
                       "accessor!");
@@ -1299,14 +1303,15 @@ void Interpreter::algorithmResume() {
                   return throwMessage(
                       "Parameter reference doesn't match callling context!");
                 const Node* Context = CallingEval.Caller->getKid(ParamIndex);
-                CallingEvalStack.push(
-                    CallingEvalStack.at(CallingEval.CallingEvalIndex));
+                size_t ContextFrameIndex =
+                    CurEvalFrameStack[CurEvalFrameStack.back()];
+                CurEvalFrameStack.push_back(ContextFrameIndex);
                 Frame.CallState = State::Exit;
                 call(Method::Eval, Frame.CallModifier, Context);
                 break;
               }
               case State::Exit:
-                CallingEvalStack.pop();
+                CurEvalFrameStack.pop_back();
                 popAndReturn(Frame.ReturnValue);
                 break;
               default:
@@ -1394,6 +1399,7 @@ void Interpreter::algorithmResume() {
                   return throwMessage("Unable to evaluate call");
                 }
                 size_t CallingEvalIndex = CallingEvalStack.size();
+                CurEvalFrameStack.push_back(CallingEvalIndex);
                 CallingEvalStack.push();
                 CallingEval.Caller = cast<Eval>(Frame.Nd);
                 CallingEval.CallingEvalIndex = CallingEvalIndex;
@@ -1402,6 +1408,7 @@ void Interpreter::algorithmResume() {
                 break;
               }
               case State::Exit:
+                CurEvalFrameStack.pop_back();
                 CallingEvalStack.pop();
                 popAndReturn(LastReadValue);
                 break;
