@@ -609,7 +609,7 @@
 (literal 'unknown.section.begin' (u32.const 131))
 (literal 'unknown.section.end' (u32.const 132))
 (literal 'instruction.begin' (u32.const 133))
-(define 'br_table' (params)
+(define 'br_table'
   (=> 'br_table.begin')
   (loop
     (seq
@@ -623,12 +623,12 @@
   (=> 'br_table.default')
   (=> 'br_table.end')
 )
-(define 'br_target' (params)
+(define 'br_target'
   (=> 'br_target.begin')
   (varuint32)
   (=> 'br_target.end')
 )
-(define 'code.section' (params)
+(define 'code.section'
   (=> 'code.section.begin')
   (loop
     (seq
@@ -639,7 +639,7 @@
   )
   (=> 'code.section.end')
 )
-(define 'data.section' (params)
+(define 'data.section'
   (=> 'data.section.begin')
   (loop
     (seq
@@ -650,7 +650,7 @@
   )
   (=> 'data.section.end')
 )
-(define 'data.segment' (params)
+(define 'data.segment'
   (=> 'data.segment.begin')
   (varuint32)
   (=> 'data.segment.memory_index')
@@ -665,7 +665,7 @@
   )
   (=> 'data.segment.end')
 )
-(define 'element.section' (params)
+(define 'element.section'
   (=> 'element.section.begin')
   (loop
     (seq
@@ -676,7 +676,7 @@
   )
   (=> 'element.section.end')
 )
-(define 'element.segment' (params)
+(define 'element.segment'
   (=> 'element.segment.begin')
   (varuint32)
   (=> 'element.segment.index')
@@ -692,7 +692,7 @@
   )
   (=> 'element.segment.end')
 )
-(define 'export.section' (params)
+(define 'export.section'
   (=> 'export.section.begin')
   (loop
     (seq
@@ -703,24 +703,24 @@
   )
   (=> 'export.section.end')
 )
-(define 'export.entry' (params)
+(define 'export.entry'
   (eval 'symbol.name')
   (=> 'export.entry.name')
   (eval 'external.kind')
   (varuint32)
   (=> 'export.entry.index')
 )
-(define 'external.kind' (params)
+(define 'external.kind'
   (=> 'external.kind.begin')
   (uint8)
   (=> 'external.kind.end')
 )
-(define 'file' (params)
+(define 'file'
   (=> 'file.begin')
   (loop.unbounded (eval 'section'))
   (=> 'file.end')
 )
-(define 'function.section' (params)
+(define 'function.section'
   (=> 'function.section.begin')
   (loop
     (seq
@@ -732,7 +732,7 @@
   )
   (=> 'function.section.end')
 )
-(define 'function.names' (params)
+(define 'function.names'
   (=> 'function.names.begin')
   (eval 'symbol.name')
   (=> 'function.names.fcn_name')
@@ -746,7 +746,7 @@
   )
   (=> 'function.names.end')
 )
-(define 'function.type' (params)
+(define 'function.type'
   (=> 'function.type.begin')
   (varint32)
   (=> 'function.type.form')
@@ -768,7 +768,7 @@
   )
   (=> 'function.type.end')
 )
-(define 'function.body' (params)
+(define 'function.body'
   (=> 'function.body.begin')
   (block
     (loop
@@ -787,7 +787,7 @@
   )
   (=> 'function.body.end')
 )
-(define 'global.section' (params)
+(define 'global.section'
   (=> 'global.section.begin')
   (loop
     (seq
@@ -801,13 +801,13 @@
   )
   (=> 'global.section.end')
 )
-(define 'global.type' (params)
+(define 'global.type'
   (=> 'global.type.begin')
   (eval 'type.value')
   (uint8)
   (=> 'global.type.end')
 )
-(define 'import.section' (params)
+(define 'import.section'
   (=> 'import.section.begin')
   (loop
     (seq
@@ -818,7 +818,7 @@
   )
   (=> 'import.section.end')
 )
-(define 'import.entry' (params)
+(define 'import.entry'
   (=> 'import.entry.begin')
   (eval 'symbol.name')
   (=> 'import.entry.module')
@@ -845,8 +845,7 @@
   )
   (=> 'import.entry.end')
 )
-(define 'init_expr' (params)
-  (locals 1)
+(define 'init_expr' (locals 1)
   (=> 'init_expr.begin')
   (set (local 0) (u32.const 1))
   (eval 'instruction.opcode')
@@ -889,7 +888,7 @@
   )
   (=> 'init_expr.end')
 )
-(define 'instruction' (params)
+(define 'instruction'
   (=> 'instruction.begin')
   (switch
     (seq
@@ -1199,15 +1198,15 @@
   )
   (=> 'instruction.end')
 )
-(define 'instruction.opcode' (params) (uint8))
-(define 'local.entry' (params)
+(define 'instruction.opcode' (uint8))
+(define 'local.entry'
   (=> 'local.entry.begin')
   (varuint32)
   (=> 'local.entry.count')
   (eval 'type.value')
   (=> 'local.entry.end')
 )
-(define 'memory.section' (params)
+(define 'memory.section'
   (=> 'memory.section.begin')
   (loop
     (seq
@@ -1219,13 +1218,13 @@
   )
   (=> 'memory.section.end')
 )
-(define 'memory.immediate' (params)
+(define 'memory.immediate'
   (=> 'memory.immediate.begin')
   (varuint32)
   (varuint32)
   (=> 'memory.immediate.end')
 )
-(define 'name.section' (params)
+(define 'name.section'
   (=> 'name.section.begin')
   (loop
     (seq
@@ -1236,13 +1235,12 @@
   )
   (=> 'name.section.end')
 )
-(define 'memory.type' (params)
+(define 'memory.type'
   (=> 'memory.type.begin')
   (eval 'resizable.limits')
   (=> 'memory.type.end')
 )
-(define 'resizable.limits' (params)
-  (locals 1)
+(define 'resizable.limits' (locals 1)
   (=> 'resizable.limits.begin')
   (set (local 0) (varuint32))
   (=> 'resizable.limits.flags')
@@ -1256,8 +1254,7 @@
   )
   (=> 'resizable.limits.end')
 )
-(define 'section' (params)
-  (locals 1)
+(define 'section' (locals 1)
   (=> 'section.begin')
   (set (local 0) (varuint32))
   (=> 'section.code')
@@ -1280,17 +1277,17 @@
   )
   (=> 'section.end')
 )
-(define 'skip.section' (params)
+(define 'skip.section'
   (=> 'skip.section.begin')
   (loop.unbounded (uint8))
   (=> 'skip.section.end')
 )
-(define 'start.section' (params)
+(define 'start.section'
   (=> 'start.section.begin')
   (varuint32)
   (=> 'start.section.end')
 )
-(define 'symbol.name' (params)
+(define 'symbol.name'
   (=> 'symbol.name.begin')
   (loop
     (seq
@@ -1301,7 +1298,7 @@
   )
   (=> 'symbol.name.end')
 )
-(define 'table.section' (params)
+(define 'table.section'
   (=> 'table.section.begin')
   (loop
     (seq
@@ -1313,13 +1310,13 @@
   )
   (=> 'table.section.end')
 )
-(define 'table.type' (params)
+(define 'table.type'
   (=> 'table.type.begin')
   (eval 'type.value')
   (eval 'resizable.limits')
   (=> 'table.type.end')
 )
-(define 'type.section' (params)
+(define 'type.section'
   (=> 'type.section.begin')
   (loop
     (seq
@@ -1330,18 +1327,18 @@
   )
   (=> 'type.section.end')
 )
-(define 'type.value' (params)
+(define 'type.value'
   (=> 'type.value.begin')
   (varint32)
   (=> 'type.value.end')
 )
-(define 'unknown.section' (params)
+(define 'unknown.section'
   (=> 'unknown.section.begin')
   (eval 'symbol.name')
   (eval 'unknown_body')
   (=> 'unknown.section.end')
 )
-(define 'unknown_body' (params)
+(define 'unknown_body'
   (if (last.symbol.is 'name')
     (eval 'name.section')
     (eval 'skip.section')

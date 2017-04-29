@@ -1,6 +1,6 @@
 (header (u32.const 0x6d736163) (u32.const 0x0))
 (header.read (u32.const 0x6d736100) (u32.const 0xd))
-(define 'br_table' (params)
+(define 'br_table'
   (=> (u64.const 1001))
   (loop
     (seq
@@ -14,12 +14,12 @@
   (=> (u64.const 1003))
   (=> (u64.const 1004))
 )
-(define 'br_target' (params)
+(define 'br_target'
   (=> (u64.const 1006))
   (varuint32)
   (=> (u64.const 1007))
 )
-(define 'code.section' (params)
+(define 'code.section'
   (=> (u64.const 1008))
   (loop
     (seq
@@ -30,7 +30,7 @@
   )
   (=> (u64.const 1010))
 )
-(define 'data.section' (params)
+(define 'data.section'
   (=> (u64.const 1011))
   (loop
     (seq
@@ -41,7 +41,7 @@
   )
   (=> (u64.const 1013))
 )
-(define 'data.segment' (params)
+(define 'data.segment'
   (=> (u64.const 1014))
   (varuint32)
   (=> (u64.const 1017))
@@ -56,7 +56,7 @@
   )
   (=> (u64.const 1016))
 )
-(define 'element.section' (params)
+(define 'element.section'
   (=> (u64.const 1019))
   (loop
     (seq
@@ -67,7 +67,7 @@
   )
   (=> (u64.const 1021))
 )
-(define 'element.segment' (params)
+(define 'element.segment'
   (=> (u64.const 1022))
   (varuint32)
   (=> (u64.const 1025))
@@ -83,7 +83,7 @@
   )
   (=> (u64.const 1024))
 )
-(define 'export.section' (params)
+(define 'export.section'
   (=> (u64.const 1030))
   (loop
     (seq
@@ -94,24 +94,24 @@
   )
   (=> (u64.const 1032))
 )
-(define 'export.entry' (params)
+(define 'export.entry'
   (eval 'symbol.name')
   (=> (u64.const 1029))
   (eval 'external.kind')
   (varuint32)
   (=> (u64.const 1028))
 )
-(define 'external.kind' (params)
+(define 'external.kind'
   (=> (u64.const 1033))
   (uint8)
   (=> (u64.const 1034))
 )
-(define 'file' (params)
+(define 'file'
   (=> (u64.const 1035))
   (loop.unbounded (eval 'section'))
   (=> (u64.const 1036))
 )
-(define 'function.section' (params)
+(define 'function.section'
   (=> (u64.const 1047))
   (loop
     (seq
@@ -123,7 +123,7 @@
   )
   (=> (u64.const 1049))
 )
-(define 'function.names' (params)
+(define 'function.names'
   (=> (u64.const 1042))
   (eval 'symbol.name')
   (=> (u64.const 1044))
@@ -137,7 +137,7 @@
   )
   (=> (u64.const 1043))
 )
-(define 'function.type' (params)
+(define 'function.type'
   (=> (u64.const 1051))
   (varint32)
   (=> (u64.const 1053))
@@ -159,7 +159,7 @@
   )
   (=> (u64.const 1052))
 )
-(define 'function.body' (params)
+(define 'function.body'
   (=> (u64.const 1037))
   (block
     (loop
@@ -178,7 +178,7 @@
   )
   (=> (u64.const 1040))
 )
-(define 'global.section' (params)
+(define 'global.section'
   (=> (u64.const 1054))
   (loop
     (seq
@@ -192,13 +192,13 @@
   )
   (=> (u64.const 1056))
 )
-(define 'global.type' (params)
+(define 'global.type'
   (=> (u64.const 1059))
   (eval 'type.value')
   (uint8)
   (=> (u64.const 1060))
 )
-(define 'import.section' (params)
+(define 'import.section'
   (=> (u64.const 1069))
   (loop
     (seq
@@ -209,7 +209,7 @@
   )
   (=> (u64.const 1071))
 )
-(define 'import.entry' (params)
+(define 'import.entry'
   (=> (u64.const 1061))
   (eval 'symbol.name')
   (=> (u64.const 1067))
@@ -236,8 +236,7 @@
   )
   (=> (u64.const 1062))
 )
-(define 'init_expr' (params)
-  (locals 1)
+(define 'init_expr' (locals 1)
   (=> (u64.const 1072))
   (set (local 0) (u32.const 1))
   (eval 'instruction.opcode')
@@ -280,7 +279,7 @@
   )
   (=> (u64.const 1073))
 )
-(define 'instruction' (params)
+(define 'instruction'
   (=> (u64.const 1247))
   (switch
     (seq
@@ -590,15 +589,15 @@
   )
   (=> (u64.const 1248))
 )
-(define 'instruction.opcode' (params) (uint8))
-(define 'local.entry' (params)
+(define 'instruction.opcode' (uint8))
+(define 'local.entry'
   (=> (u64.const 1250))
   (varuint32)
   (=> (u64.const 1251))
   (eval 'type.value')
   (=> (u64.const 1252))
 )
-(define 'memory.section' (params)
+(define 'memory.section'
   (=> (u64.const 1255))
   (loop
     (seq
@@ -610,13 +609,13 @@
   )
   (=> (u64.const 1257))
 )
-(define 'memory.immediate' (params)
+(define 'memory.immediate'
   (=> (u64.const 1253))
   (varuint32)
   (varuint32)
   (=> (u64.const 1254))
 )
-(define 'name.section' (params)
+(define 'name.section'
   (=> (u64.const 1261))
   (loop
     (seq
@@ -627,13 +626,12 @@
   )
   (=> (u64.const 1263))
 )
-(define 'memory.type' (params)
+(define 'memory.type'
   (=> (u64.const 1259))
   (eval 'resizable.limits')
   (=> (u64.const 1260))
 )
-(define 'resizable.limits' (params)
-  (locals 1)
+(define 'resizable.limits' (locals 1)
   (=> (u64.const 1264))
   (set (local 0) (varuint32))
   (=> (u64.const 1266))
@@ -647,8 +645,7 @@
   )
   (=> (u64.const 1265))
 )
-(define 'section' (params)
-  (locals 1)
+(define 'section' (locals 1)
   (=> (u64.const 1269))
   (set (local 0) (varuint32))
   (=> (u64.const 1270))
@@ -671,17 +668,17 @@
   )
   (=> (u64.const 1271))
 )
-(define 'skip.section' (params)
+(define 'skip.section'
   (=> (u64.const 1272))
   (loop.unbounded (uint8))
   (=> (u64.const 1273))
 )
-(define 'start.section' (params)
+(define 'start.section'
   (=> (u64.const 1274))
   (varuint32)
   (=> (u64.const 1275))
 )
-(define 'symbol.name' (params)
+(define 'symbol.name'
   (=> (u64.const 1276))
   (loop
     (seq
@@ -692,7 +689,7 @@
   )
   (=> (u64.const 1277))
 )
-(define 'table.section' (params)
+(define 'table.section'
   (=> (u64.const 1279))
   (loop
     (seq
@@ -704,13 +701,13 @@
   )
   (=> (u64.const 1281))
 )
-(define 'table.type' (params)
+(define 'table.type'
   (=> (u64.const 1283))
   (eval 'type.value')
   (eval 'resizable.limits')
   (=> (u64.const 1284))
 )
-(define 'type.section' (params)
+(define 'type.section'
   (=> (u64.const 1289))
   (loop
     (seq
@@ -721,18 +718,18 @@
   )
   (=> (u64.const 1291))
 )
-(define 'type.value' (params)
+(define 'type.value'
   (=> (u64.const 1292))
   (varint32)
   (=> (u64.const 1293))
 )
-(define 'unknown.section' (params)
+(define 'unknown.section'
   (=> (u64.const 1294))
   (eval 'symbol.name')
   (eval 'unknown_body')
   (=> (u64.const 1295))
 )
-(define 'unknown_body' (params)
+(define 'unknown_body'
   (if (last.symbol.is 'name')
     (eval 'name.section')
     (eval 'skip.section')
