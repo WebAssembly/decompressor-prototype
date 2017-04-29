@@ -225,10 +225,6 @@ Node::Node(SymbolTable& Symtab, NodeType Type)
 
 Node::~Node() {}
 
-bool Node::isTextInvisibleAsKid() const {
-  return false;
-}
-
 int Node::compare(const Node* Nd) const {
   if (this == Nd)
     return 0;

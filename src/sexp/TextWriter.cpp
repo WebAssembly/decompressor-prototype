@@ -140,7 +140,7 @@ void TextWriter::writeNodeKids(const Node* Nd, bool EmbeddedInParent) {
   bool ForceNewline = false;
   for (auto* Kid : *Nd) {
     if (!ShowInternalStructure) {
-      if (Kid->isTextInvisibleAsKid())
+      if (isa<TextInvisible>(Kid))
         continue;
       if (Kid == LastKid && HasHiddenSeq &&
           (isa<Sequence>(LastKid) || (isa<Case>(Nd) && isa<Case>(Kid)))) {
@@ -240,18 +240,21 @@ void TextWriter::writeNodeKidsAbbrev(const Node* Nd, bool EmbeddedInParent) {
   const AstTraitsType* Traits = getAstTraits(Nd->getType());
   int KidsSameLine = Traits->NumTextArgs;
   int MaxKidsSameLine = KidsSameLine + Traits->AdditionalTextArgs;
-  int NumKids = Nd->getNumKids();
+  std::vector<Node*> Kids;
+  for (Node* Kid : *Nd) {
+    if (!isa<TextInvisible>(Kid))
+      Kids.push_back(Kid);
+  }
+  int NumKids = Kids.size();
   if (NumKids <= MaxKidsSameLine)
     KidsSameLine = MaxKidsSameLine;
   bool HasHiddenSeq = Traits->HidesSeqInText;
   int Count = 0;
   for (int i = 0; i < NumKids; ++i) {
-    Node* Kid = Nd->getKid(i);
-    if (Kid->isTextInvisibleAsKid())
-      continue;
+    Node* Kid = Kids[i];
     bool LastKid = i + 1 == NumKids;
     if (HasHiddenSeq && LastKid && isa<Sequence>(Kid)) {
-      fprintf(File, " ...[%d]", Kid->getNumKids());
+      fprintf(File, " ...[%d]", NumKids);
       return;
     }
     if (getAstTraits(Kid->getType())->NeverSameLineInText) {

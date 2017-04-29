@@ -296,7 +296,6 @@ class Node {
   virtual int getNumKids() const = 0;
   virtual Node* getKid(int Index) const = 0;
   virtual void setKid(int Index, Node* N) = 0;
-  virtual bool isTextInvisibleAsKid() const;
   void setLastKid(Node* N);
   Node* getLastKid() const;
 
