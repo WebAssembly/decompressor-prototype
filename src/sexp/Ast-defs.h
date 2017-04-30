@@ -167,7 +167,7 @@
 //         initialization
 #define AST_NARYNODE_TABLE                     \
   X(Algorithm, Nary, ALGORITHM_DECLS, init();) \
-  X(Define, Nary, DEFINE_DECLS, )              \
+  X(Define, Nary, DEFINE_DECLS, init();)       \
   X(Eval, Nary, EVAL_DECLS, )                  \
   X(LiteralActionBase, Nary, , )               \
   X(ParamArgs, Nary, , )                       \
@@ -325,15 +325,27 @@
   mutable bool IsValidated;                                      \
   bool setIsAlgorithm(const Node* Nd);
 
-#define DEFINE_DECLS                              \
-  VALIDATENODE                                    \
- public:                                          \
-  bool isValidParam(decode::IntType Index) const; \
-  bool isValidLocal(decode::IntType Index) const; \
-  const std::string getName() const;              \
-  size_t getNumLocals() const;                    \
-  size_t getNumParams() const;                    \
-  Node* getBody() const;
+#define DEFINE_DECLS                                                  \
+  VALIDATENODE                                                        \
+ public:                                                              \
+  typedef std::vector<const Node*> ParamTypeVector;                   \
+  void init();                                                        \
+  bool isValidParam(decode::IntType Index) const;                     \
+  bool isValidLocal(decode::IntType Index) const;                     \
+  const std::string getName() const;                                  \
+  size_t getNumLocals() const;                                        \
+  size_t getNumParams() const;                                        \
+  size_t getNumArgs() const { return ParamTypes.size(); }             \
+  const ParamTypeVector& getParamTypes() const { return ParamTypes; } \
+  Node* getBody() const;                                              \
+                                                                      \
+ private:                                                             \
+  friend class SymbolTable;                                           \
+  bool validateCallingFrame() const;                                  \
+  mutable ParamTypeVector ParamTypes;                                 \
+  mutable size_t NumParams;                                           \
+  mutable size_t NumLocals;                                           \
+  mutable bool IsCallingFrameValidated;
 
 #define EVAL_DECLS \
   VALIDATENODE     \

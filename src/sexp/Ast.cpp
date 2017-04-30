@@ -1,21 +1,21 @@
-/* -*- C++ -*- */
-/*
- * Copyright 2016 WebAssembly Community Group participants
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+// -*- C++ -*-
+//
+// Copyright 2016 WebAssembly Community Group participants
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 
-/* Implements AST's for modeling filter s-expressions */
+// Implements AST's for modeling filter s-expressions
 
 #include "sexp/Ast.h"
 
@@ -914,6 +914,7 @@ bool SymbolTable::install() {
   installDefinitions(Alg);
   ConstNodeVectorType Parents;
   bool IsValid = Alg->validateSubtree(Parents);
+  Parents.push_back(Alg);
   if (IsValid)
     IsValid = areActionsConsistent();
   if (!IsValid)
@@ -1041,6 +1042,8 @@ void SymbolTable::installDefinitions(const Node* Nd) {
             for (int i = 1; i < OldDefn->getNumKids(); ++i)
               NewDefn->append(OldDefn->getKid(i));
             installDefinitions(NewDefn);
+            if (!NewDefn->validateCallingFrame())
+              return fatal("Can't install rename!");
             return;
           }
         }
@@ -1760,21 +1763,84 @@ AST_TERNARYNODE_TABLE
 AST_TERNARYNODE_TABLE
 #undef X
 
+void Define::init() {
+  NumLocals = 0;
+  NumParams = 0;
+  IsCallingFrameValidated = false;
+}
+
 bool Define::validateNode(ConstNodeVectorType& Parents) const {
+  return validateCallingFrame();
+}
+
+bool Define::validateCallingFrame() const {
+  IsCallingFrameValidated = true;
   if (getNumKids() != 4) {
     errorDescribeNode("Malformed define", this);
     return false;
   }
-  // TODO(karlschimpf) Allow other forms of parameters.
-  switch (getKid(1)->getType()) {
-    default:
-      errorDescribeNodeContext("Parameter expression not implemented yet", this,
-                               Parents);
-      return false;
-    case NodeType::Params:
-    case NodeType::NoParams:
-      return true;
+  NumParams = 0;
+  NumLocals = 0;
+  bool ParamsValidate = true;
+  ParamTypes.clear();
+  const Node* ParamsRoot = getKid(1);
+  std::vector<const Node*> Args;
+  Args.push_back(ParamsRoot);
+  for (size_t NextIndex = 0; NextIndex < Args.size(); ++NextIndex) {
+    const Node* Arg = Args[NextIndex];
+    switch (Arg->getType()) {
+      default:
+        ParamsValidate = false;
+        break;
+      case NodeType::NoParams:
+        break;
+      case NodeType::Params:
+        if (const auto* Val = dyn_cast<IntegerNode>(Arg))
+          NumParams += Val->getValue();
+        else
+          ParamsValidate = false;
+      // Intentionally fall to next case!
+      case NodeType::ParamExprs:
+      case NodeType::ParamExprsCached:
+        if (const auto* Val = dyn_cast<IntegerNode>(Arg)) {
+          for (size_t i = 0, end = Val->getValue(); i < end; ++i)
+            ParamTypes.push_back(Arg);
+        } else {
+          ParamsValidate = false;
+        }
+        break;
+      case NodeType::ParamCached:
+        ++NumParams;
+        ParamTypes.push_back(Arg);
+        break;
+      case NodeType::ParamArgs:
+        for (const Node* Kid : *Arg)
+          Args.push_back(Kid);
+        if (Arg != ParamsRoot)
+          ParamsValidate = false;
+        break;
+    }
   }
+  if (!ParamsValidate) {
+    errorDescribeNode("Malformed parameter list", ParamsRoot, false);
+    errorDescribeNode("In", this);
+    return false;
+  }
+
+  // Check local declarations.
+  const Node* LocalDecl = getKid(2);
+  switch (LocalDecl->getType()) {
+    default:
+      errorDescribeNode("Malformed locals declaration", LocalDecl, false);
+      errorDescribeNode("In", this);
+      return false;
+    case NodeType::Locals:
+      NumLocals = dyn_cast<Locals>(LocalDecl)->getValue();
+      break;
+    case NodeType::NoLocals:
+      break;
+  }
+  return true;
 }
 
 // Returns nullptr if P is illegal, based on the define.
@@ -1800,17 +1866,15 @@ const std::string Define::getName() const {
 }
 
 size_t Define::getNumLocals() const {
-  assert(getNumKids() == 4);
-  if (auto* Locs = dyn_cast<Locals>(getKid(2)))
-    return Locs->getValue();
-  return 0;
+  if (!IsCallingFrameValidated)
+    validateCallingFrame();
+  return NumLocals;
 }
 
 size_t Define::getNumParams() const {
-  assert(getNumKids() == 4);
-  if (auto* Parms = dyn_cast<Params>(getKid(1)))
-    return Parms->getValue();
-  return 0;
+  if (!IsCallingFrameValidated)
+    validateCallingFrame();
+  return NumParams;
 }
 
 Node* Define::getBody() const {
