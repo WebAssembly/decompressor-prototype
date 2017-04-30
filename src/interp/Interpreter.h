@@ -20,7 +20,7 @@
 #ifndef DECOMPRESSOR_SRC_INTERP_INTERPRETER_H_
 #define DECOMPRESSOR_SRC_INTERP_INTERPRETER_H_
 
-#include "interp/Interpreter.def"
+#include "interp/Interpreter-defs.h"
 #include "interp/InterpreterFlags.h"
 #include "stream/ValueFormat.h"
 #include "utils/TraceAPI.h"
