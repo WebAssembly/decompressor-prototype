@@ -26,9 +26,9 @@
 #include <vector>
 
 #include "interp/IntFormats.h"
-#include "sexp/Ast.def"
+#include "sexp/Ast-defs.h"
 #include "sexp/NodeType.h"
-#include "sexp/PredefinedStrings.def"
+#include "sexp/PredefinedStrings-defs.h"
 #include "stream/ValueFormat.h"
 
 namespace wasm {
