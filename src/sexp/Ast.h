@@ -283,7 +283,7 @@ class Node {
   };
 
   virtual ~Node();
-
+  bool isTextVisible() const;
   SymbolTable& getSymtab() const { return Symtab; }
   NodeType getRtClassId() const { return Type; }
   NodeType getType() const { return Type; }
@@ -380,20 +380,6 @@ class Nullary : public Node {
 
  protected:
   Nullary(SymbolTable& Symtab, NodeType Type);
-};
-
-class TextInvisible : public Nullary {
-  TextInvisible() = delete;
-  TextInvisible(const TextInvisible&) = delete;
-  TextInvisible& operator=(const TextInvisible&) = delete;
-
- public:
-  ~TextInvisible() OVERRIDE;
-
-  static bool implementsClass(NodeType Type);
-
- protected:
-  TextInvisible(SymbolTable& Symtab, NodeType Type);
 };
 
 // Base class for cached data. What these nodes have in common is that

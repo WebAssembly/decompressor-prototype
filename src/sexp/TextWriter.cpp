@@ -131,7 +131,7 @@ void TextWriter::writeNodeKids(const Node* Nd, bool EmbeddedInParent) {
   std::vector<Node*> Kids;
   Node* LastKid = nullptr;
   for (Node* Kid : *Nd) {
-    if (!isa<TextInvisible>(Kid)) {
+    if (Kid->isTextVisible()) {
       LastKid = Kid;
       Kids.push_back(Kid);
     }
@@ -247,7 +247,7 @@ void TextWriter::writeNodeKidsAbbrev(const Node* Nd, bool EmbeddedInParent) {
   int MaxKidsSameLine = KidsSameLine + Traits->AdditionalTextArgs;
   std::vector<Node*> Kids;
   for (Node* Kid : *Nd) {
-    if (!isa<TextInvisible>(Kid))
+    if (Kid->isTextVisible())
       Kids.push_back(Kid);
   }
   int NumKids = Kids.size();

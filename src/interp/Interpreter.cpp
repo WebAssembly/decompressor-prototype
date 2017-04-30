@@ -863,7 +863,7 @@ void Interpreter::algorithmResume() {
             }
             break;
           case NodeType::Callback: {  // Method::Eval
-            IntType Action = cast<Callback>(Frame.Nd)->getValue()->getValue();
+            IntType Action = cast<Callback>(Frame.Nd)->getIntNode()->getValue();
             if (!Input->readAction(Action) || !Output->writeAction(Action))
               return throwMessage("Unable to apply action: ", Action);
             popAndReturn(LastReadValue);

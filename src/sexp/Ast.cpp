@@ -201,6 +201,17 @@ Node::Iterator::Iterator(const Node* Nd, int Index) : Nd(Nd), Index(Index) {}
 Node::Iterator::Iterator(const Iterator& Iter)
     : Nd(Iter.Nd), Index(Iter.Index) {}
 
+bool Node::isTextVisible() const {
+  switch (getType()) {
+    default:
+      return true;
+#define X(NAME) case NodeType::NAME:
+      AST_TEXTINVISIBLE_TABLE
+#undef X
+      return false;
+  }
+}
+
 Node::Iterator& Node::Iterator::operator=(const Iterator& Iter) {
   Nd = Iter.Nd;
   Index = Iter.Index;
@@ -1301,22 +1312,6 @@ bool Nullary::implementsClass(NodeType Type) {
   }
 }
 
-TextInvisible::~TextInvisible() {}
-
-TextInvisible::TextInvisible(SymbolTable& Symtab, NodeType Type)
-    : Nullary(Symtab, Type) {}
-
-bool TextInvisible::implementsClass(NodeType Type) {
-  switch (Type) {
-    default:
-      return false;
-#define X(NAME) case NodeType::NAME:
-      AST_TEXTINVISIBLE_TABLE
-#undef X
-      return true;
-  }
-}
-
 #define X(NAME, BASE, DECLS, INIT) \
   NAME::NAME(SymbolTable& Symtab) : BASE(Symtab, NodeType::NAME) { INIT }
 AST_NULLARYNODE_TABLE
@@ -1443,7 +1438,7 @@ bool Callback::validateNode(ConstNodeVectorType& Parents) const {
   return true;
 }
 
-const IntegerNode* Callback::getValue() const {
+const IntegerNode* Callback::getIntNode() const {
   const Node* Val = getKid(0);
   if (const auto* IntNd = dyn_cast<IntegerNode>(Val))
     return IntNd;
