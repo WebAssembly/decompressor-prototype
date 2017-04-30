@@ -1810,6 +1810,7 @@ bool Define::validateCallingFrame() const {
         }
         break;
       case NodeType::ParamCached:
+        ++NumParams;
         ParamTypes.push_back(Arg);
         break;
       case NodeType::ParamArgs:
