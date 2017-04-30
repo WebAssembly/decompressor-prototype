@@ -18,6 +18,194 @@
 #ifndef DECOMPRESSOR_SRC_AST_DEF
 #define DECOMPRESSOR_SRC_AST_DEF
 
+// Defines common declarations for nodes.
+
+#define VALIDATENODE                                                           \
+  public:                                                                      \
+    bool validateNode(ConstNodeVectorType &Parents) const OVERRIDE;            \
+
+#define GETINTNODE                                                             \
+  public:                                                                      \
+    const IntegerNode* getIntNode() const;                                     \
+
+#define GETDEF(NAME)                                                           \
+  public:                                                                      \
+     const NAME##Def* getDef() const;                                          \
+     
+//#define X(NAME, BASE, DECLS, INIT)
+// where:
+//   NAME: Class/enum node type name
+//   BASE: Base class for node class.
+//   DECLS: Other declarations for the node.
+//   INIT: code to run in the body of the constructors to finish
+//         initialization
+#define AST_NULLARYNODE_TABLE                                                  \
+  X(Bit, Nullary,,)                                                            \
+  X(Error, Nullary,,)                                                          \
+  X(LastRead, Nullary,,)                                                       \
+  X(NoLocals, Nullary,,)                                                       \
+  X(NoParams, Nullary,,)                                                       \
+  X(Uint32, Nullary,,)                                                         \
+  X(Uint64, Nullary,,)                                                         \
+  X(Uint8, Nullary,,)                                                          \
+  X(Varint32, Nullary,,)                                                       \
+  X(Varint64, Nullary,,)                                                       \
+  X(Varuint32, Nullary,,)                                                      \
+  X(Varuint64, Nullary,,)                                                      \
+  X(Void, Nullary,,)                                                           \
+
+//#define X(NAME, FORMAT, DEFAULT, MERGE, BASE, DECLS, INIT)
+// where:
+//   NAME: Class/enum node type name
+//   FORMAT: The binary format (in binary files) of the value.
+//   DEFAULT: Default value assumed if not provided.
+//   MERGE: True if instances can be merged.
+//   BASE: Base class for node class.
+//   DECLS: Other declarations for the node.
+//   INIT: code to run in the body of the constructors to finish
+//         initialization
+#define AST_INTEGERNODE_TABLE                                                  \
+  X(I32Const, Varint32, 0, true, IntegerNode,,)                                \
+  X(I64Const, Varint64, 0, true, IntegerNode,,)                                \
+  X(Local, Varuint32, 0, true, IntegerNode, VALIDATENODE,)                     \
+  X(Locals, Varuint32, 0, true, IntegerNode,,)                                 \
+  X(Param, Varuint32, 0, false, IntegerNode, VALIDATENODE,)                    \
+  X(Params, Varuint32, 0, false, IntegerNode,,)                                \
+  X(ParamCached, Varuint32, 1, false, IntegerNode,,)                           \
+  X(ParamExprs, Varuint32, 0, false, IntegerNode,,)                            \
+  X(ParamExprsCached, Varuint32, 0, false, IntegerNode,,)                      \
+  X(U8Const, Uint8, 0, true, IntegerNode,,)                                    \
+  X(U32Const, Varuint32, 0, true, IntegerNode,,)                               \
+  X(U64Const, Varuint64, 0, true, IntegerNode,,)                               \
+
+// Defines explicit literals
+//#define X(NAME, BASE, VALUE, FORMAT, DECLS, INIT)
+// where:
+//   NAME: Class/enum node type name
+//   BASE: Base class for node class.
+//   VALUE: The value of the literal.
+//   FORMAT: The ValueFormat to use to represent the literal.
+//   DECLS: Other declarations for the node.
+//   INIT: code to run in the body of the constructors to finish
+//         initialization
+#define AST_LITERAL_TABLE                                                      \
+  X(Zero, IntegerNode, 0, Decimal,,)                                           \
+  X(One, IntegerNode, 1, Decimal,,)                                            \
+
+//#define X(NAME, BASE, DECLS, INIT)
+// where:
+//   NAME: Class/enum node type name
+//   BASE: Base class for node class.
+//   DECLS: Other declarations for the node.
+//   INIT: code to run in the body of the constructors to finish
+//         initialization
+#define AST_UNARYNODE_TABLE                                                    \
+  X(AlgorithmFlag, Unary,,)                                                    \
+  X(Block, Unary,,)                                                            \
+  X(BitwiseNegate, Unary,,)                                                    \
+  X(Callback, Unary, VALIDATENODE                                              \
+                     GETINTNODE,)                                              \
+  X(LastSymbolIs, Unary,,)                                                     \
+  X(LiteralActionUse, Unary, VALIDATENODE                                      \
+                             GETINTNODE                                        \
+			     GETDEF(LiteralAction),)                           \
+  X(LiteralUse, Unary, VALIDATENODE                                            \
+                       GETINTNODE                                              \
+		       GETDEF(Literal),)                                       \
+  X(LoopUnbounded, Unary,,)                                                    \
+  X(Not, Unary,,)                                                              \
+  X(Peek, Unary,,)                                                             \
+  X(Read, Unary,,)                                                             \
+  X(Undefine, Unary,,)                                                         \
+  X(UnknownSection, Unary,,)                                                   \
+
+//#define X(NAME, BASE, DECLS, INIT)
+// where:
+//   NAME: Class/enum node type name
+//   BASE: Base class for node class.
+//   DECLS: Other declarations for the node.
+//   INIT: code to run in the body of the constructors to finish
+//         initialization
+#define AST_BINARYNODE_TABLE                                                   \
+  X(And, Binary,,)                                                             \
+  X(BinarySelect, Binary,,)                                                    \
+  X(BitwiseAnd, Binary,,)                                                      \
+  X(BitwiseOr, Binary,,)                                                       \
+  X(BitwiseXor, Binary,,)                                                      \
+  X(Case, Binary, CASE_DECLS,)                                                 \
+  X(IfThen, Binary,,)                                                          \
+  X(LiteralActionDef, Binary,,)                                                \
+  X(LiteralDef, Binary,,)                                                      \
+  X(Loop, Binary,,)                                                            \
+  X(Or, Binary,,)                                                              \
+  X(Rename, Binary,,)                                                          \
+  X(Set, Binary,,)                                                             \
+  X(Table, Binary,,)                                                           \
+
+
+#define CASE_DECLS                                                             \
+    VALIDATENODE                                                               \
+  public:                                                                      \
+    decode::IntType getValue() const { return Value; }                         \
+    const Node* getCaseBody() const { return CaseBody; }                       \
+  private:                                                                     \
+    mutable decode::IntType Value;                                             \
+    mutable const Node* CaseBody;                                              \
+
+//#define X(NAME, BASE, DECLS, INIT)
+// where:
+//   NAME: Class/enum node type name
+//   BASE: Base class for node class.
+//   DECLS: Other declarations for the node.
+//   INIT: code to run in the body of the constructors to finish
+//         initialization
+#define AST_SELECTNODE_TABLE                                                   \
+  X(Switch, SelectBase,,)                                                      \
+  X(Map, SelectBase,,)                                                         \
+
+//#define X(NAME, BASE, DECLS, INIT)
+// where:
+//   NAME: Class/enum node type name
+//   BASE: Base class for node class.
+//   DECLS: Other declarations for the node.
+//   INIT: code to run in the body of the constructors to finish
+//         initialization
+#define AST_NARYNODE_TABLE                                                     \
+  X(Algorithm, Nary, ALGORITHM_DECLS, init();)                                 \
+  X(Define, Nary, DEFINE_DECLS,)                                               \
+  X(Eval, Nary, EVAL_DECLS,)                                                   \
+  X(LiteralActionBase, Nary,,)                                                 \
+  X(ParamArgs, Nary,,)                                                         \
+  X(ReadHeader, Header,,)                                                      \
+  X(Sequence, Nary,,)                                                          \
+  X(SourceHeader, Header,,)                                                    \
+  X(Write, Nary,,)                                                             \
+  X(WriteHeader, Header,,)                                                     \
+
+//#define X(NAME, BASE, DECLS, INIT)
+// where:
+//   NAME: Class/enum node type name
+//   BASE: Base class for node class.
+//   DECLS: Other declarations for the node.
+//   INIT: code to run in the body of the constructors to finish
+//         initialization
+#define AST_TERNARYNODE_TABLE                                                  \
+  X(IfThenElse, Ternary,,)                                                     \
+
+//#define X(NAME)
+// where:
+//   NAME: Class/enum node type name
+#define AST_CACHEDNODE_TABLE                                                   \
+  X(SymbolDefn)                                                                \
+  X(IntLookup)                                                                 \
+
+// The rest of this file defines text printing rules.
+
+//#define X(NAME)
+#define AST_TEXTINVISIBLE_TABLE                                                \
+  X(NoLocals)                                                                  \
+  X(NoParams)                                                                  \
+
 //#define X(tag, opcode, sexp_name, text_num_args, text_max_args, NSL, hidden)
 // where:
 //   tag: enumeration name.
@@ -125,185 +313,13 @@
   X(SymbolDefn,        0x100, "symbol.defn",     0, 0, false, false)           \
   X(IntLookup,         0x101, "int.lookup",      0, 0, false, false)           \
 
-//#define X(NAME, BASE, DECLS, INIT)
-// where:
-//   NAME: Class/enum node type name
-//   BASE: Base class for node class.
-//   DECLS: Other declarations for the node.
-//   INIT: code to run in the body of the constructors to finish
-//         initialization
-#define AST_NULLARYNODE_TABLE                                                  \
-  X(Bit, Nullary,,)                                                            \
-  X(Error, Nullary,,)                                                          \
-  X(LastRead, Nullary,,)                                                       \
-  X(NoLocals, TextInvisible,,)                                                 \
-  X(NoParams, TextInvisible,,)                                                 \
-  X(Uint32, Nullary,,)                                                         \
-  X(Uint64, Nullary,,)                                                         \
-  X(Uint8, Nullary,,)                                                          \
-  X(Varint32, Nullary,,)                                                       \
-  X(Varint64, Nullary,,)                                                       \
-  X(Varuint32, Nullary,,)                                                      \
-  X(Varuint64, Nullary,,)                                                      \
-  X(Void, Nullary,,)                                                           \
-
-//#define X(NAME)
-#define AST_TEXTINVISIBLE_TABLE                                                \
-  X(NoLocals)                                                                  \
-  X(NoParams)                                                                  \
-
-//#define X(NAME, FORMAT, DEFAULT, MERGE, BASE, DECLS, INIT)
-// where:
-//   NAME: Class/enum node type name
-//   FORMAT: The binary format (in binary files) of the value.
-//   DEFAULT: Default value assumed if not provided.
-//   MERGE: True if instances can be merged.
-//   BASE: Base class for node class.
-//   DECLS: Other declarations for the node.
-//   INIT: code to run in the body of the constructors to finish
-//         initialization
-#define AST_INTEGERNODE_TABLE                                                  \
-  X(I32Const, Varint32, 0, true, IntegerNode,,)                                \
-  X(I64Const, Varint64, 0, true, IntegerNode,,)                                \
-  X(Local, Varuint32, 0, true, IntegerNode, LOCAL_DECLS,)                      \
-  X(Locals, Varuint32, 0, true, IntegerNode,,)                                 \
-  X(Param, Varuint32, 0, false, IntegerNode, PARAM_DECLS,)                     \
-  X(Params, Varuint32, 0, false, IntegerNode,,)                                \
-  X(ParamCached, Varuint32, 1, false, IntegerNode,,)                           \
-  X(ParamExprs, Varuint32, 0, false, IntegerNode,,)                            \
-  X(ParamExprsCached, Varuint32, 0, false, IntegerNode,,)                      \
-  X(U8Const, Uint8, 0, true, IntegerNode,,)                                    \
-  X(U32Const, Varuint32, 0, true, IntegerNode,,)                               \
-  X(U64Const, Varuint64, 0, true, IntegerNode,,)                               \
-
-#define LOCAL_DECLS                                                            \
-  public:                                                                      \
-    bool validateNode(ConstNodeVectorType &Parents) const OVERRIDE;            \
-
-#define PARAM_DECLS                                                            \
-  public:                                                                      \
-    bool validateNode(ConstNodeVectorType &Parents) const OVERRIDE;            \
-
-//#define X(NAME, BASE, VALUE, FORMAT, DECLS, INIT)
-// where:
-//   NAME: Class/enum node type name
-//   BASE: Base class for node class.
-//   VALUE: The value of the literal.
-//   FORMAT: The ValueFormat to use to represent the literal.
-//   DECLS: Other declarations for the node.
-//   INIT: code to run in the body of the constructors to finish
-//         initialization
-#define AST_LITERAL_TABLE                                                      \
-  X(Zero, IntegerNode, 0, Decimal,,)                                           \
-  X(One, IntegerNode, 1, Decimal,,)                                            \
-
-//#define X(NAME, BASE, DECLS, INIT)
-// where:
-//   NAME: Class/enum node type name
-//   BASE: Base class for node class.
-//   DECLS: Other declarations for the node.
-//   INIT: code to run in the body of the constructors to finish
-//         initialization
-#define AST_UNARYNODE_TABLE                                                    \
-  X(AlgorithmFlag, Unary,,)                                                    \
-  X(Block, Unary,,)                                                            \
-  X(BitwiseNegate, Unary,,)                                                    \
-  X(Callback, Unary, CALLBACK_DECLS,)                                          \
-  X(LastSymbolIs, Unary,,)                                                     \
-  X(LiteralActionUse, Unary, LITERALACTIONUSE_DECLS,)                          \
-  X(LiteralUse, Unary, LITERALUSE_DECLS,)                                      \
-  X(LoopUnbounded, Unary,,)                                                    \
-  X(Not, Unary,,)                                                              \
-  X(Peek, Unary,,)                                                             \
-  X(Read, Unary,,)                                                             \
-  X(Undefine, Unary,,)                                                         \
-  X(UnknownSection, Unary,,)                                                   \
-
-#define CALLBACK_DECLS                                                         \
-  public:                                                                      \
-    bool validateNode(ConstNodeVectorType &Parents) const OVERRIDE;            \
-    const IntegerNode* getValue() const;                                       \
-
-#define LITERALUSE_DECLS                                                       \
-  const LiteralDef* getDef() const;                                            \
-  const IntegerNode* getIntNode() const;                                       \
-  bool validateNode(ConstNodeVectorType &Parents) const OVERRIDE;              \
-
-
-#define LITERALACTIONUSE_DECLS                                                 \
-  const LiteralActionDef* getDef() const;                                      \
-  const IntegerNode* getIntNode() const;                                       \
-  bool validateNode(ConstNodeVectorType &Parents) const OVERRIDE;              \
-
-//#define X(NAME, BASE, DECLS, INIT)
-// where:
-//   NAME: Class/enum node type name
-//   BASE: Base class for node class.
-//   DECLS: Other declarations for the node.
-//   INIT: code to run in the body of the constructors to finish
-//         initialization
-#define AST_BINARYNODE_TABLE                                                   \
-  X(And, Binary,,)                                                             \
-  X(BinarySelect, Binary,,)                                                    \
-  X(BitwiseAnd, Binary,,)                                                      \
-  X(BitwiseOr, Binary,,)                                                       \
-  X(BitwiseXor, Binary,,)                                                      \
-  X(Case, Binary, CASE_DECLS,)                                                 \
-  X(IfThen, Binary,,)                                                          \
-  X(LiteralActionDef, Binary,,)                                                \
-  X(LiteralDef, Binary,,)                                                      \
-  X(Loop, Binary,,)                                                            \
-  X(Or, Binary,,)                                                              \
-  X(Rename, Binary,,)                                                          \
-  X(Set, Binary,,)                                                             \
-  X(Table, Binary,,)                                                           \
-
-#define CASE_DECLS                                                             \
-  public:                                                                      \
-    decode::IntType getValue() const { return Value; }                         \
-    const Node* getCaseBody() const { return CaseBody; }                       \
-    bool validateNode(ConstNodeVectorType &Parents) const OVERRIDE;            \
-  private:                                                                     \
-    mutable decode::IntType Value;                                             \
-    mutable const Node* CaseBody;                                              \
-
-//#define X(NAME, BASE, DECLS, INIT)
-// where:
-//   NAME: Class/enum node type name
-//   BASE: Base class for node class.
-//   DECLS: Other declarations for the node.
-//   INIT: code to run in the body of the constructors to finish
-//         initialization
-#define AST_SELECTNODE_TABLE                                                   \
-  X(Switch, SelectBase,,)                                                      \
-  X(Map, SelectBase,,)                                                         \
-
-//#define X(NAME, BASE, DECLS, INIT)
-// where:
-//   NAME: Class/enum node type name
-//   BASE: Base class for node class.
-//   DECLS: Other declarations for the node.
-//   INIT: code to run in the body of the constructors to finish
-//         initialization
-#define AST_NARYNODE_TABLE                                                     \
-  X(Algorithm, Nary, ALGORITHM_DECLS, init();)                                 \
-  X(Define, Nary, DEFINE_DECLS,)                                               \
-  X(Eval, Nary, EVAL_DECLS,)                                                   \
-  X(LiteralActionBase, Nary,,)                                                 \
-  X(ParamArgs, Nary,,)                                                         \
-  X(ReadHeader, Header,,)                                                      \
-  X(Sequence, Nary,,)                                                          \
-  X(SourceHeader, Header,,)                                                    \
-  X(Write, Nary,,)                                                             \
-  X(WriteHeader, Header,,)                                                     \
-
 #define ALGORITHM_DECLS                                                        \
+  VALIDATENODE                                                                 \
   public:                                                                      \
     const Header* getSourceHeader(bool UseEnclosing=true) const;               \
     const Header* getReadHeader(bool UseEnclosing=true) const;                 \
     const Header* getWriteHeader(bool UseEnclosing=true) const;                \
     bool isAlgorithm() const;                                                  \
-    bool validateNode(ConstNodeVectorType &Parents) const OVERRIDE;            \
     void init();                                                               \
     void clearCaches() { init(); }                                             \
   private:                                                                     \
@@ -315,6 +331,7 @@
     bool setIsAlgorithm(const Node* Nd);                                       \
 
 #define DEFINE_DECLS                                                           \
+    VALIDATENODE                                                               \
   public:                                                                      \
     bool isValidParam(decode::IntType Index) const;                            \
     bool isValidLocal(decode::IntType Index) const;                            \
@@ -322,28 +339,10 @@
     size_t getNumLocals() const;                                               \
     size_t getNumParams() const;                                               \
     Node* getBody() const;                                                     \
-    bool validateNode(ConstNodeVectorType &Parents) const OVERRIDE;            \
 
 #define EVAL_DECLS                                                             \
+  VALIDATENODE                                                                 \
  public:                                                                       \
   Symbol* getCallName() const;                                                 \
-  bool validateNode(ConstNodeVectorType &Parents) const OVERRIDE;              \
-
-//#define X(NAME, BASE, DECLS, INIT)
-// where:
-//   NAME: Class/enum node type name
-//   BASE: Base class for node class.
-//   DECLS: Other declarations for the node.
-//   INIT: code to run in the body of the constructors to finish
-//         initialization
-#define AST_TERNARYNODE_TABLE                                                  \
-  X(IfThenElse, Ternary,,)                                                     \
-
-//#define X(NAME)
-// where:
-//   NAME: Class/enum node type name
-#define AST_CACHEDNODE_TABLE                                                   \
-  X(SymbolDefn)                                                                \
-  X(IntLookup)                                                                 \
 
 #endif // DECOMPRESSOR_SRC_AST_DEF
