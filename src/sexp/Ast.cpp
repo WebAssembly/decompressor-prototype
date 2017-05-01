@@ -1042,7 +1042,7 @@ void SymbolTable::installDefinitions(const Node* Nd) {
             for (int i = 1; i < OldDefn->getNumKids(); ++i)
               NewDefn->append(OldDefn->getKid(i));
             installDefinitions(NewDefn);
-            if (!NewDefn->validateCallingFrame())
+            if (!NewDefn->getCallFrame()->isConsistent())
               return fatal("Can't install rename!");
             return;
           }
@@ -1763,27 +1763,20 @@ AST_TERNARYNODE_TABLE
 AST_TERNARYNODE_TABLE
 #undef X
 
-void Define::init() {
-  NumLocals = 0;
-  NumParams = 0;
-  IsCallingFrameValidated = false;
+CallFrame::CallFrame(const Define* Def)
+    : NumParams(0), NumLocals(0), InitSuccessful(false) {
+  init(Def);
 }
 
-bool Define::validateNode(ConstNodeVectorType& Parents) const {
-  return validateCallingFrame();
-}
+CallFrame::~CallFrame() {}
 
-bool Define::validateCallingFrame() const {
-  IsCallingFrameValidated = true;
-  if (getNumKids() != 4) {
-    errorDescribeNode("Malformed define", this);
-    return false;
+void CallFrame::init(const Define* Def) {
+  if (Def->getNumKids() != 4) {
+    errorDescribeNode("Malformed define", Def);
+    return;
   }
-  NumParams = 0;
-  NumLocals = 0;
   bool ParamsValidate = true;
-  ParamTypes.clear();
-  const Node* ParamsRoot = getKid(1);
+  const Node* ParamsRoot = Def->getKid(1);
   std::vector<const Node*> Args;
   Args.push_back(ParamsRoot);
   for (size_t NextIndex = 0; NextIndex < Args.size(); ++NextIndex) {
@@ -1823,40 +1816,35 @@ bool Define::validateCallingFrame() const {
   }
   if (!ParamsValidate) {
     errorDescribeNode("Malformed parameter list", ParamsRoot, false);
-    errorDescribeNode("In", this);
-    return false;
+    errorDescribeNode("In", Def);
+    return;
   }
 
   // Check local declarations.
-  const Node* LocalDecl = getKid(2);
+  const Node* LocalDecl = Def->getKid(2);
   switch (LocalDecl->getType()) {
     default:
       errorDescribeNode("Malformed locals declaration", LocalDecl, false);
-      errorDescribeNode("In", this);
-      return false;
+      errorDescribeNode("In", Def);
+      return;
     case NodeType::Locals:
       NumLocals = dyn_cast<Locals>(LocalDecl)->getValue();
       break;
     case NodeType::NoLocals:
       break;
   }
-  return true;
+  InitSuccessful = true;
+  return;
 }
 
-// Returns nullptr if P is illegal, based on the define.
-bool Define::isValidParam(IntType Index) const {
-  assert(getNumKids() == 4);
-  if (!isa<Params>(getKid(1)))
-    return false;
-  return Index < cast<Params>(getKid(1))->getValue();
+CallFrame* Define::getCallFrame() const {
+  if (!MyCallFrame)
+    MyCallFrame = utils::make_unique<CallFrame>(this);
+  return MyCallFrame.get();
 }
 
-bool Define::isValidLocal(IntType Index) const {
-  if (getNumKids() < 3)
-    return false;
-  if (!isa<Locals>(getKid(2)))
-    return false;
-  return Index < cast<Locals>(getKid(2))->getValue();
+bool Define::validateNode(ConstNodeVectorType& Parents) const {
+  return getCallFrame()->isConsistent();
 }
 
 const std::string Define::getName() const {
@@ -1865,29 +1853,10 @@ const std::string Define::getName() const {
   return cast<Symbol>(getKid(0))->getName();
 }
 
-size_t Define::getNumLocals() const {
-  if (!IsCallingFrameValidated)
-    validateCallingFrame();
-  return NumLocals;
-}
-
-size_t Define::getNumParams() const {
-  if (!IsCallingFrameValidated)
-    validateCallingFrame();
-  return NumParams;
-}
-
 Node* Define::getBody() const {
-  assert(getNumKids() == 4);
-  Node* Nd = getKid(2);
-  switch (Nd->getType()) {
-    default:
-      return Nd;
-    case NodeType::Locals:
-    case NodeType::NoLocals:
-      assert(getNumKids() >= 4);
-      return getKid(3);
-  }
+  if (getNumKids() < 4)
+    return nullptr;
+  return getKid(3);
 }
 
 Nary::Nary(SymbolTable& Symtab, NodeType Type) : Node(Symtab, Type) {}
