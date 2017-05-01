@@ -116,13 +116,13 @@ static constexpr PredefinedSymbol MaxPredefinedSymbol =
 PredefinedSymbol toPredefinedSymbol(uint32_t Value);
 charstring getName(PredefinedSymbol);
 
-class CallFrame {
-  CallFrame(const CallFrame&) = delete;
-  CallFrame& operator=(const CallFrame&) = delete;
+class DefineFrame {
+  DefineFrame(const DefineFrame&) = delete;
+  DefineFrame& operator=(const DefineFrame&) = delete;
 
  public:
-  explicit CallFrame(const Define* Def);
-  ~CallFrame();
+  explicit DefineFrame(const Define* Def);
+  ~DefineFrame();
   bool isConsistent() { return InitSuccessful; }
   size_t getNumArgs() const { return ParamTypes.size(); }
   size_t getNumLocals() const { return NumLocals; }

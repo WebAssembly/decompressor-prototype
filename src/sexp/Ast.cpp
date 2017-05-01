@@ -1042,7 +1042,7 @@ void SymbolTable::installDefinitions(const Node* Nd) {
             for (int i = 1; i < OldDefn->getNumKids(); ++i)
               NewDefn->append(OldDefn->getKid(i));
             installDefinitions(NewDefn);
-            if (!NewDefn->getCallFrame()->isConsistent())
+            if (!NewDefn->getDefineFrame()->isConsistent())
               return fatal("Can't install rename!");
             return;
           }
@@ -1763,14 +1763,14 @@ AST_TERNARYNODE_TABLE
 AST_TERNARYNODE_TABLE
 #undef X
 
-CallFrame::CallFrame(const Define* Def)
+DefineFrame::DefineFrame(const Define* Def)
     : NumParams(0), NumLocals(0), InitSuccessful(false) {
   init(Def);
 }
 
-CallFrame::~CallFrame() {}
+DefineFrame::~DefineFrame() {}
 
-void CallFrame::init(const Define* Def) {
+void DefineFrame::init(const Define* Def) {
   if (Def->getNumKids() != 4) {
     errorDescribeNode("Malformed define", Def);
     return;
@@ -1837,14 +1837,14 @@ void CallFrame::init(const Define* Def) {
   return;
 }
 
-CallFrame* Define::getCallFrame() const {
-  if (!MyCallFrame)
-    MyCallFrame = utils::make_unique<CallFrame>(this);
-  return MyCallFrame.get();
+DefineFrame* Define::getDefineFrame() const {
+  if (!MyDefineFrame)
+    MyDefineFrame = utils::make_unique<DefineFrame>(this);
+  return MyDefineFrame.get();
 }
 
 bool Define::validateNode(ConstNodeVectorType& Parents) const {
-  return getCallFrame()->isConsistent();
+  return getDefineFrame()->isConsistent();
 }
 
 const std::string Define::getName() const {
