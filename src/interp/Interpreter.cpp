@@ -143,14 +143,20 @@ Interpreter::EvalFrame::EvalFrame() {
   reset();
 }
 
-Interpreter::EvalFrame::EvalFrame(const filt::Eval* Caller,
+Interpreter::EvalFrame::EvalFrame(const Eval* Caller,
+                                  const DefineFrame* DefinedFrame,
                                   size_t CallingEvalIndex)
-    : Caller(Caller), CallingEvalIndex(CallingEvalIndex) {
+    : Caller(Caller),
+      DefinedFrame(DefinedFrame),
+      CallingEvalIndex(CallingEvalIndex) {
   assert(Caller != nullptr);
+  assert(DefinedFrame != nullptr);
 }
 
 Interpreter::EvalFrame::EvalFrame(const EvalFrame& F)
-    : Caller(F.Caller), CallingEvalIndex(F.CallingEvalIndex) {}
+    : Caller(F.Caller),
+      DefinedFrame(F.DefinedFrame),
+      CallingEvalIndex(F.CallingEvalIndex) {}
 
 bool Interpreter::EvalFrame::isDefined() const {
   return Caller != nullptr;
@@ -158,6 +164,7 @@ bool Interpreter::EvalFrame::isDefined() const {
 
 void Interpreter::EvalFrame::reset() {
   Caller = nullptr;
+  DefinedFrame = nullptr;
   CallingEvalIndex = 0;
 }
 
@@ -1409,8 +1416,9 @@ void Interpreter::algorithmResume() {
                 size_t CallingEvalIndex = CallingEvalStack.size();
                 CurEvalFrameStack.push_back(CallingEvalIndex);
                 CallingEvalStack.push();
-                CallingEval.Caller = cast<Eval>(Frame.Nd);
-                CallingEval.CallingEvalIndex = CallingEvalIndex;
+                EvalFrame CalledFrame(cast<Eval>(Frame.Nd),
+                                      Defn->getDefineFrame(), CallingEvalIndex);
+                CallingEval = CalledFrame;
                 Frame.CallState = State::Exit;
                 call(Method::Eval, Frame.CallModifier, Defn);
                 break;

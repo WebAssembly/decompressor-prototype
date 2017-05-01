@@ -31,6 +31,7 @@ namespace wasm {
 namespace filt {
 
 class Case;
+class DefineFrame;
 class Eval;
 class Header;
 class Node;
@@ -198,12 +199,15 @@ class Interpreter {
   // The stack of calling "eval" expressions.
   struct EvalFrame {
     EvalFrame();
-    EvalFrame(const filt::Eval* Caller, size_t CallingEvalIndex);
+    EvalFrame(const filt::Eval* Caller,
+              const filt::DefineFrame* DefinedFrame,
+              size_t CallingEvalIndex);
     EvalFrame(const EvalFrame& F);
     bool isDefined() const;
     void reset();
     void describe(FILE* File, filt::TextWriter* Writer) const;
     const filt::Eval* Caller;
+    const filt::DefineFrame* DefinedFrame;
     size_t CallingEvalIndex;
   };
 
