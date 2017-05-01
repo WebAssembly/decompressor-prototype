@@ -116,6 +116,27 @@ static constexpr PredefinedSymbol MaxPredefinedSymbol =
 PredefinedSymbol toPredefinedSymbol(uint32_t Value);
 charstring getName(PredefinedSymbol);
 
+class CallFrame {
+  CallFrame(const CallFrame&) = delete;
+  CallFrame& operator=(const CallFrame&) = delete;
+
+ public:
+  explicit CallFrame(const Define* Def);
+  ~CallFrame();
+  bool isConsistent() { return InitSuccessful; }
+  size_t getNumArgs() const { return ParamTypes.size(); }
+  size_t getNumLocals() const { return NumLocals; }
+  size_t getNumParams() const { return NumParams; }
+  const Node* getParam(size_t Index);
+
+ private:
+  std::vector<const Node*> ParamTypes;
+  mutable size_t NumParams;
+  mutable size_t NumLocals;
+  bool InitSuccessful;
+  void init(const Define* Def);
+};
+
 // TODO(karlschimpf): Code no longer uses allocator. Remove from API.
 class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   SymbolTable(const SymbolTable&) = delete;
