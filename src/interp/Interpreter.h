@@ -291,7 +291,7 @@ class Interpreter {
 
   void popAndReturn(decode::IntType Value = 0);
 
-  EvalFrame& getCurrentEvalFrame();
+  EvalFrame* getCurrentEvalFrame();
 
   // For debugging only.
   void traceEnterFrame();

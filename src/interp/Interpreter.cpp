@@ -500,12 +500,11 @@ void Interpreter::callTopLevel(Method Method, const filt::Node* Nd) {
   call(Method, MethodModifier::ReadAndWrite, Nd);
 }
 
-#if 0
-Interpreter::EvalFrame& Interpreter::getCurrentEvalFrame() {
-  assert(CallingEvalStack.empty() || CurEvalFrameStack.empty());
-  return CallingEvalStack[CurEvalFrameStack.back()];
+Interpreter::EvalFrame* Interpreter::getCurrentEvalFrame() {
+  if (EvalFrameStack.empty() || CurEvalFrameStack.empty())
+    return nullptr;
+  return EvalFrameStack[CurEvalFrameStack.back()].get();
 }
-#endif
 
 void Interpreter::catchOrElseFail() {
   TRACE_MESSAGE("method failed");
@@ -1341,12 +1340,9 @@ void Interpreter::algorithmResume() {
           case NodeType::Param: {  // Method::Eval
             auto* Parm = cast<Param>(Frame.Nd);
             IntType ParamIndex = Parm->getValue();
-            if (EvalFrameStack.empty() || CurEvalFrameStack.empty())
-              return throwMessage(
-                  "Not inside a call frame, can't evaluate parameter "
-                  "accessor!");
-            EvalFrame* CallingFrame =
-                EvalFrameStack[CurEvalFrameStack.back()].get();
+            EvalFrame* CallingFrame = getCurrentEvalFrame();
+            if (CallingFrame == nullptr)
+              return throwMessage("Parameter reference not in called method");
             NodeType ParamTy =
                 CallingFrame->DefinedFrame->getArgType(ParamIndex);
             switch (Frame.CallState) {
@@ -1356,9 +1352,9 @@ void Interpreter::algorithmResume() {
                       "Parameter reference doesn't match callling context!");
                 switch (ParamTy) {
                   default:
-                    return throwMessage(std::string("Parameter type ") +
+                    return throwMessage(std::string("Parameter type '") +
                                         getNodeSexpName(ParamTy) +
-                                        " not implemented");
+                                        "' not implemented");
                   case NodeType::ParamExprs: {
                     const Node* Context =
                         CallingFrame->Caller->getKid(ParamIndex + 1);
@@ -1474,14 +1470,17 @@ void Interpreter::algorithmResume() {
                 std::unique_ptr<EvalFrame> CalledFrame = make_unique<EvalFrame>(
                     cast<Eval>(Frame.Nd), DefFrame, CallingEvalIndex);
                 EvalFrameStack.push_back(std::move(CalledFrame));
+#if 1
+                if (DefFrame->getNumValueArgs() > 0)
+                  return throwMessage("Value parameters not implemented");
+#else
                 for (size_t i = 0, e = DefFrame->getNumValueArgs(); i < e;
                      ++i) {
                   size_t ValArg = DefFrame->getValueArgIndex(i);
-#if 1
                   fprintf(stderr, "call %s[%u] = %u\n", Sym->getName().c_str(),
                           unsigned(i), unsigned(ValArg));
-#endif
                 }
+#endif
                 Frame.CallState = State::Exit;
                 call(Method::Eval, Frame.CallModifier, Defn);
                 break;
