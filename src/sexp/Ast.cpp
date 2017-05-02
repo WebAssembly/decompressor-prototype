@@ -1526,7 +1526,7 @@ bool Local::validateNode(ConstNodeVectorType& Parents) const {
   for (const Node* Nd : Parents) {
     if (const auto* Def = dyn_cast<Define>(Nd)) {
       TRACE(node_ptr, "Enclosing define", Def);
-      if (Def->isValidLocal(getValue()))
+      if (Def->isValidLocalIndex(getValue()))
         return true;
       errorDescribeNodeContext("Invalid local usage", this, Parents);
       return false;
@@ -1542,7 +1542,7 @@ bool Param::validateNode(ConstNodeVectorType& Parents) const {
   for (const Node* Nd : Parents) {
     if (const auto* Def = dyn_cast<Define>(Nd)) {
       TRACE(node_ptr, "Enclosing define", Def);
-      if (Def->isValidParam(getValue()))
+      if (Def->isValidArgIndex(getValue()))
         return true;
       errorDescribeNodeContext("Invalid parameter usage", this, Parents);
       return false;
@@ -1764,11 +1764,23 @@ AST_TERNARYNODE_TABLE
 #undef X
 
 DefineFrame::DefineFrame(const Define* Def)
-    : NumParams(0), NumLocals(0), InitSuccessful(false) {
+    : NumValueArgs(0), NumExprArgs(0), NumLocals(0), InitSuccessful(false) {
   init(Def);
 }
 
 DefineFrame::~DefineFrame() {}
+
+size_t DefineFrame::addSizedArg(const Node* Arg) {
+  if (!isa<IntegerNode>(Arg)) {
+    ParamTypes.push_back(Arg);
+    return 1;
+  }
+  const auto* Val = cast<IntegerNode>(Arg);
+  size_t Count = Val->getValue();
+  for (size_t i = 0; i < Count; ++i)
+    ParamTypes.push_back(Arg);
+  return Count;
+}
 
 void DefineFrame::init(const Define* Def) {
   if (Def->getNumKids() != 4) {
@@ -1782,35 +1794,24 @@ void DefineFrame::init(const Define* Def) {
   for (size_t NextIndex = 0; NextIndex < Args.size(); ++NextIndex) {
     const Node* Arg = Args[NextIndex];
     switch (Arg->getType()) {
+      case NodeType::ParamCached:
+      case NodeType::ParamExprsCached:
       default:
+        errorDescribeNode("Parameter argument implemented!", Arg);
         ParamsValidate = false;
         break;
       case NodeType::NoParams:
         break;
       case NodeType::Params:
-        if (const auto* Val = dyn_cast<IntegerNode>(Arg))
-          NumParams += Val->getValue();
-        else
-          ParamsValidate = false;
+        NumValueArgs += addSizedArg(Arg);
+        break;
       // Intentionally fall to next case!
       case NodeType::ParamExprs:
-      case NodeType::ParamExprsCached:
-        if (const auto* Val = dyn_cast<IntegerNode>(Arg)) {
-          for (size_t i = 0, end = Val->getValue(); i < end; ++i)
-            ParamTypes.push_back(Arg);
-        } else {
-          ParamsValidate = false;
-        }
-        break;
-      case NodeType::ParamCached:
-        ++NumParams;
-        ParamTypes.push_back(Arg);
+        NumExprArgs += addSizedArg(Arg);
         break;
       case NodeType::ParamArgs:
         for (const Node* Kid : *Arg)
           Args.push_back(Kid);
-        if (Arg != ParamsRoot)
-          ParamsValidate = false;
         break;
     }
   }
@@ -1939,7 +1940,7 @@ bool Eval::validateNode(ConstNodeVectorType& Parents) const {
     errorDescribeNode("In", this);
     return false;
   }
-  size_t NumParms = Defn->getNumParams();
+  size_t NumParms = Defn->getNumArgs();
   if (NumParms != size_t(getNumKids() - 1)) {
     fprintf(error(), "Eval called with wrong number of arguments!\n");
     errorDescribeNode("bad eval", this);

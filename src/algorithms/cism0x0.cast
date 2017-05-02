@@ -45,7 +45,7 @@
    (param 0)
 )
 
-(define 'opcode' (params)
+(define 'opcode'
    (varuint64)
 )
 

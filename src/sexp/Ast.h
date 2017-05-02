@@ -124,17 +124,20 @@ class DefineFrame {
   explicit DefineFrame(const Define* Def);
   ~DefineFrame();
   bool isConsistent() { return InitSuccessful; }
-  size_t getNumArgs() const { return ParamTypes.size(); }
   size_t getNumLocals() const { return NumLocals; }
-  size_t getNumParams() const { return NumParams; }
-  const Node* getParam(size_t Index);
+  size_t getNumArgs() const { return ParamTypes.size(); }
+  size_t getNumValueArgs() const { return NumValueArgs; }
+  size_t getNumExprArgs() const { return NumExprArgs; }
+  const Node* getValueArg(size_t Index);
 
  private:
   std::vector<const Node*> ParamTypes;
-  mutable size_t NumParams;
+  mutable size_t NumValueArgs;
+  mutable size_t NumExprArgs;
   mutable size_t NumLocals;
   bool InitSuccessful;
   void init(const Define* Def);
+  size_t addSizedArg(const Node* Arg);
 };
 
 // TODO(karlschimpf): Code no longer uses allocator. Remove from API.

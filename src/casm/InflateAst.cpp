@@ -430,6 +430,10 @@ bool InflateAst::writeAction(IntType Action) {
           Nd = IsDefault ? Symtab->create<Params>()
                          : Symtab->create<Params>(Value, Format);
           break;
+        case NodeType::ParamExprs:
+          Nd = IsDefault ? Symtab->create<ParamExprs>()
+                         : Symtab->create<ParamExprs>(Value, Format);
+          break;
         case NodeType::U8Const:
           Nd = IsDefault ? Symtab->create<U8Const>()
                          : Symtab->create<U8Const>(Value, Format);

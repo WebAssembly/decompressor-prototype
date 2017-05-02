@@ -31,7 +31,7 @@
   )
 )
 
-(define 'int.value' (params 1)
+(define 'int.value' (exprs 1)
   (=> 'int.value.begin')
   (if (uint8)                   # 0 or (decode::ValueFormat+1)
     (param 0)                   # integer value.
@@ -44,7 +44,7 @@
   (=> 'nary.inst')
 )
 
-(define 'node' (params 1)
+(define 'node' (exprs 1)
   (switch (param 0)
     (error)
     (case 'algorithm'
@@ -79,7 +79,8 @@
      case 'sequence'
      case 'switch'              (eval 'nary.node'))
 
-    (case 'param'
+    (case 'exprs'
+     case 'param'
      case 'params'
      case 'u32.const'
                                 (eval 'int.value' (varuint32)))
