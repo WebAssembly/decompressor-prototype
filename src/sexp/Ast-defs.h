@@ -325,25 +325,28 @@
   mutable bool IsValidated;                                      \
   bool setIsAlgorithm(const Node* Nd);
 
-#define DEFINE_DECLS                                                       \
-  VALIDATENODE                                                             \
- public:                                                                   \
-  typedef std::vector<const Node*> ParamTypeVector;                        \
-  DefineFrame* getDefineFrame() const;                                     \
-  bool isValidParam(decode::IntType Index) const {                         \
-    return Index < getDefineFrame()->getNumParams();                       \
-  }                                                                        \
-  bool isValidLocal(decode::IntType Index) const {                         \
-    return Index < getDefineFrame()->getNumLocals();                       \
-  }                                                                        \
-  const std::string getName() const;                                       \
-  size_t getNumLocals() const { return getDefineFrame()->getNumLocals(); } \
-  size_t getNumParams() const { return getDefineFrame()->getNumParams(); } \
-  size_t getNumArgs() const { return getDefineFrame()->getNumArgs(); }     \
-  Node* getBody() const;                                                   \
-                                                                           \
- private:                                                                  \
-  friend class SymbolTable;                                                \
+#define DEFINE_DECLS                                                           \
+  VALIDATENODE                                                                 \
+ public:                                                                       \
+  typedef std::vector<const Node*> ParamTypeVector;                            \
+  DefineFrame* getDefineFrame() const;                                         \
+  const std::string getName() const;                                           \
+  size_t getNumLocals() const { return getDefineFrame()->getNumLocals(); }     \
+  size_t getNumArgs() const { return getDefineFrame()->getNumArgs(); }         \
+  size_t getNumValueArgs() const {                                             \
+    return getDefineFrame()->getNumValueArgs();                                \
+  }                                                                            \
+  size_t getNumExprArgs() const { return getDefineFrame()->getNumExprArgs(); } \
+  bool isValidArgIndex(decode::IntType Index) const {                          \
+    return Index < getDefineFrame()->getNumArgs();                             \
+  }                                                                            \
+  bool isValidLocalIndex(decode::IntType Index) const {                        \
+    return Index < getDefineFrame()->getNumLocals();                           \
+  }                                                                            \
+  Node* getBody() const;                                                       \
+                                                                               \
+ private:                                                                      \
+  friend class SymbolTable;                                                    \
   mutable std::unique_ptr<DefineFrame> MyDefineFrame;
 
 #define EVAL_DECLS \

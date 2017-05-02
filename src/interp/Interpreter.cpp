@@ -1403,7 +1403,7 @@ void Interpreter::algorithmResume() {
                           Sym->getName().c_str());
                   return throwMessage("Unable to evaluate call");
                 }
-                size_t NumParams = Defn->getNumParams();
+                size_t NumParams = Defn->getNumArgs();
                 int NumCallArgs = Frame.Nd->getNumKids() - 1;
                 if (NumParams != size_t(NumCallArgs)) {
                   fprintf(stderr,
