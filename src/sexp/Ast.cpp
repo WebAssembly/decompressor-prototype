@@ -1782,6 +1782,24 @@ size_t DefineFrame::addSizedArg(const Node* Arg) {
   return Count;
 }
 
+size_t DefineFrame::getValueArgIndex(size_t Index) const {
+  // TODO(karlschimpf): Speed up?
+  assert(Index < ParamTypes.size());
+  size_t ArgIndex = 0;
+  for (const Node* Nd : ParamTypes)
+    if (isa<ParamValues>(Nd)) {
+      if (Index == 0)
+        return ArgIndex;
+      ++ArgIndex;
+      --Index;
+    }
+  WASM_RETURN_UNREACHABLE(0);
+}
+
+NodeType DefineFrame::getArgType(size_t Index) const {
+  return ParamTypes[Index]->getType();
+}
+
 void DefineFrame::init(const Define* Def) {
   if (Def->getNumKids() != 4) {
     errorDescribeNode("Malformed define", Def);
@@ -1844,6 +1862,7 @@ DefineFrame* Define::getDefineFrame() const {
 }
 
 bool Define::validateNode(ConstNodeVectorType& Parents) const {
+  MyDefineFrame.reset();
   return getDefineFrame()->isConsistent();
 }
 
