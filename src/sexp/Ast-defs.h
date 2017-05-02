@@ -336,6 +336,7 @@
   size_t getNumValueArgs() const {                                             \
     return getDefineFrame()->getNumValueArgs();                                \
   }                                                                            \
+  size_t getValueArg(size_t Index) const;                                      \
   size_t getNumExprArgs() const { return getDefineFrame()->getNumExprArgs(); } \
   bool isValidArgIndex(decode::IntType Index) const {                          \
     return Index < getDefineFrame()->getNumArgs();                             \

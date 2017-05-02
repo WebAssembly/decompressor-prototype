@@ -149,8 +149,7 @@ Interpreter::EvalFrame::EvalFrame(const Eval* Caller,
     : Caller(Caller),
       DefinedFrame(DefinedFrame),
       CallingEvalIndex(CallingEvalIndex),
-      Values(DefinedFrame->getNumValues(), 0) {
-}
+      Values(DefinedFrame->getNumValues(), 0) {}
 
 Interpreter::EvalFrame::EvalFrame(const EvalFrame& F)
     : Caller(F.Caller),
@@ -175,7 +174,8 @@ decode::IntType Interpreter::EvalFrame::getValueParam(size_t Index) const {
   return Values[Index];
 }
 
-void Interpreter::EvalFrame::setValueParam(size_t Index, decode::IntType Value) {
+void Interpreter::EvalFrame::setValueParam(size_t Index,
+                                           decode::IntType Value) {
   assert(Index < Values.size());
   Values[Index] = Value;
 }
@@ -1338,38 +1338,56 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case NodeType::Param:  // Method::Eval
+          case NodeType::Param: {  // Method::Eval
+            auto* Parm = cast<Param>(Frame.Nd);
+            IntType ParamIndex = Parm->getValue();
+            if (EvalFrameStack.empty() || CurEvalFrameStack.empty())
+              return throwMessage(
+                  "Not inside a call frame, can't evaluate parameter "
+                  "accessor!");
+            EvalFrame* CallingFrame =
+                EvalFrameStack[CurEvalFrameStack.back()].get();
+            NodeType ParamTy =
+                CallingFrame->DefinedFrame->getArgType(ParamIndex);
             switch (Frame.CallState) {
               case State::Enter: {
-                if (EvalFrameStack.empty() || CurEvalFrameStack.empty())
-                  return throwMessage(
-                      "Not inside a call frame, can't evaluate parameter "
-                      "accessor!");
-                assert(isa<Param>(Frame.Nd));
-                auto* Parm = cast<Param>(Frame.Nd);
-                IntType ParamIndex = Parm->getValue() + 1;
-                if (ParamIndex >=
-                    IntType(EvalFrameStack.back()->Caller->getNumKids()))
+                if (ParamIndex >= CallingFrame->DefinedFrame->getNumArgs())
                   return throwMessage(
                       "Parameter reference doesn't match callling context!");
-                EvalFrame* CallingFrame =
-                    EvalFrameStack[CurEvalFrameStack.back()].get();
-                const Node* Context = CallingFrame->Caller->getKid(ParamIndex);
-                size_t ContextFrameIndex =
-                    CurEvalFrameStack[CurEvalFrameStack.back()];
-                CurEvalFrameStack.push_back(ContextFrameIndex);
-                Frame.CallState = State::Exit;
-                call(Method::Eval, Frame.CallModifier, Context);
+                switch (ParamTy) {
+                  default:
+                    return throwMessage(std::string("Parameter type ") +
+                                        getNodeSexpName(ParamTy) +
+                                        " not implemented");
+                  case NodeType::ParamExprs: {
+                    const Node* Context =
+                        CallingFrame->Caller->getKid(ParamIndex + 1);
+                    size_t ContextFrameIndex =
+                        CurEvalFrameStack[CurEvalFrameStack.back()];
+                    CurEvalFrameStack.push_back(ContextFrameIndex);
+                    Frame.CallState = State::Exit;
+                    call(Method::Eval, Frame.CallModifier, Context);
+                    break;
+                  }
+                }
                 break;
               }
-              case State::Exit:
-                CurEvalFrameStack.pop_back();
+              case State::Exit: {
+                switch (ParamTy) {
+                  default:
+                    break;
+                  case NodeType::ParamExprs:
+                    CurEvalFrameStack.pop_back();
+                    break;
+                }
                 popAndReturn(Frame.ReturnValue);
                 break;
+              }
               default:
                 return failBadState();
             }
             break;
+          }
           case NodeType::LiteralActionUse:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter: {
@@ -1440,7 +1458,8 @@ void Interpreter::algorithmResume() {
                           Sym->getName().c_str());
                   return throwMessage("Unable to evaluate call");
                 }
-                size_t NumParams = Defn->getNumArgs();
+                DefineFrame* DefFrame = Defn->getDefineFrame();
+                size_t NumParams = DefFrame->getNumArgs();
                 int NumCallArgs = Frame.Nd->getNumKids() - 1;
                 if (NumParams != size_t(NumCallArgs)) {
                   fprintf(stderr,
@@ -1452,11 +1471,17 @@ void Interpreter::algorithmResume() {
                 }
                 size_t CallingEvalIndex = EvalFrameStack.size();
                 CurEvalFrameStack.push_back(CallingEvalIndex);
-                std::unique_ptr<EvalFrame> CalledFrame =
-                    make_unique<EvalFrame>(cast<Eval>(Frame.Nd),
-                                           Defn->getDefineFrame(),
-                                           CallingEvalIndex);
+                std::unique_ptr<EvalFrame> CalledFrame = make_unique<EvalFrame>(
+                    cast<Eval>(Frame.Nd), DefFrame, CallingEvalIndex);
                 EvalFrameStack.push_back(std::move(CalledFrame));
+                for (size_t i = 0, e = DefFrame->getNumValueArgs(); i < e;
+                     ++i) {
+                  size_t ValArg = DefFrame->getValueArgIndex(i);
+#if 1
+                  fprintf(stderr, "call %s[%u] = %u\n", Sym->getName().c_str(),
+                          unsigned(i), unsigned(ValArg));
+#endif
+                }
                 Frame.CallState = State::Exit;
                 call(Method::Eval, Frame.CallModifier, Defn);
                 break;

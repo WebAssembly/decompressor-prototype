@@ -129,7 +129,8 @@ class DefineFrame {
   size_t getNumValueArgs() const { return NumValueArgs; }
   size_t getNumValues() const { return NumValueArgs + NumLocals; }
   size_t getNumExprArgs() const { return NumExprArgs; }
-  const Node* getValueArg(size_t Index);
+  size_t getValueArgIndex(size_t Index) const;
+  NodeType getArgType(size_t Index) const;
 
  private:
   std::vector<const Node*> ParamTypes;
