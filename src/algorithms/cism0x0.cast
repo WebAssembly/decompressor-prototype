@@ -20,7 +20,7 @@
 (header (u32.const 0x6d736163) (u32.const 0x0))
 (header.read (u32.const 0x6d736963) (u32.const 0x0))
 
-(define 'file' (params) (locals 1)
+(define 'file' (locals 1)
   (loop.unbounded
     (set (local 0) (eval 'categorize' (eval 'opcode')))
     (eval 'process' (local 0))
