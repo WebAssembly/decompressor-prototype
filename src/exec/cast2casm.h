@@ -645,9 +645,9 @@ size_t CodeGenerator::generateNode(const Node* Nd) {
     case NodeType::Or:
       return generateBinary("Or", Nd);
     case NodeType::Param:
-      return generateInteger("Param", cast<Params>(Nd));
-    case NodeType::Params:
-      return generateInteger("Params", cast<Params>(Nd));
+      return generateInteger("Param", cast<Param>(Nd));
+    case NodeType::ParamValues:
+      return generateInteger("ParamValues", cast<ParamValues>(Nd));
     case NodeType::ParamExprs:
       return generateInteger("ParamExprs", cast<ParamExprs>(Nd));
     case NodeType::Peek:

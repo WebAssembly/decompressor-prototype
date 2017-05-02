@@ -70,10 +70,10 @@
   X(Local, Varuint32, 0, true, IntegerNode, VALIDATENODE, )  \
   X(Locals, Varuint32, 0, true, IntegerNode, , )             \
   X(Param, Varuint32, 0, false, IntegerNode, VALIDATENODE, ) \
-  X(Params, Varuint32, 0, false, IntegerNode, , )            \
   X(ParamCached, Varuint32, 1, false, IntegerNode, , )       \
   X(ParamExprs, Varuint32, 0, false, IntegerNode, , )        \
   X(ParamExprsCached, Varuint32, 0, false, IntegerNode, , )  \
+  X(ParamValues, Varuint32, 0, false, IntegerNode, , )       \
   X(U8Const, Uint8, 0, true, IntegerNode, , )                \
   X(U32Const, Varuint32, 0, true, IntegerNode, , )           \
   X(U64Const, Varuint64, 0, true, IntegerNode, , )
@@ -287,7 +287,7 @@
   X(LiteralUse, 0x66, "literal.use", 1, 0, false, false)                 \
   X(Rename, 0x67, "rename", 2, 0, false, false)                          \
   X(Locals, 0x68, "locals", 1, 0, false, false)                          \
-  X(Params, 0x69, "params", 1, 0, false, false)                          \
+  X(ParamValues, 0x69, "values", 1, 0, false, false)                     \
   X(LiteralActionDef, 0x6a, "literal.action.define", 2, 0, false, false) \
   X(LiteralActionUse, 0x6b, "literal.action.use", 11, 0, false, false)   \
   X(LiteralActionBase, 0x6c, "literal.action.enum", 1, 0, false, false)  \

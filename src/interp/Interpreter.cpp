@@ -704,10 +704,10 @@ void Interpreter::algorithmResume() {
           case NodeType::NoLocals:
           case NodeType::NoParams:
           case NodeType::ParamArgs:
-          case NodeType::Params:
+          case NodeType::ParamCached:
           case NodeType::ParamExprs:
           case NodeType::ParamExprsCached:
-          case NodeType::ParamCached:
+          case NodeType::ParamValues:
           case NodeType::LastSymbolIs:
           case NodeType::LiteralActionBase:
           case NodeType::LiteralActionDef:

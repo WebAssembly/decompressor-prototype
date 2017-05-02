@@ -27,7 +27,7 @@
   )
 )
 
-(define 'process' (params 1)
+(define 'process' (exprs 1)
   (switch (param 0)
     (table (param 0)
       (case (u32.const 32772)
@@ -41,7 +41,7 @@
   )
 )
 
-(define 'categorize' (params 1)
+(define 'categorize' (exprs 1)
    (param 0)
 )
 
