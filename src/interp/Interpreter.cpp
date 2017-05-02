@@ -335,6 +335,7 @@ void Interpreter::init() {
   EvalFrameStack.reserve(DefaultStackSize);
   CurEvalFrameStack.reserve(DefaultStackSize);
   CurEvalFrameStack.push_back(0);
+  LoopCounterStack.reserve(DefaultStackSize);
   LocalsBaseStack.reserve(DefaultStackSize);
   LocalValues.reserve(DefaultStackSize * DefaultExpectedLocals);
   OpcodeLocalsStack.reserve(DefaultStackSize);
@@ -406,7 +407,12 @@ void Interpreter::describePeekPosStack(FILE* Out) {
 void Interpreter::describeLoopCounterStack(FILE* File) {
   fprintf(File, "*** Loop Counter Stack ***\n");
   for (const auto& Count : LoopCounterStack.iterRange(1))
-    fprintf(File, "%" PRIxMAX "\n", uintmax_t(Count));
+    fprintf(File, "%" PRIuMAX "\n", uintmax_t(Count));
+  if (!LoopSizeStack.empty()) {
+    fprintf(File, "*** Loop Size Stack\n");
+    for (size_t Sz : LoopSizeStack)
+      fprintf(File, "%" PRIuMAX "\n", uintmax_t(Sz));
+  }
   fprintf(File, "**************************\n");
 }
 
@@ -1470,6 +1476,23 @@ void Interpreter::algorithmResume() {
                 std::unique_ptr<EvalFrame> CalledFrame = make_unique<EvalFrame>(
                     cast<Eval>(Frame.Nd), DefFrame, CallingEvalIndex);
                 EvalFrameStack.push_back(std::move(CalledFrame));
+                LoopCounterStack.push(0);
+                LoopSizeStack.push_back(DefFrame->getNumValueArgs());
+                Frame.CallState = State::Loop;
+                break;
+              }
+              case State::Loop: {
+                if (LoopCounter >= LoopSizeStack.back()) {
+                  Frame.CallState = State::Step2;
+                  break;
+                }
+                size_t ValArg = DefFrame->getValueArgIndex(LoopCounter++);
+                fprintf(stderr, "call %s[%u] = %u\n", Sym->getName().c_str(),
+                        unsigned(i), unsigned(ValArg));
+                break;
+              }
+              case State::Step2:
+#if 0
 #if 1
                 if (DefFrame->getNumValueArgs() > 0)
                   return throwMessage("Value parameters not implemented");
@@ -1481,13 +1504,15 @@ void Interpreter::algorithmResume() {
                           unsigned(i), unsigned(ValArg));
                 }
 #endif
+#endif
                 Frame.CallState = State::Exit;
                 call(Method::Eval, Frame.CallModifier, Defn);
                 break;
-              }
               case State::Exit:
                 CurEvalFrameStack.pop_back();
                 EvalFrameStack.pop_back();
+                LoopCounterStack.pop();
+                LoopSizeStack.pop_back();
                 popAndReturn(LastReadValue);
                 break;
               default:
