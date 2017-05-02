@@ -1802,12 +1802,11 @@ void DefineFrame::init(const Define* Def) {
         break;
       case NodeType::NoParams:
         break;
-      case NodeType::Params:
-        NumValueArgs += addSizedArg(Arg);
-        break;
-      // Intentionally fall to next case!
       case NodeType::ParamExprs:
         NumExprArgs += addSizedArg(Arg);
+        break;
+      case NodeType::ParamValues:
+        NumValueArgs += addSizedArg(Arg);
         break;
       case NodeType::ParamArgs:
         for (const Node* Kid : *Arg)

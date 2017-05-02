@@ -242,7 +242,6 @@ letter	[a-zA-Z]
 "opcode"          return Parser::make_OPCODE(Driver.getLoc());
 "or"              return Parser::make_OR(Driver.getLoc());
 "param"           return Parser::make_PARAM(Driver.getLoc());
-"params"          return Parser::make_PARAMS(Driver.getLoc());
 "peek"            return Parser::make_PEEK(Driver.getLoc());
 "read"            return Parser::make_READ(Driver.getLoc());
 "rename"          return Parser::make_RENAME(Driver.getLoc());
@@ -258,6 +257,7 @@ letter	[a-zA-Z]
 "u8.const"        return Parser::make_U8_CONST(Driver.getLoc());
 "u32.const"       return Parser::make_U32_CONST(Driver.getLoc());
 "u64.const"       return Parser::make_U64_CONST(Driver.getLoc());
+"values"          return Parser::make_VALUES(Driver.getLoc());
 "varint32"        return Parser::make_VARINT32(Driver.getLoc());
 "varint64"        return Parser::make_VARINT64(Driver.getLoc());
 "varuint32"       return Parser::make_VARUINT32(Driver.getLoc());

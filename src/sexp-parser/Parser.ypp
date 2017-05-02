@@ -114,7 +114,6 @@ struct IntValue {
 %token OPENPAREN     "("
 %token OR            "or"
 %token PARAM         "param"
-%token PARAMS        "params"
 %token PEEK          "peek"
 %token READ          "read"
 %token RENAME        "rename"
@@ -130,6 +129,7 @@ struct IntValue {
 %token U8_CONST      "u8.const"
 %token U32_CONST     "u32.const"
 %token U64_CONST     "u64.const"
+%token VALUES        "values"
 %token VARINT32      "varint32"
 %token VARINT64      "varint64"
 %token VARUINT32     "varuint32"
@@ -579,11 +579,11 @@ opcode_args
 
 
 params_arg
-        : "(" "params" INTEGER ")" {
-            $$ = Driver.create<Params>($3.Value, $3.Format);
+        : "(" "values" INTEGER ")" {
+            $$ = Driver.create<ParamValues>($3.Value, $3.Format);
           }
-        | "(" "params" ")" {
-            $$ = Driver.create<Params>();
+        | "(" "values" ")" {
+            $$ = Driver.create<ParamValues>();
           }
         | "(" "exprs" INTEGER ")" {
             $$ = Driver.create<ParamExprs>($3.Value, $3.Format);
