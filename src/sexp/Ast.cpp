@@ -1844,6 +1844,7 @@ DefineFrame* Define::getDefineFrame() const {
 }
 
 bool Define::validateNode(ConstNodeVectorType& Parents) const {
+  MyDefineFrame.reset();
   return getDefineFrame()->isConsistent();
 }
 

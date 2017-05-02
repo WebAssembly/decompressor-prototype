@@ -127,6 +127,7 @@ class DefineFrame {
   size_t getNumLocals() const { return NumLocals; }
   size_t getNumArgs() const { return ParamTypes.size(); }
   size_t getNumValueArgs() const { return NumValueArgs; }
+  size_t getNumValues() const { return NumValueArgs + NumLocals; }
   size_t getNumExprArgs() const { return NumExprArgs; }
   const Node* getValueArg(size_t Index);
 

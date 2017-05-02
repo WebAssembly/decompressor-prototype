@@ -202,13 +202,19 @@ class Interpreter {
     EvalFrame(const filt::Eval* Caller,
               const filt::DefineFrame* DefinedFrame,
               size_t CallingEvalIndex);
+    EvalFrame& operator=(const EvalFrame& F);
     EvalFrame(const EvalFrame& F);
     bool isDefined() const;
     void reset();
+    decode::IntType getValueParam(size_t Index) const;
+    void setValueParam(size_t Index, decode::IntType Value);
+    decode::IntType getLocal(size_t Index) const;
+    void setLocal(size_t Index, decode::IntType Value);
     void describe(FILE* File, filt::TextWriter* Writer) const;
     const filt::Eval* Caller;
     const filt::DefineFrame* DefinedFrame;
     size_t CallingEvalIndex;
+    std::vector<decode::IntType> Values;
   };
 
   std::shared_ptr<Reader> Input;
@@ -243,8 +249,7 @@ class Interpreter {
   CallFrame Frame;
   utils::ValueStack<CallFrame> FrameStack;
   // The stack of (eval) calls.
-  EvalFrame CallingEval;
-  utils::ValueStack<EvalFrame> CallingEvalStack;
+  std::vector<std::unique_ptr<EvalFrame>> EvalFrameStack;
   std::vector<size_t> CurEvalFrameStack;
   // The stack of loop counters.
   size_t LoopCounter;
@@ -285,6 +290,8 @@ class Interpreter {
   void call(Method Method, MethodModifier Modifier, const filt::Node* Nd);
 
   void popAndReturn(decode::IntType Value = 0);
+
+  EvalFrame& getCurrentEvalFrame();
 
   // For debugging only.
   void traceEnterFrame();

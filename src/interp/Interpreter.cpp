@@ -148,24 +148,55 @@ Interpreter::EvalFrame::EvalFrame(const Eval* Caller,
                                   size_t CallingEvalIndex)
     : Caller(Caller),
       DefinedFrame(DefinedFrame),
-      CallingEvalIndex(CallingEvalIndex) {
-  assert(Caller != nullptr);
-  assert(DefinedFrame != nullptr);
+      CallingEvalIndex(CallingEvalIndex),
+      Values(DefinedFrame->getNumValues(), 0) {
 }
 
 Interpreter::EvalFrame::EvalFrame(const EvalFrame& F)
     : Caller(F.Caller),
       DefinedFrame(F.DefinedFrame),
-      CallingEvalIndex(F.CallingEvalIndex) {}
+      CallingEvalIndex(F.CallingEvalIndex),
+      Values(F.Values) {}
+
+Interpreter::EvalFrame& Interpreter::EvalFrame::operator=(const EvalFrame& F) {
+  Caller = F.Caller;
+  DefinedFrame = F.DefinedFrame;
+  CallingEvalIndex = F.CallingEvalIndex;
+  Values = F.Values;
+  return *this;
+}
 
 bool Interpreter::EvalFrame::isDefined() const {
   return Caller != nullptr;
+}
+
+decode::IntType Interpreter::EvalFrame::getValueParam(size_t Index) const {
+  assert(Index < Values.size());
+  return Values[Index];
+}
+
+void Interpreter::EvalFrame::setValueParam(size_t Index, decode::IntType Value) {
+  assert(Index < Values.size());
+  Values[Index] = Value;
+}
+
+decode::IntType Interpreter::EvalFrame::getLocal(size_t Index) const {
+  size_t FixedIndex = DefinedFrame->getNumValueArgs() + Index;
+  assert(FixedIndex < Values.size());
+  return Values[FixedIndex];
+}
+
+void Interpreter::EvalFrame::setLocal(size_t Index, decode::IntType Value) {
+  size_t FixedIndex = DefinedFrame->getNumValueArgs() + Index;
+  assert(FixedIndex < Values.size());
+  Values[FixedIndex] = Value;
 }
 
 void Interpreter::EvalFrame::reset() {
   Caller = nullptr;
   DefinedFrame = nullptr;
   CallingEvalIndex = 0;
+  Values.clear();
 }
 
 void Interpreter::setInput(std::shared_ptr<Reader> Value) {
@@ -264,7 +295,6 @@ Interpreter::Interpreter(std::shared_ptr<Reader> Input,
       IsFatalFailure(false),
       CheckForEof(true),
       FrameStack(Frame),
-      CallingEvalStack(CallingEval),
       LoopCounter(0),
       LoopCounterStack(LoopCounter),
       LocalsBase(0),
@@ -288,7 +318,6 @@ Interpreter::Interpreter(std::shared_ptr<Reader> Input,
       CatchState(State::NO_SUCH_STATE),
       IsFatalFailure(false),
       FrameStack(Frame),
-      CallingEvalStack(CallingEval),
       LoopCounter(0),
       LoopCounterStack(LoopCounter),
       LocalsBase(0),
@@ -303,7 +332,7 @@ void Interpreter::init() {
   LastReadValue = 0;
   CurSectionName.reserve(MaxExpectedSectionNameSize);
   FrameStack.reserve(DefaultStackSize);
-  CallingEvalStack.reserve(DefaultStackSize);
+  EvalFrameStack.reserve(DefaultStackSize);
   CurEvalFrameStack.reserve(DefaultStackSize);
   CurEvalFrameStack.push_back(0);
   LocalsBaseStack.reserve(DefaultStackSize);
@@ -362,8 +391,8 @@ void Interpreter::describeFrameStack(FILE* File) {
 void Interpreter::describeCallingEvalStack(FILE* File) {
   fprintf(File, "*** Eval Call Stack ****\n");
   TextWriter Writer;
-  for (const auto& Frame : CallingEvalStack.iterRange(1))
-    Frame.describe(File, &Writer);
+  for (const auto& Frame : EvalFrameStack)
+    Frame->describe(File, &Writer);
   fprintf(File, "*** Current Eval Call Stack ***\n");
   for (size_t Index : CurEvalFrameStack)
     fprintf(File, "%" PRIuMAX "\n", uintmax_t(Index));
@@ -406,7 +435,7 @@ void Interpreter::describeOpcodeLocalsStack(FILE* File) {
 
 void Interpreter::describeState(FILE* File) {
   describeFrameStack(File);
-  if (!CallingEvalStack.empty())
+  if (!EvalFrameStack.empty())
     describeCallingEvalStack(File);
   describePeekPosStack(File);
   if (!LoopCounterStack.empty())
@@ -430,7 +459,7 @@ void Interpreter::traceExitFrame() {
 void Interpreter::reset() {
   Frame.reset();
   FrameStack.clear();
-  CallingEvalStack.clear();
+  EvalFrameStack.clear();
   CurEvalFrameStack.clear();
   CurEvalFrameStack.push_back(0);
   LoopCounter = 0;
@@ -470,6 +499,13 @@ void Interpreter::callTopLevel(Method Method, const filt::Node* Nd) {
   Frame.reset();
   call(Method, MethodModifier::ReadAndWrite, Nd);
 }
+
+#if 0
+Interpreter::EvalFrame& Interpreter::getCurrentEvalFrame() {
+  assert(CallingEvalStack.empty() || CurEvalFrameStack.empty());
+  return CallingEvalStack[CurEvalFrameStack.back()];
+}
+#endif
 
 void Interpreter::catchOrElseFail() {
   TRACE_MESSAGE("method failed");
@@ -1305,19 +1341,20 @@ void Interpreter::algorithmResume() {
           case NodeType::Param:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter: {
-                if (CallingEvalStack.empty() || CurEvalFrameStack.empty())
+                if (EvalFrameStack.empty() || CurEvalFrameStack.empty())
                   return throwMessage(
                       "Not inside a call frame, can't evaluate parameter "
                       "accessor!");
                 assert(isa<Param>(Frame.Nd));
                 auto* Parm = cast<Param>(Frame.Nd);
                 IntType ParamIndex = Parm->getValue() + 1;
-                if (ParamIndex >= IntType(CallingEval.Caller->getNumKids()))
+                if (ParamIndex >=
+                    IntType(EvalFrameStack.back()->Caller->getNumKids()))
                   return throwMessage(
                       "Parameter reference doesn't match callling context!");
-                const EvalFrame& CallingFrame =
-                    CallingEvalStack[CurEvalFrameStack.back()];
-                const Node* Context = CallingFrame.Caller->getKid(ParamIndex);
+                EvalFrame* CallingFrame =
+                    EvalFrameStack[CurEvalFrameStack.back()].get();
+                const Node* Context = CallingFrame->Caller->getKid(ParamIndex);
                 size_t ContextFrameIndex =
                     CurEvalFrameStack[CurEvalFrameStack.back()];
                 CurEvalFrameStack.push_back(ContextFrameIndex);
@@ -1413,19 +1450,20 @@ void Interpreter::algorithmResume() {
                           uintmax_t(NumCallArgs));
                   return throwMessage("Unable to evaluate call");
                 }
-                size_t CallingEvalIndex = CallingEvalStack.size();
+                size_t CallingEvalIndex = EvalFrameStack.size();
                 CurEvalFrameStack.push_back(CallingEvalIndex);
-                CallingEvalStack.push();
-                EvalFrame CalledFrame(cast<Eval>(Frame.Nd),
-                                      Defn->getDefineFrame(), CallingEvalIndex);
-                CallingEval = CalledFrame;
+                std::unique_ptr<EvalFrame> CalledFrame =
+                    make_unique<EvalFrame>(cast<Eval>(Frame.Nd),
+                                           Defn->getDefineFrame(),
+                                           CallingEvalIndex);
+                EvalFrameStack.push_back(std::move(CalledFrame));
                 Frame.CallState = State::Exit;
                 call(Method::Eval, Frame.CallModifier, Defn);
                 break;
               }
               case State::Exit:
                 CurEvalFrameStack.pop_back();
-                CallingEvalStack.pop();
+                EvalFrameStack.pop_back();
                 popAndReturn(LastReadValue);
                 break;
               default:
