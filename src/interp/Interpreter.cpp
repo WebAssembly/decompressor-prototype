@@ -335,6 +335,7 @@ void Interpreter::init() {
   EvalFrameStack.reserve(DefaultStackSize);
   CurEvalFrameStack.reserve(DefaultStackSize);
   CurEvalFrameStack.push_back(0);
+  LoopCounterStack.reserve(DefaultStackSize);
   LocalsBaseStack.reserve(DefaultStackSize);
   LocalValues.reserve(DefaultStackSize * DefaultExpectedLocals);
   OpcodeLocalsStack.reserve(DefaultStackSize);
@@ -406,7 +407,12 @@ void Interpreter::describePeekPosStack(FILE* Out) {
 void Interpreter::describeLoopCounterStack(FILE* File) {
   fprintf(File, "*** Loop Counter Stack ***\n");
   for (const auto& Count : LoopCounterStack.iterRange(1))
-    fprintf(File, "%" PRIxMAX "\n", uintmax_t(Count));
+    fprintf(File, "%" PRIuMAX "\n", uintmax_t(Count));
+  if (!LoopSizeStack.empty()) {
+    fprintf(File, "*** Loop Size Stack\n");
+    for (size_t Sz : LoopSizeStack)
+      fprintf(File, "%" PRIuMAX "\n", uintmax_t(Sz));
+  }
   fprintf(File, "**************************\n");
 }
 
@@ -1443,10 +1449,6 @@ void Interpreter::algorithmResume() {
               case State::Enter: {
                 auto* Sym = dyn_cast<Symbol>(Frame.Nd->getKid(0));
                 assert(Sym);
-                // Note: To handle local algorithm overrides (when processing
-                // code in an enclosing scope) we need to get the definition
-                // from the current algorithm, not the algorithm the symbol was
-                // defined in.
                 const Define* Defn =
                     Symtab->getSymbolDefn(Sym)->getDefineDefinition();
                 if (Defn == nullptr) {
@@ -1470,17 +1472,31 @@ void Interpreter::algorithmResume() {
                 std::unique_ptr<EvalFrame> CalledFrame = make_unique<EvalFrame>(
                     cast<Eval>(Frame.Nd), DefFrame, CallingEvalIndex);
                 EvalFrameStack.push_back(std::move(CalledFrame));
-#if 1
-                if (DefFrame->getNumValueArgs() > 0)
-                  return throwMessage("Value parameters not implemented");
-#else
-                for (size_t i = 0, e = DefFrame->getNumValueArgs(); i < e;
-                     ++i) {
-                  size_t ValArg = DefFrame->getValueArgIndex(i);
-                  fprintf(stderr, "call %s[%u] = %u\n", Sym->getName().c_str(),
-                          unsigned(i), unsigned(ValArg));
+                LoopCounterStack.push(0);
+                LoopSizeStack.push_back(DefFrame->getNumValueArgs());
+                Frame.CallState = State::Loop;
+                break;
+              }
+              case State::Loop: {
+                if (LoopCounter >= LoopSizeStack.back()) {
+                  Frame.CallState = State::Step2;
+                  break;
                 }
-#endif
+                EvalFrame* EvalFrame = getCurrentEvalFrame();
+                size_t ValArg =
+                    EvalFrame->DefinedFrame->getValueArgIndex(LoopCounter);
+                fprintf(stderr, "call [%u] = %u\n", unsigned(LoopCounter),
+                        unsigned(ValArg));
+                ++LoopCounter;
+                break;
+              }
+              case State::Step2: {
+                EvalFrame* EvalFrame = getCurrentEvalFrame();
+                if (EvalFrame->DefinedFrame->getNumValueArgs() > 0)
+                  return throwMessage("Value parameters not implemented");
+                auto* Sym = dyn_cast<Symbol>(Frame.Nd->getKid(0));
+                const Define* Defn =
+                    Symtab->getSymbolDefn(Sym)->getDefineDefinition();
                 Frame.CallState = State::Exit;
                 call(Method::Eval, Frame.CallModifier, Defn);
                 break;
@@ -1488,6 +1504,8 @@ void Interpreter::algorithmResume() {
               case State::Exit:
                 CurEvalFrameStack.pop_back();
                 EvalFrameStack.pop_back();
+                LoopCounterStack.pop();
+                LoopSizeStack.pop_back();
                 popAndReturn(LastReadValue);
                 break;
               default:

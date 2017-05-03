@@ -254,6 +254,7 @@ class Interpreter {
   // The stack of loop counters.
   size_t LoopCounter;
   utils::ValueStack<size_t> LoopCounterStack;
+  std::vector<size_t> LoopSizeStack;
   // The stack of local values. Also includes expression arguments
   // (appearing after user-defined locals).
   size_t LocalsBase;
