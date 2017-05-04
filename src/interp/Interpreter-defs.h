@@ -40,6 +40,7 @@
   X(CopyBlock)                    \
   X(Eval)                         \
   X(EvalBlock)                    \
+  X(EvalInCallingContext)         \
   X(Finished)                     \
   X(GetFile)                      \
   X(HasFileHeader)                \

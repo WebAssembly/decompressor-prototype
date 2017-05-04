@@ -44,7 +44,7 @@
   (=> 'nary.inst')
 )
 
-(define 'node' (exprs 1)
+(define 'node' (values 1)
   (switch (param 0)
     (error)
     (case 'algorithm'

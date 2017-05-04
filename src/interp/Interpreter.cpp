@@ -369,6 +369,9 @@ void Interpreter::CallFrame::describe(FILE* File, TextWriter* Writer) const {
 void Interpreter::EvalFrame::describe(FILE* File, TextWriter* Writer) const {
   fprintf(File, "cc = %" PRIuMAX ": ", uintmax_t(CallingEvalIndex));
   Writer->writeAbbrev(File, Caller);
+  for (size_t i = 0; i < Values.size(); ++i)
+    fprintf(File,   "v[%" PRIuMAX "] = %" PRIuMAX "\n",
+            uintmax_t(i), uintmax_t(Values[i]));
 }
 
 void Interpreter::OpcodeLocalsFrame::describe(FILE* File,
@@ -1357,6 +1360,13 @@ void Interpreter::algorithmResume() {
                   return throwMessage(
                       "Parameter reference doesn't match callling context!");
                 switch (ParamTy) {
+                  case NodeType::ParamValues: {
+                    size_t ValueIndex = CallingFrame->DefinedFrame->getValueArgIndex(ParamIndex);
+                    Frame.CallState = State::Exit;
+                    Frame.ReturnValue = CallingFrame->Values[ValueIndex];
+                    TRACE(size_t, "Param value", Frame.ReturnValue);
+                    break;
+                  }
                   default:
                     return throwMessage(std::string("Parameter type '") +
                                         getNodeSexpName(ParamTy) +
@@ -1364,24 +1374,14 @@ void Interpreter::algorithmResume() {
                   case NodeType::ParamExprs: {
                     const Node* Context =
                         CallingFrame->Caller->getKid(ParamIndex + 1);
-                    size_t ContextFrameIndex =
-                        CurEvalFrameStack[CurEvalFrameStack.back()];
-                    CurEvalFrameStack.push_back(ContextFrameIndex);
                     Frame.CallState = State::Exit;
-                    call(Method::Eval, Frame.CallModifier, Context);
+                    call(Method::EvalInCallingContext, Frame.CallModifier, Context);
                     break;
                   }
                 }
                 break;
               }
               case State::Exit: {
-                switch (ParamTy) {
-                  default:
-                    break;
-                  case NodeType::ParamExprs:
-                    CurEvalFrameStack.pop_back();
-                    break;
-                }
                 popAndReturn(Frame.ReturnValue);
                 break;
               }
@@ -1479,21 +1479,28 @@ void Interpreter::algorithmResume() {
               }
               case State::Loop: {
                 if (LoopCounter >= LoopSizeStack.back()) {
-                  Frame.CallState = State::Step2;
+                  Frame.CallState = State::Step3;
                   break;
                 }
                 EvalFrame* EvalFrame = getCurrentEvalFrame();
                 size_t ValArg =
                     EvalFrame->DefinedFrame->getValueArgIndex(LoopCounter);
-                fprintf(stderr, "call [%u] = %u\n", unsigned(LoopCounter),
-                        unsigned(ValArg));
-                ++LoopCounter;
+                Frame.CallState = State::Step2;
+                call(Method::EvalInCallingContext, Frame.CallModifier,
+                     Frame.Nd->getKid(ValArg + 1));
                 break;
               }
               case State::Step2: {
                 EvalFrame* EvalFrame = getCurrentEvalFrame();
-                if (EvalFrame->DefinedFrame->getNumValueArgs() > 0)
-                  return throwMessage("Value parameters not implemented");
+                TRACE(IntType, "Value parameter", Frame.ReturnValue);
+                size_t ValArg =
+                    EvalFrame->DefinedFrame->getValueArgIndex(LoopCounter);
+                EvalFrame->Values[ValArg] = Frame.ReturnValue;
+                ++LoopCounter;
+                Frame.CallState = State::Loop;
+                break;
+              }
+              case State::Step3: {
                 auto* Sym = dyn_cast<Symbol>(Frame.Nd->getKid(0));
                 const Define* Defn =
                     Symtab->getSymbolDefn(Sym)->getDefineDefinition();
@@ -1571,6 +1578,24 @@ void Interpreter::algorithmResume() {
             popAndReturn();
             break;
           }
+          default:
+            return failBadState();
+        }
+        break;
+      case Method::EvalInCallingContext:
+        switch (Frame.CallState) {
+          case State::Enter: {
+            size_t ContextFrameIndex =
+                CurEvalFrameStack[CurEvalFrameStack.back()];
+            CurEvalFrameStack.push_back(ContextFrameIndex);
+            Frame.CallState = State::Exit;
+            call(Method::Eval, Frame.CallModifier, Frame.Nd);
+            break;
+          }
+          case State::Exit:
+            CurEvalFrameStack.pop_back();
+            popAndReturn(Frame.ReturnValue);
+            break;
           default:
             return failBadState();
         }
