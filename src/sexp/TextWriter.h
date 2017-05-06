@@ -113,8 +113,7 @@ class TextWriter {
 
   void writeNodeAbbrev(const Node* Node,
                        bool AddNewline,
-                       bool EmbedInParent = false,
-                       bool DefineIsParent = false);
+                       bool EmbedInParent = false);
   void writeNodeKidsAbbrev(const Node* Node, bool EmbeddedInParent);
 
   void writeSymbol(const Symbol* Sym, bool AddNewline);

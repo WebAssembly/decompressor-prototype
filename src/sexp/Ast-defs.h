@@ -169,7 +169,7 @@
 #define AST_NARYNODE_TABLE                     \
   X(Algorithm, Nary, ALGORITHM_DECLS, init();) \
   X(Define, Nary, DEFINE_DECLS, )              \
-  X(EnclosingAlgorithms, Nary, , )             \
+  X(EnclosingAlgorithms, Nary, VALIDATENODE, )             \
   X(Eval, Nary, EVAL_DECLS, )                  \
   X(LiteralActionBase, Nary, , )               \
   X(ParamArgs, Nary, , )                       \

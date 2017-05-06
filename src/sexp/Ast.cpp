@@ -1467,6 +1467,43 @@ AST_UNARYNODE_TABLE
 AST_UNARYNODE_TABLE
 #undef X
 
+bool EnclosingAlgorithms::validateNode(ConstNodeVectorType& Parents) const {
+  TRACE_METHOD("validateNode");
+  TRACE(node_ptr, nullptr, this);
+  SymbolTable* Next = this->getSymtab().getEnclosingScope().get();
+  for (const Node* Kid : *this) {
+    const Symbol* Sym = dyn_cast<Symbol>(Kid);
+    if (Sym == nullptr) {
+      errorDescribeNode("Context", Kid);
+      errorDescribeNode("in", this);
+      fprintf(error(), "Can't find enclosing: not algorithm name\n");
+      return false;
+    }
+    if (Next == nullptr) {
+      errorDescribeNode("Context", Kid);
+      errorDescribeNode("in", this);
+      fprintf(error(), "Can't find enclosing: no such algorithm!\n");
+      return false;
+    }
+    const Symbol* EncName = Next->getAlgorithmName();
+    if (EncName == nullptr) {
+      errorDescribeNode("Context", Kid);
+      errorDescribeNode("in", this);
+      fprintf(error(), "Can't find enclosing: enclosing doesn't have name!\n");
+      return false;
+    }
+    if (Sym->getName() != EncName->getName()) {
+      errorDescribeNode("Context", Kid);
+      errorDescribeNode("in", this);
+      fprintf(error(), "Can't find enclosing: enclosing named '%s'\n",
+              EncName->getName().c_str());
+      return false;
+    }
+    Next = Next->getEnclosingScope().get();
+  }
+  return true;
+}
+
 const LiteralDef* LiteralUse::getDef() const {
   return cast<Symbol>(getKid(0))->getLiteralDefinition();
 }
@@ -1477,6 +1514,7 @@ const LiteralActionDef* LiteralActionUse::getDef() const {
 
 bool LiteralUse::validateNode(ConstNodeVectorType& Parents) const {
   TRACE_METHOD("validateNode");
+  TRACE(node_ptr, nullptr, this);
   if (getDef())
     return true;
   fprintf(getErrorFile(), "No corresponding literal definition found\n");
@@ -1485,6 +1523,7 @@ bool LiteralUse::validateNode(ConstNodeVectorType& Parents) const {
 
 bool LiteralActionUse::validateNode(ConstNodeVectorType& Parents) const {
   TRACE_METHOD("validateNode");
+  TRACE(node_ptr, nullptr, this);
   if (const LiteralActionDef* Def = getDef()) {
     getSymtab().insertCallbackLiteral(Def);
     return true;
@@ -1513,6 +1552,7 @@ const IntegerNode* LiteralActionUse::getIntNode() const {
 
 bool Callback::validateNode(ConstNodeVectorType& Parents) const {
   TRACE_METHOD("validateNode");
+  TRACE(node_ptr, nullptr, this);
   const Node* Action = getKid(0);
   if (const auto* IntNd = dyn_cast<IntegerNode>(Action)) {
     getSymtab().insertCallbackValue(IntNd);
@@ -2035,6 +2075,7 @@ Symbol* Eval::getCallName() const {
 
 bool Eval::validateNode(ConstNodeVectorType& Parents) const {
   TRACE_METHOD("validateNode");
+  TRACE(node_ptr, nullptr, this);
   const auto* Sym = dyn_cast<Symbol>(getKid(0));
   assert(Sym);
   const auto* Defn = dyn_cast<Define>(Sym->getDefineDefinition());
@@ -2156,6 +2197,7 @@ const Header* Algorithm::getWriteHeader(bool UseEnclosing) const {
 
 bool Algorithm::validateNode(ConstNodeVectorType& Parents) const {
   TRACE_METHOD("validateNode");
+  TRACE(node_ptr, nullptr, this);
   if (!Parents.empty()) {
     fprintf(error(),
             "Algorithm nodes can only appear as a top-level s-expression\n");
