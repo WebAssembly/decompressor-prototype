@@ -269,6 +269,7 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   void clearCaches();
   void deallocateNodes();
 
+  bool standardizeAlgorithm();
   void installPredefined();
   void installDefinitions(const Node* Root);
 
