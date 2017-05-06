@@ -664,6 +664,12 @@ FILE* SymbolTable::error() const {
   return Out;
 }
 
+const Symbol* SymbolTable::getAlgorithmName() const {
+  if (Alg == nullptr)
+    return nullptr;
+  return Alg->getName();
+}
+
 Symbol* SymbolTable::getSymbol(const std::string& Name) {
   if (SymbolMap.count(Name))
     return SymbolMap[Name];
@@ -2051,6 +2057,7 @@ void Algorithm::init() {
   SourceHdr = nullptr;
   ReadHdr = nullptr;
   WriteHdr = nullptr;
+  Name = nullptr;
   IsAlgorithmSpecified = false;
   IsValidated = false;
 }
@@ -2160,6 +2167,7 @@ bool Algorithm::validateNode(ConstNodeVectorType& Parents) const {
   SourceHdr = nullptr;
   ReadHdr = nullptr;
   WriteHdr = nullptr;
+  Name = nullptr;
   IsAlgorithmSpecified = false;
   const Node* OldAlgorithmFlag = nullptr;
   for (const Node* Kid : *this) {
@@ -2203,6 +2211,16 @@ bool Algorithm::validateNode(ConstNodeVectorType& Parents) const {
           return false;
         }
         break;
+      case NodeType::AlgorithmName:
+        if (Name != nullptr) {
+          errorDescribeDuplicate("algorithm name", Name, Kid);
+          return false;
+        }
+        Name = dyn_cast<Symbol>(Kid->getKid(0));
+        if (Name)
+          break;
+        errorDescribeNode("Malformed algorithm name", Kid);
+        return false;
       default:
         break;
     }

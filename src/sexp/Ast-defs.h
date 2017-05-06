@@ -317,6 +317,7 @@
   const Header* getSourceHeader(bool UseEnclosing = true) const; \
   const Header* getReadHeader(bool UseEnclosing = true) const;   \
   const Header* getWriteHeader(bool UseEnclosing = true) const;  \
+  const Symbol* getName() const { return Name; }                 \
   bool isAlgorithm() const;                                      \
   void init();                                                   \
   void clearCaches() { init(); }                                 \
@@ -325,6 +326,7 @@
   mutable const Header* SourceHdr;                               \
   mutable const Header* ReadHdr;                                 \
   mutable const Header* WriteHdr;                                \
+  mutable const Symbol* Name;                                    \
   mutable bool IsAlgorithmSpecified;                             \
   mutable bool IsValidated;                                      \
   bool setIsAlgorithm(const Node* Nd);
