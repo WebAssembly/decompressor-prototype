@@ -206,6 +206,8 @@ bool InflateAst::applyOp(IntType Op) {
 #undef X
     case NodeType::AlgorithmFlag:
       return buildUnary<AlgorithmFlag>();
+    case NodeType::AlgorithmName:
+      return buildUnary<AlgorithmName>();
     case NodeType::And:
       return buildBinary<And>();
     case NodeType::BinaryAccept:
@@ -232,6 +234,8 @@ bool InflateAst::applyOp(IntType Op) {
       return buildBinary<Case>();
     case NodeType::Define:
       return buildNary<Define>();
+    case NodeType::EnclosingAlgorithms:
+      return buildNary<EnclosingAlgorithms>();
     case NodeType::Error:
       return buildNullary<Error>();
     case NodeType::Eval:

@@ -15,10 +15,11 @@
 # Defines the boot CAST algorithm for reading/writing "Compressed binary
 # algorithm" ("CASM") files.
 
-(enclosing 'casm0x0-lits.cast')
+(include 'casm0x0-lits.cast')
 
-(header (u32.const 0x6d736163) (u32.const 0x0))
+(name 'casm-boot')
 (algorithm 1)
+(header (u32.const 0x6d736163) (u32.const 0x0))
 
 (define 'file'
   (locals 1)
@@ -48,6 +49,7 @@
   (switch (param 0)
     (error)
     (case 'algorithm'
+     case 'name'
      case 'bit'
      case 'block'
      case 'case'
@@ -72,6 +74,7 @@
      case '=>'                  (=> 'postorder.inst'))
 
     (case 'define'
+     case 'enclosing'
      case 'eval'
      case 'file'
      case 'literal.action.enum'

@@ -15,10 +15,12 @@
 # Defines the CAST algorithm for reading/writing "Compressed binary
 # algorithm" ("CASM") files.
 
-(enclosing 'casm0x0Boot.cast')
+(include 'casm0x0Boot.cast')
 
-(header (u32.const 0x6d736163) (u32.const 0x0))
+(name 'casm')
+(enclosing 'casm-boot')
 (algorithm 1)
+(header (u32.const 0x6d736163) (u32.const 0x0))
 
 (rename 'node' 'node.old')
 

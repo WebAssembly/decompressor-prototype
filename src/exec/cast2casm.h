@@ -576,6 +576,8 @@ size_t CodeGenerator::generateNode(const Node* Nd) {
 #undef X
     case NodeType::AlgorithmFlag:
       return generateUnary("AlgorithmFlag", Nd);
+    case NodeType::AlgorithmName:
+      return generateUnary("AlgorithmName", Nd);
     case NodeType::And:
       return generateBinary("And", Nd);
     case NodeType::Bit:
@@ -596,6 +598,8 @@ size_t CodeGenerator::generateNode(const Node* Nd) {
       return generateBinary("Case", Nd);
     case NodeType::Define:
       return generateNary("Define", Nd);
+    case NodeType::EnclosingAlgorithms:
+      return generateNary("EnclosingAlgorithms", Nd);
     case NodeType::Error:
       return generateNullary("Error", Nd);
     case NodeType::Eval:
