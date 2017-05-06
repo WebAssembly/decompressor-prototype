@@ -158,6 +158,9 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   ~SymbolTable();
   SharedPtr getEnclosingScope() { return EnclosingScope; }
   void setEnclosingScope(SharedPtr Symtab);
+
+  // Returns nullptr if no algorithm or algorithm is nameless.
+  const Symbol* getAlgorithmName() const;
   // Gets existing symbol if known. Otherwise returns nullptr.
   Symbol* getSymbol(const std::string& Name);
   // Returns the corresponding symbol for the predefined symbol (creates if
@@ -269,6 +272,7 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   void clearCaches();
   void deallocateNodes();
 
+  bool standardizeAlgorithm();
   void installPredefined();
   void installDefinitions(const Node* Root);
 

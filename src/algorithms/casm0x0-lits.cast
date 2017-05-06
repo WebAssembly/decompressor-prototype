@@ -14,8 +14,9 @@
 
 # Defines symbolic literals used by the CASM algorithm as an enclosing scope.
 
-(header (u32.const 0x6d736163) (u32.const 0x0))
+(name 'casm0x0-lits')
 (algorithm 1)
+(header (u32.const 0x6d736163) (u32.const 0x0))
 
 (literal.action.enum (u32.const 101)
                      'int.value.begin'
@@ -111,3 +112,5 @@
 (literal 'args'           (u8.const 0x7e))
 (literal 'no.params'      (u8.const 0x7f))
 (literal 'no.locals'      (u8.const 0x61))
+(literal 'name'           (u8.const 0x80))
+(literal 'enclosing'      (u8.const 0x81))

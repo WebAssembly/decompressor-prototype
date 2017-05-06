@@ -1,4 +1,3 @@
-/* -*- C++ -*- */
 /*
  * Copyright 2016 WebAssembly Community Group participants
  *
@@ -98,6 +97,7 @@ struct IntValue {
 %token EXPRS         "exprs"
 %token HEADER        "header"
 %token IF            "if"
+%token INCLUDE       "include"
 %token IS            "is"
 %token I32_CONST     "i32.const"
 %token I64_CONST     "i64.const"
@@ -108,6 +108,7 @@ struct IntValue {
 %token LOOP          "loop"
 %token LOOP_UNBOUNDED "loop.unbounded"
 %token MAP           "map"
+%token NAME          "name"
 %token NEGATE        "negate"
 %token NOT           "not"
 %token OPCODE        "opcode"
@@ -154,6 +155,7 @@ struct IntValue {
 %type <wasm::filt::Node *> control_flow
 %type <wasm::filt::Node *> declaration
 %type <wasm::filt::Node *> define_args
+%type <wasm::filt::Node *> enclosing_args
 %type <wasm::filt::Node *> eval_args
 %type <wasm::filt::Node *> expression
 %type <wasm::filt::Node *> expression_redirect
@@ -183,18 +185,17 @@ struct IntValue {
 %%
 
 algorithm
-        : "(" "enclosing" IDENTIFIER ")" declaration {
-            Driver.setEnclosing($3);
-            $$ = Driver.create<Algorithm>();
-            Driver.setAlgorithm($$);
-             Driver.setAlgorithm($$);
-             $$->append($5);
-           }
-        | declaration {
+        : declaration {
             $$ = Driver.create<Algorithm>();
             Driver.setAlgorithm($$);
             $$->append($1);
           }
+	| "(" "include" IDENTIFIER ")" declaration {
+            $$ = Driver.create<Algorithm>();
+            Driver.setAlgorithm($$);
+            $$->append($5);
+	    Driver.setEnclosing($3);
+	  }
         | algorithm declaration {
             $$ = $1;
             $$->append($2);
@@ -322,6 +323,12 @@ declaration
         | "(" algorithm_header_args ")" {
             $$ = $2;
           }
+        | "(" "name" symbol ")" {
+            $$ = Driver.create<AlgorithmName>($3);
+          }
+	| "(" "enclosing" enclosing_args ")" {
+	    $$ = $3;
+	  }
         | "(" "algorithm" literal_expression ")" {
             $$ = Driver.create<AlgorithmFlag>($3);
           }
@@ -377,6 +384,17 @@ define_args
             Driver.appendArgument($1, $2);
           }
         ;
+
+enclosing_args
+	: symbol {
+	    $$ = Driver.create<EnclosingAlgorithms>();
+	    $$->append($1);
+	  }
+	| enclosing_args symbol {
+	    $$ = $1;
+	    $$->append($2);
+	  }
+	;
 
 expression
         : format_directive { $$ = $1; }

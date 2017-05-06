@@ -370,8 +370,8 @@ void Interpreter::EvalFrame::describe(FILE* File, TextWriter* Writer) const {
   fprintf(File, "cc = %" PRIuMAX ": ", uintmax_t(CallingEvalIndex));
   Writer->writeAbbrev(File, Caller);
   for (size_t i = 0; i < Values.size(); ++i)
-    fprintf(File,   "v[%" PRIuMAX "] = %" PRIuMAX "\n",
-            uintmax_t(i), uintmax_t(Values[i]));
+    fprintf(File, "v[%" PRIuMAX "] = %" PRIuMAX "\n", uintmax_t(i),
+            uintmax_t(Values[i]));
 }
 
 void Interpreter::OpcodeLocalsFrame::describe(FILE* File,
@@ -741,9 +741,11 @@ void Interpreter::algorithmResume() {
           case NodeType::NO_SUCH_NODETYPE:
           case NodeType::Algorithm:
           case NodeType::AlgorithmFlag:
+          case NodeType::AlgorithmName:
           case NodeType::BinaryAccept:
           case NodeType::BinaryEvalBits:
           case NodeType::BinarySelect:
+          case NodeType::EnclosingAlgorithms:
           case NodeType::IntLookup:
           case NodeType::NoLocals:
           case NodeType::NoParams:
@@ -1361,7 +1363,9 @@ void Interpreter::algorithmResume() {
                       "Parameter reference doesn't match callling context!");
                 switch (ParamTy) {
                   case NodeType::ParamValues: {
-                    size_t ValueIndex = CallingFrame->DefinedFrame->getValueArgIndex(ParamIndex);
+                    size_t ValueIndex =
+                        CallingFrame->DefinedFrame->getValueArgIndex(
+                            ParamIndex);
                     Frame.CallState = State::Exit;
                     Frame.ReturnValue = CallingFrame->Values[ValueIndex];
                     TRACE(size_t, "Param value", Frame.ReturnValue);
@@ -1375,7 +1379,8 @@ void Interpreter::algorithmResume() {
                     const Node* Context =
                         CallingFrame->Caller->getKid(ParamIndex + 1);
                     Frame.CallState = State::Exit;
-                    call(Method::EvalInCallingContext, Frame.CallModifier, Context);
+                    call(Method::EvalInCallingContext, Frame.CallModifier,
+                         Context);
                     break;
                   }
                 }

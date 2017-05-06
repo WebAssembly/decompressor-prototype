@@ -89,6 +89,15 @@ void errorDescribeNodeContext(const char* Message,
   errorDescribeContext(Parents, "Context", Abbrev);
 }
 
+void errorDescribeDuplicate(charstring Concept,
+                            const Node* New,
+                            const Node* Old,
+                            bool Abbrev = true) {
+  fprintf(New->error(), "Duplicate %s entries:\n", Concept);
+  errorDescribeNode("Duplicate", New, Abbrev);
+  errorDescribeNode("Previous", Old, Abbrev);
+}
+
 static const char* PredefinedName[NumPredefinedSymbols]{"Unknown"
 #define X(NAME, name) , name
                                                         PREDEFINED_SYMBOLS_TABLE
@@ -655,6 +664,12 @@ FILE* SymbolTable::error() const {
   return Out;
 }
 
+const Symbol* SymbolTable::getAlgorithmName() const {
+  if (Alg == nullptr)
+    return nullptr;
+  return Alg->getName();
+}
+
 Symbol* SymbolTable::getSymbol(const std::string& Name) {
   if (SymbolMap.count(Name))
     return SymbolMap[Name];
@@ -900,6 +915,74 @@ void SymbolTable::setAlgorithm(const Algorithm* NewAlg) {
   Alg->clearCaches();
 }
 
+bool SymbolTable::standardizeAlgorithm() {
+  std::vector<Node*> OtherNodes;
+  Node* Source = nullptr;
+  Node* Read = nullptr;
+  Node* Write = nullptr;
+  Node* Name = nullptr;
+  Node* Enclosing = nullptr;
+  bool Success = true;
+  for (Node* Kid : *Alg) {
+    switch (Kid->getType()) {
+      default:
+        OtherNodes.push_back(Kid);
+        break;
+      case NodeType::SourceHeader:
+        if (Source != nullptr) {
+          errorDescribeDuplicate("source header", Kid, Source);
+          Success = false;
+        }
+        Source = Kid;
+        break;
+      case NodeType::ReadHeader:
+        if (Read != nullptr) {
+          errorDescribeDuplicate("read header", Kid, Read);
+          Success = false;
+        }
+        Read = Kid;
+        break;
+      case NodeType::WriteHeader:
+        if (Write != nullptr) {
+          errorDescribeDuplicate("write header", Kid, Write);
+          Success = false;
+        }
+        Write = Kid;
+        break;
+      case NodeType::AlgorithmName:
+        if (Name != nullptr) {
+          errorDescribeDuplicate("algorithm name", Kid, Name);
+          Success = false;
+        }
+        Name = Kid;
+        break;
+      case NodeType::EnclosingAlgorithms:
+        if (Enclosing != nullptr) {
+          errorDescribeDuplicate("enclosing algorithms", Kid, Enclosing, false);
+          Success = false;
+        }
+        Enclosing = Kid;
+        break;
+    }
+  }
+  if (!Success)
+    return false;
+  Alg->clearKids();
+  if (Source)
+    Alg->append(Source);
+  if (Read)
+    Alg->append(Read);
+  if (Write)
+    Alg->append(Write);
+  if (Name)
+    Alg->append(Name);
+  if (Enclosing)
+    Alg->append(Enclosing);
+  for (Node* Kid : OtherNodes)
+    Alg->append(Kid);
+  return true;
+}
+
 bool SymbolTable::install() {
   TRACE_METHOD("install");
   if (IsAlgInstalled)
@@ -910,6 +993,8 @@ bool SymbolTable::install() {
     if (!EnclosingScope->install())
       return false;
   }
+  if (!standardizeAlgorithm())
+    return false;
   installPredefined();
   installDefinitions(Alg);
   ConstNodeVectorType Parents;
@@ -1972,6 +2057,7 @@ void Algorithm::init() {
   SourceHdr = nullptr;
   ReadHdr = nullptr;
   WriteHdr = nullptr;
+  Name = nullptr;
   IsAlgorithmSpecified = false;
   IsValidated = false;
 }
@@ -2081,6 +2167,7 @@ bool Algorithm::validateNode(ConstNodeVectorType& Parents) const {
   SourceHdr = nullptr;
   ReadHdr = nullptr;
   WriteHdr = nullptr;
+  Name = nullptr;
   IsAlgorithmSpecified = false;
   const Node* OldAlgorithmFlag = nullptr;
   for (const Node* Kid : *this) {
@@ -2124,6 +2211,16 @@ bool Algorithm::validateNode(ConstNodeVectorType& Parents) const {
           return false;
         }
         break;
+      case NodeType::AlgorithmName:
+        if (Name != nullptr) {
+          errorDescribeDuplicate("algorithm name", Name, Kid);
+          return false;
+        }
+        Name = dyn_cast<Symbol>(Kid->getKid(0));
+        if (Name)
+          break;
+        errorDescribeNode("Malformed algorithm name", Kid);
+        return false;
       default:
         break;
     }

@@ -137,7 +137,6 @@ class Driver {
  private:
   std::shared_ptr<SymbolTable> Table;
   std::string Filename;
-  std::string BaseFilename;
   std::string Enclosing;
   bool TraceLexing;
   bool TraceParsing;

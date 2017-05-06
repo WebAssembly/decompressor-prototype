@@ -15,8 +15,9 @@
 # Defines the CAST algorithm for reading/writing "Compressed binary
 # integer sequence" ("cism") file.
 
-(enclosing 'cism0x0-lits.cast')
+(include 'cism0x0-lits.cast')
 
+(name 'cism')
 (header (u32.const 0x6d736163) (u32.const 0x0))
 (header.read (u32.const 0x6d736963) (u32.const 0x0))
 

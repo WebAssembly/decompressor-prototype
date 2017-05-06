@@ -14,6 +14,7 @@
 
 # Defines symbolic literals used by the WASM algorithm as enclosing scope.
 
+(name 'wasm0x0-lits')
 (header (u32.const 0x6d736163) (u32.const 0x0))
 
 (literal.action.enum (u32.const 1001)

@@ -188,6 +188,7 @@ void FlattenAst::flattenNode(const Node* Nd) {
     // Not binary encoding, Intentionally fall to next case that
     // will generate non-compressed form.
     case NodeType::AlgorithmFlag:
+    case NodeType::AlgorithmName:
     case NodeType::And:
     case NodeType::Block:
     case NodeType::BinaryAccept:
@@ -239,13 +240,15 @@ void FlattenAst::flattenNode(const Node* Nd) {
       break;
     }
     case NodeType::Algorithm: {
+      const auto* Alg = cast<Algorithm>(Nd);
+      const auto* Source = Alg->getSourceHeader();
       int NumKids = Nd->getNumKids();
-      if (NumKids < 1 || !isa<SourceHeader>(Nd->getKid(0)))
-        return reportError("Algorithm doesn't begin with a source header");
+      if (Source == nullptr)
+        return reportError("Algorithm doesn't define a source header");
       // Write source header. Note: Only the constants are written out (See
       // case NodeType::FileHeader). The reader will automatically build the
       // corresponding AST while reading the constants.
-      flattenNode(Nd->getKid(0));
+      flattenNode(Source);
 
       // Put rest of algorithm in a block. Begin with symbol table, and then
       // nodes.
@@ -262,9 +265,9 @@ void FlattenAst::flattenNode(const Node* Nd) {
           write(SymName[i]);
       }
 
-      // Now flatten remaining kids.
-      for (int i = 1; i < NumKids; ++i)
-        flattenNode(Nd->getKid(i));
+      for (const Node* Kid : *Nd)
+        if (Kid != Source)
+          flattenNode(Kid);
 
       // Write out algorithm node.
       write(IntType(Opcode));
@@ -299,6 +302,7 @@ void FlattenAst::flattenNode(const Node* Nd) {
       write(Nd->getNumKids());
       break;
     case NodeType::Define:
+    case NodeType::EnclosingAlgorithms:
     case NodeType::Eval:
     case NodeType::LiteralActionBase:
     case NodeType::Opcode:

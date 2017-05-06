@@ -48,6 +48,7 @@ const char* Driver::getName(ErrorLevel Level) {
 bool Driver::parse(const std::string& Filename) {
   SymbolTable::SharedPtr FirstSymtab = Table;
   Enclosing.erase();
+  std::string BaseFilename;
   size_t LastSlash = Filename.find_last_of("/\\");
   if (LastSlash == std::string::npos)
     BaseFilename.erase();

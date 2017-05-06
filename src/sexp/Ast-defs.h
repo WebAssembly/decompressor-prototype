@@ -101,6 +101,7 @@
 //         initialization
 #define AST_UNARYNODE_TABLE                                                   \
   X(AlgorithmFlag, Unary, , )                                                 \
+  X(AlgorithmName, Unary, , )                                                 \
   X(Block, Unary, , )                                                         \
   X(BitwiseNegate, Unary, , )                                                 \
   X(Callback, Unary, VALIDATENODE GETINTNODE, )                               \
@@ -168,6 +169,7 @@
 #define AST_NARYNODE_TABLE                     \
   X(Algorithm, Nary, ALGORITHM_DECLS, init();) \
   X(Define, Nary, DEFINE_DECLS, )              \
+  X(EnclosingAlgorithms, Nary, , )             \
   X(Eval, Nary, EVAL_DECLS, )                  \
   X(LiteralActionBase, Nary, , )               \
   X(ParamArgs, Nary, , )                       \
@@ -301,6 +303,8 @@
   X(ParamArgs, 0x7e, "args", 0, 2, false, false)                         \
   X(NoParams, 0x7f, "no.params", 0, 0, false, false)                     \
   X(NoLocals, 0x61, "no.locals", 0, 0, false, false)                     \
+  X(AlgorithmName, 0x80, "name", 1, 0, false, false)                     \
+  X(EnclosingAlgorithms, 0x81, "enclosing", 1, 5, false, false)          \
                                                                          \
   /* Internal (not opcodes in compressed file) */                        \
   X(UnknownSection, 0xFF, "unknown.section", 1, 0, true, false)          \
@@ -313,6 +317,7 @@
   const Header* getSourceHeader(bool UseEnclosing = true) const; \
   const Header* getReadHeader(bool UseEnclosing = true) const;   \
   const Header* getWriteHeader(bool UseEnclosing = true) const;  \
+  const Symbol* getName() const { return Name; }                 \
   bool isAlgorithm() const;                                      \
   void init();                                                   \
   void clearCaches() { init(); }                                 \
@@ -321,6 +326,7 @@
   mutable const Header* SourceHdr;                               \
   mutable const Header* ReadHdr;                                 \
   mutable const Header* WriteHdr;                                \
+  mutable const Symbol* Name;                                    \
   mutable bool IsAlgorithmSpecified;                             \
   mutable bool IsValidated;                                      \
   bool setIsAlgorithm(const Node* Nd);
