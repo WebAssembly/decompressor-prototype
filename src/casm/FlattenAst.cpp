@@ -225,17 +225,15 @@ void FlattenAst::flattenNode(const Node* Nd) {
 
   // Now handle default cases.
   switch (NodeType Opcode = Nd->getType()) {
+#define X(NAME) case NodeType::NAME:
+    AST_CACHEDNODE_TABLE
+#undef X
     case NodeType::NO_SUCH_NODETYPE:
       return reportError("Internal error in FlattenAst::flattenNode");
-
-#define X(NAME) case NodeType::NAME:
-      AST_CACHEDNODE_TABLE
-#undef X
 
 #define X(NAME, FORMAT, DEFAULT, MERGE, BASE, DECLS, INIT) case NodeType::NAME:
       AST_INTEGERNODE_TABLE
 #undef X
-
     case NodeType::BinaryEvalBits: {
       write(IntType(Opcode));
       auto* Int = cast<IntegerNode>(Nd);
@@ -251,23 +249,18 @@ void FlattenAst::flattenNode(const Node* Nd) {
 #define X(NAME, BASE, DECLS, INIT) case NodeType::NAME:
       AST_NULLARYNODE_TABLE
 #undef X
-
 #define X(NAME, BASE, VALUE, FORMAT, DECLS, INIT) case NodeType::NAME:
       AST_LITERAL_TABLE
 #undef X
-
 #define X(NAME, BASE, DECLS, INIT) case NodeType::NAME:
       AST_UNARYNODE_TABLE
 #undef X
-
 #define X(NAME, BASE, DECLS, INIT) case NodeType::NAME:
       AST_BINARYNODE_TABLE
 #undef X
-
 #define X(NAME, BASE, DECLS, INIT) case NodeType::NAME:
       AST_TERNARYNODE_TABLE
 #undef X
-
     case NodeType::BinaryEval:
     case NodeType::BinaryAccept: {
       // Operations that are written out in postorder, with a fixed number of
@@ -281,11 +274,9 @@ void FlattenAst::flattenNode(const Node* Nd) {
 #define X(NAME, BASE, DECLS, INIT) case NodeType::NAME:
       AST_NARYNODE_TABLE
 #undef X
-
 #define X(NAME, BASE, DECLS, INIT) case NodeType::NAME:
       AST_SELECTNODE_TABLE
 #undef X
-
     case NodeType::Opcode: {
       // Operations that are written out in postorder, and have a variable
       // number of arguments.
