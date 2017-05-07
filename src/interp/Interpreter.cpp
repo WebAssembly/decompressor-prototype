@@ -1452,8 +1452,8 @@ void Interpreter::algorithmResume() {
           case NodeType::EvalVirtual:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter: {
-                auto* Sym = dyn_cast<Symbol>(Frame.Nd->getKid(0));
-                assert(Sym);
+                const Eval* EvalNd = cast<Eval>(Frame.Nd);
+                const Symbol* Sym = EvalNd->getCallName();
                 const Define* Defn =
                     Symtab->getSymbolDefn(Sym)->getDefineDefinition();
                 if (Defn == nullptr) {
@@ -1506,7 +1506,8 @@ void Interpreter::algorithmResume() {
                 break;
               }
               case State::Step3: {
-                auto* Sym = dyn_cast<Symbol>(Frame.Nd->getKid(0));
+                const Eval* EvalNd = cast<Eval>(Frame.Nd);
+                const Symbol* Sym = EvalNd->getCallName();
                 const Define* Defn =
                     Symtab->getSymbolDefn(Sym)->getDefineDefinition();
                 Frame.CallState = State::Exit;

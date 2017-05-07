@@ -604,53 +604,45 @@ size_t CodeGenerator::generateNode(const Node* Nd) {
     case NodeType::Symbol:
       return generateSymbol(Nd);
 
-#define X(NAME, BASE, DECLS, INIT) \
-  case NodeType::NAME:             \
-    return generateNullary(Nd);
+#define X(NAME, BASE, DECLS, INIT) case NodeType::NAME:
       AST_NULLARYNODE_TABLE
 #undef X
+      return generateNullary(Nd);
 
-#define X(NAME)        \
-  case NodeType::NAME: \
-    return generateNullary(Nd);
+#define X(NAME) case NodeType::NAME:
       AST_CACHEDNODE_TABLE
 #undef X
+      return generateNullary(Nd);
 
-#define X(NAME, BASE, VALUE, FORMAT, DECLS, INIT) \
-  case NodeType::NAME:                            \
-    return generateNullary(Nd);
+#define X(NAME, BASE, VALUE, FORMAT, DECLS, INIT) case NodeType::NAME:
       AST_LITERAL_TABLE
 #undef X
+      return generateNullary(Nd);
 
-#define X(NAME, BASE, DECLS, INIT) \
-  case NodeType::NAME:             \
-    return generateUnary(Nd);
+#define X(NAME, BASE, DECLS, INIT) case NodeType::NAME:
       AST_UNARYNODE_TABLE
 #undef X
+      return generateUnary(Nd);
 
-#define X(NAME, BASE, DECLS, INIT) \
-  case NodeType::NAME:             \
-    return generateBinary(Nd);
+#define X(NAME, BASE, DECLS, INIT) case NodeType::NAME:
       AST_BINARYNODE_TABLE
 #undef X
+      return generateBinary(Nd);
 
-#define X(NAME, BASE, DECLS, INIT) \
-  case NodeType::NAME:             \
-    return generateTernary(Nd);
+#define X(NAME, BASE, DECLS, INIT) case NodeType::NAME:
       AST_TERNARYNODE_TABLE
 #undef X
+      return generateTernary(Nd);
 
-#define X(NAME, BASE, DECLS, INIT) \
-  case NodeType::NAME:             \
-    return generateNary(Nd);
+#define X(NAME, BASE, DECLS, INIT) case NodeType::NAME:
       AST_NARYNODE_TABLE AST_SELECTNODE_TABLE
 #undef X
+          return generateNary(Nd);
 
-#define X(NAME, FORMAT, DEFAULT, MERGE, BASE, DECLS, INIT) \
-  case NodeType::NAME:                                     \
-    return generateInteger(Nd);
-          AST_INTEGERNODE_TABLE
+#define X(NAME, FORMAT, DEFAULT, MERGE, BASE, DECLS, INIT) case NodeType::NAME:
+      AST_INTEGERNODE_TABLE
 #undef X
+      return generateInteger(Nd);
   }
   WASM_RETURN_UNREACHABLE(0);
 }
