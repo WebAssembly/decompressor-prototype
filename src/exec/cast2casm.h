@@ -105,13 +105,14 @@ class CodeGenerator {
   void generateAlgorithmHeader();
   void generateAlgorithmHeader(charstring AlgName);
   size_t generateNode(const Node* Nd);
-  size_t generateSymbol(const Symbol* Sym);
-  size_t generateInteger(charstring NodeType, const IntegerNode* Nd);
-  size_t generateNullary(charstring NodeType, const Node* Nd);
-  size_t generateUnary(charstring NodeType, const Node* Nd);
-  size_t generateBinary(charstring NodeType, const Node* Nd);
-  size_t generateTernary(charstring NodeType, const Node* Nd);
-  size_t generateNary(charstring NodeName, const Node* Nd);
+  size_t generateNodeFcn(const Node* Nd, std::function<void()> ArgsFn);
+  size_t generateSymbol(const Node* Nd);
+  size_t generateInteger(const Node* Nd);
+  size_t generateNullary(const Node* Nd);
+  size_t generateUnary(const Node* Nd);
+  size_t generateBinary(const Node* Nd);
+  size_t generateTernary(const Node* Nd);
+  size_t generateNary(const Node* Nd);
   void generateInt(IntType Value);
   void generateFormat(ValueFormat Format);
   void generateLocal(size_t Index);
@@ -463,7 +464,20 @@ void CodeGenerator::generateReturnCreate(charstring NodeType) {
   generateCreate(NodeType);
 }
 
-size_t CodeGenerator::generateSymbol(const Symbol* Sym) {
+size_t CodeGenerator::generateNodeFcn(const Node* Nd,
+                                      std::function<void()> ArgsFn) {
+  size_t Index = NextIndex++;
+  charstring NodeType = Nd->getNodeName();
+  generateFunctionHeader(NodeType, Index);
+  generateReturnCreate(NodeType);
+  ArgsFn();
+  generateCloseFunctionFooter();
+  return Index;
+}
+
+size_t CodeGenerator::generateSymbol(const Node* Nd) {
+  assert(isa<Symbol>(Nd));
+  const Symbol* Sym = cast<Symbol>(Nd);
   size_t Index = NextIndex++;
   generateFunctionHeader("Symbol", Index);
   puts("  return Symtab->getOrCreateSymbol(\"");
@@ -474,73 +488,55 @@ size_t CodeGenerator::generateSymbol(const Symbol* Sym) {
   return Index;
 }
 
-size_t CodeGenerator::generateInteger(charstring NodeName,
-                                      const IntegerNode* Nd) {
-  size_t Index = NextIndex++;
-  std::string NodeType(NodeName);
-  generateFunctionHeader(NodeType, Index);
-  puts("  return Symtab->create<");
-  puts(NodeName);
-  puts(">(");
-  generateInt(Nd->getValue());
-  puts(", ");
-  generateFormat(Nd->getFormat());
-  generateCloseFunctionFooter();
-  return Index;
+size_t CodeGenerator::generateInteger(const Node* Nd) {
+  return generateNodeFcn(Nd, [&]() {
+    assert(isa<IntegerNode>(Nd));
+    const IntegerNode* IntNd = cast<IntegerNode>(Nd);
+    generateInt(IntNd->getValue());
+    puts(", ");
+    generateFormat(IntNd->getFormat());
+  });
 }
 
-size_t CodeGenerator::generateNullary(charstring NodeType, const Node* Nd) {
-  size_t Index = NextIndex++;
-  generateFunctionHeader(NodeType, Index);
-  generateReturnCreate(NodeType);
-  generateCloseFunctionFooter();
-  return Index;
+size_t CodeGenerator::generateNullary(const Node* Nd) {
+  assert(Nd->getNumKids() == 0);
+  return generateNodeFcn(Nd, []() { return; });
 }
 
-size_t CodeGenerator::generateUnary(charstring NodeType, const Node* Nd) {
-  size_t Index = NextIndex++;
+size_t CodeGenerator::generateUnary(const Node* Nd) {
   assert(Nd->getNumKids() == 1);
   size_t Kid1 = generateNode(Nd->getKid(0));
-  generateFunctionHeader(NodeType, Index);
-  generateReturnCreate(NodeType);
-  generateFunctionCall(Kid1);
-  generateCloseFunctionFooter();
-  return Index;
+  return generateNodeFcn(Nd, [&]() { generateFunctionCall(Kid1); });
 }
 
-size_t CodeGenerator::generateBinary(charstring NodeType, const Node* Nd) {
+size_t CodeGenerator::generateBinary(const Node* Nd) {
   assert(Nd->getNumKids() == 2);
   size_t Kid1 = generateNode(Nd->getKid(0));
   size_t Kid2 = generateNode(Nd->getKid(1));
-  size_t Index = NextIndex++;
-  generateFunctionHeader(NodeType, Index);
-  generateReturnCreate(NodeType);
-  generateFunctionCall(Kid1);
-  puts(", ");
-  generateFunctionCall(Kid2);
-  generateCloseFunctionFooter();
-  return Index;
+  return generateNodeFcn(Nd, [&]() {
+    generateFunctionCall(Kid1);
+    puts(", ");
+    generateFunctionCall(Kid2);
+  });
 }
 
-size_t CodeGenerator::generateTernary(charstring NodeType, const Node* Nd) {
+size_t CodeGenerator::generateTernary(const Node* Nd) {
   assert(Nd->getNumKids() == 3);
   size_t Kid1 = generateNode(Nd->getKid(0));
   size_t Kid2 = generateNode(Nd->getKid(1));
   size_t Kid3 = generateNode(Nd->getKid(2));
-  size_t Index = NextIndex++;
-  generateFunctionHeader(NodeType, Index);
-  generateReturnCreate(NodeType);
-  generateFunctionCall(Kid1);
-  puts(", ");
-  generateFunctionCall(Kid2);
-  puts(", ");
-  generateFunctionCall(Kid3);
-  generateCloseFunctionFooter();
-  return Index;
+  return generateNodeFcn(Nd, [&]() {
+    generateFunctionCall(Kid1);
+    puts(", ");
+    generateFunctionCall(Kid2);
+    puts(", ");
+    generateFunctionCall(Kid3);
+  });
 }
 
-size_t CodeGenerator::generateNary(charstring NodeType, const Node* Nd) {
+size_t CodeGenerator::generateNary(const Node* Nd) {
   std::vector<size_t> Kids;
+  charstring NodeType = Nd->getNodeName();
   for (int i = 0; i < Nd->getNumKids(); ++i)
     Kids.push_back(generateNode(Nd->getKid(i)));
   size_t Index = NextIndex++;
@@ -567,137 +563,71 @@ size_t CodeGenerator::generateNode(const Node* Nd) {
     return generateBadLocal(Nd);
 
   switch (Nd->getType()) {
-    default:
+    case NodeType::NO_SUCH_NODETYPE:
+    case NodeType::BinaryEvalBits:
       return generateBadLocal(Nd);
+    case NodeType::BinaryAccept: {
+      return generateNodeFcn(Nd, [&] {
+        const BinaryAccept* AcceptNd = cast<BinaryAccept>(Nd);
+        generateInt(AcceptNd->getValue());
+        puts(", ");
+        generateInt(AcceptNd->getNumBits());
+      });
+    }
+    case NodeType::BinaryEval:
+      return generateUnary(Nd);
+    case NodeType::Opcode:
+      return generateNary(Nd);
+    case NodeType::Symbol:
+      return generateSymbol(Nd);
+
+#define X(NAME, BASE, DECLS, INIT) \
+  case NodeType::NAME:             \
+    return generateNullary(Nd);
+      AST_NULLARYNODE_TABLE
+#undef X
+
+#define X(NAME)        \
+  case NodeType::NAME: \
+    return generateNullary(Nd);
+      AST_CACHEDNODE_TABLE
+#undef X
+
 #define X(NAME, BASE, VALUE, FORMAT, DECLS, INIT) \
   case NodeType::NAME:                            \
-    return generateNullary(#NAME, Nd);
+    return generateNullary(Nd);
       AST_LITERAL_TABLE
 #undef X
-    case NodeType::AlgorithmFlag:
-      return generateUnary("AlgorithmFlag", Nd);
-    case NodeType::AlgorithmName:
-      return generateUnary("AlgorithmName", Nd);
-    case NodeType::And:
-      return generateBinary("And", Nd);
-    case NodeType::Bit:
-      return generateNullary("Bit", Nd);
-    case NodeType::BitwiseAnd:
-      return generateBinary("BitwiseAnd", Nd);
-    case NodeType::BitwiseNegate:
-      return generateUnary("BitwiseNegate", Nd);
-    case NodeType::BitwiseOr:
-      return generateBinary("BitwiseOr", Nd);
-    case NodeType::BitwiseXor:
-      return generateBinary("BitwiseXor", Nd);
-    case NodeType::Block:
-      return generateUnary("Block", Nd);
-    case NodeType::Callback:
-      return generateUnary("Callback", Nd);
-    case NodeType::Case:
-      return generateBinary("Case", Nd);
-    case NodeType::Define:
-      return generateNary("Define", Nd);
-    case NodeType::EnclosingAlgorithms:
-      return generateNary("EnclosingAlgorithms", Nd);
-    case NodeType::Error:
-      return generateNullary("Error", Nd);
-    case NodeType::Eval:
-      return generateNary("Eval", Nd);
-    case NodeType::Algorithm:
-      return generateNary("Algorithm", Nd);
-    case NodeType::IfThen:
-      return generateBinary("IfThen", Nd);
-    case NodeType::IfThenElse:
-      return generateTernary("IfThenElse", Nd);
-    case NodeType::I32Const:
-      return generateInteger("I32Const", cast<I32Const>(Nd));
-    case NodeType::I64Const:
-      return generateInteger("I64Const", cast<I64Const>(Nd));
-    case NodeType::LastRead:
-      return generateNullary("LastRead", Nd);
-    case NodeType::LastSymbolIs:
-      return generateUnary("LastSymbolIs", Nd);
-    case NodeType::LiteralActionBase:
-      return generateNary("LiteralActionBase", Nd);
-    case NodeType::LiteralActionDef:
-      return generateBinary("LiteralActionDef", Nd);
-    case NodeType::LiteralActionUse:
-      return generateUnary("LiteralActionUse", Nd);
-    case NodeType::LiteralDef:
-      return generateBinary("LiteralDef", Nd);
-    case NodeType::LiteralUse:
-      return generateUnary("LiteralUse", Nd);
-    case NodeType::Local:
-      return generateInteger("Local", cast<Local>(Nd));
-    case NodeType::Locals:
-      return generateInteger("Locals", cast<Local>(Nd));
-    case NodeType::Loop:
-      return generateBinary("Loop", Nd);
-    case NodeType::LoopUnbounded:
-      return generateUnary("LoopUnbounded", Nd);
-    case NodeType::Map:
-      return generateNary("Map", Nd);
-    case NodeType::NoLocals:
-      return generateNullary("NoLocals", Nd);
-    case NodeType::NoParams:
-      return generateNullary("NoParams", Nd);
-    case NodeType::Not:
-      return generateUnary("Not", Nd);
-    case NodeType::Opcode:
-      return generateNary("Opcode", Nd);
-    case NodeType::Or:
-      return generateBinary("Or", Nd);
-    case NodeType::Param:
-      return generateInteger("Param", cast<Param>(Nd));
-    case NodeType::ParamValues:
-      return generateInteger("ParamValues", cast<ParamValues>(Nd));
-    case NodeType::ParamExprs:
-      return generateInteger("ParamExprs", cast<ParamExprs>(Nd));
-    case NodeType::Peek:
-      return generateUnary("Peek", Nd);
-    case NodeType::Read:
-      return generateUnary("Read", Nd);
-    case NodeType::Rename:
-      return generateBinary("Rename", Nd);
-    case NodeType::Sequence:
-      return generateNary("Sequence", Nd);
-    case NodeType::Set:
-      return generateBinary("Set", Nd);
-    case NodeType::SourceHeader:
-      return generateNary("SourceHeader", Nd);
-    case NodeType::Symbol:
-      return generateSymbol(cast<Symbol>(Nd));
-    case NodeType::Switch:
-      return generateNary("Switch", Nd);
-    case NodeType::Table:
-      return generateNary("Table", Nd);
-    case NodeType::Uint8:
-      return generateNullary("Uint8", Nd);
-    case NodeType::Uint32:
-      return generateNullary("Uint32", Nd);
-    case NodeType::Uint64:
-      return generateNullary("Uint64", Nd);
-    case NodeType::Undefine:
-      return generateUnary("Undefine", Nd);
-    case NodeType::U8Const:
-      return generateInteger("U8Const", cast<U8Const>(Nd));
-    case NodeType::U32Const:
-      return generateInteger("U32Const", cast<U32Const>(Nd));
-    case NodeType::U64Const:
-      return generateInteger("U64Const", cast<U64Const>(Nd));
-    case NodeType::Varint32:
-      return generateNullary("Varint32", Nd);
-    case NodeType::Varint64:
-      return generateNullary("Varint64", Nd);
-    case NodeType::Varuint32:
-      return generateNullary("Varuint32", Nd);
-    case NodeType::Varuint64:
-      return generateNullary("Varuint64", Nd);
-    case NodeType::Void:
-      return generateNullary("Void", Nd);
-    case NodeType::Write:
-      return generateNary("Write", Nd);
+
+#define X(NAME, BASE, DECLS, INIT) \
+  case NodeType::NAME:             \
+    return generateUnary(Nd);
+      AST_UNARYNODE_TABLE
+#undef X
+
+#define X(NAME, BASE, DECLS, INIT) \
+  case NodeType::NAME:             \
+    return generateBinary(Nd);
+      AST_BINARYNODE_TABLE
+#undef X
+
+#define X(NAME, BASE, DECLS, INIT) \
+  case NodeType::NAME:             \
+    return generateTernary(Nd);
+      AST_TERNARYNODE_TABLE
+#undef X
+
+#define X(NAME, BASE, DECLS, INIT) \
+  case NodeType::NAME:             \
+    return generateNary(Nd);
+      AST_NARYNODE_TABLE AST_SELECTNODE_TABLE
+#undef X
+
+#define X(NAME, FORMAT, DEFAULT, MERGE, BASE, DECLS, INIT) \
+  case NodeType::NAME:                                     \
+    return generateInteger(Nd);
+          AST_INTEGERNODE_TABLE
+#undef X
   }
   WASM_RETURN_UNREACHABLE(0);
 }
