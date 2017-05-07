@@ -105,6 +105,7 @@ class CodeGenerator {
   void generateAlgorithmHeader();
   void generateAlgorithmHeader(charstring AlgName);
   size_t generateNode(const Node* Nd);
+  size_t generateNodeFcn(const Node* Nd, std::function<void()> ArgsFn);
   size_t generateSymbol(const Node* Nd);
   size_t generateInteger(const Node* Nd);
   size_t generateNullary(const Node* Nd);
@@ -463,6 +464,17 @@ void CodeGenerator::generateReturnCreate(charstring NodeType) {
   generateCreate(NodeType);
 }
 
+size_t CodeGenerator::generateNodeFcn(const Node* Nd,
+                                      std::function<void()> ArgsFn) {
+  size_t Index = NextIndex++;
+  charstring NodeType = Nd->getNodeName();
+  generateFunctionHeader(NodeType, Index);
+  generateReturnCreate(NodeType);
+  ArgsFn();
+  generateCloseFunctionFooter();
+  return Index;
+}
+
 size_t CodeGenerator::generateSymbol(const Node* Nd) {
   assert(isa<Symbol>(Nd));
   const Symbol* Sym = cast<Symbol>(Nd);
@@ -477,55 +489,35 @@ size_t CodeGenerator::generateSymbol(const Node* Nd) {
 }
 
 size_t CodeGenerator::generateInteger(const Node* Nd) {
-  assert(isa<IntegerNode>(Nd));
-  const IntegerNode* IntNd = cast<IntegerNode>(Nd);
-  size_t Index = NextIndex++;
-  charstring NodeType = IntNd->getNodeName();
-  generateFunctionHeader(NodeType, Index);
-  puts("  return Symtab->create<");
-  puts(NodeType);
-  puts(">(");
-  generateInt(IntNd->getValue());
-  puts(", ");
-  generateFormat(IntNd->getFormat());
-  generateCloseFunctionFooter();
-  return Index;
+  return generateNodeFcn(Nd, [&]() {
+    assert(isa<IntegerNode>(Nd));
+    const IntegerNode* IntNd = cast<IntegerNode>(Nd);
+    generateInt(IntNd->getValue());
+    puts(", ");
+    generateFormat(IntNd->getFormat());
+  });
 }
 
 size_t CodeGenerator::generateNullary(const Node* Nd) {
-  size_t Index = NextIndex++;
-  charstring NodeType = Nd->getNodeName();
-  generateFunctionHeader(NodeType, Index);
-  generateReturnCreate(NodeType);
-  generateCloseFunctionFooter();
-  return Index;
+  assert(Nd->getNumKids() == 0);
+  return generateNodeFcn(Nd, []() { return; });
 }
 
 size_t CodeGenerator::generateUnary(const Node* Nd) {
-  size_t Index = NextIndex++;
-  charstring NodeType = Nd->getNodeName();
   assert(Nd->getNumKids() == 1);
   size_t Kid1 = generateNode(Nd->getKid(0));
-  generateFunctionHeader(NodeType, Index);
-  generateReturnCreate(NodeType);
-  generateFunctionCall(Kid1);
-  generateCloseFunctionFooter();
-  return Index;
+  return generateNodeFcn(Nd, [&]() { generateFunctionCall(Kid1); });
 }
 
 size_t CodeGenerator::generateBinary(const Node* Nd) {
   assert(Nd->getNumKids() == 2);
   size_t Kid1 = generateNode(Nd->getKid(0));
   size_t Kid2 = generateNode(Nd->getKid(1));
-  size_t Index = NextIndex++;
-  charstring NodeType = Nd->getNodeName();
-  generateFunctionHeader(NodeType, Index);
-  generateReturnCreate(NodeType);
-  generateFunctionCall(Kid1);
-  puts(", ");
-  generateFunctionCall(Kid2);
-  generateCloseFunctionFooter();
-  return Index;
+  return generateNodeFcn(Nd, [&]() {
+    generateFunctionCall(Kid1);
+    puts(", ");
+    generateFunctionCall(Kid2);
+  });
 }
 
 size_t CodeGenerator::generateTernary(const Node* Nd) {
@@ -533,17 +525,13 @@ size_t CodeGenerator::generateTernary(const Node* Nd) {
   size_t Kid1 = generateNode(Nd->getKid(0));
   size_t Kid2 = generateNode(Nd->getKid(1));
   size_t Kid3 = generateNode(Nd->getKid(2));
-  size_t Index = NextIndex++;
-  charstring NodeType = Nd->getNodeName();
-  generateFunctionHeader(NodeType, Index);
-  generateReturnCreate(NodeType);
-  generateFunctionCall(Kid1);
-  puts(", ");
-  generateFunctionCall(Kid2);
-  puts(", ");
-  generateFunctionCall(Kid3);
-  generateCloseFunctionFooter();
-  return Index;
+  return generateNodeFcn(Nd, [&]() {
+    generateFunctionCall(Kid1);
+    puts(", ");
+    generateFunctionCall(Kid2);
+    puts(", ");
+    generateFunctionCall(Kid3);
+  });
 }
 
 size_t CodeGenerator::generateNary(const Node* Nd) {
@@ -575,13 +563,34 @@ size_t CodeGenerator::generateNode(const Node* Nd) {
     return generateBadLocal(Nd);
 
   switch (Nd->getType()) {
-    default:
+    case NodeType::NO_SUCH_NODETYPE:
+    case NodeType::BinaryEvalBits:
       return generateBadLocal(Nd);
+    case NodeType::BinaryAccept: {
+      return generateNodeFcn(Nd, [&] {
+        const BinaryAccept* AcceptNd = cast<BinaryAccept>(Nd);
+        generateInt(AcceptNd->getValue());
+        puts(", ");
+        generateInt(AcceptNd->getNumBits());
+      });
+    }
+    case NodeType::BinaryEval:
+      return generateUnary(Nd);
+    case NodeType::Opcode:
+      return generateNary(Nd);
+    case NodeType::Symbol:
+      return generateSymbol(Nd);
 
 #define X(NAME, BASE, DECLS, INIT) \
   case NodeType::NAME:             \
     return generateNullary(Nd);
       AST_NULLARYNODE_TABLE
+#undef X
+
+#define X(NAME)        \
+  case NodeType::NAME: \
+    return generateNullary(Nd);
+      AST_CACHEDNODE_TABLE
 #undef X
 
 #define X(NAME, BASE, VALUE, FORMAT, DECLS, INIT) \
@@ -619,8 +628,6 @@ size_t CodeGenerator::generateNode(const Node* Nd) {
     return generateInteger(Nd);
           AST_INTEGERNODE_TABLE
 #undef X
-
-          case NodeType::Symbol : return generateSymbol(Nd);
   }
   WASM_RETURN_UNREACHABLE(0);
 }
