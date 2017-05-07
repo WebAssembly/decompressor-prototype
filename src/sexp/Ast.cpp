@@ -613,6 +613,9 @@ void Symbol::setPredefinedSymbol(PredefinedSymbol NewValue) {
   PredefinedValueIsCached = true;
 }
 
+std::map<std::string, SymbolTable::SharedPtr>* SymbolTable::AlgorithmRegistry =
+    nullptr;
+
 SymbolTable::SymbolTable(std::shared_ptr<SymbolTable> EnclosingScope)
     : EnclosingScope(EnclosingScope) {
   init();
@@ -638,6 +641,23 @@ void SymbolTable::init() {
 SymbolTable::~SymbolTable() {
   clearSymbols();
   deallocateNodes();
+}
+
+SymbolTable::SharedPtr SymbolTable::getRegisteredAlgorithm(std::string Name) {
+  if (AlgorithmRegistry == nullptr)
+    AlgorithmRegistry = new std::map<std::string, SharedPtr>();
+  if (AlgorithmRegistry->count(Name) > 0)
+    return (*AlgorithmRegistry)[Name];
+  return SymbolTable::SharedPtr();
+}
+
+void SymbolTable::registerAlgorithm(SharedPtr Alg) {
+  if (AlgorithmRegistry == nullptr)
+    AlgorithmRegistry = new std::map<std::string, SharedPtr>();
+  std::string AlgName;
+  if (const Symbol* AlgSym = Alg->getAlgorithmName())
+    AlgName = AlgSym->getName();
+  (*AlgorithmRegistry)[AlgName] = Alg;
 }
 
 const Callback* SymbolTable::getBlockEnterCallback() {
@@ -980,6 +1000,71 @@ bool SymbolTable::standardizeAlgorithm() {
     Alg->append(Enclosing);
   for (Node* Kid : OtherNodes)
     Alg->append(Kid);
+
+  // Before returning, verify that enclosing clause is good.
+  if (Enclosing) {
+    SymbolTable* Last = this;
+    SymbolTable* Next = Last->getEnclosingScope().get();
+    std::set<const Symbol*> AlgSymbols;
+    if (const Symbol* AlgName = Alg->getName())
+      AlgSymbols.insert(AlgName);
+    for (const Node* Kid : *Enclosing) {
+      const Symbol* Sym = dyn_cast<Symbol>(Kid);
+      if (Sym == nullptr) {
+        errorDescribeNode("Context", Kid);
+        errorDescribeNode("in", Enclosing);
+        fprintf(error(), "Can't find enclosing: not algorithm name\n");
+        return false;
+      }
+      if (AlgSymbols.count(Sym)) {
+        errorDescribeNode("Context", Kid);
+        errorDescribeNode("in", Enclosing);
+        fprintf(error(), "Circular definition for algorithms!\n");
+        return false;
+      }
+      AlgSymbols.insert(Sym);
+      if (Next == nullptr) {
+        // See if registered. If so, use it.
+        SymbolTable::SharedPtr Enc =
+            SymbolTable::getRegisteredAlgorithm(Sym->getName());
+        if (Enc) {
+          if (Enc && !isAlgorithmInstalled()) {
+            if (!Enc->install()) {
+              errorDescribeNode("Context", Kid);
+              errorDescribeNode("in", Enclosing);
+              fprintf(error(), "Problems installing registered algorithm\n");
+              return false;
+            }
+          }
+          Last->setEnclosingScope(Enc);
+          Next = Enc.get();
+        }
+      }
+      if (Next == nullptr) {
+        errorDescribeNode("Context", Kid);
+        errorDescribeNode("in", Enclosing);
+        fprintf(error(), "Can't find enclosing: no such algorithm!\n");
+        return false;
+      }
+      const Symbol* EncName = Next->getAlgorithmName();
+      if (EncName == nullptr) {
+        errorDescribeNode("Context", Kid);
+        errorDescribeNode("in", Enclosing);
+        fprintf(error(),
+                "Can't find enclosing: enclosing doesn't have name!\n");
+        return false;
+      }
+      if (Sym->getName() != EncName->getName()) {
+        errorDescribeNode("Context", Kid);
+        errorDescribeNode("in", Enclosing);
+        fprintf(error(), "Can't find enclosing: enclosing named '%s'\n",
+                EncName->getName().c_str());
+        return false;
+      }
+      Last = Next;
+      Next = Last->getEnclosingScope().get();
+    }
+  }
   return true;
 }
 
@@ -1477,6 +1562,7 @@ const LiteralActionDef* LiteralActionUse::getDef() const {
 
 bool LiteralUse::validateNode(ConstNodeVectorType& Parents) const {
   TRACE_METHOD("validateNode");
+  TRACE(node_ptr, nullptr, this);
   if (getDef())
     return true;
   fprintf(getErrorFile(), "No corresponding literal definition found\n");
@@ -1485,6 +1571,7 @@ bool LiteralUse::validateNode(ConstNodeVectorType& Parents) const {
 
 bool LiteralActionUse::validateNode(ConstNodeVectorType& Parents) const {
   TRACE_METHOD("validateNode");
+  TRACE(node_ptr, nullptr, this);
   if (const LiteralActionDef* Def = getDef()) {
     getSymtab().insertCallbackLiteral(Def);
     return true;
@@ -1513,6 +1600,7 @@ const IntegerNode* LiteralActionUse::getIntNode() const {
 
 bool Callback::validateNode(ConstNodeVectorType& Parents) const {
   TRACE_METHOD("validateNode");
+  TRACE(node_ptr, nullptr, this);
   const Node* Action = getKid(0);
   if (const auto* IntNd = dyn_cast<IntegerNode>(Action)) {
     getSymtab().insertCallbackValue(IntNd);
@@ -2035,6 +2123,7 @@ Symbol* Eval::getCallName() const {
 
 bool Eval::validateNode(ConstNodeVectorType& Parents) const {
   TRACE_METHOD("validateNode");
+  TRACE(node_ptr, nullptr, this);
   const auto* Sym = dyn_cast<Symbol>(getKid(0));
   assert(Sym);
   const auto* Defn = dyn_cast<Define>(Sym->getDefineDefinition());
@@ -2154,8 +2243,24 @@ const Header* Algorithm::getWriteHeader(bool UseEnclosing) const {
   return getReadHeader(UseEnclosing);
 }
 
+const Symbol* Algorithm::getName() const {
+  if (Name || IsValidated)
+    return Name;
+  // Note: This function must work, even if not installed. The reason
+  // is that algorithms may get registered before they have been
+  // installed.
+  for (const Node* Kid : *this) {
+    if (!isa<AlgorithmName>(Kid))
+      continue;
+    Name = dyn_cast<Symbol>(Kid->getKid(0));
+    return Name;
+  }
+  return nullptr;
+}
+
 bool Algorithm::validateNode(ConstNodeVectorType& Parents) const {
   TRACE_METHOD("validateNode");
+  TRACE(node_ptr, nullptr, this);
   if (!Parents.empty()) {
     fprintf(error(),
             "Algorithm nodes can only appear as a top-level s-expression\n");

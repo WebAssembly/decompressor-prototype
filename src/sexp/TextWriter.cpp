@@ -107,6 +107,10 @@ void TextWriter::write(FILE* File, const Node* Root) {
 
 void TextWriter::writeAbbrev(FILE* File, const Node* Root) {
   initialize(File);
+  if (const Symbol* AlgName = Root->getSymtab().getAlgorithmName()) {
+    writeSymbol(AlgName, false);
+    fprintf(File, "->");
+  }
   writeNodeAbbrev(Root, true);
 }
 
@@ -241,7 +245,6 @@ void TextWriter::writeNode(const Node* Nd,
 void TextWriter::writeNodeKidsAbbrev(const Node* Nd, bool EmbeddedInParent) {
   // Write out with number of kids specified to be on same line,
   // with remaining kids on separate (indented) lines.
-  bool DefineIsParent = isa<Define>(Nd);
   const AstTraitsType* Traits = getAstTraits(Nd->getType());
   int KidsSameLine = Traits->NumTextArgs;
   int MaxKidsSameLine = KidsSameLine + Traits->AdditionalTextArgs;
@@ -269,12 +272,12 @@ void TextWriter::writeNodeKidsAbbrev(const Node* Nd, bool EmbeddedInParent) {
     ++Count;
     if (Count < KidsSameLine) {
       writeSpace();
-      writeNodeAbbrev(Kid, false, false, DefineIsParent);
+      writeNodeAbbrev(Kid, false);
       continue;
     }
     if (Count == KidsSameLine) {
       writeSpace();
-      writeNodeAbbrev(Kid, false, false, DefineIsParent);
+      writeNodeAbbrev(Kid, false);
       if (!LastKid)
         fprintf(File, " ...[%d]", NumKids - Count);
       return;
@@ -284,7 +287,7 @@ void TextWriter::writeNodeKidsAbbrev(const Node* Nd, bool EmbeddedInParent) {
       return;
     }
     writeSpace();
-    writeNodeAbbrev(Kid, false, false, DefineIsParent);
+    writeNodeAbbrev(Kid, false);
     if (!LastKid)
       fprintf(File, " ...[%d]", NumKids - Count);
     return;
@@ -293,8 +296,7 @@ void TextWriter::writeNodeKidsAbbrev(const Node* Nd, bool EmbeddedInParent) {
 
 void TextWriter::writeNodeAbbrev(const Node* Nd,
                                  bool AddNewline,
-                                 bool EmbedInParent,
-                                 bool DefineIsParent) {
+                                 bool EmbedInParent) {
   if (Nd == nullptr) {
     fprintf(File, "null");
     LineEmpty = false;
@@ -323,12 +325,6 @@ void TextWriter::writeNodeAbbrev(const Node* Nd,
       writeNodeAbbrev(Nd->getKid(0), AddNewline, EmbedInParent);
       return;
     case NodeType::Symbol:
-      if (DefineIsParent) {
-        if (const Symbol* AlgName = Nd->getSymtab().getAlgorithmName()) {
-          writeSymbol(AlgName, false);
-          fprintf(File, "->");
-        }
-      }
       return writeSymbol(cast<Symbol>(Nd), AddNewline);
     case NodeType::SymbolDefn:
       writeNode(Nd, AddNewline, EmbedInParent);

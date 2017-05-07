@@ -109,6 +109,7 @@ void CasmReader::inflateBinary(std::shared_ptr<Queue> Binary,
     return;
   }
   Symtab = Inflator->getSymtab();
+  SymbolTable::registerAlgorithm(Symtab);
 }
 
 void CasmReader::readBinary(charstring Filename,

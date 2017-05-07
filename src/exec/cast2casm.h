@@ -847,6 +847,7 @@ void CodeGenerator::generateFunctionImplFile() {
   puts(
       ");\n"
       "  Symtab->install();\n"
+      "  SymbolTable::registerAlgorithm(Symtable);\n"
       "  return Symtable;\n");
   generateFunctionFooter();
 }

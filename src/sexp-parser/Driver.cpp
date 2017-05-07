@@ -94,7 +94,10 @@ bool Driver::parseOneFile(std::string& Filename) {
   parser.set_debug_level(TraceParsing);
   int Result = parser.parse();
   End();
-  return Result == 0 && !ErrorsReported;
+  bool Good = Result == 0 && !ErrorsReported;
+  if (Good)
+    SymbolTable::registerAlgorithm(Table);
+  return Good;
 }
 
 IntegerNode* Driver::createLiteral(IntType Value, ValueFormat Format) {

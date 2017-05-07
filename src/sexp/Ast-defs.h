@@ -317,7 +317,7 @@
   const Header* getSourceHeader(bool UseEnclosing = true) const; \
   const Header* getReadHeader(bool UseEnclosing = true) const;   \
   const Header* getWriteHeader(bool UseEnclosing = true) const;  \
-  const Symbol* getName() const { return Name; }                 \
+  const Symbol* getName() const;                                 \
   bool isAlgorithm() const;                                      \
   void init();                                                   \
   void clearCaches() { init(); }                                 \
