@@ -156,6 +156,11 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   explicit SymbolTable();
   explicit SymbolTable(std::shared_ptr<SymbolTable> EnclosingScope);
   ~SymbolTable();
+
+  // Registry of known algorithms.
+  static SharedPtr getRegisteredAlgorithm(std::string Name);
+  static void registerAlgorithm(SharedPtr Alg);
+
   SharedPtr getEnclosingScope() { return EnclosingScope; }
   void setEnclosingScope(SharedPtr Symtab);
 
@@ -267,6 +272,7 @@ class SymbolTable FINAL : public std::enable_shared_from_this<SymbolTable> {
   mutable const Header* CachedSourceHeader;
   mutable const Header* CachedReadHeader;
   mutable const Header* CachedWriteHeader;
+  static std::map<std::string, SharedPtr>* AlgorithmRegistry;
 
   void init();
   void clearCaches();

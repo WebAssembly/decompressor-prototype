@@ -169,7 +169,7 @@
 #define AST_NARYNODE_TABLE                     \
   X(Algorithm, Nary, ALGORITHM_DECLS, init();) \
   X(Define, Nary, DEFINE_DECLS, )              \
-  X(EnclosingAlgorithms, Nary, VALIDATENODE, )             \
+  X(EnclosingAlgorithms, Nary, , )             \
   X(Eval, Nary, EVAL_DECLS, )                  \
   X(LiteralActionBase, Nary, , )               \
   X(ParamArgs, Nary, , )                       \
@@ -317,7 +317,7 @@
   const Header* getSourceHeader(bool UseEnclosing = true) const; \
   const Header* getReadHeader(bool UseEnclosing = true) const;   \
   const Header* getWriteHeader(bool UseEnclosing = true) const;  \
-  const Symbol* getName() const { return Name; }                 \
+  const Symbol* getName() const;                                 \
   bool isAlgorithm() const;                                      \
   void init();                                                   \
   void clearCaches() { init(); }                                 \
