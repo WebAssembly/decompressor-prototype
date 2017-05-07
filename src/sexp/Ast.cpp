@@ -2117,12 +2117,20 @@ bool Header::implementsClass(NodeType Type) {
          Type == NodeType::WriteHeader;
 }
 
+Eval::Eval(SymbolTable& Symtab, NodeType Type) : Nary(Symtab, Type) {}
+
+Eval::~Eval() {}
+
+bool Eval::implementsClass(NodeType Type) {
+  return Type == NodeType::EvalVirtual;
+}
+
 Symbol* Eval::getCallName() const {
   return dyn_cast<Symbol>(getKid(0));
 }
 
 bool Eval::validateNode(ConstNodeVectorType& Parents) const {
-  TRACE_METHOD("validateNode");
+  TRACE_METHOD("validateNodeEval");
   TRACE(node_ptr, nullptr, this);
   const auto* Sym = dyn_cast<Symbol>(getKid(0));
   assert(Sym);

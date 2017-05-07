@@ -238,8 +238,8 @@ bool InflateAst::applyOp(IntType Op) {
       return buildNary<EnclosingAlgorithms>();
     case NodeType::Error:
       return buildNullary<Error>();
-    case NodeType::Eval:
-      return buildNary<Eval>();
+    case NodeType::EvalVirtual:
+      return buildNary<EvalVirtual>();
     case NodeType::SourceHeader:
       return buildNary<SourceHeader>();
     case NodeType::IfThen:

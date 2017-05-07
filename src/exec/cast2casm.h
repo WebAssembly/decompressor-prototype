@@ -38,6 +38,11 @@ using namespace utils;
 
 namespace {
 
+utils::TraceClass& getTrace() {
+  static TraceClass Trace("cast2casm");
+  return Trace;
+}
+
 charstring LocalName = "Local_";
 charstring FuncName = "Func_";
 
@@ -152,6 +157,7 @@ void CodeGenerator::generateFormat(ValueFormat Format) {
 }
 
 void CodeGenerator::generateHeader() {
+  TRACE_METHOD("generateHeader");
   puts(
       "// -*- C++ -*- \n"
       "\n"
@@ -184,6 +190,7 @@ void CodeGenerator::generateHeader() {
 }
 
 void CodeGenerator::generateEnterNamespaces() {
+  TRACE_METHOD("generateEnterNamespaces");
   for (charstring Name : Namespaces) {
     puts("namespace ");
     puts(Name);
@@ -194,6 +201,7 @@ void CodeGenerator::generateEnterNamespaces() {
 }
 
 void CodeGenerator::generateExitNamespaces() {
+  TRACE_METHOD("generateExitNamespaces");
   for (std::vector<charstring>::reverse_iterator Iter = Namespaces.rbegin(),
                                                  IterEnd = Namespaces.rend();
        Iter != IterEnd; ++Iter) {
@@ -320,6 +328,7 @@ void CodeGenerator::collectActionDefs() {
 }
 
 void CodeGenerator::generatePredefinedEnum() {
+  TRACE_METHOD("generatePredefinedEnum");
   collectActionDefs();
   puts("enum class Predefined");
   puts(AlgName);
@@ -348,6 +357,7 @@ void CodeGenerator::generatePredefinedEnum() {
 }
 
 void CodeGenerator::generatePredefinedEnumNames() {
+  TRACE_METHOD("generatePredefinedEnumNames");
   collectActionDefs();
   puts(
       "struct {\n"
@@ -378,6 +388,7 @@ void CodeGenerator::generatePredefinedEnumNames() {
 }
 
 void CodeGenerator::generatePredefinedNameFcn() {
+  TRACE_METHOD("generatePredefinedNameFcn");
   puts("charstring getName(Predefined");
   puts(AlgName);
   puts(
@@ -396,6 +407,7 @@ void CodeGenerator::generateAlgorithmHeader() {
 }
 
 void CodeGenerator::generateAlgorithmHeader(charstring AlgName) {
+  TRACE_METHOD("generateAlgorithmHeader");
   puts("std::shared_ptr<filt::SymbolTable> get");
   puts(AlgName);
   puts("Symtab()");
@@ -436,6 +448,7 @@ void CodeGenerator::generateFunctionCall(size_t Index) {
 }
 
 void CodeGenerator::generateFunctionHeader(std::string NodeType, size_t Index) {
+  TRACE_METHOD("generateFunctionHeader");
   puts(NodeType.c_str());
   puts("* ");
   generateFunctionName(Index);
@@ -443,6 +456,7 @@ void CodeGenerator::generateFunctionHeader(std::string NodeType, size_t Index) {
 }
 
 void CodeGenerator::generateFunctionFooter() {
+  TRACE_METHOD("generateFunctionFooter");
   puts(
       "}\n"
       "\n");
@@ -476,6 +490,7 @@ size_t CodeGenerator::generateNodeFcn(const Node* Nd,
 }
 
 size_t CodeGenerator::generateSymbol(const Node* Nd) {
+  TRACE_METHOD("generateSymbol");
   assert(isa<Symbol>(Nd));
   const Symbol* Sym = cast<Symbol>(Nd);
   size_t Index = NextIndex++;
@@ -489,6 +504,7 @@ size_t CodeGenerator::generateSymbol(const Node* Nd) {
 }
 
 size_t CodeGenerator::generateInteger(const Node* Nd) {
+  TRACE_METHOD("generateInteger");
   return generateNodeFcn(Nd, [&]() {
     assert(isa<IntegerNode>(Nd));
     const IntegerNode* IntNd = cast<IntegerNode>(Nd);
@@ -499,17 +515,20 @@ size_t CodeGenerator::generateInteger(const Node* Nd) {
 }
 
 size_t CodeGenerator::generateNullary(const Node* Nd) {
+  TRACE_METHOD("generateNullary");
   assert(Nd->getNumKids() == 0);
   return generateNodeFcn(Nd, []() { return; });
 }
 
 size_t CodeGenerator::generateUnary(const Node* Nd) {
+  TRACE_METHOD("generateUnary");
   assert(Nd->getNumKids() == 1);
   size_t Kid1 = generateNode(Nd->getKid(0));
   return generateNodeFcn(Nd, [&]() { generateFunctionCall(Kid1); });
 }
 
 size_t CodeGenerator::generateBinary(const Node* Nd) {
+  TRACE_METHOD("generateBinary");
   assert(Nd->getNumKids() == 2);
   size_t Kid1 = generateNode(Nd->getKid(0));
   size_t Kid2 = generateNode(Nd->getKid(1));
@@ -521,6 +540,7 @@ size_t CodeGenerator::generateBinary(const Node* Nd) {
 }
 
 size_t CodeGenerator::generateTernary(const Node* Nd) {
+  TRACE_METHOD("generateTernary");
   assert(Nd->getNumKids() == 3);
   size_t Kid1 = generateNode(Nd->getKid(0));
   size_t Kid2 = generateNode(Nd->getKid(1));
@@ -535,6 +555,7 @@ size_t CodeGenerator::generateTernary(const Node* Nd) {
 }
 
 size_t CodeGenerator::generateNary(const Node* Nd) {
+  TRACE_METHOD("generateNary");
   std::vector<size_t> Kids;
   charstring NodeType = Nd->getNodeName();
   for (int i = 0; i < Nd->getNumKids(); ++i)
@@ -559,6 +580,8 @@ size_t CodeGenerator::generateNary(const Node* Nd) {
 }
 
 size_t CodeGenerator::generateNode(const Node* Nd) {
+  TRACE_METHOD("generateNode");
+  TRACE(node_ptr, "Nd", Nd);
   if (Nd == nullptr)
     return generateBadLocal(Nd);
 
@@ -633,6 +656,7 @@ size_t CodeGenerator::generateNode(const Node* Nd) {
 }
 
 void CodeGenerator::generateDeclFile() {
+  TRACE_METHOD("generateDeclFile");
   generateHeader();
   generateEnterNamespaces();
   if (GenerateEnum)
@@ -646,6 +670,7 @@ void CodeGenerator::generateDeclFile() {
 
 #if WASM_CAST_BOOT > 1
 void CodeGenerator::generateArrayImplFile() {
+  TRACE_METHOD("generateArrayImplFile");
   puts(
       "namespace {\n"
       "\n");
@@ -757,6 +782,7 @@ void CodeGenerator::generateArrayImplFile() {
 #endif
 
 void CodeGenerator::generateFunctionImplFile() {
+  TRACE_METHOD("generateFunctionImplFile");
   puts(
       "namespace {\n"
       "\n");
@@ -783,6 +809,7 @@ void CodeGenerator::generateFunctionImplFile() {
 }
 
 void CodeGenerator::generateImplFile(bool UseArrayImpl) {
+  TRACE_METHOD("generateImplFile");
   generateHeader();
   if (UseArrayImpl)
     puts(
@@ -826,6 +853,7 @@ std::shared_ptr<SymbolTable> readCasmFile(
     bool TraceLexer,
     bool TraceParser,
     std::shared_ptr<SymbolTable> EnclosingScope) {
+  TRACE_METHOD("readCasmFile");
   bool HasErrors = false;
   std::shared_ptr<SymbolTable> Symtab;
 #if WASM_CAST_BOOT < 3
@@ -852,10 +880,11 @@ std::shared_ptr<SymbolTable> readCasmFile(
 }
 
 bool install(SymbolTable::SharedPtr Symtab, bool Display, const char* Title) {
+  TRACE_METHOD("install");
   if (Display) {
-    fprintf(stdout, "After stripping %s:\n", Title);
+    fprintf(stderr, "After stripping %s:\n", Title);
     TextWriter Writer;
-    Writer.write(stdout, Symtab->getAlgorithm());
+    Writer.write(stderr, Symtab->getAlgorithm());
   }
   bool Success = Symtab->install();
   if (!Success)
@@ -893,6 +922,7 @@ int main(int Argc, charstring Argv[]) {
   bool TraceParser = false;
   bool Verbose = false;
   bool HeaderFile = false;
+  bool TraceProgress = false;
 
 #if WASM_CAST_BOOT > 1
   bool BitCompress = true;
@@ -1011,6 +1041,10 @@ int main(int Argc, charstring Argv[]) {
     Args.add(StripLiteralUsesFlag.setLongName("strip-literal-uses")
                  .setDescription("Replace literal uses with their defintion"));
 
+    ArgsParser::Optional<bool> TraceProgressFlag(TraceProgress);
+    Args.add(TraceProgressFlag.setLongName("verbose=progress")
+                 .setDescription("Trace progress of compiling casm file"));
+
     ArgsParser::Optional<bool> TraceLexerFlag(TraceLexer);
     Args.add(
         TraceLexerFlag.setLongName("verbose=lexer")
@@ -1121,6 +1155,11 @@ int main(int Argc, charstring Argv[]) {
 #endif
   }
 
+  if (TraceProgress)
+    getTrace().setTraceProgress(true);
+
+  if (Verbose)
+    fprintf(stderr, "Parsing input files...\n");
   std::shared_ptr<SymbolTable> InputSymtab;
   charstring InputFilename = "-";
   for (charstring Filename : InputFilenames) {
@@ -1142,30 +1181,40 @@ int main(int Argc, charstring Argv[]) {
   }
 
   if (StripActions) {
+    if (Verbose)
+      fprintf(stderr, "Stripping actions..\n");
     InputSymtab->stripCallbacksExcept(KeepActions);
     if (!install(InputSymtab, DisplayStripAll, "actions"))
       return exit_status(EXIT_FAILURE);
   }
 
   if (StripSymbolicActions) {
+    if (Verbose)
+      fprintf(stderr, "Stripping symbolic actions...\n");
     InputSymtab->stripSymbolicCallbacks();
     if (!install(InputSymtab, DisplayStripAll, "symbolic actions"))
       return exit_status(EXIT_FAILURE);
   }
 
   if (StripLiteralUses) {
+    if (Verbose)
+      fprintf(stderr, "Stripping literal uses...\n");
     InputSymtab->stripLiteralUses();
     if (!install(InputSymtab, DisplayStripAll, "literal uses"))
       return exit_status(EXIT_FAILURE);
   }
 
   if (StripLiteralDefs) {
+    if (Verbose)
+      fprintf(stderr, "Stripping literal definitions...\n");
     InputSymtab->stripLiteralDefs();
     if (!install(InputSymtab, DisplayStripAll, "literal definitions"))
       return exit_status(EXIT_FAILURE);
   }
 
   if (StripLiterals) {
+    if (Verbose)
+      fprintf(stderr, "Stripping lierals...\n");
     InputSymtab->stripLiterals();
     if (!install(InputSymtab, DisplayStripAll, "literals"))
       return exit_status(EXIT_FAILURE);
@@ -1180,6 +1229,8 @@ int main(int Argc, charstring Argv[]) {
     return exit_status(EXIT_SUCCESS);
   }
 
+  if (Verbose)
+    fprintf(stderr, "Reading algorithms...\n");
   std::shared_ptr<SymbolTable> AlgSymtab;
   for (charstring Filename : AlgorithmFilenames) {
     AlgSymtab =
@@ -1229,6 +1280,8 @@ int main(int Argc, charstring Argv[]) {
 #if WASM_CAST_BOOT > 1
   if (OutputStream) {
     // Generate binary stream
+    if (Verbose)
+      fprintf(stderr, "Generating binary stream...\n");
     CasmWriter Writer;
     Writer.setTraceWriter(TraceWrite)
         .setTraceFlatten(TraceFlatten)
@@ -1248,6 +1301,8 @@ int main(int Argc, charstring Argv[]) {
     return exit_status(EXIT_SUCCESS);
 
   // Generate C++ code.
+  if (Verbose)
+    fprintf(stderr, "Generating c++ code...\n");
   std::vector<charstring> Namespaces;
   Namespaces.push_back("wasm");
   Namespaces.push_back("decode");

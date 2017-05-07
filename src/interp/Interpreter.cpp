@@ -1449,7 +1449,7 @@ void Interpreter::algorithmResume() {
                 return failBadState();
             }
             break;
-          case NodeType::Eval:  // Method::Eval
+          case NodeType::EvalVirtual:  // Method::Eval
             switch (Frame.CallState) {
               case State::Enter: {
                 auto* Sym = dyn_cast<Symbol>(Frame.Nd->getKid(0));

@@ -303,7 +303,7 @@ void FlattenAst::flattenNode(const Node* Nd) {
       break;
     case NodeType::Define:
     case NodeType::EnclosingAlgorithms:
-    case NodeType::Eval:
+    case NodeType::EvalVirtual:
     case NodeType::LiteralActionBase:
     case NodeType::Opcode:
     case NodeType::Map:
