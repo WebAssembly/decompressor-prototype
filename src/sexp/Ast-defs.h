@@ -170,7 +170,7 @@
   X(Algorithm, Nary, ALGORITHM_DECLS, init();) \
   X(Define, Nary, DEFINE_DECLS, )              \
   X(EnclosingAlgorithms, Nary, , )             \
-  X(Eval, Nary, EVAL_DECLS, )                  \
+  X(EvalVirtual, Eval, , )                     \
   X(LiteralActionBase, Nary, , )               \
   X(ParamArgs, Nary, , )                       \
   X(ReadHeader, Header, , )                    \
@@ -222,7 +222,7 @@
   X(Block, 0x01, "block", 1, 0, true, true)                              \
   X(Case, 0x02, "case", 2, 0, true, true)                                \
   X(Error, 0x03, "error", 0, 0, false, false)                            \
-  X(Eval, 0x04, "eval", 1, 1, false, false)                              \
+  X(EvalVirtual, 0x04, "eval", 1, 1, false, false)                       \
   X(Loop, 0x07, "loop", 1, 1, true, true)                                \
   X(LoopUnbounded, 0x08, "loop.unbounded", 0, 1, true, true)             \
   X(Switch, 0x09, "switch", 1, 0, true, false)                           \
@@ -355,10 +355,5 @@
  private:                                                                      \
   friend class SymbolTable;                                                    \
   mutable std::unique_ptr<DefineFrame> MyDefineFrame;
-
-#define EVAL_DECLS \
-  VALIDATENODE     \
- public:           \
-  Symbol* getCallName() const;
 
 #endif  // DECOMPRESSOR_SRC_SEXP_AST_DEFS_H_

@@ -198,90 +198,10 @@ bool InflateAst::writeHeaderValue(decode::IntType Value,
 }
 
 bool InflateAst::applyOp(IntType Op) {
+  // Handle special cases first.
   switch (NodeType(Op)) {
-#define X(NAME, BASE, VALUE, FORMAT, DECLS, INIT) \
-  case NodeType::NAME:                            \
-    return buildNullary<NAME>();
-    AST_LITERAL_TABLE
-#undef X
-    case NodeType::AlgorithmFlag:
-      return buildUnary<AlgorithmFlag>();
-    case NodeType::AlgorithmName:
-      return buildUnary<AlgorithmName>();
-    case NodeType::And:
-      return buildBinary<And>();
-    case NodeType::BinaryAccept:
-      return buildNullary<BinaryAccept>();
-    case NodeType::BinaryEval:
-      return buildUnary<BinaryEval>();
-    case NodeType::BinarySelect:
-      return buildBinary<BinarySelect>();
-    case NodeType::Bit:
-      return buildNullary<Bit>();
-    case NodeType::BitwiseAnd:
-      return buildBinary<BitwiseAnd>();
-    case NodeType::BitwiseOr:
-      return buildBinary<BitwiseOr>();
-    case NodeType::BitwiseNegate:
-      return buildUnary<BitwiseNegate>();
-    case NodeType::BitwiseXor:
-      return buildBinary<BitwiseXor>();
-    case NodeType::Block:
-      return buildUnary<Block>();
-    case NodeType::Callback:
-      return buildUnary<Callback>();
-    case NodeType::Case:
-      return buildBinary<Case>();
-    case NodeType::Define:
-      return buildNary<Define>();
-    case NodeType::EnclosingAlgorithms:
-      return buildNary<EnclosingAlgorithms>();
-    case NodeType::Error:
-      return buildNullary<Error>();
-    case NodeType::Eval:
-      return buildNary<Eval>();
-    case NodeType::SourceHeader:
-      return buildNary<SourceHeader>();
-    case NodeType::IfThen:
-      return buildBinary<IfThen>();
-    case NodeType::IfThenElse:
-      return buildTernary<IfThenElse>();
-    case NodeType::LastRead:
-      return buildNullary<LastRead>();
-    case NodeType::LastSymbolIs:
-      return buildUnary<LastSymbolIs>();
-    case NodeType::LiteralActionBase:
-      return buildNary<LiteralActionBase>();
-    case NodeType::LiteralActionDef:
-      return buildBinary<LiteralActionDef>();
-    case NodeType::LiteralActionUse:
-      return buildUnary<LiteralActionUse>();
-    case NodeType::LiteralDef:
-      return buildBinary<LiteralDef>();
-    case NodeType::LiteralUse:
-      return buildUnary<LiteralUse>();
-    case NodeType::Loop:
-      return buildBinary<Loop>();
-    case NodeType::LoopUnbounded:
-      return buildUnary<LoopUnbounded>();
-    case NodeType::Map:
-      return buildNary<Map>();
-    case NodeType::NoLocals:
-      return buildNullary<NoLocals>();
-    case NodeType::NoParams:
-      return buildNullary<NoParams>();
-    case NodeType::Not:
-      return buildUnary<Not>();
-    case NodeType::Or:
-      return buildBinary<Or>();
-    case NodeType::Peek:
-      return buildUnary<Peek>();
-    case NodeType::Read:
-      return buildUnary<Read>();
-    case NodeType::ReadHeader:
-      return buildNary<ReadHeader>();
-    case NodeType::Rename:
-      return buildBinary<Rename>();
+    default:
+      break;
     case NodeType::Algorithm: {
       Algorithm* Alg = buildNary<Algorithm>() ? getGeneratedFile() : nullptr;
       if (Alg == nullptr)
@@ -291,12 +211,6 @@ bool InflateAst::applyOp(IntType Op) {
         Symtab->install();
       return true;
     }
-    case NodeType::Sequence:
-      return buildNary<Sequence>();
-    case NodeType::Set:
-      return buildBinary<Set>();
-    case NodeType::Switch:
-      return buildNary<Switch>();
     case NodeType::Symbol: {
       Symbol* Sym = SymIndex->getIndexSymbol(Values.popValue());
       Values.pop();
@@ -307,34 +221,61 @@ bool InflateAst::applyOp(IntType Op) {
       Asts.push(Sym);
       return true;
     }
-    case NodeType::Table:
-      return buildBinary<Table>();
-    case NodeType::Undefine:
-      return buildUnary<Undefine>();
-    case NodeType::UnknownSection:
-      return buildUnary<UnknownSection>();
-    case NodeType::Uint32:
-      return buildNullary<Uint32>();
-    case NodeType::Uint64:
-      return buildNullary<Uint64>();
-    case NodeType::Uint8:
-      return buildNullary<Uint8>();
-    case NodeType::Varint32:
-      return buildNullary<Varint32>();
-    case NodeType::Varint64:
-      return buildNullary<Varint64>();
-    case NodeType::Varuint32:
-      return buildNullary<Varuint32>();
-    case NodeType::Varuint64:
-      return buildNullary<Varuint64>();
-    case NodeType::Void:
-      return buildNullary<Void>();
-    case NodeType::Write:
-      return buildNary<Write>();
-    case NodeType::WriteHeader:
-      return buildNary<WriteHeader>();
-    default:
+  }
+
+  // Now handle default cases.
+  switch (NodeType(Op)) {
+#define X(NAME, FORMAT, DEFAULT, MERGE, BASE, DECLS, INIT) case NodeType::NAME:
+    AST_INTEGERNODE_TABLE
+#undef X
+#define X(NAME) case NodeType::NAME:
+    AST_CACHEDNODE_TABLE
+#undef X
+    case NodeType::BinaryEvalBits:
+    case NodeType::Opcode:
+    case NodeType::Symbol:
+    case NodeType::NO_SUCH_NODETYPE:
       return failWriteActionMalformed();
+
+#define X(NAME, BASE, VALUE, FORMAT, DECLS, INIT) \
+  case NodeType::NAME:                            \
+    return buildNullary<NAME>();
+      AST_LITERAL_TABLE
+#undef X
+#define X(NAME, BASE, DECLS, INIT) \
+  case NodeType::NAME:             \
+    return buildNullary<NAME>();
+      AST_NULLARYNODE_TABLE
+#undef X
+#define X(NAME, BASE, DECLS, INIT) \
+  case NodeType::NAME:             \
+    return buildUnary<NAME>();
+      AST_UNARYNODE_TABLE
+#undef X
+#define X(NAME, BASE, DECLS, INIT) \
+  case NodeType::NAME:             \
+    return buildBinary<NAME>();
+      AST_BINARYNODE_TABLE
+#undef X
+#define X(NAME, BASE, DECLS, INIT) \
+  case NodeType::NAME:             \
+    return buildNary<NAME>();
+      AST_NARYNODE_TABLE
+#undef X
+#define X(NAME, BASE, DECLS, INIT) \
+  case NodeType::NAME:             \
+    return buildNary<NAME>();
+      AST_SELECTNODE_TABLE
+#undef X
+#define X(NAME, BASE, DECLS, INIT) \
+  case NodeType::NAME:             \
+    return buildTernary<NAME>();
+      AST_TERNARYNODE_TABLE
+#undef X
+    case NodeType::BinaryAccept:
+      return buildNullary<BinaryAccept>();
+    case NodeType::BinaryEval:
+      return buildUnary<BinaryEval>();
   }
   return failWriteActionMalformed();
 }

@@ -445,7 +445,7 @@ expression_redirect
 
 eval_args
         : symbol {
-            $$ = Driver.create<Eval>();
+            $$ = Driver.create<EvalVirtual>();
             $$->append($1);
           }
         | eval_args expression {

@@ -554,6 +554,22 @@ class Header : public Nary {
   Header(SymbolTable& Symtab, NodeType Type);
 };
 
+class Eval : public Nary {
+  Eval() = delete;
+  Eval(const Eval&) = delete;
+  Eval& operator=(const Eval&) = delete;
+  friend class SymbolTable;
+
+ public:
+  ~Eval() OVERRIDE;
+  Symbol* getCallName() const;
+  bool validateNode(ConstNodeVectorType& Parents) const OVERRIDE;
+  static bool implementsClass(NodeType Type);
+
+ protected:
+  Eval(SymbolTable& Symtab, NodeType Type);
+};
+
 class IntLookup FINAL : public Cached {
   IntLookup() = delete;
   IntLookup(const IntLookup&) = delete;

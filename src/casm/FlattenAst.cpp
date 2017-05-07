@@ -158,87 +158,11 @@ void FlattenAst::flattenNode(const Node* Nd) {
     return;
   TRACE_METHOD("flattenNode");
   TRACE(node_ptr, nullptr, Nd);
+
+  // Handle special cases first.
   switch (NodeType Opcode = Nd->getType()) {
-    case NodeType::NO_SUCH_NODETYPE:
-    case NodeType::BinaryEvalBits:
-    case NodeType::IntLookup:
-    case NodeType::SymbolDefn:
-    case NodeType::UnknownSection: {
-      reportError("Unexpected s-expression, can't write!");
-      reportError("s-expression: ", Nd);
+    default:
       break;
-    }
-#define X(NAME, FORMAT, DEFAULT, MERGE, BASE, DECLS, INIT) \
-  case NodeType::NAME: {                                   \
-    write(IntType(Opcode));                                \
-    auto* Int = cast<NAME>(Nd);                            \
-    if (Int->isDefaultValue()) {                           \
-      write(0);                                            \
-    } else {                                               \
-      write(int(Int->getFormat()) + 1);                    \
-      write(Int->getValue());                              \
-    }                                                      \
-    break;                                                 \
-  }
-      AST_INTEGERNODE_TABLE
-#undef X
-    case NodeType::BinaryEval:
-      if (BitCompress && binaryEvalEncode(cast<BinaryEval>(Nd)))
-        break;
-    // Not binary encoding, Intentionally fall to next case that
-    // will generate non-compressed form.
-    case NodeType::AlgorithmFlag:
-    case NodeType::AlgorithmName:
-    case NodeType::And:
-    case NodeType::Block:
-    case NodeType::BinaryAccept:
-    case NodeType::BinarySelect:
-    case NodeType::Bit:
-    case NodeType::BitwiseAnd:
-    case NodeType::BitwiseNegate:
-    case NodeType::BitwiseOr:
-    case NodeType::BitwiseXor:
-    case NodeType::Callback:
-    case NodeType::Case:
-    case NodeType::Error:
-    case NodeType::IfThen:
-    case NodeType::IfThenElse:
-    case NodeType::LastRead:
-    case NodeType::LastSymbolIs:
-    case NodeType::LiteralActionDef:
-    case NodeType::LiteralActionUse:
-    case NodeType::LiteralDef:
-    case NodeType::LiteralUse:
-    case NodeType::Loop:
-    case NodeType::LoopUnbounded:
-    case NodeType::NoLocals:
-    case NodeType::NoParams:
-    case NodeType::Not:
-    case NodeType::Or:
-    case NodeType::Peek:
-    case NodeType::Read:
-    case NodeType::Rename:
-    case NodeType::Set:
-    case NodeType::Table:
-    case NodeType::Uint32:
-    case NodeType::Uint64:
-    case NodeType::Uint8:
-    case NodeType::Undefine:
-    case NodeType::Varint32:
-    case NodeType::Varint64:
-    case NodeType::Varuint32:
-    case NodeType::Varuint64:
-#define X(NAME, BASE, VALUE, FORMAT, DECLS, INIT) case NodeType::NAME:
-      AST_LITERAL_TABLE
-#undef X
-    case NodeType::Void: {
-      // Operations that are written out in postorder, with a fixed number of
-      // arguments.
-      for (const auto* Kid : *Nd)
-        flattenNode(Kid);
-      write(IntType(Opcode));
-      break;
-    }
     case NodeType::Algorithm: {
       const auto* Alg = cast<Algorithm>(Nd);
       const auto* Source = Alg->getSourceHeader();
@@ -273,7 +197,7 @@ void FlattenAst::flattenNode(const Node* Nd) {
       write(IntType(Opcode));
       write(NumKids);
       writeAction(IntType(PredefinedSymbol::Block_exit));
-      break;
+      return;
     }
     case NodeType::SourceHeader: {
       // The primary header is special in that the size is defined by the
@@ -291,26 +215,69 @@ void FlattenAst::flattenNode(const Node* Nd) {
         }
         writeHeaderValue(Const->getValue(), Const->getIntTypeFormat());
       }
-      break;
-      // Intentionally drop to next case.
+      return;
     }
-    case NodeType::ReadHeader:
-    case NodeType::WriteHeader:
+    case NodeType::BinaryEval:
+      if (BitCompress && binaryEvalEncode(cast<BinaryEval>(Nd)))
+        return;
+      break;
+  }
+
+  // Now handle default cases.
+  switch (NodeType Opcode = Nd->getType()) {
+#define X(NAME) case NodeType::NAME:
+    AST_CACHEDNODE_TABLE
+#undef X
+    case NodeType::NO_SUCH_NODETYPE:
+      return reportError("Internal error in FlattenAst::flattenNode");
+
+#define X(NAME, FORMAT, DEFAULT, MERGE, BASE, DECLS, INIT) case NodeType::NAME:
+      AST_INTEGERNODE_TABLE
+#undef X
+    case NodeType::BinaryEvalBits: {
+      write(IntType(Opcode));
+      auto* Int = cast<IntegerNode>(Nd);
+      if (Int->isDefaultValue()) {
+        write(0);
+      } else {
+        write(int(Int->getFormat()) + 1);
+        write(Int->getValue());
+      }
+      break;
+    }
+
+#define X(NAME, BASE, DECLS, INIT) case NodeType::NAME:
+      AST_NULLARYNODE_TABLE
+#undef X
+#define X(NAME, BASE, VALUE, FORMAT, DECLS, INIT) case NodeType::NAME:
+      AST_LITERAL_TABLE
+#undef X
+#define X(NAME, BASE, DECLS, INIT) case NodeType::NAME:
+      AST_UNARYNODE_TABLE
+#undef X
+#define X(NAME, BASE, DECLS, INIT) case NodeType::NAME:
+      AST_BINARYNODE_TABLE
+#undef X
+#define X(NAME, BASE, DECLS, INIT) case NodeType::NAME:
+      AST_TERNARYNODE_TABLE
+#undef X
+    case NodeType::BinaryEval:
+    case NodeType::BinaryAccept: {
+      // Operations that are written out in postorder, with a fixed number of
+      // arguments.
       for (const auto* Kid : *Nd)
         flattenNode(Kid);
       write(IntType(Opcode));
-      write(Nd->getNumKids());
       break;
-    case NodeType::Define:
-    case NodeType::EnclosingAlgorithms:
-    case NodeType::Eval:
-    case NodeType::LiteralActionBase:
-    case NodeType::Opcode:
-    case NodeType::Map:
-    case NodeType::ParamArgs:
-    case NodeType::Switch:
-    case NodeType::Sequence:
-    case NodeType::Write: {
+    }
+
+#define X(NAME, BASE, DECLS, INIT) case NodeType::NAME:
+      AST_NARYNODE_TABLE
+#undef X
+#define X(NAME, BASE, DECLS, INIT) case NodeType::NAME:
+      AST_SELECTNODE_TABLE
+#undef X
+    case NodeType::Opcode: {
       // Operations that are written out in postorder, and have a variable
       // number of arguments.
       for (const auto* Kid : *Nd)
