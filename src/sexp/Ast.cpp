@@ -1945,13 +1945,14 @@ DefineFrame::~DefineFrame() {}
 
 size_t DefineFrame::addSizedArg(const Node* Arg) {
   if (!isa<IntegerNode>(Arg)) {
-    ParamTypes.push_back(Arg);
+    ParamTypes.push_back(Arg->getType());
     return 1;
   }
   const auto* Val = cast<IntegerNode>(Arg);
   size_t Count = Val->getValue();
+  NodeType Ty = Arg->getType();
   for (size_t i = 0; i < Count; ++i)
-    ParamTypes.push_back(Arg);
+    ParamTypes.push_back(Ty);
   return Count;
 }
 
@@ -1959,18 +1960,22 @@ size_t DefineFrame::getValueArgIndex(size_t Index) const {
   // TODO(karlschimpf): Speed up?
   assert(Index < ParamTypes.size());
   size_t ArgIndex = 0;
-  for (const Node* Nd : ParamTypes)
-    if (isa<ParamValues>(Nd)) {
-      if (Index == 0)
-        return ArgIndex;
-      ++ArgIndex;
-      --Index;
+  for (NodeType Ty : ParamTypes)
+    switch (Ty) {
+      default:
+        break;
+      case NodeType::ParamValues:
+        if (Index == 0)
+          return ArgIndex;
+        ++ArgIndex;
+        --Index;
+        break;
     }
   WASM_RETURN_UNREACHABLE(0);
 }
 
 NodeType DefineFrame::getArgType(size_t Index) const {
-  return ParamTypes[Index]->getType();
+  return ParamTypes[Index];
 }
 
 void DefineFrame::init(const Define* Def) {
