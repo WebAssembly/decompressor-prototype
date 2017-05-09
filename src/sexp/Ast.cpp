@@ -1937,7 +1937,11 @@ AST_TERNARYNODE_TABLE
 #undef X
 
 DefineFrame::DefineFrame(const Define* Def)
-    : NumValueArgs(0), NumExprArgs(0), NumLocals(0), InitSuccessful(false) {
+    : NumValueArgs(0),
+      NumExprArgs(0),
+      NumLocals(0),
+      NumCached(0),
+      InitSuccessful(false) {
   init(Def);
 }
 
@@ -1964,6 +1968,7 @@ size_t DefineFrame::getValueArgIndex(size_t Index) const {
     switch (Ty) {
       default:
         break;
+      case NodeType::ParamCached:
       case NodeType::ParamValues:
         if (Index == 0)
           return ArgIndex;
@@ -1990,7 +1995,6 @@ void DefineFrame::init(const Define* Def) {
   for (size_t NextIndex = 0; NextIndex < Args.size(); ++NextIndex) {
     const Node* Arg = Args[NextIndex];
     switch (Arg->getType()) {
-      case NodeType::ParamCached:
       case NodeType::ParamExprsCached:
       default:
         errorDescribeNode("Parameter argument implemented!", Arg);
@@ -1998,10 +2002,22 @@ void DefineFrame::init(const Define* Def) {
         break;
       case NodeType::NoParams:
         break;
+      case NodeType::ParamCached:
+        NumCached += addSizedArg(Arg);
+        if (!ParamTypes.empty()) {
+          errorDescribeNode("Cached parameter must be first arugment!", Arg);
+          ParamsValidate = false;
+        }
+        break;
       case NodeType::ParamExprs:
         NumExprArgs += addSizedArg(Arg);
         break;
       case NodeType::ParamValues:
+        if (NumExprArgs > 0) {
+          errorDescribeNode("Value arguments must preceed Expr arguments!",
+                            Arg);
+          ParamsValidate = false;
+        }
         NumValueArgs += addSizedArg(Arg);
         break;
       case NodeType::ParamArgs:
@@ -2011,7 +2027,6 @@ void DefineFrame::init(const Define* Def) {
     }
   }
   if (!ParamsValidate) {
-    errorDescribeNode("Malformed parameter list", ParamsRoot, false);
     errorDescribeNode("In", Def);
     return;
   }
