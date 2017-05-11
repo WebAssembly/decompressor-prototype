@@ -67,6 +67,7 @@ class AbbreviationCodegen {
   filt::Node* generateDefaultMultipleAction();
   filt::Node* generateDefaultSingleAction();
   filt::Node* generateAlignAction();
+  filt::Node* generateEnclosingAlg(charstring Name);
   filt::Node* generateIntType(decode::IntType Value);
   filt::Node* generateIntLitAction(IntCountNode* Nd);
   filt::Node* generateIntLitActionRead(IntCountNode* Nd);
@@ -74,6 +75,9 @@ class AbbreviationCodegen {
   filt::Node* generateAbbrevFormat(interp::IntTypeFormat AbbrevFormat);
   filt::Node* generateHuffmanEncoding(utils::HuffmanEncoder::NodePtr Root);
   void generateFunctions(filt::Algorithm* Alg);
+  filt::Node* generateOpcodeFunction();
+  filt::Node* generateCategorizeFunction();
+  filt::Node* generateMapCase(CountNode::Ptr Nd);
   filt::Node* generateRename(filt::Symbol* from, filt::Symbol* to);
 };
 
