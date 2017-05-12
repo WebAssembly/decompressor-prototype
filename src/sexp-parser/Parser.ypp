@@ -575,8 +575,9 @@ loop_body
         ;
 
 map_args
-        : expression case {
+        : expression {
             $$ = Driver.create<Map>();
+            $$->append($1);
           }
         | map_args case {
             $$ = $1;

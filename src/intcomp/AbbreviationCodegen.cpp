@@ -72,15 +72,56 @@ Node* AbbreviationCodegen::generateHeader(NodeType Type,
 }
 
 void AbbreviationCodegen::generateFunctions(Algorithm* Alg) {
-  if (Flags.UseCismModel) {
-    Alg->append(
-        generateRename(Symtab->getOrCreateSymbol(CategorizeName),
-                       Symtab->getOrCreateSymbol(CategorizeName + OldName)));
-    Alg->append(
-        generateRename(Symtab->getOrCreateSymbol(OpcodeName),
-                       Symtab->getOrCreateSymbol(OpcodeName + OldName)));
+  if (!Flags.UseCismModel)
+    return Alg->append(generateStartFunction());
+
+  Alg->append(generateEnclosingAlg("cism"));
+  Alg->append(
+      generateRename(Symtab->getOrCreateSymbol(CategorizeName),
+                     Symtab->getOrCreateSymbol(CategorizeName + OldName)));
+  Alg->append(generateRename(Symtab->getOrCreateSymbol(OpcodeName),
+                             Symtab->getOrCreateSymbol(OpcodeName + OldName)));
+  Alg->append(generateOpcodeFunction());
+  Alg->append(generateCategorizeFunction());
+}
+
+Node* AbbreviationCodegen::generateOpcodeFunction() {
+  auto* Fcn = Symtab->create<Define>();
+  Fcn->append(Symtab->getOrCreateSymbol(OpcodeName));
+  Fcn->append(Symtab->create<NoParams>());
+  Fcn->append(Symtab->create<NoLocals>());
+  Fcn->append(generateAbbreviationRead());
+  return Fcn;
+}
+
+Node* AbbreviationCodegen::generateCategorizeFunction() {
+  auto* Fcn = Symtab->create<Define>();
+  Fcn->append(Symtab->getOrCreateSymbol(CategorizeName));
+  Fcn->append(Symtab->create<ParamValues>(1, ValueFormat::Decimal));
+  Fcn->append(Symtab->create<NoLocals>());
+  auto* MapNd = Symtab->create<Map>();
+  Fcn->append(MapNd);
+  MapNd->append(Symtab->create<Param>(0, ValueFormat::Decimal));
+  for (CountNode::Ptr CntNd : Assignments) {
+    assert(CntNd->hasAbbrevIndex());
+    Node* MapCase = generateMapCase(CntNd);
+    if (MapCase)
+      MapNd->append(MapCase);
   }
-  Alg->append(generateStartFunction());
+  return Fcn;
+}
+
+Node* AbbreviationCodegen::generateMapCase(CountNode::Ptr CntNd) {
+  return Symtab->create<Case>(
+      Symtab->create<U64Const>(CntNd->getAbbrevIndex(), ValueFormat::Decimal),
+      // TODO(karlschimpf): Fix this.
+      generateAction(CntNd));
+}
+
+Node* AbbreviationCodegen::generateEnclosingAlg(charstring Name) {
+  auto* Enc = Symtab->create<EnclosingAlgorithms>();
+  Enc->append(Symtab->getOrCreateSymbol(Name));
+  return Enc;
 }
 
 Node* AbbreviationCodegen::generateRename(filt::Symbol* From,
