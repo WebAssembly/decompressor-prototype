@@ -77,7 +77,7 @@ class AbbreviationCodegen {
   void generateFunctions(filt::Algorithm* Alg);
   filt::Node* generateOpcodeFunction();
   filt::Node* generateCategorizeFunction();
-  filt::Node* generateMapCase(CountNode::Ptr Nd);
+  filt::Node* generateMapCase(decode::IntType Index, uint32_t Value);
   filt::Node* generateRename(filt::Symbol* from, filt::Symbol* to);
 };
 
