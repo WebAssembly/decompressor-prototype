@@ -1011,7 +1011,8 @@ void Interpreter::algorithmResume() {
               case State::Enter:
                 Frame.CallState = State::Step2;
                 if (hasReadMode())
-                  call(Method::Eval, MethodModifier::ReadOnly, Frame.Nd);
+                  call(Method::Eval, MethodModifier::ReadOnly,
+                       Frame.Nd->getKid(0));
                 break;
               case State::Step2:
                 Frame.CallState = State::Exit;

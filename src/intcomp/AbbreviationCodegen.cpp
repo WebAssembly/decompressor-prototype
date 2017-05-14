@@ -94,6 +94,16 @@ Node* AbbreviationCodegen::generateOpcodeFunction() {
   return Fcn;
 }
 
+namespace {
+
+static constexpr uint32_t CismDefaultSingleValue = 16767;
+static constexpr uint32_t CismDefaultMultipleValue = 16764;
+static constexpr uint32_t CismBlockEnterValue = 16768;
+static constexpr uint32_t CismBlockExitValue = 16769;
+static constexpr uint32_t CismAlignValue = 16770;
+
+}  // end of anonymous namespace
+
 Node* AbbreviationCodegen::generateCategorizeFunction() {
   auto* Fcn = Symtab->create<Define>();
   Fcn->append(Symtab->getOrCreateSymbol(CategorizeName));
@@ -102,20 +112,37 @@ Node* AbbreviationCodegen::generateCategorizeFunction() {
   auto* MapNd = Symtab->create<Map>();
   Fcn->append(MapNd);
   MapNd->append(Symtab->create<Param>(0, ValueFormat::Decimal));
-  for (CountNode::Ptr CntNd : Assignments) {
-    assert(CntNd->hasAbbrevIndex());
-    Node* MapCase = generateMapCase(CntNd);
-    if (MapCase)
-      MapNd->append(MapCase);
+  std::map<IntType, uint32_t> CatMap;
+  for (CountNode::Ptr Nd : Assignments) {
+    assert(Nd->hasAbbrevIndex());
+    switch (Nd->getKind()) {
+      default:
+        break;
+      case CountNode::Kind::Default:
+        CatMap[Nd->getAbbrevIndex()] =
+            (cast<DefaultCountNode>(Nd.get())->isSingle()
+                 ? CismDefaultSingleValue
+                 : CismDefaultMultipleValue);
+        break;
+      case CountNode::Kind::Block:
+        CatMap[Nd->getAbbrevIndex()] =
+            (cast<BlockCountNode>(Nd.get())->isEnter() ? CismBlockEnterValue
+                                                       : CismBlockExitValue);
+        break;
+      case CountNode::Kind::Align:
+        CatMap[Nd->getAbbrevIndex()] = CismAlignValue;
+        break;
+    }
   }
+  for (const auto& Pair : CatMap)
+    MapNd->append(generateMapCase(Pair.first, Pair.second));
   return Fcn;
 }
 
-Node* AbbreviationCodegen::generateMapCase(CountNode::Ptr CntNd) {
+Node* AbbreviationCodegen::generateMapCase(IntType Index, uint32_t Value) {
   return Symtab->create<Case>(
-      Symtab->create<U64Const>(CntNd->getAbbrevIndex(), ValueFormat::Decimal),
-      // TODO(karlschimpf): Fix this.
-      generateAction(CntNd));
+      Symtab->create<U64Const>(Index, ValueFormat::Decimal),
+      Symtab->create<U32Const>(Value, ValueFormat::Decimal));
 }
 
 Node* AbbreviationCodegen::generateEnclosingAlg(charstring Name) {

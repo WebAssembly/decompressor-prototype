@@ -214,6 +214,31 @@ void AbbrevAssignWriter::forwardAbbrevAfterFlush(CountNode::Ptr Abbrev) {
     Abbrev->describe(getTrace().getFile());
   });
   Values.push_back(AbbrevValue::create(Abbrev));
+  if (!MyFlags.UseCismModel)
+    return;
+  switch (Abbrev->getKind()) {
+    default:
+      return;
+    case CountNode::Kind::Singleton:
+      Values.push_back(LoopValue::create(1));
+      Values.push_back(DefaultValue::create(
+          cast<SingletonCountNode>(Abbrev.get())->getValue()));
+      break;
+    case CountNode::Kind::IntSequence: {
+      std::vector<IntType> Vals;
+      auto* Nd = cast<IntCountNode>(Abbrev.get());
+      while (Nd != nullptr) {
+        Vals.push_back(Nd->getValue());
+        Nd = Nd->getParent().get();
+      }
+      Values.push_back(LoopValue::create(Vals.size()));
+      while (!Vals.empty()) {
+        Values.push_back(DefaultValue::create(Vals.back()));
+        Vals.pop_back();
+      }
+      break;
+    }
+  }
 }
 
 void AbbrevAssignWriter::forwardOtherValue(IntType Value) {
