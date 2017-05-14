@@ -133,10 +133,11 @@ class DefineFrame {
   NodeType getArgType(size_t Index) const;
 
  private:
-  std::vector<const Node*> ParamTypes;
+  std::vector<NodeType> ParamTypes;
   mutable size_t NumValueArgs;
   mutable size_t NumExprArgs;
   mutable size_t NumLocals;
+  mutable size_t NumCached;
   bool InitSuccessful;
   void init(const Define* Def);
   size_t addSizedArg(const Node* Arg);
