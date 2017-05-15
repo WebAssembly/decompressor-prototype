@@ -99,7 +99,7 @@ namespace {
 //#define X(NAME, VALUE)
 #define SPECIAL_ABBREV_TABLE         \
   X(CismDefaultSingleValue, 16767)   \
-  X(CismDefaultMultipleValue, 16764) \
+  X(CismDefaultMultipleValue, 16766) \
   X(CismBlockEnterValue, 16768)      \
   X(CismBlockExitValue, 16769)       \
   X(CismAlignValue, 16770)
@@ -141,8 +141,10 @@ Node* AbbreviationCodegen::generateCategorizeFunction() {
     IntType NextAvail = 0;
     for (size_t i = 0; i < size(SpecialAbbrevs); ++i) {
       IntType Val = SpecialAbbrevs[i];
-      while (Used.count(Val))
-        NextAvail++;
+      if (Used.count(Val)) {
+        while (Used.count(NextAvail))
+          ++NextAvail;
+      }
       FixMap[Val] = NextAvail++;
     }
   }
