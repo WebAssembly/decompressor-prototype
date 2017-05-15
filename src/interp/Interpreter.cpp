@@ -1003,27 +1003,22 @@ void Interpreter::algorithmResume() {
             break;
           case NodeType::Map:
             switch (Frame.CallState) {
-              // TODO(karlschimpf): Run in "peek" mode, so that we don't do
-              // any reads.
               case State::Enter:
                 Frame.CallState = State::Step2;
-                if (hasReadMode())
-                  call(Method::Eval, Frame.CallModifier, Frame.Nd->getKid(0));
+                call(Method::Eval, Frame.CallModifier, Frame.Nd->getKid(0));
                 break;
-              case State::Step2:
+              case State::Step2: {
                 Frame.CallState = State::Exit;
-                if (hasReadMode()) {
-                  LastReadValue = Frame.ReturnValue;
-                  const Node* Cse = cast<Map>(Frame.Nd)->getCase(LastReadValue);
-                  if (Cse) {
-                    call(Method::Eval, Frame.CallModifier, Cse);
-                    break;
-                  }
+                LastReadValue = Frame.ReturnValue;
+                const Node* Cse = cast<Map>(Frame.Nd)->getCase(LastReadValue);
+                if (Cse) {
+                  call(Method::Peek, Frame.CallModifier, Cse);
+                  break;
                 }
                 break;
+              }
               case State::Exit:
-                if (hasReadMode())
-                  LastReadValue = Frame.ReturnValue;
+                LastReadValue = Frame.ReturnValue;
                 popAndReturn(LastReadValue);
                 break;
               default:
