@@ -36,14 +36,15 @@
 
 //#define X(tag)
 #define INTERPRETER_METHODS_TABLE \
-  X(GetAlgorithm)                 \
   X(CopyBlock)                    \
   X(Eval)                         \
   X(EvalBlock)                    \
   X(EvalInCallingContext)         \
   X(Finished)                     \
+  X(GetAlgorithm)                 \
   X(GetFile)                      \
   X(HasFileHeader)                \
+  X(Peek)                         \
   X(ReadIntBlock)                 \
   X(ReadOpcode)                   \
   X(ReadIntValues)                \

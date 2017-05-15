@@ -96,11 +96,26 @@ Node* AbbreviationCodegen::generateOpcodeFunction() {
 
 namespace {
 
-static constexpr uint32_t CismDefaultSingleValue = 16767;
-static constexpr uint32_t CismDefaultMultipleValue = 16764;
-static constexpr uint32_t CismBlockEnterValue = 16768;
-static constexpr uint32_t CismBlockExitValue = 16769;
-static constexpr uint32_t CismAlignValue = 16770;
+//#define X(NAME, VALUE)
+#define SPECIAL_ABBREV_TABLE         \
+  X(CismDefaultSingleValue, 16767)   \
+  X(CismDefaultMultipleValue, 16766) \
+  X(CismBlockEnterValue, 16768)      \
+  X(CismBlockExitValue, 16769)       \
+  X(CismAlignValue, 16770)
+
+enum class SpecialAbbrev : IntType {
+#define X(NAME, VALUE) NAME = VALUE,
+  SPECIAL_ABBREV_TABLE
+#undef X
+      Unknown = ~(IntType(0))
+};
+
+static IntType SpecialAbbrevs[] = {
+#define X(NAME, VALUE) IntType(SpecialAbbrev::NAME),
+    SPECIAL_ABBREV_TABLE
+#undef X
+};
 
 }  // end of anonymous namespace
 
@@ -112,25 +127,53 @@ Node* AbbreviationCodegen::generateCategorizeFunction() {
   auto* MapNd = Symtab->create<Map>();
   Fcn->append(MapNd);
   MapNd->append(Symtab->create<Param>(0, ValueFormat::Decimal));
-  std::map<IntType, uint32_t> CatMap;
+
+  // Define remappings for each special action.
+  std::map<IntType, IntType> FixMap;
+  {
+    // Start by collecting set of used abbreviations.
+    std::unordered_set<IntType> Used;
+    for (CountNode::Ptr Nd : Assignments) {
+      assert(Nd->hasAbbrevIndex());
+      Used.insert(Nd->getAbbrevIndex());
+    }
+    // Now find available renames for conflicting values.
+    IntType NextAvail = 0;
+    for (size_t i = 0; i < size(SpecialAbbrevs); ++i) {
+      IntType Val = SpecialAbbrevs[i];
+      if (Used.count(Val)) {
+        while (Used.count(NextAvail))
+          ++NextAvail;
+      }
+      FixMap[Val] = NextAvail++;
+    }
+  }
+
+  std::map<IntType, IntType> CatMap;
   for (CountNode::Ptr Nd : Assignments) {
     assert(Nd->hasAbbrevIndex());
+    IntType Val = Nd->getAbbrevIndex();
+    if (FixMap.count(Val)) {
+      CatMap[Val] = FixMap[Val];
+      continue;
+    }
     switch (Nd->getKind()) {
       default:
         break;
       case CountNode::Kind::Default:
         CatMap[Nd->getAbbrevIndex()] =
-            (cast<DefaultCountNode>(Nd.get())->isSingle()
-                 ? CismDefaultSingleValue
-                 : CismDefaultMultipleValue);
+            (IntType(cast<DefaultCountNode>(Nd.get())->isSingle()
+                         ? SpecialAbbrev::CismDefaultSingleValue
+                         : SpecialAbbrev::CismDefaultMultipleValue));
         break;
       case CountNode::Kind::Block:
         CatMap[Nd->getAbbrevIndex()] =
-            (cast<BlockCountNode>(Nd.get())->isEnter() ? CismBlockEnterValue
-                                                       : CismBlockExitValue);
+            IntType(cast<BlockCountNode>(Nd.get())->isEnter()
+                        ? SpecialAbbrev::CismBlockEnterValue
+                        : SpecialAbbrev::CismBlockExitValue);
         break;
       case CountNode::Kind::Align:
-        CatMap[Nd->getAbbrevIndex()] = CismAlignValue;
+        CatMap[Nd->getAbbrevIndex()] = IntType(SpecialAbbrev::CismAlignValue);
         break;
     }
   }
@@ -139,10 +182,10 @@ Node* AbbreviationCodegen::generateCategorizeFunction() {
   return Fcn;
 }
 
-Node* AbbreviationCodegen::generateMapCase(IntType Index, uint32_t Value) {
+Node* AbbreviationCodegen::generateMapCase(IntType Index, IntType Value) {
   return Symtab->create<Case>(
       Symtab->create<U64Const>(Index, ValueFormat::Decimal),
-      Symtab->create<U32Const>(Value, ValueFormat::Decimal));
+      Symtab->create<U64Const>(Value, ValueFormat::Decimal));
 }
 
 Node* AbbreviationCodegen::generateEnclosingAlg(charstring Name) {

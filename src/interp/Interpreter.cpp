@@ -950,15 +950,10 @@ void Interpreter::algorithmResume() {
           case NodeType::Peek:
             switch (Frame.CallState) {
               case State::Enter:
-                if (!Input->pushPeekPos())
-                  return failBadState();
                 Frame.CallState = State::Exit;
-                call(Method::Eval, MethodModifier::ReadOnly,
-                     Frame.Nd->getKid(0));
+                call(Method::Peek, Frame.CallModifier, Frame.Nd->getKid(0));
                 break;
               case State::Exit:
-                if (!Input->popPeekPos())
-                  return failBadState();
                 popAndReturn(Frame.ReturnValue);
                 break;
               default:
@@ -1010,21 +1005,20 @@ void Interpreter::algorithmResume() {
             switch (Frame.CallState) {
               case State::Enter:
                 Frame.CallState = State::Step2;
-                if (hasReadMode())
-                  call(Method::Eval, MethodModifier::ReadOnly,
-                       Frame.Nd->getKid(0));
+                call(Method::Eval, Frame.CallModifier, Frame.Nd->getKid(0));
                 break;
-              case State::Step2:
+              case State::Step2: {
                 Frame.CallState = State::Exit;
-                if (hasReadMode()) {
-                  LastReadValue = Frame.ReturnValue;
-                  call(Method::Eval, MethodModifier::ReadOnly,
-                       cast<Map>(Frame.Nd)->getCase(LastReadValue));
+                LastReadValue = Frame.ReturnValue;
+                const Node* Cse = cast<Map>(Frame.Nd)->getCase(LastReadValue);
+                if (Cse) {
+                  call(Method::Peek, Frame.CallModifier, Cse);
+                  break;
                 }
                 break;
+              }
               case State::Exit:
-                if (hasReadMode())
-                  LastReadValue = Frame.ReturnValue;
+                LastReadValue = Frame.ReturnValue;
                 popAndReturn(LastReadValue);
                 break;
               default:
@@ -1781,6 +1775,23 @@ void Interpreter::algorithmResume() {
               return failBadState();
             // Quitely fail.
             return catchOrElseFail();
+          default:
+            return failBadState();
+        }
+        break;
+      case Method::Peek:
+        switch (Frame.CallState) {
+          case State::Enter:
+            if (!Input->pushPeekPos())
+              return failBadState();
+            Frame.CallState = State::Exit;
+            call(Method::Eval, MethodModifier::ReadOnly, Frame.Nd);
+            break;
+          case State::Exit:
+            if (!Input->popPeekPos())
+              return failBadState();
+            popAndReturn(Frame.ReturnValue);
+            break;
           default:
             return failBadState();
         }
