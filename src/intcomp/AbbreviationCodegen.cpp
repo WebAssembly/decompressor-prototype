@@ -68,6 +68,7 @@ AbbreviationCodegen::AbbreviationCodegen(const CompressionFlags& Flags,
       CategorizeName("categorize"),
       OpcodeName("opcode"),
       ProcessName("process"),
+      ValuesName("values"),
       OldName(".old") {}
 
 AbbreviationCodegen::~AbbreviationCodegen() {}
@@ -104,9 +105,20 @@ void AbbreviationCodegen::generateFunctions(Algorithm* Alg) {
   if (!ToRead) {
     Alg->append(generateRename(ProcessName));
     Alg->append(generateProcessFunction());
+    Alg->append(generateValuesFunction());
   }
   Alg->append(generateOpcodeFunction());
   Alg->append(generateCategorizeFunction());
+}
+
+Node* AbbreviationCodegen::generateValuesFunction() {
+  auto* Fcn = Symtab->create<Define>();
+  Fcn->append(Symtab->getOrCreateSymbol(ValuesName));
+  Fcn->append(Symtab->create<NoParams>());
+  Fcn->append(Symtab->create<NoLocals>());
+  Fcn->append(Symtab->create<Loop>(Symtab->create<Varuint64>(),
+                                   Symtab->create<Varint64>()));
+  return Fcn;
 }
 
 Node* AbbreviationCodegen::generateProcessFunction() {

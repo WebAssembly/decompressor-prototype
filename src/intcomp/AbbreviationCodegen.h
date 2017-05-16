@@ -51,6 +51,7 @@ class AbbreviationCodegen {
   std::string CategorizeName;
   std::string OpcodeName;
   std::string ProcessName;
+  std::string ValuesName;
   std::string OldName;
 
   filt::Node* generateHeader(filt::NodeType Type,
@@ -77,6 +78,7 @@ class AbbreviationCodegen {
   filt::Node* generateOpcodeFunction();
   filt::Node* generateCategorizeFunction();
   filt::Node* generateProcessFunction();
+  filt::Node* generateValuesFunction();
   filt::Node* generateMapCase(decode::IntType Index, decode::IntType Value);
   filt::Node* generateRename(std::string Name);
   filt::Node* generateOld(std::string Name);
