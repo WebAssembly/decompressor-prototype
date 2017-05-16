@@ -19,6 +19,10 @@
 #include "intcomp/AbbreviationCodegen.h"
 #include "algorithms/cism0x0.h"
 
+#if 1
+#include "sexp/TextWriter.h"
+#endif
+
 #include <algorithm>
 
 namespace wasm {
@@ -148,8 +152,21 @@ Node* AbbreviationCodegen::generateOpcodeFunction() {
   auto* Fcn = Symtab->create<Define>();
   Fcn->append(Symtab->getOrCreateSymbol(OpcodeName));
   Fcn->append(Symtab->create<NoParams>());
-  Fcn->append(Symtab->create<NoLocals>());
-  Fcn->append(generateAbbreviationRead());
+  if (Flags.AlignOpcodes)
+    Fcn->append(Symtab->create<Locals>(1, ValueFormat::Decimal));
+  else
+    Fcn->append(Symtab->create<NoLocals>());
+  Node* Rd = generateAbbreviationRead();
+  if (!Flags.AlignOpcodes) {
+    Fcn->append(Rd);
+    return Fcn;
+  }
+  Sequence* Seq = Symtab->create<Sequence>();
+  Fcn->append(Seq);
+  Seq->append(
+      Symtab->create<Set>(Symtab->create<Local>(0, ValueFormat::Decimal), Rd));
+  Seq->append(generateCallback(PredefinedSymbol::Align));
+  Seq->append(Symtab->create<Local>(0, ValueFormat::Decimal));
   return Fcn;
 }
 

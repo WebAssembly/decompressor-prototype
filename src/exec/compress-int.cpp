@@ -82,8 +82,12 @@ int main(int Argc, const char* Argv[]) {
 
     ArgsParser::Toggle UseCismModelFlag(MyCompressionFlags.UseCismModel);
     Args.add(UseCismModelFlag.setLongName("cism").setDescription(
-        "Generate compressed algorithm using Cism algorithm "
-        "(experimental - not working yet)"));
+        "Generate compressed algorithm using Cism algorithm"));
+
+    ArgsParser::Toggle AlignOpcodesFlag(MyCompressionFlags.AlignOpcodes);
+    Args.add(AlignOpcodesFlag.setLongName("align").setDescription(
+        "Byte align opcodes, even if using Huffman encoding. "
+        "(experimental to see if helps zipping compressed files)"));
 
     ArgsParser::Optional<bool> TraceHuffmanAssignmentsFlag(
         MyCompressionFlags.TraceHuffmanAssignments);

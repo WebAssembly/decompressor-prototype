@@ -1194,10 +1194,14 @@ $(TEST_WASM_COMP_FILES): $(TEST_0XD_GENDIR)/%.wasm-comp: $(TEST_0XD_SRCDIR)/%.wa
 	| $(BUILD_EXECDIR)/decompress - | cmp - $<
 	$(BUILD_EXECDIR)/compress-int --min-count 2 --min-weight 5 --cism $< \
 	| $(BUILD_EXECDIR)/decompress - | cmp - $<
-	$(BUILD_EXECDIR)/compress-int --Huffman --min-count 2 --min-weight 5 $< \
-	| $(BUILD_EXECDIR)/decompress - | cmp - $<
-	$(BUILD_EXECDIR)/compress-int --Huffman --min-count 2 --min-weight 5 --cism $< \
-	| $(BUILD_EXECDIR)/decompress - | cmp - $<
+	$(BUILD_EXECDIR)/compress-int --min-count 2 --min-weight 5 --cism \
+          --align $< | $(BUILD_EXECDIR)/decompress - | cmp - $<
+	$(BUILD_EXECDIR)/compress-int --Huffman --min-count 2 --min-weight 5 \
+          $< | $(BUILD_EXECDIR)/decompress - | cmp - $<
+	$(BUILD_EXECDIR)/compress-int --Huffman --min-count 2 --min-weight 5 \
+          --cism $< | $(BUILD_EXECDIR)/decompress - | cmp - $<
+	$(BUILD_EXECDIR)/compress-int --Huffman --min-count 2 --min-weight 5 \
+          --cism --align $< | $(BUILD_EXECDIR)/decompress - | cmp - $<
 
 .PHONY: $(TEST_WASM_COMP_FILES)
 
