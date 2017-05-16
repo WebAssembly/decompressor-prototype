@@ -69,6 +69,7 @@ CompressionFlags::CompressionFlags()
       TraceAbbreviationAssignments(false),
       TraceAbbreviationAssignmentsCollection(false),
       TraceAssigningAbbreviations(false),
+      TraceFlushingAbbreviations(false),
       TraceCompressedIntOutput(false),
       TraceAbbrevSelectionSelect(false),
       TraceAbbrevSelectionCreate(false),

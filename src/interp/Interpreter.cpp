@@ -917,8 +917,10 @@ void Interpreter::algorithmResume() {
             break;
           case NodeType::Callback: {  // Method::Eval
             IntType Action = cast<Callback>(Frame.Nd)->getIntNode()->getValue();
-            if (!Input->readAction(Action) || !Output->writeAction(Action))
-              return throwMessage("Unable to apply action: ", Action);
+            if (!Input->readAction(Action))
+              return throwCantRead();
+            if (!Output->writeAction(Action))
+              return throwCantWrite();
             popAndReturn(LastReadValue);
             break;
           }
@@ -993,12 +995,14 @@ void Interpreter::algorithmResume() {
             break;
           }
           case NodeType::BinaryEval:
-            if (hasReadMode())
+            if (hasReadMode()) {
               if (!Input->readBinary(Frame.Nd, LastReadValue))
                 return throwCantRead();
-            if (hasWriteMode())
+            }
+            if (hasWriteMode()) {
               if (!Output->writeBinary(LastReadValue, Frame.Nd))
                 return throwCantWrite();
+            }
             popAndReturn(LastReadValue);
             break;
           case NodeType::Map:
@@ -1175,7 +1179,7 @@ void Interpreter::algorithmResume() {
                         return throwCantWrite();
                     break;
                 }
-                Frame.CallState = State::Step3;
+                Frame.CallState = State::Exit;
                 call(Method::Eval, Frame.CallModifier, Frame.Nd->getKid(1));
                 break;
               case State::Exit:
@@ -1310,7 +1314,8 @@ void Interpreter::algorithmResume() {
                 break;
               }
               case State::Exit:
-                popAndReturn();
+                LastReadValue = Frame.ReturnValue;
+                popAndReturn(LastReadValue);
                 break;
               default:
                 return failBadState();

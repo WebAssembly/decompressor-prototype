@@ -30,6 +30,31 @@ using namespace utils;
 
 namespace intcomp {
 
+namespace {
+
+//#define X(NAME, VALUE)
+#define SPECIAL_ABBREV_TABLE         \
+  X(CismDefaultSingleValue, 16767)   \
+  X(CismDefaultMultipleValue, 16766) \
+  X(CismBlockEnterValue, 16768)      \
+  X(CismBlockExitValue, 16769)       \
+  X(CismAlignValue, 16770)
+
+enum class SpecialAbbrev : IntType {
+#define X(NAME, VALUE) NAME = VALUE,
+  SPECIAL_ABBREV_TABLE
+#undef X
+      Unknown = ~(IntType(0))
+};
+
+static IntType SpecialAbbrevs[] = {
+#define X(NAME, VALUE) IntType(SpecialAbbrev::NAME),
+    SPECIAL_ABBREV_TABLE
+#undef X
+};
+
+}  // end of anonymous namespace
+
 AbbreviationCodegen::AbbreviationCodegen(const CompressionFlags& Flags,
                                          CountNode::RootPtr Root,
                                          HuffmanEncoder::NodePtr EncodingRoot,
@@ -65,9 +90,9 @@ Node* AbbreviationCodegen::generateHeader(NodeType Type,
       break;
   }
   Header->append(
-      Symtab->create<U32Const>(MagicNumber, decode::ValueFormat::Hexidecimal));
-  Header->append(Symtab->create<U32Const>(VersionNumber,
-                                          decode::ValueFormat::Hexidecimal));
+      Symtab->create<U32Const>(MagicNumber, ValueFormat::Hexidecimal));
+  Header->append(
+      Symtab->create<U32Const>(VersionNumber, ValueFormat::Hexidecimal));
   return Header;
 }
 
@@ -76,13 +101,35 @@ void AbbreviationCodegen::generateFunctions(Algorithm* Alg) {
     return Alg->append(generateStartFunction());
 
   Alg->append(generateEnclosingAlg("cism"));
-  Alg->append(
-      generateRename(Symtab->getOrCreateSymbol(CategorizeName),
-                     Symtab->getOrCreateSymbol(CategorizeName + OldName)));
-  Alg->append(generateRename(Symtab->getOrCreateSymbol(OpcodeName),
-                             Symtab->getOrCreateSymbol(OpcodeName + OldName)));
+  if (!ToRead) {
+    Alg->append(generateRename(ProcessName));
+    Alg->append(generateProcessFunction());
+  }
   Alg->append(generateOpcodeFunction());
   Alg->append(generateCategorizeFunction());
+}
+
+Node* AbbreviationCodegen::generateProcessFunction() {
+  auto* Fcn = Symtab->create<Define>();
+  Fcn->append(Symtab->getOrCreateSymbol(ProcessName));
+  Fcn->append(Symtab->create<ParamValues>(1, ValueFormat::Decimal));
+  Fcn->append(Symtab->create<NoLocals>());
+  auto* Swch = Symtab->create<Switch>();
+  Fcn->append(Swch);
+  Swch->append(Symtab->create<Param>(0, ValueFormat::Decimal));
+  auto* Eval = Symtab->create<EvalVirtual>();
+  Swch->append(Eval);
+  Eval->append(generateOld(ProcessName));
+  Eval->append(Symtab->create<Param>(0, ValueFormat::Decimal));
+  Swch->append(Symtab->create<Case>(
+      Symtab->create<U64Const>(IntType(SpecialAbbrev::CismBlockEnterValue),
+                               ValueFormat::Decimal),
+      generateCallback(PredefinedSymbol::Block_enter_writeonly)));
+  Swch->append(Symtab->create<Case>(
+      Symtab->create<U64Const>(IntType(SpecialAbbrev::CismBlockExitValue),
+                               ValueFormat::Decimal),
+      generateCallback(PredefinedSymbol::Block_exit_writeonly)));
+  return Fcn;
 }
 
 Node* AbbreviationCodegen::generateOpcodeFunction() {
@@ -93,31 +140,6 @@ Node* AbbreviationCodegen::generateOpcodeFunction() {
   Fcn->append(generateAbbreviationRead());
   return Fcn;
 }
-
-namespace {
-
-//#define X(NAME, VALUE)
-#define SPECIAL_ABBREV_TABLE         \
-  X(CismDefaultSingleValue, 16767)   \
-  X(CismDefaultMultipleValue, 16766) \
-  X(CismBlockEnterValue, 16768)      \
-  X(CismBlockExitValue, 16769)       \
-  X(CismAlignValue, 16770)
-
-enum class SpecialAbbrev : IntType {
-#define X(NAME, VALUE) NAME = VALUE,
-  SPECIAL_ABBREV_TABLE
-#undef X
-      Unknown = ~(IntType(0))
-};
-
-static IntType SpecialAbbrevs[] = {
-#define X(NAME, VALUE) IntType(SpecialAbbrev::NAME),
-    SPECIAL_ABBREV_TABLE
-#undef X
-};
-
-}  // end of anonymous namespace
 
 Node* AbbreviationCodegen::generateCategorizeFunction() {
   auto* Fcn = Symtab->create<Define>();
@@ -194,8 +216,13 @@ Node* AbbreviationCodegen::generateEnclosingAlg(charstring Name) {
   return Enc;
 }
 
-Node* AbbreviationCodegen::generateRename(filt::Symbol* From,
-                                          filt::Symbol* To) {
+Node* AbbreviationCodegen::generateOld(std::string Name) {
+  return Symtab->getOrCreateSymbol(Name + OldName);
+}
+
+Node* AbbreviationCodegen::generateRename(std::string Name) {
+  Node* From = Symtab->getOrCreateSymbol(Name);
+  Node* To = generateOld(Name);
   return Symtab->create<Rename>(From, To);
 }
 
@@ -265,12 +292,13 @@ Node* AbbreviationCodegen::generateAction(CountNode::Ptr Nd) {
   else if (auto* DefaultPtr = dyn_cast<DefaultCountNode>(NdPtr))
     return generateDefaultAction(DefaultPtr);
   else if (isa<AlignCountNode>(NdPtr))
-    return generateAlignAction();
+    return generateCallback(PredefinedSymbol::Align);
   return Symtab->create<Error>();
 }
 
-Node* AbbreviationCodegen::generateUseAction(Symbol* Sym) {
-  return Symtab->create<LiteralActionUse>(Sym);
+Node* AbbreviationCodegen::generateCallback(PredefinedSymbol Sym) {
+  return Symtab->create<Callback>(
+      Symtab->create<LiteralActionUse>(Symtab->getPredefined(Sym)));
 }
 
 Node* AbbreviationCodegen::generateBlockAction(BlockCountNode* Blk) {
@@ -282,8 +310,7 @@ Node* AbbreviationCodegen::generateBlockAction(BlockCountNode* Blk) {
     Sym = ToRead ? PredefinedSymbol::Block_exit
                  : PredefinedSymbol::Block_exit_writeonly;
   }
-  return Symtab->create<Callback>(
-      generateUseAction(Symtab->getPredefined(Sym)));
+  return generateCallback(Sym);
 }
 
 Node* AbbreviationCodegen::generateDefaultAction(DefaultCountNode* Default) {
@@ -300,11 +327,6 @@ Node* AbbreviationCodegen::generateDefaultMultipleAction() {
 
 Node* AbbreviationCodegen::generateDefaultSingleAction() {
   return Symtab->create<Varint64>();
-}
-
-Node* AbbreviationCodegen::generateAlignAction() {
-  return Symtab->create<Callback>(
-      generateUseAction(Symtab->getPredefined(PredefinedSymbol::Align)));
 }
 
 Node* AbbreviationCodegen::generateIntType(IntType Value) {

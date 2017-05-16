@@ -257,6 +257,13 @@ int main(int Argc, const char* Argv[]) {
         TraceAbbreviationAssignmentsFlag.setLongName("verbose=abbreviations")
             .setDescription("Show (final) abbreviation assignments"));
 
+    ArgsParser::Optional<bool> TraceFlushingAbbreviationsFlag(
+        MyCompressionFlags.TraceFlushingAbbreviations);
+    Args.add(TraceFlushingAbbreviationsFlag
+                 .setLongName("verbose=stream-abbreviations")
+                 .setDescription("Show how abbreviations are converted into an "
+                                 "integer stream"));
+
     ArgsParser::Optional<bool> TraceInitialAbbreviationAssignmentsFlag(
         MyCompressionFlags.TraceInitialAbbreviationAssignments);
     Args.add(TraceInitialAbbreviationAssignmentsFlag

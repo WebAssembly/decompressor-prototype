@@ -103,8 +103,10 @@ void IntCompressor::writeDataOutput(const BitWriteCursor& StartPos,
   TRACE_METHOD("writeDataOutput");
   auto Writer = std::make_shared<ByteWriter>(Output);
   Writer->setPos(StartPos);
+  InterpreterFlags InterpFlags = MyFlags.MyInterpFlags;
+  InterpFlags.MacroContext = MacroDirective::Contract;
   Interpreter MyReader(std::make_shared<IntReader>(IntOutput), Writer,
-                       MyFlags.MyInterpFlags, Symtab);
+                       InterpFlags, Symtab);
   if (MyFlags.TraceWritingDataOutput)
     MyReader.getTrace().setTraceProgress(true);
   MyReader.algorithmStart();

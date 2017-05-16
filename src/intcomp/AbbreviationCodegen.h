@@ -61,12 +61,11 @@ class AbbreviationCodegen {
   filt::Node* generateSwitchStatement();
   filt::Node* generateCase(size_t AbbrevIndex, CountNode::Ptr Nd);
   filt::Node* generateAction(CountNode::Ptr Nd);
-  filt::Node* generateUseAction(filt::Symbol* Sym);
+  filt::Node* generateCallback(filt::PredefinedSymbol Sym);
   filt::Node* generateBlockAction(BlockCountNode* Blk);
   filt::Node* generateDefaultAction(DefaultCountNode* Default);
   filt::Node* generateDefaultMultipleAction();
   filt::Node* generateDefaultSingleAction();
-  filt::Node* generateAlignAction();
   filt::Node* generateEnclosingAlg(charstring Name);
   filt::Node* generateIntType(decode::IntType Value);
   filt::Node* generateIntLitAction(IntCountNode* Nd);
@@ -77,8 +76,10 @@ class AbbreviationCodegen {
   void generateFunctions(filt::Algorithm* Alg);
   filt::Node* generateOpcodeFunction();
   filt::Node* generateCategorizeFunction();
+  filt::Node* generateProcessFunction();
   filt::Node* generateMapCase(decode::IntType Index, decode::IntType Value);
-  filt::Node* generateRename(filt::Symbol* from, filt::Symbol* to);
+  filt::Node* generateRename(std::string Name);
+  filt::Node* generateOld(std::string Name);
 };
 
 }  // end of namespace intcomp
