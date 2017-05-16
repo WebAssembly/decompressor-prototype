@@ -30,70 +30,6 @@ using namespace utils;
 
 namespace intcomp {
 
-AbbreviationCodegen::AbbreviationCodegen(const CompressionFlags& Flags,
-                                         CountNode::RootPtr Root,
-                                         HuffmanEncoder::NodePtr EncodingRoot,
-                                         CountNode::PtrSet& Assignments,
-                                         bool ToRead)
-    : Flags(Flags),
-      Root(Root),
-      EncodingRoot(EncodingRoot),
-      Assignments(Assignments),
-      ToRead(ToRead),
-      CategorizeName("categorize"),
-      OpcodeName("opcode"),
-      ProcessName("process"),
-      OldName(".old") {}
-
-AbbreviationCodegen::~AbbreviationCodegen() {}
-
-Node* AbbreviationCodegen::generateHeader(NodeType Type,
-                                          uint32_t MagicNumber,
-                                          uint32_t VersionNumber) {
-  Header* Header = nullptr;
-  switch (Type) {
-    default:
-      return Symtab->create<Void>();
-    case NodeType::SourceHeader:
-      Header = Symtab->create<SourceHeader>();
-      break;
-    case NodeType::ReadHeader:
-      Header = Symtab->create<ReadHeader>();
-      break;
-    case NodeType::WriteHeader:
-      Header = Symtab->create<WriteHeader>();
-      break;
-  }
-  Header->append(
-      Symtab->create<U32Const>(MagicNumber, decode::ValueFormat::Hexidecimal));
-  Header->append(Symtab->create<U32Const>(VersionNumber,
-                                          decode::ValueFormat::Hexidecimal));
-  return Header;
-}
-
-void AbbreviationCodegen::generateFunctions(Algorithm* Alg) {
-  if (!Flags.UseCismModel)
-    return Alg->append(generateStartFunction());
-
-  Alg->append(generateEnclosingAlg("cism"));
-  Alg->append(
-      generateRename(Symtab->getOrCreateSymbol(CategorizeName),
-                     Symtab->getOrCreateSymbol(CategorizeName + OldName)));
-  Alg->append(generateRename(Symtab->getOrCreateSymbol(OpcodeName),
-                             Symtab->getOrCreateSymbol(OpcodeName + OldName)));
-  Alg->append(generateOpcodeFunction());
-  Alg->append(generateCategorizeFunction());
-}
-
-Node* AbbreviationCodegen::generateOpcodeFunction() {
-  auto* Fcn = Symtab->create<Define>();
-  Fcn->append(Symtab->getOrCreateSymbol(OpcodeName));
-  Fcn->append(Symtab->create<NoParams>());
-  Fcn->append(Symtab->create<NoLocals>());
-  Fcn->append(generateAbbreviationRead());
-  return Fcn;
-}
-
 namespace {
 
 //#define X(NAME, VALUE)
@@ -118,6 +54,104 @@ static IntType SpecialAbbrevs[] = {
 };
 
 }  // end of anonymous namespace
+
+AbbreviationCodegen::AbbreviationCodegen(const CompressionFlags& Flags,
+                                         CountNode::RootPtr Root,
+                                         HuffmanEncoder::NodePtr EncodingRoot,
+                                         CountNode::PtrSet& Assignments,
+                                         bool ToRead)
+    : Flags(Flags),
+      Root(Root),
+      EncodingRoot(EncodingRoot),
+      Assignments(Assignments),
+      ToRead(ToRead),
+      CategorizeName("categorize"),
+      OpcodeName("opcode"),
+      ProcessName("process"),
+      ValuesName("values"),
+      OldName(".old") {}
+
+AbbreviationCodegen::~AbbreviationCodegen() {}
+
+Node* AbbreviationCodegen::generateHeader(NodeType Type,
+                                          uint32_t MagicNumber,
+                                          uint32_t VersionNumber) {
+  Header* Header = nullptr;
+  switch (Type) {
+    default:
+      return Symtab->create<Void>();
+    case NodeType::SourceHeader:
+      Header = Symtab->create<SourceHeader>();
+      break;
+    case NodeType::ReadHeader:
+      Header = Symtab->create<ReadHeader>();
+      break;
+    case NodeType::WriteHeader:
+      Header = Symtab->create<WriteHeader>();
+      break;
+  }
+  Header->append(
+      Symtab->create<U32Const>(MagicNumber, ValueFormat::Hexidecimal));
+  Header->append(
+      Symtab->create<U32Const>(VersionNumber, ValueFormat::Hexidecimal));
+  return Header;
+}
+
+void AbbreviationCodegen::generateFunctions(Algorithm* Alg) {
+  if (!Flags.UseCismModel)
+    return Alg->append(generateStartFunction());
+
+  Alg->append(generateEnclosingAlg("cism"));
+  if (!ToRead) {
+    Alg->append(generateRename(ProcessName));
+    Alg->append(generateProcessFunction());
+    Alg->append(generateValuesFunction());
+  }
+  Alg->append(generateOpcodeFunction());
+  Alg->append(generateCategorizeFunction());
+}
+
+Node* AbbreviationCodegen::generateValuesFunction() {
+  auto* Fcn = Symtab->create<Define>();
+  Fcn->append(Symtab->getOrCreateSymbol(ValuesName));
+  Fcn->append(Symtab->create<NoParams>());
+  Fcn->append(Symtab->create<NoLocals>());
+  Fcn->append(Symtab->create<Loop>(Symtab->create<Varuint64>(),
+                                   Symtab->create<Varint64>()));
+  return Fcn;
+}
+
+Node* AbbreviationCodegen::generateProcessFunction() {
+  auto* Fcn = Symtab->create<Define>();
+  Fcn->append(Symtab->getOrCreateSymbol(ProcessName));
+  Fcn->append(Symtab->create<ParamValues>(1, ValueFormat::Decimal));
+  Fcn->append(Symtab->create<NoLocals>());
+  auto* Swch = Symtab->create<Switch>();
+  Fcn->append(Swch);
+  Swch->append(Symtab->create<Param>(0, ValueFormat::Decimal));
+  auto* Eval = Symtab->create<EvalVirtual>();
+  Swch->append(Eval);
+  Eval->append(generateOld(ProcessName));
+  Eval->append(Symtab->create<Param>(0, ValueFormat::Decimal));
+  Swch->append(Symtab->create<Case>(
+      Symtab->create<U64Const>(IntType(SpecialAbbrev::CismBlockEnterValue),
+                               ValueFormat::Decimal),
+      generateCallback(PredefinedSymbol::Block_enter_writeonly)));
+  Swch->append(Symtab->create<Case>(
+      Symtab->create<U64Const>(IntType(SpecialAbbrev::CismBlockExitValue),
+                               ValueFormat::Decimal),
+      generateCallback(PredefinedSymbol::Block_exit_writeonly)));
+  return Fcn;
+}
+
+Node* AbbreviationCodegen::generateOpcodeFunction() {
+  auto* Fcn = Symtab->create<Define>();
+  Fcn->append(Symtab->getOrCreateSymbol(OpcodeName));
+  Fcn->append(Symtab->create<NoParams>());
+  Fcn->append(Symtab->create<NoLocals>());
+  Fcn->append(generateAbbreviationRead());
+  return Fcn;
+}
 
 Node* AbbreviationCodegen::generateCategorizeFunction() {
   auto* Fcn = Symtab->create<Define>();
@@ -194,8 +228,13 @@ Node* AbbreviationCodegen::generateEnclosingAlg(charstring Name) {
   return Enc;
 }
 
-Node* AbbreviationCodegen::generateRename(filt::Symbol* From,
-                                          filt::Symbol* To) {
+Node* AbbreviationCodegen::generateOld(std::string Name) {
+  return Symtab->getOrCreateSymbol(Name + OldName);
+}
+
+Node* AbbreviationCodegen::generateRename(std::string Name) {
+  Node* From = Symtab->getOrCreateSymbol(Name);
+  Node* To = generateOld(Name);
   return Symtab->create<Rename>(From, To);
 }
 
@@ -265,12 +304,13 @@ Node* AbbreviationCodegen::generateAction(CountNode::Ptr Nd) {
   else if (auto* DefaultPtr = dyn_cast<DefaultCountNode>(NdPtr))
     return generateDefaultAction(DefaultPtr);
   else if (isa<AlignCountNode>(NdPtr))
-    return generateAlignAction();
+    return generateCallback(PredefinedSymbol::Align);
   return Symtab->create<Error>();
 }
 
-Node* AbbreviationCodegen::generateUseAction(Symbol* Sym) {
-  return Symtab->create<LiteralActionUse>(Sym);
+Node* AbbreviationCodegen::generateCallback(PredefinedSymbol Sym) {
+  return Symtab->create<Callback>(
+      Symtab->create<LiteralActionUse>(Symtab->getPredefined(Sym)));
 }
 
 Node* AbbreviationCodegen::generateBlockAction(BlockCountNode* Blk) {
@@ -282,8 +322,7 @@ Node* AbbreviationCodegen::generateBlockAction(BlockCountNode* Blk) {
     Sym = ToRead ? PredefinedSymbol::Block_exit
                  : PredefinedSymbol::Block_exit_writeonly;
   }
-  return Symtab->create<Callback>(
-      generateUseAction(Symtab->getPredefined(Sym)));
+  return generateCallback(Sym);
 }
 
 Node* AbbreviationCodegen::generateDefaultAction(DefaultCountNode* Default) {
@@ -300,11 +339,6 @@ Node* AbbreviationCodegen::generateDefaultMultipleAction() {
 
 Node* AbbreviationCodegen::generateDefaultSingleAction() {
   return Symtab->create<Varint64>();
-}
-
-Node* AbbreviationCodegen::generateAlignAction() {
-  return Symtab->create<Callback>(
-      generateUseAction(Symtab->getPredefined(PredefinedSymbol::Align)));
 }
 
 Node* AbbreviationCodegen::generateIntType(IntType Value) {

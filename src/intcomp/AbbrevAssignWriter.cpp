@@ -214,16 +214,19 @@ void AbbrevAssignWriter::forwardAbbrevAfterFlush(CountNode::Ptr Abbrev) {
     Abbrev->describe(getTrace().getFile());
   });
   Values.push_back(AbbrevValue::create(Abbrev));
+  TRACE(IntType, "Abbrev index", Abbrev->getAbbrevIndex());
   if (!MyFlags.UseCismModel)
     return;
   switch (Abbrev->getKind()) {
     default:
       return;
-    case CountNode::Kind::Singleton:
+    case CountNode::Kind::Singleton: {
       Values.push_back(LoopValue::create(1));
-      Values.push_back(DefaultValue::create(
-          cast<SingletonCountNode>(Abbrev.get())->getValue()));
+      IntType Value = cast<SingletonCountNode>(Abbrev.get())->getValue();
+      TRACE(IntType, "Singleton", Value);
+      Values.push_back(DefaultValue::create(Value));
       break;
+    }
     case CountNode::Kind::IntSequence: {
       std::vector<IntType> Vals;
       auto* Nd = cast<IntCountNode>(Abbrev.get());
@@ -231,9 +234,13 @@ void AbbrevAssignWriter::forwardAbbrevAfterFlush(CountNode::Ptr Abbrev) {
         Vals.push_back(Nd->getValue());
         Nd = Nd->getParent().get();
       }
-      Values.push_back(LoopValue::create(Vals.size()));
+      size_t Size = Vals.size();
+      TRACE(size_t, "Multiple %s", Size);
+      Values.push_back(LoopValue::create(Size));
       while (!Vals.empty()) {
-        Values.push_back(DefaultValue::create(Vals.back()));
+        IntType Val = Vals.back();
+        TRACE(IntType, "Value", Val);
+        Values.push_back(DefaultValue::create(Val));
         Vals.pop_back();
       }
       break;
@@ -301,15 +308,22 @@ bool AbbrevAssignWriter::flushValues() {
   if (MyFlags.ReassignAbbreviations)
     reassignAbbreviations();
   if (MyFlags.TraceAbbreviationAssignments) {
+    fprintf(stderr, "Trace flush = %u\n", MyFlags.TraceFlushingAbbreviations);
     fprintf(stderr, "abbreviation assignments:\n");
     fprintf(stderr, "-------------------------\n");
     CountNode::describeNodes(stderr, Assignments);
   }
+  TraceClass::Ptr Trace;
+  if (MyFlags.TraceFlushingAbbreviations) {
+    Trace = std::make_shared<TraceClass>("FlushAbbrev");
+    Trace->setTraceProgress(true);
+    Trace->addContext(OutWriter.getTraceContext());
+  }
   for (AbbrevAssignValue* Value : Values) {
-    TRACE_BLOCK({
-      TRACE_PREFIX("Write ");
-      Value->describe(getTrace().getFile());
-    });
+    if (Trace) {
+      TRACE_PREFIX_USING(*Trace, "Write ");
+      Value->describe(Trace->getFile());
+    }
     switch (Value->getKind()) {
       default:
         fprintf(
