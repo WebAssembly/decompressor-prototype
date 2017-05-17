@@ -59,6 +59,7 @@ struct CompressionFlags {
   bool BitCompressOpcodes;
   bool ReassignAbbreviations;
   bool UseCismModel;
+  bool AlignOpcodes;
   interp::IntTypeFormat DefaultFormat;
   interp::IntTypeFormat LoopSizeFormat;
 
