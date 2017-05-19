@@ -52,6 +52,7 @@ CompressionFlags::CompressionFlags()
       AlignOpcodes(false),
       DefaultFormat(IntTypeFormat::Varint64),
       LoopSizeFormat(IntTypeFormat::Varuint64),
+      MatchSingletonsLast(false),
       TraceHuffmanAssignments(false),
       TraceReadingInput(false),
       TraceReadingIntStream(false),

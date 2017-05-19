@@ -62,6 +62,7 @@ struct CompressionFlags {
   bool AlignOpcodes;
   interp::IntTypeFormat DefaultFormat;
   interp::IntTypeFormat LoopSizeFormat;
+  bool MatchSingletonsLast;
 
   interp::InterpreterFlags MyInterpFlags;
 

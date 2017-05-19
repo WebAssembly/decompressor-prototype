@@ -89,6 +89,11 @@ int main(int Argc, const char* Argv[]) {
         "Byte align opcodes, even if using Huffman encoding. "
         "(experimental to see if helps zipping compressed files)"));
 
+    ArgsParser::Toggle MatchSingletonsLastFlag(
+        MyCompressionFlags.MatchSingletonsLast);
+    Args.add(MatchSingletonsLastFlag.setLongName("singletons").setDescription(
+        "Run experiment on how singleton patterns are handled."));
+
     ArgsParser::Optional<bool> TraceHuffmanAssignmentsFlag(
         MyCompressionFlags.TraceHuffmanAssignments);
     Args.add(
