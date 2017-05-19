@@ -111,6 +111,10 @@ void AbbreviationsCollector::addAbbreviation(CountNode::Ptr Nd) {
     TRACE_MESSAGE("Removing, count/weight too small");
     return;
   }
+  if (MyFlags.MatchSingletonsLast && isa<SingletonCountNode>(NdPtr)) {
+    TRACE_MESSAGE("Singleton integer, ignoring");
+    return;
+  }
   Assignments.insert(Nd);
   TRACE_MESSAGE("Added to assignments");
   if (!MyFlags.TrimOverriddenPatterns) {

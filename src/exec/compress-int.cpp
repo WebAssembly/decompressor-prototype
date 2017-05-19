@@ -91,8 +91,9 @@ int main(int Argc, const char* Argv[]) {
 
     ArgsParser::Toggle MatchSingletonsLastFlag(
         MyCompressionFlags.MatchSingletonsLast);
-    Args.add(MatchSingletonsLastFlag.setLongName("singletons").setDescription(
-        "Run experiment on how singleton patterns are handled."));
+    Args.add(MatchSingletonsLastFlag.setLongName("singletons")
+                 .setDescription(
+                     "Run experiment on how singleton patterns are handled."));
 
     ArgsParser::Optional<bool> TraceHuffmanAssignmentsFlag(
         MyCompressionFlags.TraceHuffmanAssignments);
