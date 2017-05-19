@@ -215,37 +215,6 @@ void AbbrevAssignWriter::forwardAbbrevAfterFlush(CountNode::Ptr Abbrev) {
   });
   Values.push_back(AbbrevValue::create(Abbrev));
   TRACE(IntType, "Abbrev index", Abbrev->getAbbrevIndex());
-  if (!MyFlags.UseCismModel)
-    return;
-  switch (Abbrev->getKind()) {
-    default:
-      return;
-    case CountNode::Kind::Singleton: {
-      Values.push_back(LoopValue::create(1));
-      IntType Value = cast<SingletonCountNode>(Abbrev.get())->getValue();
-      TRACE(IntType, "Singleton", Value);
-      Values.push_back(DefaultValue::create(Value));
-      break;
-    }
-    case CountNode::Kind::IntSequence: {
-      std::vector<IntType> Vals;
-      auto* Nd = cast<IntCountNode>(Abbrev.get());
-      while (Nd != nullptr) {
-        Vals.push_back(Nd->getValue());
-        Nd = Nd->getParent().get();
-      }
-      size_t Size = Vals.size();
-      TRACE(size_t, "Multiple %s", Size);
-      Values.push_back(LoopValue::create(Size));
-      while (!Vals.empty()) {
-        IntType Val = Vals.back();
-        TRACE(IntType, "Value", Val);
-        Values.push_back(DefaultValue::create(Val));
-        Vals.pop_back();
-      }
-      break;
-    }
-  }
 }
 
 void AbbrevAssignWriter::forwardOtherValue(IntType Value) {
@@ -299,8 +268,6 @@ void AbbrevAssignWriter::reassignAbbreviations() {
     if (Nd->getCount() > 0)
       Assignments.insert(Nd);
   EncodingRoot = CountNode::assignAbbreviations(Assignments, MyFlags);
-  if (!MyFlags.TraceAbbreviationAssignments)
-    return;
 }
 
 bool AbbrevAssignWriter::flushValues() {
@@ -333,6 +300,39 @@ bool AbbrevAssignWriter::flushValues() {
       case ValueType::Abbreviation: {
         AbbrevValue* Abbrev = cast<AbbrevValue>(Value);
         OutWriter.write(Abbrev->getAbbreviation()->getAbbrevIndex());
+        if (!MyFlags.UseCismModel)
+          break;
+        CountNode::Ptr AbbrevNd = Abbrev->getAbbreviation();
+        switch (AbbrevNd->getKind()) {
+          default:
+            break;
+          case CountNode::Kind::Singleton: {
+            OutWriter.write(1);
+            IntType Value =
+                cast<SingletonCountNode>(AbbrevNd.get())->getValue();
+            TRACE(IntType, "Singleton", Value);
+            OutWriter.write(Value);
+            break;
+          }
+          case CountNode::Kind::IntSequence: {
+            std::vector<IntType> Vals;
+            auto* Nd = cast<IntCountNode>(AbbrevNd.get());
+            while (Nd != nullptr) {
+              Vals.push_back(Nd->getValue());
+              Nd = Nd->getParent().get();
+            }
+            size_t Size = Vals.size();
+            TRACE(size_t, "Multiple %s", Size);
+            OutWriter.write(Size);
+            while (!Vals.empty()) {
+              IntType Val = Vals.back();
+              TRACE(IntType, "Value", Val);
+              OutWriter.write(Val);
+              Vals.pop_back();
+            }
+            break;
+          }
+        }
         break;
       }
       case ValueType::Default: {
