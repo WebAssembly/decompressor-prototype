@@ -17,8 +17,8 @@
 // Implements a writer that injects abbreviations into the input stream.
 
 #include "intcomp/AbbrevAssignWriter.h"
-#include "intcomp/AbbreviationsCollector.h"
 #include "intcomp/AbbrevSelector.h"
+#include "intcomp/AbbreviationsCollector.h"
 #include "sexp/Ast.h"
 
 #define DEBUG 0
@@ -301,7 +301,8 @@ void AbbrevAssignWriter::findSingletonPatterns() {
 
   // Trim set to allowed size.
   CountNode::PtrSet SingletonAssignments;
-  AbbreviationsCollector Collector(SingletonsRoot, SingletonAssignments, MyFlags);
+  AbbreviationsCollector Collector(SingletonsRoot, SingletonAssignments,
+                                   MyFlags);
   Collector.setTrace(getTracePtr());
   Collector.assignAbbreviations(MyFlags.MaxAbbreviationsSingle,
                                 makeFlags(CollectionFlag::Singletons));

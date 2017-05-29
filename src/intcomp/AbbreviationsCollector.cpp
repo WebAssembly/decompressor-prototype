@@ -35,7 +35,8 @@ AbbreviationsCollector::AbbreviationsCollector(CountNode::RootPtr Root,
 AbbreviationsCollector::~AbbreviationsCollector() {}
 
 HuffmanEncoder::NodePtr AbbreviationsCollector::assignAbbreviations(
-    size_t MaxAbbreviations, CollectionFlags Flags) {
+    size_t MaxAbbreviations,
+    CollectionFlags Flags) {
   TRACE_METHOD("assignAbbreviations");
   if (MaxAbbreviations == 0)
     MaxAbbreviations = MyFlags.MaxAbbreviations;
@@ -47,10 +48,10 @@ HuffmanEncoder::NodePtr AbbreviationsCollector::assignAbbreviations(
     Root->getOthers(Others);
     for (CountNode::Ptr Nd : Others) {
       TRACE_BLOCK({
-          FILE* Out = getTrace().getFile();
-          fprintf(Out, "Considering: ");
-          Nd->describe(Out);
-        });
+        FILE* Out = getTrace().getFile();
+        fprintf(Out, "Considering: ");
+        Nd->describe(Out);
+      });
       // Assume others are needed if even used once!
       if (Nd->getCount() == 0) {
         TRACE_MESSAGE("Ignoring: never used");
@@ -80,8 +81,7 @@ HuffmanEncoder::NodePtr AbbreviationsCollector::assignAbbreviations(
   collectUsingCutoffs(MyFlags.CountCutoff, MyFlags.WeightCutoff, Flags);
   buildHeap();
 
-  while (!ValuesHeap->empty() &&
-         Assignments.size() < MaxAbbreviations) {
+  while (!ValuesHeap->empty() && Assignments.size() < MaxAbbreviations) {
     CountNode::Ptr Nd = popHeap();
     TRACE_BLOCK({
       FILE* Out = getTrace().getFile();

@@ -37,8 +37,8 @@ class AbbreviationsCollector : public CountNodeCollector {
   // candidate patterns to use as abbreviations. Returns Huffman encoding
   // of abbreviations if generated. Note: If MaxAbbreviations == 0, it
   // will use the cutoff defined in MyFlags.
-  utils::HuffmanEncoder::NodePtr assignAbbreviations(
-      size_t MaxAbbreviations, CollectionFlags Kinds);
+  utils::HuffmanEncoder::NodePtr assignAbbreviations(size_t MaxAbbreviations,
+                                                     CollectionFlags Kinds);
 
  private:
   CountNode::PtrSet& Assignments;

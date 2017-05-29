@@ -103,8 +103,8 @@ int main(int Argc, const char* Argv[]) {
     ArgsParser::Optional<bool> TraceMatchSingletonsLastFlag(
         MyCompressionFlags.TraceMatchSingletonsLast);
     Args.add(TraceMatchSingletonsLastFlag.setLongName("verbose=singletons")
-             .setDescription(
-                 "Trace handling of experimental singleton patterns"));
+                 .setDescription(
+                     "Trace handling of experimental singleton patterns"));
 
     ArgsParser::Optional<bool> TraceHuffmanAssignmentsFlag(
         MyCompressionFlags.TraceHuffmanAssignments);
@@ -170,12 +170,11 @@ int main(int Argc, const char* Argv[]) {
 
     ArgsParser::Optional<size_t> MaxAbbreviationsSingleFlag(
         MyCompressionFlags.MaxAbbreviationsSingle);
-    Args.add(
-        MaxAbbreviationsSingleFlag.setLongName("max-patterns-single")
-        .setOptionName("INTEGER")
-        .setDescription(
-            "(Experimental) Maximum of singleton patterns is '--singletons' "
-            "sepcified"));
+    Args.add(MaxAbbreviationsSingleFlag.setLongName("max-patterns-single")
+                 .setOptionName("INTEGER")
+                 .setDescription("(Experimental) Maximum of singleton patterns "
+                                 "is '--singletons' "
+                                 "sepcified"));
 
     ArgsParser::Optional<IntType> SmallValueMaxFlag(
         MyCompressionFlags.SmallValueMax);

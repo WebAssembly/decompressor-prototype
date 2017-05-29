@@ -166,8 +166,7 @@ void CountNodeCollector::collectNode(CountNode::Ptr Nd) {
         CountReported += Count;
         WeightReported += Weight;
         ++NumNodesReported;
-        if (hasFlag(CollectionFlag::Singletons, Flags)
-            || IntNd == nullptr) {
+        if (hasFlag(CollectionFlag::Singletons, Flags) || IntNd == nullptr) {
           TRACE_MESSAGE("Adding node");
           Values.push_back(Nd);
         }
