@@ -29,9 +29,12 @@ typedef uint32_t CollectionFlags;
 
 enum class CollectionFlag : CollectionFlags {
   None = 0x0,
-  TopLevel = 0x1,
-  IntPaths = 0x2,
-  All = 0x3
+  Defaults = 0x1,
+  Singletons = 0x2,
+  IntPaths = 0x4,
+  SmallValues = 0x8,
+  TopLevel = 0x3,
+  All = 0xf
 };
 
 inline CollectionFlags makeFlags(CollectionFlag F) {
@@ -42,6 +45,10 @@ inline bool hasFlag(CollectionFlag F, CollectionFlags Flags) {
   return makeFlags(F) & Flags;
 }
 
+inline CollectionFlags lessFlag(CollectionFlag F, CollectionFlags Flags) {
+  return (~makeFlags(F)) & Flags;
+}
+
 charstring getName(CollectionFlags Flags);
 
 struct CompressionFlags {
@@ -50,6 +57,7 @@ struct CompressionFlags {
   size_t PatternLengthLimit;
   size_t PatternLengthMultiplier;
   size_t MaxAbbreviations;
+  size_t MaxAbbreviationsSingle;
   decode::IntType SmallValueMax;
   size_t SmallValueCountCutoff;
   interp::IntTypeFormat AbbrevFormat;
@@ -66,6 +74,7 @@ struct CompressionFlags {
 
   interp::InterpreterFlags MyInterpFlags;
 
+  bool TraceMatchSingletonsLast;
   bool TraceHuffmanAssignments;
   bool TraceReadingInput;
   bool TraceReadingIntStream;

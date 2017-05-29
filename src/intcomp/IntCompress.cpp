@@ -222,7 +222,10 @@ void IntCompressor::assignInitialAbbreviations(CountNode::PtrSet& Assignments) {
   AbbreviationsCollector Collector(getRoot(), Assignments, MyFlags);
   if (MyFlags.TraceAssigningAbbreviations && hasTrace())
     Collector.setTrace(getTracePtr());
-  EncodingRoot = Collector.assignAbbreviations();
+  CollectionFlags Flags = makeFlags(CollectionFlag::All);
+  if (MyFlags.MatchSingletonsLast)
+    Flags = lessFlag(CollectionFlag::Singletons, Flags);
+  EncodingRoot = Collector.assignAbbreviations(0, Flags);
 }
 
 bool IntCompressor::generateIntOutput(CountNode::PtrSet& Assignments) {

@@ -44,12 +44,16 @@ std::shared_ptr<TraceClass> AbbreviationsCollector::getTracePtr() {
   return Trace;
 }
 
-HuffmanEncoder::NodePtr AbbreviationsCollector::assignAbbreviations() {
+HuffmanEncoder::NodePtr AbbreviationsCollector::assignAbbreviations(
+    size_t MaxAbbreviations,
+    CollectionFlags Flags) {
   TRACE_METHOD("assignAbbreviations");
+  if (MaxAbbreviations == 0)
+    MaxAbbreviations = MyFlags.MaxAbbreviations;
   TRACE(uint64_t, "WeightCutoff", MyFlags.WeightCutoff);
+  TRACE(hex_uint32_t, "Flags", Flags);
   TrimmedNodes.clear();
-  {
-    // Add always defined patterns.
+  if (hasFlag(CollectionFlag::Defaults, Flags)) {
     CountNode::PtrVector Others;
     Root->getOthers(Others);
     for (CountNode::Ptr Nd : Others) {
@@ -63,8 +67,10 @@ HuffmanEncoder::NodePtr AbbreviationsCollector::assignAbbreviations() {
         TRACE_MESSAGE("Ignoring: never used");
         continue;
       }
-      addAbbreviation(Nd);
+      addAbbreviation(Nd, Flags);
     }
+  }
+  if (hasFlag(CollectionFlag::SmallValues, Flags)) {
     for (IntType Val = 0; Val < MyFlags.SmallValueMax; ++Val) {
       constexpr bool AddIfNotFound = true;
       CountNode::Ptr Nd = lookup(Root, Val, !AddIfNotFound);
@@ -78,30 +84,29 @@ HuffmanEncoder::NodePtr AbbreviationsCollector::assignAbbreviations() {
         fprintf(Out, "Considering: ");
         NdPtr->describe(Out);
       });
-      addAbbreviation(Nd);
+      addAbbreviation(Nd, Flags);
     }
   }
   // Now select best fitting patterns, based on weight.
-  collectUsingCutoffs(MyFlags.CountCutoff, MyFlags.WeightCutoff,
-                      makeFlags(CollectionFlag::All));
+  collectUsingCutoffs(MyFlags.CountCutoff, MyFlags.WeightCutoff, Flags);
   buildHeap();
 
-  while (!ValuesHeap->empty() &&
-         Assignments.size() < MyFlags.MaxAbbreviations) {
+  while (!ValuesHeap->empty() && Assignments.size() < MaxAbbreviations) {
     CountNode::Ptr Nd = popHeap();
     TRACE_BLOCK({
       FILE* Out = getTrace().getFile();
       fprintf(Out, "Considering: ");
       Nd->describe(Out);
     });
-    addAbbreviation(Nd);
+    addAbbreviation(Nd, Flags);
   }
   TrimmedNodes.clear();
   clearHeap();
   return CountNode::assignAbbreviations(Assignments, MyFlags);
 }
 
-void AbbreviationsCollector::addAbbreviation(CountNode::Ptr Nd) {
+void AbbreviationsCollector::addAbbreviation(CountNode::Ptr Nd,
+                                             CollectionFlags Flags) {
   if (Assignments.count(Nd) > 0) {
     TRACE_MESSAGE("Ignoring: already chosen");
     return;
@@ -111,9 +116,29 @@ void AbbreviationsCollector::addAbbreviation(CountNode::Ptr Nd) {
     TRACE_MESSAGE("Removing, count/weight too small");
     return;
   }
-  if (MyFlags.MatchSingletonsLast && isa<SingletonCountNode>(NdPtr)) {
-    TRACE_MESSAGE("Singleton integer, ignoring");
-    return;
+  switch (Nd->getKind()) {
+    case CountNode::Kind::Root:
+      return;
+    case CountNode::Kind::Block:
+    case CountNode::Kind::Default:
+    case CountNode::Kind::Align:
+      if (!hasFlag(CollectionFlag::Defaults, Flags)) {
+        TRACE_MESSAGE("Removing, not collecting defaults");
+        return;
+      }
+      break;
+    case CountNode::Kind::Singleton:
+      if (!hasFlag(CollectionFlag::Singletons, Flags)) {
+        TRACE_MESSAGE("Removing, not collecting singletons");
+        return;
+      }
+      break;
+    case CountNode::Kind::IntSequence:
+      if (!hasFlag(CollectionFlag::IntPaths, Flags)) {
+        TRACE_MESSAGE("Removing, not collecting integer sequences");
+        return;
+      }
+      break;
   }
   Assignments.insert(Nd);
   TRACE_MESSAGE("Added to assignments");

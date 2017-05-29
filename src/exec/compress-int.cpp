@@ -23,6 +23,8 @@
 #include "stream/WriteBackedQueue.h"
 #include "utils/ArgsParse.h"
 
+#define TRACE_ARGS_PARSE 0
+
 using namespace wasm;
 using namespace wasm::decode;
 using namespace wasm::filt;
@@ -47,6 +49,9 @@ int main(int Argc, const char* Argv[]) {
 
   {
     ArgsParser Args("Compress integer sequences in a WASM file");
+#if TRACE_ARGS_PARSE
+    Args.setTraceProgress(true);
+#endif
 
     ArgsParser::Required<charstring> InputFilenameFlag(InputFilename);
     Args.add(InputFilenameFlag.setOptionName("INPUT").setDescription(
@@ -94,6 +99,12 @@ int main(int Argc, const char* Argv[]) {
     Args.add(MatchSingletonsLastFlag.setLongName("singletons")
                  .setDescription(
                      "Run experiment on how singleton patterns are handled."));
+
+    ArgsParser::Optional<bool> TraceMatchSingletonsLastFlag(
+        MyCompressionFlags.TraceMatchSingletonsLast);
+    Args.add(TraceMatchSingletonsLastFlag.setLongName("verbose=singletons")
+                 .setDescription(
+                     "Trace handling of experimental singleton patterns"));
 
     ArgsParser::Optional<bool> TraceHuffmanAssignmentsFlag(
         MyCompressionFlags.TraceHuffmanAssignments);
@@ -156,6 +167,14 @@ int main(int Argc, const char* Argv[]) {
             .setOptionName("INTEGER")
             .setDescription(
                 "Maximum number of abbreviations allowed in compressed file"));
+
+    ArgsParser::Optional<size_t> MaxAbbreviationsSingleFlag(
+        MyCompressionFlags.MaxAbbreviationsSingle);
+    Args.add(MaxAbbreviationsSingleFlag.setLongName("max-patterns-single")
+                 .setOptionName("INTEGER")
+                 .setDescription("(Experimental) Maximum of singleton patterns "
+                                 "is '--singletons' "
+                                 "sepcified"));
 
     ArgsParser::Optional<IntType> SmallValueMaxFlag(
         MyCompressionFlags.SmallValueMax);
@@ -365,6 +384,9 @@ int main(int Argc, const char* Argv[]) {
         return exit_status(EXIT_FAILURE);
     }
   }
+
+  if (MyCompressionFlags.MatchSingletonsLast)
+    fprintf(stderr, "*** Running singleton patterns experiment...\n");
 
   SymbolTable::SharedPtr AlgSymtab;
   if (AlgorithmFilenames.empty()) {

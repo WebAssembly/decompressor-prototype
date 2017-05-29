@@ -144,6 +144,23 @@ class TraceClass : public std::enable_shared_from_this<TraceClass> {
     TraceClass& Cls;
   };
 
+  // Allows temporary  turing on of tracing.
+  class Local {
+    Local() = delete;
+    Local(const Local&) = delete;
+    Local& operator=(const Local&) = delete;
+
+   public:
+    Local(TraceClass& Cls) : Cls(Cls), OldValue(Cls.getTraceProgress()) {
+      Cls.setTraceProgress(true);
+    }
+    ~Local() { Cls.setTraceProgress(OldValue); }
+
+   private:
+    TraceClass& Cls;
+    bool OldValue;
+  };
+
   TraceClass();
   explicit TraceClass(charstring Label);
   explicit TraceClass(FILE* File);
