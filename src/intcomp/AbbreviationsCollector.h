@@ -40,6 +40,11 @@ class AbbreviationsCollector : public CountNodeCollector {
   utils::HuffmanEncoder::NodePtr assignAbbreviations(size_t MaxAbbreviations,
                                                      CollectionFlags Kinds);
 
+  utils::TraceClass& getTrace() { return *getTracePtr(); }
+  std::shared_ptr<utils::TraceClass> getTracePtr();
+  void setTrace(std::shared_ptr<utils::TraceClass> NewTrace);
+  bool hasTrace() const { return bool(Trace); }
+
  private:
   CountNode::PtrSet& Assignments;
   const CompressionFlags& MyFlags;
