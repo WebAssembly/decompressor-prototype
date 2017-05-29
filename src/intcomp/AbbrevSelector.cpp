@@ -281,6 +281,7 @@ AbbrevSelection::Ptr AbbrevSelector::select() {
   if (Buffer.size() == 0)
     return Min;
   // Create possible defaults.
+  AbbrevSelection::Ptr UsableMin;
   Heap->clear();
   createMatches();
   while (!Heap->empty()) {
@@ -293,6 +294,18 @@ AbbrevSelection::Ptr AbbrevSelector::select() {
     IF_TRACE(Select, TRACE_ABBREV_SELECTION("Select", Sel));
     assert(bool(Sel));
 
+    bool UsableCase = true;
+    if (Flags.MatchSingletonsLast) {
+      if (CountNode::Ptr Abbrev = Sel->getAbbreviation()) {
+        if (auto* IntNd = dyn_cast<IntCountNode>(Abbrev.get())) {
+          if (IntNd->getPathLength() == 1) {
+            UsableCase = false;
+            IF_TRACE(Select, TRACE_MESSAGE("Singleton - don't use as min"));
+          }
+        }
+      }
+    }
+
     // Rule out special cases where we can short-circuit the search.
     if (!Min) {
       if (Heap->empty()) {
@@ -301,6 +314,13 @@ AbbrevSelection::Ptr AbbrevSelector::select() {
         IF_TRACE(Select,
                  TRACE_MESSAGE("Defining as minimum, since only selection"));
         Min = Sel;
+        if (UsableCase) {
+          // If only one choice left, no need to expand further, it must be
+          // the best choice.
+          IF_TRACE(Select,
+                   TRACE_MESSAGE("Defining as minimum, since only selection"));
+          UsableMin = Min;
+        }
         break;
       }
     } else if (Sel->getWeight() > Min->getWeight()) {
@@ -312,7 +332,12 @@ AbbrevSelection::Ptr AbbrevSelector::select() {
       // Valid selection, see if best.
       if (!Min || isHillclimbLT(Sel, Min)) {
         Min = Sel;
-        IF_TRACE(Select, TRACE_MESSAGE("Define as minimum"));
+        if (UsableCase) {
+          IF_TRACE(Select, TRACE_MESSAGE("Define as minimum"));
+          UsableMin = Min;
+        } else {
+          IF_TRACE(Select, TRACE_MESSAGE("Not usable, ignoring"));
+        }
       } else {
         IF_TRACE(Select, TRACE_MESSAGE("Ignoring: not minimum"));
       }

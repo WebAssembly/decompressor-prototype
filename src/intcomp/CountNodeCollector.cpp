@@ -66,8 +66,9 @@ void CountNodeCollector::clear() {
 }
 
 void CountNodeCollector::buildHeap() {
-  for (auto& Value : Values)
+  for (auto& Value : Values) {
     pushHeap(Value);
+  }
 }
 
 void CountNodeCollector::pushHeap(CountNode::Ptr Nd) {
@@ -112,7 +113,7 @@ void CountNodeCollector::collectAbbreviations() {
 }
 
 void CountNodeCollector::collect() {
-  if (hasFlag(CollectionFlag::TopLevel, Flags)) {
+  if (hasFlag(CollectionFlag::Defaults, Flags)) {
     CountNode::PtrVector Others;
     Root->getOthers(Others);
     for (CountNode::Ptr Nd : Others)
@@ -141,11 +142,14 @@ void CountNodeCollector::collectNode(CountNode::Ptr Nd) {
       for (auto& Pair : *IntNd)
         ToAdd.push_back(Pair.second);
     if (hasFlag(CollectionFlag::TopLevel, Flags)) {
+      TRACE_MESSAGE("TopLevel node");
       CountTotal += Count;
       WeightTotal += Weight;
       if (CollectAbbreviations) {
-        if (!Nd->hasAbbrevIndex())
+        if (!Nd->hasAbbrevIndex()) {
+          TRACE_MESSAGE("Omitting due to no abbreviation index");
           continue;
+        }
       } else {
         if (IsIntNode) {
           if (IsSingleton && Count < CountCutoff) {
@@ -162,19 +166,27 @@ void CountNodeCollector::collectNode(CountNode::Ptr Nd) {
         CountReported += Count;
         WeightReported += Weight;
         ++NumNodesReported;
-        Values.push_back(Nd);
+        if (hasFlag(CollectionFlag::Singletons, Flags)
+            || IntNd == nullptr) {
+          TRACE_MESSAGE("Adding node");
+          Values.push_back(Nd);
+        }
       }
     }
-    if (IntNd == nullptr || !hasFlag(CollectionFlag::IntPaths, Flags))
+    if (IntNd == nullptr || !hasFlag(CollectionFlag::IntPaths, Flags)) {
+      TRACE_MESSAGE("Not expanding successors, don't want int paths");
       continue;
+    }
     if (!IsSingleton) {
       CountTotal += Count;
       WeightTotal += Weight;
     }
     if (IsIntNode) {
       if (CollectAbbreviations) {
-        if (!Nd->hasAbbrevIndex())
+        if (!Nd->hasAbbrevIndex()) {
+          TRACE_MESSAGE("Omitting due to no abbreviation index");
           continue;
+        }
       } else {
         if (IsSingleton && Count < CountCutoff) {
           TRACE_MESSAGE("Omitting due to count cutoff");
@@ -187,6 +199,7 @@ void CountNodeCollector::collectNode(CountNode::Ptr Nd) {
       }
     }
     if (!IsSingleton) {
+      TRACE_MESSAGE("Adding node");
       Values.push_back(CountNode::Ptr(Nd));
       CountReported += Count;
       WeightReported += Weight;

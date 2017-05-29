@@ -35,21 +35,17 @@ class AbbreviationsCollector : public CountNodeCollector {
 
   // Does assignment based on maximizing weight. This will find the set of
   // candidate patterns to use as abbreviations. Returns Huffman encoding
-  // of abbreviations if generated.
-  utils::HuffmanEncoder::NodePtr assignAbbreviations();
-
-  utils::TraceClass& getTrace() { return *getTracePtr(); }
-  std::shared_ptr<utils::TraceClass> getTracePtr();
-  void setTrace(std::shared_ptr<utils::TraceClass> NewTrace);
-  bool hasTrace() const { return bool(Trace); }
+  // of abbreviations if generated. Note: If MaxAbbreviations == 0, it
+  // will use the cutoff defined in MyFlags.
+  utils::HuffmanEncoder::NodePtr assignAbbreviations(
+      size_t MaxAbbreviations, CollectionFlags Kinds);
 
  private:
   CountNode::PtrSet& Assignments;
   const CompressionFlags& MyFlags;
-  std::shared_ptr<utils::TraceClass> Trace;
   CountNode::PtrSet TrimmedNodes;
 
-  void addAbbreviation(CountNode::Ptr Nd);
+  void addAbbreviation(CountNode::Ptr Nd, CollectionFlags Flags);
 };
 
 }  // end of namespace intcomp

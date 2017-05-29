@@ -61,6 +61,7 @@ class AbbrevAssignWriter : public interp::Writer {
  private:
   const CompressionFlags& MyFlags;
   CountNode::RootPtr Root;
+  CountNode::RootPtr SingletonsRoot;
   CountNode::PtrSet& Assignments;
   utils::HuffmanEncoder::NodePtr& EncodingRoot;
   interp::IntWriter OutWriter;
@@ -83,6 +84,7 @@ class AbbrevAssignWriter : public interp::Writer {
   void alignIfNecessary();
   bool flushValues();
   void clearValues();
+  void findSingletonPatterns();
   void reassignAbbreviations();
 
   const char* getDefaultTraceName() const OVERRIDE;

@@ -17,8 +17,11 @@
 // Implements a writer that injects abbreviations into the input stream.
 
 #include "intcomp/AbbrevAssignWriter.h"
+#include "intcomp/AbbreviationsCollector.h"
 #include "intcomp/AbbrevSelector.h"
 #include "sexp/Ast.h"
+
+#define DEBUG 0
 
 namespace wasm {
 
@@ -270,8 +273,54 @@ void AbbrevAssignWriter::reassignAbbreviations() {
   EncodingRoot = CountNode::assignAbbreviations(Assignments, MyFlags);
 }
 
+void AbbrevAssignWriter::findSingletonPatterns() {
+#if DEBUG
+  TraceClass::Local _(getTrace());
+#endif
+  TRACE_METHOD("findSingletons");
+
+  // Start by collecting set of singletons using default values.
+  SingletonsRoot = std::make_shared<RootCountNode>();
+  for (AbbrevAssignValue* Value : Values) {
+    if (auto* Def = dyn_cast<DefaultValue>(Value)) {
+      TRACE(IntType, "default", Def->getValue());
+      CountNode::IntPtr Nd = lookup(SingletonsRoot, Def->getValue());
+      Root->increment();
+      Nd->increment();
+    }
+  }
+  if (MyFlags.TraceMatchSingletonsLast) {
+    fprintf(stderr, "Max patterns = %" PRIuMAX "\n",
+            uintmax_t(MyFlags.MaxAbbreviationsSingle));
+    fprintf(stderr, "*** Possible Singletons ****\n");
+    for (const auto& Pair : *SingletonsRoot) {
+      if (Pair.second->keepSingletonsUsingCount(MyFlags))
+        Pair.second->describe(stderr);
+    }
+  }
+
+  // Trim set to allowed size.
+  CountNode::PtrSet SingletonAssignments;
+  AbbreviationsCollector Collector(SingletonsRoot, SingletonAssignments, MyFlags);
+  Collector.setTrace(getTracePtr());
+  Collector.assignAbbreviations(MyFlags.MaxAbbreviationsSingle,
+                                makeFlags(CollectionFlag::Singletons));
+  for (CountNode::Ptr Nd : SingletonAssignments) {
+    Assignments.insert(Nd);
+    Values.push_back(AbbrevValue::create(Nd));
+  }
+  if (MyFlags.TraceMatchSingletonsLast) {
+    fprintf(stderr, "*** Chosen Singletons ****\n");
+    for (CountNode::Ptr Nd : SingletonAssignments) {
+      Nd->describe(stderr);
+    }
+  }
+}
+
 bool AbbrevAssignWriter::flushValues() {
   TRACE_MESSAGE("Flushing collected abbreviations");
+  if (MyFlags.MatchSingletonsLast)
+    findSingletonPatterns();
   if (MyFlags.ReassignAbbreviations)
     reassignAbbreviations();
   if (MyFlags.TraceAbbreviationAssignments) {
@@ -322,7 +371,7 @@ bool AbbrevAssignWriter::flushValues() {
               Nd = Nd->getParent().get();
             }
             size_t Size = Vals.size();
-            TRACE(size_t, "Multiple %s", Size);
+            TRACE(size_t, "Multiple", Size);
             OutWriter.write(Size);
             while (!Vals.empty()) {
               IntType Val = Vals.back();
@@ -337,12 +386,16 @@ bool AbbrevAssignWriter::flushValues() {
       }
       case ValueType::Default: {
         DefaultValue* Default = cast<DefaultValue>(Value);
-        OutWriter.write(Default->getValue());
+        IntType Val = Default->getValue();
+        TRACE(size_t, "Default", Val);
+        OutWriter.write(Val);
         break;
       }
       case ValueType::Loop: {
         LoopValue* Loop = cast<LoopValue>(Value);
-        OutWriter.write(Loop->getValue());
+        IntType Val = Loop->getValue();
+        TRACE(size_t, "Loop", Val);
+        OutWriter.write(Val);
       }
     }
   }

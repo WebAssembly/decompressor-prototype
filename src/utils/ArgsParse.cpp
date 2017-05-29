@@ -392,23 +392,45 @@ bool ArgsParser::parseShortName(const Arg* A,
 bool ArgsParser::parseLongName(const Arg* A,
                                charstring Argument,
                                charstring& Leftover) const {
+  if (TraceProgress) {
+    fprintf(stderr, "parseLongName: '%s'\n", Argument);
+    A->describe(stderr, TabWidth);
+  }
   size_t ArgSize = strlen(Argument);
-  if (ArgSize < 3)
+  if (ArgSize < 3) {
+    if (TraceProgress)
+      fprintf(stderr, "can't be --FLAG, skipping\n");
     return false;
-  if (Argument != strstr(Argument, "--"))
+  }
+  if (Argument != strstr(Argument, "--")) {
+    if (TraceProgress)
+      fprintf(stderr, "can't be --FLAG, skipping\n");
     return false;
+  }
   size_t NameSize = strlen(A->getLongName()) + 2;
-  if (Argument + 2 != strstr(Argument, A->getLongName()))
+  if (Argument + 2 != strstr(Argument, A->getLongName())) {
+    if (TraceProgress)
+      fprintf(stderr, "lengths don't match, skipping\n");
     return false;
+  }
   if (ArgSize == NameSize) {
     Leftover = nullptr;
+    if (TraceProgress)
+      fprintf(stderr, "matches with no leftover!\n");
     return true;
   }
-  if (Argument[NameSize] != '=')
+  if (Argument[NameSize] != '=') {
+    if (TraceProgress)
+      fprintf(stderr, "matches prefix, but not followed with '='\n");
     return false;
-  if (A->getOptionName() == nullptr)
+  }
+  if (A->getOptionName() == nullptr) {
+    fprintf(stderr, "matches prefix=, but option doesn't allow argument\n");
     return false;
+  }
   Leftover = Argument + NameSize + 1;
+  if (TraceProgress)
+    fprintf(stderr, "matches, leftover='%s'\n", Leftover);
   return true;
 }
 
