@@ -34,6 +34,16 @@ AbbreviationsCollector::AbbreviationsCollector(CountNode::RootPtr Root,
 
 AbbreviationsCollector::~AbbreviationsCollector() {}
 
+void AbbreviationsCollector::setTrace(std::shared_ptr<TraceClass> NewTrace) {
+  Trace = NewTrace;
+}
+
+std::shared_ptr<TraceClass> AbbreviationsCollector::getTracePtr() {
+  if (!Trace)
+    setTrace(std::make_shared<TraceClass>("AbbreviationCollector"));
+  return Trace;
+}
+
 HuffmanEncoder::NodePtr AbbreviationsCollector::assignAbbreviations(
     size_t MaxAbbreviations,
     CollectionFlags Flags) {
